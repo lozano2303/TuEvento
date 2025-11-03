@@ -1,6 +1,6 @@
-# 🎟️ Backend de TuEvento
+# 🎟️ Tu Evento
 
-Este es el backend del proyecto **TuEvento**.  
+Actualmente solo se encuentra el backend del proyecto **TuEvento**.  
 A medida que avance el desarrollo, este archivo se irá actualizando con nueva información sobre el proyecto, su estructura y sus componentes.
 
 ---
