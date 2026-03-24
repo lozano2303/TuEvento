@@ -10,7 +10,7 @@ The backend is currently the active component under development. Frontend (web a
 
 - [Overview](#overview)
 - [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
+- [Architecture](#architecture9)
 - [Modules](#modules)
 - [Database Model](#database-model)
 - [Functional Requirements](#functional-requirements)
