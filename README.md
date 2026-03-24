@@ -208,8 +208,8 @@ mvn spring-boot:run
 
 | Name | Role | Contact |
 |---|---|---|
-| Cristofer David Lozano Contreras | Backend Developer, Database Administrator | Cristofer_Lozano@soy.sena.edu.co |
-| Jhampier Santos Ortiz | Frontend Developer, Documentation | Jham_santos@soy.sena.edu.co |
+| Cristofer David Lozano Contreras | Desarrollador de Software | Cristofer_Lozano@soy.sena.edu.co |
+| Jhampier Santos Ortiz | Desarrollador de Software | Jham_santos@soy.sena.edu.co |
 
 ---
 
