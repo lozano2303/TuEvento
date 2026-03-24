@@ -10,7 +10,7 @@ The backend is currently the active component under development. Frontend (web a
 
 - [Overview](#overview)
 - [Tech Stack](#tech-stack)
-- [Architecture](#architecture9)
+- [Architecture](#architecture)
 - [Modules](#modules)
 - [Database Model](#database-model)
 - [Functional Requirements](#functional-requirements)
@@ -207,6 +207,225 @@ mvn spring-boot:run
 ## Team
 
 | Name | Role | Contact |
+|---|---|---|
+| Cristofer David Lozano Contreras | Desarrollador de Software | Cristofer_Lozano@soy.sena.edu.co |
+| Jhampier Santos Ortiz | Desarrollador de Software | Jham_santos@soy.sena.edu.co |
+
+---
+
+*© 2025 — CapySoft*
+
+---
+
+# Tu Evento
+
+**Tu Evento** es una plataforma web y móvil desarrollada por **CapySoft** para la creación, administración y operación de eventos. Proporciona a los organizadores herramientas para diseñar distribuciones de venues, configurar asientos, gestionar reservas y procesar pagos de forma segura. Los asistentes pueden explorar eventos, comprar entradas, recibir notificaciones push y validar su entrada mediante código QR.
+
+El backend es actualmente el componente activo en desarrollo. El frontend (web y móvil) se integrará progresivamente.
+
+---
+
+## Tabla de Contenidos
+
+- [Descripción General](#descripción-general)
+- [Tecnologías](#tecnologías)
+- [Arquitectura](#arquitectura-1)
+- [Módulos](#módulos)
+- [Modelo de Base de Datos](#modelo-de-base-de-datos)
+- [Requisitos Funcionales](#requisitos-funcionales)
+- [Requisitos No Funcionales](#requisitos-no-funcionales)
+- [Cómo Empezar](#cómo-empezar)
+- [Equipo](#equipo)
+
+---
+
+## Descripción General
+
+Tu Evento está dirigido a dos tipos principales de usuarios:
+
+- **Organizadores** — Crear y publicar eventos, diseñar distribuciones de asientos, gestionar secciones y precios, y controlar la asistencia (solo web).
+- **Asistentes** — Descubrir eventos, comprar entradas, seleccionar asientos, recibir notificaciones y registrarse mediante código QR (web y móvil).
+
+Los roles adicionales incluyen **usuarios anónimos** (solo navegación en web) y **administradores** (gestión a nivel de sistema y aprobación de organizadores).
+
+---
+
+## Tecnologías
+
+| Capa | Tecnología |
+|---|---|
+| Backend | Java 23, Spring Boot |
+| Persistencia | Spring Data JPA |
+| Base de Datos | PostgreSQL 17 |
+| Autenticación | JWT + Refresh Token |
+| Pasarela de Pago | Wompi |
+| Notificaciones | SMTP (email), Notificaciones push |
+| Estilo de API | RESTful (JSON sobre HTTP) |
+| Móvil | Android 11+, iOS (funcional) |
+| Web | Google Chrome, Microsoft Edge |
+
+---
+
+## Arquitectura
+
+El sistema está construido sobre una **arquitectura modular N-Layer con Domain-Driven Design (DDD)**, orientada a microservicios. Decisiones arquitectónicas clave:
+
+- La autenticación se maneja mediante **JWT** con un sistema de **Refresh Token**, asegurando una gestión de sesiones segura y auditable.
+- Toda la comunicación cliente-servidor se realiza sobre **HTTP** con JSON como formato de intercambio de datos.
+- La **API Gateway** proporciona enrutamiento y control de acceso por rol.
+- La distribución de venues y configuración de eventos son **exclusivas de web**; los clientes móviles se enfocan en navegación, compra y validación QR.
+
+---
+
+## Módulos
+
+El backend está organizado en los siguientes módulos funcionales:
+
+### Seguridad
+Maneja la autenticación de usuarios, gestión de sesiones y autorización. Incluye emisión de JWT, rotación de Refresh Token, login social OAuth, bloqueo de cuentas, recuperación de contraseña, y gestión de roles/permisos.
+
+### Perfil
+Gestiona datos del perfil de usuario, referencias de ciudad y departamento, registros de actividad, historial de compras, y preferencias de usuario (idioma, tema, notificaciones).
+
+### Evento
+Cubre el ciclo de vida completo del evento: creación, edición, publicación, cancelación y completado. Incluye gestión de medios, almacenamiento de distribución (JSONB), sistema de calificación y comentarios con respuestas hilvanadas, y registros de auditoría de estado del evento.
+
+### Categoría
+Proporciona categorización jerárquica para eventos, soportando árboles de categorías padre-hijo y asociaciones evento-categoría.
+
+### Geolocalización
+Modela la estructura geográfica de los sitios (venues), vinculados a ciudades y departamentos. Soporta latitud/longitud para mapeo de ubicación física.
+
+### Sección
+Define secciones de eventos (`event_section` vinculadas a tipos de sección), incluyendo capacidad, asientos disponibles, precio y estado activo. Impone restricciones de integridad en capacidad y precios.
+
+### Asiento
+Gestiona registros individuales de asientos dentro de bloques y secciones. Rastrea tipo de asiento (regular, cortesía), estado (disponible, reservado, vendido, cortesía) y registra todas las transiciones de estado con seguimiento de motivos.
+
+### Entrada
+Maneja la emisión de entradas por orden, incluyendo generación de código QR, fechas de expiración, validación de check-in y registro completo del ciclo de vida del estado.
+
+### Pago
+Procesa órdenes y pagos mediante la pasarela Wompi. Rastrea métodos de pago (card, PSE, Nequi, efectivo), estados de transacción, solicitudes de reembolso y registros de eventos webhook.
+
+### Billetera
+Proporciona una billetera digital por usuario con soporte para recarga, pago, retiro y tipos de transacción de reembolso. Incluye seguimiento de resumen de billetera y referencias que vinculan transacciones con sus entidades originarias.
+
+### Notificación
+Entrega notificaciones a través de canales configurables (email, push, etc.) con soporte para categorías de notificación tipificadas. Rastrea estado de entrega (Pendiente, Enviado, Entregado, Fallido) por destinatario usuario.
+
+### Tema
+Permite a los usuarios seleccionar y personalizar temas de interfaz (light, dark, purple, blue). Mantiene asignaciones de tema por usuario, personalizaciones a nivel de propiedad y registros de cambios.
+
+### Idioma / Internacionalización
+Soporta contenido multilingüe (ES, EN, PT, JA) a través de una capa de traducción aplicada entre entidades: eventos, categorías, canales, notificaciones, tipos de sección, perfiles y más.
+
+---
+
+## Modelo de Base de Datos
+
+La base de datos está diseñada alrededor de los módulos anteriores. Cada módulo tiene su propio grupo de entidades con relaciones claras de clave foránea. A continuación un resumen de las principales tablas por módulo:
+
+| Módulo | Tablas Principales |
+|---|---|
+| Seguridad | `user`, `role`, `permission`, `auth_session`, `refresh_token`, `account_lockout`, `account_activation`, `oauth_account`, `recover_password`, `password_history`, `login_credentials`, `organizer_petition` |
+| Perfil | `profile`, `preferences`, `activity_log`, `profile_log`, `purchase_history`, `wallet`, `wallet_transaction`, `wallet_summary` |
+| Evento | `event`, `event_media`, `event_media_log`, `event_layout`, `event_rating`, `event_comment_reply`, `event_status_log` |
+| Categoría | `category`, `category_event` |
+| Geolocalización | `department`, `city`, `site` |
+| Sección | `event_section`, `section_type` |
+| Asiento | `seat`, `seat_block`, `seat_log` |
+| Entrada | `ticket`, `ticket_log`, `ticket_checkin`, `seat_ticket` |
+| Pago | `order`, `payment`, `payment_log`, `refund`, `transaction_webhook` |
+| Billetera | `wallet`, `wallet_transaction`, `wallet_reference` |
+| Notificación | `notification`, `notification_type`, `notification_user`, `channel` |
+| Tema | `theme`, `user_theme`, `theme_customization`, `theme_log` |
+| Idioma | `language`, `*_translation` (una por entidad traducible) |
+
+> Las restricciones clave aplicadas en el modelo incluyen `CHECK (finish_date > start_date)`, `UNIQUE(event_name, start_date, site_id)` y aplicación de roles (`user.role = "ORGANIZER"`) donde corresponda.
+
+---
+
+## Requisitos Funcionales
+
+| ID | Requisito |
+|---|---|
+| RF1 | Registro de usuario |
+| RF2 | Autenticación social (OAuth) |
+| RF3 | Inicio de sesión de usuario |
+| RF4 | Gestión y personalización de perfil |
+| RF5 | Recuperación de contraseña |
+| RF6 | Cierre de sesión |
+| RF7 | Eliminación permanente de cuenta |
+| RF8 | Módulo de administración del sistema |
+| RF9 | Edición de estructura de eventos y diseño de distribución |
+| RF10 | Reserva de asientos |
+| RF11 | Generación y validación de código QR por reserva |
+| RF12 | Soporte funcional para iOS |
+| RF13 | Soporte multilingüe (ES / EN / PT / FR) |
+| RF14 | Panel basado en roles (asistente, organizador, admin) |
+| RF15 | Sistema de sesión con Refresh Token |
+| RF16 | Sistema de notificaciones push |
+| RF17 | Integración con pasarela de pago Wompi |
+| RF18 | Compra de entradas desde aplicación móvil |
+| RF19 | Gestión y distribución de eventos desde web |
+| RF20 | Arquitectura orientada a microservicios |
+| RF21 | Migración del backend a arquitectura N-Layer con DDD |
+| RF22 | Sistema de temas de interfaz (light, dark, purple, blue) |
+| RF23 | Filtros y búsqueda de eventos |
+| RF24 | Lector de código QR para validación de asistencia |
+| RF25 | Sistema de billetera digital |
+
+---
+
+## Requisitos No Funcionales
+
+| ID | Requisito |
+|---|---|
+| RNF1 | Mensajes de error claros y descriptivos |
+| RNF2 | Diseño responsivo en web y móvil |
+| RNF3 | Autenticación segura y protección de datos |
+| RNF4 | Usabilidad — interfaz intuitiva y accesible |
+
+**Restricciones de la plataforma:**
+- Se requiere conexión a internet para todas las operaciones del sistema.
+- Web: compatible con Google Chrome y Microsoft Edge en Windows.
+- Móvil: Se requiere Android 11 o superior; el soporte para iOS es funcional según los requisitos definidos.
+- El diseño de distribución de venues está disponible exclusivamente en la plataforma web.
+- Los clientes móviles soportan navegación de eventos, selección de asientos, compra de entradas y escaneo QR.
+
+---
+
+## Cómo Empezar
+
+### Prerrequisitos
+
+- Java 17+
+- Maven 3.9+
+- PostgreSQL 17
+
+### Configuración
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/your-org/tu-evento.git
+cd tu-evento
+
+# Configurar la conexión a la base de datos en application.properties
+# spring.datasource.url=jdbc:postgresql://localhost:5432/tuevento
+# spring.datasource.username=your_user
+# spring.datasource.password=your_password
+
+# Compilar y ejecutar
+mvn clean install
+mvn spring-boot:run
+```
+
+---
+
+## Equipo
+
+| Nombre | Rol | Contacto |
 |---|---|---|
 | Cristofer David Lozano Contreras | Desarrollador de Software | Cristofer_Lozano@soy.sena.edu.co |
 | Jhampier Santos Ortiz | Desarrollador de Software | Jham_santos@soy.sena.edu.co |
