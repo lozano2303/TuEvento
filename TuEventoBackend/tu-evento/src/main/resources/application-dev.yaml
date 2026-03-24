@@ -9,3 +9,10 @@ spring:
 logging:
   level:
     com.capysoft: DEBUG
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui
+    enabled: true
