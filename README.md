@@ -12,6 +12,7 @@ The backend is currently the active component under development. Frontend (web a
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
 - [Modules](#modules)
+- [Project Structure](#project-structure)
 - [Database Model](#database-model)
 - [Functional Requirements](#functional-requirements)
 - [Non-Functional Requirements](#non-functional-requirements)
@@ -100,6 +101,93 @@ Allows users to select and customize interface themes (light, dark, purple, blue
 
 ### Language / Internationalization
 Supports multilingual content (ES, EN, PT, JA) through a translation layer applied across entities: events, categories, channels, notifications, section types, profiles, and more.
+
+---
+
+## Project Structure
+
+The backend follows a modular N-Layer DDD architecture. Each module lives under `modules/[module]` and exposes the same layer layout. Shared cross-cutting concerns are placed in `shared/`.
+
+```
+src/main/java/com/capysoft/tuevento/
+├── shared/
+│   ├── domain/
+│   │   ├── exception/
+│   │   └── valueobject/
+│   ├── infrastructure/
+│   │   ├── config/
+│   │   └── security/
+│   └── interfaces/
+│       └── advice/
+└── modules/
+    ├── security/
+    │   ├── domain/
+    │   │   ├── model/
+    │   │   ├── repository/
+    │   │   └── event/
+    │   ├── application/
+    │   │   ├── usecase/
+    │   │   ├── dto/
+    │   │   │   ├── request/
+    │   │   │   └── response/
+    │   │   ├── port/
+    │   │   │   ├── in/
+    │   │   │   └── out/
+    │   │   └── mapper/
+    │   ├── infrastructure/
+    │   │   └── persistence/
+    │   │       ├── entity/
+    │   │       └── repository/
+    │   └── interfaces/
+    │       └── rest/
+    ├── profile/          (same layer structure as security)
+    ├── category/         (same layer structure as security)
+    ├── theme/            (same layer structure as security)
+    ├── language/         (same layer structure as security)
+    ├── geolocation/
+    │   ├── domain/  application/  interfaces/rest/
+    │   └── infrastructure/
+    │       ├── persistence/entity/  persistence/repository/
+    │       └── external/
+    ├── section/          (same layer structure as security)
+    ├── seat/             (same layer structure as security)
+    ├── event/
+    │   ├── domain/  application/  interfaces/rest/
+    │   └── infrastructure/
+    │       ├── persistence/entity/  persistence/repository/
+    │       └── messaging/
+    ├── ticket/
+    │   ├── domain/  application/
+    │   └── infrastructure/
+    │       ├── persistence/entity/  persistence/repository/
+    │       └── messaging/
+    │   └── interfaces/
+    │       ├── rest/
+    │       └── websocket/
+    ├── payment/
+    │   ├── domain/  application/
+    │   └── infrastructure/
+    │       ├── persistence/entity/  persistence/repository/
+    │       ├── messaging/
+    │       └── external/
+    │   └── interfaces/rest/
+    ├── wallet/
+    │   ├── domain/  application/  interfaces/rest/
+    │   └── infrastructure/
+    │       ├── persistence/entity/  persistence/repository/
+    │       └── messaging/
+    └── notification/
+        ├── domain/  application/
+        └── infrastructure/
+            ├── persistence/entity/  persistence/repository/
+            ├── messaging/
+            └── external/
+        └── interfaces/
+            ├── rest/
+            └── websocket/
+```
+
+> Layer rules: `websocket/` only in **notification** and **ticket**. `messaging/` only in **payment, wallet, notification, ticket, event**. `external/` only in **payment, notification, geolocation**.
 
 ---
 
@@ -231,6 +319,7 @@ El backend es actualmente el componente activo en desarrollo. El frontend (web y
 - [Tecnologías](#tecnologías)
 - [Arquitectura](#arquitectura-1)
 - [Módulos](#módulos)
+- [Estructura del proyecto](#estructura-del-proyecto)
 - [Modelo de Base de Datos](#modelo-de-base-de-datos)
 - [Requisitos Funcionales](#requisitos-funcionales)
 - [Requisitos No Funcionales](#requisitos-no-funcionales)
@@ -319,6 +408,93 @@ Permite a los usuarios seleccionar y personalizar temas de interfaz (light, dark
 
 ### Idioma / Internacionalización
 Soporta contenido multilingüe (ES, EN, PT, JA) a través de una capa de traducción aplicada entre entidades: eventos, categorías, canales, notificaciones, tipos de sección, perfiles y más.
+
+---
+
+## Estructura del proyecto
+
+El backend sigue una arquitectura DDD modular N-Layer. Cada módulo vive bajo `modules/[module]` y expone el mismo esquema de capas. Las preocupaciones transversales compartidas se ubican en `shared/`.
+
+```
+src/main/java/com/capysoft/tuevento/
+├── shared/
+│   ├── domain/
+│   │   ├── exception/
+│   │   └── valueobject/
+│   ├── infrastructure/
+│   │   ├── config/
+│   │   └── security/
+│   └── interfaces/
+│       └── advice/
+└── modules/
+    ├── security/
+    │   ├── domain/
+    │   │   ├── model/
+    │   │   ├── repository/
+    │   │   └── event/
+    │   ├── application/
+    │   │   ├── usecase/
+    │   │   ├── dto/
+    │   │   │   ├── request/
+    │   │   │   └── response/
+    │   │   ├── port/
+    │   │   │   ├── in/
+    │   │   │   └── out/
+    │   │   └── mapper/
+    │   ├── infrastructure/
+    │   │   └── persistence/
+    │   │       ├── entity/
+    │   │       └── repository/
+    │   └── interfaces/
+    │       └── rest/
+    ├── profile/          (misma estructura de capas que security)
+    ├── category/         (misma estructura de capas que security)
+    ├── theme/            (misma estructura de capas que security)
+    ├── language/         (misma estructura de capas que security)
+    ├── geolocation/
+    │   ├── domain/  application/  interfaces/rest/
+    │   └── infrastructure/
+    │       ├── persistence/entity/  persistence/repository/
+    │       └── external/
+    ├── section/          (misma estructura de capas que security)
+    ├── seat/             (misma estructura de capas que security)
+    ├── event/
+    │   ├── domain/  application/  interfaces/rest/
+    │   └── infrastructure/
+    │       ├── persistence/entity/  persistence/repository/
+    │       └── messaging/
+    ├── ticket/
+    │   ├── domain/  application/
+    │   └── infrastructure/
+    │       ├── persistence/entity/  persistence/repository/
+    │       └── messaging/
+    │   └── interfaces/
+    │       ├── rest/
+    │       └── websocket/
+    ├── payment/
+    │   ├── domain/  application/
+    │   └── infrastructure/
+    │       ├── persistence/entity/  persistence/repository/
+    │       ├── messaging/
+    │       └── external/
+    │   └── interfaces/rest/
+    ├── wallet/
+    │   ├── domain/  application/  interfaces/rest/
+    │   └── infrastructure/
+    │       ├── persistence/entity/  persistence/repository/
+    │       └── messaging/
+    └── notification/
+        ├── domain/  application/
+        └── infrastructure/
+            ├── persistence/entity/  persistence/repository/
+            ├── messaging/
+            └── external/
+        └── interfaces/
+            ├── rest/
+            └── websocket/
+```
+
+> Reglas de capas: `websocket/` solo en **notification** y **ticket**. `messaging/` solo en **payment, wallet, notification, ticket, event**. `external/` solo en **payment, notification, geolocation**.
 
 ---
 
