@@ -269,7 +269,7 @@ The database is designed around the modules above. Each module has its own entit
 
 ### Prerequisites
 
-- Java 17+
+- Java 21
 - Maven 3.9+
 - PostgreSQL 17
 
@@ -576,7 +576,7 @@ La base de datos está diseñada alrededor de los módulos anteriores. Cada mód
 
 ### Prerrequisitos
 
-- Java 17+
+- Java 21
 - Maven 3.9+
 - PostgreSQL 17
 
