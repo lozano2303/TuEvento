@@ -1,48 +1,25 @@
 package com.capysoft.tuevento.shared.domain.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.MappedSuperclass;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import java.time.LocalDateTime;
 
 /**
- * Abstract base class for all auditable JPA entities.
- * Automatically populates createdAt on insert and updatedAt on every update
- * via Spring Data JPA auditing ({@link AuditingEntityListener}).
+ * Contrato de dominio para entidades auditables.
+ * Define los campos de auditoría estándar sin ninguna dependencia
+ * de JPA, Hibernate ni ningún framework de infraestructura.
  *
- * All domain entities that require audit tracking must extend this class.
+ * La implementación de persistencia se delega a {@code JpaAuditingEntity}.
  */
-@Getter
-@Setter
-@MappedSuperclass
-@EntityListeners(AuditingEntityListener.class)
-public abstract class AuditableEntity {
+public interface AuditableEntity {
 
-    /** Timestamp when the record was first persisted. Never updated after creation. */
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    /** Fecha y hora en que el registro fue creado. */
+    LocalDateTime getCreatedAt();
 
-    /** Timestamp of the most recent update to the record. */
-    @LastModifiedDate
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    /** Fecha y hora de la última modificación del registro. */
+    LocalDateTime getUpdatedAt();
 
-    /** ID of the user who created the record. Nullable for system-generated records. */
-    @CreatedBy
-    @Column(name = "created_by")
-    private Integer createdBy;
+    /** Identificador del usuario que creó el registro. Puede ser nulo para registros del sistema. */
+    String getCreatedBy();
 
-    /** ID of the user who last modified the record. Nullable for system-generated records. */
-    @LastModifiedBy
-    @Column(name = "updated_by")
-    private Integer updatedBy;
+    /** Identificador del usuario que realizó la última modificación. Puede ser nulo para registros del sistema. */
+    String getUpdatedBy();
 }
