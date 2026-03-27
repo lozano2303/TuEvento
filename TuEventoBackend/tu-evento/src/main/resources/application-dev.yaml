@@ -16,3 +16,24 @@ springdoc:
   swagger-ui:
     path: /swagger-ui
     enabled: true
+
+spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration: 900000
+    refresh-token-expiration: 604800000
+  mail:
+    from: ${MAIL_USERNAME}
