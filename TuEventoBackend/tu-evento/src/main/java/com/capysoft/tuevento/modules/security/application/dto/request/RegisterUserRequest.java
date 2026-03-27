@@ -13,10 +13,6 @@ import lombok.*;
 public class RegisterUserRequest {
 
     @NotBlank
-    @Size(min = 3, max = 50)
-    private String alias;
-
-    @NotBlank
     @Email
     @Size(max = 255)
     private String email;
