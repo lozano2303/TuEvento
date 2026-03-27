@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
+import com.capysoft.tuevento.modules.security.application.dto.OauthProfile;
 import com.capysoft.tuevento.modules.security.application.dto.response.LoginResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.OauthLoginPort;
 import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
@@ -51,7 +52,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
         OauthProfile profile = resolver.apply(code);
 
         Optional<OauthAccount> existing = oauthAccountRepository
-                .findByProviderAndProviderUserId(provider, profile.providerUserId());
+                .findByProviderAndProviderUserId(provider, profile.getProviderUserId());
 
         User user;
         boolean isNewUser = false;
@@ -64,7 +65,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
             UserStatus status = userStatusRepository.findByCode(DEFAULT_STATUS_CODE)
                     .orElseThrow(() -> new NotFoundException("STATUS_NOT_FOUND", "Default status not found"));
 
-            String alias = AliasGenerator.generateUnique(profile.email(), userRepository::existsByAlias);
+            String alias = AliasGenerator.generateUnique(profile.getEmail(), userRepository::existsByAlias);
 
             user = userRepository.save(User.builder()
                     .role(role)
@@ -76,8 +77,8 @@ public class OauthLoginUseCase implements OauthLoginPort {
             oauthAccountRepository.save(OauthAccount.builder()
                     .user(user)
                     .provider(provider)
-                    .providerUserId(profile.providerUserId())
-                    .email(profile.email())
+                    .providerUserId(profile.getProviderUserId())
+                    .email(profile.getEmail())
                     .linkedAt(LocalDateTime.now())
                     .build());
 
@@ -110,7 +111,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
             eventPublisher.publishEvent(UserRegisteredEvent.builder()
                     .userId(user.getUserId())
                     .alias(user.getAlias())
-                    .email(profile.email())
+                    .email(profile.getEmail())
                     .occurredAt(now)
                     .build());
         }
@@ -122,7 +123,4 @@ public class OauthLoginUseCase implements OauthLoginPort {
                 .alias(user.getAlias())
                 .build();
     }
-
-    /** Immutable value object carrying the normalized profile from any OAuth provider. */
-    public record OauthProfile(String providerUserId, String email) {}
 }

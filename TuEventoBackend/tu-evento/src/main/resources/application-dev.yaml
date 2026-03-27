@@ -37,3 +37,12 @@ app:
     from: ${MAIL_USERNAME}
   cors:
     allowed-origins: http://localhost:3000,http://localhost:4200
+
+  oauth:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID}
+      client-secret: ${GOOGLE_CLIENT_SECRET}
+      redirect-uri: http://localhost:8080/api/v1/auth/oauth/google/callback
+      token-uri: https://oauth2.googleapis.com/token
+      userinfo-uri: https://www.googleapis.com/oauth2/v3/userinfo
+      authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
