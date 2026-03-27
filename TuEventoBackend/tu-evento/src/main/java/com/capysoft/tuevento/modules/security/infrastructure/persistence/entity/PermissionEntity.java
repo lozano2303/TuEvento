@@ -4,6 +4,8 @@ import com.capysoft.tuevento.shared.infrastructure.persistence.JpaAuditingEntity
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Builder
@@ -26,4 +28,7 @@ public class PermissionEntity extends JpaAuditingEntity {
 
     @Column(name = "description", nullable = false, length = 150)
     private String description;
+
+    @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
+    private List<RoleEntity> roles;
 }
