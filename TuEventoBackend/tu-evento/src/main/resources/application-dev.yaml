@@ -5,19 +5,6 @@ spring:
     password: ${POSTGRES_PASSWORD}
   jpa:
     show-sql: true
-
-logging:
-  level:
-    com.capysoft: DEBUG
-
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui
-    enabled: true
-
-spring:
   mail:
     host: smtp.gmail.com
     port: 587
@@ -30,6 +17,17 @@ spring:
           starttls:
             enable: true
 
+logging:
+  level:
+    com.capysoft: DEBUG
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui
+    enabled: true
+
 app:
   jwt:
     secret: ${JWT_SECRET}
@@ -37,3 +35,5 @@ app:
     refresh-token-expiration: 604800000
   mail:
     from: ${MAIL_USERNAME}
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:4200
