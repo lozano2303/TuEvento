@@ -1,5 +1,11 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
+import java.time.LocalDateTime;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.capysoft.tuevento.modules.security.application.dto.request.RegisterUserRequest;
 import com.capysoft.tuevento.modules.security.application.dto.response.RegisterUserResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.RegisterUserPort;
@@ -7,23 +13,27 @@ import com.capysoft.tuevento.modules.security.application.port.out.CodeGenerator
 import com.capysoft.tuevento.modules.security.application.port.out.EmailNotificationPort;
 import com.capysoft.tuevento.modules.security.application.port.out.PasswordEncoderPort;
 import com.capysoft.tuevento.modules.security.domain.event.UserRegisteredEvent;
-import com.capysoft.tuevento.modules.security.domain.model.*;
-import com.capysoft.tuevento.modules.security.domain.repository.*;
+import com.capysoft.tuevento.modules.security.domain.model.AccountActivation;
+import com.capysoft.tuevento.modules.security.domain.model.LoginCredentials;
+import com.capysoft.tuevento.modules.security.domain.model.Role;
+import com.capysoft.tuevento.modules.security.domain.model.User;
+import com.capysoft.tuevento.modules.security.domain.model.UserStatus;
+import com.capysoft.tuevento.modules.security.domain.repository.AccountActivationRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.RoleRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.UserRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.UserStatusRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.domain.valueobject.AliasGenerator;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class RegisterUserUseCase implements RegisterUserPort {
 
-    private static final String DEFAULT_ROLE_CODE  = "ATTENDEE";
+    private static final String DEFAULT_ROLE_CODE  = "USER";
     private static final String DEFAULT_STATUS_CODE = "PENDING";
     private static final int    ACTIVATION_EXPIRY_HOURS = 24;
 
