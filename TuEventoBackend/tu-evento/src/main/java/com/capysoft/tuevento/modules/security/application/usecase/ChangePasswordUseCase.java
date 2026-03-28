@@ -8,6 +8,7 @@ import com.capysoft.tuevento.modules.security.domain.model.LoginCredentials;
 import com.capysoft.tuevento.modules.security.domain.model.PasswordHistory;
 import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
 import com.capysoft.tuevento.modules.security.domain.repository.PasswordHistoryRepository;
+import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -37,9 +38,9 @@ public class ChangePasswordUseCase implements ChangePasswordPort {
             throw new BusinessException("PASSWORD_MISMATCH", "Passwords do not match");
         }
 
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        SecurityUser securityUser = (SecurityUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        LoginCredentials credentials = loginCredentialsRepository.findByEmail(email)
+        LoginCredentials credentials = loginCredentialsRepository.findByUserId(securityUser.getUserId())
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), credentials.getPasswordHash())) {
