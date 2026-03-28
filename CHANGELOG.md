@@ -27,6 +27,7 @@ All notable changes to this project will be documented in this file.
 - REST controllers: AuthController, UserController
 - Initial data: roles (ADMIN, ORGANIZER, USER) and user statuses (PENDING, ACTIVE, BLOCKED, INACTIVE, DELETED) via Liquibase changeset
 - DataInitializer: default admin user created on startup from environment variables
+- SecurityDataCleanupTask: scheduled task running daily at 2am to clean expired/revoked auth sessions, refresh tokens, activation codes and recovery codes
 
 #### Fixed
 - Duplicate SecurityConfig bean conflict resolved
