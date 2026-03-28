@@ -32,3 +32,5 @@ All notable changes to this project will be documented in this file.
 - Duplicate SecurityConfig bean conflict resolved
 - Missing audit columns added to auditable tables via changeset 016
 - BYTEA mapping fixed in OrganizerPetitionEntity replacing @Lob with @Column(columnDefinition = "bytea")
+- RegisterUserUseCase: default role code corrected from "ATTENDEE" to "USER"
+- ActivateAccountUseCase: user status now updated to "ACTIVE" after successful account activation
