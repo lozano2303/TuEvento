@@ -1,12 +1,14 @@
 package com.capysoft.tuevento.modules.security.infrastructure.persistence.repository;
 
-import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.AccountActivationEntity;
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
+import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.AccountActivationEntity;
 
 public interface AccountActivationJpaRepository extends JpaRepository<AccountActivationEntity, Integer> {
 
@@ -16,4 +18,8 @@ public interface AccountActivationJpaRepository extends JpaRepository<AccountAct
     @Modifying
     @Query("DELETE FROM AccountActivationEntity a WHERE a.user.userId = :userId")
     void deleteByUserUserId(@Param("userId") Integer userId);
+
+    @Modifying
+    @Query("DELETE FROM AccountActivationEntity a WHERE a.expiresAt < :now OR a.activated = true")
+    void deleteAllExpiredOrUsed(@Param("now") LocalDateTime now);
 }

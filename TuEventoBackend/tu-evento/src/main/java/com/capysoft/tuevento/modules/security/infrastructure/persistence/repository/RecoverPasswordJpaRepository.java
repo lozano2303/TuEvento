@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface RecoverPasswordJpaRepository extends JpaRepository<RecoverPasswordEntity, Integer> {
@@ -18,4 +19,8 @@ public interface RecoverPasswordJpaRepository extends JpaRepository<RecoverPassw
     @Modifying
     @Query("UPDATE RecoverPasswordEntity r SET r.codeStatus = true WHERE r.user.userId = :userId AND r.codeStatus = false")
     void invalidateAllByUserId(@Param("userId") Integer userId);
+
+    @Modifying
+    @Query("DELETE FROM RecoverPasswordEntity r WHERE r.expiresAt < :now OR r.codeStatus = true")
+    void deleteAllExpiredOrUsed(@Param("now") LocalDateTime now);
 }
