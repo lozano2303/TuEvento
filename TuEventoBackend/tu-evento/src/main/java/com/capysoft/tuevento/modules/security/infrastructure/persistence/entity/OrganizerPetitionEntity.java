@@ -24,8 +24,7 @@ public class OrganizerPetitionEntity extends JpaAuditingEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    @Lob
-    @Column(name = "document", nullable = false)
+    @Column(name = "document", nullable = false, columnDefinition = "bytea")
     private byte[] document;
 
     @Column(name = "application_date", nullable = false)
