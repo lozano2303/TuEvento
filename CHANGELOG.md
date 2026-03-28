@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file.
 - Initial data: roles (ADMIN, ORGANIZER, USER) and user statuses (PENDING, ACTIVE, BLOCKED, INACTIVE, DELETED) via Liquibase changeset
 - DataInitializer: default admin user created on startup from environment variables
 - SecurityDataCleanupTask: scheduled task running daily at 2am to clean expired/revoked auth sessions, refresh tokens, activation codes and recovery codes
+- Swagger JWT Bearer Authentication scheme configured for protected endpoints
 
 #### Fixed
 - Duplicate SecurityConfig bean conflict resolved
@@ -35,3 +36,4 @@ All notable changes to this project will be documented in this file.
 - BYTEA mapping fixed in OrganizerPetitionEntity replacing @Lob with @Column(columnDefinition = "bytea")
 - RegisterUserUseCase: default role code corrected from "ATTENDEE" to "USER"
 - ActivateAccountUseCase: user status now updated to "ACTIVE" after successful account activation
+- ChangePasswordUseCase: fixed user lookup using SecurityUser.getUserId() instead of Authentication.getName() which was returning alias instead of email
