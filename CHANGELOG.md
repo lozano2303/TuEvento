@@ -29,6 +29,8 @@ All notable changes to this project will be documented in this file.
 - DataInitializer: default admin user created on startup from environment variables
 - SecurityDataCleanupTask: scheduled task running daily at 2am to clean expired/revoked auth sessions, refresh tokens, activation codes and recovery codes
 - Swagger JWT Bearer Authentication scheme configured for protected endpoints
+- Admin endpoints for organizer petition management: list pending requests, approve and reject
+- OrganizerApprovedEvent domain event
 
 #### Fixed
 - Duplicate SecurityConfig bean conflict resolved
