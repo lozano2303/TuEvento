@@ -25,6 +25,8 @@ All notable changes to this project will be documented in this file.
 - OAuth Google configuration with extensible provider pattern
 - Spring Security configuration with JWT authentication filter
 - REST controllers: AuthController, UserController
+- Initial data: roles (ADMIN, ORGANIZER, USER) and user statuses (PENDING, ACTIVE, BLOCKED, INACTIVE, DELETED) via Liquibase changeset
+- DataInitializer: default admin user created on startup from environment variables
 
 #### Fixed
 - Duplicate SecurityConfig bean conflict resolved

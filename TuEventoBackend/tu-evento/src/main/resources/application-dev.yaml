@@ -46,3 +46,8 @@ app:
       token-uri: https://oauth2.googleapis.com/token
       userinfo-uri: https://www.googleapis.com/oauth2/v3/userinfo
       authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+
+  admin:
+    email: ${ADMIN_EMAIL}
+    password: ${ADMIN_PASSWORD}
+    alias: ${ADMIN_ALIAS}

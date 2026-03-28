@@ -1,0 +1,101 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-insert-initial-roles-and-user-status
+      author: capysoft
+      changes:
+        - insert:
+            tableName: role
+            columns:
+              - column:
+                  name: code
+                  value: ADMIN
+              - column:
+                  name: name
+                  value: Administrator
+              - column:
+                  name: description
+                  value: Full access to the system
+        - insert:
+            tableName: role
+            columns:
+              - column:
+                  name: code
+                  value: ORGANIZER
+              - column:
+                  name: name
+                  value: Organizer
+              - column:
+                  name: description
+                  value: Can create and manage events
+        - insert:
+            tableName: role
+            columns:
+              - column:
+                  name: code
+                  value: USER
+              - column:
+                  name: name
+                  value: User
+              - column:
+                  name: description
+                  value: Regular platform user
+        - insert:
+            tableName: user_status
+            columns:
+              - column:
+                  name: code
+                  value: PENDING
+              - column:
+                  name: name
+                  value: Pending
+              - column:
+                  name: description
+                  value: Registered but email not verified yet
+        - insert:
+            tableName: user_status
+            columns:
+              - column:
+                  name: code
+                  value: ACTIVE
+              - column:
+                  name: name
+                  value: Active
+              - column:
+                  name: description
+                  value: Email verified and account fully operational
+        - insert:
+            tableName: user_status
+            columns:
+              - column:
+                  name: code
+                  value: BLOCKED
+              - column:
+                  name: name
+                  value: Blocked
+              - column:
+                  name: description
+                  value: Blocked due to security violations or failed attempts
+        - insert:
+            tableName: user_status
+            columns:
+              - column:
+                  name: code
+                  value: INACTIVE
+              - column:
+                  name: name
+                  value: Inactive
+              - column:
+                  name: description
+                  value: Manually deactivated by user or administrator
+        - insert:
+            tableName: user_status
+            columns:
+              - column:
+                  name: code
+                  value: DELETED
+              - column:
+                  name: name
+                  value: Deleted
+              - column:
+                  name: description
+                  value: Logically deleted, data preserved for referential integrity
