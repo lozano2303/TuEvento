@@ -1,19 +1,22 @@
 package com.capysoft.tuevento.modules.security.infrastructure.external;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.Optional;
+
+import javax.crypto.SecretKey;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -63,6 +66,25 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
         try {
             Claims claims = parseClaims(token);
             return Optional.ofNullable(claims.get("userId", Integer.class));
+        } catch (JwtException | IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<String> extractRole(String token) {
+        try {
+            Claims claims = parseClaims(token);
+            return Optional.ofNullable(claims.get("role", String.class));
+        } catch (JwtException | IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<String> extractSubject(String token) {
+        try {
+            return Optional.ofNullable(parseClaims(token).getSubject());
         } catch (JwtException | IllegalArgumentException e) {
             return Optional.empty();
         }

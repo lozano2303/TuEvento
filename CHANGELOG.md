@@ -39,3 +39,7 @@ All notable changes to this project will be documented in this file.
 - RegisterUserUseCase: default role code corrected from "ATTENDEE" to "USER"
 - ActivateAccountUseCase: user status now updated to "ACTIVE" after successful account activation
 - ChangePasswordUseCase: fixed user lookup using SecurityUser.getUserId() instead of Authentication.getName() which was returning alias instead of email
+- SecurityUser: fixed authority registration removing ROLE_ prefix to match hasAuthority("ADMIN") checks in SecurityConfig and AdminController
+- JwtAuthenticationFilter: replaced fragile manual Base64 claim parser with JJWT-based extraction via TokenGeneratorPort; added debug log for loaded authorities
+- SecurityConfig: added @EnableMethodSecurity to enable @PreAuthorize on controllers
+- TokenGeneratorPort / JwtTokenGenerator: added extractRole() and extractSubject() methods
