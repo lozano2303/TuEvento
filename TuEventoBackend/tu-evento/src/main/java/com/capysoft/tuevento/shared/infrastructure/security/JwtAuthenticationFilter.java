@@ -1,11 +1,7 @@
 package com.capysoft.tuevento.shared.infrastructure.security;
 
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import java.io.IOException;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -13,8 +9,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -33,10 +37,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (StringUtils.hasText(token) && tokenGenerator.isTokenValid(token)) {
             tokenGenerator.extractUserId(token).ifPresent(userId -> {
-                // userId is present — build SecurityUser from token claims
-                // Role is embedded in the token; we re-extract via a lightweight parse
-                String alias = extractClaim(token, "sub");
-                String role  = extractClaim(token, "role");
+                String alias = tokenGenerator.extractSubject(token).orElse("");
+                String role  = tokenGenerator.extractRole(token).orElse("");
+
+                log.debug("JWT authorities loaded for userId={}: [{}]", userId, role);
 
                 SecurityUser securityUser = new SecurityUser(userId, alias, role);
 
@@ -62,23 +66,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
-    /**
-     * Lightweight claim extraction without full validation (already validated above).
-     * Decodes the JWT payload (Base64) and extracts the requested field.
-     */
-    private String extractClaim(String token, String claimName) {
-        try {
-            String payload = token.split("\\.")[1];
-            String decoded = new String(java.util.Base64.getUrlDecoder().decode(payload));
-            // Simple JSON field extraction — avoids pulling in a full JSON parser here
-            String search = "\"" + claimName + "\":\"";
-            int start = decoded.indexOf(search);
-            if (start == -1) return null;
-            start += search.length();
-            int end = decoded.indexOf("\"", start);
-            return decoded.substring(start, end);
-        } catch (Exception e) {
-            return null;
-        }
-    }
 }
