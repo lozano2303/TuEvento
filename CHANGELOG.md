@@ -4,9 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [develop] - 2026-03-29
+
 ### Backend
 
-### Security module
+### Security module — completed and merged from feature/security-module
 #### Added
 - Liquibase changesets for all security tables: user_status, role, permission, app_user, role_permission, login_credentials, account_activation, account_lockout, auth_session, refresh_token, recover_password, password_history, oauth_account, user_status_history, organizer_petition
 - Audit columns (created_at, updated_at, created_by, updated_by) to all auditable tables
