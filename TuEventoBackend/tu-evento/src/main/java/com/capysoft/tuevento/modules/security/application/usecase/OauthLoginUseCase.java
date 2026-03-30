@@ -26,7 +26,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
 
     private static final int ACCESS_TOKEN_MINUTES = 15;
     private static final int REFRESH_TOKEN_DAYS   = 7;
-    private static final String DEFAULT_ROLE_CODE  = "ATTENDEE";
+    private static final String DEFAULT_ROLE_CODE  = "USER";
     private static final String DEFAULT_STATUS_CODE = "ACTIVE";
 
     private final OauthAccountRepository  oauthAccountRepository;
