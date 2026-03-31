@@ -5,18 +5,19 @@ import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 
 export default function Login() {
-  const [showTermsModal, setShowTermsModal]         = useState(false);
-  const [view, setView]                             = useState('login');
-  const [userID, setUserID]                         = useState(null);
-  const [userData, setUserData]                     = useState(null);
-  const [showPassword, setShowPassword]             = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [view, setView] = useState('login');
+  const [userID, setUserID] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading]                       = useState(false);
-  const [error, setError]                           = useState("");
-  const [fieldErrors, setFieldErrors]               = useState({});
-  const [showSuccessNotification, setShowSuccessNotification]           = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   const [showLoginSuccessNotification, setShowLoginSuccessNotification] = useState(false);
   const [showActivateAccount, setShowActivateAccount] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0); // ← NUEVO
   const [formData, setFormData] = useState({
     email: "", password: "", confirmPassword: "", name: "",
   });
@@ -24,21 +25,21 @@ export default function Login() {
   // ─── OAuth2 / sesión activa ───────────────────────────────────────────────
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const token  = urlParams.get('token');
+    const token = urlParams.get('token');
     const userID = urlParams.get('userID');
-    const role   = urlParams.get('role');
-    const oauth  = urlParams.get('oauth');
+    const role = urlParams.get('role');
+    const oauth = urlParams.get('oauth');
 
     if (oauth === 'true' && token && userID && role) {
-      localStorage.setItem('token',  token);
+      localStorage.setItem('token', token);
       localStorage.setItem('userID', userID);
-      localStorage.setItem('role',   role);
+      localStorage.setItem('role', role);
       window.history.replaceState({}, document.title, window.location.pathname);
       window.location.href = '/';
       return;
     }
 
-    const storedToken  = localStorage.getItem('token');
+    const storedToken = localStorage.getItem('token');
     const storedUserID = localStorage.getItem('userID');
     if (storedToken && storedUserID) {
       getUserById(storedUserID)
@@ -51,30 +52,52 @@ export default function Login() {
   }, []);
 
   const clearAuth = () => {
-    ['token','userID','role','pendingActivationUserID','adminLoggedIn']
+    ['token', 'userID', 'role', 'pendingActivationUserID', 'adminLoggedIn']
       .forEach(k => localStorage.removeItem(k));
   };
+
+  // ─── Calcular fortaleza de contraseña ────────────────────────────────────
+  const calcStrength = (pw) => {
+    let score = 0;
+    if (pw.length >= 8)            score++;
+    if (/[A-Z]/.test(pw))          score++;
+    if (/\d/.test(pw))             score++;
+    if (/[@$!%*?&]/.test(pw))      score++;
+    return score;
+  };
+
+  const strengthLabel = ['', 'Muy débil', 'Débil', 'Buena', 'Fuerte'];
+  const strengthColor = ['', 'text-red-400', 'text-yellow-400', 'text-blue-400', 'text-green-400'];
+  const barColors = [
+    '',
+    'bg-red-500',
+    'bg-yellow-500',
+    'bg-blue-500',
+    'bg-green-500',
+  ];
 
   // ─── Handlers ────────────────────────────────────────────────────────────
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: "" }));
+    // Actualizar fortaleza solo cuando cambia el campo password
+    if (name === 'password') setPasswordStrength(calcStrength(value));
   };
 
   const validateEmail = (email) => {
-    if (!email?.trim())            return "El correo electrónico es obligatorio";
+    if (!email?.trim()) return "El correo electrónico es obligatorio";
     if (email.trim().length > 100) return "Máximo 100 caracteres";
     if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim()))
-                                   return "Formato de correo no válido";
+      return "Formato de correo no válido";
     if (!email.trim().toLowerCase().endsWith('@gmail.com'))
-                                   return "Solo tenemos soporte para correos de Gmail";
+      return "Solo tenemos soporte para correos de Gmail";
     return "";
   };
 
   const validatePassword = (pw) => {
-    if (!pw?.trim())     return "La contraseña es obligatoria";
-    if (pw.length < 8)   return "Mínimo 8 caracteres";
+    if (!pw?.trim()) return "La contraseña es obligatoria";
+    if (pw.length < 8) return "Mínimo 8 caracteres";
     if (pw.length > 100) return "Máximo 100 caracteres";
     if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(pw))
       return "Debe contener minúscula, mayúscula, número y carácter especial (@$!%*?&)";
@@ -82,25 +105,24 @@ export default function Login() {
   };
 
   const validateName = (name) => {
-    if (!name?.trim())              return "El nombre completo es obligatorio";
-    if (name.trim().length < 2)     return "Mínimo 2 caracteres";
-    if (name.trim().length > 70)    return "Máximo 70 caracteres";
+    if (!name?.trim()) return "El nombre completo es obligatorio";
+    if (name.trim().length < 2) return "Mínimo 2 caracteres";
+    if (name.trim().length > 70) return "Máximo 70 caracteres";
     if (!/^[a-zA-ZÀ-ÿ\s'-]+$/.test(name.trim()))
-                                    return "Solo letras, espacios y acentos";
+      return "Solo letras, espacios y acentos";
     if (name.trim().split(/\s+/).length < 2) return "Ingresa nombre y apellido";
     return "";
   };
 
   const validateConfirmPassword = (cp, pw) => {
     if (!cp?.trim()) return "Confirmar contraseña es obligatorio";
-    if (cp !== pw)   return "Las contraseñas no coinciden";
+    if (cp !== pw) return "Las contraseñas no coinciden";
     return "";
   };
 
-  const handleVerificationSuccess     = () => setView('login');
-  const handleContinueToVerification  = () => { setShowSuccessNotification(false); setView('verification'); };
-  const handleContinueToHome          = () => { setShowLoginSuccessNotification(false); window.location.href = '/'; };
-
+  const handleVerificationSuccess = () => setView('login');
+  const handleContinueToVerification = () => { setShowSuccessNotification(false); setView('verification'); };
+  const handleContinueToHome = () => { setShowLoginSuccessNotification(false); window.location.href = '/'; };
   const handleLogout = () => { clearAuth(); setUserData(null); setView('login'); };
 
   const handleSubmit = async (e) => {
@@ -108,8 +130,8 @@ export default function Login() {
     setError(""); setFieldErrors({}); setLoading(true);
 
     const errors = {};
-    const emailErr = validateEmail(formData.email);       if (emailErr) errors.email = emailErr;
-    const pwErr    = validatePassword(formData.password); if (pwErr)    errors.password = pwErr;
+    const emailErr = validateEmail(formData.email); if (emailErr) errors.email = emailErr;
+    const pwErr = validatePassword(formData.password); if (pwErr) errors.password = pwErr;
     if (view !== 'login') {
       const nameErr = validateName(formData.name);
       if (nameErr) errors.name = nameErr;
@@ -122,9 +144,9 @@ export default function Login() {
       if (view === 'login') {
         const result = await loginUser(formData.email, formData.password);
         if (result.success) {
-          localStorage.setItem('token',  result.data.token);
+          localStorage.setItem('token', result.data.token);
           localStorage.setItem('userID', result.data.userID);
-          localStorage.setItem('role',   result.data.role);
+          localStorage.setItem('role', result.data.role);
           const userResult = await getUserById(result.data.userID);
           if (userResult.success && !userResult.data.activated) {
             setUserID(result.data.userID);
@@ -134,7 +156,7 @@ export default function Login() {
           setShowLoginSuccessNotification(true);
         } else {
           const msg = result.message || "";
-          if (['no activada','not activated','activar','revisa tu correo'].some(s => msg.toLowerCase().includes(s))) {
+          if (['no activada', 'not activated', 'activar', 'revisa tu correo'].some(s => msg.toLowerCase().includes(s))) {
             setShowActivateAccount(true);
             setError("Tu cuenta no está activada. Activa tu cuenta para continuar.");
           } else setError(msg || "Error en login");
@@ -145,7 +167,7 @@ export default function Login() {
         else setError(result.message || "Error en registro");
       }
     } catch { setError("Error de conexión"); }
-    finally  { setLoading(false); }
+    finally { setLoading(false); }
   };
 
   // ─── Vistas secundarias ───────────────────────────────────────────────────
@@ -159,7 +181,11 @@ export default function Login() {
     return (
       <div className="min-h-screen flex">
         <div className="w-full bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-8">
-          <img src="/src/assets/images/fondologin.png" alt="Ilustración" className="w-full max-w-xs drop-shadow-2xl" />
+          <img
+            src="/src/assets/images/fondologin.png"
+            alt="Ilustración escritorio"
+            className="w-full max-w-xs drop-shadow-2xl hover:scale-105 transition-transform duration-500"
+          />
         </div>
         <div className="w-full bg-gray-900 flex items-center justify-center p-8">
           <div className="w-full max-w-sm space-y-6">
@@ -259,6 +285,25 @@ export default function Login() {
                 </button>
               </div>
               {fieldErrors.password && <p className="text-red-400 text-xs mt-1">{fieldErrors.password}</p>}
+
+              {/* ── Barra de fortaleza — SOLO en registro ── */}
+              {view !== 'login' && formData.password.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map(i => (
+                      <div
+                        key={i}
+                        className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                          passwordStrength >= i ? barColors[passwordStrength] : 'bg-gray-700'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className={`text-xs font-medium transition-colors duration-300 ${strengthColor[passwordStrength]}`}>
+                    {strengthLabel[passwordStrength]}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Confirmar contraseña — solo registro */}
@@ -328,22 +373,32 @@ export default function Login() {
             </div>
 
             {/* Botones Google / Facebook */}
-            <div className="flex justify-center gap-6">
+            <div className="flex justify-center gap-4">
               <button
                 type="button"
                 onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/google'}
-                className="w-16 h-16 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-purple-500 rounded-2xl transition-all duration-200 flex items-center justify-center shadow-lg"
-                title="Iniciar con Google"
-              >
-                <img src="/src/assets/images/google.png" alt="Google" className="w-8 h-8 object-contain" />
+                className="flex items-center gap-3 bg-white hover:bg-gray-100 text-gray-800 px-5 py-2.5 rounded-lg transition-colors duration-200 shadow-sm"
+                title="Iniciar con Google">
+                <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                  <path fill="none" d="M0 0h48v48H0z"/>
+                </svg>
+                <span className="text-sm font-medium leading-none">Google</span>
               </button>
+
               <button
                 type="button"
                 onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/facebook'}
-                className="w-16 h-16 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-purple-500 rounded-2xl transition-all duration-200 flex items-center justify-center shadow-lg"
+                className="flex items-center gap-3 bg-[#1877F2] hover:bg-[#166FE5] text-white px-5 py-2.5 rounded-lg transition-colors duration-200 shadow-sm"
                 title="Iniciar con Facebook"
               >
-                <img src="/src/assets/images/facebook.png" alt="Facebook" className="w-8 h-8 object-contain" />
+                <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path fill="white" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                <span className="text-sm font-medium leading-none">Facebook</span>
               </button>
             </div>
 
@@ -353,7 +408,7 @@ export default function Login() {
                 {view === 'login' ? "¿No tienes una cuenta aún?" : "¿Ya tienes una cuenta?"}
                 {" "}
                 <button type="button"
-                  onClick={() => { setView(view === 'login' ? 'register' : 'login'); setError(""); setFieldErrors({}); }}
+                  onClick={() => { setView(view === 'login' ? 'register' : 'login'); setError(""); setFieldErrors({}); setPasswordStrength(0); }}
                   className="text-purple-400 hover:text-purple-300 font-medium"
                 >
                   {view === 'login' ? "Haz clic aquí" : "Inicia sesión"}
