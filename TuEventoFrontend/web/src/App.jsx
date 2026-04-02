@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import Login from './pages/login'
 import LadingPage from './pages/ladingPage'
+import AboutUs from './pages/AboutUs'
 import Navbar from './layouts/Navbar'
 
 function AppContent() {
@@ -13,6 +14,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<LadingPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/nosotros" element={<AboutUs />} />
       </Routes>
     </>
   );

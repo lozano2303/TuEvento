@@ -2,6 +2,8 @@ import { Users, Gift, Smartphone, Globe, CheckCircle, X, Download } from 'lucide
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getUserById } from '../services/Login.js';
+import Footer from '../layouts/Footer';
+
 
 export default function LadingPage() {
   const navigate = useNavigate();
@@ -283,7 +285,7 @@ export default function LadingPage() {
       </section>
 
       {/* Footer */}
-
+      <Footer />
 
       {/* Modal de descarga APK */}
       {showApkModal && (

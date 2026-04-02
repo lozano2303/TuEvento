@@ -89,7 +89,7 @@ export default function Navbar() {
         </div>
 
         <div className="hidden md:flex space-x-6 text-white">
-          <Link to="/landingPage" className="hover:text-purple-400 transition-colors">Inicio</Link>
+          <Link to="/" className="hover:text-purple-400 transition-colors">Inicio</Link>
           <Link to="/nosotros" className="hover:text-purple-400 transition-colors">Nosotros</Link>
           {userData && (
             <button
