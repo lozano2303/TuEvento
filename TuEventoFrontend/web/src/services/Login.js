@@ -14,7 +14,7 @@ export const loginUser = async (credentials) => {
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(data.message || 'Error al iniciar sesión');
     }
@@ -38,7 +38,7 @@ export const registerUser = async (userData) => {
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(data.message || 'Error al registrar usuario');
     }
@@ -62,7 +62,7 @@ export const getUserById = async (id, token) => {
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(data.message || 'Error al obtener usuario');
     }
@@ -70,6 +70,32 @@ export const getUserById = async (id, token) => {
     return data;
   } catch (error) {
     console.error('Error al obtener usuario:', error);
+    throw error;
+  }
+};
+
+// Función para cambiar contraseña
+export const changePassword = async (oldPassword, newPassword) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/users/change-password`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ oldPassword, newPassword }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al cambiar contraseña');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error al cambiar contraseña:', error);
     throw error;
   }
 };
