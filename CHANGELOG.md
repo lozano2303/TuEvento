@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ## [develop] - 2026-03-29
 
+### Storage module
+#### Added
+- MinIO service added to docker-compose for local S3-compatible storage
+- AWS S3 SDK dependency added to pom.xml
+
 ### Backend
 
 ### Security module — completed and merged from feature/security-module
