@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Liquibase changesets 018-022: storage_provider, file_category, stored_file, storage_operation_log tables and initial MinIO provider
 - S3StorageClient: AWS S3 SDK implementation of StorageClientPort compatible with MinIO
 - S3Config: S3Client and S3Presigner beans configured for MinIO in development
+- StorageController: REST endpoints for file upload, delete, get and url generation
 
 ### Backend
 
