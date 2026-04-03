@@ -52,6 +52,7 @@ public class UploadFileUseCase implements UploadFilePort {
         String s3Key = category.getCode().toLowerCase() + "/" + UUID.randomUUID() + "." + extension;
 
         StoredFile savedFile;
+        String publicUrl = null;
 
         try {
             storageClient.uploadFile(defaultBucket, s3Key, request.getContent(), request.getContentType());
