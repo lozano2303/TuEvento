@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.security.infrastructure.persistence.entity;
 
+import com.capysoft.tuevento.modules.storage.infrastructure.persistence.entity.StoredFileEntity;
 import com.capysoft.tuevento.shared.infrastructure.persistence.JpaAuditingEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,8 +25,9 @@ public class OrganizerPetitionEntity extends JpaAuditingEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    @Column(name = "document", nullable = false, columnDefinition = "bytea")
-    private byte[] document;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stored_file_id")
+    private StoredFileEntity storedFile;
 
     @Column(name = "application_date", nullable = false)
     private LocalDateTime applicationDate;
