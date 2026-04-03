@@ -12,4 +12,5 @@ public class RequestOrganizerResponse {
     private final Integer organizerPetitionId;
     private final String status;
     private final LocalDateTime applicationDate;
+    private final Integer storedFileId;
 }

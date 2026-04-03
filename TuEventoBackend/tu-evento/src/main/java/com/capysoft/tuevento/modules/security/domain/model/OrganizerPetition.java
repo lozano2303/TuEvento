@@ -13,7 +13,7 @@ public class OrganizerPetition {
 
     private Integer organizerPetitionId;
     private User user;
-    private byte[] document;
+    private Integer storedFileId;
     private LocalDateTime applicationDate;
     private String status;
 }
