@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 029-seed-cities
+      author: capysoft
+      changes:
+        - loadData:
+            tableName: city
+            file: db/data/cities.csv
+            separator: ","
+            encoding: UTF-8
+            columns:
+              - column:
+                  name: code
+                  type: STRING
+              - column:
+                  name: name
+                  type: STRING
+              - column:
+                  name: department_id
+                  type: NUMERIC
