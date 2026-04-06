@@ -6,6 +6,17 @@ All notable changes to this project will be documented in this file.
 
 ## [develop] - 2026-03-29
 
+### Storage module
+#### Added
+- MinIO service added to docker-compose for local S3-compatible storage
+- AWS S3 SDK dependency added to pom.xml
+- Liquibase changesets 018-022: storage_provider, file_category, stored_file, storage_operation_log tables and initial MinIO provider
+- S3StorageClient: AWS S3 SDK implementation of StorageClientPort compatible with MinIO
+- S3Config: S3Client and S3Presigner beans configured for MinIO in development
+- StorageController: REST endpoints for file upload, delete, get and url generation
+- Initial file category: ORGANIZER_DOCUMENT (PDF, max 5MB, private)
+- organizer_petition migrated from BYTEA document to stored_file_id FK referencing storage module
+
 ### Backend
 
 ### Security module — completed and merged from feature/security-module
