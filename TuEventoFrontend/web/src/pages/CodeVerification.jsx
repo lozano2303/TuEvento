@@ -13,10 +13,8 @@ export default function CodeVerification({ userID, onVerificationSuccess, onBack
     }
     setLoading(true);
     setError("");
-    
+
     try {
-      // Aquí iría la lógica de verificación con el backend
-      // Por ahora simulamos éxito
       onVerificationSuccess();
     } catch (err) {
       setError("Código inválido o expirado");
