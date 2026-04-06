@@ -10,6 +10,7 @@ import com.capysoft.tuevento.modules.geolocation.application.dto.request.CreateS
 import com.capysoft.tuevento.modules.geolocation.application.dto.response.SiteResponse;
 import com.capysoft.tuevento.modules.geolocation.application.port.in.CreateSitePort;
 import com.capysoft.tuevento.modules.geolocation.domain.event.SiteCreatedEvent;
+import com.capysoft.tuevento.modules.geolocation.domain.exception.SiteAlreadyExistsException;
 import com.capysoft.tuevento.modules.geolocation.domain.model.City;
 import com.capysoft.tuevento.modules.geolocation.domain.model.Site;
 import com.capysoft.tuevento.modules.geolocation.domain.repository.CityRepository;
@@ -32,6 +33,11 @@ public class CreateSiteUseCase implements CreateSitePort {
         City city = cityRepository.findById(request.getCityId())
                 .orElseThrow(() -> new NotFoundException("CITY_NOT_FOUND",
                         "City not found with id: " + request.getCityId()));
+
+        siteRepository.findNearby(request.getLatitude(), request.getLongitude(), 0.05)
+                .stream().findFirst().ifPresent(existing -> {
+                    throw new SiteAlreadyExistsException(existing.getSiteId(), existing.getName());
+                });
 
         Site saved = siteRepository.save(Site.builder()
                 .city(city)
