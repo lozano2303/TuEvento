@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 030-update-site-columns-not-null
+      author: capysoft
+      changes:
+        - addNotNullConstraint:
+            tableName: site
+            columnName: capacity
+            columnDataType: INT
+        - addNotNullConstraint:
+            tableName: site
+            columnName: latitude
+            columnDataType: DECIMAL(9,6)
+        - addNotNullConstraint:
+            tableName: site
+            columnName: longitude
+            columnDataType: DECIMAL(9,6)

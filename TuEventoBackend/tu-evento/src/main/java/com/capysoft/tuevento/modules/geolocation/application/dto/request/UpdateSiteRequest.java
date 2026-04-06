@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -25,13 +26,16 @@ public class UpdateSiteRequest {
     @Size(max = 200)
     private String address;
 
+    @NotNull
     @Positive
     private Integer capacity;
 
+    @NotNull
     @DecimalMin(value = "-90.000000")
     @DecimalMax(value = "90.000000")
     private BigDecimal latitude;
 
+    @NotNull
     @DecimalMin(value = "-180.000000")
     @DecimalMax(value = "180.000000")
     private BigDecimal longitude;
