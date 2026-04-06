@@ -17,6 +17,10 @@ All notable changes to this project will be documented in this file.
 - Initial file category: ORGANIZER_DOCUMENT (PDF, max 5MB, private)
 - organizer_petition migrated from BYTEA document to stored_file_id FK referencing storage module
 
+### Geolocation module
+#### Added
+- Liquibase changesets 025-027: department, city and site tables
+
 ### Backend
 
 ### Security module — completed and merged from feature/security-module
