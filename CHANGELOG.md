@@ -21,6 +21,7 @@ All notable changes to this project will be documented in this file.
 #### Added
 - Liquibase changesets 025-027: department, city and site tables
 - GeolocationController: REST endpoints for departments, cities and sites
+- Seed data: 33 departments and 1122 cities of Colombia via Liquibase loadData (changesets 028-029)
 
 ### Backend
 
