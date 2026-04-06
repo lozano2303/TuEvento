@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 ### Geolocation module
 #### Added
 - Liquibase changesets 025-027: department, city and site tables
+- GeolocationController: REST endpoints for departments, cities and sites
 
 ### Backend
 
