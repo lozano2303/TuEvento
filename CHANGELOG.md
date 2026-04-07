@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [develop] - 2026-04-07
+
+### Profile module
+#### Added
+- Liquibase changeset 031: inserted `PROFILE_PICTURE` file category (public, jpg/jpeg/png/webp, max 2MB)
+- Liquibase changeset 032: created `profile` table with FK to `app_user`, `city` (nullable) and `stored_file` (nullable)
+- Liquibase changeset 033: created `profile_log` table with FK to `profile`
+- Domain models: `Profile` (references `City` object from geolocation module), `ProfileLog`
+- Domain repository interfaces: `ProfileRepository`, `ProfileLogRepository`
+- Domain events: `ProfileCreatedEvent`, `ProfileUpdatedEvent` (primitive IDs only)
+- Domain exception: `ProfileAlreadyExistsException`
+- JPA entities: `ProfileEntity` (auditable, `storedFileId` as plain INT decoupled from storage module), `ProfileLogEntity`
+- MapStruct mappers: `ProfileMapper` (uses `CityMapper`), `ProfileLogMapper`
+- JPA repositories: `ProfileJpaRepository`, `ProfileLogJpaRepository`
+- Domain repository implementations: `ProfileRepositoryImpl`, `ProfileLogRepositoryImpl`
+- Application ports in: `CreateProfilePort`, `UpdateProfilePort`, `GetProfilePort`, `GetProfileByUserIdPort`
+- DTOs: `CreateProfileRequest` (userId, fullName), `UpdateProfileRequest` (cityId, storedFileId, fullName, bio), `ProfileResponse`
+- Use cases: `CreateProfileUseCase` (validates no duplicate profile per user, assigns default avatar), `UpdateProfileUseCase` (logs each changed field to profile_log), `GetProfileUseCase`, `GetProfileByUserIdUseCase`
+- `ProfileController`: POST `/api/v1/profiles`, PUT `/api/v1/profiles/{profileId}`, GET `/api/v1/profiles/{profileId}`, GET `/api/v1/profiles/user/{userId}`
+- `ProfileDataInitializer`: uploads `default-avatar.jpg` from `src/main/resources/assets/` to MinIO on first startup using `UploadFilePort`; logs resulting `storedFileId` for manual config
+- `app.profile.default-avatar-stored-file-id` property added to `application-dev.yaml`
+- GET profile endpoints added to public routes in `SecurityConfig`
+- `src/main/resources/assets/default-avatar.jpg` placeholder directory created
+
+#### Known issues
+- `ProfileDataInitializer` lookup for existing default avatar pending fix (method to check `findByOwnerEntity` not yet validated)
+
 ## [develop] - 2026-03-29
 
 ### Storage module

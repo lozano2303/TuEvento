@@ -58,3 +58,6 @@ app:
     secret-key: ${MINIO_ROOT_PASSWORD}
     region: us-east-1
     bucket-default: tuevento
+
+  profile:
+    default-avatar-stored-file-id: # set after first run — see ProfileDataInitializer log
