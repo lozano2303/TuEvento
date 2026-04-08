@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.capysoft.tuevento.modules.geolocation.domain.exception.SiteAlreadyExistsException;
+import com.capysoft.tuevento.modules.profile.domain.exception.ProfileAlreadyExistsException;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
@@ -35,6 +36,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(SiteAlreadyExistsException.class)
     public ResponseEntity<ApiResponse<Void>> handleSiteAlreadyExistsException(SiteAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(ProfileAlreadyExistsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleProfileAlreadyExistsException(ProfileAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.error(ex.getMessage()));
     }
