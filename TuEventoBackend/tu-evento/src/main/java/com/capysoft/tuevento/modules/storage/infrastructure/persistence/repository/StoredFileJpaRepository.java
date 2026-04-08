@@ -1,13 +1,14 @@
 package com.capysoft.tuevento.modules.storage.infrastructure.persistence.repository;
 
-import com.capysoft.tuevento.modules.storage.infrastructure.persistence.entity.StoredFileEntity;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-import java.util.Optional;
+import com.capysoft.tuevento.modules.storage.infrastructure.persistence.entity.StoredFileEntity;
 
 public interface StoredFileJpaRepository extends JpaRepository<StoredFileEntity, Integer> {
 
@@ -19,7 +20,7 @@ public interface StoredFileJpaRepository extends JpaRepository<StoredFileEntity,
     @Query("SELECT f FROM StoredFileEntity f WHERE f.fileCategory.fileCategoryId = :fileCategoryId AND f.deleted = false")
     List<StoredFileEntity> findByFileCategoryId(@Param("fileCategoryId") Integer fileCategoryId);
 
-    @Query("SELECT f FROM StoredFileEntity f WHERE f.ownerEntityId = :ownerEntityId AND f.ownerEntityType = :ownerEntityType AND f.deleted = false")
+    @Query("SELECT sf FROM StoredFileEntity sf JOIN FETCH sf.fileCategory fc JOIN FETCH fc.storageProvider WHERE sf.ownerEntityId = :ownerEntityId AND sf.ownerEntityType = :ownerEntityType AND sf.deleted = false")
     List<StoredFileEntity> findByOwnerEntity(@Param("ownerEntityId") Integer ownerEntityId,
                                              @Param("ownerEntityType") String ownerEntityType);
 
