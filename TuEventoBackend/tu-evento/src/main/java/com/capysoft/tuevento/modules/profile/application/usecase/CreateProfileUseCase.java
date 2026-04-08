@@ -1,5 +1,12 @@
 package com.capysoft.tuevento.modules.profile.application.usecase;
 
+import java.time.LocalDateTime;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.capysoft.tuevento.modules.profile.application.dto.request.CreateProfileRequest;
 import com.capysoft.tuevento.modules.profile.application.dto.response.ProfileResponse;
 import com.capysoft.tuevento.modules.profile.application.port.in.CreateProfilePort;
@@ -9,13 +16,8 @@ import com.capysoft.tuevento.modules.profile.domain.model.Profile;
 import com.capysoft.tuevento.modules.profile.domain.model.ProfileLog;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileLogRepository;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +40,9 @@ public class CreateProfileUseCase implements CreateProfilePort {
         Profile profile = profileRepository.save(Profile.builder()
                 .userId(request.getUserId())
                 .fullName(request.getFullName())
-                .storedFileId(defaultAvatarStoredFileId)
+                .storedFileId(request.isStoredFileIdSet()
+                        ? request.getStoredFileId()
+                        : defaultAvatarStoredFileId)
                 .build());
 
         profileLogRepository.save(ProfileLog.builder()

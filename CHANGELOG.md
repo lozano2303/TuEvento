@@ -43,6 +43,7 @@ All notable changes to this project will be documented in this file.
 - StorageController: REST endpoints for file upload, delete, get and url generation
 - Initial file category: ORGANIZER_DOCUMENT (PDF, max 5MB, private)
 - organizer_petition migrated from BYTEA document to stored_file_id FK referencing storage module
+- CreateProfileRequest: added storedFileIdSet flag to distinguish explicit null from use-default behavior
 
 ### Geolocation module
 #### Added

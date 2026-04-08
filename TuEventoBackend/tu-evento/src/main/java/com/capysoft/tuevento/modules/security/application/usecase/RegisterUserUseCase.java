@@ -6,6 +6,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.capysoft.tuevento.modules.profile.application.dto.request.CreateProfileRequest;
+import com.capysoft.tuevento.modules.profile.application.port.in.CreateProfilePort;
 import com.capysoft.tuevento.modules.security.application.dto.request.RegisterUserRequest;
 import com.capysoft.tuevento.modules.security.application.dto.response.RegisterUserResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.RegisterUserPort;
@@ -33,8 +35,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RegisterUserUseCase implements RegisterUserPort {
 
-    private static final String DEFAULT_ROLE_CODE  = "USER";
-    private static final String DEFAULT_STATUS_CODE = "PENDING";
+    private static final String DEFAULT_ROLE_CODE       = "USER";
+    private static final String DEFAULT_STATUS_CODE     = "PENDING";
     private static final int    ACTIVATION_EXPIRY_HOURS = 24;
 
     private final UserRepository              userRepository;
@@ -45,6 +47,7 @@ public class RegisterUserUseCase implements RegisterUserPort {
     private final PasswordEncoderPort         passwordEncoder;
     private final CodeGeneratorPort           codeGenerator;
     private final EmailNotificationPort       emailNotification;
+    private final CreateProfilePort           createProfilePort;
     private final ApplicationEventPublisher   eventPublisher;
 
     @Override
@@ -73,6 +76,12 @@ public class RegisterUserUseCase implements RegisterUserPort {
                 .user(user)
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .build());
+
+        // Profile creation is atomic with registration — if it fails the whole transaction rolls back
+        createProfilePort.create(CreateProfileRequest.builder()
+                .userId(user.getUserId())
+                .fullName(request.getFullName())
                 .build());
 
         String code = codeGenerator.generateActivationCode();
