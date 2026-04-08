@@ -60,4 +60,4 @@ app:
     bucket-default: tuevento
 
   profile:
-    default-avatar-stored-file-id: # set after first run — see ProfileDataInitializer log
+    default-avatar-stored-file-id: 1

@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.shared.infrastructure.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -27,6 +28,9 @@ public class ProfileDataInitializer implements ApplicationRunner {
     private final StoredFileRepository storedFileRepository;
     private final UploadFilePort       uploadFilePort;
 
+    @Value("${app.profile.default-avatar-stored-file-id:1}")
+    private Integer defaultAvatarStoredFileId;
+
     @Override
     public void run(ApplicationArguments args) {
         boolean alreadyExists = !storedFileRepository
@@ -34,7 +38,8 @@ public class ProfileDataInitializer implements ApplicationRunner {
                 .isEmpty();
 
         if (alreadyExists) {
-            log.info("Default avatar already uploaded, skipping ProfileDataInitializer");
+            log.info("Default avatar already uploaded (storedFileId={}), skipping ProfileDataInitializer",
+                    defaultAvatarStoredFileId);
             return;
         }
 
@@ -56,8 +61,6 @@ public class ProfileDataInitializer implements ApplicationRunner {
 
             log.info("Default avatar uploaded successfully. storedFileId={}, url={}",
                     response.getStoredFileId(), response.getPublicUrl());
-            log.info("Set app.profile.default-avatar-stored-file-id={} in application.yml",
-                    response.getStoredFileId());
 
         } catch (Exception e) {
             log.warn("Could not upload default avatar (MinIO may not be running): {}", e.getMessage());
