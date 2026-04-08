@@ -6,6 +6,7 @@ import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -33,5 +34,11 @@ public class ProfileRepositoryImpl implements ProfileRepository {
     @Override
     public boolean existsByUserId(Integer userId) {
         return jpaRepository.existsByUserId(userId);
+    }
+
+    @Override
+    public List<Profile> findAllWithNullStoredFileId() {
+        return jpaRepository.findAllByStoredFileIdIsNull()
+                .stream().map(mapper::toDomain).toList();
     }
 }
