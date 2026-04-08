@@ -38,6 +38,8 @@ public class SecurityConfig {
             "/api/v1/auth/**",
             "/api/v1/storage/**",
             "/api/v1/geolocation/**",
+            "/api/v1/profiles/*/",
+            "/api/v1/profiles/user/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/api-docs/**",

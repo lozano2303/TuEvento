@@ -1,21 +1,25 @@
 package com.capysoft.tuevento.shared.infrastructure.config;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.LoginCredentialsEntity;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.UserEntity;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.LoginCredentialsJpaRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.RoleJpaRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserStatusJpaRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@Order(1)
 @RequiredArgsConstructor
 public class DataInitializer implements ApplicationRunner {
 
