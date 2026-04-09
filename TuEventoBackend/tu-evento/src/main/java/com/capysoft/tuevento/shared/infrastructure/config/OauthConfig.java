@@ -12,6 +12,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
 import com.capysoft.tuevento.modules.security.application.dto.OauthProfile;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration
 public class OauthConfig {
@@ -85,7 +87,7 @@ public class OauthConfig {
         String facebookUrl = facebookAuthUri
                 + "?client_id=" + facebookClientId
                 + "&redirect_uri=" + facebookRedirectUri
-                + "&scope=public_profile"
+                + "&scope=email,public_profile"
                 + "&response_type=code";
 
         return Map.of(
@@ -138,37 +140,51 @@ public class OauthConfig {
 
     private Function<String, OauthProfile> facebookProfileResolver() {
         RestClient restClient = RestClient.create();
+        ObjectMapper objectMapper = new ObjectMapper();
 
         return authorizationCode -> {
-            // Step 1 — exchange authorization code for access token
-            MultiValueMap<String, String> tokenParams = new LinkedMultiValueMap<>();
-            tokenParams.add("code",          authorizationCode);
-            tokenParams.add("client_id",     facebookClientId);
-            tokenParams.add("client_secret", facebookClientSecret);
-            tokenParams.add("redirect_uri",  facebookRedirectUri);
+            try {
+                // Step 1 — exchange authorization code for access token
+                // Facebook responds with Content-Type: text/javascript, so we read as String
+                // and parse manually to avoid HttpMessageConverter restrictions.
+                MultiValueMap<String, String> tokenParams = new LinkedMultiValueMap<>();
+                tokenParams.add("code",          authorizationCode);
+                tokenParams.add("client_id",     facebookClientId);
+                tokenParams.add("client_secret", facebookClientSecret);
+                tokenParams.add("redirect_uri",  facebookRedirectUri);
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> tokenResponse = restClient.post()
-                    .uri(facebookTokenUri)
-                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(tokenParams)
-                    .retrieve()
-                    .body(Map.class);
+                String tokenRaw = restClient.post()
+                        .uri(facebookTokenUri)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .body(tokenParams)
+                        .retrieve()
+                        .body(String.class);
 
-            String accessToken = (String) tokenResponse.get("access_token");
+                Map<String, Object> tokenResponse = objectMapper.readValue(
+                        tokenRaw, new TypeReference<>() {});
 
-            // Step 2 — fetch user profile from Graph API (id differs from Google's sub)
-            @SuppressWarnings("unchecked")
-            Map<String, Object> userInfo = restClient.get()
-                    .uri(facebookProfileUri + "?fields=id,name,email&access_token=" + accessToken)
-                    .retrieve()
-                    .body(Map.class);
+                String accessToken = (String) tokenResponse.get("access_token");
 
-            return OauthProfile.builder()
-                    .providerUserId((String) userInfo.get("id"))
-                    .email((String) userInfo.get("email"))
-                    .alias((String) userInfo.get("name"))
-                    .build();
+                // Step 2 — fetch user profile from Graph API (id differs from Google's sub)
+                // Same pattern: read as String, parse with ObjectMapper.
+                String profileRaw = restClient.get()
+                        .uri(facebookProfileUri + "?fields=id,name,email&access_token=" + accessToken)
+                        .retrieve()
+                        .body(String.class);
+
+                Map<String, Object> userInfo = objectMapper.readValue(
+                        profileRaw, new TypeReference<>() {});
+
+                return OauthProfile.builder()
+                        .providerUserId((String) userInfo.get("id"))
+                        .email((String) userInfo.get("email"))
+                        .alias((String) userInfo.get("name"))
+                        .build();
+
+            } catch (Exception e) {
+                throw new com.capysoft.tuevento.shared.domain.exception.BusinessException(
+                        "FACEBOOK_OAUTH_FAILED", "Facebook OAuth failed: " + e.getMessage());
+            }
         };
     }
 }
