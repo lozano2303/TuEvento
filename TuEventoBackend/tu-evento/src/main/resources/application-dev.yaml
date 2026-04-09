@@ -5,6 +5,17 @@ spring:
     password: ${POSTGRES_PASSWORD}
   jpa:
     show-sql: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 logging:
   level:
@@ -16,3 +27,37 @@ springdoc:
   swagger-ui:
     path: /swagger-ui
     enabled: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration: 900000
+    refresh-token-expiration: 604800000
+  mail:
+    from: ${MAIL_USERNAME}
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:4200
+
+  oauth:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID}
+      client-secret: ${GOOGLE_CLIENT_SECRET}
+      redirect-uri: http://localhost:8080/api/v1/auth/oauth/google/callback
+      token-uri: https://oauth2.googleapis.com/token
+      userinfo-uri: https://www.googleapis.com/oauth2/v3/userinfo
+      authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+
+  admin:
+    email: ${ADMIN_EMAIL}
+    password: ${ADMIN_PASSWORD}
+    alias: ${ADMIN_ALIAS}
+
+  storage:
+    endpoint: http://localhost:9000
+    access-key: ${MINIO_ROOT_USER}
+    secret-key: ${MINIO_ROOT_PASSWORD}
+    region: us-east-1
+    bucket-default: tuevento
+
+  profile:
+    default-avatar-stored-file-id: 1

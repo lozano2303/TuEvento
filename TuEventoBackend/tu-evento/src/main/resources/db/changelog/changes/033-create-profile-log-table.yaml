@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 033-create-profile-log-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: profile_log
+            columns:
+              - column:
+                  name: log_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: profile_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action
+                  type: VARCHAR(50)
+              - column:
+                  name: old_value
+                  type: VARCHAR(255)
+              - column:
+                  name: new_value
+                  type: VARCHAR(255)
+              - column:
+                  name: occurred_at
+                  type: TIMESTAMP
+        - addForeignKeyConstraint:
+            baseTableName: profile_log
+            baseColumnNames: profile_id
+            referencedTableName: profile
+            referencedColumnNames: profile_id
+            constraintName: fk_profile_log_profile

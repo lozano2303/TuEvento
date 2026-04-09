@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-create-file-category-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: file_category
+            columns:
+              - column:
+                  name: file_category_id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: storage_provider_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: is_public
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: allowed_extensions
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_size_mb
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_by
+                  type: VARCHAR(50)
+              - column:
+                  name: updated_by
+                  type: VARCHAR(50)
+        - addForeignKeyConstraint:
+            baseTableName: file_category
+            baseColumnNames: storage_provider_id
+            referencedTableName: storage_provider
+            referencedColumnNames: storage_provider_id
+            constraintName: fk_file_category_storage_provider

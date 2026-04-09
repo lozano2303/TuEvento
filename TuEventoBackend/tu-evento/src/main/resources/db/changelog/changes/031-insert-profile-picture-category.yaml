@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 031-insert-profile-picture-category
+      author: capysoft
+      changes:
+        - insert:
+            tableName: file_category
+            columns:
+              - column:
+                  name: storage_provider_id
+                  valueNumeric: 1
+              - column:
+                  name: name
+                  value: Profile Picture
+              - column:
+                  name: code
+                  value: PROFILE_PICTURE
+              - column:
+                  name: is_public
+                  valueBoolean: true
+              - column:
+                  name: allowed_extensions
+                  value: jpg,jpeg,png,webp
+              - column:
+                  name: max_size_mb
+                  valueNumeric: 2
