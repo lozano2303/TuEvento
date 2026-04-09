@@ -1,7 +1,6 @@
 import { Users, Gift, Smartphone, Globe, CheckCircle, X, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { getUserById } from '../services/Login.js';
 import Footer from '../layouts/Footer';
 
 
@@ -17,56 +16,12 @@ export default function LadingPage() {
     const oauthRole = urlParams.get('role');
     const isOAuth = urlParams.get('oauth');
 
-    if (isOAuth && oauthToken && oauthUserID && oauthRole) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-
-      localStorage.setItem('token', oauthToken);
-      localStorage.setItem('userID', oauthUserID);
-      localStorage.setItem('role', oauthRole);
-
-      getUserById(oauthUserID).then(result => {
-        if (result.success) {
-          setUserData(result.data);
-        } else {
-          // Limpiar todos los datos de autenticación del localStorage
-          localStorage.removeItem('token');
-          localStorage.removeItem('userID');
-          localStorage.removeItem('role');
-          localStorage.removeItem('pendingActivationUserID');
-          localStorage.removeItem('adminLoggedIn');
-        }
-      }).catch(() => {
-        // Limpiar todos los datos de autenticación del localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('userID');
-        localStorage.removeItem('role');
-        localStorage.removeItem('pendingActivationUserID');
-        localStorage.removeItem('adminLoggedIn');
-      });
-    } else {
-      const token = localStorage.getItem('token');
-      const storedUserID = localStorage.getItem('userID');
-      if (token && storedUserID) {
-        getUserById(storedUserID).then(result => {
-          if (result.success) {
-            setUserData(result.data);
-          } else {
-            // Limpiar todos los datos de autenticación del localStorage
-            localStorage.removeItem('token');
-            localStorage.removeItem('userID');
-            localStorage.removeItem('role');
-            localStorage.removeItem('pendingActivationUserID');
-            localStorage.removeItem('adminLoggedIn');
-          }
-        }).catch(() => {
-          // Limpiar todos los datos de autenticación del localStorage
-          localStorage.removeItem('token');
-          localStorage.removeItem('userID');
-          localStorage.removeItem('role');
-          localStorage.removeItem('pendingActivationUserID');
-          localStorage.removeItem('adminLoggedIn');
-        });
-      }
+    const token = localStorage.getItem('token');
+    const storedUserID = localStorage.getItem('userID');
+    const storedAlias = localStorage.getItem('alias');
+    const storedFullName = localStorage.getItem('fullName');
+    if (token && storedUserID) {
+      setUserData({ userId: storedUserID, alias: storedAlias, fullName: storedFullName });
     }
   }, []);
 
@@ -74,18 +29,18 @@ export default function LadingPage() {
     <div className="min-h-screen bg-gray-900 text-white">
   
       {/* Hero Section */}
-      <section className="relative overflow-hidden" style={{ paddingBlock: 'calc(var(--spacing) * 33)' }}>
+      <section className="relative overflow-hidden pt-16 md:pt-20">
         {/* Fondo degradado */}
         <div className="absolute inset-0 bg-purple-700"></div>
 
         {/* Contenido principal */}
-        <div className="relative max-w-6xl mx-auto px-4 py-10">
+        <div className="relative max-w-6xl mx-auto px-4 pb-25">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             
             {/* Texto */}
-            <div className="space-y-6">
+            <div className="space-y-6 pt-8">
               <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                {userData ? `¡Hola, ${userData.fullName}!` : 'Visualiza el evento'}
+                {userData ? `¡Hola, ${userData.fullName ? userData.fullName.split(' ')[0] : userData.alias}!` : 'Visualiza el evento'}
                 <span className="block text-yellow-300">{userData ? 'Bienvenido de vuelta.' : 'ideal.'}</span>
               </h1>
               <p className="text-lg text-purple-100">
@@ -97,28 +52,35 @@ export default function LadingPage() {
               </button>
             </div>
 
-            {/* Imagen */}
+             {/* Imagen */}
             <div className="relative">
               <div className="w-60 h-60 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-20 absolute -top-10 -right-10"></div>
+
               <div className="relative bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                <img
-                  src="/src/assets/images/bosquejo_1-removebg-preview.png"
-                  alt="Bosquejo"
-                  className="w-full h-58 rounded-xl mb-4 object-contain"
-                />
+
+                {/* Contenedor fijo */}
+                <div className="w-full h-55 mb-4">
+                  <img
+                    src="/src/assets/images/ladingpage.png"
+                    alt="ladingpage"
+                    className="w-120 h-70 relative -top-8 rounded-xl  object-contain"
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <div className="h-4 bg-white/30 rounded w-3/4"></div>
                   <div className="h-4 bg-white/30 rounded w-1/2"></div>
                 </div>
+
               </div>
             </div>
-          </div>
+          </div> 
         </div>
 
         {/* Solo la curva inferior */}
       <svg
         viewBox="0 0 1200 120"
-        className="absolute bottom-0 left-0 w-full h-24 fill-gray-900"  
+        className="absolute bottom-0 left-0 w-full h-16 fill-gray-900"  
         preserveAspectRatio="none"
       >
       <path d="M0,60 Q150,0 300,60 T600,60 Q750,120 900,60 T1200,60 L1200,120 L0,120 Z" />
@@ -145,11 +107,11 @@ export default function LadingPage() {
             
             <div className="relative">
               <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-2xl">
-                <div className="rounded-xl mb-4 overflow-hidden">
+                <div className="rounded-xl mb-4 overflow-hidden h-56">
                   <img
-                    src="/src/assets/images/imagen1.png"
-                    alt="Interfaz de planos interactivos"
-                    className="w-full h-48 object-cover"
+                    src="/src/assets/images/ladingpage1.png"
+                    alt="evento"
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="space-y-2">
@@ -160,25 +122,26 @@ export default function LadingPage() {
             </div>
           </div>
 
-          {/* Línea decorativa con check */}
-          <div className="flex items-center justify-center mb-12">
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent"></div>
-            <div className="mx-4 flex items-center space-x-2 bg-purple-900 px-4 py-2 rounded-full border border-purple-500">
-              <CheckCircle className="w-5 h-5 text-green-400" />
-              <span className="text-green-400 font-semibold text-sm">Verificado</span>
-            </div>
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent"></div>
+        {/* Separador */}
+        <div className="flex items-center gap-6 mb-16 px-4">
+          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500 to-purple-600" />
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+            <div className="w-3 h-3 rounded-full bg-purple-500 animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
           </div>
-
+          <div className="flex-1 h-px bg-gradient-to-l from-transparent via-purple-500 to-purple-600" />
+        </div>
+        
           {/* Segunda sección */}
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative order-2 md:order-1">
               <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-2xl">
-                <div className="rounded-xl mb-4 overflow-hidden">
+                <div className="aspect-video overflow-hidden rounded-xl">
                   <img
-                    src="/src/assets/images/imagen2.png"
+                    src="/src/assets/images/ladingpage2.png"
                     alt="Búsqueda de eventos"
-                    className="w-full h-48 object-cover"
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="space-y-2">
