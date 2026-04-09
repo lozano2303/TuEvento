@@ -1,7 +1,6 @@
 import { Users, Gift, Smartphone, Globe, CheckCircle, X, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { getUserById } from '../services/Login.js';
 import Footer from '../layouts/Footer';
 
 
@@ -17,56 +16,12 @@ export default function LadingPage() {
     const oauthRole = urlParams.get('role');
     const isOAuth = urlParams.get('oauth');
 
-    if (isOAuth && oauthToken && oauthUserID && oauthRole) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-
-      localStorage.setItem('token', oauthToken);
-      localStorage.setItem('userID', oauthUserID);
-      localStorage.setItem('role', oauthRole);
-
-      getUserById(oauthUserID).then(result => {
-        if (result.success) {
-          setUserData(result.data);
-        } else {
-          // Limpiar todos los datos de autenticación del localStorage
-          localStorage.removeItem('token');
-          localStorage.removeItem('userID');
-          localStorage.removeItem('role');
-          localStorage.removeItem('pendingActivationUserID');
-          localStorage.removeItem('adminLoggedIn');
-        }
-      }).catch(() => {
-        // Limpiar todos los datos de autenticación del localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('userID');
-        localStorage.removeItem('role');
-        localStorage.removeItem('pendingActivationUserID');
-        localStorage.removeItem('adminLoggedIn');
-      });
-    } else {
-      const token = localStorage.getItem('token');
-      const storedUserID = localStorage.getItem('userID');
-      if (token && storedUserID) {
-        getUserById(storedUserID).then(result => {
-          if (result.success) {
-            setUserData(result.data);
-          } else {
-            // Limpiar todos los datos de autenticación del localStorage
-            localStorage.removeItem('token');
-            localStorage.removeItem('userID');
-            localStorage.removeItem('role');
-            localStorage.removeItem('pendingActivationUserID');
-            localStorage.removeItem('adminLoggedIn');
-          }
-        }).catch(() => {
-          // Limpiar todos los datos de autenticación del localStorage
-          localStorage.removeItem('token');
-          localStorage.removeItem('userID');
-          localStorage.removeItem('role');
-          localStorage.removeItem('pendingActivationUserID');
-          localStorage.removeItem('adminLoggedIn');
-        });
-      }
+    const token = localStorage.getItem('token');
+    const storedUserID = localStorage.getItem('userID');
+    const storedAlias = localStorage.getItem('alias');
+    const storedFullName = localStorage.getItem('fullName');
+    if (token && storedUserID) {
+      setUserData({ userId: storedUserID, alias: storedAlias, fullName: storedFullName });
     }
   }, []);
 
@@ -85,7 +40,7 @@ export default function LadingPage() {
             {/* Texto */}
             <div className="space-y-6 pt-8">
               <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                {userData ? `¡Hola, ${userData.fullName}!` : 'Visualiza el evento'}
+                {userData ? `¡Hola, ${userData.fullName ? userData.fullName.split(' ')[0] : userData.alias}!` : 'Visualiza el evento'}
                 <span className="block text-yellow-300">{userData ? 'Bienvenido de vuelta.' : 'ideal.'}</span>
               </h1>
               <p className="text-lg text-purple-100">
