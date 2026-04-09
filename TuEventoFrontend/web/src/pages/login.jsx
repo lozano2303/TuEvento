@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight } from "lucide-react";
-import { loginUser, registerUser } from "../services/Login.js";
-import { getProfileByUserId } from "../services/ProfileService.js";
+import { loginUser, registerUser, getUserById } from "../services/Login.js";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 
@@ -42,17 +41,18 @@ export default function Login() {
 
     const storedToken = localStorage.getItem('token');
     const storedUserID = localStorage.getItem('userID');
-    const storedAlias = localStorage.getItem('alias');
-    const storedEmail = localStorage.getItem('userEmail');
-    const storedFullName = localStorage.getItem('fullName');
     if (storedToken && storedUserID) {
-      setUserData({ userId: storedUserID, alias: storedAlias, email: storedEmail, fullName: storedFullName });
-      setView('profile');
+      getUserById(storedUserID)
+        .then(result => {
+          if (result.success) { setUserData(result.data); setView('profile'); }
+          else clearAuth();
+        })
+        .catch(clearAuth);
     }
   }, []);
 
   const clearAuth = () => {
-    ['token', 'userID', 'alias', 'userEmail', 'fullName', 'pendingActivationUserID', 'adminLoggedIn']
+    ['token', 'userID', 'role', 'pendingActivationUserID', 'adminLoggedIn']
       .forEach(k => localStorage.removeItem(k));
   };
 
@@ -146,36 +146,14 @@ export default function Login() {
         if (result.success) {
           localStorage.setItem('token', result.data.token);
           localStorage.setItem('userID', result.data.userID);
-          localStorage.setItem('alias', result.data.alias);
-          localStorage.setItem('userEmail', formData.email);
-          
-          let userProfile = { userId: result.data.userID, alias: result.data.alias, email: formData.email };
-          try {
-            const profileResult = await getProfileByUserId(result.data.userID);
-            console.log('Profile result:', JSON.stringify(profileResult));
-            let fullName = null;
-            if (profileResult.data && profileResult.data.fullName) {
-              fullName = profileResult.data.fullName;
-            } else if (profileResult.data?.data && profileResult.data.data.fullName) {
-              fullName = profileResult.data.data.fullName;
-            } else if (profileResult.fullName) {
-              fullName = profileResult.fullName;
-            }
-            if (fullName) {
-              userProfile = { 
-                ...userProfile, 
-                fullName: fullName 
-              };
-              localStorage.setItem('fullName', fullName);
-            }
-          } catch (profileErr) {
-            console.log('Perfil no encontrado, se creará en el primer uso');
+          localStorage.setItem('role', result.data.role);
+          const userResult = await getUserById(result.data.userID);
+          if (userResult.success && !userResult.data.activated) {
+            setUserID(result.data.userID);
+            localStorage.setItem('pendingActivationUserID', result.data.userID.toString());
+            setView('verification'); return;
           }
-          setUserData(userProfile);
           setShowLoginSuccessNotification(true);
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 1500);
         } else {
           const msg = result.message || "";
           if (['no activada', 'not activated', 'activar', 'revisa tu correo'].some(s => msg.toLowerCase().includes(s))) {
@@ -194,7 +172,7 @@ export default function Login() {
 
   // ─── Vistas secundarias ───────────────────────────────────────────────────
   if (view === 'verification')
-    return <CodeVerification userID={userID} userEmail={formData.email} onVerificationSuccess={handleVerificationSuccess} onBackToLogin={() => setView('login')} />;
+    return <CodeVerification userID={userID} onVerificationSuccess={handleVerificationSuccess} onBackToLogin={() => setView('login')} />;
 
   if (view === 'forgot')
     return <ForgotPassword onBackToLogin={() => setView('login')} />;
@@ -216,12 +194,7 @@ export default function Login() {
               <p className="text-gray-400 text-sm mt-1">Bienvenido de vuelta</p>
             </div>
             <div className="space-y-4">
-              {[
-                ['Nombre', userData.fullName || 'No definido'],
-                ['Alias', userData.alias], 
-                ['Correo', userData.email], 
-                ['ID', userData.userId]
-              ].map(([label, val]) => (
+              {[['Nombre completo', userData.fullName], ['Correo electrónico', userData.email || 'No disponible'], ['Rol', userData.role]].map(([label, val]) => (
                 <div key={label}>
                   <label className="block text-gray-400 text-sm mb-1">{label}</label>
                   <p className="text-white bg-gray-800 rounded-lg px-4 py-3 text-sm">{val}</p>
@@ -566,7 +539,7 @@ export default function Login() {
                 <User className="w-6 h-6 text-purple-500 mx-auto mb-2" />
                 <p className="text-gray-700 text-sm font-medium">Sesión iniciada</p>
                 <p className="text-gray-400 text-xs mt-1">Accede a todas las funcionalidades de TuEvento</p>
-                <p className="text-purple-600 text-sm font-semibold mt-2">👋 ¡Hola, {userData?.fullName ? userData.fullName.split(' ')[0] : (userData?.alias || formData.email)}!</p>
+                <p className="text-purple-600 text-sm font-semibold mt-2">👋 ¡Hola, {formData.email}!</p>
               </div>
               <button onClick={handleContinueToHome}
                 className="w-full bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-semibold py-3 rounded-lg transition-all text-sm flex items-center justify-center gap-2">
