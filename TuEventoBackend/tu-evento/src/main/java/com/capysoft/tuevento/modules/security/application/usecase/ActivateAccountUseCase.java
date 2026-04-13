@@ -10,6 +10,7 @@ import com.capysoft.tuevento.modules.security.application.dto.request.ActivateAc
 import com.capysoft.tuevento.modules.security.application.port.in.ActivateAccountPort;
 import com.capysoft.tuevento.modules.security.domain.event.UserActivatedEvent;
 import com.capysoft.tuevento.modules.security.domain.model.AccountActivation;
+import com.capysoft.tuevento.modules.security.domain.model.LoginCredentials;
 import com.capysoft.tuevento.modules.security.domain.model.User;
 import com.capysoft.tuevento.modules.security.domain.model.UserStatus;
 import com.capysoft.tuevento.modules.security.domain.repository.AccountActivationRepository;
@@ -34,12 +35,17 @@ public class ActivateAccountUseCase implements ActivateAccountPort {
     @Override
     @Transactional
     public void activate(ActivateAccountRequest request) {
-        loginCredentialsRepository.findByEmail(request.getEmail())
+        LoginCredentials credentials = loginCredentialsRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
 
         AccountActivation activation = accountActivationRepository
                 .findByActivationCode(request.getActivationCode())
                 .orElseThrow(() -> new NotFoundException("ACTIVATION_CODE_NOT_FOUND", "Invalid activation code"));
+
+        // Verify the activation code belongs to the email in the request
+        if (!activation.getUser().getUserId().equals(credentials.getUser().getUserId())) {
+            throw new BusinessException("INVALID_ACTIVATION_CODE", "Invalid activation code");
+        }
 
         if (activation.getActivated()) {
             throw new BusinessException("ACCOUNT_ALREADY_ACTIVATED", "Account is already activated");

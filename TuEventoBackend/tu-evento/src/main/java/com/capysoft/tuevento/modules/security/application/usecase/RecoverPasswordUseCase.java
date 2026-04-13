@@ -1,5 +1,11 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.capysoft.tuevento.modules.security.application.dto.request.RecoverPasswordRequest;
 import com.capysoft.tuevento.modules.security.application.port.in.RecoverPasswordPort;
 import com.capysoft.tuevento.modules.security.application.port.out.CodeGeneratorPort;
@@ -8,12 +14,8 @@ import com.capysoft.tuevento.modules.security.domain.model.LoginCredentials;
 import com.capysoft.tuevento.modules.security.domain.model.RecoverPassword;
 import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
 import com.capysoft.tuevento.modules.security.domain.repository.RecoverPasswordRepository;
-import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -29,9 +31,13 @@ public class RecoverPasswordUseCase implements RecoverPasswordPort {
     @Override
     @Transactional
     public void recover(RecoverPasswordRequest request) {
-        LoginCredentials credentials = loginCredentialsRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+        // Silent success if email not found — prevents user enumeration
+        Optional<LoginCredentials> credentialsOpt = loginCredentialsRepository.findByEmail(request.getEmail());
+        if (credentialsOpt.isEmpty()) {
+            return;
+        }
 
+        LoginCredentials credentials = credentialsOpt.get();
         recoverPasswordRepository.invalidateAllByUserId(credentials.getUser().getUserId());
 
         String code = codeGenerator.generateRecoveryCode();

@@ -1,5 +1,13 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.capysoft.tuevento.modules.security.application.dto.request.RequestOrganizerRequest;
 import com.capysoft.tuevento.modules.security.application.dto.response.RequestOrganizerResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.RequestOrganizerPort;
@@ -14,20 +22,15 @@ import com.capysoft.tuevento.modules.storage.application.port.in.UploadFilePort;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class RequestOrganizerUseCase implements RequestOrganizerPort {
 
     private static final String PENDING_STATUS          = "PENDING";
+    private static final String ORGANIZER_ROLE_CODE     = "ORGANIZER";
     private static final String ORGANIZER_DOCUMENT_CODE = "ORGANIZER_DOCUMENT";
     private static final String OWNER_ENTITY_TYPE       = "organizer_petition";
 
@@ -44,6 +47,11 @@ public class RequestOrganizerUseCase implements RequestOrganizerPort {
 
         User user = userRepository.findByAlias(securityUser.getAlias())
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+
+        // Verify user is not already an organizer
+        if (ORGANIZER_ROLE_CODE.equals(user.getRole().getCode())) {
+            throw new BusinessException("ALREADY_ORGANIZER", "User is already an organizer");
+        }
 
         organizerPetitionRepository.findPendingByUserId(user.getUserId())
                 .ifPresent(existing -> {

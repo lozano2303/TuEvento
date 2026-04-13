@@ -2,6 +2,8 @@ package com.capysoft.tuevento.modules.security.application.usecase;
 
 import java.time.LocalDateTime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class RegisterUserUseCase implements RegisterUserPort {
+
+    private static final Logger log = LoggerFactory.getLogger(RegisterUserUseCase.class);
 
     private static final String DEFAULT_ROLE_CODE       = "USER";
     private static final String DEFAULT_STATUS_CODE     = "PENDING";
@@ -93,7 +97,13 @@ public class RegisterUserUseCase implements RegisterUserPort {
                 .expiresAt(LocalDateTime.now().plusHours(ACTIVATION_EXPIRY_HOURS))
                 .build());
 
-        emailNotification.sendActivationEmail(request.getEmail(), alias, code);
+        // Email failure is logged but not propagated — user is registered and can request resend
+        try {
+            emailNotification.sendActivationEmail(request.getEmail(), alias, code);
+        } catch (Exception e) {
+            log.error("Failed to send activation email to {} — user registered but email not sent: {}",
+                    request.getEmail(), e.getMessage());
+        }
 
         eventPublisher.publishEvent(UserRegisteredEvent.builder()
                 .userId(user.getUserId())

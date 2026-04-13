@@ -1,5 +1,11 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
+import java.time.LocalDateTime;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.capysoft.tuevento.modules.security.application.dto.request.ResetPasswordRequest;
 import com.capysoft.tuevento.modules.security.application.port.in.ResetPasswordPort;
 import com.capysoft.tuevento.modules.security.application.port.out.PasswordEncoderPort;
@@ -12,12 +18,8 @@ import com.capysoft.tuevento.modules.security.domain.repository.PasswordHistoryR
 import com.capysoft.tuevento.modules.security.domain.repository.RecoverPasswordRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +43,11 @@ public class ResetPasswordUseCase implements ResetPasswordPort {
 
         RecoverPassword recovery = recoverPasswordRepository.findByCode(request.getCode())
                 .orElseThrow(() -> new NotFoundException("RECOVERY_CODE_NOT_FOUND", "Invalid recovery code"));
+
+        // Verify the recovery code belongs to the user identified by the email
+        if (!recovery.getUser().getUserId().equals(credentials.getUser().getUserId())) {
+            throw new BusinessException("INVALID_RECOVERY_CODE", "Invalid recovery code");
+        }
 
         if (recovery.getCodeStatus()) {
             throw new BusinessException("RECOVERY_CODE_USED", "Recovery code has already been used");

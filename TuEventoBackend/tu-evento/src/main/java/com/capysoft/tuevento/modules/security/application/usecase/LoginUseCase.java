@@ -1,21 +1,30 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
+import java.time.LocalDateTime;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.capysoft.tuevento.modules.security.application.dto.request.LoginRequest;
 import com.capysoft.tuevento.modules.security.application.dto.response.LoginResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.LoginPort;
 import com.capysoft.tuevento.modules.security.application.port.out.PasswordEncoderPort;
 import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
 import com.capysoft.tuevento.modules.security.domain.event.UserLockedEvent;
-import com.capysoft.tuevento.modules.security.domain.model.*;
-import com.capysoft.tuevento.modules.security.domain.repository.*;
+import com.capysoft.tuevento.modules.security.domain.model.AccountLockout;
+import com.capysoft.tuevento.modules.security.domain.model.AuthSession;
+import com.capysoft.tuevento.modules.security.domain.model.LoginCredentials;
+import com.capysoft.tuevento.modules.security.domain.model.RefreshToken;
+import com.capysoft.tuevento.modules.security.domain.model.User;
+import com.capysoft.tuevento.modules.security.domain.repository.AccountLockoutRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.AuthSessionRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.RefreshTokenRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +54,18 @@ public class LoginUseCase implements LoginPort {
 
         if (!user.getActivated()) {
             throw new BusinessException("ACCOUNT_NOT_ACTIVATED", "Account is not activated");
+        }
+
+        // Verify user status for blocked/inactive/deleted accounts
+        String statusCode = user.getUserStatus().getCode();
+        if ("BLOCKED".equals(statusCode)) {
+            throw new BusinessException("ACCOUNT_BLOCKED", "Your account has been blocked. Please contact support");
+        }
+        if ("INACTIVE".equals(statusCode)) {
+            throw new BusinessException("ACCOUNT_INACTIVE", "Your account is inactive");
+        }
+        if ("DELETED".equals(statusCode)) {
+            throw new BusinessException("ACCOUNT_DELETED", "Account not found");
         }
 
         checkLockout(user);
@@ -91,7 +112,7 @@ public class LoginUseCase implements LoginPort {
         accountLockoutRepository.findByUserId(user.getUserId()).ifPresent(lockout -> {
             if (lockout.getLockedUntil() != null && lockout.getLockedUntil().isAfter(LocalDateTime.now())) {
                 throw new BusinessException("ACCOUNT_LOCKED",
-                        "Account is locked until " + lockout.getLockedUntil());
+                        "Account is temporarily locked. Please try again later");
             }
         });
     }
