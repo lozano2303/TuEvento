@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { mapErrorMessage } from "../utils/errorMessages";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -41,7 +42,7 @@ export default function ForgotPasswordScreen() {
       if (!response.ok) throw new Error(data.message || "Error al enviar el correo");
       navigation.navigate("ResetPassword", { email });
     } catch (e) {
-      setError(e.message);
+      setError(mapErrorMessage(e.message));
     } finally {
       setLoading(false);
     }

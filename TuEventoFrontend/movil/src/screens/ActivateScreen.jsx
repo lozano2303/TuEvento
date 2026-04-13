@@ -11,6 +11,8 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { authService } from "../services/authService";
+import { mapErrorMessage } from "../utils/errorMessages";
 
 const BASE_URL = `${process.env.EXPO_PUBLIC_API_URL}/auth`;
 
@@ -23,20 +25,21 @@ export default function ActivateScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleActivate = async () => {
-    if (!code.trim()) { setError("Ingresa el código"); return; }
+    if (!code.trim()) {
+      setError("El código es requerido");
+      return;
+    }
+    if (code.trim().length !== 8) {
+      setError("El código debe tener exactamente 8 caracteres");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${BASE_URL}/activate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, activationCode: code }),
-      });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.message || "Código inválido");
+      await authService.activateAccount(email, code.trim());
       navigation.navigate("Login");
     } catch (e) {
-      setError(e.message);
+      setError(mapErrorMessage(e.message));
     } finally {
       setLoading(false);
     }

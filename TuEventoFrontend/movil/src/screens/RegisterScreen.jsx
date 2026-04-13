@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { authService } from "../services/authService";
+import { mapErrorMessage } from "../utils/errorMessages";
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
@@ -46,7 +47,7 @@ export default function RegisterScreen() {
         await authService.register(form.name, form.email, form.password);
         navigation.navigate("Activate", { email: form.email });
       } catch (e) {
-        setApiError(e.message);
+        setApiError(mapErrorMessage(e.message));
       } finally {
         setApiLoading(false);
       }
@@ -165,11 +166,13 @@ export default function RegisterScreen() {
           )}
           <TouchableOpacity
             onPress={handleRegister}
+            disabled={apiLoading}
             activeOpacity={0.85}
             style={{
               borderRadius: 14, overflow: "hidden", marginTop: 32,
               shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.5, shadowRadius: 12, elevation: 8,
+              opacity: apiLoading ? 0.7 : 1,
             }}
           >
             <LinearGradient
@@ -178,7 +181,7 @@ export default function RegisterScreen() {
               style={{ paddingVertical: 16, alignItems: "center" }}
             >
               <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>
-                {apiLoading ? "Registrando..." : "Siguiente"}
+                {apiLoading ? "Creando cuenta..." : "Siguiente"}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
