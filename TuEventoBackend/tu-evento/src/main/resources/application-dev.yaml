@@ -46,6 +46,13 @@ app:
       token-uri: https://oauth2.googleapis.com/token
       userinfo-uri: https://www.googleapis.com/oauth2/v3/userinfo
       authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+    facebook:
+      client-id: ${FACEBOOK_CLIENT_ID}
+      client-secret: ${FACEBOOK_CLIENT_SECRET}
+      redirect-uri: http://localhost:8080/api/v1/auth/oauth/facebook/callback
+      auth-uri: https://www.facebook.com/v18.0/dialog/oauth
+      token-uri: https://graph.facebook.com/v18.0/oauth/access_token
+      profile-uri: https://graph.facebook.com/me
 
   admin:
     email: ${ADMIN_EMAIL}
