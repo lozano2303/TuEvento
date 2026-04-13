@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { mapErrorMessage } from "../utils/errorMessages";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -60,7 +61,7 @@ export default function ResetPasswordScreen() {
       if (!response.ok) throw new Error(data.message || "Error al restablecer");
       setSuccess(true);
     } catch (e) {
-      setErrors({ ...errors, code: e.message });
+      setErrors({ ...errors, code: mapErrorMessage(e.message) });
     } finally {
       setLoading(false);
     }

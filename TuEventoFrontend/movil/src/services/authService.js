@@ -8,7 +8,7 @@ export const authService = {
       body: JSON.stringify({ email, password }),
     });
     const json = await res.json();
-    if (!json.success) throw new Error(json.message || "Error al iniciar sesión");
+    if (!json.success) throw new Error(json.message);
     return json.data; // { accessToken, refreshToken, userId, alias }
   },
 
@@ -19,7 +19,40 @@ export const authService = {
       body: JSON.stringify({ fullName, email, password }),
     });
     const json = await res.json();
-    if (!json.success) throw new Error(json.message || "Error al registrarse");
+    if (!json.success) throw new Error(json.message);
     return json.data; // { userId, alias, email }
+  },
+
+  async activateAccount(email, activationCode) {
+    const res = await fetch(`${BASE_URL}/activate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, activationCode }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.message);
+    return json.data;
+  },
+
+  async recoverPassword(email) {
+    const res = await fetch(`${BASE_URL}/recover-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.message);
+    return json.data;
+  },
+
+  async resetPassword(email, code, newPassword, confirmPassword) {
+    const res = await fetch(`${BASE_URL}/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, code, newPassword, confirmPassword }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.message);
+    return json.data;
   },
 };

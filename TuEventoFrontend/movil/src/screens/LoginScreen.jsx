@@ -43,11 +43,14 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    if (validate()) {
+    if (!validate()) return;
+    try {
       const result = await login(email, password);
       if (result.success) {
         navigation.navigate("Main");
       }
+    } finally {
+      // loading es manejado por AuthContext
     }
   };
 
@@ -124,21 +127,24 @@ export default function LoginScreen() {
           )}
 
           {/* Botón iniciar */}
-          {error && (
+          {error && !errors.email && !errors.password && (
             <View style={{
-              backgroundColor: "#EF444422", borderRadius: 10,
-              padding: 12, marginTop: 8, borderWidth: 1, borderColor: "#EF4444",
+              backgroundColor: "#EF444420", borderRadius: 10,
+              padding: 12, marginTop: 16,
+              borderWidth: 1, borderColor: "#EF4444",
             }}>
-              <Text style={{ color: "#EF4444", fontSize: 13, textAlign: "center" }}>{error}</Text>
+              <Text style={{ color: "#EF4444", fontSize: 14, textAlign: "center" }}>{error}</Text>
             </View>
           )}
           <TouchableOpacity
             onPress={handleLogin}
+            disabled={loading}
             activeOpacity={0.85}
             style={{
               borderRadius: 14, overflow: "hidden", marginTop: 32,
               shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.5, shadowRadius: 12, elevation: 8,
+              opacity: loading ? 0.7 : 1,
             }}
           >
             <LinearGradient

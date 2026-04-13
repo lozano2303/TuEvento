@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import { authService } from "../services/authService";
 import { profileService } from "../services/profileService";
+import { mapErrorMessage } from "../utils/errorMessages";
 
 const AuthContext = createContext(null);
 
@@ -60,8 +61,9 @@ export function AuthProvider({ children }) {
       });
       return { success: true };
     } catch (e) {
-      setError(e.message);
-      return { success: false, message: e.message };
+      const mapped = mapErrorMessage(e.message);
+      setError(mapped);
+      return { success: false, message: mapped };
     } finally {
       setLoading(false);
     }
