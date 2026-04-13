@@ -1,4 +1,4 @@
-import { Calendar, User, LogOut, Key, Plus } from "lucide-react";
+import { Calendar, User, LogOut, Key, Plus, Wallet } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ChangePassword from "../pages/ChangePassword.jsx";
@@ -14,8 +14,10 @@ export default function Navbar() {
     const storedUserID = localStorage.getItem('userID');
     const storedAlias = localStorage.getItem('alias');
     const storedName = localStorage.getItem('name');
+    const storedRole = localStorage.getItem('role');
+    const storedEmail = localStorage.getItem('userEmail');
     if (token && storedUserID) {
-      setUserData({ userId: storedUserID, alias: storedAlias, fullName: storedName });
+      setUserData({ userId: storedUserID, alias: storedAlias, fullName: storedName, role: storedRole, email: storedEmail });
     }
   }, []);
 
@@ -121,22 +123,6 @@ export default function Navbar() {
                 {isModalOpen && (
                   <div className="user-modal absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
                     
-                    {/* Header del dropdown */}
-                    <div className="bg-gradient-to-r from-purple-600 to-purple-800 p-4 text-center">
-                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <User className="w-6 h-6 text-white" />
-                      </div>
-                      <h3 className="text-white font-semibold text-sm">{userData.fullName}</h3>
-                      <p className="text-purple-200 text-xs mt-0.5">{userData.email}</p>
-                      <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mt-2 ${
-                        isAdmin ? 'bg-red-500 text-white' :
-                        isOrganizer ? 'bg-blue-500 text-white' :
-                        'bg-gray-500 text-white'
-                      }`}>
-                        {isAdmin ? 'Administrador' : isOrganizer ? 'Organizador' : 'Usuario'}
-                      </span>
-                    </div>
-
                     {/* Opciones */}
                     <div className="p-3 space-y-1.5">
                       {isAdmin && (
@@ -170,21 +156,14 @@ export default function Navbar() {
                         Mi Perfil
                       </Link>
 
-                      <button
-                        onClick={() => { setIsModalOpen(false); setShowChangePasswordModal(true); }}
-                        className="w-full bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
+                      <Link
+                        to="/wallet"
+                        onClick={() => setIsModalOpen(false)}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
                       >
-                        <Key className="w-4 h-4" />
-                        Cambiar contraseña
-                      </button>
-
-                      <button
-                        onClick={handleLogout}
-                        className="w-full bg-orange-600 hover:bg-orange-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Cerrar sesión
-                      </button>
+                        <Wallet className="w-4 h-4" />
+                        Ver mi cartera
+                      </Link>
                     </div>
                   </div>
                 )}

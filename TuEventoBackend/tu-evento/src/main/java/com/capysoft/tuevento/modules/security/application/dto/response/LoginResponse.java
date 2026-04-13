@@ -11,4 +11,5 @@ public class LoginResponse {
     private final String refreshToken;
     private final Integer userId;
     private final String alias;
+    private final String role;
 }
