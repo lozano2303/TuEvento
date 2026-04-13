@@ -160,6 +160,13 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
+          <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 12 }}>
+            <Text style={{ color: "#9CA3AF", fontSize: 14 }}>¿Olvidaste tu contraseña? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
+              <Text style={{ color: "#7C3AED", fontSize: 14, fontWeight: "600" }}>Recupera el acceso.</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Divider */}
           <View style={{ flexDirection: "row", alignItems: "center", marginTop: 28 }}>
             <View style={{ flex: 1, height: 1, backgroundColor: "#3D2B5E" }} />
