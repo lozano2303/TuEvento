@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   Animated,
   Dimensions,
@@ -91,7 +92,11 @@ export default function LandingScreen() {
               elevation: 12,
             }}
           >
-            <Text style={{ fontSize: 36 }}>🎉</Text>
+            <Image
+              source={require("../../assets/logo.png")}
+              style={{ width: 80, height: 80, borderRadius: 20 }}
+              resizeMode="contain"
+            />
           </View>
           <Text
             style={{
@@ -173,7 +178,7 @@ export default function LandingScreen() {
         <Animated.View style={{ opacity: buttonAnim }}>
           {/* Botón principal */}
           <TouchableOpacity
-            onPress={() => navigation.navigate("Login")}
+            onPress={() => navigation.navigate("Register")}
             activeOpacity={0.85}
             style={{
               borderRadius: 14,
