@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export const getEventImages = async (eventId) => {
   const response = await fetch(`${API_URL}/events/${eventId}/images`);

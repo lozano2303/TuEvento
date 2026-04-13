@@ -1,24 +1,36 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.capysoft.tuevento.modules.security.application.dto.OauthProfile;
 import com.capysoft.tuevento.modules.security.application.dto.response.LoginResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.OauthLoginPort;
 import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
 import com.capysoft.tuevento.modules.security.domain.event.UserRegisteredEvent;
-import com.capysoft.tuevento.modules.security.domain.model.*;
-import com.capysoft.tuevento.modules.security.domain.repository.*;
+import com.capysoft.tuevento.modules.security.domain.model.AuthSession;
+import com.capysoft.tuevento.modules.security.domain.model.OauthAccount;
+import com.capysoft.tuevento.modules.security.domain.model.RefreshToken;
+import com.capysoft.tuevento.modules.security.domain.model.Role;
+import com.capysoft.tuevento.modules.security.domain.model.User;
+import com.capysoft.tuevento.modules.security.domain.model.UserStatus;
+import com.capysoft.tuevento.modules.security.domain.repository.AuthSessionRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.OauthAccountRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.RefreshTokenRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.RoleRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.UserRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.UserStatusRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.domain.valueobject.AliasGenerator;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -65,7 +77,13 @@ public class OauthLoginUseCase implements OauthLoginPort {
             UserStatus status = userStatusRepository.findByCode(DEFAULT_STATUS_CODE)
                     .orElseThrow(() -> new NotFoundException("STATUS_NOT_FOUND", "Default status not found"));
 
-            String alias = AliasGenerator.generateUnique(profile.getEmail(), userRepository::existsByAlias);
+            String alias = AliasGenerator.generateUnique(
+                    profile.getEmail(), profile.getAlias(), userRepository::existsByAlias);
+
+            // Facebook with public_profile scope doesn't return email — use a synthetic one
+            String email = (profile.getEmail() != null && !profile.getEmail().isBlank())
+                    ? profile.getEmail()
+                    : profile.getProviderUserId() + "@" + provider.toLowerCase() + ".oauth";
 
             user = userRepository.save(User.builder()
                     .role(role)
@@ -78,7 +96,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
                     .user(user)
                     .provider(provider)
                     .providerUserId(profile.getProviderUserId())
-                    .email(profile.getEmail())
+                    .email(email)
                     .linkedAt(LocalDateTime.now())
                     .build());
 
@@ -111,7 +129,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
             eventPublisher.publishEvent(UserRegisteredEvent.builder()
                     .userId(user.getUserId())
                     .alias(user.getAlias())
-                    .email(profile.getEmail())
+                    .email(profile.getEmail() != null ? profile.getEmail() : "")
                     .occurredAt(now)
                     .build());
         }

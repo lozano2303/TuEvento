@@ -1,7 +1,6 @@
 import { Calendar, User, LogOut, Key, Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { getUserById } from "../services/Login.js";
 import ChangePassword from "../pages/ChangePassword.jsx";
 
 export default function Navbar() {
@@ -13,24 +12,10 @@ export default function Navbar() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const storedUserID = localStorage.getItem('userID');
+    const storedAlias = localStorage.getItem('alias');
+    const storedName = localStorage.getItem('name');
     if (token && storedUserID) {
-      getUserById(storedUserID).then(result => {
-        if (result.success) {
-          setUserData(result.data);
-        } else {
-          localStorage.removeItem('token');
-          localStorage.removeItem('userID');
-          localStorage.removeItem('role');
-          localStorage.removeItem('pendingActivationUserID');
-          localStorage.removeItem('adminLoggedIn');
-        }
-      }).catch(() => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userID');
-        localStorage.removeItem('role');
-        localStorage.removeItem('pendingActivationUserID');
-        localStorage.removeItem('adminLoggedIn');
-      });
+      setUserData({ userId: storedUserID, alias: storedAlias, fullName: storedName });
     }
   }, []);
 
@@ -63,6 +48,7 @@ export default function Navbar() {
 
   const isAdmin = userData?.role === 'ADMIN' || userData?.email === 'atuevento72@gmail.com';
   const isOrganizer = userData?.organizer;
+  const isOrganizerOrAdmin = isOrganizer || isAdmin;
 
   const roleBadge = isAdmin
     ? { label: 'Admin', bg: 'bg-red-500' }
@@ -125,7 +111,7 @@ export default function Navbar() {
                   className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
                 >
                   <User className="w-4 h-4" />
-                  <span>{userData.fullName.split(' ')[0]}</span>
+                  <span>{userData.fullName ? userData.fullName.split(' ')[0] : userData.alias}</span>
                   <span className={`text-xs px-1.5 py-0.5 rounded-full ${roleBadge.bg}`}>
                     {roleBadge.label}
                   </span>
