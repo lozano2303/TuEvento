@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import { authService } from "../services/authService";
@@ -10,6 +10,38 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Inicialización: verifica si hay sesión guardada al arrancar
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const accessToken = await AsyncStorage.getItem("accessToken");
+        if (accessToken) {
+          const decoded = jwtDecode(accessToken);
+          // Token expirado — limpiar y no restaurar
+          if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+            await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+          } else {
+            const profile = await profileService.getByUserId(decoded.userId, accessToken);
+            setUser({
+              userId: decoded.userId,
+              alias: decoded.sub,
+              role: decoded.role,
+              fullName: profile.fullName,
+            });
+          }
+        }
+      } catch {
+        // Si falla la restauración, simplemente arranca sin sesión
+        await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    restoreSession();
+  }, []);
 
   const login = async (email, password) => {
     setLoading(true);
@@ -42,7 +74,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, error, login, logout, showLogoutModal, setShowLogoutModal, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

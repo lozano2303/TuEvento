@@ -1,15 +1,12 @@
 import { View, Text, ScrollView, TouchableOpacity, StatusBar, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
-  const navigation = useNavigation();
-
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const getDisplayName = (alias) => {
     if (!alias) return "Usuario";
@@ -66,25 +63,6 @@ export default function HomeScreen() {
           <Text style={{ color: "#9CA3AF", fontSize: 14, marginTop: 6 }}>
             Descubre y vive experiencias únicas
           </Text>
-
-          <TouchableOpacity
-            onPress={async () => {
-              await logout();
-              navigation.replace("Login");
-            }}
-            style={{
-              flexDirection: "row", alignItems: "center", gap: 6,
-              alignSelf: "flex-start", marginTop: 16,
-              backgroundColor: "#EF444422", borderRadius: 20,
-              paddingHorizontal: 14, paddingVertical: 7,
-              borderWidth: 1, borderColor: "#EF4444",
-            }}
-          >
-            <Ionicons name="log-out-outline" size={16} color="#EF4444" />
-            <Text style={{ color: "#EF4444", fontSize: 13, fontWeight: "700" }}>
-              Cerrar sesión
-            </Text>
-          </TouchableOpacity>
 
           {/* Buscador decorativo */}
           <TouchableOpacity
