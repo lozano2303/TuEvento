@@ -3,7 +3,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 export const createPetition = async (formData) => {
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/organizer-petition`, {
+    const response = await fetch(`${API_URL}/users/organizer-request`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
