@@ -2,8 +2,10 @@ import { Calendar, User, LogOut, Key, Plus, Wallet } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ChangePassword from "../pages/ChangePassword.jsx";
+import { useTranslation } from "../context/TranslationContext";
 
 export default function Navbar() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,7 +19,7 @@ export default function Navbar() {
     const storedRole = localStorage.getItem('role');
     const storedEmail = localStorage.getItem('userEmail');
     if (token && storedUserID) {
-      setUserData({ userId: storedUserID, alias: storedAlias, fullName: storedName, role: storedRole, email: storedEmail });
+      setUserData({ userId: storedUserID, alias: storedAlias || storedName, fullName: storedName, role: storedRole, email: storedEmail });
     }
   }, []);
 
@@ -44,19 +46,19 @@ export default function Navbar() {
 
   const handleCreateClick = () => {
     if (!userData) { navigate('/login'); return; }
-    const isOrganizerOrAdmin = userData.organizer || userData.role === 'ADMIN' || userData.email === 'atuevento72@gmail.com';
+    const isOrganizerOrAdmin = userData.organizer || userData.role === 'ADMIN' || userData.email === 'tuevento.capysoft@gmail.com';
     navigate(isOrganizerOrAdmin ? '/event-management' : '/organizer-petition');
   };
 
-  const isAdmin = userData?.role === 'ADMIN' || userData?.email === 'atuevento72@gmail.com';
+  const isAdmin = userData?.role === 'ADMIN' || userData?.email === 'tuevento.capysoft@gmail.com';
   const isOrganizer = userData?.organizer;
   const isOrganizerOrAdmin = isOrganizer || isAdmin;
 
   const roleBadge = isAdmin
-    ? { label: 'Admin', bg: 'bg-red-500' }
+    ? { label: t('roleAdmin'), bg: 'bg-red-500' }
     : isOrganizer
-    ? { label: 'Org', bg: 'bg-blue-500' }
-    : { label: 'User', bg: 'bg-gray-500' };
+    ? { label: t('roleOrganizer'), bg: 'bg-blue-500' }
+    : { label: t('roleUser'), bg: 'bg-gray-500' };
 
   return (
     <>
@@ -71,23 +73,32 @@ export default function Navbar() {
           </Link>
 
           {/* Links centrales */}
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium">
+          <div className="hidden md:flex items-center gap-12 text-sm font-medium flex-1 justify-center">
             <Link to="/" className="text-gray-300 hover:text-purple-400 transition-colors">
-              Inicio
+              {t('home')}
             </Link>
             <Link to="/nosotros" className="text-gray-300 hover:text-purple-400 transition-colors">
-              Nosotros
+              {t('aboutUs')}
             </Link>
             <Link to="/events" className="text-gray-300 hover:text-purple-400 transition-colors">
-              Eventos
+              {t('events')}
             </Link>
-            {userData && (
+            {userData && isOrganizer && (
               <button
-                onClick={handleCreateClick}
+                onClick={() => navigate('/event-management')}
                 className="flex items-center gap-1 text-gray-300 hover:text-purple-400 transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
-                {isOrganizerOrAdmin ? "Crear" : "Enviar solicitud"}
+                {t('createEvent')}
+              </button>
+            )}
+            {userData && !isAdmin && !isOrganizer && (
+              <button
+                onClick={() => navigate('/organizer-petition')}
+                className="flex items-center gap-1 text-gray-300 hover:text-purple-400 transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
+              >
+                <Plus className="w-4 h-4" />
+                {t('organizerPetition')}
               </button>
             )}
           </div>
@@ -95,26 +106,21 @@ export default function Navbar() {
           {/* Lado derecho */}
           <div className="flex items-center gap-3">
 
-            {/* Botón Admin */}
-            {isAdmin && (
-              <Link
-                to="/admin-dashboard"
-                className="bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
-              >
-                Admin
-              </Link>
-            )}
-
             {/* Usuario logueado */}
             {userData ? (
               <div className="relative user-modal">
                 <button
                   onClick={() => setIsModalOpen(!isModalOpen)}
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+                  className="user-pill text-white transition-colors"
                 >
-                  <User className="w-4 h-4" />
-                  <span>{userData.fullName ? userData.fullName.split(' ')[0] : userData.alias}</span>
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${roleBadge.bg}`}>
+                  <span className="name">
+                    {(() => {
+                      const name = userData.fullName || userData.alias || '';
+                      const parts = name.split(' ');
+                      return parts.length >= 2 ? parts.slice(0, 2).join(' ') : (parts[0] || userData.alias || name);
+                    })()}
+                  </span>
+                  <span className={`role ${roleBadge.bg}`}>
                     {roleBadge.label}
                   </span>
                 </button>
@@ -125,16 +131,7 @@ export default function Navbar() {
                     
                     {/* Opciones */}
                     <div className="p-3 space-y-1.5">
-                      {isAdmin && (
-                        <Link
-                          to="/admin-dashboard"
-                          onClick={() => setIsModalOpen(false)}
-                          className="w-full bg-red-600 hover:bg-red-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
-                        >
-                          <User className="w-4 h-4" />
-                          Panel Admin
-                        </Link>
-                      )}
+                      
 
                       {isOrganizer && (
                         <Link
@@ -143,8 +140,9 @@ export default function Navbar() {
                           className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
                         >
                           <Calendar className="w-4 h-4" />
-                          Gestionar Eventos
+                          {t('myEvents')}
                         </Link>
+                        
                       )}
 
                       <Link
@@ -153,17 +151,30 @@ export default function Navbar() {
                         className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
                       >
                         <User className="w-4 h-4" />
-                        Mi Perfil
+                        {t('profile')}
                       </Link>
 
-                      <Link
-                        to="/wallet"
-                        onClick={() => setIsModalOpen(false)}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
-                      >
-                        <Wallet className="w-4 h-4" />
-                        Ver mi cartera
-                      </Link>
+                      {isAdmin && (
+                        <Link
+                          to="/admin-dashboard"
+                          onClick={() => setIsModalOpen(false)}
+                          className="w-full bg-red-600 hover:bg-red-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
+                        >
+                          <Calendar className="w-4 h-4" />
+                          Panel de Gestión
+                        </Link>
+                      )}
+
+                      {!isAdmin && (
+                        <Link
+                          to="/wallet"
+                          onClick={() => setIsModalOpen(false)}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
+                        >
+                          <Wallet className="w-4 h-4" />
+                          {t('wallet')}
+                        </Link>
+                      )}
                     </div>
                   </div>
                 )}
