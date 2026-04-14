@@ -38,6 +38,7 @@ public class LoginUseCase implements LoginPort {
 
     private final LoginCredentialsRepository loginCredentialsRepository;
     private final AccountLockoutRepository   accountLockoutRepository;
+    private final AccountLockoutService      accountLockoutService;
     private final AuthSessionRepository      authSessionRepository;
     private final RefreshTokenRepository     refreshTokenRepository;
     private final PasswordEncoderPort        passwordEncoder;
@@ -138,7 +139,7 @@ public class LoginUseCase implements LoginPort {
         if (lockout.getFailedAttempts() >= MAX_FAILED_ATTEMPTS) {
             LocalDateTime lockedUntil = now.plusMinutes(LOCKOUT_MINUTES);
             lockout.setLockedUntil(lockedUntil);
-            accountLockoutRepository.save(lockout);
+            accountLockoutService.saveLockout(lockout);
             eventPublisher.publishEvent(UserLockedEvent.builder()
                     .userId(user.getUserId())
                     .alias(user.getAlias())
@@ -148,11 +149,11 @@ public class LoginUseCase implements LoginPort {
             throw new BusinessException("ACCOUNT_LOCKED", "Account locked due to too many failed attempts");
         }
 
-        accountLockoutRepository.save(lockout);
+        accountLockoutService.saveLockout(lockout);
     }
 
     private void resetLockout(User user) {
         accountLockoutRepository.findByUserId(user.getUserId())
-                .ifPresent(lockout -> accountLockoutRepository.deleteByUserId(user.getUserId()));
+                .ifPresent(lockout -> accountLockoutService.deleteLockout(user.getUserId()));
     }
 }
