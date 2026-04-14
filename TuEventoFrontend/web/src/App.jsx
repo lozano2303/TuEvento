@@ -4,10 +4,14 @@ import LadingPage from './pages/ladingPage'
 import AboutUs from './pages/AboutUs'
 import Events from './pages/Events'
 import Navbar from './layouts/Navbar'
+import OrganizerPetitionForm from './pages/OrganizerPetitionForm'
+import AdminDashboard from './pages/AdminDashboard'
+import ProfilePage from './pages/ProfilePage';
+
 
 function AppContent() {
   const location = useLocation();
-  const showNavbar = location.pathname !== '/login';
+  const showNavbar = !['/login', '/profile'].includes(location.pathname);
 
   return (
     <>
@@ -17,6 +21,9 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/nosotros" element={<AboutUs />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/organizer-petition" element={<OrganizerPetitionForm />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route path="/profile" element={<ProfilePage />} />
       </Routes>
     </>
   );

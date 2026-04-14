@@ -148,6 +148,7 @@ export default function Login() {
           localStorage.setItem('userID', result.data.userID);
           localStorage.setItem('alias', result.data.alias);
           localStorage.setItem('userEmail', formData.email);
+          localStorage.setItem('role', result.data.role || 'USER');
           
           let userProfile = { userId: result.data.userID, alias: result.data.alias, email: formData.email };
           try {

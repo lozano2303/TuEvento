@@ -26,6 +26,7 @@ export const loginUser = async (email, password) => {
         refreshToken: data.data.refreshToken,
         userID: data.data.userId,
         alias: data.data.alias,
+        role: data.data.role || 'USER',
       },
     };
   } catch (error) {
