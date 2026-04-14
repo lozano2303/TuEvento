@@ -111,9 +111,13 @@ public class LoginUseCase implements LoginPort {
 
     private void checkLockout(User user) {
         accountLockoutRepository.findByUserId(user.getUserId()).ifPresent(lockout -> {
-            if (lockout.getLockedUntil() != null && lockout.getLockedUntil().isAfter(LocalDateTime.now())) {
-                throw new BusinessException("ACCOUNT_LOCKED",
-                        "Account is temporarily locked. Please try again later");
+            if (lockout.getLockedUntil() != null) {
+                if (lockout.getLockedUntil().isAfter(LocalDateTime.now())) {
+                    throw new BusinessException("ACCOUNT_LOCKED",
+                            "Account is temporarily locked. Please try again later");
+                }
+                // Lockout window expired — auto-unblock
+                accountLockoutService.deleteLockout(user.getUserId());
             }
         });
     }
