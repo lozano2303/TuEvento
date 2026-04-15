@@ -5,14 +5,11 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.capysoft.tuevento.modules.security.domain.model.AccountLockout;
-import com.capysoft.tuevento.modules.security.domain.model.User;
-import com.capysoft.tuevento.modules.security.domain.model.UserStatus;
-import com.capysoft.tuevento.modules.security.domain.model.UserStatusHistory;
 import com.capysoft.tuevento.modules.security.domain.repository.AccountLockoutRepository;
-import com.capysoft.tuevento.modules.security.domain.repository.UserRepository;
-import com.capysoft.tuevento.modules.security.domain.repository.UserStatusHistoryRepository;
-import com.capysoft.tuevento.modules.security.domain.repository.UserStatusRepository;
-import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
+import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.UserStatusHistoryEntity;
+import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
+import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserStatusHistoryJpaRepository;
+import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserStatusJpaRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,10 +20,10 @@ public class AccountLockoutService {
     private static final String BLOCKED_CODE = "BLOCKED";
     private static final String ACTIVE_CODE  = "ACTIVE";
 
-    private final AccountLockoutRepository    accountLockoutRepository;
-    private final UserRepository              userRepository;
-    private final UserStatusRepository        userStatusRepository;
-    private final UserStatusHistoryRepository userStatusHistoryRepository;
+    private final AccountLockoutRepository       accountLockoutRepository;
+    private final UserJpaRepository              userJpaRepository;
+    private final UserStatusJpaRepository        userStatusJpaRepository;
+    private final UserStatusHistoryJpaRepository userStatusHistoryJpaRepository;
 
     /**
      * Persists the lockout record in its own transaction so it survives
@@ -38,7 +35,8 @@ public class AccountLockoutService {
         accountLockoutRepository.save(lockout);
 
         if (lockout.getLockedUntil() != null) {
-            blockUser(lockout.getUser(), "Account temporarily blocked due to too many failed login attempts");
+            blockUser(lockout.getUser().getUserId(),
+                    "Account temporarily blocked due to too many failed login attempts");
         }
     }
 
@@ -54,35 +52,33 @@ public class AccountLockoutService {
 
     // ── private helpers ──────────────────────────────────────────────────────
 
-    private void blockUser(User user, String reason) {
-        UserStatus blocked = userStatusRepository.findByCode(BLOCKED_CODE)
-                .orElseThrow(() -> new NotFoundException("STATUS_NOT_FOUND", "BLOCKED status not found"));
+    private void blockUser(Integer userId, String reason) {
+        var blockedStatus = userStatusJpaRepository.findByCode(BLOCKED_CODE).orElse(null);
+        if (blockedStatus == null) return;
 
-        user.setUserStatus(blocked);
-        userRepository.save(user);
+        userJpaRepository.updateStatusByUserId(userId, BLOCKED_CODE);
 
-        userStatusHistoryRepository.save(UserStatusHistory.builder()
-                .user(user)
-                .userStatus(blocked)
+        var userRef = userJpaRepository.getReferenceById(userId);
+        userStatusHistoryJpaRepository.save(UserStatusHistoryEntity.builder()
+                .user(userRef)
+                .userStatus(blockedStatus)
                 .reason(reason)
                 .build());
     }
 
     private void unblockUser(Integer userId) {
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) return;
+        String currentCode = userJpaRepository.findStatusCodeByUserId(userId);
+        if (currentCode == null || !BLOCKED_CODE.equals(currentCode)) return;
 
-        if (!BLOCKED_CODE.equals(user.getUserStatus().getCode())) return;
+        var activeStatus = userStatusJpaRepository.findByCode(ACTIVE_CODE).orElse(null);
+        if (activeStatus == null) return;
 
-        UserStatus active = userStatusRepository.findByCode(ACTIVE_CODE)
-                .orElseThrow(() -> new NotFoundException("STATUS_NOT_FOUND", "ACTIVE status not found"));
+        userJpaRepository.updateStatusByUserId(userId, ACTIVE_CODE);
 
-        user.setUserStatus(active);
-        userRepository.save(user);
-
-        userStatusHistoryRepository.save(UserStatusHistory.builder()
-                .user(user)
-                .userStatus(active)
+        var userRef = userJpaRepository.getReferenceById(userId);
+        userStatusHistoryJpaRepository.save(UserStatusHistoryEntity.builder()
+                .user(userRef)
+                .userStatus(activeStatus)
                 .reason("Account automatically unblocked after lockout period expired")
                 .build());
     }
