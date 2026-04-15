@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 public class LoginUseCase implements LoginPort {
 
     private static final int    MAX_FAILED_ATTEMPTS  = 5;
-    private static final int    LOCKOUT_MINUTES       = 30;
+    private static final int    LOCKOUT_MINUTES       = 1; // TODO: restore to 30 for production
     private static final int    WINDOW_MINUTES        = 15;
     private static final int    ACCESS_TOKEN_MINUTES  = 15;
     private static final int    REFRESH_TOKEN_DAYS    = 7;
@@ -57,6 +57,14 @@ public class LoginUseCase implements LoginPort {
             throw new BusinessException("ACCOUNT_NOT_ACTIVATED", "Account is not activated");
         }
 
+        // Check lockout first — if expired, it auto-unblocks the user before status is evaluated
+        checkLockout(user);
+
+        // Re-fetch credentials so user status reflects any auto-unblock done above
+        credentials = loginCredentialsRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "Invalid email or password"));
+        user = credentials.getUser();
+
         // Verify user status for blocked/inactive/deleted accounts
         String statusCode = user.getUserStatus().getCode();
         if ("BLOCKED".equals(statusCode)) {
@@ -68,8 +76,6 @@ public class LoginUseCase implements LoginPort {
         if ("DELETED".equals(statusCode)) {
             throw new BusinessException("ACCOUNT_DELETED", "Account not found");
         }
-
-        checkLockout(user);
 
         if (!passwordEncoder.matches(request.getPassword(), credentials.getPasswordHash())) {
             handleFailedAttempt(user);
