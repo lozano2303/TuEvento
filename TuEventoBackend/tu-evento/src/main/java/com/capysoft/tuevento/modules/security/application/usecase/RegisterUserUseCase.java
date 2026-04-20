@@ -2,6 +2,8 @@ package com.capysoft.tuevento.modules.security.application.usecase;
 
 import java.time.LocalDateTime;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,12 +30,15 @@ import com.capysoft.tuevento.modules.security.domain.repository.UserStatusReposi
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.domain.valueobject.AliasGenerator;
+import com.capysoft.tuevento.shared.domain.valueobject.ValidationUtils;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class RegisterUserUseCase implements RegisterUserPort {
+
+    private static final Logger log = LoggerFactory.getLogger(RegisterUserUseCase.class);
 
     private static final String DEFAULT_ROLE_CODE       = "USER";
     private static final String DEFAULT_STATUS_CODE     = "PENDING";
@@ -53,6 +58,10 @@ public class RegisterUserUseCase implements RegisterUserPort {
     @Override
     @Transactional
     public RegisterUserResponse register(RegisterUserRequest request) {
+        ValidationUtils.validateGmailEmail(request.getEmail());
+        ValidationUtils.validateStrongPassword(request.getPassword());
+        ValidationUtils.validateFullName(request.getFullName());
+
         if (loginCredentialsRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException("EMAIL_ALREADY_EXISTS", "Email is already registered");
         }
@@ -93,7 +102,13 @@ public class RegisterUserUseCase implements RegisterUserPort {
                 .expiresAt(LocalDateTime.now().plusHours(ACTIVATION_EXPIRY_HOURS))
                 .build());
 
-        emailNotification.sendActivationEmail(request.getEmail(), alias, code);
+        // Email failure is logged but not propagated — user is registered and can request resend
+        try {
+            emailNotification.sendActivationEmail(request.getEmail(), alias, code);
+        } catch (Exception e) {
+            log.error("Failed to send activation email to {} — user registered but email not sent: {}",
+                    request.getEmail(), e.getMessage());
+        }
 
         eventPublisher.publishEvent(UserRegisteredEvent.builder()
                 .userId(user.getUserId())

@@ -1,5 +1,10 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
+import java.time.LocalDateTime;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.capysoft.tuevento.modules.security.application.dto.request.RefreshTokenRequest;
 import com.capysoft.tuevento.modules.security.application.dto.response.RefreshTokenResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.RefreshTokenPort;
@@ -11,11 +16,8 @@ import com.capysoft.tuevento.modules.security.domain.repository.AuthSessionRepos
 import com.capysoft.tuevento.modules.security.domain.repository.RefreshTokenRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +44,16 @@ public class RefreshTokenUseCase implements RefreshTokenPort {
         }
 
         User user = oldRefresh.getUser();
+
+        // Verify the user account is still active
+        if (!user.getActivated()) {
+            throw new BusinessException("ACCOUNT_NOT_ACTIVE", "Account is not active");
+        }
+        String statusCode = user.getUserStatus().getCode();
+        if (!"ACTIVE".equals(statusCode)) {
+            throw new BusinessException("ACCOUNT_NOT_ACTIVE", "Account is not active");
+        }
+
         LocalDateTime now = LocalDateTime.now();
 
         oldRefresh.setRevoked(true);
