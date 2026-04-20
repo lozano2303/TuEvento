@@ -11,6 +11,7 @@ import com.capysoft.tuevento.modules.security.domain.repository.PasswordHistoryR
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
+import com.capysoft.tuevento.shared.domain.valueobject.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,6 +38,8 @@ public class ChangePasswordUseCase implements ChangePasswordPort {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new BusinessException("PASSWORD_MISMATCH", "Passwords do not match");
         }
+
+        ValidationUtils.validateStrongPassword(request.getNewPassword());
 
         SecurityUser securityUser = (SecurityUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 

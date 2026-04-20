@@ -18,6 +18,7 @@ import com.capysoft.tuevento.modules.security.domain.repository.PasswordHistoryR
 import com.capysoft.tuevento.modules.security.domain.repository.RecoverPasswordRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
+import com.capysoft.tuevento.shared.domain.valueobject.ValidationUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,6 +38,8 @@ public class ResetPasswordUseCase implements ResetPasswordPort {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new BusinessException("PASSWORD_MISMATCH", "Passwords do not match");
         }
+
+        ValidationUtils.validateStrongPassword(request.getNewPassword());
 
         LoginCredentials credentials = loginCredentialsRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));

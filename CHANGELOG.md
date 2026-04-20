@@ -21,7 +21,8 @@ All notable changes to this project will be documented in this file.
 - Fixed: organizer request allowed for existing organizers
 #### Added
 - Added: AccessDeniedException handler (403)
-- Added: AuthenticationException handler (401)
+- Added: input validations on register: Gmail-only email, strong password, full name format
+- Added: password strength validation on change password to match register rules- Added: AuthenticationException handler (401)
 - Added: MethodNotAllowedException handler (405)
 - Added: ConstraintViolationException handler (409)
 - Added: NoResourceFoundException handler (404)
