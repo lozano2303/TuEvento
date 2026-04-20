@@ -30,6 +30,7 @@ import com.capysoft.tuevento.modules.security.domain.repository.UserStatusReposi
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.domain.valueobject.AliasGenerator;
+import com.capysoft.tuevento.shared.domain.valueobject.ValidationUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -57,6 +58,10 @@ public class RegisterUserUseCase implements RegisterUserPort {
     @Override
     @Transactional
     public RegisterUserResponse register(RegisterUserRequest request) {
+        ValidationUtils.validateGmailEmail(request.getEmail());
+        ValidationUtils.validateStrongPassword(request.getPassword());
+        ValidationUtils.validateFullName(request.getFullName());
+
         if (loginCredentialsRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException("EMAIL_ALREADY_EXISTS", "Email is already registered");
         }
