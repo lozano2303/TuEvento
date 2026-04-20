@@ -29,8 +29,9 @@ public class RecoverPasswordUseCase implements RecoverPasswordPort {
     @Override
     @Transactional
     public void recover(RecoverPasswordRequest request) {
+        // Explicit error if email not found
         LoginCredentials credentials = loginCredentialsRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new NotFoundException("EMAIL_NOT_FOUND", "This email is not registered in the system"));
 
         recoverPasswordRepository.invalidateAllByUserId(credentials.getUser().getUserId());
 

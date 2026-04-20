@@ -6,6 +6,27 @@ All notable changes to this project will be documented in this file.
 
 ## [develop] - 2026-04-07
 
+### Security module
+#### Fixed
+- Fixed: activation code not validated against request email (security vulnerability)
+- Fixed: recovery code not validated against request email (security vulnerability)
+- Fixed: logout not validating session ownership (security vulnerability)
+- Fixed: login not checking BLOCKED/INACTIVE/DELETED user status
+- Fixed: lockout message exposed exact timestamp
+- Fixed: recover password revealed email existence (user enumeration)
+- Reverted: recover password now returns explicit error when email is not registered
+- Fixed: refresh token not validating user active status
+- Fixed: email send failure in register now logged instead of propagated
+- Fixed: OAuth login allows duplicate email with local account
+- Fixed: organizer request allowed for existing organizers
+#### Added
+- Added: AccessDeniedException handler (403)
+- Added: input validations on register: Gmail-only email, strong password, full name format
+- Added: password strength validation on change password to match register rules- Added: AuthenticationException handler (401)
+- Added: MethodNotAllowedException handler (405)
+- Added: ConstraintViolationException handler (409)
+- Added: NoResourceFoundException handler (404)
+
 ### Profile module
 #### Added
 - Liquibase changeset 031: inserted `PROFILE_PICTURE` file category (public, jpg/jpeg/png/webp, max 2MB)
@@ -45,8 +66,7 @@ All notable changes to this project will be documented in this file.
 - organizer_petition migrated from BYTEA document to stored_file_id FK referencing storage module
 - CreateProfileRequest: added storedFileIdSet flag to distinguish explicit null from use-default behavior
 
-### Geolocation module
-#### Added
+### Geolocation module#### Added
 - Liquibase changesets 025-027: department, city and site tables
 - GeolocationController: REST endpoints for departments, cities and sites
 - Seed data: 33 departments and 1122 cities of Colombia via Liquibase loadData (changesets 028-029)
