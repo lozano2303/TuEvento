@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - Fixed: login not checking BLOCKED/INACTIVE/DELETED user status
 - Fixed: lockout message exposed exact timestamp
 - Fixed: recover password revealed email existence (user enumeration)
+- Reverted: recover password now returns explicit error when email is not registered
 - Fixed: refresh token not validating user active status
 - Fixed: email send failure in register now logged instead of propagated
 - Fixed: OAuth login allows duplicate email with local account
