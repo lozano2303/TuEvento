@@ -46,14 +46,15 @@ export default function ActivateScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
+    <View style={{ flex: 1, backgroundColor: "#1E0A3C" }}>
       <StatusBar barStyle="light-content" backgroundColor="#1E0A3C" />
       <LinearGradient
         colors={["#1E0A3C", "#2D1B4E", "#1E0A3C"]}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+      />
+      <KeyboardAvoidingView
         style={{ flex: 1, paddingHorizontal: 28, paddingTop: 80 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -124,7 +125,7 @@ export default function ActivateScreen() {
             </Text>
           </LinearGradient>
         </TouchableOpacity>
-      </LinearGradient>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
