@@ -1,22 +1,26 @@
 import { useState, useCallback } from "react";
 import {
   View, Text, TextInput, TouchableOpacity,
-  ScrollView, Platform,
+  ScrollView, Platform, ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
+import { authService } from "../services/authService";
+import { oauthService } from "../services/oauthService";
+import { mapErrorMessage } from "../utils/errorMessages";
 import ScreenLayout from "../components/ScreenLayout";
 import { colors } from "../theme";
 
 export default function LoginScreen() {
   const navigation = useNavigation();
-  const { login, loading, error } = useAuth();
+  const { login, setSession, loading, error } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [oauthLoading, setOauthLoading] = useState(null); // "google" | "facebook" | null
 
   useFocusEffect(
     useCallback(() => {
@@ -40,6 +44,24 @@ export default function LoginScreen() {
       const result = await login(email, password);
       if (result.success) navigation.navigate("Main");
     } finally {}
+  };
+
+  const handleOAuthLogin = async (provider) => {
+    setOauthLoading(provider);
+    try {
+      const code = provider === "google" 
+        ? await oauthService.loginWithGoogle()
+        : await oauthService.loginWithFacebook();
+
+      const result = await authService.oauthLogin(provider, code);
+      // Guardar tokens en el contexto/storage
+      await setSession(result);
+      navigation.navigate("Main");
+    } catch (e) {
+      setErrors({ oauth: mapErrorMessage(e.message) });
+    } finally {
+      setOauthLoading(null);
+    }
   };
 
   return (
@@ -132,13 +154,35 @@ export default function LoginScreen() {
 
         {/* OAuth */}
         <View style={{ gap: 12, marginTop: 20 }}>
-          <TouchableOpacity activeOpacity={0.85} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#FFFFFF", borderRadius: 14, paddingVertical: 14 }}>
-            <Ionicons name="logo-google" size={20} color="#EA4335" />
-            <Text style={{ color: "#111827", fontSize: 15, fontWeight: "600" }}>Continuar con Google</Text>
+          <TouchableOpacity 
+            activeOpacity={0.85} 
+            disabled={oauthLoading !== null}
+            onPress={() => handleOAuthLogin("google")}
+            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#FFFFFF", borderRadius: 14, paddingVertical: 14, opacity: oauthLoading === "google" ? 0.7 : 1 }}
+          >
+            {oauthLoading === "google" ? (
+              <ActivityIndicator size="small" color="#EA4335" />
+            ) : (
+              <Ionicons name="logo-google" size={20} color="#EA4335" />
+            )}
+            <Text style={{ color: "#111827", fontSize: 15, fontWeight: "600" }}>
+              {oauthLoading === "google" ? "Conectando..." : "Continuar con Google"}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.85} style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#1877F2", borderRadius: 14, paddingVertical: 14 }}>
-            <Ionicons name="logo-facebook" size={20} color="#FFFFFF" />
-            <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600" }}>Continuar con Facebook</Text>
+          <TouchableOpacity 
+            activeOpacity={0.85} 
+            disabled={oauthLoading !== null}
+            onPress={() => handleOAuthLogin("facebook")}
+            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: "#1877F2", borderRadius: 14, paddingVertical: 14, opacity: oauthLoading === "facebook" ? 0.7 : 1 }}
+          >
+            {oauthLoading === "facebook" ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Ionicons name="logo-facebook" size={20} color="#FFFFFF" />
+            )}
+            <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600" }}>
+              {oauthLoading === "facebook" ? "Conectando..." : "Continuar con Facebook"}
+            </Text>
           </TouchableOpacity>
         </View>
 
