@@ -24,21 +24,38 @@ export default function ResetPasswordScreen() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Misma regla que ValidationUtils.validateStrongPassword del backend
+  const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
 
   const update = (field, value) => {
     setForm({ ...form, [field]: value });
     setErrors({ ...errors, [field]: null });
+    if (apiError) setApiError(null);
   };
 
   const validate = () => {
     const e = {};
-    if (!form.code.trim()) e.code = "El código es requerido";
-    if (!form.newPassword) e.newPassword = "La contraseña es requerida";
-    else if (form.newPassword.length < 8) e.newPassword = "Mínimo 8 caracteres";
-    if (!form.confirmPassword) e.confirmPassword = "Confirma tu contraseña";
-    else if (form.newPassword !== form.confirmPassword) e.confirmPassword = "Las contraseñas no coinciden";
+    if (!form.code.trim()) {
+      e.code = "El código de recuperación es requerido";
+    } else if (form.code.trim().length !== 8) {
+      e.code = "El código debe tener exactamente 8 caracteres";
+    }
+    if (!form.newPassword) {
+      e.newPassword = "La contraseña es requerida";
+    } else if (!PASSWORD_PATTERN.test(form.newPassword)) {
+      e.newPassword = "Debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial";
+    } else if (form.newPassword.length > 100) {
+      e.newPassword = "La contraseña no puede superar los 100 caracteres";
+    }
+    if (!form.confirmPassword) {
+      e.confirmPassword = "Confirma tu contraseña";
+    } else if (form.newPassword !== form.confirmPassword) {
+      e.confirmPassword = "Las contraseñas no coinciden";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -46,22 +63,38 @@ export default function ResetPasswordScreen() {
   const handleSubmit = async () => {
     if (!validate()) return;
     setLoading(true);
+    setApiError(null);
     try {
       const response = await fetch(`${API_URL}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
-          code: form.code,
+          code: form.code.trim(),
           newPassword: form.newPassword,
           confirmPassword: form.confirmPassword,
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Error al restablecer");
+      if (!data.success) throw new Error(data.message);
       setSuccess(true);
     } catch (e) {
-      setErrors({ ...errors, code: mapErrorMessage(e.message) });
+      const msg = e.message;
+      // Errores que aplican al campo código
+      if (
+        msg === "Invalid recovery code" ||
+        msg === "Recovery code has already been used" ||
+        msg === "Recovery code has expired"
+      ) {
+        setErrors({ code: mapErrorMessage(msg) });
+      // Error que aplica al campo contraseña
+      } else if (msg === "Passwords do not match") {
+        setErrors({ confirmPassword: mapErrorMessage(msg) });
+      } else if (msg.includes("Password must be")) {
+        setErrors({ newPassword: mapErrorMessage(msg) });
+      } else {
+        setApiError(mapErrorMessage(msg));
+      }
     } finally {
       setLoading(false);
     }
@@ -151,7 +184,7 @@ export default function ResetPasswordScreen() {
             borderWidth: errors.code ? 1 : 0, borderColor: "#EF4444",
           }}>
             <TextInput
-              placeholder="Código recibido por correo"
+              placeholder="Código de 8 caracteres"
               placeholderTextColor="#6B7280"
               value={form.code}
               onChangeText={(t) => update("code", t)}
@@ -173,7 +206,7 @@ export default function ResetPasswordScreen() {
             borderWidth: errors.newPassword ? 1 : 0, borderColor: "#EF4444",
           }}>
             <TextInput
-              placeholder="Mínimo 8 caracteres"
+              placeholder="Mín. 8 chars, mayúscula, número y símbolo"
               placeholderTextColor="#6B7280"
               value={form.newPassword}
               onChangeText={(t) => update("newPassword", t)}
@@ -214,6 +247,14 @@ export default function ResetPasswordScreen() {
           )}
 
           {/* Botón */}
+          {apiError && (
+            <View style={{
+              backgroundColor: "#EF444422", borderRadius: 10,
+              padding: 12, marginTop: 16, borderWidth: 1, borderColor: "#EF4444",
+            }}>
+              <Text style={{ color: "#EF4444", fontSize: 13, textAlign: "center" }}>{apiError}</Text>
+            </View>
+          )}
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={loading}

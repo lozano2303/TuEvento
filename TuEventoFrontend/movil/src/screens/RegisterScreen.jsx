@@ -13,11 +13,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { authService } from "../services/authService";
-import { mapErrorMessage } from "../utils/errorMessages";
+import { mapErrorMessage, parseValidationErrors } from "../utils/errorMessages";
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ fullName: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState(null);
@@ -25,34 +25,76 @@ export default function RegisterScreen() {
 
   const update = (field, value) => {
     setForm({ ...form, [field]: value });
-    setErrors({ ...errors, [field]: null });
+    if (errors[field]) setErrors({ ...errors, [field]: null });
+    if (apiError) setApiError(null);
   };
+
+  // Mismas reglas que ValidationUtils.java del backend
+  const GMAIL_PATTERN = /^[a-zA-Z0-9._%+\-]+@gmail\.com$/;
+  const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
+  const FULL_NAME_PATTERN = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{2,}(\s[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{2,})+$/;
 
   const validate = () => {
     const e = {};
-    if (!form.name.trim()) e.name = "El nombre es requerido";
-    if (!form.email.trim()) e.email = "El correo es requerido";
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Correo inválido";
-    if (!form.password) e.password = "La contraseña es requerida";
-    else if (form.password.length < 8) e.password = "Mínimo 8 caracteres";
+
+    const name = form.fullName.trim();
+    if (!name) {
+      e.fullName = "El nombre completo es requerido";
+    } else if (!FULL_NAME_PATTERN.test(name)) {
+      e.fullName = "Ingresa tu nombre y apellido (solo letras, mínimo dos palabras)";
+    } else if (name.length > 100) {
+      e.fullName = "El nombre no puede superar los 100 caracteres";
+    }
+
+    const email = form.email.trim();
+    if (!email) {
+      e.email = "El correo electrónico es requerido";
+    } else if (!GMAIL_PATTERN.test(email)) {
+      e.email = "Solo se aceptan correos @gmail.com";
+    }
+
+    const password = form.password;
+    if (!password) {
+      e.password = "La contraseña es requerida";
+    } else if (!PASSWORD_PATTERN.test(password)) {
+      e.password = "Debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial";
+    } else if (password.length > 100) {
+      e.password = "La contraseña no puede superar los 100 caracteres";
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleRegister = async () => {
-    if (validate()) {
-      setApiLoading(true);
-      setApiError(null);
-      try {
-        await authService.register(form.name, form.email, form.password);
-        navigation.navigate("Activate", { email: form.email });
-      } catch (e) {
-        setApiError(mapErrorMessage(e.message));
-      } finally {
-        setApiLoading(false);
+    if (!validate()) return;
+
+    setApiLoading(true);
+    setApiError(null);
+    try {
+      await authService.register(form.fullName.trim(), form.email.trim(), form.password);
+      navigation.navigate("Activate", { email: form.email.trim() });
+    } catch (e) {
+      const rawMessage = e.message;
+
+      // Intenta parsear errores de validación por campo del backend
+      const fieldErrors = parseValidationErrors(rawMessage);
+      if (fieldErrors) {
+        setErrors(fieldErrors);
+      } else {
+        setApiError(mapErrorMessage(rawMessage));
       }
+    } finally {
+      setApiLoading(false);
     }
   };
+
+  const inputStyle = (field) => ({
+    backgroundColor: "#2D1B4E",
+    borderRadius: 12,
+    borderWidth: errors[field] ? 1 : 0,
+    borderColor: "#EF4444",
+  });
 
   return (
     <KeyboardAvoidingView
@@ -89,38 +131,35 @@ export default function RegisterScreen() {
           <Text style={{ color: "#FFFFFF", fontWeight: "600", marginBottom: 8 }}>
             Nombre completo
           </Text>
-          <View style={{
-            backgroundColor: "#2D1B4E", borderRadius: 12,
-            borderWidth: errors.name ? 1 : 0, borderColor: "#EF4444",
-          }}>
+          <View style={inputStyle("fullName")}>
             <TextInput
-              placeholder="Tu nombre completo"
+              placeholder="Ej: Juan Pérez"
               placeholderTextColor="#6B7280"
-              value={form.name}
-              onChangeText={(t) => update("name", t)}
+              value={form.fullName}
+              onChangeText={(t) => update("fullName", t)}
+              maxLength={100}
               style={{ color: "#FFFFFF", padding: 16, fontSize: 15 }}
             />
           </View>
-          {errors.name && (
-            <Text style={{ color: "#EF4444", fontSize: 13, marginTop: 4 }}>{errors.name}</Text>
+          {errors.fullName && (
+            <Text style={{ color: "#EF4444", fontSize: 13, marginTop: 4 }}>{errors.fullName}</Text>
           )}
 
           {/* Email */}
           <Text style={{ color: "#FFFFFF", fontWeight: "600", marginTop: 20, marginBottom: 8 }}>
             Correo electrónico
           </Text>
-          <View style={{
-            backgroundColor: "#2D1B4E", borderRadius: 12,
-            borderWidth: errors.email ? 1 : 0, borderColor: "#EF4444",
-          }}>
+          <View style={inputStyle("email")}>
             <TextInput
-              placeholder="tucorreo@ejemplo.com"
+              placeholder="tucorreo@gmail.com"
               placeholderTextColor="#6B7280"
               value={form.email}
               onChangeText={(t) => update("email", t)}
+              maxLength={255}
               style={{ color: "#FFFFFF", padding: 16, fontSize: 15 }}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
             />
           </View>
           {errors.email && (
@@ -131,17 +170,14 @@ export default function RegisterScreen() {
           <Text style={{ color: "#FFFFFF", fontWeight: "600", marginTop: 20, marginBottom: 8 }}>
             Contraseña
           </Text>
-          <View style={{
-            backgroundColor: "#2D1B4E", borderRadius: 12,
-            flexDirection: "row", alignItems: "center",
-            borderWidth: errors.password ? 1 : 0, borderColor: "#EF4444",
-          }}>
+          <View style={[inputStyle("password"), { flexDirection: "row", alignItems: "center" }]}>
             <TextInput
-              placeholder="Mínimo 8 caracteres"
+              placeholder="Mín. 8 chars, mayúscula, número y símbolo"
               placeholderTextColor="#6B7280"
               value={form.password}
               onChangeText={(t) => update("password", t)}
               secureTextEntry={!showPassword}
+              maxLength={100}
               style={{ color: "#FFFFFF", padding: 16, fontSize: 15, flex: 1 }}
             />
             <TouchableOpacity
@@ -155,15 +191,17 @@ export default function RegisterScreen() {
             <Text style={{ color: "#EF4444", fontSize: 13, marginTop: 4 }}>{errors.password}</Text>
           )}
 
-          {/* Botón registrar */}
+          {/* Error general de API */}
           {apiError && (
             <View style={{
               backgroundColor: "#EF444422", borderRadius: 10,
-              padding: 12, marginTop: 8, borderWidth: 1, borderColor: "#EF4444",
+              padding: 12, marginTop: 16, borderWidth: 1, borderColor: "#EF4444",
             }}>
               <Text style={{ color: "#EF4444", fontSize: 13, textAlign: "center" }}>{apiError}</Text>
             </View>
           )}
+
+          {/* Botón registrar */}
           <TouchableOpacity
             onPress={handleRegister}
             disabled={apiLoading}

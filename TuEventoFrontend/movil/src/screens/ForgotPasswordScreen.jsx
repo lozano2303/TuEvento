@@ -22,9 +22,11 @@ export default function ForgotPasswordScreen() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const GMAIL_PATTERN = /^[a-zA-Z0-9._%+\-]+@gmail\.com$/;
+
   const validate = () => {
     if (!email.trim()) { setError("El correo es requerido"); return false; }
-    if (!/\S+@\S+\.\S+/.test(email)) { setError("Correo inválido"); return false; }
+    if (!GMAIL_PATTERN.test(email.trim())) { setError("Solo se aceptan correos @gmail.com"); return false; }
     return true;
   };
 
@@ -36,11 +38,11 @@ export default function ForgotPasswordScreen() {
       const response = await fetch(`${API_URL}/auth/recover-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim() }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Error al enviar el correo");
-      navigation.navigate("ResetPassword", { email });
+      if (!data.success) throw new Error(data.message);
+      navigation.navigate("ResetPassword", { email: email.trim() });
     } catch (e) {
       setError(mapErrorMessage(e.message));
     } finally {
@@ -98,7 +100,7 @@ export default function ForgotPasswordScreen() {
             borderWidth: error ? 1 : 0, borderColor: "#EF4444",
           }}>
             <TextInput
-              placeholder="tucorreo@ejemplo.com"
+              placeholder="tucorreo@gmail.com"
               placeholderTextColor="#6B7280"
               value={email}
               onChangeText={(t) => { setEmail(t); setError(null); }}
