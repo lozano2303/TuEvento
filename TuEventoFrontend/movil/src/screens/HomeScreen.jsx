@@ -2,12 +2,14 @@ import { View, Text, ScrollView, TouchableOpacity, StatusBar, Dimensions } from 
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../theme";
 
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const { user, setShowLogoutModal } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const getDisplayName = (alias) => {
     if (!alias) return "Usuario";
@@ -41,11 +43,14 @@ export default function HomeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: "#1E0A3C" }}>
       <StatusBar barStyle="light-content" backgroundColor="#1E0A3C" />
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        style={{ paddingTop: insets.top > 0 ? insets.top + 16 : 0 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+      >
         {/* Hero */}
         <LinearGradient
           colors={["#2D1B4E", "#1E0A3C"]}
-          style={{ paddingTop: 60, paddingHorizontal: 24, paddingBottom: 32 }}
+          style={{ paddingTop: insets.top + 16, paddingHorizontal: 24, paddingBottom: 32 }}
         >
           <Text style={{ color: "#A78BFA", fontSize: 14, marginBottom: 4 }}>Bienvenido de vuelta 👋</Text>
           <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>

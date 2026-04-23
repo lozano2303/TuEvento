@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authService } from "../services/authService";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
@@ -11,6 +12,7 @@ import { colors } from "../theme";
 
 export default function ActivateScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const route = useRoute();
   const email = route.params?.email || "";
   const [code, setCode] = useState("");
@@ -34,7 +36,7 @@ export default function ActivateScreen() {
 
   return (
     <ScreenLayout>
-      <View style={{ flex: 1, paddingHorizontal: 28, paddingTop: 80 }}>
+      <View style={{ flex: 1, paddingHorizontal: 28, paddingTop: insets.top + 16 }}>
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
           <BackButton style={{ marginBottom: 0 }} />
           <View style={{ flex: 1, alignItems: "center" }}>
