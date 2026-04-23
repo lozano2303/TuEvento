@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView } from "react-nativ
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
@@ -13,6 +14,7 @@ const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}
 
 export default function ResetPasswordScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const route = useRoute();
   const email = route.params?.email || "";
   const [form, setForm] = useState({ code: "", newPassword: "", confirmPassword: "" });
@@ -103,7 +105,8 @@ export default function ResetPasswordScreen() {
   return (
     <ScreenLayout>
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingTop: 60 }}
+        style={{ paddingTop: insets.top > 0 ? insets.top + 16 : 0 }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingBottom: insets.bottom + 24 }}
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 32 }}>

@@ -6,6 +6,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { authService } from "../services/authService";
 import { oauthService } from "../services/oauthService";
@@ -16,6 +17,7 @@ import { colors } from "../theme";
 
 export default function LoginScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const { login, setSession, loading, error } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -68,7 +70,8 @@ export default function LoginScreen() {
   return (
     <ScreenLayout>
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingTop: 60 }}
+        style={{ paddingTop: insets.top > 0 ? insets.top + 16 : 0 }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingBottom: insets.bottom + 24 }}
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 40 }}>

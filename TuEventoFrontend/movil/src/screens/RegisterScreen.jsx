@@ -6,6 +6,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { authService } from "../services/authService";
 import { oauthService } from "../services/oauthService";
 import { mapErrorMessage, parseValidationErrors } from "../utils/errorMessages";
@@ -20,6 +21,7 @@ const FULL_NAME_PATTERN = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{2,}(\s[a-zA-Zá
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [form, setForm] = useState({ fullName: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -95,7 +97,8 @@ export default function RegisterScreen() {
   return (
     <ScreenLayout>
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingTop: 60 }}
+        style={{ paddingTop: insets.top > 0 ? insets.top + 16 : 0 }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingBottom: insets.bottom + 24 }}
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 40 }}>

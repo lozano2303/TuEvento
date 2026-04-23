@@ -5,17 +5,18 @@ import {
   Image,
   TouchableOpacity,
   Animated,
-  Dimensions,
+  useWindowDimensions,
   StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { decorativeStyle } from "../theme";
 
-const { width, height } = Dimensions.get("window");
-
 export default function LandingScreen() {
+  const { width, height } = useWindowDimensions();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
   const buttonAnim = useRef(new Animated.Value(0)).current;
@@ -69,19 +70,17 @@ export default function LandingScreen() {
       />
 
       {/* Contenido principal */}
-      <View style={{ flex: 1, paddingHorizontal: 28, justifyContent: "center" }}>
+      <View style={{ flex: 1, paddingHorizontal: 28, paddingTop: insets.top, paddingBottom: insets.bottom + 16, justifyContent: "space-between" }}>
 
         {/* Logo y nombre */}
         <Animated.View
-          style={[
-            decorativeStyle.noTouch,
-            {
+          style={{
+              flex: 0.35,
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
               alignItems: "center",
-              marginBottom: 48,
-            },
-          ]}
+              justifyContent: "center",
+            }}
         >
           <View
             style={[
@@ -135,14 +134,12 @@ export default function LandingScreen() {
 
         {/* Tarjeta de características */}
         <Animated.View
-          style={[
-            decorativeStyle.noTouch,
-            {
+          style={{
+              flex: 0.4,
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
-              marginBottom: 48,
-            },
-          ]}
+              justifyContent: "center",
+            }}
         >
           {[
             { emoji: "🗓️", title: "Crea eventos", desc: "Organiza cada detalle fácilmente" },
@@ -194,7 +191,7 @@ export default function LandingScreen() {
         </Animated.View>
 
         {/* Botones */}
-        <Animated.View style={{ opacity: buttonAnim }}>
+        <Animated.View style={{ flex: 0.25, justifyContent: "flex-end", opacity: buttonAnim }}>
           {/* Botón principal */}
           <TouchableOpacity
             onPress={() => navigation.navigate("Register")}
