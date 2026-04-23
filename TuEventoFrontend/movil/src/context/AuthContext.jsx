@@ -44,21 +44,25 @@ export function AuthProvider({ children }) {
     restoreSession();
   }, []);
 
+  const setSession = async (data) => {
+    await AsyncStorage.setItem("accessToken", data.accessToken);
+    await AsyncStorage.setItem("refreshToken", data.refreshToken);
+    const decoded = jwtDecode(data.accessToken);
+    const profile = await profileService.getByUserId(data.userId, data.accessToken);
+    setUser({
+      userId: data.userId,
+      alias: data.alias,
+      role: decoded.role,
+      fullName: profile.fullName,
+    });
+  };
+
   const login = async (email, password) => {
     setLoading(true);
     setError(null);
     try {
       const data = await authService.login(email, password);
-      await AsyncStorage.setItem("accessToken", data.accessToken);
-      await AsyncStorage.setItem("refreshToken", data.refreshToken);
-      const decoded = jwtDecode(data.accessToken);
-      const profile = await profileService.getByUserId(data.userId, data.accessToken);
-      setUser({
-        userId: data.userId,
-        alias: data.alias,
-        role: decoded.role,
-        fullName: profile.fullName,
-      });
+      await setSession(data);
       return { success: true };
     } catch (e) {
       const mapped = mapErrorMessage(e.message);
@@ -76,7 +80,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, logout, showLogoutModal, setShowLogoutModal, isLoading }}>
+    <AuthContext.Provider value={{ user, loading, error, login, logout, setSession, showLogoutModal, setShowLogoutModal, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
