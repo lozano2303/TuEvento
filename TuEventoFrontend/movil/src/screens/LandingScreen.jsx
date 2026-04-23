@@ -5,16 +5,18 @@ import {
   Image,
   TouchableOpacity,
   Animated,
-  Dimensions,
+  useWindowDimensions,
   StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
-
-const { width, height } = Dimensions.get("window");
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { decorativeStyle } from "../theme";
 
 export default function LandingScreen() {
+  const { width, height } = useWindowDimensions();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
   const buttonAnim = useRef(new Animated.Value(0)).current;
@@ -53,44 +55,51 @@ export default function LandingScreen() {
 
       {/* Ola decorativa superior */}
       <View
-        style={{
-          position: "absolute",
-          top: -60,
-          left: -40,
-          width: width + 80,
-          height: 200,
-          borderRadius: 120,
-          backgroundColor: "#7C3AED22",
-        }}
+        style={[
+          decorativeStyle.noTouch,
+          {
+            position: "absolute",
+            top: -60,
+            left: -40,
+            width: width + 80,
+            height: 200,
+            borderRadius: 120,
+            backgroundColor: "#7C3AED22",
+          },
+        ]}
       />
 
       {/* Contenido principal */}
-      <View style={{ flex: 1, paddingHorizontal: 28, justifyContent: "center" }}>
+      <View style={{ flex: 1, paddingHorizontal: 28, paddingTop: insets.top, paddingBottom: insets.bottom + 16, justifyContent: "space-between" }}>
 
         {/* Logo y nombre */}
         <Animated.View
           style={{
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-            alignItems: "center",
-            marginBottom: 48,
-          }}
-        >
-          <View
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: 20,
-              backgroundColor: "#7C3AED",
+              flex: 0.35,
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
               alignItems: "center",
               justifyContent: "center",
-              marginBottom: 16,
-              shadowColor: "#7C3AED",
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.5,
-              shadowRadius: 16,
-              elevation: 12,
             }}
+        >
+          <View
+            style={[
+              decorativeStyle.noTouch,
+              {
+                width: 80,
+                height: 80,
+                borderRadius: 20,
+                backgroundColor: "#7C3AED",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 16,
+                shadowColor: "#7C3AED",
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.5,
+                shadowRadius: 16,
+                elevation: 12,
+              },
+            ]}
           >
             <Image
               source={require("../../assets/logo.png")}
@@ -126,10 +135,11 @@ export default function LandingScreen() {
         {/* Tarjeta de características */}
         <Animated.View
           style={{
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-            marginBottom: 48,
-          }}
+              flex: 0.4,
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+              justifyContent: "center",
+            }}
         >
           {[
             { emoji: "🗓️", title: "Crea eventos", desc: "Organiza cada detalle fácilmente" },
@@ -138,27 +148,33 @@ export default function LandingScreen() {
           ].map((item, index) => (
             <View
               key={index}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "#2D1B4E",
-                borderRadius: 16,
-                padding: 16,
-                marginBottom: 12,
-                borderWidth: 1,
-                borderColor: "#3D2B5E",
-              }}
+              style={[
+                decorativeStyle.noTouch,
+                {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#2D1B4E",
+                  borderRadius: 16,
+                  padding: 16,
+                  marginBottom: 12,
+                  borderWidth: 1,
+                  borderColor: "#3D2B5E",
+                },
+              ]}
             >
               <View
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  backgroundColor: "#3D2B5E",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 14,
-                }}
+                style={[
+                  decorativeStyle.noTouch,
+                  {
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    backgroundColor: "#3D2B5E",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 14,
+                  },
+                ]}
               >
                 <Text style={{ fontSize: 20 }}>{item.emoji}</Text>
               </View>
@@ -175,7 +191,7 @@ export default function LandingScreen() {
         </Animated.View>
 
         {/* Botones */}
-        <Animated.View style={{ opacity: buttonAnim }}>
+        <Animated.View style={{ flex: 0.25, justifyContent: "flex-end", opacity: buttonAnim }}>
           {/* Botón principal */}
           <TouchableOpacity
             onPress={() => navigation.navigate("Register")}
@@ -224,15 +240,18 @@ export default function LandingScreen() {
 
       {/* Ola decorativa inferior */}
       <View
-        style={{
-          position: "absolute",
-          bottom: -40,
-          left: -20,
-          width: width + 40,
-          height: 140,
-          borderRadius: 80,
-          backgroundColor: "#7C3AED33",
-        }}
+        style={[
+          decorativeStyle.noTouch,
+          {
+            position: "absolute",
+            bottom: -40,
+            left: -20,
+            width: width + 40,
+            height: 140,
+            borderRadius: 80,
+            backgroundColor: "#7C3AED33",
+          },
+        ]}
       />
     </View>
   );
