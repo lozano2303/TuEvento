@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { authService } from "../services/authService";
 import { mapErrorMessage } from "../utils/errorMessages";
+import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
 import { colors } from "../theme";
 
@@ -34,18 +35,18 @@ export default function ActivateScreen() {
   return (
     <ScreenLayout>
       <View style={{ flex: 1, paddingHorizontal: 28, paddingTop: 80 }}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", marginBottom: 32, borderWidth: 1, borderColor: colors.surfaceAlt }}
-        >
-          <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
+          <BackButton style={{ marginBottom: 0 }} />
+          <View style={{ flex: 1, alignItems: "center" }}>
+            <Text style={{ color: colors.textPrimary, fontSize: 26, fontWeight: "800" }}>
+              Activa tu cuenta
+            </Text>
+          </View>
+          <View style={{ width: 40 }} />
+        </View>
 
         <Ionicons name="mail-outline" size={48} color={colors.primary} style={{ marginBottom: 20 }} />
 
-        <Text style={{ color: colors.textPrimary, fontSize: 26, fontWeight: "800", marginBottom: 10 }}>
-          Activa tu cuenta
-        </Text>
         <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 8 }}>Enviamos un código a:</Text>
         <Text style={{ color: colors.accent, fontSize: 15, fontWeight: "600", marginBottom: 32 }}>{email}</Text>
 

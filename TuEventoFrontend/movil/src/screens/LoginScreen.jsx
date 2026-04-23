@@ -10,6 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import { authService } from "../services/authService";
 import { oauthService } from "../services/oauthService";
 import { mapErrorMessage } from "../utils/errorMessages";
+import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
 import { colors } from "../theme";
 
@@ -70,9 +71,18 @@ export default function LoginScreen() {
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingTop: 60 }}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={{ color: colors.textPrimary, fontSize: 28, fontWeight: "800", textAlign: "center", marginBottom: 40 }}>
-          Iniciar Sesión
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 40 }}>
+          <BackButton
+            onPress={() => navigation.navigate("Landing")}
+            style={{ marginBottom: 0 }}
+          />
+          <View style={{ flex: 1, alignItems: "center" }}>
+            <Text style={{ color: colors.textPrimary, fontSize: 28, fontWeight: "800" }}>
+              Iniciar Sesión
+            </Text>
+          </View>
+          <View style={{ width: 40 }} />
+        </View>
 
         {/* Email */}
         <Text style={{ color: colors.textPrimary, fontWeight: "600", marginBottom: 8 }}>

@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { mapErrorMessage } from "../utils/errorMessages";
+import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
 import { colors } from "../theme";
 
@@ -105,20 +106,21 @@ export default function ResetPasswordScreen() {
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingTop: 60 }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Botón volver */}
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", marginBottom: 24, borderWidth: 1, borderColor: colors.surfaceAlt }}
-        >
-          <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 32 }}>
+          <BackButton style={{ marginBottom: 0 }} />
+          <View style={{ flex: 1, alignItems: "center" }}>
+            <Text style={{ color: colors.textPrimary, fontSize: 26, fontWeight: "800" }}>
+              Nueva contraseña
+            </Text>
+          </View>
+          <View style={{ width: 40 }} />
+        </View>
 
         {/* Header */}
         <View style={{ alignItems: "center", marginBottom: 32 }}>
           <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: colors.surfaceAlt, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
             <Ionicons name="key-outline" size={32} color={colors.primary} />
           </View>
-          <Text style={{ color: colors.textPrimary, fontSize: 26, fontWeight: "800", marginBottom: 8 }}>Nueva contraseña</Text>
           <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: "center", lineHeight: 22 }}>
             Ingresa el código que enviamos a{"\n"}
             <Text style={{ color: colors.accent, fontWeight: "600" }}>{email}</Text>

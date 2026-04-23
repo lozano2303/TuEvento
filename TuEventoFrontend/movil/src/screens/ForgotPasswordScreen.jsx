@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { mapErrorMessage } from "../utils/errorMessages";
+import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
 import { colors } from "../theme";
 
@@ -48,20 +49,21 @@ export default function ForgotPasswordScreen() {
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 28, paddingTop: 60 }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Botón volver */}
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center", marginBottom: 24, borderWidth: 1, borderColor: colors.surfaceAlt }}
-        >
-          <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 32 }}>
+          <BackButton style={{ marginBottom: 0 }} />
+          <View style={{ flex: 1, alignItems: "center" }}>
+            <Text style={{ color: colors.textPrimary, fontSize: 26, fontWeight: "800" }}>
+              Recuperar acceso
+            </Text>
+          </View>
+          <View style={{ width: 40 }} />
+        </View>
 
         {/* Header */}
         <View style={{ alignItems: "center", marginBottom: 32 }}>
           <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: colors.surfaceAlt, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
             <Ionicons name="lock-closed-outline" size={32} color={colors.primary} />
           </View>
-          <Text style={{ color: colors.textPrimary, fontSize: 26, fontWeight: "800", marginBottom: 8 }}>Recuperar acceso</Text>
           <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: "center", lineHeight: 22 }}>
             Ingresa tu correo y te enviaremos un código para restablecer tu contraseña.
           </Text>
