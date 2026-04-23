@@ -1,11 +1,8 @@
-import { View, Text, ScrollView, TouchableOpacity, StatusBar } from "react-native";
+import { View, Text, ScrollView, StatusBar } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import BackButton from "../components/BackButton";
 
 export default function TermsScreen() {
-  const navigation = useNavigation();
-
   const sections = [
     {
       title: "1. Aceptación de los Términos",
@@ -67,19 +64,13 @@ export default function TermsScreen() {
           paddingTop: 56, paddingHorizontal: 24, paddingBottom: 20,
           borderBottomWidth: 1, borderBottomColor: "#3D2B5E",
         }}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{
-              width: 40, height: 40, borderRadius: 20,
-              backgroundColor: "#2D1B4E", alignItems: "center",
-              justifyContent: "center", borderWidth: 1, borderColor: "#3D2B5E",
-            }}
-          >
-            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={{ color: "#FFFFFF", fontSize: 20, fontWeight: "700", marginLeft: 16 }}>
-            Términos y Condiciones
-          </Text>
+          <BackButton style={{ marginBottom: 0, backgroundColor: "#2D1B4E", borderColor: "#3D2B5E" }} />
+          <View style={{ flex: 1, alignItems: "center" }}>
+            <Text style={{ color: "#FFFFFF", fontSize: 20, fontWeight: "700" }}>
+              Términos y Condiciones
+            </Text>
+          </View>
+          <View style={{ width: 40 }} />
         </View>
 
         <ScrollView contentContainerStyle={{ padding: 24 }}>

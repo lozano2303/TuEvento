@@ -2,11 +2,12 @@ import { View, Text, ScrollView, TouchableOpacity, StatusBar, Dimensions } from 
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
+import { colors } from "../theme";
 
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, setShowLogoutModal } = useAuth();
 
   const getDisplayName = (alias) => {
     if (!alias) return "Usuario";
@@ -28,6 +29,7 @@ export default function HomeScreen() {
     }
   };
   const roleBadge = getRoleBadge(user?.role);
+  const shouldShowLogoutText = `${userName} ${roleBadge.label}`.length <= 24;
 
   const quickActions = [
     { icon: "search-outline", label: "Buscar eventos", color: "#7C3AED" },
@@ -46,19 +48,48 @@ export default function HomeScreen() {
           style={{ paddingTop: 60, paddingHorizontal: 24, paddingBottom: 32 }}
         >
           <Text style={{ color: "#A78BFA", fontSize: 14, marginBottom: 4 }}>Bienvenido de vuelta 👋</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <Text style={{ color: "#FFFFFF", fontSize: 26, fontWeight: "800" }}>
-              {userName}
-            </Text>
-            <View style={{
-              backgroundColor: roleBadge.bg,
-              borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
-              borderWidth: 1, borderColor: roleBadge.color,
-            }}>
-              <Text style={{ color: roleBadge.color, fontSize: 12, fontWeight: "800", letterSpacing: 0.5 }}>
-                {roleBadge.label}
-              </Text>
+          <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <Text style={{ color: "#FFFFFF", fontSize: 26, fontWeight: "800" }}>
+                  {userName}
+                </Text>
+                <View style={{
+                  backgroundColor: roleBadge.bg,
+                  borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5,
+                  borderWidth: 1, borderColor: roleBadge.color,
+                }}>
+                  <Text style={{ color: roleBadge.color, fontSize: 12, fontWeight: "800", letterSpacing: 0.5 }}>
+                    {roleBadge.label}
+                  </Text>
+                </View>
+              </View>
             </View>
+            <TouchableOpacity
+              onPress={() => setShowLogoutModal(true)}
+              activeOpacity={0.7}
+              style={{
+                minWidth: 44,
+                minHeight: 44,
+                paddingHorizontal: shouldShowLogoutText ? 12 : 10,
+                paddingVertical: 10,
+                borderRadius: 22,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.surfaceAlt,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: shouldShowLogoutText ? 6 : 0,
+              }}
+            >
+              <Ionicons name="log-out-outline" size={20} color={colors.textSecondary} />
+              {shouldShowLogoutText ? (
+                <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: "600" }}>
+                  Salir
+                </Text>
+              ) : null}
+            </TouchableOpacity>
           </View>
           <Text style={{ color: "#9CA3AF", fontSize: 14, marginTop: 6 }}>
             Descubre y vive experiencias únicas
