@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.theme.application.usecase;
 
 import com.capysoft.tuevento.modules.theme.application.dto.response.ResolvedPaletteResponse;
+import com.capysoft.tuevento.modules.theme.application.port.in.ActivateThemePort;
 import com.capysoft.tuevento.modules.theme.application.port.in.GetActivePalettePort;
 import com.capysoft.tuevento.modules.theme.domain.model.Theme;
 import com.capysoft.tuevento.modules.theme.domain.model.ThemeCustomization;
