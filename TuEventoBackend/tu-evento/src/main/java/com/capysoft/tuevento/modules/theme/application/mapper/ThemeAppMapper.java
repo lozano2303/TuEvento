@@ -13,5 +13,6 @@ public interface ThemeAppMapper {
     @Mapping(source = "id", target = "id")
     ThemeResponse toThemeResponse(Theme theme);
 
+    @Mapping(source = "id", target = "logId")
     ThemeLogResponse toThemeLogResponse(ThemeLog log);
 }
