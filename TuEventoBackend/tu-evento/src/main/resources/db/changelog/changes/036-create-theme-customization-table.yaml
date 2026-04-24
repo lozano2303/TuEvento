@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: 036-create-theme-customization-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: theme_customization
+            columns:
+              - column:
+                  name: customization_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_theme_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: property
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: value
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+        - addForeignKeyConstraint:
+            baseTableName: theme_customization
+            baseColumnNames: user_theme_id
+            referencedTableName: user_theme
+            referencedColumnNames: user_theme_id
+            constraintName: fk_theme_customization_user_theme
+        - addUniqueConstraint:
+            tableName: theme_customization
+            columnNames: user_theme_id, property
+            constraintName: uq_theme_customization_user_theme_property

@@ -46,6 +46,10 @@ public class SecurityConfig {
             "/v3/api-docs/**"
     };
 
+    private static final String[] PUBLIC_GET_ENDPOINTS = {
+            "/api/v1/themes"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
@@ -55,10 +59,22 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                PUBLIC_GET_ENDPOINTS).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST,
                                 "/api/v1/geolocation/sites").hasAnyAuthority("ADMIN", "ORGANIZER")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT,
                                 "/api/v1/geolocation/sites/**").hasAnyAuthority("ADMIN", "ORGANIZER")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/v1/themes/activate/**").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                "/api/v1/themes/my-active").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT,
+                                "/api/v1/themes/my-active/customize").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE,
+                                "/api/v1/themes/my-active/customize/**").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                "/api/v1/themes/my-active/log").authenticated()
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
