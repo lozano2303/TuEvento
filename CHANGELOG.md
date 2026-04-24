@@ -4,6 +4,44 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [develop] - 2026-04-24
+
+### Theme module
+#### Added
+- Liquibase changeset 034: created `theme` table (id, name, description, default_palette jsonb)
+- Liquibase changeset 035: created `user_theme` table with FK to `app_user` and `theme`; `is_active` flag controls the single active theme per user
+- Liquibase changeset 036: created `theme_customization` table with FK to `user_theme`; stores per-property overrides as key/value pairs
+- Liquibase changeset 037: created `theme_log` table with FK to `user_theme`; append-only audit log of UPDATE and RESET actions
+- Liquibase changeset 038: seed data — 4 base themes with full `default_palette` JSON: `DARK` (deep purple, platform identity), `LIGHT`, `VIBRANT`, `ACCESSIBLE`
+- Domain models: `Theme`, `UserTheme`, `ThemeCustomization`, `ThemeLog` — pure POJOs, no JPA, no Jackson
+- Domain repository interfaces: `ThemeRepository`, `UserThemeRepository`, `ThemeCustomizationRepository`, `ThemeLogRepository` — pure interfaces, no Spring Data
+- Domain events: `ThemeActivatedEvent`, `ThemeCustomizedEvent`, `ThemeCustomizationResetEvent` — immutable, primitive IDs only
+- JPA entities: `ThemeEntity`, `UserThemeEntity`, `ThemeCustomizationEntity`, `ThemeLogEntity` — no `@ManyToOne`, FKs as plain `Integer`; no `JpaAuditingEntity` inheritance; `ThemeLogEntity` is append-only (no `@Setter`)
+- JPA repositories: `ThemeJpaRepository`, `UserThemeJpaRepository` (`@Modifying @Query` for bulk deactivation), `ThemeCustomizationJpaRepository`, `ThemeLogJpaRepository`
+- `ThemeInfraMapper`: single MapStruct mapper in `infrastructure/persistence/mapper/` handling all four entity↔domain conversions with explicit `@Mapping` for PK renames
+- Domain repository implementations: `ThemeRepositoryImpl`, `UserThemeRepositoryImpl`, `ThemeCustomizationRepositoryImpl`, `ThemeLogRepositoryImpl`
+- Application ports in: `GetThemesPort`, `ActivateThemePort`, `GetActivePalettePort`, `CustomizeThemePort`, `ResetCustomizationPort`, `GetThemeLogPort` — pure interfaces, no Spring
+- DTOs response: `ThemeResponse` (id, name, description — no palette exposed), `ResolvedPaletteResponse` (themeId, themeName, userThemeId, `Map<String, Object>` palette), `ThemeLogResponse`
+- DTO request: `CustomizeThemeRequest` (property `@NotBlank`, value `@NotBlank` + `@Pattern` for hex/rgb/rgba)
+- `ThemeAppMapper`: MapStruct mapper for `Theme → ThemeResponse` and `ThemeLog → ThemeLogResponse`
+- `ThemePaletteResolver`: `@Component` that parses `defaultPalette` JSON via `ObjectMapper` and overlays user customizations — decoupled from use cases
+- Use cases: `GetThemesUseCase`, `ActivateThemeUseCase` (deactivates current, reactivates or creates `UserTheme`, publishes event), `GetActivePaletteUseCase` (auto-activates `DARK` theme if no active theme found), `CustomizeThemeUseCase` (upsert customization, audit log, event), `ResetCustomizationUseCase` (delete customization, audit log with `oldValue`, event), `GetThemeLogUseCase`
+- `ThemeController`: base path `/api/v1/themes`, 6 endpoints (see below)
+- `SecurityConfig` updated: `GET /api/v1/themes` added to public routes via `PUBLIC_GET_ENDPOINTS`; authenticated routes added as explicit `requestMatchers` by HTTP method
+
+#### Endpoints
+- `GET /api/v1/themes` — public; returns list of available themes
+- `POST /api/v1/themes/activate/{themeId}` — authenticated; activates theme for current user, returns resolved palette
+- `GET /api/v1/themes/my-active` — authenticated; returns current user's resolved palette (activates DARK by default if none set)
+- `PUT /api/v1/themes/my-active/customize` — authenticated; overrides a palette property, returns updated resolved palette
+- `DELETE /api/v1/themes/my-active/customize/{property}` — authenticated; resets a property to theme default, returns updated resolved palette
+- `GET /api/v1/themes/my-active/log` — authenticated; returns audit log of theme changes for current user
+
+#### Design decisions
+- Resolved palette strategy: backend merges `default_palette` + user customizations and returns a ready-to-consume `Map<String, Object>` — both web (React + Tailwind v4) and mobile (React Native + NativeWind) share the same single source of truth
+- `DARK` is the default theme (deep purple identity palette matching the existing frontend); auto-activated on first `GET /my-active` if the user has no active theme
+- `ThemePaletteResolver` kept as a separate `@Component` to avoid coupling merge logic to individual use cases
+
 ## [develop] - 2026-04-07
 
 ### Security module
