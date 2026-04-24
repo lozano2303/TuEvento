@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 034-create-theme-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: theme
+            columns:
+              - column:
+                  name: theme_id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: description
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: default_palette
+                  type: JSONB
+                  constraints:
+                    nullable: false
