@@ -1,0 +1,53 @@
+databaseChangeLog:
+  - changeSet:
+      id: 035-create-user-theme-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: user_theme
+            columns:
+              - column:
+                  name: user_theme_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: theme_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+        - addForeignKeyConstraint:
+            baseTableName: user_theme
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_user_theme_user
+        - addForeignKeyConstraint:
+            baseTableName: user_theme
+            baseColumnNames: theme_id
+            referencedTableName: theme
+            referencedColumnNames: theme_id
+            constraintName: fk_user_theme_theme
+        - addUniqueConstraint:
+            tableName: user_theme
+            columnNames: user_id, theme_id
+            constraintName: uq_user_theme_user_theme

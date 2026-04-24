@@ -1,0 +1,68 @@
+databaseChangeLog:
+  - changeSet:
+      id: 038-seed-themes-dark
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: DARK
+              - column:
+                  name: description
+                  value: Tema por defecto — identidad de Tu Evento
+              - column:
+                  name: default_palette
+                  value: '{"background":"#1E0A3C","surface":"#2D1B4E","surfaceAlt":"#3D2B5E","primary":"#7C3AED","primaryDark":"#6D28D9","accent":"#A78BFA","textPrimary":"#FFFFFF","textSecondary":"#9CA3AF","textMuted":"#6B7280","error":"#EF4444","errorBg":"#EF444422","success":"#059669","successBg":"#05966922","gradientBg":["#1E0A3C","#2D1B4E","#1E0A3C"],"gradientPrimary":["#7C3AED","#6D28D9"],"borderRadius":"8px","fontFamily":"Inter"}'
+
+  - changeSet:
+      id: 038-seed-themes-light
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: LIGHT
+              - column:
+                  name: description
+                  value: Tema claro con identidad de Tu Evento
+              - column:
+                  name: default_palette
+                  value: '{"background":"#FFFFFF","surface":"#F5F3FF","surfaceAlt":"#EDE9FE","primary":"#7C3AED","primaryDark":"#6D28D9","accent":"#8B5CF6","textPrimary":"#1A1A2E","textSecondary":"#4B5563","textMuted":"#9CA3AF","error":"#EF4444","errorBg":"#FEE2E2","success":"#059669","successBg":"#D1FAE5","gradientBg":["#F5F3FF","#EDE9FE","#F5F3FF"],"gradientPrimary":["#7C3AED","#6D28D9"],"borderRadius":"8px","fontFamily":"Inter"}'
+
+  - changeSet:
+      id: 038-seed-themes-vibrant
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: VIBRANT
+              - column:
+                  name: description
+                  value: Tema vibrante con colores llamativos
+              - column:
+                  name: default_palette
+                  value: '{"background":"#0D0D0D","surface":"#1A1A2E","surfaceAlt":"#16213E","primary":"#FF4081","primaryDark":"#E91E63","accent":"#FFEB3B","textPrimary":"#FFFFFF","textSecondary":"#B0BEC5","textMuted":"#78909C","error":"#FF5252","errorBg":"#FF525222","success":"#69F0AE","successBg":"#69F0AE22","gradientBg":["#0D0D0D","#1A1A2E","#0D0D0D"],"gradientPrimary":["#FF4081","#E91E63"],"borderRadius":"12px","fontFamily":"Poppins"}'
+
+  - changeSet:
+      id: 038-seed-themes-accessible
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: ACCESSIBLE
+              - column:
+                  name: description
+                  value: Tema de alto contraste para accesibilidad
+              - column:
+                  name: default_palette
+                  value: '{"background":"#FFFFFF","surface":"#F0F4FF","surfaceAlt":"#E8F0FE","primary":"#005FCC","primaryDark":"#004499","accent":"#E65100","textPrimary":"#000000","textSecondary":"#1A1A1A","textMuted":"#333333","error":"#C62828","errorBg":"#FFEBEE","success":"#1B5E20","successBg":"#E8F5E9","gradientBg":["#F0F4FF","#E8F0FE","#F0F4FF"],"gradientPrimary":["#005FCC","#004499"],"borderRadius":"4px","fontFamily":"Arial"}'
