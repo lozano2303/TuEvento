@@ -7,11 +7,12 @@ import Navbar from './layouts/Navbar'
 import OrganizerPetitionForm from './pages/OrganizerPetitionForm'
 import AdminDashboard from './pages/AdminDashboard'
 import ProfilePage from './pages/ProfilePage';
+import CodeVerification from './pages/CodeVerification';
 
 
 function AppContent() {
   const location = useLocation();
-  const showNavbar = !['/login', '/profile'].includes(location.pathname);
+  const showNavbar = !['/login', '/profile', '/verification'].includes(location.pathname);
 
   return (
     <>
@@ -24,6 +25,7 @@ function AppContent() {
         <Route path="/organizer-petition" element={<OrganizerPetitionForm />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/verification" element={<CodeVerification />} />
       </Routes>
     </>
   );
