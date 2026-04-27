@@ -47,8 +47,19 @@ public class AuthController {
     @PostMapping("/activate")
     public ResponseEntity<ApiResponse<Void>> activate(
             @Valid @RequestBody ActivateAccountRequest request) {
-        activateAccountPort.activate(request);
-        return ResponseEntity.ok(ApiResponse.ok("Account activated successfully"));
+        try {
+            System.out.println("=== AUTH CONTROLLER ACTIVATE ===");
+            System.out.println("Email: " + request.getEmail());
+            System.out.println("Activation Code: " + request.getActivationCode());
+            System.out.println("About to call activateAccountPort.activate()");
+            activateAccountPort.activate(request);
+            System.out.println("activateAccountPort.activate() completed successfully");
+            return ResponseEntity.ok(ApiResponse.ok("Account activated successfully"));
+        } catch (Exception e) {
+            System.out.println("ERROR IN AUTH CONTROLLER: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @Operation(summary = "Login with email and password")
@@ -111,4 +122,12 @@ public class AuthController {
         LoginResponse response = oauthLoginPort.login(provider, code);
         return ResponseEntity.ok(ApiResponse.ok("OAuth login successful", response));
     }
+
+    @Operation(summary = "Resend activation code to email")
+@PostMapping("/resend-activation")
+public ResponseEntity<ApiResponse<Void>> resendActivation(
+        @Valid @RequestBody ResendActivationRequest request) {
+    registerUserPort.resendActivationCode(request.getEmail());
+    return ResponseEntity.ok(ApiResponse.ok("Se ha enviado un nuevo código de activación a tu correo"));
+}
 }
