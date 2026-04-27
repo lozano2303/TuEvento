@@ -45,7 +45,13 @@ export default function ForgotPassword({ onBackToLogin }) {
         setError(result.message || "Error al enviar el correo");
       }
     } catch (err) {
-      setError("Error de conexión");
+      const errorMsg = err.message || "Error de conexión";
+      // Traducir mensajes del backend
+      if (errorMsg === "This email is not registered in the system") {
+        setError("Este correo no está registrado en el sistema");
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -104,7 +110,7 @@ export default function ForgotPassword({ onBackToLogin }) {
             <img
               src="/src/assets/images/fondologin.png"
               alt="Ilustración escritorio"
-              className="w-380 h-130 mx-auto drop-shadow-2xl"
+              className="w-full max-w-xs drop-shadow-2xl"
             />
           </div>
         </div>
@@ -129,22 +135,24 @@ export default function ForgotPassword({ onBackToLogin }) {
                 {fieldErrors.token && <p className="text-red-500 text-xs mt-1">{fieldErrors.token}</p>}
               </div>
 
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={(e) => handlePasswordChange(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 pr-12 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
-                  placeholder="Nueva contraseña"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+              <div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 pr-12 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                    placeholder="Nueva contraseña"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
                 {fieldErrors.newPassword && <p className="text-red-500 text-xs mt-1">{fieldErrors.newPassword}</p>}
                 
                 {newPassword.length > 0 && (
@@ -261,7 +269,7 @@ export default function ForgotPassword({ onBackToLogin }) {
           <img
             src="/src/assets/images/fondologin.png"
             alt="Ilustración escritorio"
-            className="w-380 h-130 mx-auto drop-shadow-2xl"
+            className="w-full max-w-xs drop-shadow-2xl"
           />
         </div>
       </div>
