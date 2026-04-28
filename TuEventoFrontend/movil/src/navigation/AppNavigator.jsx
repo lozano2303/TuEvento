@@ -13,6 +13,7 @@ import TermsScreen from "../screens/TermsScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import HomeScreen from "../screens/HomeScreen";
+import ThemeSelectScreen from "../screens/ThemeSelectScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -154,6 +155,7 @@ export default function AppNavigator() {
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
         <Stack.Screen name="Activate" component={ActivateScreen} />
+        <Stack.Screen name="ThemeSelect" component={ThemeSelectScreen} />
         <Stack.Screen
           name="Main"
           component={MainTabs}
