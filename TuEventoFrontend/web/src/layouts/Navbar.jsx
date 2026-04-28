@@ -17,7 +17,13 @@ export default function Navbar() {
     const storedRole = localStorage.getItem('role');
     const storedEmail = localStorage.getItem('userEmail');
     if (token && storedUserID) {
-      setUserData({ userId: storedUserID, alias: storedAlias || storedName, fullName: storedName, role: storedRole, email: storedEmail });
+      setUserData({
+        userId: storedUserID,
+        alias: storedAlias || storedName,
+        fullName: storedName,
+        role: storedRole,
+        email: storedEmail
+      });
     }
   }, []);
 
@@ -53,17 +59,17 @@ export default function Navbar() {
   const isOrganizerOrAdmin = isOrganizer || isAdmin;
 
   const roleBadge = isAdmin
-    ? { label: 'Admin', bg: 'bg-red-500' }
+    ? { label: 'Admin', badgeClass: 'bg-red-500 text-white', roleText: 'Administrador' }
     : isOrganizer
-    ? { label: 'Organizador', bg: 'bg-blue-500' }
-    : { label: 'Usuario', bg: 'bg-gray-500' };
+    ? { label: 'Org', badgeClass: 'bg-violet-500 text-white', roleText: 'Organizador' }
+    : { label: 'User', badgeClass: 'bg-gray-500 text-white', roleText: 'Usuario' };
 
   return (
     <>
       <header className="bg-gray-900 border-b border-gray-700 shadow-lg sticky top-0 z-40">
         <nav className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
 
-          {/* Logo / Nombre */}
+          {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <span className="text-xl font-bold text-white group-hover:text-purple-400 transition-colors">
               Tu <span className="text-purple-400 group-hover:text-white transition-colors">Evento</span>
@@ -103,33 +109,48 @@ export default function Navbar() {
 
           {/* Lado derecho */}
           <div className="flex items-center gap-3">
-
-            {/* Usuario logueado */}
             {userData ? (
               <div className="relative user-modal">
+
+                {/* Pill */}
                 <button
                   onClick={() => setIsModalOpen(!isModalOpen)}
-                  className="user-pill text-white transition-colors"
+                  className="group inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full
+                    bg-purple-600 hover:bg-purple-700
+                    transition-all duration-200 outline-none cursor-pointer"
                 >
-                  <span className="name">
+                  {/* Avatar */}
+                  <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-white/20">
+                    <User className="w-4 h-4 text-white" />
+                  </span>
+
+                  {/* Nombre */}
+                  <span className="text-[13px] font-medium text-white leading-none">
                     {(() => {
                       const name = userData.fullName || userData.alias || '';
                       const parts = name.split(' ');
                       return parts.length >= 2 ? parts.slice(0, 2).join(' ') : (parts[0] || userData.alias || name);
                     })()}
                   </span>
-                  <span className={`role ${roleBadge.bg}`}>
+
+                  {/* Badge */}
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${roleBadge.badgeClass}`}>
                     {roleBadge.label}
                   </span>
+
+                  {/* Chevron */}
+                  <svg
+                    className="w-3.5 h-3.5 text-white/60 group-hover:text-white transition-colors"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                  >
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
                 </button>
 
                 {/* Dropdown */}
                 {isModalOpen && (
                   <div className="user-modal absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
-                    
-                    {/* Opciones */}
                     <div className="p-3 space-y-1.5">
-                      
 
                       {isOrganizer && (
                         <Link
@@ -140,7 +161,6 @@ export default function Navbar() {
                           <Calendar className="w-4 h-4" />
                           Mis Eventos
                         </Link>
-                        
                       )}
 
                       <Link
