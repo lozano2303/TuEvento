@@ -66,7 +66,7 @@ export default function Login() {
   };
 
   const strengthLabel = ['', 'Muy débil', 'Débil', 'Buena', 'Fuerte'];
-  const strengthColor = ['', 'text-orange-400', 'text-yellow-400', 'text-blue-400', 'text-green-400'];
+  const strengthColor = ['', 'text-red-400', 'text-yellow-400', 'text-blue-400', 'text-green-400'];
   const barColors = [
     '',
     'bg-red-500',
@@ -290,16 +290,16 @@ export default function Login() {
                     required
                   />
                 </div>
-                {fieldErrors.name && <p className="text-orange-400 text-xs mt-1">{fieldErrors.name}</p>}
+                {fieldErrors.name && <p className="text-red-400 text-xs mt-1">{fieldErrors.name}</p>}
                 {formData.name && !fieldErrors.name && (
                   <div className="mt-1 space-y-0.5">
                     {formData.name.trim().split(/\s+/).length < 2 && (
-                      <p className="text-xs text-orange-400 flex items-center">
+                      <p className="text-xs text-red-400 flex items-center">
                         <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Nombre y apellido
                       </p>
                     )}
                     {!formData.name.trim().split(/\s+/).every(w => w.length >= 3) && (
-                      <p className="text-xs text-orange-400 flex items-center">
+                      <p className="text-xs text-red-400 flex items-center">
                         <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Mínimo 3 caracteres por palabra
                       </p>
                     )}
@@ -320,11 +320,11 @@ export default function Login() {
                   required
                 />
               </div>
-              {fieldErrors.email && <p className="text-orange-400 text-xs mt-1">{fieldErrors.email}</p>}
+              {fieldErrors.email && <p className="text-red-400 text-xs mt-1">{fieldErrors.email}</p>}
               {formData.email && !fieldErrors.email && view !== 'login' && (
                 <div className="mt-1 space-y-0.5">
                   {!formData.email.trim().toLowerCase().endsWith('@gmail.com') && (
-                    <p className="text-xs text-orange-400 flex items-center">
+                    <p className="text-xs text-red-400 flex items-center">
                       <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Debe ser @gmail.com
                     </p>
                   )}
@@ -351,7 +351,7 @@ export default function Login() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {fieldErrors.password && <p className="text-orange-400 text-xs mt-1">{fieldErrors.password}</p>}
+              {fieldErrors.password && <p className="text-red-400 text-xs mt-1">{fieldErrors.password}</p>}
 
               {/* ── Requisitos de contraseña — SOLO en registro ── */}
               {view !== 'login' && formData.password.length > 0 && (
@@ -370,31 +370,24 @@ export default function Login() {
                     {strengthLabel[passwordStrength]}
                   </p>
                   <div className="mt-2 space-y-0.5">
-                    {formData.password.length < 8 && (
-                      <p className="text-xs text-orange-400 flex items-center">
-                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Mínimo 8 caracteres
-                      </p>
-                    )}
-                    {!/[A-Z]/.test(formData.password) && (
-                      <p className="text-xs text-orange-400 flex items-center">
-                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Una mayúscula
-                      </p>
-                    )}
-                    {!/[a-z]/.test(formData.password) && (
-                      <p className="text-xs text-orange-400 flex items-center">
-                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Una minúscula
-                      </p>
-                    )}
-                    {!/\d/.test(formData.password) && (
-                      <p className="text-xs text-orange-400 flex items-center">
-                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Un número
-                      </p>
-                    )}
-                    {!/[@$!%*?&]/.test(formData.password) && (
-                      <p className="text-xs text-orange-400 flex items-center">
-                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Un carácter especial (@$!%*?&)
-                      </p>
-                    )}
+                    {(() => {
+                      const missing = [];
+                      if (formData.password.length < 8) missing.push("8 caracteres");
+                      if (!/[A-Z]/.test(formData.password)) missing.push("mayúscula");
+                      if (!/[a-z]/.test(formData.password)) missing.push("minúscula");
+                      if (!/\d/.test(formData.password)) missing.push("número");
+                      if (!/[@$!%*?&]/.test(formData.password)) missing.push("carácter especial (@$!%*?&)");
+                      
+                      if (missing.length > 0) {
+                        return (
+                          <p className="text-xs text-red-400 flex items-center">
+                            <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>
+                            Debe contener {missing.join(", ")}
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
               )}
@@ -420,9 +413,9 @@ export default function Login() {
                     {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                {fieldErrors.confirmPassword && <p className="text-orange-400 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
+                {fieldErrors.confirmPassword && <p className="text-red-400 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
                 {formData.confirmPassword && !fieldErrors.confirmPassword && formData.confirmPassword !== formData.password && (
-                  <p className="text-xs mt-1 text-orange-400 flex items-center">
+                  <p className="text-xs mt-1 text-red-400 flex items-center">
                     <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Las contraseñas no coinciden
                   </p>
                 )}

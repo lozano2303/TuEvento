@@ -91,7 +91,17 @@ export default function ForgotPassword({ onBackToLogin }) {
         setError(result.message || "Error al restablecer contraseña");
       }
     } catch (err) {
-      setError("Error de conexión");
+      const errorMsg = err.message || "Error de conexión";
+      // Traducir mensajes del backend
+      if (errorMsg.includes("tamaño debe estar entre 8 y 8") || errorMsg.includes("size must be between 8 and 8")) {
+        setError("El código de recuperación debe tener 8 caracteres");
+      } else if (errorMsg.includes("Invalid code") || errorMsg.includes("Código inválido") || errorMsg.includes("invalid code")) {
+        setError("El código de recuperación es incorrecto");
+      } else if (errorMsg.includes("expired") || errorMsg.includes("expirado")) {
+        setError("El código de recuperación ha expirado. Solicita uno nuevo");
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -170,6 +180,26 @@ export default function ForgotPassword({ onBackToLogin }) {
                     <p className={`text-xs font-medium transition-colors duration-300 ${strengthColor[passwordStrength]}`}>
                       {strengthLabel[passwordStrength]}
                     </p>
+                    <div className="mt-2 space-y-0.5">
+                      {(() => {
+                        const missing = [];
+                        if (newPassword.length < 8) missing.push("8 caracteres");
+                        if (!/[A-Z]/.test(newPassword)) missing.push("mayúscula");
+                        if (!/[a-z]/.test(newPassword)) missing.push("minúscula");
+                        if (!/\d/.test(newPassword)) missing.push("número");
+                        if (!/[@$!%*?&]/.test(newPassword)) missing.push("carácter especial (@$!%*?&)");
+                        
+                        if (missing.length > 0) {
+                          return (
+                            <p className="text-xs text-red-400 flex items-center">
+                              <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>
+                              Debe contener {missing.join(", ")}
+                            </p>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
                   </div>
                 )}
               </div>
