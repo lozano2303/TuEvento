@@ -3,13 +3,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
   const { user, setShowLogoutModal } = useAuth();
   const insets = useSafeAreaInsets();
+  const { palette } = useTheme();
 
   const getDisplayName = (alias) => {
     if (!alias) return "Usuario";
@@ -23,40 +24,40 @@ export default function HomeScreen() {
   const getRoleBadge = (role) => {
     switch (role) {
       case "ADMIN":
-        return { label: "⚡ Admin", color: "#EF4444", bg: "#EF444433" };
+        return { label: "⚡ Admin", color: palette.error, bg: palette.error + "33" };
       case "ORGANIZER":
         return { label: "🎯 Organizador", color: "#3B82F6", bg: "#3B82F633" };
       default:
-        return { label: "👤 Usuario", color: "#A78BFA", bg: "#7C3AED33" };
+        return { label: "👤 Usuario", color: palette.accent, bg: palette.primary + "33" };
     }
   };
   const roleBadge = getRoleBadge(user?.role);
   const shouldShowLogoutText = `${userName} ${roleBadge.label}`.length <= 24;
 
   const quickActions = [
-    { icon: "search-outline", label: "Buscar eventos", color: "#7C3AED" },
-    { icon: "ticket-outline", label: "Mis tickets", color: "#059669" },
+    { icon: "search-outline", label: "Buscar eventos", color: palette.primary },
+    { icon: "ticket-outline", label: "Mis tickets", color: palette.success },
     { icon: "heart-outline", label: "Favoritos", color: "#DC2626" },
     { icon: "notifications-outline", label: "Notificaciones", color: "#D97706" },
   ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#1E0A3C" }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1E0A3C" />
+    <View style={{ flex: 1, backgroundColor: palette.background }}>
+      <StatusBar barStyle="light-content" backgroundColor={palette.background} />
       <ScrollView
         style={{ paddingTop: insets.top > 0 ? insets.top + 16 : 0 }}
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
       >
         {/* Hero */}
         <LinearGradient
-          colors={["#2D1B4E", "#1E0A3C"]}
+          colors={[palette.surface, palette.background]}
           style={{ paddingTop: insets.top + 16, paddingHorizontal: 24, paddingBottom: 32 }}
         >
-          <Text style={{ color: "#A78BFA", fontSize: 14, marginBottom: 4 }}>Bienvenido de vuelta 👋</Text>
+          <Text style={{ color: palette.accent, fontSize: 14, marginBottom: 4 }}>Bienvenido de vuelta 👋</Text>
           <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <Text style={{ color: "#FFFFFF", fontSize: 26, fontWeight: "800" }}>
+                <Text style={{ color: palette.textPrimary, fontSize: 26, fontWeight: "800" }}>
                   {userName}
                 </Text>
                 <View style={{
@@ -79,24 +80,24 @@ export default function HomeScreen() {
                 paddingHorizontal: shouldShowLogoutText ? 12 : 10,
                 paddingVertical: 10,
                 borderRadius: 22,
-                backgroundColor: colors.surface,
+                backgroundColor: palette.surface,
                 borderWidth: 1,
-                borderColor: colors.surfaceAlt,
+                borderColor: palette.surfaceAlt,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: shouldShowLogoutText ? 6 : 0,
               }}
             >
-              <Ionicons name="log-out-outline" size={20} color={colors.textSecondary} />
+              <Ionicons name="log-out-outline" size={20} color={palette.textSecondary} />
               {shouldShowLogoutText ? (
-                <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: "600" }}>
+                <Text style={{ color: palette.textSecondary, fontSize: 13, fontWeight: "600" }}>
                   Salir
                 </Text>
               ) : null}
             </TouchableOpacity>
           </View>
-          <Text style={{ color: "#9CA3AF", fontSize: 14, marginTop: 6 }}>
+          <Text style={{ color: palette.textSecondary, fontSize: 14, marginTop: 6 }}>
             Descubre y vive experiencias únicas
           </Text>
 
@@ -105,18 +106,18 @@ export default function HomeScreen() {
             activeOpacity={0.85}
             style={{
               flexDirection: "row", alignItems: "center",
-              backgroundColor: "#3D2B5E", borderRadius: 14,
+              backgroundColor: palette.surfaceAlt, borderRadius: 14,
               padding: 14, marginTop: 24, gap: 10,
             }}
           >
-            <Ionicons name="search-outline" size={20} color="#6B7280" />
-            <Text style={{ color: "#6B7280", fontSize: 15 }}>Buscar eventos...</Text>
+            <Ionicons name="search-outline" size={20} color={palette.textMuted} />
+            <Text style={{ color: palette.textMuted, fontSize: 15 }}>Buscar eventos...</Text>
           </TouchableOpacity>
         </LinearGradient>
 
         {/* Accesos rápidos */}
         <View style={{ paddingHorizontal: 24, marginTop: 8 }}>
-          <Text style={{ color: "#FFFFFF", fontSize: 18, fontWeight: "700", marginBottom: 16 }}>
+          <Text style={{ color: palette.textPrimary, fontSize: 18, fontWeight: "700", marginBottom: 16 }}>
             Accesos rápidos
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
@@ -126,9 +127,9 @@ export default function HomeScreen() {
                 activeOpacity={0.85}
                 style={{
                   width: (width - 60) / 2,
-                  backgroundColor: "#2D1B4E", borderRadius: 16,
+                  backgroundColor: palette.surface, borderRadius: 16,
                   padding: 20, alignItems: "center",
-                  borderWidth: 1, borderColor: "#3D2B5E",
+                  borderWidth: 1, borderColor: palette.surfaceAlt,
                 }}
               >
                 <View style={{
@@ -138,7 +139,7 @@ export default function HomeScreen() {
                 }}>
                   <Ionicons name={action.icon} size={24} color={action.color} />
                 </View>
-                <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "600", textAlign: "center" }}>
+                <Text style={{ color: palette.textPrimary, fontSize: 13, fontWeight: "600", textAlign: "center" }}>
                   {action.label}
                 </Text>
               </TouchableOpacity>
@@ -148,19 +149,19 @@ export default function HomeScreen() {
 
         {/* Próximos eventos placeholder */}
         <View style={{ paddingHorizontal: 24, marginTop: 28 }}>
-          <Text style={{ color: "#FFFFFF", fontSize: 18, fontWeight: "700", marginBottom: 16 }}>
+          <Text style={{ color: palette.textPrimary, fontSize: 18, fontWeight: "700", marginBottom: 16 }}>
             Próximos eventos
           </Text>
           <View style={{
-            backgroundColor: "#2D1B4E", borderRadius: 16,
+            backgroundColor: palette.surface, borderRadius: 16,
             padding: 24, alignItems: "center",
-            borderWidth: 1, borderColor: "#3D2B5E",
+            borderWidth: 1, borderColor: palette.surfaceAlt,
           }}>
-            <Ionicons name="calendar-outline" size={40} color="#7C3AED" />
-            <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600", marginTop: 12 }}>
+            <Ionicons name="calendar-outline" size={40} color={palette.primary} />
+            <Text style={{ color: palette.textPrimary, fontSize: 15, fontWeight: "600", marginTop: 12 }}>
               Próximamente
             </Text>
-            <Text style={{ color: "#9CA3AF", fontSize: 13, marginTop: 6, textAlign: "center" }}>
+            <Text style={{ color: palette.textSecondary, fontSize: 13, marginTop: 6, textAlign: "center" }}>
               Los eventos aparecerán aquí cuando estén disponibles
             </Text>
           </View>
