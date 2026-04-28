@@ -1,11 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '../layouts/Navbar';
 import Footer from '../layouts/Footer';
+import { useTheme } from '../context/ThemeContext';
+import { getThemes, activateTheme, getActivePalette } from '../services/themeService';
+
+const THEME_PREVIEWS = {
+  DARK:       { background: "#1E0A3C", primary: "#7C3AED", accent: "#A78BFA" },
+  LIGHT:      { background: "#FFFFFF", primary: "#7C3AED", accent: "#8B5CF6" },
+  VIBRANT:    { background: "#0D0D0D", primary: "#FF4081", accent: "#FFEB3B" },
+  ACCESSIBLE: { background: "#FFFFFF", primary: "#005FCC", accent: "#E65100" }
+};
 
 const ProfilePage = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('es');
   const [selectedTheme, setSelectedTheme] = useState('default');
   const [loading, setLoading] = useState(false);
+  const [themes, setThemes] = useState([]);
+  const [activeThemeId, setActiveThemeId] = useState(null);
+  const [loadingTheme, setLoadingTheme] = useState(false);
+  const { refreshPalette } = useTheme();
 
   const [formData, setFormData] = useState({
     nombreCompleto: 'Francisco Rodríguez',
@@ -20,6 +33,38 @@ const ProfilePage = () => {
   const firstLetter = userName ? userName.charAt(0).toUpperCase() : 'F';
 
   const roleLabel = userRole === 'ADMIN' ? 'Administrador' : userRole === 'ORGANIZER' ? 'Organizador Premium' : 'Usuario';
+
+  useEffect(() => {
+    loadThemes();
+  }, []);
+
+  const loadThemes = async () => {
+    try {
+      const themesData = await getThemes();
+      setThemes(themesData);
+      
+      const activePalette = await getActivePalette();
+      if (activePalette && activePalette.themeId) {
+        setActiveThemeId(activePalette.themeId);
+      }
+    } catch (error) {
+      console.error('Error loading themes:', error);
+    }
+  };
+
+  const handleThemeChange = async (themeId) => {
+    setLoadingTheme(true);
+    try {
+      await activateTheme(themeId);
+      await refreshPalette();
+      setActiveThemeId(themeId);
+    } catch (error) {
+      console.error('Error activating theme:', error);
+      alert('Error al cambiar el tema');
+    } finally {
+      setLoadingTheme(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -171,18 +216,77 @@ const ProfilePage = () => {
               </h3>
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 rounded-xl bg-red-500/5 border border-red-500/20">
                 <div>
-                  <p className="font-bold text-red-400">Zona de Peligro</p>
+                  <p className="font-bold text-error">Zona de Peligro</p>
                   <p className="text-sm text-slate-400">Una vez que desactives tu cuenta, no podrás revertir esta acción.</p>
                 </div>
                 <div className="flex gap-3">
                   <button className="px-4 py-2 rounded-lg border border-red-500/50 text-red-500 text-sm font-bold hover:bg-red-500 hover:text-white transition-all">Desactivar Cuenta</button>
                   <button 
                     onClick={handleLogout}
-                    className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-all"
+                    className="px-4 py-2 rounded-lg bg-error text-white text-sm font-bold hover:bg-red-700 transition-all"
                   >
                     Cerrar Sesión
                   </button>
                 </div>
+              </div>
+            </section>
+
+            {/* Apariencia */}
+            <section className="rounded-2xl p-8" style={{ background: 'rgba(26, 17, 33, 0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(124, 23, 211, 0.2)' }}>
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#7c17d3">
+                  <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                </svg>
+                Apariencia
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {themes.map((theme) => {
+                  const preview = THEME_PREVIEWS[theme.name] || THEME_PREVIEWS.DARK;
+                  const isActive = activeThemeId === theme.id;
+                  
+                  return (
+                    <button
+                      key={theme.id}
+                      onClick={() => handleThemeChange(theme.id)}
+                      disabled={loadingTheme}
+                      className={`relative rounded-xl p-4 text-left transition-all ${
+                        isActive 
+                          ? 'bg-[rgba(124,23,211,0.15)] border-2 border-[#7c17d3]' 
+                          : 'bg-[rgba(15,15,26,0.5)] border-2 border-[#372447] hover:border-[rgba(124,23,211,0.4)]'
+                      } ${loadingTheme ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className={`text-sm font-bold ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                          {theme.name}
+                        </span>
+                        {isActive && (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c17d3">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                          </svg>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-8 h-8 rounded-full border-2 border-white/20" 
+                          style={{ background: preview.background }}
+                        />
+                        <div 
+                          className="w-8 h-8 rounded-full border-2 border-white/20" 
+                          style={{ background: preview.primary }}
+                        />
+                        <div 
+                          className="w-8 h-8 rounded-full border-2 border-white/20" 
+                          style={{ background: preview.accent }}
+                        />
+                      </div>
+                      {isActive && (
+                        <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(124, 23, 211, 0.3)', color: '#c4b5fd' }}>
+                          Activo
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </section>
           </div>
