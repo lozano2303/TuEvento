@@ -12,7 +12,7 @@ import { oauthService } from "../services/oauthService";
 import { mapErrorMessage, parseValidationErrors } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 // Mismas reglas que ValidationUtils.java del backend
 const GMAIL_PATTERN = /^[a-zA-Z0-9._%+\-]+@gmail\.com$/;
@@ -22,6 +22,7 @@ const FULL_NAME_PATTERN = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{2,}(\s[a-zA-Zá
 export default function RegisterScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { palette } = useTheme();
   const [form, setForm] = useState({ fullName: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -88,10 +89,10 @@ export default function RegisterScreen() {
   };
 
   const inputStyle = (field) => ({
-    backgroundColor: colors.surface,
+    backgroundColor: palette.surface,
     borderRadius: 12,
     borderWidth: errors[field] ? 1 : 0,
-    borderColor: colors.error,
+    borderColor: palette.error,
   });
 
   return (
@@ -104,7 +105,7 @@ export default function RegisterScreen() {
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 40 }}>
           <BackButton style={{ marginBottom: 0 }} />
           <View style={{ flex: 1, alignItems: "center" }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 28, fontWeight: "800" }}>
+            <Text style={{ color: palette.textPrimary, fontSize: 28, fontWeight: "800" }}>
               Crea tu cuenta
             </Text>
           </View>
@@ -112,58 +113,58 @@ export default function RegisterScreen() {
         </View>
 
         {/* Nombre completo */}
-        <Text style={{ color: colors.textPrimary, fontWeight: "600", marginBottom: 8 }}>Nombre completo</Text>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginBottom: 8 }}>Nombre completo</Text>
         <View style={inputStyle("fullName")}>
           <TextInput
             placeholder="Ej: Juan Pérez"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={palette.textMuted}
             value={form.fullName}
             onChangeText={(t) => update("fullName", t)}
             maxLength={100}
-            style={{ color: colors.textPrimary, padding: 16, fontSize: 15 }}
+            style={{ color: palette.textPrimary, padding: 16, fontSize: 15 }}
           />
         </View>
-        {errors.fullName && <Text style={{ color: colors.error, fontSize: 13, marginTop: 4 }}>{errors.fullName}</Text>}
+        {errors.fullName && <Text style={{ color: palette.error, fontSize: 13, marginTop: 4 }}>{errors.fullName}</Text>}
 
         {/* Email */}
-        <Text style={{ color: colors.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>Correo electrónico</Text>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>Correo electrónico</Text>
         <View style={inputStyle("email")}>
           <TextInput
             placeholder="tucorreo@gmail.com"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={palette.textMuted}
             value={form.email}
             onChangeText={(t) => update("email", t)}
             maxLength={255}
-            style={{ color: colors.textPrimary, padding: 16, fontSize: 15 }}
+            style={{ color: palette.textPrimary, padding: 16, fontSize: 15 }}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
           />
         </View>
-        {errors.email && <Text style={{ color: colors.error, fontSize: 13, marginTop: 4 }}>{errors.email}</Text>}
+        {errors.email && <Text style={{ color: palette.error, fontSize: 13, marginTop: 4 }}>{errors.email}</Text>}
 
         {/* Contraseña */}
-        <Text style={{ color: colors.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>Contraseña</Text>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>Contraseña</Text>
         <View style={[inputStyle("password"), { flexDirection: "row", alignItems: "center" }]}>
           <TextInput
             placeholder="Mín. 8 chars, mayúscula, número y símbolo"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={palette.textMuted}
             value={form.password}
             onChangeText={(t) => update("password", t)}
             secureTextEntry={!showPassword}
             maxLength={100}
-            style={{ color: colors.textPrimary, padding: 16, fontSize: 15, flex: 1 }}
+            style={{ color: palette.textPrimary, padding: 16, fontSize: 15, flex: 1 }}
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ paddingRight: 16 }}>
-            <Ionicons name={showPassword ? "eye" : "eye-off"} size={22} color={colors.textMuted} />
+            <Ionicons name={showPassword ? "eye" : "eye-off"} size={22} color={palette.textMuted} />
           </TouchableOpacity>
         </View>
-        {errors.password && <Text style={{ color: colors.error, fontSize: 13, marginTop: 4 }}>{errors.password}</Text>}
+        {errors.password && <Text style={{ color: palette.error, fontSize: 13, marginTop: 4 }}>{errors.password}</Text>}
 
         {/* Error API */}
         {apiError && (
-          <View style={{ backgroundColor: colors.errorBg, borderRadius: 10, padding: 12, marginTop: 16, borderWidth: 1, borderColor: colors.error }}>
-            <Text style={{ color: colors.error, fontSize: 13, textAlign: "center" }}>{apiError}</Text>
+          <View style={{ backgroundColor: palette.errorBg, borderRadius: 10, padding: 12, marginTop: 16, borderWidth: 1, borderColor: palette.error }}>
+            <Text style={{ color: palette.error, fontSize: 13, textAlign: "center" }}>{apiError}</Text>
           </View>
         )}
 
@@ -172,17 +173,17 @@ export default function RegisterScreen() {
           onPress={handleRegister}
           disabled={apiLoading}
           activeOpacity={0.85}
-          style={{ borderRadius: 14, overflow: "hidden", marginTop: 32, shadowColor: colors.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8, opacity: apiLoading ? 0.7 : 1 }}
+          style={{ borderRadius: 14, overflow: "hidden", marginTop: 32, shadowColor: palette.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8, opacity: apiLoading ? 0.7 : 1 }}
         >
-          <LinearGradient colors={colors.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: "center" }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "700" }}>
+          <LinearGradient colors={palette.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: "center" }}>
+            <Text style={{ color: palette.textPrimary, fontSize: 16, fontWeight: "700" }}>
               {apiLoading ? "Creando cuenta..." : "Siguiente"}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
 
         {/* OAuth */}
-        <Text style={{ color: colors.textSecondary, textAlign: "center", marginTop: 24, marginBottom: 16 }}>Regístrate con:</Text>
+        <Text style={{ color: palette.textSecondary, textAlign: "center", marginTop: 24, marginBottom: 16 }}>Regístrate con:</Text>
         <View style={{ gap: 12 }}>
           <TouchableOpacity 
             activeOpacity={0.85} 
@@ -218,9 +219,9 @@ export default function RegisterScreen() {
 
         {/* Términos */}
         <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 24, marginBottom: 40, flexWrap: "wrap" }}>
-          <Text style={{ color: colors.textMuted, fontSize: 13 }}>Crea tu cuenta bajo nuestros </Text>
+          <Text style={{ color: palette.textMuted, fontSize: 13 }}>Crea tu cuenta bajo nuestros </Text>
           <TouchableOpacity onPress={() => navigation.navigate("Terms")}>
-            <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>términos y condiciones del sistema</Text>
+            <Text style={{ color: palette.primary, fontSize: 13, fontWeight: "600" }}>términos y condiciones del sistema</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

@@ -1,10 +1,11 @@
 import { TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 export default function BackButton({ onPress, style }) {
   const navigation = useNavigation();
+  const { palette } = useTheme();
 
   const handlePress = () => {
     if (onPress) {
@@ -24,18 +25,18 @@ export default function BackButton({ onPress, style }) {
           width: 40,
           height: 40,
           borderRadius: 20,
-          backgroundColor: colors.surface,
+          backgroundColor: palette.surface,
           alignItems: "center",
           justifyContent: "center",
           alignSelf: "flex-start",
           marginBottom: 24,
           borderWidth: 1,
-          borderColor: colors.surfaceAlt,
+          borderColor: palette.surfaceAlt,
         },
         style,
       ]}
     >
-      <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
+      <Ionicons name="arrow-back" size={20} color={palette.textPrimary} />
     </TouchableOpacity>
   );
 }
