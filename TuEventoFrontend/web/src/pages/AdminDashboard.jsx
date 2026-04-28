@@ -74,39 +74,39 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-purple-400 text-xl">Cargando...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-accent text-xl">Cargando...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-white mb-8">Panel de Administración</h1>
+        <h1 className="text-3xl font-bold text-textPrimary mb-8">Panel de Administración</h1>
         
         {error && (
-          <div className="bg-red-500/10 border border-red-500 rounded-lg p-4 mb-4">
-            <p className="text-red-400">{error}</p>
+          <div className="bg-error/10 border border-error rounded-lg p-4 mb-4">
+            <p className="text-error">{error}</p>
           </div>
         )}
 
-        <div className="bg-gray-800 rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+        <div className="bg-surface rounded-xl p-6">
+          <h2 className="text-xl font-semibold text-textPrimary mb-4 flex items-center gap-2">
             <Users className="w-5 h-5" />
             Solicitudes de Organizadores
           </h2>
           
           {requests.length === 0 ? (
-            <p className="text-gray-400">No hay solicitudes pendientes</p>
+            <p className="text-textMuted">No hay solicitudes pendientes</p>
           ) : (
             <div className="space-y-4">
               {requests.map((request) => (
-                <div key={request.id} className="bg-gray-700 rounded-lg p-4 flex items-center justify-between">
+                <div key={request.id} className="bg-surfaceAlt rounded-lg p-4 flex items-center justify-between">
                   <div>
-                    <p className="text-white font-medium">{request.fullName}</p>
-                    <p className="text-gray-400 text-sm">{request.email}</p>
-                    <p className="text-gray-500 text-xs mt-1">
+                    <p className="text-textPrimary font-medium">{request.fullName}</p>
+                    <p className="text-textMuted text-sm">{request.email}</p>
+                    <p className="text-textMuted text-xs mt-1">
                       Fecha: {new Date(request.createdAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
                     <button
                       onClick={() => handleApprove(request.id)}
                       disabled={processing === request.id}
-                      className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                      className="bg-success hover:bg-success disabled:opacity-50 text-textPrimary px-4 py-2 rounded-lg flex items-center gap-2"
                     >
                       <CheckCircle className="w-4 h-4" />
                       Aprobar
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
                     <button
                       onClick={() => handleReject(request.id)}
                       disabled={processing === request.id}
-                      className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                      className="bg-error hover:bg-error disabled:opacity-50 text-textPrimary px-4 py-2 rounded-lg flex items-center gap-2"
                     >
                       <XCircle className="w-4 h-4" />
                       Rechazar

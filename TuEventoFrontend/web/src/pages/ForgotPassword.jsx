@@ -109,11 +109,11 @@ export default function ForgotPassword({ onBackToLogin }) {
           </div>
         </div>
 
-        <div className="w-1/2 bg-gray-900 flex items-center justify-center p-8">
+        <div className="w-1/2 bg-background flex items-center justify-center p-8">
           <div className="w-full max-w-sm space-y-6">
             <div className="text-center space-y-2">
-              <h1 className="text-2xl font-bold text-white mb-1">Restablecer contraseña</h1>
-              <p className="text-gray-400 text-sm">Ingresa el código recibido y tu nueva contraseña.</p>
+              <h1 className="text-2xl font-bold text-textPrimary mb-1">Restablecer contraseña</h1>
+              <p className="text-textMuted text-sm">Ingresa el código recibido y tu nueva contraseña.</p>
             </div>
 
             <form onSubmit={handleResetSubmit} className="space-y-4">
@@ -122,7 +122,7 @@ export default function ForgotPassword({ onBackToLogin }) {
                   type="text"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                  className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
                   placeholder="Código de recuperación"
                   required
                 />
@@ -134,14 +134,14 @@ export default function ForgotPassword({ onBackToLogin }) {
                   type={showPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => handlePasswordChange(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 pr-12 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                  className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
                   placeholder="Nueva contraseña"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-textMuted hover:text-textSecondary"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -154,7 +154,7 @@ export default function ForgotPassword({ onBackToLogin }) {
                         <div
                           key={i}
                           className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                            passwordStrength >= i ? barColors[passwordStrength] : 'bg-gray-700'
+                            passwordStrength >= i ? barColors[passwordStrength] : 'bg-surfaceAlt'
                           }`}
                         />
                       ))}
@@ -171,14 +171,14 @@ export default function ForgotPassword({ onBackToLogin }) {
                   type={showPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 pr-12 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                  className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
                   placeholder="Confirmar nueva contraseña"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-textMuted hover:text-textSecondary"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -190,7 +190,7 @@ export default function ForgotPassword({ onBackToLogin }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 text-sm"
+                className="w-full bg-gradient-to-r from-primary to-primaryDark hover:from-primaryDark hover:to-primaryDark disabled:opacity-50 disabled:cursor-not-allowed text-textPrimary font-semibold py-3 px-4 rounded-lg transition-all duration-300 text-sm"
               >
                 {loading ? "Restableciendo..." : "RESTABLECER"}
               </button>
@@ -200,7 +200,7 @@ export default function ForgotPassword({ onBackToLogin }) {
               <button
                 type="button"
                 onClick={onBackToLogin}
-                className="text-purple-400 hover:text-purple-300"
+                className="text-accent hover:text-purple-300"
               >
                 Volver al inicio de sesión
               </button>
@@ -266,11 +266,11 @@ export default function ForgotPassword({ onBackToLogin }) {
         </div>
       </div>
 
-      <div className="w-1/2 bg-gray-900 flex items-center justify-center p-8">
+      <div className="w-1/2 bg-background flex items-center justify-center p-8">
         <div className="w-full max-w-sm space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold text-white mb-1">Olvidé mi contraseña</h1>
-            <p className="text-gray-400 text-sm">Ingresa tu correo electrónico para recibir instrucciones.</p>
+            <h1 className="text-2xl font-bold text-textPrimary mb-1">Olvidé mi contraseña</h1>
+            <p className="text-textMuted text-sm">Ingresa tu correo electrónico para recibir instrucciones.</p>
           </div>
 
           <form onSubmit={handleEmailSubmit} className="space-y-4">
@@ -279,7 +279,7 @@ export default function ForgotPassword({ onBackToLogin }) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
                 placeholder="Correo electrónico"
                 required
               />
@@ -290,7 +290,7 @@ export default function ForgotPassword({ onBackToLogin }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 text-sm"
+              className="w-full bg-gradient-to-r from-primary to-primaryDark hover:from-primaryDark hover:to-primaryDark disabled:opacity-50 disabled:cursor-not-allowed text-textPrimary font-semibold py-3 px-4 rounded-lg transition-all duration-300 text-sm"
             >
               {loading ? "Enviando..." : "ENVIAR"}
             </button>
@@ -300,7 +300,7 @@ export default function ForgotPassword({ onBackToLogin }) {
             <button
               type="button"
               onClick={onBackToLogin}
-              className="text-purple-400 hover:text-purple-300"
+              className="text-accent hover:text-purple-300"
             >
               Volver al inicio de sesión
             </button>

@@ -42,11 +42,11 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
           </div>
         </div>
 
-        <div className="w-full md:w-1/2 bg-gray-900 flex items-center justify-center p-4 md:p-8">
+        <div className="w-full md:w-1/2 bg-background flex items-center justify-center p-4 md:p-8">
           <div className="w-full max-w-sm space-y-6">
             <div className="text-center space-y-2">
-              <h1 className="text-xl md:text-2xl font-bold text-white mb-1">Activar Cuenta</h1>
-              <p className="text-gray-400 text-xs md:text-sm">Ingresa tu email para reenviar el código de activación</p>
+              <h1 className="text-xl md:text-2xl font-bold text-textPrimary mb-1">Activar Cuenta</h1>
+              <p className="text-textMuted text-xs md:text-sm">Ingresa tu email para reenviar el código de activación</p>
             </div>
 
             <form onSubmit={async (e) => {
@@ -71,18 +71,18 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                   type="email"
                   value={activationEmail}
                   onChange={(e) => setActivationEmail(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                  className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
                   placeholder="Correo electrónico"
                   required
                 />
               </div>
 
-              {resendMessage && <p className="text-purple-400 text-sm">{resendMessage}</p>}
+              {resendMessage && <p className="text-accent text-sm">{resendMessage}</p>}
 
               <button
                 type="submit"
                 disabled={resendLoading}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 text-sm flex items-center justify-center space-x-2"
+                className="w-full bg-gradient-to-r from-primary to-primaryDark hover:from-primaryDark hover:to-primaryDark disabled:opacity-50 disabled:cursor-not-allowed text-textPrimary font-semibold py-3 px-4 rounded-lg transition-all duration-300 text-sm flex items-center justify-center space-x-2"
               >
                 {resendLoading ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -181,11 +181,11 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
         </div>
       </div>
 
-      <div className="w-full md:w-1/2 bg-gray-900 flex items-center justify-center p-4 md:p-8">
+      <div className="w-full md:w-1/2 bg-background flex items-center justify-center p-4 md:p-8">
         <div className="w-full max-w-sm space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-xl md:text-2xl font-bold text-white mb-1">Verificar Cuenta</h1>
-            <p className="text-gray-400 text-xs md:text-sm">Ingresa el código de activación enviado a tu correo</p>
+            <h1 className="text-xl md:text-2xl font-bold text-textPrimary mb-1">Verificar Cuenta</h1>
+            <p className="text-textMuted text-xs md:text-sm">Ingresa el código de activación enviado a tu correo</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -194,7 +194,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
                 placeholder="Código de activación"
                 required
               />
@@ -207,7 +207,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 text-sm"
+              className="w-full bg-gradient-to-r from-primary to-primaryDark hover:from-primaryDark hover:to-primaryDark disabled:opacity-50 disabled:cursor-not-allowed text-textPrimary font-semibold py-3 px-4 rounded-lg transition-all duration-300 text-sm"
             >
               {loading ? "Verificando..." : "VERIFICAR"}
             </button>
@@ -217,7 +217,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                 type="button"
                 onClick={handleResendCode}
                 disabled={resendLoading}
-                className="text-purple-400 hover:text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center space-x-1 mx-auto"
+                className="text-accent hover:text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center space-x-1 mx-auto"
               >
                 {resendLoading ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -233,7 +233,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
             <button
               type="button"
               onClick={onBackToLogin}
-              className="text-purple-400 hover:text-purple-300"
+              className="text-accent hover:text-purple-300"
             >
               Volver al inicio de sesión
             </button>

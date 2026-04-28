@@ -93,8 +93,8 @@ export default function ChangePassword({ onClose }) {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold text-white mb-4">Cambiar Contraseña</h2>
+      <div className="bg-surface rounded-lg p-6 w-full max-w-md">
+        <h2 className="text-xl font-bold text-textPrimary mb-4">Cambiar Contraseña</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -103,7 +103,7 @@ export default function ChangePassword({ onClose }) {
               name="oldPassword"
               value={formData.oldPassword}
               onChange={handleInputChange}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+              className="w-full bg-surfaceAlt border border-gray-600 rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
               placeholder="Contraseña actual"
               required
             />
@@ -116,7 +116,7 @@ export default function ChangePassword({ onClose }) {
               name="newPassword"
               value={formData.newPassword}
               onChange={handleInputChange}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 pr-12 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+              className="w-full bg-surfaceAlt border border-gray-600 rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
               placeholder="Nueva contraseña"
               required
             />
@@ -136,7 +136,7 @@ export default function ChangePassword({ onClose }) {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
-              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 pr-12 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+              className="w-full bg-surfaceAlt border border-gray-600 rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
               placeholder="Confirmar nueva contraseña"
               required
             />
@@ -156,14 +156,14 @@ export default function ChangePassword({ onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 bg-surfaceAlt hover:bg-surfaceAlt text-textPrimary py-2 px-4 rounded-lg transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 bg-primary hover:bg-primaryDark disabled:opacity-50 disabled:cursor-not-allowed text-textPrimary py-2 px-4 rounded-lg transition-colors"
             >
               {loading ? "Cambiando..." : "Cambiar"}
             </button>
