@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, StatusBar, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../context/ThemeContext";
@@ -8,6 +9,7 @@ import { useTheme } from "../context/ThemeContext";
 const { width } = Dimensions.get("window");
 
 export default function HomeScreen() {
+  const navigation = useNavigation();
   const { user, setShowLogoutModal } = useAuth();
   const insets = useSafeAreaInsets();
   const { palette } = useTheme();
@@ -165,6 +167,49 @@ export default function HomeScreen() {
               Los eventos aparecerán aquí cuando estén disponibles
             </Text>
           </View>
+        </View>
+
+        {/* Configuración */}
+        <View style={{ paddingHorizontal: 24, marginTop: 28 }}>
+          <Text style={{ color: palette.textPrimary, fontSize: 18, fontWeight: "700", marginBottom: 16 }}>
+            Configuración
+          </Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("ThemeSelect")}
+            activeOpacity={0.85}
+            style={{
+              backgroundColor: palette.surface,
+              borderRadius: 16,
+              padding: 16,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              borderWidth: 1,
+              borderColor: palette.surfaceAlt,
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                backgroundColor: palette.primary + "22",
+                alignItems: "center",
+                justifyContent: "center",
+              }}>
+                <Ionicons name="color-palette-outline" size={22} color={palette.primary} />
+              </View>
+              <View>
+                <Text style={{ color: palette.textPrimary, fontSize: 15, fontWeight: "600" }}>
+                  Apariencia
+                </Text>
+                <Text style={{ color: palette.textSecondary, fontSize: 12, marginTop: 2 }}>
+                  Personaliza el tema de la app
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={palette.textMuted} />
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
