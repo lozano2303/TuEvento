@@ -62,31 +62,31 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="bg-gray-900 border-b border-gray-700 shadow-lg sticky top-0 z-40">
+      <header className="bg-background border-b border-surfaceAlt shadow-lg sticky top-0 z-40">
         <nav className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
 
           {/* Logo / Nombre */}
           <Link to="/" className="flex items-center gap-2 group">
-            <span className="text-xl font-bold text-white group-hover:text-purple-400 transition-colors">
-              Tu <span className="text-purple-400 group-hover:text-white transition-colors">Evento</span>
+            <span className="text-xl font-bold text-textPrimary group-hover:text-accent transition-colors">
+              Tu <span className="text-accent group-hover:text-textPrimary transition-colors">Evento</span>
             </span>
           </Link>
 
           {/* Links centrales */}
           <div className="hidden md:flex items-center gap-12 text-sm font-medium flex-1 justify-center">
-            <Link to="/" className="text-gray-300 hover:text-purple-400 transition-colors">
+            <Link to="/" className="text-textSecondary hover:text-accent transition-colors">
               {t('home')}
             </Link>
-            <Link to="/nosotros" className="text-gray-300 hover:text-purple-400 transition-colors">
+            <Link to="/nosotros" className="text-textSecondary hover:text-accent transition-colors">
               {t('aboutUs')}
             </Link>
-            <Link to="/events" className="text-gray-300 hover:text-purple-400 transition-colors">
+            <Link to="/events" className="text-textSecondary hover:text-accent transition-colors">
               {t('events')}
             </Link>
             {userData && isOrganizer && (
               <button
                 onClick={() => navigate('/event-management')}
-                className="flex items-center gap-1 text-gray-300 hover:text-purple-400 transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
+                className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
                 {t('createEvent')}
@@ -95,7 +95,7 @@ export default function Navbar() {
             {userData && !isAdmin && !isOrganizer && (
               <button
                 onClick={() => navigate('/organizer-petition')}
-                className="flex items-center gap-1 text-gray-300 hover:text-purple-400 transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
+                className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
                 {t('organizerPetition')}
@@ -111,7 +111,7 @@ export default function Navbar() {
               <div className="relative user-modal">
                 <button
                   onClick={() => setIsModalOpen(!isModalOpen)}
-                  className="user-pill text-white transition-colors"
+                  className="user-pill text-textPrimary transition-colors"
                 >
                   <span className="name">
                     {(() => {
@@ -127,7 +127,7 @@ export default function Navbar() {
 
                 {/* Dropdown */}
                 {isModalOpen && (
-                  <div className="user-modal absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                  <div className="user-modal absolute right-0 mt-2 w-64 bg-surface border border-surfaceAlt rounded-2xl shadow-2xl z-50 overflow-hidden">
                     
                     {/* Opciones */}
                     <div className="p-3 space-y-1.5">
@@ -148,7 +148,7 @@ export default function Navbar() {
                       <Link
                         to="/profile"
                         onClick={() => setIsModalOpen(false)}
-                        className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
+                        className="w-full bg-primary hover:bg-primaryDark text-textPrimary text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
                       >
                         <User className="w-4 h-4" />
                         {t('profile')}
@@ -158,7 +158,7 @@ export default function Navbar() {
                         <Link
                           to="/admin-dashboard"
                           onClick={() => setIsModalOpen(false)}
-                          className="w-full bg-red-600 hover:bg-red-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
+                          className="w-full bg-error hover:bg-error text-textPrimary text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
                         >
                           <Calendar className="w-4 h-4" />
                           Panel de Gestión
@@ -169,7 +169,7 @@ export default function Navbar() {
                         <Link
                           to="/wallet"
                           onClick={() => setIsModalOpen(false)}
-                          className="w-full bg-green-600 hover:bg-green-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
+                          className="w-full bg-success hover:bg-success text-textPrimary text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
                         >
                           <Wallet className="w-4 h-4" />
                           {t('wallet')}
@@ -182,7 +182,7 @@ export default function Navbar() {
             ) : (
               <Link
                 to="/login"
-                className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium px-5 py-2 rounded-xl transition-colors"
+                className="bg-primary hover:bg-primaryDark text-textPrimary text-sm font-medium px-5 py-2 rounded-xl transition-colors"
               >
                 Iniciar sesión
               </Link>
