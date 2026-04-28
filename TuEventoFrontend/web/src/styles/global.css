@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+:root {
+  --color-background: #1E0A3C;
+  --color-surface: #2D1B4E;
+  --color-surfaceAlt: #3D2B5E;
+  --color-primary: #7C3AED;
+  --color-primaryDark: #6D28D9;
+  --color-accent: #A78BFA;
+  --color-textPrimary: #FFFFFF;
+  --color-textSecondary: #9CA3AF;
+  --color-textMuted: #6B7280;
+  --color-error: #EF4444;
+  --color-success: #059669;
+  --color-borderRadius: 8px;
+  --color-fontFamily: Inter;
+}
+
 input[type="password"]::-ms-reveal {
     display: none;
 }

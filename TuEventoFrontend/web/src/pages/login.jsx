@@ -4,8 +4,10 @@ import { loginUser, registerUser } from "../services/Login.js";
 import { getProfileByUserId } from "../services/ProfileService.js";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Login() {
+  const { refreshPalette } = useTheme();
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [view, setView] = useState('login');
   const [userID, setUserID] = useState(null);
@@ -149,6 +151,7 @@ export default function Login() {
           localStorage.setItem('alias', result.data.alias);
           localStorage.setItem('userEmail', formData.email);
           localStorage.setItem('role', result.data.role || 'USER');
+          refreshPalette(); // carga la paleta del usuario recién autenticado
           
           let userProfile = { userId: result.data.userID, alias: result.data.alias, email: formData.email };
           try {
