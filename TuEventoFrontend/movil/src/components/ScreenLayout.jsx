@@ -1,6 +1,6 @@
 import { View, StatusBar, KeyboardAvoidingView, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 /**
  * Wrapper base para todas las pantallas.
@@ -8,11 +8,13 @@ import { colors } from "../theme";
  * sin que el gradiente participe en el layout del teclado.
  */
 export default function ScreenLayout({ children }) {
+  const { palette } = useTheme();
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+    <View style={{ flex: 1, backgroundColor: palette.background }}>
+      <StatusBar barStyle="light-content" backgroundColor={palette.background} />
       <LinearGradient
-        colors={colors.gradientBg}
+        colors={palette.gradientBg}
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
       />
       <KeyboardAvoidingView
