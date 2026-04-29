@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tu-evento-config
+data:
+  application.yml: |
+    spring:
+      profiles:
+        active: prod
+      datasource:
+        url: jdbc:postgresql://postgres-service:5432/tuevento
+        driver-class-name: org.postgresql.Driver
+      jpa:
+        hibernate:
+          ddl-auto: validate
+        properties:
+          hibernate:
+            dialect: org.hibernate.dialect.PostgreSQLDialect
+      redis:
+        host: redis-service
+        port: 6379
+    
+    server:
+      port: 8080
+    
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info,metrics
+      endpoint:
+        health:
+          show-details: always
+    
+    logging:
+      level:
+        com.capysoft.tuevento: INFO
+        org.springframework.security: DEBUG
+      pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+        file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    
+    springdoc:
+      api-docs:
+        path: /api-docs
+      swagger-ui:
+        path: /swagger-ui.html
