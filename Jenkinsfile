@@ -14,18 +14,6 @@ pipeline {
             }
         }
         
-        stage('Setup') {
-            steps {
-                sh '''
-                    echo "Setting up environment..."
-                    whoami
-                    apt-get update
-                    apt-get install -y maven
-                    mvn --version
-                '''
-            }
-        }
-        
         stage('Clean & Compile') {
             steps {
                 dir('TuEventoBackend/tu-evento') {
