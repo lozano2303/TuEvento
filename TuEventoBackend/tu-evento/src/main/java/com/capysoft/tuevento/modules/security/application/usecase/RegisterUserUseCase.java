@@ -63,7 +63,40 @@ public class RegisterUserUseCase implements RegisterUserPort {
         ValidationUtils.validateFullName(request.getFullName());
 
         if (loginCredentialsRepository.existsByEmail(request.getEmail())) {
-            throw new BusinessException("EMAIL_ALREADY_EXISTS", "Email is already registered");
+            LoginCredentials existingCredentials = loginCredentialsRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new NotFoundException("EMAIL_NOT_FOUND", "Email not found"));
+
+            if (existingCredentials.getUser().getActivated() == null || !existingCredentials.getUser().getActivated()) {
+                String code = codeGenerator.generateActivationCode();
+                System.out.println("=== RESENDING ACTIVATION CODE ===");
+                System.out.println("Email: " + request.getEmail());
+                System.out.println("New code: " + code);
+                System.out.println("User ID: " + existingCredentials.getUser().getUserId());
+
+                // CORRECCIÓN: eliminar códigos anteriores antes de crear uno nuevo
+                accountActivationRepository.deleteByUserId(existingCredentials.getUser().getUserId());
+
+                var savedActivation = accountActivationRepository.save(AccountActivation.builder()
+                        .user(existingCredentials.getUser())
+                        .activationCode(code)
+                        .activated(false)
+                        .createdAt(LocalDateTime.now())
+                        .expiresAt(LocalDateTime.now().plusHours(ACTIVATION_EXPIRY_HOURS))
+                        .build());
+
+                System.out.println("Saved activation ID: " + savedActivation.getAccountActivationId());
+
+                try {
+                    emailNotification.sendActivationEmail(request.getEmail(), existingCredentials.getUser().getAlias(), code);
+                } catch (Exception e) {
+                    log.error("Failed to send activation email to {} — user exists but email not sent: {}",
+                            request.getEmail(), e.getMessage());
+                }
+
+                throw new BusinessException("EMAIL_NOT_ACTIVATED", "This email is already registered but not activated. If you want to activate your account, click on Resend activation email");
+            }
+
+            throw new BusinessException("EMAIL_ALREADY_EXISTS", "This email is already registered and activated. Please login with your credentials.");
         }
 
         Role role = roleRepository.findByCode(DEFAULT_ROLE_CODE)
@@ -87,7 +120,6 @@ public class RegisterUserUseCase implements RegisterUserPort {
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .build());
 
-        // Profile creation is atomic with registration — if it fails the whole transaction rolls back
         createProfilePort.create(CreateProfileRequest.builder()
                 .userId(user.getUserId())
                 .fullName(request.getFullName())
@@ -102,7 +134,6 @@ public class RegisterUserUseCase implements RegisterUserPort {
                 .expiresAt(LocalDateTime.now().plusHours(ACTIVATION_EXPIRY_HOURS))
                 .build());
 
-        // Email failure is logged but not propagated — user is registered and can request resend
         try {
             emailNotification.sendActivationEmail(request.getEmail(), alias, code);
         } catch (Exception e) {
@@ -122,5 +153,42 @@ public class RegisterUserUseCase implements RegisterUserPort {
                 .alias(alias)
                 .email(request.getEmail())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void resendActivationCode(String email) {
+        ValidationUtils.validateGmailEmail(email);
+
+        LoginCredentials existingCredentials = loginCredentialsRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("EMAIL_NOT_FOUND", "Email not found"));
+
+        if (existingCredentials.getUser().getActivated() != null && existingCredentials.getUser().getActivated()) {
+            throw new BusinessException("EMAIL_ALREADY_ACTIVATED", "This email is already activated. Please login with your credentials.");
+        }
+
+        String code = codeGenerator.generateActivationCode();
+        System.out.println("=== RESENDING ACTIVATION CODE ===");
+        System.out.println("Email: " + email);
+        System.out.println("New code: " + code);
+        System.out.println("User ID: " + existingCredentials.getUser().getUserId());
+
+        // CORRECCIÓN: eliminar códigos anteriores antes de crear uno nuevo
+        accountActivationRepository.deleteByUserId(existingCredentials.getUser().getUserId());
+
+        accountActivationRepository.save(AccountActivation.builder()
+                .user(existingCredentials.getUser())
+                .activationCode(code)
+                .activated(false)
+                .createdAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusHours(ACTIVATION_EXPIRY_HOURS))
+                .build());
+
+        try {
+            emailNotification.sendActivationEmail(email, existingCredentials.getUser().getAlias(), code);
+        } catch (Exception e) {
+            log.error("Failed to send activation email to {} — user exists but email not sent: {}",
+                    email, e.getMessage());
+        }
     }
 }

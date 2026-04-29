@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight } from "lucide-react";
-import { loginUser, registerUser } from "../services/Login.js";
-import { getProfileByUserId } from "../services/ProfileService.js";
+import { loginUser, registerUser, resendActivationCode } from "../services/Login.js";
+import { getProfileByUserId } from "../services/Profile.js";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 import { useTheme } from "../context/ThemeContext";
@@ -20,7 +20,7 @@ export default function Login() {
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   const [showLoginSuccessNotification, setShowLoginSuccessNotification] = useState(false);
   const [showActivateAccount, setShowActivateAccount] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0); // ← NUEVO
+  const [passwordStrength, setPasswordStrength] = useState(0);
   const [formData, setFormData] = useState({
     email: "", password: "", confirmPassword: "", name: "",
   });
@@ -87,13 +87,14 @@ export default function Login() {
     if (name === 'password') setPasswordStrength(calcStrength(value));
   };
 
+  // ─── Validaciones ────────────────────────────────────────────────────────
   const validateEmail = (email) => {
     if (!email?.trim()) return "El correo electrónico es obligatorio";
-    if (email.trim().length > 100) return "Máximo 100 caracteres";
+    if (email.trim().length > 255) return "Máximo 255 caracteres";
     if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim()))
       return "Formato de correo no válido";
     if (!email.trim().toLowerCase().endsWith('@gmail.com'))
-      return "Solo tenemos soporte para correos de Gmail";
+      return "Solo correos @gmail.com son aceptados";
     return "";
   };
 
@@ -108,11 +109,17 @@ export default function Login() {
 
   const validateName = (name) => {
     if (!name?.trim()) return "El nombre completo es obligatorio";
-    if (name.trim().length < 2) return "Mínimo 2 caracteres";
-    if (name.trim().length > 70) return "Máximo 70 caracteres";
+    if (name.trim().length > 100) return "Máximo 100 caracteres";
     if (!/^[a-zA-ZÀ-ÿ\s'-]+$/.test(name.trim()))
       return "Solo letras, espacios y acentos";
-    if (name.trim().split(/\s+/).length < 2) return "Ingresa nombre y apellido";
+    
+    const words = name.trim().split(/\s+/);
+    if (words.length < 2) return "Ingresa nombre y apellido";
+    
+    // Validar que cada palabra tenga al menos 3 caracteres
+    const invalidWord = words.find(word => word.length < 3);
+    if (invalidWord) return "Cada nombre y apellido debe tener al menos 3 caracteres";
+    
     return "";
   };
 
@@ -126,6 +133,24 @@ export default function Login() {
   const handleContinueToVerification = () => { setShowSuccessNotification(false); setView('verification'); };
   const handleContinueToHome = () => { setShowLoginSuccessNotification(false); window.location.href = '/'; };
   const handleLogout = () => { clearAuth(); setUserData(null); setView('login'); };
+
+  const handleResendActivation = async () => {
+    if (!formData.email || !formData.email.trim()) {
+      setError("Por favor, ingresa tu correo electrónico para reenviar el código de activación.");
+      return;
+    }
+    try {
+      const result = await resendActivationCode(formData.email);
+      if (result.success) {
+        setError("Se ha enviado un nuevo código de activación a tu correo.");
+        setShowActivateAccount(true);
+      } else {
+        setError(result.message || "Error al reenviar código de activación");
+      }
+    } catch (err) {
+      setError("Error de conexión al reenviar código de activación");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -153,29 +178,21 @@ export default function Login() {
           localStorage.setItem('role', result.data.role || 'USER');
           refreshPalette(); // carga la paleta del usuario recién autenticado
           
-          let userProfile = { userId: result.data.userID, alias: result.data.alias, email: formData.email };
+          // Obtener el perfil del usuario para conseguir el fullName (como en el móvil)
+          let fullName = result.data.alias; // fallback al alias
           try {
             const profileResult = await getProfileByUserId(result.data.userID);
-            console.log('Profile result:', JSON.stringify(profileResult));
-            let fullName = null;
-            if (profileResult.data && profileResult.data.fullName) {
+            if (profileResult.success && profileResult.data.fullName) {
               fullName = profileResult.data.fullName;
-            } else if (profileResult.data?.data && profileResult.data.data.fullName) {
-              fullName = profileResult.data.data.fullName;
-            } else if (profileResult.fullName) {
-              fullName = profileResult.fullName;
+              localStorage.setItem('name', fullName);
             }
-            if (fullName) {
-              userProfile = { 
-                ...userProfile, 
-                fullName: fullName 
-              };
-              localStorage.setItem('fullName', fullName);
-            }
-          } catch (profileErr) {
-            console.log('Perfil no encontrado, se creará en el primer uso');
+          } catch (error) {
+            console.error('Error al obtener perfil:', error);
+            // Si falla, usar el alias como nombre
+            localStorage.setItem('name', result.data.alias);
           }
-          setUserData(userProfile);
+          
+          setUserData({ userId: result.data.userID, alias: result.data.alias, fullName: fullName, email: formData.email });
           setShowLoginSuccessNotification(true);
           setTimeout(() => {
             window.location.href = '/';
@@ -192,7 +209,21 @@ export default function Login() {
         if (result.success) { setShowSuccessNotification(true); setUserID(result.data); }
         else setError(result.message || "Error en registro");
       }
-    } catch { setError("Error de conexión"); }
+    } catch (err) {
+      const errorMsg = err.message || "Error de conexión";
+      // Traducir mensajes del backend
+      if (errorMsg === "This email is not registered in the system") {
+        setError("Este correo no está registrado en el sistema");
+      } else if (errorMsg === "Invalid email or password") {
+        setError("Correo o contraseña incorrectos");
+      } else if (errorMsg === "This email is already registered and activated. Please login with your credentials.") {
+        setError("Este correo ya está registrado y activado. Inicia sesión con tus credenciales.");
+      } else if (errorMsg === "This email is already registered but not activated. If you want to activate your account, click on Resend activation email") {
+        setError("Este correo ya está registrado pero no activado. Si quieres activar tu cuenta, haz clic en Reenviar correo de activación");
+      } else {
+        setError(errorMsg);
+      }
+    }
     finally { setLoading(false); }
   };
 
@@ -242,7 +273,7 @@ export default function Login() {
 
   // ─── Vista principal Login / Registro ────────────────────────────────────
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex items-stretch">
 
       {/* Columna izquierda */}
       <div className="w-full bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-8">
@@ -278,6 +309,20 @@ export default function Login() {
                   />
                 </div>
                 {fieldErrors.name && <p className="text-red-400 text-xs mt-1">{fieldErrors.name}</p>}
+                {formData.name && !fieldErrors.name && (
+                  <div className="mt-1 space-y-0.5">
+                    {formData.name.trim().split(/\s+/).length < 2 && (
+                      <p className="text-xs text-red-400 flex items-center">
+                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Nombre y apellido
+                      </p>
+                    )}
+                    {!formData.name.trim().split(/\s+/).every(w => w.length >= 3) && (
+                      <p className="text-xs text-red-400 flex items-center">
+                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Mínimo 3 caracteres por palabra
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -294,6 +339,15 @@ export default function Login() {
                 />
               </div>
               {fieldErrors.email && <p className="text-red-400 text-xs mt-1">{fieldErrors.email}</p>}
+              {formData.email && !fieldErrors.email && view !== 'login' && (
+                <div className="mt-1 space-y-0.5">
+                  {!formData.email.trim().toLowerCase().endsWith('@gmail.com') && (
+                    <p className="text-xs text-red-400 flex items-center">
+                      <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Debe ser @gmail.com
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Contraseña */}
@@ -317,7 +371,7 @@ export default function Login() {
               </div>
               {fieldErrors.password && <p className="text-red-400 text-xs mt-1">{fieldErrors.password}</p>}
 
-              {/* ── Barra de fortaleza — SOLO en registro ── */}
+              {/* ── Requisitos de contraseña — SOLO en registro ── */}
               {view !== 'login' && formData.password.length > 0 && (
                 <div className="mt-2 space-y-1">
                   <div className="flex gap-1">
@@ -333,6 +387,26 @@ export default function Login() {
                   <p className={`text-xs font-medium transition-colors duration-300 ${strengthColor[passwordStrength]}`}>
                     {strengthLabel[passwordStrength]}
                   </p>
+                  <div className="mt-2 space-y-0.5">
+                    {(() => {
+                      const missing = [];
+                      if (formData.password.length < 8) missing.push("8 caracteres");
+                      if (!/[A-Z]/.test(formData.password)) missing.push("mayúscula");
+                      if (!/[a-z]/.test(formData.password)) missing.push("minúscula");
+                      if (!/\d/.test(formData.password)) missing.push("número");
+                      if (!/[@$!%*?&]/.test(formData.password)) missing.push("carácter especial (@$!%*?&)");
+                      
+                      if (missing.length > 0) {
+                        return (
+                          <p className="text-xs text-red-400 flex items-center">
+                            <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>
+                            Debe contener {missing.join(", ")}
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
                 </div>
               )}
             </div>
@@ -358,14 +432,16 @@ export default function Login() {
                   </button>
                 </div>
                 {fieldErrors.confirmPassword && <p className="text-red-400 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
+                {formData.confirmPassword && !fieldErrors.confirmPassword && formData.confirmPassword !== formData.password && (
+                  <p className="text-xs mt-1 text-red-400 flex items-center">
+                    <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Las contraseñas no coinciden
+                  </p>
+                )}
               </div>
             )}
 
-            {/* Error general */}
             {error && (
-              <div className="bg-red-500 bg-opacity-10 border border-red-500 border-opacity-30 rounded-lg px-4 py-2">
-                <p className="text-red-400 text-sm">{error}</p>
-              </div>
+              <p className="text-red-400 text-sm">{error}</p>
             )}
 
             {/* Botón principal */}
@@ -373,33 +449,36 @@ export default function Login() {
               type="submit" disabled={loading}
               className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-all duration-300 text-sm tracking-widest"
             >
-              {loading ? "Cargando..." : (view === 'login' ? "INICIAR" : "REGISTRAR")}
+              {loading ? "Cargando..." : (view === 'login' ? "INICIAR SESIÓN" : "REGISTRARSE")}
             </button>
 
-            {/* Activar cuenta */}
-            {showActivateAccount && view === 'login' && (
-              <button type="button"
-                onClick={() => { setView('verification'); setShowActivateAccount(false); setError(""); }}
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-semibold py-3 rounded-lg transition-all text-sm"
-              >
-                ACTIVAR CUENTA
-              </button>
+            {/* ¿No has activado tu cuenta? — solo registro */}
+            {view !== 'login' && (
+              <div className="text-center">
+                <p className="text-gray-500 text-xs">
+                  ¿No has activado tu cuenta?{" "}
+                  <button type="button" onClick={handleResendActivation} className="text-purple-400 hover:text-purple-300 font-medium">
+                    Reenviar correo de activación
+                  </button>
+                </p>
+              </div>
             )}
 
-            {/* ¿Olvidaste tu contraseña? */}
-            <div className="text-center">
-              <p className="text-gray-500 text-xs">
-                ¿No recuerdas tu contraseña?{" "}
-                <button type="button" onClick={() => setView('forgot')} className="text-purple-400 hover:text-purple-300 font-medium">
-                  Ponla aquí
-                </button>
-              </p>
-            </div>
+            {/* ¿Olvidaste tu contraseña? — solo login */}
+            {view === 'login' && (
+              <div className="text-center">
+                <p className="text-gray-500 text-xs">
+                  ¿No recuerdas tu contraseña?{" "}
+                  <button type="button" onClick={() => setView('forgot')} className="text-purple-400 hover:text-purple-300 font-medium">
+                    Recupérala
+                  </button>
+                </p>
+              </div>
+            )}
 
             {/* Separador redes sociales */}
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-gray-700" />
-              <span className="text-gray-500 text-xs whitespace-nowrap">También puedes iniciar con</span>
               <div className="flex-1 h-px bg-gray-700" />
             </div>
 
@@ -570,7 +649,31 @@ export default function Login() {
                 <User className="w-6 h-6 text-purple-500 mx-auto mb-2" />
                 <p className="text-gray-700 text-sm font-medium">Sesión iniciada</p>
                 <p className="text-gray-400 text-xs mt-1">Accede a todas las funcionalidades de TuEvento</p>
-                <p className="text-purple-600 text-sm font-semibold mt-2">👋 ¡Hola, {userData?.fullName ? userData.fullName.split(' ')[0] : (userData?.alias || formData.email)}!</p>
+                <p className="text-purple-600 text-sm font-semibold mt-2">👋 ¡Hola, {(() => {
+                      if (!userData?.fullName) return userData?.alias || formData.email;
+                      
+                      const name = userData.fullName;
+                      const parts = name.split(' ').filter(part => part.trim().length > 0);
+                      
+                      if (parts.length === 0) return userData?.alias || formData.email;
+                      if (parts.length === 1) return parts[0];
+                      
+                      const firstName = parts[0];
+                      const lastName = parts[1];
+                      
+                      // Si el nombre es corto (≤3 caracteres)
+                      if (firstName.length <= 3) {
+                        // Si el apellido es más largo que el nombre, mostrar apellido
+                        if (lastName.length > firstName.length) {
+                          return lastName;
+                        }
+                        // Si el apellido también es corto, mostrar solo el nombre
+                        return firstName;
+                      }
+                      
+                      // Si el nombre es largo (>3 caracteres), mostrar solo el nombre
+                      return firstName;
+                    })()}!</p>
               </div>
               <button onClick={handleContinueToHome}
                 className="w-full bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-semibold py-3 rounded-lg transition-all text-sm flex items-center justify-center gap-2">

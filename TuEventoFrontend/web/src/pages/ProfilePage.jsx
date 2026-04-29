@@ -17,19 +17,42 @@ const ProfilePage = () => {
   const [loadingTheme, setLoadingTheme] = useState(false);
   const { refreshPalette, activeThemeId } = useTheme();
 
+  const userEmail = localStorage.getItem('userEmail') || 'francisco@tuevento.com';
+  const storedName = localStorage.getItem('name') || localStorage.getItem('fullName') || 'Francisco';
+  const userRole = localStorage.getItem('role') || 'USER';
+
+  const getDisplayName = (name) => {
+    if (!name) return 'Usuario';
+    
+    const parts = name.split(' ').filter(part => part.trim().length > 0);
+    
+    if (parts.length === 0) return 'Usuario';
+    if (parts.length === 1) return parts[0];
+    
+    const firstName = parts[0];
+    const lastName = parts[1];
+    
+    if (firstName.length <= 3) {
+      if (lastName.length > firstName.length) {
+        return lastName;
+      }
+      return firstName;
+    }
+    
+    return firstName;
+  };
+  
+  const displayName = getDisplayName(storedName);
+  const firstLetter = displayName ? displayName.charAt(0).toUpperCase() : 'F';
+
+  const roleLabel = userRole === 'ADMIN' ? 'Administrador' : userRole === 'ORGANIZER' ? 'Organizador Premium' : 'Usuario';
+
   const [formData, setFormData] = useState({
-    nombreCompleto: 'Francisco Rodríguez',
+    nombreCompleto: storedName || 'Francisco Rodríguez',
     telefono: '+34 600 000 000',
     fechaNacimiento: '',
     direccion: 'Calle Mayor, 1 Madrid'
   });
-
-  const userEmail = localStorage.getItem('userEmail') || 'francisco@tuevento.com';
-  const userName = localStorage.getItem('fullName') || 'Francisco';
-  const userRole = localStorage.getItem('role') || 'USER';
-  const firstLetter = userName ? userName.charAt(0).toUpperCase() : 'F';
-
-  const roleLabel = userRole === 'ADMIN' ? 'Administrador' : userRole === 'ORGANIZER' ? 'Organizador Premium' : 'Usuario';
 
   useEffect(() => {
     loadThemes();
@@ -59,6 +82,7 @@ const ProfilePage = () => {
       setLoadingTheme(false);
     }
   };
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

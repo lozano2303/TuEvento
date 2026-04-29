@@ -6,4 +6,5 @@ import com.capysoft.tuevento.modules.security.application.dto.response.RegisterU
 public interface RegisterUserPort {
 
     RegisterUserResponse register(RegisterUserRequest request);
+    void resendActivationCode(String email);
 }
