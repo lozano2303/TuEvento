@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight } from "lucide-react";
 import { loginUser, registerUser, resendActivationCode } from "../services/Login.js";
-import { getProfileByUserId } from "../services/Profile.js";
+import { getProfileByUserId } from "../services/ProfileService.js";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 import { useTheme } from "../context/ThemeContext";

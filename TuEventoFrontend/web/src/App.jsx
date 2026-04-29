@@ -13,12 +13,13 @@ import CodeVerification from './pages/CodeVerification';
 
 function AppContent() {
   const location = useLocation();
-  const showNavbar = !['/login', '/profile', '/verification'].includes(location.pathname);
+  const showNavbar = !['/login', '/verification'].includes(location.pathname);
+  const showPadding = showNavbar && location.pathname !== '/profile';
 
   return (
     <div className="min-h-screen bg-background">
       {showNavbar && <Navbar />}
-      <div className={showNavbar ? "pt-16" : ""}>
+      <div className={showPadding ? "pt-16" : ""}>
         <Routes>
           <Route path="/" element={<LadingPage />} />
           <Route path="/login" element={<Login />} />
