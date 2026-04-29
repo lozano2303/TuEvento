@@ -55,16 +55,6 @@ const OrganizerPetitionForm = () => {
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-[#191022] text-slate-100 font-sans">
-      <style jsx>{`
-        .purple-glow {
-          box-shadow: 0 0 20px 2px rgba(127, 19, 236, 0.3);
-        }
-        .bg-mesh {
-          background-color: #191022;
-          background-image: radial-gradient(at 0% 0%, rgba(127, 19, 236, 0.15) 0px, transparent 50%),
-                            radial-gradient(at 100% 100%, rgba(127, 19, 236, 0.1) 0px, transparent 50%);
-        }
-      `}</style>
       
       <div className="flex h-full grow flex-col">
 

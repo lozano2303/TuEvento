@@ -38,7 +38,6 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isModalOpen]);
 
-  // Cerrar menú móvil al cambiar de tamaño a desktop
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) setIsMobileMenuOpen(false);
@@ -88,7 +87,7 @@ export default function Navbar() {
     <>
       <header className="bg-gray-900 border-b border-gray-700 shadow-lg sticky top-0 z-40">
         <nav className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
-          
+
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
             <span className="text-xl font-bold text-white group-hover:text-purple-400 transition-colors">
@@ -121,6 +120,7 @@ export default function Navbar() {
 
           {/* Derecha: usuario + hamburguesa */}
           <div className="flex items-center gap-2">
+
             {/* Botón usuario */}
             {userData ? (
               <div className="relative user-modal">
@@ -138,32 +138,70 @@ export default function Navbar() {
                     {roleBadge.label}
                   </span>
                 </button>
+
+                {/* Dropdown mejorado */}
                 {isModalOpen && (
-                  <div className="user-modal absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
-                    <div className="p-3 space-y-1.5">
+                  <div className="user-modal absolute right-0 mt-2 w-[230px] border rounded-2xl shadow-2xl z-50 overflow-hidden"
+                    style={{ background: '#1a1033', borderColor: 'rgba(139,92,246,0.3)', boxShadow: '0 8px 32px rgba(109,40,217,0.3)' }}>
+
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsModalOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3.5 transition-colors"
+                      style={{ borderBottom: '1px solid rgba(139,92,246,0.15)' }}
+                      onMouseOver={e => e.currentTarget.style.background = 'rgba(139,92,246,0.12)'}
+                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)' }}>
+                        <User className="w-[17px] h-[17px] text-purple-400" />
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-semibold text-white leading-tight">Perfil</p>
+                        <p className="text-[11px] text-gray-400 leading-tight mt-0.5">Ver y editar tu cuenta</p>
+                      </div>
+                      <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="#7c3aed" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                    </Link>
+
+                    <Link
+                      to="/wallet"
+                      onClick={() => setIsModalOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3.5 transition-colors"
+                      onMouseOver={e => e.currentTarget.style.background = 'rgba(96,165,250,0.1)'}
+                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.35)' }}>
+                        <Wallet className="w-[17px] h-[17px] text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-semibold text-white leading-tight">Cartera</p>
+                        <p className="text-[11px] text-gray-400 leading-tight mt-0.5">Saldo y transacciones</p>
+                      </div>
+                      <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="#3b82f6" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                    </Link>
+
+                    {isAdmin && (
                       <Link
-                        to="/profile"
+                        to="/admin-panel"
                         onClick={() => setIsModalOpen(false)}
-                        className="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
+                        className="flex items-center gap-3 px-4 py-3.5 transition-colors"
+                        style={{ borderTop: '1px solid rgba(239,68,68,0.15)' }}
+                        onMouseOver={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+                        onMouseOut={e => e.currentTarget.style.background = 'transparent'}
                       >
-                        <User className="w-4 h-4" /> Perfil
+                        <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0"
+                          style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)' }}>
+                          <Calendar className="w-[17px] h-[17px] text-red-400" />
+                        </div>
+                        <div>
+                          <p className="text-[14px] font-semibold text-white leading-tight">Panel de Gestión</p>
+                          <p className="text-[11px] text-gray-400 leading-tight mt-0.5">Administrar plataforma</p>
+                        </div>
+                        <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="#ef4444" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                       </Link>
-                      {isAdmin && (
-                        <Link
-                          to="/admin-panel"
-                          onClick={() => setIsModalOpen(false)}
-                          className="w-full bg-red-600 hover:bg-red-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
-                        >
-                          <Calendar className="w-4 h-4" /> Panel de Gestión
-                        </Link>
-                      )}
-                      <button
-                        onClick={handleLogout}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
-                      >
-                        <LogOut className="w-4 h-4" /> Cerrar sesión
-                      </button>
-                    </div>
+                    )}
+
                   </div>
                 )}
               </div>
