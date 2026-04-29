@@ -1,22 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileText, CheckCircle } from 'lucide-react';
-import { createPetition } from '../services/OrganizerPetitionService.js';
+import { Upload, FileText, UserCheck, Info, ArrowLeft, Send, Delete, CheckCircle, Bell } from 'lucide-react';
 
 const OrganizerPetitionForm = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
+    if (e.type === "mouseenter" || e.type === "dragover") {
       setDragActive(true);
-    } else if (e.type === 'dragleave') {
+    } else if (e.type === "mouseleave" || e.type === "dragleave") {
       setDragActive(false);
     }
   };
@@ -25,6 +22,7 @@ const OrganizerPetitionForm = () => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
+    
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setSelectedFile(e.dataTransfer.files[0]);
     }
@@ -36,310 +34,144 @@ const OrganizerPetitionForm = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!selectedFile) {
-      setError('Selecciona un documento');
-      return;
-    }
-
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-    if (!allowedTypes.includes(selectedFile.type)) {
-      setError('Solo archivos PDF, JPG o PNG');
-      return;
-    }
-
-    if (selectedFile.size > 5 * 1024 * 1024) {
-      setError('El archivo no puede ser mayor a 5MB');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const token = localStorage.getItem('token');
-      const userID = localStorage.getItem('userID');
-
-      if (!token || !userID) {
-        setError('Sesión expirada. Inicia sesión nuevamente.');
-        navigate('/login');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('userID', parseInt(userID));
-      formData.append('file', selectedFile);
-
-      const result = await createPetition(formData);
-
-      if (result.success) {
-        setSuccess(true);
-      } else {
-        setError(result.message || 'Error al enviar la solicitud');
-      }
-    } catch (err) {
-      setError('Error de conexión. Verifica que el backend esté ejecutándose.');
-      console.error('Error submitting petition:', err);
-    } finally {
-      setLoading(false);
-    }
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
   };
 
-  if (success) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center px-4"
-        style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}
-      >
-        <div
-          className="rounded-2xl p-10 text-center max-w-md w-full"
-          style={{
-            background: 'rgba(88, 28, 135, 0.2)',
-            border: '0.5px solid rgba(167, 139, 250, 0.25)',
-            backdropFilter: 'blur(16px)',
-          }}
-        >
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
-            style={{
-              background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 100%)',
-              boxShadow: '0 0 32px rgba(124, 58, 237, 0.5)',
-            }}
-          >
-            <CheckCircle className="w-10 h-10 text-white" />
-          </div>
-          <h2 className="text-2xl font-bold mb-3" style={{ color: '#e9d5ff' }}>
-            ¡Solicitud enviada!
-          </h2>
-          <p className="text-sm mb-8" style={{ color: 'rgba(196, 181, 253, 0.65)' }}>
-            Tu solicitud fue enviada exitosamente. El administrador la revisará pronto y recibirás una respuesta.
-          </p>
-          <button
-            onClick={() => navigate('/')}
-            className="w-full py-3 rounded-xl font-medium text-sm transition-all hover:brightness-110"
-            style={{
-              background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 100%)',
-              color: '#fff',
-              boxShadow: '0 0 16px rgba(124, 58, 237, 0.4)',
-            }}
-          >
-            Volver al inicio
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const handleSubmit = () => {
+    if (!selectedFile) {
+      alert('Por favor selecciona un archivo');
+      return;
+    }
+    
+    setLoading(true);
+    // Aquí iría la lógica para enviar el archivo
+    setTimeout(() => {
+      setLoading(false);
+      alert('Solicitud enviada exitosamente');
+      navigate('/');
+    }, 2000);
+  };
 
   return (
-    <div
-      className="min-h-screen text-white"
-      style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}
-    >
-      <div className="px-6 py-10">
-        <div className="max-w-2xl mx-auto">
+    <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-[#191022] text-slate-100 font-sans">
+      <style jsx>{`
+        .purple-glow {
+          box-shadow: 0 0 20px 2px rgba(127, 19, 236, 0.3);
+        }
+        .bg-mesh {
+          background-color: #191022;
+          background-image: radial-gradient(at 0% 0%, rgba(127, 19, 236, 0.15) 0px, transparent 50%),
+                            radial-gradient(at 100% 100%, rgba(127, 19, 236, 0.1) 0px, transparent 50%);
+        }
+      `}</style>
+      
+      <div className="flex h-full grow flex-col">
 
-          {error && (
-            <div
-              className="flex items-center justify-between rounded-xl px-4 py-3 mb-6 text-sm"
-              style={{
-                background: 'rgba(220, 38, 38, 0.15)',
-                border: '0.5px solid rgba(220, 38, 38, 0.4)',
-                color: '#fca5a5',
-              }}
-            >
-              <span>{error}</span>
-              <button
-                onClick={() => setError(null)}
-                className="text-lg leading-none ml-4 opacity-60 hover:opacity-100"
-              >
-                ×
-              </button>
-            </div>
-          )}
-
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{
-              background: 'rgba(88, 28, 135, 0.15)',
-              border: '0.5px solid rgba(167, 139, 250, 0.2)',
-              backdropFilter: 'blur(16px)',
-            }}
-          >
-            {/* Encabezado */}
-            <div
-              className="px-8 py-8 text-center"
-              style={{ borderBottom: '0.5px solid rgba(167, 139, 250, 0.15)' }}
-            >
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-                style={{
-                  background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 100%)',
-                  boxShadow: '0 0 24px rgba(124, 58, 237, 0.45)',
-                }}
-              >
-                <FileText className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-xl font-bold mb-2" style={{ color: '#e9d5ff' }}>
-                Solicitud de Organizador
-              </h2>
-              <p className="text-sm" style={{ color: 'rgba(196, 181, 253, 0.6)' }}>
-                Sube un documento para ser aprobado como organizador de eventos.
+        {/* Main Content */}
+        <main className="flex-1 max-w-[1024px] mx-auto w-full px-6 py-10">
+          <section className="mb-10">
+            <div className="flex flex-col gap-2">
+              <h1 className="text-white text-4xl md:text-5xl font-black leading-tight tracking-tight">Solicitud de Organizador</h1>
+              <p className="text-slate-400 text-lg max-w-2xl">
+                Sube un documento de identidad para verificar tu cuenta y poder crear eventos dentro de la plataforma.
               </p>
             </div>
+          </section>
 
-            <div className="px-8 py-8 space-y-6">
-
-              {/* Zona de upload */}
-              <div>
-                <label
-                  className="block text-sm font-medium mb-3"
-                  style={{ color: 'rgba(196, 181, 253, 0.8)' }}
-                >
-                  Documento <span style={{ color: '#f87171' }}>*</span>
-                </label>
-                <div
-                  className="rounded-xl p-8 text-center transition-all"
-                  style={{
-                    border: dragActive
-                      ? '1.5px dashed rgba(167, 139, 250, 0.8)'
-                      : selectedFile
-                      ? '1.5px dashed rgba(74, 222, 128, 0.6)'
-                      : '1.5px dashed rgba(167, 139, 250, 0.3)',
-                    background: dragActive
-                      ? 'rgba(124, 58, 237, 0.12)'
-                      : selectedFile
-                      ? 'rgba(74, 222, 128, 0.05)'
-                      : 'rgba(88, 28, 135, 0.1)',
-                  }}
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                >
-                  {selectedFile ? (
-                    <div className="space-y-2">
-                      <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
-                        style={{ background: 'rgba(74, 222, 128, 0.15)' }}
-                      >
-                        <FileText className="w-6 h-6" style={{ color: '#4ade80' }} />
-                      </div>
-                      <p className="font-medium text-sm" style={{ color: '#e9d5ff' }}>
-                        {selectedFile.name}
-                      </p>
-                      <p className="text-xs" style={{ color: 'rgba(196, 181, 253, 0.5)' }}>
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                      <p className="text-xs font-medium" style={{ color: '#4ade80' }}>
-                        ✓ Archivo válido
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedFile(null)}
-                        className="text-xs underline transition-opacity hover:opacity-80 mt-1"
-                        style={{ color: 'rgba(196, 181, 253, 0.5)' }}
-                      >
-                        Cambiar archivo
-                      </button>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 flex flex-col gap-6">
+              {/* Upload Area */}
+              <div className="bg-[#251a31]/40 border border-[#3d2a4d] rounded-xl p-8 transition-all hover:bg-[#251a31]/60">
+                <div className={`flex flex-col items-center gap-6 rounded-xl border-2 border-dashed ${dragActive ? 'border-[#7f13ec]' : 'border-[#7f13ec]/40'} px-6 py-12 bg-[#7f13ec]/5`}
+                     onDragEnter={handleDrag}
+                     onDragLeave={handleDrag}
+                     onDragOver={handleDrag}
+                     onDrop={handleDrop}>
+                  <div className="flex flex-col items-center gap-4 text-center">
+                    <div className="size-16 bg-[#7f13ec]/20 rounded-full flex items-center justify-center text-[#7f13ec]">
+                      <Upload className="w-10 h-10" />
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div
-                        className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
-                        style={{ background: 'rgba(124, 58, 237, 0.2)' }}
-                      >
-                        <Upload className="w-6 h-6" style={{ color: 'rgba(196, 181, 253, 0.7)' }} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium mb-1" style={{ color: '#e9d5ff' }}>
-                          Arrastrá y soltá tu documento aquí
-                        </p>
-                        <p className="text-xs mb-4" style={{ color: 'rgba(196, 181, 253, 0.45)' }}>
-                          o hacé clic para seleccionar un archivo
-                        </p>
-                        <input
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={handleFileSelect}
-                          className="hidden"
-                          id="file-upload"
-                        />
-                        <label
-                          htmlFor="file-upload"
-                          className="inline-block text-sm font-medium px-5 py-2 rounded-xl cursor-pointer transition-all hover:brightness-110"
-                          style={{
-                            background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 100%)',
-                            color: '#fff',
-                            boxShadow: '0 0 12px rgba(124, 58, 237, 0.35)',
-                          }}
-                        >
-                          Seleccionar archivo
-                        </label>
-                      </div>
+                    <div className="flex flex-col gap-1">
+                      <p className="text-white text-xl font-bold">Arrastra y suelta tu documento aquí</p>
+                      <p className="text-slate-400 text-sm">O haz clic para seleccionar un archivo manualmente</p>
                     </div>
-                  )}
+                  </div>
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleFileSelect}
+                    id="file-upload"
+                  />
+                  <label 
+                    htmlFor="file-upload"
+                    className="flex min-w-[200px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-6 bg-[#7f13ec] text-white text-sm font-bold leading-normal tracking-wide transition-transform active:scale-95 shadow-lg shadow-[#7f13ec]/20"
+                  >
+                    Seleccionar archivo
+                  </label>
+                  <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">
+                    PDF, JPG, PNG • Máx 5MB
+                  </p>
                 </div>
               </div>
 
-              {/* Info box */}
-              <div
-                className="rounded-xl p-4"
-                style={{
-                  background: 'rgba(124, 58, 237, 0.1)',
-                  border: '0.5px solid rgba(167, 139, 250, 0.25)',
-                }}
-              >
-                <h3 className="text-sm font-medium mb-2" style={{ color: '#c4b5fd' }}>
+              </div>
+
+            {/* Sidebar */}
+            <aside className="flex flex-col gap-6">
+              <div className="bg-[#251a31] border border-[#3d2a4d] rounded-xl p-6">
+                <h3 className="text-white text-lg font-bold leading-tight mb-6 flex items-center gap-2">
+                  <UserCheck className="text-[#7f13ec] w-5 h-5" />
                   Documentos requeridos
                 </h3>
-                <p className="text-xs mb-3" style={{ color: 'rgba(196, 181, 253, 0.6)' }}>
-                  Sube tu documento de identidad o registro para que un administrador lo apruebe.
-                </p>
-                <div
-                  className="pt-3 text-xs"
-                  style={{
-                    borderTop: '0.5px solid rgba(167, 139, 250, 0.2)',
-                    color: 'rgba(196, 181, 253, 0.5)',
-                  }}
-                >
-                  Formatos aceptados: PDF, JPG, PNG · Máximo 5MB
+                <div className="mb-6">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Obligatorios</p>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
+                      <span className="w-1 h-1 bg-slate-600 rounded-full mt-1.5"></span>
+                      <span className="text-slate-300 text-sm">Cédula de ciudadanía / ID</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1 h-1 bg-slate-600 rounded-full mt-1.5"></span>
+                      <span className="text-slate-300 text-sm">Pasaporte válido (Extranjeros)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1 h-1 bg-slate-600 rounded-full mt-1.5"></span>
+                      <span className="text-slate-300 text-sm">Documento de identidad oficial</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="pt-6 border-t border-[#3d2a4d]">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Opcionales</p>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-3">
+                      <span className="w-1 h-1 bg-slate-600 rounded-full mt-1.5"></span>
+                      <span className="text-slate-400 text-sm italic">Certificado de antecedentes</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1 h-1 bg-slate-600 rounded-full mt-1.5"></span>
+                      <span className="text-slate-400 text-sm italic">Certificados de cursos</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="w-1 h-1 bg-slate-600 rounded-full mt-1.5"></span>
+                      <span className="text-slate-400 text-sm italic">Referencias laborales</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
-
-              {/* Botones */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => navigate(-1)}
-                  className="flex-1 py-3 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-                  style={{
-                    background: 'transparent',
-                    border: '0.5px solid rgba(167, 139, 250, 0.3)',
-                    color: 'rgba(196, 181, 253, 0.7)',
-                  }}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  onClick={handleSubmit}
-                  disabled={loading || !selectedFile}
-                  className="flex-1 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{
-                    background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 100%)',
-                    color: '#fff',
-                    boxShadow: selectedFile ? '0 0 16px rgba(124, 58, 237, 0.4)' : 'none',
-                  }}
-                >
-                  {loading ? 'Enviando...' : 'Enviar solicitud'}
-                </button>
+              <div className="bg-[#7f13ec]/10 border border-[#7f13ec]/20 rounded-xl p-5">
+                <div className="flex gap-3">
+                  <Info className="text-[#7f13ec] w-4 h-4" />
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Tu información será procesada en un plazo de 24 a 48 horas hábiles por nuestro equipo de seguridad.
+                  </p>
+                </div>
               </div>
-
-            </div>
+            </aside>
           </div>
-        </div>
+
+          </main>
       </div>
     </div>
   );

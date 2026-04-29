@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight } from "lucide-react";
 import { loginUser, registerUser, resendActivationCode } from "../services/Login.js";
+import { getProfileByUserId } from "../services/Profile.js";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 
@@ -66,7 +67,7 @@ export default function Login() {
   };
 
   const strengthLabel = ['', 'Muy débil', 'Débil', 'Buena', 'Fuerte'];
-  const strengthColor = ['', 'text-orange-400', 'text-yellow-400', 'text-blue-400', 'text-green-400'];
+  const strengthColor = ['', 'text-red-400', 'text-yellow-400', 'text-blue-400', 'text-green-400'];
   const barColors = [
     '',
     'bg-red-500',
@@ -174,7 +175,21 @@ export default function Login() {
           localStorage.setItem('userEmail', formData.email);
           localStorage.setItem('role', result.data.role || 'USER');
           
-          setUserData({ userId: result.data.userID, alias: result.data.alias, email: formData.email });
+          // Obtener el perfil del usuario para conseguir el fullName (como en el móvil)
+          let fullName = result.data.alias; // fallback al alias
+          try {
+            const profileResult = await getProfileByUserId(result.data.userID);
+            if (profileResult.success && profileResult.data.fullName) {
+              fullName = profileResult.data.fullName;
+              localStorage.setItem('name', fullName);
+            }
+          } catch (error) {
+            console.error('Error al obtener perfil:', error);
+            // Si falla, usar el alias como nombre
+            localStorage.setItem('name', result.data.alias);
+          }
+          
+          setUserData({ userId: result.data.userID, alias: result.data.alias, fullName: fullName, email: formData.email });
           setShowLoginSuccessNotification(true);
           setTimeout(() => {
             window.location.href = '/';
@@ -290,16 +305,16 @@ export default function Login() {
                     required
                   />
                 </div>
-                {fieldErrors.name && <p className="text-orange-400 text-xs mt-1">{fieldErrors.name}</p>}
+                {fieldErrors.name && <p className="text-red-400 text-xs mt-1">{fieldErrors.name}</p>}
                 {formData.name && !fieldErrors.name && (
                   <div className="mt-1 space-y-0.5">
                     {formData.name.trim().split(/\s+/).length < 2 && (
-                      <p className="text-xs text-orange-400 flex items-center">
+                      <p className="text-xs text-red-400 flex items-center">
                         <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Nombre y apellido
                       </p>
                     )}
                     {!formData.name.trim().split(/\s+/).every(w => w.length >= 3) && (
-                      <p className="text-xs text-orange-400 flex items-center">
+                      <p className="text-xs text-red-400 flex items-center">
                         <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Mínimo 3 caracteres por palabra
                       </p>
                     )}
@@ -320,11 +335,11 @@ export default function Login() {
                   required
                 />
               </div>
-              {fieldErrors.email && <p className="text-orange-400 text-xs mt-1">{fieldErrors.email}</p>}
+              {fieldErrors.email && <p className="text-red-400 text-xs mt-1">{fieldErrors.email}</p>}
               {formData.email && !fieldErrors.email && view !== 'login' && (
                 <div className="mt-1 space-y-0.5">
                   {!formData.email.trim().toLowerCase().endsWith('@gmail.com') && (
-                    <p className="text-xs text-orange-400 flex items-center">
+                    <p className="text-xs text-red-400 flex items-center">
                       <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Debe ser @gmail.com
                     </p>
                   )}
@@ -351,7 +366,7 @@ export default function Login() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {fieldErrors.password && <p className="text-orange-400 text-xs mt-1">{fieldErrors.password}</p>}
+              {fieldErrors.password && <p className="text-red-400 text-xs mt-1">{fieldErrors.password}</p>}
 
               {/* ── Requisitos de contraseña — SOLO en registro ── */}
               {view !== 'login' && formData.password.length > 0 && (
@@ -370,31 +385,24 @@ export default function Login() {
                     {strengthLabel[passwordStrength]}
                   </p>
                   <div className="mt-2 space-y-0.5">
-                    {formData.password.length < 8 && (
-                      <p className="text-xs text-orange-400 flex items-center">
-                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Mínimo 8 caracteres
-                      </p>
-                    )}
-                    {!/[A-Z]/.test(formData.password) && (
-                      <p className="text-xs text-orange-400 flex items-center">
-                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Una mayúscula
-                      </p>
-                    )}
-                    {!/[a-z]/.test(formData.password) && (
-                      <p className="text-xs text-orange-400 flex items-center">
-                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Una minúscula
-                      </p>
-                    )}
-                    {!/\d/.test(formData.password) && (
-                      <p className="text-xs text-orange-400 flex items-center">
-                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Un número
-                      </p>
-                    )}
-                    {!/[@$!%*?&]/.test(formData.password) && (
-                      <p className="text-xs text-orange-400 flex items-center">
-                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Un carácter especial (@$!%*?&)
-                      </p>
-                    )}
+                    {(() => {
+                      const missing = [];
+                      if (formData.password.length < 8) missing.push("8 caracteres");
+                      if (!/[A-Z]/.test(formData.password)) missing.push("mayúscula");
+                      if (!/[a-z]/.test(formData.password)) missing.push("minúscula");
+                      if (!/\d/.test(formData.password)) missing.push("número");
+                      if (!/[@$!%*?&]/.test(formData.password)) missing.push("carácter especial (@$!%*?&)");
+                      
+                      if (missing.length > 0) {
+                        return (
+                          <p className="text-xs text-red-400 flex items-center">
+                            <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>
+                            Debe contener {missing.join(", ")}
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
               )}
@@ -420,9 +428,9 @@ export default function Login() {
                     {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                {fieldErrors.confirmPassword && <p className="text-orange-400 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
+                {fieldErrors.confirmPassword && <p className="text-red-400 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
                 {formData.confirmPassword && !fieldErrors.confirmPassword && formData.confirmPassword !== formData.password && (
-                  <p className="text-xs mt-1 text-orange-400 flex items-center">
+                  <p className="text-xs mt-1 text-red-400 flex items-center">
                     <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Las contraseñas no coinciden
                   </p>
                 )}
@@ -638,7 +646,31 @@ export default function Login() {
                 <User className="w-6 h-6 text-purple-500 mx-auto mb-2" />
                 <p className="text-gray-700 text-sm font-medium">Sesión iniciada</p>
                 <p className="text-gray-400 text-xs mt-1">Accede a todas las funcionalidades de TuEvento</p>
-                <p className="text-purple-600 text-sm font-semibold mt-2">👋 ¡Hola, {userData?.fullName ? userData.fullName.split(' ')[0] : (userData?.alias || formData.email)}!</p>
+                <p className="text-purple-600 text-sm font-semibold mt-2">👋 ¡Hola, {(() => {
+                      if (!userData?.fullName) return userData?.alias || formData.email;
+                      
+                      const name = userData.fullName;
+                      const parts = name.split(' ').filter(part => part.trim().length > 0);
+                      
+                      if (parts.length === 0) return userData?.alias || formData.email;
+                      if (parts.length === 1) return parts[0];
+                      
+                      const firstName = parts[0];
+                      const lastName = parts[1];
+                      
+                      // Si el nombre es corto (≤3 caracteres)
+                      if (firstName.length <= 3) {
+                        // Si el apellido es más largo que el nombre, mostrar apellido
+                        if (lastName.length > firstName.length) {
+                          return lastName;
+                        }
+                        // Si el apellido también es corto, mostrar solo el nombre
+                        return firstName;
+                      }
+                      
+                      // Si el nombre es largo (>3 caracteres), mostrar solo el nombre
+                      return firstName;
+                    })()}!</p>
               </div>
               <button onClick={handleContinueToHome}
                 className="w-full bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-semibold py-3 rounded-lg transition-all text-sm flex items-center justify-center gap-2">
