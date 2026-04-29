@@ -13,12 +13,13 @@ import { oauthService } from "../services/oauthService";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 export default function LoginScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { login, setSession, loading, error } = useAuth();
+  const { palette } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -80,7 +81,7 @@ export default function LoginScreen() {
             style={{ marginBottom: 0 }}
           />
           <View style={{ flex: 1, alignItems: "center" }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 28, fontWeight: "800" }}>
+            <Text style={{ color: palette.textPrimary, fontSize: 28, fontWeight: "800" }}>
               Iniciar Sesión
             </Text>
           </View>
@@ -88,45 +89,45 @@ export default function LoginScreen() {
         </View>
 
         {/* Email */}
-        <Text style={{ color: colors.textPrimary, fontWeight: "600", marginBottom: 8 }}>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginBottom: 8 }}>
           Ingresa tu Correo Electronico
         </Text>
-        <View style={{ backgroundColor: colors.surface, borderRadius: 12, borderWidth: errors.email ? 1 : 0, borderColor: colors.error }}>
+        <View style={{ backgroundColor: palette.surface, borderRadius: 12, borderWidth: errors.email ? 1 : 0, borderColor: palette.error }}>
           <TextInput
             placeholder="Correo o nombre"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={palette.textMuted}
             value={email}
             onChangeText={(t) => { setEmail(t); setErrors({ ...errors, email: null }); }}
-            style={{ color: colors.textPrimary, padding: 16, fontSize: 15 }}
+            style={{ color: palette.textPrimary, padding: 16, fontSize: 15 }}
             keyboardType="email-address"
             autoCapitalize="none"
           />
         </View>
-        {errors.email && <Text style={{ color: colors.error, fontSize: 13, marginTop: 4 }}>{errors.email}</Text>}
+        {errors.email && <Text style={{ color: palette.error, fontSize: 13, marginTop: 4 }}>{errors.email}</Text>}
 
         {/* Password */}
-        <Text style={{ color: colors.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>
           Ingresa tu contraseña
         </Text>
-        <View style={{ backgroundColor: colors.surface, borderRadius: 12, flexDirection: "row", alignItems: "center", borderWidth: errors.password ? 1 : 0, borderColor: colors.error }}>
+        <View style={{ backgroundColor: palette.surface, borderRadius: 12, flexDirection: "row", alignItems: "center", borderWidth: errors.password ? 1 : 0, borderColor: palette.error }}>
           <TextInput
             placeholder="Contraseña"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={palette.textMuted}
             value={password}
             onChangeText={(t) => { setPassword(t); setErrors({ ...errors, password: null }); }}
             secureTextEntry={!showPassword}
-            style={{ color: colors.textPrimary, padding: 16, fontSize: 15, flex: 1 }}
+            style={{ color: palette.textPrimary, padding: 16, fontSize: 15, flex: 1 }}
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ paddingRight: 16 }}>
-            <Ionicons name={showPassword ? "eye" : "eye-off"} size={22} color={colors.textMuted} />
+            <Ionicons name={showPassword ? "eye" : "eye-off"} size={22} color={palette.textMuted} />
           </TouchableOpacity>
         </View>
-        {errors.password && <Text style={{ color: colors.error, fontSize: 13, marginTop: 4 }}>{errors.password}</Text>}
+        {errors.password && <Text style={{ color: palette.error, fontSize: 13, marginTop: 4 }}>{errors.password}</Text>}
 
         {/* Error API */}
         {error && !errors.email && !errors.password && (
-          <View style={{ backgroundColor: "#EF444420", borderRadius: 10, padding: 12, marginTop: 16, borderWidth: 1, borderColor: colors.error }}>
-            <Text style={{ color: colors.error, fontSize: 14, textAlign: "center" }}>{error}</Text>
+          <View style={{ backgroundColor: "#EF444420", borderRadius: 10, padding: 12, marginTop: 16, borderWidth: 1, borderColor: palette.error }}>
+            <Text style={{ color: palette.error, fontSize: 14, textAlign: "center" }}>{error}</Text>
           </View>
         )}
 
@@ -135,10 +136,10 @@ export default function LoginScreen() {
           onPress={handleLogin}
           disabled={loading}
           activeOpacity={0.85}
-          style={{ borderRadius: 14, overflow: "hidden", marginTop: 32, shadowColor: colors.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8, opacity: loading ? 0.7 : 1 }}
+          style={{ borderRadius: 14, overflow: "hidden", marginTop: 32, shadowColor: palette.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8, opacity: loading ? 0.7 : 1 }}
         >
-          <LinearGradient colors={colors.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: "center" }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "700" }}>
+          <LinearGradient colors={palette.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: "center" }}>
+            <Text style={{ color: palette.textPrimary, fontSize: 16, fontWeight: "700" }}>
               {loading ? "Iniciando sesión..." : "Iniciar sesión"}
             </Text>
           </LinearGradient>
@@ -146,23 +147,23 @@ export default function LoginScreen() {
 
         {/* Links */}
         <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 24 }}>
-          <Text style={{ color: colors.textSecondary, fontSize: 14 }}>¿No tienes una cuenta? </Text>
+          <Text style={{ color: palette.textSecondary, fontSize: 14 }}>¿No tienes una cuenta? </Text>
           <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-            <Text style={{ color: colors.primary, fontSize: 14, fontWeight: "600" }}>crea tu cuenta.</Text>
+            <Text style={{ color: palette.primary, fontSize: 14, fontWeight: "600" }}>crea tu cuenta.</Text>
           </TouchableOpacity>
         </View>
         <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 12 }}>
-          <Text style={{ color: colors.textSecondary, fontSize: 14 }}>¿Olvidaste tu contraseña? </Text>
+          <Text style={{ color: palette.textSecondary, fontSize: 14 }}>¿Olvidaste tu contraseña? </Text>
           <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
-            <Text style={{ color: colors.primary, fontSize: 14, fontWeight: "600" }}>Recupera el acceso.</Text>
+            <Text style={{ color: palette.primary, fontSize: 14, fontWeight: "600" }}>Recupera el acceso.</Text>
           </TouchableOpacity>
         </View>
 
         {/* Divider */}
         <View style={{ flexDirection: "row", alignItems: "center", marginTop: 28 }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: colors.surfaceAlt }} />
-          <Text style={{ color: colors.textMuted, marginHorizontal: 12, fontSize: 13 }}>Inicia sesión con:</Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: colors.surfaceAlt }} />
+          <View style={{ flex: 1, height: 1, backgroundColor: palette.surfaceAlt }} />
+          <Text style={{ color: palette.textMuted, marginHorizontal: 12, fontSize: 13 }}>Inicia sesión con:</Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: palette.surfaceAlt }} />
         </View>
 
         {/* OAuth */}
@@ -201,9 +202,9 @@ export default function LoginScreen() {
 
         {/* Términos */}
         <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 28, marginBottom: 40, flexWrap: "wrap" }}>
-          <Text style={{ color: colors.textMuted, fontSize: 13 }}>Consulta nuestros </Text>
+          <Text style={{ color: palette.textMuted, fontSize: 13 }}>Consulta nuestros </Text>
           <TouchableOpacity onPress={() => navigation.navigate("Terms")}>
-            <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>términos y condiciones del sistema</Text>
+            <Text style={{ color: palette.primary, fontSize: 13, fontWeight: "600" }}>términos y condiciones del sistema</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
