@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { CheckCircle, Mail, ArrowRight, RefreshCw, AlertCircle } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle, Mail, ArrowRight, RefreshCw } from "lucide-react";
 import { verifyActivationCode, resendActivationCode, resendActivationCodeByEmail } from "../services/Login.js";
 
 export default function CodeVerification({ userID: propUserID, userEmail: propUserEmail, onVerificationSuccess, onBackToLogin }) {
+  const navigate = useNavigate();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -14,12 +16,33 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
   const [activationEmail, setActivationEmail] = useState(propUserEmail || "");
 
   useEffect(() => {
+    console.log('CodeVerification mounted');
+    console.log('propUserEmail:', propUserEmail);
+    console.log('propUserID:', propUserID);
+    
     if (propUserEmail) {
       setActivationEmail(propUserEmail);
       setNoUserID(false);
     } else if (!propUserID) {
       const storedUserID = localStorage.getItem('pendingActivationUserID');
-      if (storedUserID) {
+      const storedEmail = localStorage.getItem('pendingActivationEmail');
+      
+      // Leer email de la URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlEmail = urlParams.get('email');
+      
+      console.log('URL email:', urlEmail);
+      console.log('Stored email:', storedEmail);
+      console.log('Stored userID:', storedUserID);
+      
+      if (urlEmail) {
+        setActivationEmail(urlEmail);
+        localStorage.setItem('pendingActivationEmail', urlEmail);
+        setNoUserID(false);
+      } else if (storedEmail) {
+        setActivationEmail(storedEmail);
+        setNoUserID(false);
+      } else if (storedUserID) {
         setUserID(parseInt(storedUserID));
       } else {
         setNoUserID(true);
@@ -30,9 +53,9 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
   // Si no hay userID disponible, mostrar pantalla para reenviar código
   if (noUserID) {
     return (
-      <div className="min-h-screen flex flex-col md:flex-row">
+      <div className="min-h-screen flex">
         {/* Columna izquierda - Ilustración con gradiente púrpura */}
-        <div className="w-full md:w-1/2 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-4 md:p-8">
+        <div className="w-1/2 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-8">
           <div className="text-center space-y-6 max-w-sm">
             <Mail className="w-16 h-16 text-white mx-auto" />
             <div className="text-white">
@@ -96,8 +119,8 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
             <div className="text-center">
               <button
                 type="button"
-                onClick={onBackToLogin}
-                className="text-purple-400 hover:text-purple-300"
+                onClick={() => onBackToLogin ? onBackToLogin() : navigate('/login')}
+                className="text-accent hover:text-purple-300"
               >
                 Volver al inicio de sesión
               </button>
@@ -112,6 +135,10 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
     e.preventDefault();
     setError("");
     setLoading(true);
+    console.log('=== FRONTEND SUBMIT ===');
+    console.log('Email:', activationEmail || userID);
+    console.log('Code:', code);
+    console.log('Code length:', code.length);
     try {
       const result = await verifyActivationCode(activationEmail || userID, code);
       if (result.success) {
@@ -144,9 +171,13 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
 
   const handleContinueToLogin = () => {
     setShowSuccessNotification(false);
-    // Limpiar el userID del localStorage cuando la verificación es exitosa
     localStorage.removeItem('pendingActivationUserID');
-    onVerificationSuccess();
+    localStorage.removeItem('pendingActivationEmail');
+    if (onVerificationSuccess) {
+      onVerificationSuccess();
+    } else {
+      navigate('/login');
+    }
   };
 
   const handleResendCode = async () => {
@@ -169,14 +200,14 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
+    <div className="min-h-screen flex">
       {/* Columna izquierda - Ilustración con gradiente púrpura */}
-      <div className="w-full md:w-1/2 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-4 md:p-8">
+      <div className="w-1/2 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-8">
         <div className="text-center space-y-6 max-w-sm">
           <img
             src="/src/assets/images/fondologin.png"
             alt="Ilustración escritorio"
-            className="w-full max-w-xs md:w-380 h-auto md:h-130 mx-auto drop-shadow-2xl"
+            className="w-full max-w-xs drop-shadow-2xl"
           />
         </div>
       </div>
@@ -232,7 +263,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
           <div className="text-center">
             <button
               type="button"
-              onClick={onBackToLogin}
+              onClick={() => onBackToLogin ? onBackToLogin() : navigate('/login')}
               className="text-accent hover:text-purple-300"
             >
               Volver al inicio de sesión

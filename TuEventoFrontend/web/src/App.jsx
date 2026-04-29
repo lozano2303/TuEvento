@@ -6,13 +6,14 @@ import AboutUs from './pages/AboutUs'
 import Events from './pages/Events'
 import Navbar from './layouts/Navbar'
 import OrganizerPetitionForm from './pages/OrganizerPetitionForm'
-import AdminDashboard from './pages/AdminDashboard'
+import AdminPanel from './pages/AdminPanel'
 import ProfilePage from './pages/ProfilePage';
+import CodeVerification from './pages/CodeVerification';
 
 
 function AppContent() {
   const location = useLocation();
-  const showNavbar = !['/login'].includes(location.pathname);
+  const showNavbar = !['/login', '/profile', '/verification'].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-background">
@@ -23,9 +24,10 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/nosotros" element={<AboutUs />} />
           <Route path="/events" element={<Events />} />
-          <Route path="/organizer-petition" element={<OrganizerPetitionForm />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/organizer-petition-form" element={<OrganizerPetitionForm />} />
+          <Route path="/admin-panel" element={<AdminPanel />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/verification" element={<CodeVerification />} />
         </Routes>
       </div>
     </div>

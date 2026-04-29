@@ -90,12 +90,16 @@ export const changePassword = async (oldPassword, newPassword) => {
 // Función para verificar código de activación
 export const verifyActivationCode = async (email, code) => {
   try {
+    const requestBody = { email, activationCode: code };
+    console.log('=== LOGIN.JS SENDING ===');
+    console.log('Request body:', requestBody);
+    
     const response = await fetch(`${API_URL}/auth/activate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, activationCode: code }),
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
@@ -118,7 +122,7 @@ export const verifyActivationCode = async (email, code) => {
 // Función para reenviar código de activación
 export const resendActivationCode = async (email) => {
   try {
-    const response = await fetch(`${API_URL}/auth/recover-password`, {
+    const response = await fetch(`${API_URL}/auth/resend-activation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -203,5 +207,37 @@ export const resetPassword = async (code, newPassword, email) => {
   } catch (error) {
     console.error('Error en resetPassword:', error);
     throw error;
+  }
+};
+
+// Función para verificar si el correo ya existe
+export const checkEmailExists = async (email) => {
+  try {
+    const response = await fetch(`${API_URL}/auth/check-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 409) {
+      // Email ya existe
+      return { exists: true };
+    }
+
+    if (response.status === 200) {
+      // Email no existe
+      return { exists: false };
+    }
+
+    // Si el endpoint no existe, asumimos que el email no existe y dejamos que el registro falle
+    return { exists: false };
+  } catch (error) {
+    // Si hay error (endpoint no existe, etc.), asumimos que el email no existe
+    console.error('Error al verificar email:', error);
+    return { exists: false };
   }
 };
