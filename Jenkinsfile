@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9.6-eclipse-temurin-21'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent any
     
     environment {
         DOCKER_IMAGE = "tu-evento-backend:${env.BUILD_ID}"
@@ -16,6 +11,17 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+            }
+        }
+        
+        stage('Setup') {
+            steps {
+                sh '''
+                    echo "Setting up environment..."
+                    sudo apt-get update
+                    sudo apt-get install -y maven
+                    mvn --version
+                '''
             }
         }
         
