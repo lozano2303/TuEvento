@@ -18,26 +18,30 @@ export function ThemeProvider({ children }) {
       return;
     }
 
-    const fetchPalette = async () => {
-      setIsLoadingTheme(true);
-      try {
-        const accessToken = await AsyncStorage.getItem("accessToken");
-        if (!accessToken) return;
-        const remotePalette = await getActivePalette(accessToken);
-        setPalette({ ...colors, ...remotePalette });
-      } catch (e) {
-        console.warn("[ThemeContext] No se pudo cargar la paleta remota, usando fallback:", e.message);
-        // Mantiene el fallback — la app no se rompe
-      } finally {
-        setIsLoadingTheme(false);
-      }
-    };
-
     fetchPalette();
   }, [user]);
 
+  const fetchPalette = async () => {
+    setIsLoadingTheme(true);
+    try {
+      const accessToken = await AsyncStorage.getItem("accessToken");
+      if (!accessToken) return;
+      const remotePalette = await getActivePalette(accessToken);
+      setPalette({ ...colors, ...remotePalette });
+    } catch (e) {
+      console.warn("[ThemeContext] No se pudo cargar la paleta remota, usando fallback:", e.message);
+      // Mantiene el fallback — la app no se rompe
+    } finally {
+      setIsLoadingTheme(false);
+    }
+  };
+
+  const refreshPalette = async () => {
+    await fetchPalette();
+  };
+
   return (
-    <ThemeContext.Provider value={{ palette, isLoadingTheme }}>
+    <ThemeContext.Provider value={{ palette, isLoadingTheme, refreshPalette }}>
       {children}
     </ThemeContext.Provider>
   );
