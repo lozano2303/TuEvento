@@ -26,6 +26,86 @@ services:
     volumes:
       - minio_data:/data
 
+  # CI/CD Services
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: tuevento-jenkins
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+    volumes:
+      - jenkins_data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.jenkins:/root/.jenkins
+    networks:
+      - tuevento-network
+
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: tuevento-sonarqube
+    restart: unless-stopped
+    ports:
+      - "9002:9000"
+    environment:
+      - SONAR_JDBC_URL=jdbc:postgresql://postgres:5432/sonarqube
+      - SONAR_JDBC_USERNAME=${POSTGRES_USER}
+      - SONAR_JDBC_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+    depends_on:
+      - postgres
+    networks:
+      - tuevento-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: tuevento-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - tuevento-network
+
+  # Development backend service
+  backend:
+    build:
+      context: ./TuEventoBackend/tu-evento
+      dockerfile: Dockerfile
+    container_name: tuevento-backend-dev
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+    depends_on:
+      - postgres
+      - minio
+      - redis
+    networks:
+      - tuevento-network
+
+networks:
+  tuevento-network:
+    driver: bridge
+
 volumes:
   postgres_data:
   minio_data:
+  jenkins_data:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:
+  redis_data:

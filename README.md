@@ -17,6 +17,7 @@ The backend is currently the active component under development. Frontend (web a
 - [Functional Requirements](#functional-requirements)
 - [Non-Functional Requirements](#non-functional-requirements)
 - [Getting Started](#getting-started)
+- [🚀 DevOps Pipeline CI/CD](#-devops-pipeline-cicd)
 - [Team](#team)
 
 ---
@@ -269,12 +270,21 @@ The database is designed around the modules above. Each module has its own entit
 
 ### Prerequisites
 
+#### Development Environment
 - Java 21
 - Maven 3.9+
 - PostgreSQL 17
 
+#### DevOps Environment (CI/CD)
+- Docker Desktop 4.0+
+- Docker Compose 2.0+
+- kubectl (Kubernetes CLI)
+- Minikube o acceso a cluster Kubernetes
+- Git 2.30+
+
 ### Setup
 
+#### Quick Start (Development)
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/tu-evento.git
@@ -289,6 +299,130 @@ cd tu-evento
 mvn clean install
 mvn spring-boot:run
 ```
+
+#### Full DevOps Stack (CI/CD)
+```bash
+# Clone the repository
+git clone https://github.com/your-org/tu-evento.git
+cd tu-evento
+
+# Copy environment variables
+cp .env.example .env
+# Edit .env with your credentials
+
+# Start all services (Jenkins, SonarQube, PostgreSQL, Redis, MinIO)
+docker-compose up -d
+
+# Access services:
+# Jenkins: http://localhost:8080
+# SonarQube: http://localhost:9000
+# Backend Dev: http://localhost:8081
+```
+
+## 🚀 DevOps Pipeline CI/CD
+
+### Overview
+TuEvento includes a complete CI/CD pipeline with Jenkins, SonarQube, Docker, and Kubernetes for automated testing, quality analysis, and deployment.
+
+### Pipeline Stages
+1. **Checkout** - Download source code
+2. **Clean & Compile** - Build Spring Boot project
+3. **Unit Tests** - Execute automated tests
+4. **SonarQube Analysis** - Code quality analysis
+5. **Quality Gate** - Verify quality standards
+6. **Build Docker Image** - Containerize application
+7. **Push to Registry** - Upload to Docker Hub
+8. **Deploy to Kubernetes** - Production deployment
+
+### Services Available
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Jenkins | http://localhost:8080 | Setup required |
+| SonarQube | http://localhost:9002 | admin / admin |
+| MinIO Console | http://localhost:9001 | minioadmin / miniopassword |
+| PostgreSQL | localhost:5432 | postgres / secret |
+| Redis | localhost:6379 | - |
+| Backend Dev | http://localhost:8081 | - |
+
+### Jenkins Configuration
+1. **Setup Jenkins**: Get initial password with `docker logs tuevento-jenkins`
+2. **Install Plugins**: Pipeline, Docker Pipeline, Kubernetes, SonarQube Scanner, Blue Ocean
+3. **Configure Credentials**: Docker Hub, SonarQube token, Kubernetes config
+4. **Create Pipeline**: Use `Jenkinsfile` from repository root
+
+### Docker Deployment
+```bash
+# Build image
+cd TuEventoBackend/tu-evento
+docker build -t tu-evento-backend .
+
+# Run container
+docker run -p 8080:8080 tu-evento-backend
+```
+
+### Kubernetes Deployment
+```bash
+# Create namespace
+kubectl create namespace tuevento
+
+# Deploy application
+kubectl apply -f k8s/ -n tuevento
+
+# Check deployment
+kubectl get pods -n tuevento
+kubectl get services -n tuevento
+```
+
+### Quality Gates
+- Code coverage > 80%
+- Zero critical bugs
+- Zero critical vulnerabilities
+- Controlled technical debt
+
+### Monitoring & Troubleshooting
+```bash
+# View container logs
+docker logs tuevento-jenkins -f
+docker logs tuevento-sonarqube -f
+docker logs tuevento-backend-dev -f
+
+# Kubernetes logs
+kubectl logs -f deployment/tu-evento-backend -n tuevento
+
+# Clean up
+docker-compose down -v
+kubectl delete namespace tuevento
+```
+
+### Common Issues & Solutions
+
+#### Port Conflicts
+If you encounter port conflicts (e.g., "port is already allocated"), follow these steps:
+
+**Problem:** SonarQube and MinIO both trying to use port 9000
+```bash
+Error: Bind for 0.0.0.0:9000 failed: port is already allocated
+```
+
+**Solution:** Change SonarQube port in `docker-compose.yml`:
+```yaml
+sonarqube:
+  image: sonarqube:lts-community
+  ports:
+    - "9002:9000"  # Changed from "9000:9000"
+```
+
+**Steps to fix:**
+1. Stop all containers: `docker-compose down`
+2. Edit `docker-compose.yml` and change SonarQube port to `9002:9000`
+3. Restart services: `docker-compose up -d`
+4. Access SonarQube at: http://localhost:9002
+
+**Updated Service URLs:**
+- Jenkins: http://localhost:8080
+- SonarQube: http://localhost:9002 *(changed)*
+- MinIO Console: http://localhost:9001
+- Backend Dev: http://localhost:8081
 
 ---
 
@@ -324,6 +458,7 @@ El backend es actualmente el componente activo en desarrollo. El frontend (web y
 - [Requisitos Funcionales](#requisitos-funcionales)
 - [Requisitos No Funcionales](#requisitos-no-funcionales)
 - [Cómo Empezar](#cómo-empezar)
+- [🚀 Pipeline DevOps CI/CD](#-pipeline-devops-cicd)
 - [Equipo](#equipo)
 
 ---
@@ -576,12 +711,21 @@ La base de datos está diseñada alrededor de los módulos anteriores. Cada mód
 
 ### Prerrequisitos
 
+#### Entorno de Desarrollo
 - Java 21
 - Maven 3.9+
 - PostgreSQL 17
 
+#### Entorno DevOps (CI/CD)
+- Docker Desktop 4.0+
+- Docker Compose 2.0+
+- kubectl (Kubernetes CLI)
+- Minikube o acceso a cluster Kubernetes
+- Git 2.30+
+
 ### Configuración
 
+#### Inicio Rápido (Desarrollo)
 ```bash
 # Clonar el repositorio
 git clone https://github.com/your-org/tu-evento.git
@@ -596,6 +740,130 @@ cd tu-evento
 mvn clean install
 mvn spring-boot:run
 ```
+
+#### Stack DevOps Completo (CI/CD)
+```bash
+# Clonar el repositorio
+git clone https://github.com/your-org/tu-evento.git
+cd tu-evento
+
+# Copiar variables de entorno
+cp .env.example .env
+# Editar .env con tus credenciales
+
+# Iniciar todos los servicios (Jenkins, SonarQube, PostgreSQL, Redis, MinIO)
+docker-compose up -d
+
+# Acceder a los servicios:
+# Jenkins: http://localhost:8080
+# SonarQube: http://localhost:9000
+# Backend Dev: http://localhost:8081
+```
+
+## 🚀 Pipeline DevOps CI/CD
+
+### Resumen
+TuEvento incluye un pipeline CI/CD completo con Jenkins, SonarQube, Docker y Kubernetes para pruebas automatizadas, análisis de calidad y despliegue.
+
+### Etapas del Pipeline
+1. **Checkout** - Descargar código fuente
+2. **Clean & Compile** - Compilar proyecto Spring Boot
+3. **Unit Tests** - Ejecutar pruebas automatizadas
+4. **SonarQube Analysis** - Analizar calidad de código
+5. **Quality Gate** - Verificar estándares de calidad
+6. **Build Docker Image** - Contenerizar aplicación
+7. **Push to Registry** - Subir a Docker Hub
+8. **Deploy to Kubernetes** - Despliegue en producción
+
+### Servicios Disponibles
+| Servicio | URL | Credenciales |
+|----------|-----|-------------|
+| Jenkins | http://localhost:8080 | Configuración requerida |
+| SonarQube | http://localhost:9002 | admin / admin |
+| Consola MinIO | http://localhost:9001 | minioadmin / miniopassword |
+| PostgreSQL | localhost:5432 | postgres / secret |
+| Redis | localhost:6379 | - |
+| Backend Dev | http://localhost:8081 | - |
+
+### Configuración de Jenkins
+1. **Configurar Jenkins**: Obtener contraseña inicial con `docker logs tuevento-jenkins`
+2. **Instalar Plugins**: Pipeline, Docker Pipeline, Kubernetes, SonarQube Scanner, Blue Ocean
+3. **Configurar Credenciales**: Docker Hub, token SonarQube, config Kubernetes
+4. **Crear Pipeline**: Usar `Jenkinsfile` del repositorio
+
+### Despliegue Docker
+```bash
+# Construir imagen
+cd TuEventoBackend/tu-evento
+docker build -t tu-evento-backend .
+
+# Ejecutar contenedor
+docker run -p 8080:8080 tu-evento-backend
+```
+
+### Despliegue Kubernetes
+```bash
+# Crear namespace
+kubectl create namespace tuevento
+
+# Desplegar aplicación
+kubectl apply -f k8s/ -n tuevento
+
+# Verificar despliegue
+kubectl get pods -n tuevento
+kubectl get services -n tuevento
+```
+
+### Quality Gates
+- Cobertura de código > 80%
+- Cero bugs críticos
+- Cero vulnerabilidades críticas
+- Deuda técnica controlada
+
+### Monitoreo y Troubleshooting
+```bash
+# Ver logs de contenedores
+docker logs tuevento-jenkins -f
+docker logs tuevento-sonarqube -f
+docker logs tuevento-backend-dev -f
+
+# Logs de Kubernetes
+kubectl logs -f deployment/tu-evento-backend -n tuevento
+
+# Limpiar
+docker-compose down -v
+kubectl delete namespace tuevento
+```
+
+### Problemas Comunes y Soluciones
+
+#### Conflictos de Puertos
+Si encuentras conflictos de puertos (ej. "port is already allocated"), sigue estos pasos:
+
+**Problema:** SonarQube y MinIO intentando usar ambos el puerto 9000
+```bash
+Error: Bind for 0.0.0.0:9000 failed: port is already allocated
+```
+
+**Solución:** Cambiar el puerto de SonarQube en `docker-compose.yml`:
+```yaml
+sonarqube:
+  image: sonarqube:lts-community
+  ports:
+    - "9002:9000"  # Cambiado de "9000:9000"
+```
+
+**Pasos para solucionar:**
+1. Detener todos los contenedores: `docker-compose down`
+2. Editar `docker-compose.yml` y cambiar puerto de SonarQube a `9002:9000`
+3. Reiniciar servicios: `docker-compose up -d`
+4. Acceder a SonarQube en: http://localhost:9002
+
+**URLs de Servicios Actualizadas:**
+- Jenkins: http://localhost:8080
+- SonarQube: http://localhost:9002 *(cambiado)*
+- Consola MinIO: http://localhost:9001
+- Backend Dev: http://localhost:8081
 
 ---
 
