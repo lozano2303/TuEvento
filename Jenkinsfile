@@ -18,8 +18,9 @@ pipeline {
             steps {
                 sh '''
                     echo "Setting up environment..."
-                    sudo apt-get update
-                    sudo apt-get install -y maven
+                    whoami
+                    apt-get update
+                    apt-get install -y maven
                     mvn --version
                 '''
             }
