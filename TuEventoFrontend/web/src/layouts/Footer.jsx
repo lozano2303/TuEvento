@@ -1,6 +1,6 @@
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 border-t border-gray-800 py-6">
+    <footer className="bg-background border-t border-surface py-6">
       <div className="max-w-6xl mx-auto px-4">
 
         {/* Contenido centrado */}
@@ -9,18 +9,18 @@ export default function Footer() {
           {/* Logo + nombre */}
           <div className="flex items-center gap-2">
   
-            <span className="text-white font-semibold text-lg tracking-wide">
-              Tu <span className="text-purple-400">Evento</span>
+            <span className="text-textPrimary font-semibold text-lg tracking-wide">
+              Tu <span className="text-accent">Evento</span>
             </span>
           </div>
 
           {/* Slogan */}
-          <p className="text-gray-500 text-xs tracking-wide">
+          <p className="text-textMuted text-xs tracking-wide">
             Tu plataforma de eventos favorita
           </p>
 
           {/* Divisor */}
-          <div className="w-16 h-px bg-gray-700" />
+          <div className="w-16 h-px bg-surfaceAlt" />
 
           {/* Copyright */}
           <p className="text-gray-600 text-xs">

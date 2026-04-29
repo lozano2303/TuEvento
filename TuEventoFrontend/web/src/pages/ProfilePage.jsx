@@ -1,11 +1,21 @@
-import { useState } from 'react';
-import Navbar from '../layouts/Navbar';
+import { useState, useEffect } from 'react';
 import Footer from '../layouts/Footer';
+import { useTheme } from '../context/ThemeContext';
+import { getThemes, activateTheme } from '../services/themeService';
+
+const THEME_PREVIEWS = {
+  DARK:       { background: "#1E0A3C", primary: "#7C3AED", accent: "#A78BFA" },
+  LIGHT:      { background: "#FFFFFF", primary: "#7C3AED", accent: "#8B5CF6" },
+  VIBRANT:    { background: "#0D0D0D", primary: "#FF4081", accent: "#FFEB3B" },
+  ACCESSIBLE: { background: "#FFFFFF", primary: "#005FCC", accent: "#E65100" }
+};
 
 const ProfilePage = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('es');
-  const [selectedTheme, setSelectedTheme] = useState('default');
   const [loading, setLoading] = useState(false);
+  const [themes, setThemes] = useState([]);
+  const [loadingTheme, setLoadingTheme] = useState(false);
+  const { refreshPalette, activeThemeId } = useTheme();
 
   const userEmail = localStorage.getItem('userEmail') || 'francisco@tuevento.com';
   const storedName = localStorage.getItem('name') || localStorage.getItem('fullName') || 'Francisco';
@@ -44,6 +54,36 @@ const ProfilePage = () => {
     direccion: 'Calle Mayor, 1 Madrid'
   });
 
+  useEffect(() => {
+    loadThemes();
+  }, []);
+
+  const loadThemes = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+      const themesData = await getThemes();
+      setThemes(themesData);
+    } catch (error) {
+      console.error('Error loading themes:', error);
+    }
+  };
+
+  const handleThemeChange = async (themeId) => {
+    setLoadingTheme(true);
+    try {
+      await activateTheme(themeId);
+      await refreshPalette();
+    } catch (error) {
+      console.error('Error activating theme:', error);
+      alert('Error al cambiar el tema');
+    } finally {
+      setLoadingTheme(false);
+    }
+  };
+
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -69,26 +109,17 @@ const ProfilePage = () => {
     { id: 'pt', label: 'Português (PT)' }
   ];
 
-  const themeGradient = {
-    default: 'linear-gradient(135deg, #7c17d3 0%, #5a189a 100%)',
-    dark: 'linear-gradient(135deg, #1f1f2e 0%, #2d2d44 100%)',
-    light: 'linear-gradient(135deg, #e5e5e5 0%, #ffffff 100%)',
-    custom: 'linear-gradient(45deg, #7c17d3 25%, #ff00c8 50%, #00d4ff 75%)'
-  };
-
   return (
-    <div className="min-h-screen bg-[#0f0f1a] text-slate-100 font-sans">
-      <Navbar />
-
+    <div className="min-h-screen bg-background text-slate-100 font-sans">
       {/* Hero Section */}
-      <div className="w-full h-80 relative overflow-hidden bg-[#0f0f1a]">
+      <div className="w-full h-80 relative overflow-hidden bg-background">
         <div className="absolute inset-0 z-0" style={{ background: 'radial-gradient(circle at 30% 20%, #4c1d95 0%, transparent 60%), radial-gradient(circle at 70% 30%, #1e3a8a 0%, transparent 60%), radial-gradient(circle at 50% 0%, #7c3aed 0%, transparent 40%)' }}></div>
         <div className="absolute top-10 left-0 w-[150%] h-px bg-gradient-to-r from-transparent via-[rgba(124,23,211,0.3)] to-transparent -rotate-45"></div>
         <div className="absolute top-40 left-0 w-[150%] h-px bg-gradient-to-r from-transparent via-[rgba(0,212,255,0.3)] to-transparent -rotate-45"></div>
         <div className="absolute top-60 left-0 w-[150%] h-px bg-gradient-to-r from-transparent via-[rgba(124,23,211,0.3)] to-transparent -rotate-45"></div>
         <div className="absolute inset-0 z-10 opacity-40" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-        <div className="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-[#0f0f1a] via-[#0f0f1a]/80 to-transparent"></div>
-        <div className="absolute bottom-0 left-0 w-full h-24 bg-[#0f0f1a] blur-xl scale-y-150 origin-bottom opacity-90"></div>
+        <div className="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 w-full h-24 bg-background blur-xl scale-y-150 origin-bottom opacity-90"></div>
       </div>
 
       {/* Main Content */}
@@ -104,7 +135,7 @@ const ProfilePage = () => {
               <div className="relative w-32 h-32 rounded-xl bg-gradient-to-br from-[#7c17d3] to-[#5a189a] flex items-center justify-center text-5xl font-bold text-white border-2 border-white/30 shadow-2xl" style={{ boxShadow: '0 0 50px rgba(124, 23, 211, 0.6), 0 0 20px rgba(0, 212, 255, 0.4)' }}>
                 {firstLetter}
               </div>
-              <button className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-[#7c17d3] flex items-center justify-center text-white shadow-xl hover:scale-110 transition-transform border-2 border-[#0f0f1a] z-20">
+              <button className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-[#7c17d3] flex items-center justify-center text-white shadow-xl hover:scale-110 transition-transform border-2 border-background z-20">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                 </svg>
@@ -194,14 +225,14 @@ const ProfilePage = () => {
               </h3>
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 rounded-xl bg-red-500/5 border border-red-500/20">
                 <div>
-                  <p className="font-bold text-red-400">Zona de Peligro</p>
+                  <p className="font-bold text-error">Zona de Peligro</p>
                   <p className="text-sm text-slate-400">Una vez que desactives tu cuenta, no podrás revertir esta acción.</p>
                 </div>
                 <div className="flex gap-3">
                   <button className="px-4 py-2 rounded-lg border border-red-500/50 text-red-500 text-sm font-bold hover:bg-red-500 hover:text-white transition-all">Desactivar Cuenta</button>
                   <button 
                     onClick={handleLogout}
-                    className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-all"
+                    className="px-4 py-2 rounded-lg bg-error text-white text-sm font-bold hover:bg-red-700 transition-all"
                   >
                     Cerrar Sesión
                   </button>
@@ -242,44 +273,52 @@ const ProfilePage = () => {
             {/* Tema Visual */}
             <section className="rounded-2xl p-6 border-l-4" style={{ background: 'rgba(26, 17, 33, 0.7)', backdropFilter: 'blur(12px)', borderLeftColor: '#7c17d3', border: '1px solid rgba(124, 23, 211, 0.2)' }}>
               <h3 className="text-lg font-bold text-white mb-4">Tema Visual</h3>
-              <div className="space-y-4">
-                {[
-                  { id: 'default', label: 'Predeterminado', gradient: themeGradient.default },
-                  { id: 'dark', label: 'Oscuro', gradient: themeGradient.dark },
-                  { id: 'light', label: 'Claro', gradient: themeGradient.light },
-                  { id: 'custom', label: 'Personalizado', gradient: themeGradient.custom }
-                ].map((theme) => (
-                  <button 
-                    key={theme.id}
-                    onClick={() => setSelectedTheme(theme.id)}
-                    className={`relative rounded-xl overflow-hidden border-2 p-4 w-full transition-all ${
-                      selectedTheme === theme.id 
-                        ? 'border-[#7c17d3] bg-[rgba(124,23,211,0.1)]' 
-                        : 'border-[#372447] hover:border-[rgba(124,23,211,0.4)]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-sm font-bold ${selectedTheme === theme.id ? 'text-white' : 'text-slate-400'}`}>{theme.label}</span>
-                      {selectedTheme === theme.id && (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c17d3">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                        </svg>
+              <div className="space-y-3">
+                {themes.map((theme) => {
+                  const preview = THEME_PREVIEWS[theme.name] || THEME_PREVIEWS.DARK;
+                  const isActive = activeThemeId === theme.id;
+                  
+                  return (
+                    <button
+                      key={theme.id}
+                      onClick={() => handleThemeChange(theme.id)}
+                      disabled={loadingTheme}
+                      className={`relative rounded-xl p-4 text-left transition-all w-full ${
+                        isActive 
+                          ? 'bg-[rgba(124,23,211,0.15)] border-2 border-[#7c17d3]' 
+                          : 'bg-[#1a1121] border-2 border-[#372447] hover:border-[rgba(124,23,211,0.4)]'
+                      } ${loadingTheme ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className={`text-sm font-bold ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                          {theme.name}
+                        </span>
+                        {isActive && (
+                          <div className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(124, 23, 211, 0.3)', color: '#c4b5fd' }}>
+                            ACTIVO
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-8 h-8 rounded-full border-2 border-white/20" 
+                          style={{ background: preview.background }}
+                        />
+                        <div 
+                          className="w-8 h-8 rounded-full border-2 border-white/20" 
+                          style={{ background: preview.primary }}
+                        />
+                        <div 
+                          className="w-8 h-8 rounded-full border-2 border-white/20" 
+                          style={{ background: preview.accent }}
+                        />
+                      </div>
+                      {isActive && (
+                        <div className="absolute inset-0 pointer-events-none rounded-xl" style={{ boxShadow: 'inset 0 0 20px rgba(124,23,211,0.2)' }}></div>
                       )}
-                    </div>
-                    <div className="h-12 rounded flex items-center px-3 gap-2" style={{ 
-                      background: selectedTheme === theme.id ? 'rgba(15, 15, 26, 0.5)' : '#0a0a14',
-                      borderColor: selectedTheme === theme.id ? 'rgba(124, 23, 211, 0.3)' : '#372447',
-                      borderWidth: '1px',
-                      borderStyle: 'solid'
-                    }}>
-                      <div className="w-4 h-4 rounded-full" style={{ background: theme.gradient }}></div>
-                      <div className="h-2 w-16 rounded" style={{ background: '#372447' }}></div>
-                    </div>
-                    {selectedTheme === theme.id && (
-                      <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 20px rgba(124,23,211,0.2)', background: 'rgba(124,23,211,0.05)' }}></div>
-                    )}
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </section>
           </div>

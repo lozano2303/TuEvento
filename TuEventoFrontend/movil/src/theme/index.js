@@ -7,3 +7,4 @@ export {
   platformStyle,
   platformConfig,
 } from "./platform";
+export { ThemeContext, ThemeProvider, useTheme } from "../context/ThemeContext";

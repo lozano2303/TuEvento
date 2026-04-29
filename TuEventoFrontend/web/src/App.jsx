@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { ThemeProvider } from './context/ThemeContext'
 import Login from './pages/login'
 import LadingPage from './pages/ladingPage'
 import AboutUs from './pages/AboutUs'
@@ -12,29 +13,33 @@ import CodeVerification from './pages/CodeVerification';
 
 function AppContent() {
   const location = useLocation();
-  const showNavbar = !['/login', '/profile', '/verification'].includes(location.pathname);
+  const showNavbar = !['/login', '/verification'].includes(location.pathname);
 
   return (
-    <>
+    <div className="min-h-screen bg-background">
       {showNavbar && <Navbar />}
-      <Routes>
-        <Route path="/" element={<LadingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/nosotros" element={<AboutUs />} />
-        <Route path="/events" element={<Events />} />
-        <Route path="/organizer-petition-form" element={<OrganizerPetitionForm />} />
-        <Route path="/admin-panel" element={<AdminPanel />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/verification" element={<CodeVerification />} />
-      </Routes>
-    </>
+      <div>
+        <Routes>
+          <Route path="/" element={<LadingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/nosotros" element={<AboutUs />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/organizer-petition-form" element={<OrganizerPetitionForm />} />
+          <Route path="/admin-panel" element={<AdminPanel />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/verification" element={<CodeVerification />} />
+        </Routes>
+      </div>
+    </div>
   );
 }
 
 function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

@@ -85,25 +85,25 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="bg-gray-900 border-b border-gray-700 shadow-lg sticky top-0 z-40">
+      <header className="bg-background border-b border-surfaceAlt shadow-lg sticky top-0 z-40">
         <nav className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
-            <span className="text-xl font-bold text-white group-hover:text-purple-400 transition-colors">
-              Tu <span className="text-purple-400 group-hover:text-white transition-colors">Evento</span>
+            <span className="text-xl font-bold text-textPrimary group-hover:text-accent transition-colors">
+              Tu <span className="text-accent group-hover:text-textPrimary transition-colors">Evento</span>
             </span>
           </Link>
 
           {/* Links centrales — solo desktop */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium flex-1 justify-center">
-            <Link to="/" className="text-gray-300 hover:text-purple-400 transition-colors">Inicio</Link>
-            <Link to="/nosotros" className="text-gray-300 hover:text-purple-400 transition-colors">Nosotros</Link>
-            <Link to="/events" className="text-gray-300 hover:text-purple-400 transition-colors">Eventos</Link>
+            <Link to="/" className="text-textSecondary hover:text-accent transition-colors">Inicio</Link>
+            <Link to="/nosotros" className="text-textSecondary hover:text-accent transition-colors">Nosotros</Link>
+            <Link to="/events" className="text-textSecondary hover:text-accent transition-colors">Eventos</Link>
             {userData && isOrganizer && (
               <button
                 onClick={() => navigate('/event-management')}
-                className="flex items-center gap-1 text-gray-300 hover:text-purple-400 transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
+                className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
                 <Plus className="w-4 h-4" /> Crear Evento
               </button>
@@ -111,7 +111,7 @@ export default function Navbar() {
             {userData && !isAdmin && !isOrganizer && (
               <button
                 onClick={() => navigate('/organizer-petition-form')}
-                className="flex items-center gap-1 text-gray-300 hover:text-purple-400 transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
+                className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
                 <Plus className="w-4 h-4" /> Solicitud Organizador
               </button>
@@ -126,12 +126,12 @@ export default function Navbar() {
               <div className="relative user-modal">
                 <button
                   onClick={() => setIsModalOpen(!isModalOpen)}
-                  className="group inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full bg-purple-600 hover:bg-purple-700 transition-all duration-200 outline-none cursor-pointer"
+                  className="group inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full bg-primary hover:bg-primaryDark transition-all duration-200 outline-none cursor-pointer"
                 >
                   <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-white/20">
-                    <User className="w-4 h-4 text-white" />
+                    <User className="w-4 h-4 text-textPrimary" />
                   </span>
-                  <span className="text-[13px] font-medium text-white leading-none">
+                  <span className="text-[13px] font-medium text-textPrimary leading-none">
                     {displayName}
                   </span>
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${roleBadge.badgeClass}`}>
@@ -208,7 +208,7 @@ export default function Navbar() {
             ) : (
               <Link
                 to="/login"
-                className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium px-5 py-2 rounded-xl transition-colors"
+                className="bg-primary hover:bg-primaryDark text-textPrimary text-sm font-medium px-5 py-2 rounded-xl transition-colors"
               >
                 Iniciar sesión
               </Link>
@@ -217,7 +217,7 @@ export default function Navbar() {
             {/* Hamburguesa — solo mobile */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 transition-colors"
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-surfaceAlt text-textSecondary hover:text-textPrimary hover:border-accent transition-colors"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -226,32 +226,32 @@ export default function Navbar() {
 
         {/* Menú móvil desplegable */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-gray-800 border-t border-gray-700 px-4 py-3 flex flex-col gap-1">
+          <div className="md:hidden bg-surface border-t border-surfaceAlt px-4 py-3 flex flex-col gap-1">
             <Link
               to="/"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-300 hover:text-purple-400 hover:bg-gray-700 transition-colors text-sm font-medium px-3 py-2.5 rounded-xl"
+              className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl"
             >
               Inicio
             </Link>
             <Link
               to="/nosotros"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-300 hover:text-purple-400 hover:bg-gray-700 transition-colors text-sm font-medium px-3 py-2.5 rounded-xl"
+              className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl"
             >
               Nosotros
             </Link>
             <Link
               to="/events"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-300 hover:text-purple-400 hover:bg-gray-700 transition-colors text-sm font-medium px-3 py-2.5 rounded-xl"
+              className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl"
             >
               Eventos
             </Link>
             {userData && isOrganizer && (
               <button
                 onClick={() => handleNavClick('/event-management')}
-                className="flex items-center gap-2 text-gray-300 hover:text-purple-400 hover:bg-gray-700 transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer"
+                className="flex items-center gap-2 text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer"
               >
                 <Plus className="w-4 h-4" /> Crear Evento
               </button>
@@ -259,7 +259,7 @@ export default function Navbar() {
             {userData && !isAdmin && !isOrganizer && (
               <button
                 onClick={() => handleNavClick('/organizer-petition-form')}
-                className="flex items-center gap-2 text-gray-300 hover:text-purple-400 hover:bg-gray-700 transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer"
+                className="flex items-center gap-2 text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer"
               >
                 <Plus className="w-4 h-4" /> Solicitud Organizador
               </button>

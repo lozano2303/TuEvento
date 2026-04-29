@@ -12,11 +12,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { decorativeStyle } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 export default function LandingScreen() {
   const { width, height } = useWindowDimensions();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { palette } = useTheme();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
   const buttonAnim = useRef(new Animated.Value(0)).current;
@@ -44,12 +46,12 @@ export default function LandingScreen() {
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#1E0A3C" }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1E0A3C" />
+    <View style={{ flex: 1, backgroundColor: palette.background }}>
+      <StatusBar barStyle="light-content" backgroundColor={palette.background} />
 
       {/* Fondo con gradiente */}
       <LinearGradient
-        colors={["#1E0A3C", "#2D1B4E", "#1E0A3C"]}
+        colors={[palette.background, palette.surface, palette.background]}
         style={{ position: "absolute", width, height }}
       />
 
@@ -64,7 +66,7 @@ export default function LandingScreen() {
             width: width + 80,
             height: 200,
             borderRadius: 120,
-            backgroundColor: "#7C3AED22",
+            backgroundColor: palette.primary + "22",
           },
         ]}
       />
@@ -89,11 +91,11 @@ export default function LandingScreen() {
                 width: 80,
                 height: 80,
                 borderRadius: 20,
-                backgroundColor: "#7C3AED",
+                backgroundColor: palette.primary,
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 16,
-                shadowColor: "#7C3AED",
+                shadowColor: palette.primary,
                 shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.5,
                 shadowRadius: 16,
@@ -109,7 +111,7 @@ export default function LandingScreen() {
           </View>
           <Text
             style={{
-              color: "#FFFFFF",
+              color: palette.textPrimary,
               fontSize: 36,
               fontWeight: "800",
               letterSpacing: 1,
@@ -120,7 +122,7 @@ export default function LandingScreen() {
           </Text>
           <Text
             style={{
-              color: "#A78BFA",
+              color: palette.accent,
               fontSize: 14,
               textAlign: "center",
               lineHeight: 22,
@@ -153,12 +155,12 @@ export default function LandingScreen() {
                 {
                   flexDirection: "row",
                   alignItems: "center",
-                  backgroundColor: "#2D1B4E",
+                  backgroundColor: palette.surface,
                   borderRadius: 16,
                   padding: 16,
                   marginBottom: 12,
                   borderWidth: 1,
-                  borderColor: "#3D2B5E",
+                  borderColor: palette.surfaceAlt,
                 },
               ]}
             >
@@ -169,7 +171,7 @@ export default function LandingScreen() {
                     width: 44,
                     height: 44,
                     borderRadius: 12,
-                    backgroundColor: "#3D2B5E",
+                    backgroundColor: palette.surfaceAlt,
                     alignItems: "center",
                     justifyContent: "center",
                     marginRight: 14,
@@ -179,10 +181,10 @@ export default function LandingScreen() {
                 <Text style={{ fontSize: 20 }}>{item.emoji}</Text>
               </View>
               <View>
-                <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 15 }}>
+                <Text style={{ color: palette.textPrimary, fontWeight: "700", fontSize: 15 }}>
                   {item.title}
                 </Text>
-                <Text style={{ color: "#A78BFA", fontSize: 13, marginTop: 2 }}>
+                <Text style={{ color: palette.accent, fontSize: 13, marginTop: 2 }}>
                   {item.desc}
                 </Text>
               </View>
@@ -200,7 +202,7 @@ export default function LandingScreen() {
               borderRadius: 14,
               overflow: "hidden",
               marginBottom: 14,
-              shadowColor: "#7C3AED",
+              shadowColor: palette.primary,
               shadowOffset: { width: 0, height: 6 },
               shadowOpacity: 0.5,
               shadowRadius: 12,
@@ -208,12 +210,12 @@ export default function LandingScreen() {
             }}
           >
             <LinearGradient
-              colors={["#7C3AED", "#6D28D9"]}
+              colors={[palette.primary, palette.primaryDark]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={{ paddingVertical: 16, alignItems: "center" }}
             >
-              <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>
+              <Text style={{ color: palette.textPrimary, fontSize: 16, fontWeight: "700" }}>
                 Comenzar ahora
               </Text>
             </LinearGradient>
@@ -226,12 +228,12 @@ export default function LandingScreen() {
             style={{
               borderRadius: 14,
               borderWidth: 1.5,
-              borderColor: "#7C3AED",
+              borderColor: palette.primary,
               paddingVertical: 15,
               alignItems: "center",
             }}
           >
-            <Text style={{ color: "#A78BFA", fontSize: 16, fontWeight: "600" }}>
+            <Text style={{ color: palette.accent, fontSize: 16, fontWeight: "600" }}>
               Iniciar sesión
             </Text>
           </TouchableOpacity>
@@ -249,7 +251,7 @@ export default function LandingScreen() {
             width: width + 40,
             height: 140,
             borderRadius: 80,
-            backgroundColor: "#7C3AED33",
+            backgroundColor: palette.primary + "33",
           },
         ]}
       />
