@@ -21,6 +21,24 @@ export function ThemeProvider({ children }) {
     fetchPalette();
   }, [user]);
 
+  // Polling cada 30 segundos
+  useEffect(() => {
+    if (!user) return;
+    
+    const interval = setInterval(async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        if (!token) return;
+        const data = await getActivePalette(token);
+        setPalette({ ...colors, ...data });
+      } catch (e) {
+        console.log('[ThemeContext] polling error:', e.message);
+      }
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
+
   const fetchPalette = async () => {
     setIsLoadingTheme(true);
     try {

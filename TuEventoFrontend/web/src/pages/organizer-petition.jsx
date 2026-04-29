@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, FileText, CheckCircle, ArrowLeft, Send, Info, Clock, XCircle, AlertCircle } from 'lucide-react';
-import Navbar from '../layouts/Navbar';
 import Footer from '../layouts/Footer';
 import { createPetition, getPetitionStatus } from '../services/OrganizerPetitionService';
 
@@ -87,7 +86,6 @@ const Organizador = () => {
 
   return (
     <div className="min-h-screen bg-[#191022] text-slate-100 font-sans">
-      <Navbar />
       <main className="max-w-[1024px] mx-auto w-full px-6 py-10">
         <section className="mb-10">
           <div className="flex flex-col gap-2">

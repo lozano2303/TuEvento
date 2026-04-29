@@ -12,21 +12,23 @@ import ProfilePage from './pages/ProfilePage';
 
 function AppContent() {
   const location = useLocation();
-  const showNavbar = !['/login', '/profile'].includes(location.pathname);
+  const showNavbar = !['/login'].includes(location.pathname);
 
   return (
-    <>
+    <div className="min-h-screen bg-background">
       {showNavbar && <Navbar />}
-      <Routes>
-        <Route path="/" element={<LadingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/nosotros" element={<AboutUs />} />
-        <Route path="/events" element={<Events />} />
-        <Route path="/organizer-petition" element={<OrganizerPetitionForm />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
-        <Route path="/profile" element={<ProfilePage />} />
-      </Routes>
-    </>
+      <div className={showNavbar ? "pt-16" : ""}>
+        <Routes>
+          <Route path="/" element={<LadingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/nosotros" element={<AboutUs />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/organizer-petition" element={<OrganizerPetitionForm />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Routes>
+      </div>
+    </div>
   );
 }
 

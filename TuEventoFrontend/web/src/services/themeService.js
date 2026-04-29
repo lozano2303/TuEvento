@@ -8,7 +8,7 @@ export const getActivePalette = async () => {
   });
   if (!response.ok) throw new Error('Error fetching theme');
   const json = await response.json();
-  return json.data.palette;
+  return json.data; // retorna { themeId, themeName, userThemeId, palette }
 };
 
 export const getThemes = async () => {
