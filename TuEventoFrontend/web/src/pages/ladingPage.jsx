@@ -19,7 +19,7 @@ export default function LadingPage() {
     const token = localStorage.getItem('token');
     const storedUserID = localStorage.getItem('userID');
     const storedAlias = localStorage.getItem('alias');
-    const storedFullName = localStorage.getItem('fullName');
+    const storedFullName = localStorage.getItem('name');
     if (token && storedUserID) {
       setUserData({ userId: storedUserID, alias: storedAlias, fullName: storedFullName });
     }
@@ -40,7 +40,31 @@ export default function LadingPage() {
             {/* Texto */}
             <div className="space-y-6 pt-8">
               <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                {userData ? `¡Hola, ${userData.fullName ? userData.fullName.split(' ')[0] : userData.alias}!` : 'Visualiza el evento'}
+                {userData ? (() => {
+                      if (!userData?.fullName) return `¡Hola, ${userData.alias}!`;
+                      
+                      const name = userData.fullName;
+                      const parts = name.split(' ').filter(part => part.trim().length > 0);
+                      
+                      if (parts.length === 0) return `¡Hola, ${userData.alias}!`;
+                      if (parts.length === 1) return `¡Hola, ${parts[0]}!`;
+                      
+                      const firstName = parts[0];
+                      const lastName = parts[1];
+                      
+                      // Si el nombre es corto (≤3 caracteres)
+                      if (firstName.length <= 3) {
+                        // Si el apellido es más largo que el nombre, mostrar apellido
+                        if (lastName.length > firstName.length) {
+                          return `¡Hola, ${lastName}!`;
+                        }
+                        // Si el apellido también es corto, mostrar solo el nombre
+                        return `¡Hola, ${firstName}!`;
+                      }
+                      
+                      // Si el nombre es largo (>3 caracteres), mostrar solo el nombre
+                      return `¡Hola, ${firstName}!`;
+                    })() : 'Visualiza el evento'}
                 <span className="block text-yellow-300">{userData ? 'Bienvenido de vuelta.' : 'ideal.'}</span>
               </h1>
               <p className="text-lg text-purple-100">
