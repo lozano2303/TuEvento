@@ -14,6 +14,17 @@ pipeline {
             }
         }
         
+        stage('Install Maven') {
+            steps {
+                sh '''
+                    echo "Installing Maven..."
+                    apt-get update
+                    apt-get install -y maven
+                    mvn --version
+                '''
+            }
+        }
+        
         stage('Clean & Compile') {
             steps {
                 dir('TuEventoBackend/tu-evento') {
@@ -82,21 +93,15 @@ pipeline {
     
     post {
         success {
-            echo '✅ Pipeline completed successfully!'
-            slackSend(
-                color: 'good',
-                message: "✅ TuEvento backend deployed successfully - Build ${env.BUILD_ID}"
-            )
+            echo 'Pipeline exitoso! App desplegada.'
+            echo "TuEvento backend deployed successfully - Build ${env.BUILD_ID}"
         }
         failure {
-            echo '❌ Pipeline failed!'
-            slackSend(
-                color: 'danger',
-                message: "❌ TuEvento backend deployment failed - Build ${env.BUILD_ID}"
-            )
+            echo 'Pipeline falló. Revisa logs.'
+            echo "TuEvento backend deployment failed - Build ${env.BUILD_ID}"
         }
         always {
-            cleanWs()
+            echo 'Pipeline completed.'
         }
     }
 }
