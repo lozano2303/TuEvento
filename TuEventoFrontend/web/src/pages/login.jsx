@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight } from "lucide-react";
 import { loginUser, registerUser, resendActivationCode } from "../services/Login.js";
+import { getProfileByUserId } from "../services/Profile.js";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 
@@ -174,7 +175,21 @@ export default function Login() {
           localStorage.setItem('userEmail', formData.email);
           localStorage.setItem('role', result.data.role || 'USER');
           
-          setUserData({ userId: result.data.userID, alias: result.data.alias, email: formData.email });
+          // Obtener el perfil del usuario para conseguir el fullName (como en el móvil)
+          let fullName = result.data.alias; // fallback al alias
+          try {
+            const profileResult = await getProfileByUserId(result.data.userID);
+            if (profileResult.success && profileResult.data.fullName) {
+              fullName = profileResult.data.fullName;
+              localStorage.setItem('name', fullName);
+            }
+          } catch (error) {
+            console.error('Error al obtener perfil:', error);
+            // Si falla, usar el alias como nombre
+            localStorage.setItem('name', result.data.alias);
+          }
+          
+          setUserData({ userId: result.data.userID, alias: result.data.alias, fullName: fullName, email: formData.email });
           setShowLoginSuccessNotification(true);
           setTimeout(() => {
             window.location.href = '/';
@@ -631,7 +646,31 @@ export default function Login() {
                 <User className="w-6 h-6 text-purple-500 mx-auto mb-2" />
                 <p className="text-gray-700 text-sm font-medium">Sesión iniciada</p>
                 <p className="text-gray-400 text-xs mt-1">Accede a todas las funcionalidades de TuEvento</p>
-                <p className="text-purple-600 text-sm font-semibold mt-2">👋 ¡Hola, {userData?.fullName ? userData.fullName.split(' ')[0] : (userData?.alias || formData.email)}!</p>
+                <p className="text-purple-600 text-sm font-semibold mt-2">👋 ¡Hola, {(() => {
+                      if (!userData?.fullName) return userData?.alias || formData.email;
+                      
+                      const name = userData.fullName;
+                      const parts = name.split(' ').filter(part => part.trim().length > 0);
+                      
+                      if (parts.length === 0) return userData?.alias || formData.email;
+                      if (parts.length === 1) return parts[0];
+                      
+                      const firstName = parts[0];
+                      const lastName = parts[1];
+                      
+                      // Si el nombre es corto (≤3 caracteres)
+                      if (firstName.length <= 3) {
+                        // Si el apellido es más largo que el nombre, mostrar apellido
+                        if (lastName.length > firstName.length) {
+                          return lastName;
+                        }
+                        // Si el apellido también es corto, mostrar solo el nombre
+                        return firstName;
+                      }
+                      
+                      // Si el nombre es largo (>3 caracteres), mostrar solo el nombre
+                      return firstName;
+                    })()}!</p>
               </div>
               <button onClick={handleContinueToHome}
                 className="w-full bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-semibold py-3 rounded-lg transition-all text-sm flex items-center justify-center gap-2">
