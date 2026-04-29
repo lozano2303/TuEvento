@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-:root {
+@theme {
   --color-background: #1E0A3C;
   --color-surface: #2D1B4E;
   --color-surfaceAlt: #3D2B5E;
@@ -12,10 +12,12 @@
   --color-textMuted: #6B7280;
   --color-error: #EF4444;
   --color-success: #059669;
-  --color-borderRadius: 8px;
-  --color-fontFamily: Inter;
+}
+
+body {
+  background-color: #1E0A3C;
 }
 
 input[type="password"]::-ms-reveal {
-    display: none;
+  display: none;
 }

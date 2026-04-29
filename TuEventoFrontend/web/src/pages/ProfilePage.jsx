@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import Navbar from '../layouts/Navbar';
 import Footer from '../layouts/Footer';
 import { useTheme } from '../context/ThemeContext';
-import { getThemes, activateTheme, getActivePalette } from '../services/themeService';
+import { getThemes, activateTheme } from '../services/themeService';
 
 const THEME_PREVIEWS = {
   DARK:       { background: "#1E0A3C", primary: "#7C3AED", accent: "#A78BFA" },
@@ -13,12 +12,10 @@ const THEME_PREVIEWS = {
 
 const ProfilePage = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('es');
-  const [selectedTheme, setSelectedTheme] = useState('default');
   const [loading, setLoading] = useState(false);
   const [themes, setThemes] = useState([]);
-  const [activeThemeId, setActiveThemeId] = useState(null);
   const [loadingTheme, setLoadingTheme] = useState(false);
-  const { refreshPalette } = useTheme();
+  const { refreshPalette, activeThemeId } = useTheme();
 
   const [formData, setFormData] = useState({
     nombreCompleto: 'Francisco Rodríguez',
@@ -39,14 +36,12 @@ const ProfilePage = () => {
   }, []);
 
   const loadThemes = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
     try {
       const themesData = await getThemes();
       setThemes(themesData);
-      
-      const activePalette = await getActivePalette();
-      if (activePalette && activePalette.themeId) {
-        setActiveThemeId(activePalette.themeId);
-      }
     } catch (error) {
       console.error('Error loading themes:', error);
     }
@@ -57,7 +52,6 @@ const ProfilePage = () => {
     try {
       await activateTheme(themeId);
       await refreshPalette();
-      setActiveThemeId(themeId);
     } catch (error) {
       console.error('Error activating theme:', error);
       alert('Error al cambiar el tema');
@@ -91,26 +85,17 @@ const ProfilePage = () => {
     { id: 'pt', label: 'Português (PT)' }
   ];
 
-  const themeGradient = {
-    default: 'linear-gradient(135deg, #7c17d3 0%, #5a189a 100%)',
-    dark: 'linear-gradient(135deg, #1f1f2e 0%, #2d2d44 100%)',
-    light: 'linear-gradient(135deg, #e5e5e5 0%, #ffffff 100%)',
-    custom: 'linear-gradient(45deg, #7c17d3 25%, #ff00c8 50%, #00d4ff 75%)'
-  };
-
   return (
-    <div className="min-h-screen bg-[#0f0f1a] text-slate-100 font-sans">
-      <Navbar />
-
+    <div className="min-h-screen bg-background text-slate-100 font-sans">
       {/* Hero Section */}
-      <div className="w-full h-80 relative overflow-hidden bg-[#0f0f1a]">
+      <div className="w-full h-80 relative overflow-hidden bg-background">
         <div className="absolute inset-0 z-0" style={{ background: 'radial-gradient(circle at 30% 20%, #4c1d95 0%, transparent 60%), radial-gradient(circle at 70% 30%, #1e3a8a 0%, transparent 60%), radial-gradient(circle at 50% 0%, #7c3aed 0%, transparent 40%)' }}></div>
         <div className="absolute top-10 left-0 w-[150%] h-px bg-gradient-to-r from-transparent via-[rgba(124,23,211,0.3)] to-transparent -rotate-45"></div>
         <div className="absolute top-40 left-0 w-[150%] h-px bg-gradient-to-r from-transparent via-[rgba(0,212,255,0.3)] to-transparent -rotate-45"></div>
         <div className="absolute top-60 left-0 w-[150%] h-px bg-gradient-to-r from-transparent via-[rgba(124,23,211,0.3)] to-transparent -rotate-45"></div>
         <div className="absolute inset-0 z-10 opacity-40" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-        <div className="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-[#0f0f1a] via-[#0f0f1a]/80 to-transparent"></div>
-        <div className="absolute bottom-0 left-0 w-full h-24 bg-[#0f0f1a] blur-xl scale-y-150 origin-bottom opacity-90"></div>
+        <div className="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 w-full h-24 bg-background blur-xl scale-y-150 origin-bottom opacity-90"></div>
       </div>
 
       {/* Main Content */}
@@ -126,7 +111,7 @@ const ProfilePage = () => {
               <div className="relative w-32 h-32 rounded-xl bg-gradient-to-br from-[#7c17d3] to-[#5a189a] flex items-center justify-center text-5xl font-bold text-white border-2 border-white/30 shadow-2xl" style={{ boxShadow: '0 0 50px rgba(124, 23, 211, 0.6), 0 0 20px rgba(0, 212, 255, 0.4)' }}>
                 {firstLetter}
               </div>
-              <button className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-[#7c17d3] flex items-center justify-center text-white shadow-xl hover:scale-110 transition-transform border-2 border-[#0f0f1a] z-20">
+              <button className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-[#7c17d3] flex items-center justify-center text-white shadow-xl hover:scale-110 transition-transform border-2 border-background z-20">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                 </svg>
@@ -230,65 +215,6 @@ const ProfilePage = () => {
                 </div>
               </div>
             </section>
-
-            {/* Apariencia */}
-            <section className="rounded-2xl p-8" style={{ background: 'rgba(26, 17, 33, 0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(124, 23, 211, 0.2)' }}>
-              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#7c17d3">
-                  <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
-                </svg>
-                Apariencia
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {themes.map((theme) => {
-                  const preview = THEME_PREVIEWS[theme.name] || THEME_PREVIEWS.DARK;
-                  const isActive = activeThemeId === theme.id;
-                  
-                  return (
-                    <button
-                      key={theme.id}
-                      onClick={() => handleThemeChange(theme.id)}
-                      disabled={loadingTheme}
-                      className={`relative rounded-xl p-4 text-left transition-all ${
-                        isActive 
-                          ? 'bg-[rgba(124,23,211,0.15)] border-2 border-[#7c17d3]' 
-                          : 'bg-[rgba(15,15,26,0.5)] border-2 border-[#372447] hover:border-[rgba(124,23,211,0.4)]'
-                      } ${loadingTheme ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <span className={`text-sm font-bold ${isActive ? 'text-white' : 'text-slate-300'}`}>
-                          {theme.name}
-                        </span>
-                        {isActive && (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c17d3">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                          </svg>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-8 h-8 rounded-full border-2 border-white/20" 
-                          style={{ background: preview.background }}
-                        />
-                        <div 
-                          className="w-8 h-8 rounded-full border-2 border-white/20" 
-                          style={{ background: preview.primary }}
-                        />
-                        <div 
-                          className="w-8 h-8 rounded-full border-2 border-white/20" 
-                          style={{ background: preview.accent }}
-                        />
-                      </div>
-                      {isActive && (
-                        <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(124, 23, 211, 0.3)', color: '#c4b5fd' }}>
-                          Activo
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
           </div>
 
           {/* Right Column */}
@@ -323,44 +249,52 @@ const ProfilePage = () => {
             {/* Tema Visual */}
             <section className="rounded-2xl p-6 border-l-4" style={{ background: 'rgba(26, 17, 33, 0.7)', backdropFilter: 'blur(12px)', borderLeftColor: '#7c17d3', border: '1px solid rgba(124, 23, 211, 0.2)' }}>
               <h3 className="text-lg font-bold text-white mb-4">Tema Visual</h3>
-              <div className="space-y-4">
-                {[
-                  { id: 'default', label: 'Predeterminado', gradient: themeGradient.default },
-                  { id: 'dark', label: 'Oscuro', gradient: themeGradient.dark },
-                  { id: 'light', label: 'Claro', gradient: themeGradient.light },
-                  { id: 'custom', label: 'Personalizado', gradient: themeGradient.custom }
-                ].map((theme) => (
-                  <button 
-                    key={theme.id}
-                    onClick={() => setSelectedTheme(theme.id)}
-                    className={`relative rounded-xl overflow-hidden border-2 p-4 w-full transition-all ${
-                      selectedTheme === theme.id 
-                        ? 'border-[#7c17d3] bg-[rgba(124,23,211,0.1)]' 
-                        : 'border-[#372447] hover:border-[rgba(124,23,211,0.4)]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-sm font-bold ${selectedTheme === theme.id ? 'text-white' : 'text-slate-400'}`}>{theme.label}</span>
-                      {selectedTheme === theme.id && (
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c17d3">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                        </svg>
+              <div className="space-y-3">
+                {themes.map((theme) => {
+                  const preview = THEME_PREVIEWS[theme.name] || THEME_PREVIEWS.DARK;
+                  const isActive = activeThemeId === theme.id;
+                  
+                  return (
+                    <button
+                      key={theme.id}
+                      onClick={() => handleThemeChange(theme.id)}
+                      disabled={loadingTheme}
+                      className={`relative rounded-xl p-4 text-left transition-all w-full ${
+                        isActive 
+                          ? 'bg-[rgba(124,23,211,0.15)] border-2 border-[#7c17d3]' 
+                          : 'bg-[#1a1121] border-2 border-[#372447] hover:border-[rgba(124,23,211,0.4)]'
+                      } ${loadingTheme ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className={`text-sm font-bold ${isActive ? 'text-white' : 'text-slate-300'}`}>
+                          {theme.name}
+                        </span>
+                        {isActive && (
+                          <div className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: 'rgba(124, 23, 211, 0.3)', color: '#c4b5fd' }}>
+                            ACTIVO
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-8 h-8 rounded-full border-2 border-white/20" 
+                          style={{ background: preview.background }}
+                        />
+                        <div 
+                          className="w-8 h-8 rounded-full border-2 border-white/20" 
+                          style={{ background: preview.primary }}
+                        />
+                        <div 
+                          className="w-8 h-8 rounded-full border-2 border-white/20" 
+                          style={{ background: preview.accent }}
+                        />
+                      </div>
+                      {isActive && (
+                        <div className="absolute inset-0 pointer-events-none rounded-xl" style={{ boxShadow: 'inset 0 0 20px rgba(124,23,211,0.2)' }}></div>
                       )}
-                    </div>
-                    <div className="h-12 rounded flex items-center px-3 gap-2" style={{ 
-                      background: selectedTheme === theme.id ? 'rgba(15, 15, 26, 0.5)' : '#0a0a14',
-                      borderColor: selectedTheme === theme.id ? 'rgba(124, 23, 211, 0.3)' : '#372447',
-                      borderWidth: '1px',
-                      borderStyle: 'solid'
-                    }}>
-                      <div className="w-4 h-4 rounded-full" style={{ background: theme.gradient }}></div>
-                      <div className="h-2 w-16 rounded" style={{ background: '#372447' }}></div>
-                    </div>
-                    {selectedTheme === theme.id && (
-                      <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: 'inset 0 0 20px rgba(124,23,211,0.2)', background: 'rgba(124,23,211,0.05)' }}></div>
-                    )}
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             </section>
           </div>

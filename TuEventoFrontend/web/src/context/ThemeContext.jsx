@@ -26,6 +26,13 @@ const applyPalette = (palette) => {
       root.style.setProperty(`--color-${key}`, value);
     }
   });
+  
+  // Log de verificación
+  console.log('[ThemeContext] Palette applied:', {
+    background: root.style.getPropertyValue('--color-background'),
+    primary: root.style.getPropertyValue('--color-primary'),
+    accent: root.style.getPropertyValue('--color-accent')
+  });
 };
 
 export const ThemeContext = createContext(null);
@@ -33,18 +40,27 @@ export const ThemeContext = createContext(null);
 export function ThemeProvider({ children }) {
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
   const [isLoadingTheme, setIsLoadingTheme] = useState(false);
+  const [activeThemeId, setActiveThemeId] = useState(
+    parseInt(localStorage.getItem('activeThemeId')) || null
+  );
 
   const refreshPalette = useCallback(async () => {
-    // Aplica el fallback inmediatamente para evitar flash
-    applyPalette(DEFAULT_PALETTE);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('[ThemeContext] No token available, skipping fetch');
+      return;
+    }
 
     setIsLoadingTheme(true);
     try {
-      const remotePalette = await getActivePalette();
-      if (remotePalette) {
-        const merged = { ...DEFAULT_PALETTE, ...remotePalette };
+      const data = await getActivePalette();
+      if (data) {
+        const merged = { ...DEFAULT_PALETTE, ...data.palette };
         applyPalette(merged);
         setPalette(merged);
+        setActiveThemeId(data.themeId);
+        localStorage.setItem('activeThemeId', data.themeId);
+        localStorage.setItem('activeThemeName', data.themeName);
       }
     } catch (e) {
       console.warn('[ThemeContext] No se pudo cargar la paleta remota, usando fallback:', e.message);
@@ -54,13 +70,36 @@ export function ThemeProvider({ children }) {
     }
   }, []);
 
-  // Al montar: aplica fallback de inmediato y luego intenta el fetch
+  // Efecto 1 — carga inicial solo si hay token
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    applyPalette(DEFAULT_PALETTE); // siempre aplica fallback primero
+    if (!token) return; // sin token no hacer fetch
     refreshPalette();
   }, [refreshPalette]);
 
+  // Efecto 2 — detecta cuando el usuario hace login (token aparece en localStorage)
+  useEffect(() => {
+    const handleStorage = (e) => {
+      if (e.key === 'token' && e.newValue) {
+        refreshPalette();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [refreshPalette]);
+
+  // Efecto 3 — polling cada 30 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const token = localStorage.getItem('token');
+      if (token) refreshPalette();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [refreshPalette]);
+
   return (
-    <ThemeContext.Provider value={{ palette, isLoadingTheme, refreshPalette }}>
+    <ThemeContext.Provider value={{ palette, isLoadingTheme, refreshPalette, activeThemeId }}>
       {children}
     </ThemeContext.Provider>
   );

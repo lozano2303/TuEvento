@@ -57,6 +57,7 @@ export default function ThemeSelectScreen() {
     try {
       const token = await AsyncStorage.getItem("accessToken");
       if (!token) {
+        console.warn('[ThemeSelectScreen] No token available');
         setError("No se encontró el token de autenticación");
         return;
       }

@@ -2,10 +2,8 @@ import { Calendar, User, LogOut, Key, Plus, Wallet } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ChangePassword from "../pages/ChangePassword.jsx";
-import { useTranslation } from "../context/TranslationContext";
 
 export default function Navbar() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -55,10 +53,10 @@ export default function Navbar() {
   const isOrganizerOrAdmin = isOrganizer || isAdmin;
 
   const roleBadge = isAdmin
-    ? { label: t('roleAdmin'), bg: 'bg-red-500' }
+    ? { label: 'Admin', bg: 'bg-red-500' }
     : isOrganizer
-    ? { label: t('roleOrganizer'), bg: 'bg-blue-500' }
-    : { label: t('roleUser'), bg: 'bg-gray-500' };
+    ? { label: 'Organizador', bg: 'bg-blue-500' }
+    : { label: 'Usuario', bg: 'bg-gray-500' };
 
   return (
     <>
@@ -75,13 +73,13 @@ export default function Navbar() {
           {/* Links centrales */}
           <div className="hidden md:flex items-center gap-12 text-sm font-medium flex-1 justify-center">
             <Link to="/" className="text-textSecondary hover:text-accent transition-colors">
-              {t('home')}
+              Inicio
             </Link>
             <Link to="/nosotros" className="text-textSecondary hover:text-accent transition-colors">
-              {t('aboutUs')}
+              Nosotros
             </Link>
             <Link to="/events" className="text-textSecondary hover:text-accent transition-colors">
-              {t('events')}
+              Eventos
             </Link>
             {userData && isOrganizer && (
               <button
@@ -89,7 +87,7 @@ export default function Navbar() {
                 className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
-                {t('createEvent')}
+                Crear Evento
               </button>
             )}
             {userData && !isAdmin && !isOrganizer && (
@@ -98,7 +96,7 @@ export default function Navbar() {
                 className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
-                {t('organizerPetition')}
+                Solicitar Organizador
               </button>
             )}
           </div>
@@ -140,7 +138,7 @@ export default function Navbar() {
                           className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
                         >
                           <Calendar className="w-4 h-4" />
-                          {t('myEvents')}
+                          Mis Eventos
                         </Link>
                         
                       )}
@@ -151,7 +149,7 @@ export default function Navbar() {
                         className="w-full bg-primary hover:bg-primaryDark text-textPrimary text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
                       >
                         <User className="w-4 h-4" />
-                        {t('profile')}
+                        Perfil
                       </Link>
 
                       {isAdmin && (
@@ -172,7 +170,7 @@ export default function Navbar() {
                           className="w-full bg-success hover:bg-success text-textPrimary text-sm py-2 px-4 rounded-xl transition-colors flex items-center gap-2"
                         >
                           <Wallet className="w-4 h-4" />
-                          {t('wallet')}
+                          Billetera
                         </Link>
                       )}
                     </div>

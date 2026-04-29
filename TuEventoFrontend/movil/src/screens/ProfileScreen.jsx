@@ -54,7 +54,10 @@ export default function ProfileScreen() {
     setActivating(themeId);
     try {
       const token = await AsyncStorage.getItem("accessToken");
-      if (!token) return;
+      if (!token) {
+        console.warn('[ProfileScreen] No token available');
+        return;
+      }
 
       await activateTheme(themeId, token);
       await refreshPalette();
