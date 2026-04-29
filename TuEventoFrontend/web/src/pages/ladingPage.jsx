@@ -29,7 +29,7 @@ export default function LadingPage() {
     <div className="min-h-screen bg-background text-textPrimary">
   
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-16 md:pt-20">
+      <section className="relative overflow-hidden">
         {/* Fondo degradado */}
         <div className="absolute inset-0 bg-purple-700"></div>
 
