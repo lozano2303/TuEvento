@@ -5,68 +5,72 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { View, Text, TouchableOpacity, Modal } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import LandingScreen from "../screens/LandingScreen";
-import LoginScreen from "../screens/LoginScreen";
-import RegisterScreen from "../screens/RegisterScreen";
-import ActivateScreen from "../screens/ActivateScreen";
-import TermsScreen from "../screens/TermsScreen";
+import { colors } from "../theme";
+import LandingScreen      from "../screens/LandingScreen";
+import LoginScreen        from "../screens/LoginScreen";
+import RegisterScreen     from "../screens/RegisterScreen";
+import ActivateScreen     from "../screens/ActivateScreen";
+import TermsScreen        from "../screens/TermsScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
-import ResetPasswordScreen from "../screens/ResetPasswordScreen";
-import HomeScreen from "../screens/HomeScreen";
+import ResetPasswordScreen  from "../screens/ResetPasswordScreen";
+import HomeScreen         from "../screens/HomeScreen";
+import ProfileScreen      from "../screens/ProfileScreen";
+import SettingsScreen     from "../screens/SettingsScreen";
 
 const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+const Tab   = createBottomTabNavigator();
 export const navigationRef = createNavigationContainerRef();
 
+// ─── Modal de logout ──────────────────────────────────────────────────────────
 function LogoutModal({ visible, onConfirm, onCancel }) {
   return (
-    <Modal
-      transparent
-      visible={visible}
-      animationType="fade"
-      statusBarTranslucent
-    >
+    <Modal transparent visible={visible} animationType="fade" statusBarTranslucent>
       <View style={{
         flex: 1, backgroundColor: "#00000088",
         justifyContent: "center", alignItems: "center",
         paddingHorizontal: 32,
       }}>
         <View style={{
-          backgroundColor: "#2D1B4E", borderRadius: 20,
+          backgroundColor: colors.surface, borderRadius: 20,
           padding: 28, width: "100%",
-          borderWidth: 1, borderColor: "#3D2B5E",
+          borderWidth: 1, borderColor: colors.surfaceAlt,
         }}>
           <Text style={{
-            color: "#FFFFFF", fontSize: 20, fontWeight: "800",
+            color: colors.textPrimary, fontSize: 20, fontWeight: "800",
             textAlign: "center", marginBottom: 10,
           }}>
             ¿Cerrar sesión?
           </Text>
           <Text style={{
-            color: "#9CA3AF", fontSize: 14, textAlign: "center",
+            color: colors.textSecondary, fontSize: 14, textAlign: "center",
             lineHeight: 22, marginBottom: 28,
           }}>
             Tu sesión se cerrará y tendrás que volver a iniciar sesión para acceder.
           </Text>
           <TouchableOpacity
             onPress={onConfirm}
-            activeOpacity={0.85}
+            activeOpacity={0.75}
             style={{
-              backgroundColor: "#7C3AED", borderRadius: 14,
+              backgroundColor: colors.primary, borderRadius: 14,
               paddingVertical: 14, alignItems: "center", marginBottom: 12,
             }}
           >
-            <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700" }}>Sí, cerrar sesión</Text>
+            <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "700" }}>
+              Sí, cerrar sesión
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={onCancel}
-            activeOpacity={0.85}
+            activeOpacity={0.75}
             style={{
               borderRadius: 14, paddingVertical: 14,
-              alignItems: "center", borderWidth: 1, borderColor: "#3D2B5E",
+              alignItems: "center", borderWidth: 1,
+              borderColor: colors.surfaceAlt,
             }}
           >
-            <Text style={{ color: "#A78BFA", fontSize: 15, fontWeight: "600" }}>Cancelar</Text>
+            <Text style={{ color: colors.accent, fontSize: 15, fontWeight: "600" }}>
+              Cancelar
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -74,86 +78,128 @@ function LogoutModal({ visible, onConfirm, onCancel }) {
   );
 }
 
+// ─── Tab bar personalizado ────────────────────────────────────────────────────
+function CustomTabBar({ state, descriptors, navigation }) {
+  return (
+    <View style={{
+      flexDirection: "row",
+      backgroundColor: colors.surface + "F0",
+      borderTopWidth: 1,
+      borderTopColor: colors.primary + "30",
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+    }}>
+      {state.routes.map((route, index) => {
+        const { options } = descriptors[route.key];
+        const isFocused = state.index === index;
+        const isQR = route.name === "QR";
+
+        const iconName = (() => {
+          if (route.name === "Eventos") return isFocused ? "home"     : "home-outline";
+          if (route.name === "QR")      return isFocused ? "qr-code"  : "qr-code-outline";
+          if (route.name === "Perfil")  return isFocused ? "person"   : "person-outline";
+          return "ellipse-outline";
+        })();
+
+        const onPress = () => {
+          const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
+          if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
+        };
+
+        if (isQR) {
+          return (
+            <View key={route.key} style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+              <TouchableOpacity
+                onPress={onPress}
+                activeOpacity={0.75}
+                style={{
+                  width: 52, height: 52, borderRadius: 26,
+                  backgroundColor: colors.primary,
+                  alignItems: "center", justifyContent: "center",
+                  marginBottom: 14,
+                  shadowColor: colors.primary,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.5, shadowRadius: 8, elevation: 8,
+                }}
+              >
+                <Ionicons name={iconName} size={26} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+          );
+        }
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            onPress={onPress}
+            activeOpacity={0.75}
+            style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 4 }}
+          >
+            {isFocused ? (
+              /* Pill activo */
+              <View style={{
+                flexDirection: "row", alignItems: "center", gap: 6,
+                backgroundColor: colors.primary,
+                borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7,
+              }}>
+                <Ionicons name={iconName} size={18} color={colors.textPrimary} />
+                <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: "700" }}>
+                  {route.name}
+                </Text>
+              </View>
+            ) : (
+              /* Ícono inactivo */
+              <View style={{ alignItems: "center", paddingVertical: 4 }}>
+                <Ionicons name={iconName} size={22} color={colors.textMuted} />
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+// ─── Tabs principales ─────────────────────────────────────────────────────────
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: "#2D1B4E",
-          borderTopColor: "#3D2B5E",
-          borderTopWidth: 1,
-          height: 64,
-          paddingBottom: 10,
-          paddingTop: 8,
-        },
-        tabBarActiveTintColor: "#7C3AED",
-        tabBarInactiveTintColor: "#6B7280",
-        tabBarIcon: ({ focused, color }) => {
-          let iconName;
-          if (route.name === "Eventos") iconName = focused ? "calendar" : "calendar-outline";
-          else if (route.name === "QR") iconName = focused ? "qr-code" : "qr-code-outline";
-          else if (route.name === "Perfil") iconName = focused ? "person" : "person-outline";
-          return <Ionicons name={iconName} size={24} color={color} />;
-        },
-      })}
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Eventos" component={HomeScreen} />
-      <Tab.Screen
-        name="QR"
-        component={HomeScreen}
-        options={{
-          tabBarIcon: () => (
-            <View style={{
-              width: 52, height: 52, borderRadius: 26,
-              backgroundColor: "#7C3AED", alignItems: "center",
-              justifyContent: "center", marginBottom: 18,
-              shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.5, shadowRadius: 8, elevation: 8,
-            }}>
-              <Ionicons name="qr-code-outline" size={26} color="#FFFFFF" />
-            </View>
-          ),
-          tabBarLabel: () => null,
-        }}
-      />
-      <Tab.Screen name="Perfil" component={HomeScreen} />
+      <Tab.Screen name="QR"      component={HomeScreen} />
+      <Tab.Screen name="Perfil"  component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
 
+// ─── Navigator raíz ───────────────────────────────────────────────────────────
 export default function AppNavigator() {
   const { logout, showLogoutModal, setShowLogoutModal } = useAuth();
   const isLoggingOut = useRef(false);
 
   const handleLogoutConfirm = async () => {
-    // 1. Cierra el modal
     setShowLogoutModal(false);
-    // 2. Marca que es un logout para que beforeRemove no bloquee
     isLoggingOut.current = true;
-    // 3. Navega a Login ANTES de limpiar el estado
     if (navigationRef.isReady()) {
-      navigationRef.reset({
-        index: 0,
-        routes: [{ name: "Login" }],
-      });
+      navigationRef.reset({ index: 0, routes: [{ name: "Login" }] });
     }
-    // 4. Limpia el estado después de navegar
     await logout();
-    // 5. Resetea el flag
     isLoggingOut.current = false;
   };
 
   return (
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Landing" component={LandingScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Terms" component={TermsScreen} />
+        <Stack.Screen name="Landing"       component={LandingScreen} />
+        <Stack.Screen name="Login"         component={LoginScreen} />
+        <Stack.Screen name="Register"      component={RegisterScreen} />
+        <Stack.Screen name="Terms"         component={TermsScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-        <Stack.Screen name="Activate" component={ActivateScreen} />
+        <Stack.Screen name="ResetPassword"  component={ResetPasswordScreen} />
+        <Stack.Screen name="Activate"      component={ActivateScreen} />
+        <Stack.Screen name="Settings"      component={SettingsScreen} />
         <Stack.Screen
           name="Main"
           component={MainTabs}
