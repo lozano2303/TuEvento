@@ -17,7 +17,7 @@ pipeline {
         stage('Clean & Compile') {
             steps {
                 dir('TuEventoBackend/tu-evento') {
-                    sh 'mvn clean compile'
+                    sh 'export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 && mvn clean compile'
                 }
             }
         }
@@ -25,7 +25,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('TuEventoBackend/tu-evento') {
-                    sh 'mvn test'
+                    sh 'export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 && mvn test'
                 }
                 publishTestResults testResultsPattern: 'TuEventoBackend/tu-evento/target/surefire-reports/*.xml'
             }
@@ -35,7 +35,7 @@ pipeline {
             steps {
                 dir('TuEventoBackend/tu-evento') {
                     withSonarQubeEnv(env.SONARQUBE_SERVER) {
-                        sh 'mvn sonar:sonar -Dsonar.projectKey=tu-evento-backend -Dsonar.host.url=http://sonarqube:9000'
+                        sh 'export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 && mvn sonar:sonar -Dsonar.projectKey=tu-evento-backend -Dsonar.host.url=http://sonarqube:9000'
                     }
                 }
             }
