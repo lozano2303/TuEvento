@@ -28,7 +28,7 @@ services:
 
   # CI/CD Services
   jenkins:
-    image: jenkins/jenkins:lts-jdk17
+    image: jenkins/jenkins:2.462.1-jdk21
     container_name: tuevento-jenkins
     restart: unless-stopped
     user: root
