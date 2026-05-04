@@ -25,9 +25,8 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 script {
-                    // Iniciar contenedores externos para pruebas
+                    // Asegurar que postgres y redis estén corriendo
                     sh 'docker compose up -d postgres redis'
-                    // Esperar a que postgres esté listo
                     sh 'sleep 10'
                 }
                 dir('TuEventoBackend/tu-evento') {
@@ -37,8 +36,7 @@ pipeline {
             }
             post {
                 always {
-                    // Detener contenedores después de las pruebas
-                    sh 'docker compose stop postgres redis'
+                    // No detener postgres y redis ya que pueden ser usados por otros servicios
                 }
             }
         }
