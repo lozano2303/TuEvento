@@ -34,11 +34,6 @@ pipeline {
                 }
                 publishTestResults testResultsPattern: 'TuEventoBackend/tu-evento/target/surefire-reports/*.xml'
             }
-            post {
-                always {
-                    // No detener postgres y redis ya que pueden ser usados por otros servicios
-                }
-            }
         }
         
         stage('SonarQube Analysis') {
