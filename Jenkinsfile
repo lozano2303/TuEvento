@@ -24,10 +24,22 @@ pipeline {
         
         stage('Unit Tests') {
             steps {
+                script {
+                    // Iniciar contenedores externos para pruebas
+                    sh 'docker-compose up -d postgres redis'
+                    // Esperar a que postgres esté listo
+                    sh 'sleep 10'
+                }
                 dir('TuEventoBackend/tu-evento') {
                     sh 'mvn test'
                 }
                 publishTestResults testResultsPattern: 'TuEventoBackend/tu-evento/target/surefire-reports/*.xml'
+            }
+            post {
+                always {
+                    // Detener contenedores después de las pruebas
+                    sh 'docker-compose stop postgres redis'
+                }
             }
         }
         
