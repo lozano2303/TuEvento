@@ -29,7 +29,7 @@ class TestcontainersConfiguration {
 	GenericContainer<?> redisContainer() {
 		return new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
 				.withExposedPorts(6379)
-				.waitingFor(Wait.forListeningPort());
+				.waitingFor(Wait.forLogMessage(".*Ready to accept connections.*", 1));
 	}
 
 }
