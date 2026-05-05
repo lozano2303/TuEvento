@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
@@ -16,6 +16,7 @@ export default function ResetPasswordScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const route = useRoute();
+  const { palette } = useTheme();
   const email = route.params?.email || "";
   const [form, setForm] = useState({ code: "", newPassword: "", confirmPassword: "" });
   const [showNew, setShowNew] = useState(false);
@@ -78,17 +79,17 @@ export default function ResetPasswordScreen() {
 
   if (success) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: "center", alignItems: "center", paddingHorizontal: 32 }}>
-        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.successBg, alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
-          <Ionicons name="checkmark-circle" size={48} color={colors.success} />
+      <View style={{ flex: 1, backgroundColor: palette.background, justifyContent: "center", alignItems: "center", paddingHorizontal: 32 }}>
+        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: palette.successBg, alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
+          <Ionicons name="checkmark-circle" size={48} color={palette.success} />
         </View>
-        <Text style={{ color: colors.textPrimary, fontSize: 24, fontWeight: "800", marginBottom: 12 }}>¡Contraseña restablecida!</Text>
-        <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: "center", lineHeight: 22, marginBottom: 32 }}>
+        <Text style={{ color: palette.textPrimary, fontSize: 24, fontWeight: "800", marginBottom: 12 }}>¡Contraseña restablecida!</Text>
+        <Text style={{ color: palette.textSecondary, fontSize: 14, textAlign: "center", lineHeight: 22, marginBottom: 32 }}>
           Tu contraseña fue actualizada exitosamente. Ya puedes iniciar sesión.
         </Text>
         <TouchableOpacity onPress={() => navigation.navigate("Login")} activeOpacity={0.85} style={{ borderRadius: 14, overflow: "hidden", width: "100%" }}>
-          <LinearGradient colors={colors.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: "center" }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "700" }}>Ir al inicio de sesión</Text>
+          <LinearGradient colors={palette.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: "center" }}>
+            <Text style={{ color: palette.textPrimary, fontSize: 16, fontWeight: "700" }}>Ir al inicio de sesión</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -96,10 +97,10 @@ export default function ResetPasswordScreen() {
   }
 
   const inputStyle = (field) => ({
-    backgroundColor: colors.surface,
+    backgroundColor: palette.surface,
     borderRadius: 12,
     borderWidth: errors[field] ? 1 : 0,
-    borderColor: colors.error,
+    borderColor: palette.error,
   });
 
   return (
@@ -112,7 +113,7 @@ export default function ResetPasswordScreen() {
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 32 }}>
           <BackButton style={{ marginBottom: 0 }} />
           <View style={{ flex: 1, alignItems: "center" }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 26, fontWeight: "800" }}>
+            <Text style={{ color: palette.textPrimary, fontSize: 26, fontWeight: "800" }}>
               Nueva contraseña
             </Text>
           </View>
@@ -121,67 +122,67 @@ export default function ResetPasswordScreen() {
 
         {/* Header */}
         <View style={{ alignItems: "center", marginBottom: 32 }}>
-          <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: colors.surfaceAlt, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
-            <Ionicons name="key-outline" size={32} color={colors.primary} />
+          <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: palette.surfaceAlt, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
+            <Ionicons name="key-outline" size={32} color={palette.primary} />
           </View>
-          <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: "center", lineHeight: 22 }}>
+          <Text style={{ color: palette.textSecondary, fontSize: 14, textAlign: "center", lineHeight: 22 }}>
             Ingresa el código que enviamos a{"\n"}
-            <Text style={{ color: colors.accent, fontWeight: "600" }}>{email}</Text>
+            <Text style={{ color: palette.accent, fontWeight: "600" }}>{email}</Text>
           </Text>
         </View>
 
         {/* Código */}
-        <Text style={{ color: colors.textPrimary, fontWeight: "600", marginBottom: 8 }}>Código de verificación</Text>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginBottom: 8 }}>Código de verificación</Text>
         <View style={inputStyle("code")}>
           <TextInput
             placeholder="Código de 8 caracteres"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={palette.textMuted}
             value={form.code}
             onChangeText={(t) => update("code", t)}
-            style={{ color: colors.textPrimary, padding: 16, fontSize: 15 }}
+            style={{ color: palette.textPrimary, padding: 16, fontSize: 15 }}
             autoCapitalize="none"
           />
         </View>
-        {errors.code && <Text style={{ color: colors.error, fontSize: 13, marginTop: 4 }}>{errors.code}</Text>}
+        {errors.code && <Text style={{ color: palette.error, fontSize: 13, marginTop: 4 }}>{errors.code}</Text>}
 
         {/* Nueva contraseña */}
-        <Text style={{ color: colors.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>Nueva contraseña</Text>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>Nueva contraseña</Text>
         <View style={[inputStyle("newPassword"), { flexDirection: "row", alignItems: "center" }]}>
           <TextInput
             placeholder="Mín. 8 chars, mayúscula, número y símbolo"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={palette.textMuted}
             value={form.newPassword}
             onChangeText={(t) => update("newPassword", t)}
             secureTextEntry={!showNew}
-            style={{ color: colors.textPrimary, padding: 16, fontSize: 15, flex: 1 }}
+            style={{ color: palette.textPrimary, padding: 16, fontSize: 15, flex: 1 }}
           />
           <TouchableOpacity onPress={() => setShowNew(!showNew)} style={{ paddingRight: 16 }}>
-            <Ionicons name={showNew ? "eye" : "eye-off"} size={22} color={colors.textMuted} />
+            <Ionicons name={showNew ? "eye" : "eye-off"} size={22} color={palette.textMuted} />
           </TouchableOpacity>
         </View>
-        {errors.newPassword && <Text style={{ color: colors.error, fontSize: 13, marginTop: 4 }}>{errors.newPassword}</Text>}
+        {errors.newPassword && <Text style={{ color: palette.error, fontSize: 13, marginTop: 4 }}>{errors.newPassword}</Text>}
 
         {/* Confirmar contraseña */}
-        <Text style={{ color: colors.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>Confirmar contraseña</Text>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>Confirmar contraseña</Text>
         <View style={[inputStyle("confirmPassword"), { flexDirection: "row", alignItems: "center" }]}>
           <TextInput
             placeholder="Repite tu nueva contraseña"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={palette.textMuted}
             value={form.confirmPassword}
             onChangeText={(t) => update("confirmPassword", t)}
             secureTextEntry={!showConfirm}
-            style={{ color: colors.textPrimary, padding: 16, fontSize: 15, flex: 1 }}
+            style={{ color: palette.textPrimary, padding: 16, fontSize: 15, flex: 1 }}
           />
           <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} style={{ paddingRight: 16 }}>
-            <Ionicons name={showConfirm ? "eye" : "eye-off"} size={22} color={colors.textMuted} />
+            <Ionicons name={showConfirm ? "eye" : "eye-off"} size={22} color={palette.textMuted} />
           </TouchableOpacity>
         </View>
-        {errors.confirmPassword && <Text style={{ color: colors.error, fontSize: 13, marginTop: 4 }}>{errors.confirmPassword}</Text>}
+        {errors.confirmPassword && <Text style={{ color: palette.error, fontSize: 13, marginTop: 4 }}>{errors.confirmPassword}</Text>}
 
         {/* Error API */}
         {apiError && (
-          <View style={{ backgroundColor: colors.errorBg, borderRadius: 10, padding: 12, marginTop: 16, borderWidth: 1, borderColor: colors.error }}>
-            <Text style={{ color: colors.error, fontSize: 13, textAlign: "center" }}>{apiError}</Text>
+          <View style={{ backgroundColor: palette.errorBg, borderRadius: 10, padding: 12, marginTop: 16, borderWidth: 1, borderColor: palette.error }}>
+            <Text style={{ color: palette.error, fontSize: 13, textAlign: "center" }}>{apiError}</Text>
           </View>
         )}
 
@@ -190,10 +191,10 @@ export default function ResetPasswordScreen() {
           onPress={handleSubmit}
           disabled={loading}
           activeOpacity={0.85}
-          style={{ borderRadius: 14, overflow: "hidden", marginTop: 32, marginBottom: 40, shadowColor: colors.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8, opacity: loading ? 0.7 : 1 }}
+          style={{ borderRadius: 14, overflow: "hidden", marginTop: 32, marginBottom: 40, shadowColor: palette.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 8, opacity: loading ? 0.7 : 1 }}
         >
-          <LinearGradient colors={colors.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: "center" }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "700" }}>
+          <LinearGradient colors={palette.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: "center" }}>
+            <Text style={{ color: palette.textPrimary, fontSize: 16, fontWeight: "700" }}>
               {loading ? "Restableciendo..." : "Restablecer contraseña"}
             </Text>
           </LinearGradient>

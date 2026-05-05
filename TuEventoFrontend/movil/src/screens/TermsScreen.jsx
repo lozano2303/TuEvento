@@ -2,9 +2,12 @@ import { View, Text, ScrollView, StatusBar } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BackButton from "../components/BackButton";
+import { useTheme } from "../context/ThemeContext";
 
 export default function TermsScreen() {
   const insets = useSafeAreaInsets();
+  const { palette } = useTheme();
+
   const sections = [
     {
       title: "1. Aceptación de los Términos",
@@ -57,18 +60,18 @@ export default function TermsScreen() {
   ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#1E0A3C" }}>
-      <StatusBar barStyle="light-content" backgroundColor="#1E0A3C" />
-      <LinearGradient colors={["#1E0A3C", "#2D1B4E", "#1E0A3C"]} style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: palette.background }}>
+      <StatusBar barStyle="light-content" backgroundColor={palette.background} />
+      <LinearGradient colors={[palette.background, palette.surface, palette.background]} style={{ flex: 1 }}>
         {/* Header */}
         <View style={{
           flexDirection: "row", alignItems: "center",
           paddingTop: insets.top + 16, paddingHorizontal: 24, paddingBottom: 20,
-          borderBottomWidth: 1, borderBottomColor: "#3D2B5E",
+          borderBottomWidth: 1, borderBottomColor: palette.surfaceAlt,
         }}>
-          <BackButton style={{ marginBottom: 0, backgroundColor: "#2D1B4E", borderColor: "#3D2B5E" }} />
+          <BackButton style={{ marginBottom: 0, backgroundColor: palette.surface, borderColor: palette.surfaceAlt }} />
           <View style={{ flex: 1, alignItems: "center" }}>
-            <Text style={{ color: "#FFFFFF", fontSize: 20, fontWeight: "700" }}>
+            <Text style={{ color: palette.textPrimary, fontSize: 20, fontWeight: "700" }}>
               Términos y Condiciones
             </Text>
           </View>
@@ -76,17 +79,17 @@ export default function TermsScreen() {
         </View>
 
         <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }}>
-          <Text style={{ color: "#A78BFA", fontSize: 13, marginBottom: 4 }}>Tu Evento — CapySoft</Text>
-          <Text style={{ color: "#6B7280", fontSize: 12, marginBottom: 28 }}>
+          <Text style={{ color: palette.accent, fontSize: 13, marginBottom: 4 }}>Tu Evento — CapySoft</Text>
+          <Text style={{ color: palette.textMuted, fontSize: 12, marginBottom: 28 }}>
             Última actualización: 9 de abril de 2025
           </Text>
 
           {sections.map((section, index) => (
             <View key={index} style={{ marginBottom: 24 }}>
-              <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "700", marginBottom: 8 }}>
+              <Text style={{ color: palette.textPrimary, fontSize: 15, fontWeight: "700", marginBottom: 8 }}>
                 {section.title}
               </Text>
-              <Text style={{ color: "#9CA3AF", fontSize: 14, lineHeight: 22 }}>
+              <Text style={{ color: palette.textSecondary, fontSize: 14, lineHeight: 22 }}>
                 {section.content}
               </Text>
             </View>
