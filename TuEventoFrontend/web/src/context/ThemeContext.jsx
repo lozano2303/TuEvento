@@ -42,17 +42,12 @@ export function ThemeProvider({ children }) {
 
   const refreshPalette = useCallback(async () => {
     const token = localStorage.getItem('token');
-    if (!token) {
-      console.warn('[ThemeContext] No token available, skipping fetch');
-      return;
-    }
+    if (!token) return;
 
     setIsLoadingTheme(true);
     try {
       const data = await getActivePalette();
       if (!data) return;
-
-      console.log('[ThemeContext] Active theme from backend:', data.themeName, '| id:', data.themeId, '| palette.background:', data.palette?.background);
 
       const merged = { ...DEFAULT_PALETTE, ...data.palette };
       applyPalette(merged);
@@ -63,10 +58,8 @@ export function ThemeProvider({ children }) {
     } catch (e) {
       // 403 — token expirado o sesión cerrada: no aplicar fallback, mantener paleta actual
       if (e.message.includes('403') || e.message.includes('Forbidden')) {
-        console.log('[ThemeContext] Token expired or unauthorized — stopping palette fetch');
         return;
       }
-      console.log('[ThemeContext] No se pudo cargar la paleta remota, usando fallback:', e.message);
       applyPalette(DEFAULT_PALETTE);
     } finally {
       setIsLoadingTheme(false);
