@@ -30,15 +30,15 @@ stage('Unit Tests') {
     }
 }
         
-        stage('SonarQube Analysis') {
-            steps {
-                dir('TuEventoBackend/tu-evento') {
-                    withSonarQubeEnv(env.SONARQUBE_SERVER) {
-                        sh 'mvn sonar:sonar -Dsonar.projectKey=tu-evento-backend -Dsonar.host.url=http://sonarqube:9000'
-                    }
-                }
+stage('SonarQube Analysis') {
+    steps {
+        dir('TuEventoBackend/tu-evento') {
+            withSonarQubeEnv(env.SONARQUBE_SERVER) {
+                sh 'mvn sonar:sonar -Dsonar.projectKey=tu-evento-backend -Dsonar.host.url=http://tuevento-sonarqube:9000'
             }
         }
+    }
+}
         
         stage('Quality Gate') {
             steps {
