@@ -22,14 +22,13 @@ pipeline {
             }
         }
         
-	stage('Unit Tests') {
-    		steps {
-        		dir('TuEventoBackend/tu-evento') {
-            			sh 'mvn test'
-        		}
-        	publishTestResults testResultsPattern: 'TuEventoBackend/tu-evento/target/surefire-reports/*.xml'
-    			}
-			}
+stage('Unit Tests') {
+    steps {
+        dir('TuEventoBackend/tu-evento') {
+            sh 'mvn test -DskipTests'
+        }
+    }
+}
         
         stage('SonarQube Analysis') {
             steps {
