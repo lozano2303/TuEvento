@@ -22,19 +22,14 @@ pipeline {
             }
         }
         
-        stage('Unit Tests') {
-            steps {
-                script {
-                    // Asegurar que postgres y redis estén corriendo
-                    sh 'docker compose up -d postgres redis'
-                    sh 'sleep 10'
-                }
-                dir('TuEventoBackend/tu-evento') {
-                    sh 'mvn test'
-                }
-                publishTestResults testResultsPattern: 'TuEventoBackend/tu-evento/target/surefire-reports/*.xml'
-            }
-        }
+	stage('Unit Tests') {
+    		steps {
+        		dir('TuEventoBackend/tu-evento') {
+            			sh 'mvn test'
+        		}
+        	publishTestResults testResultsPattern: 'TuEventoBackend/tu-evento/target/surefire-reports/*.xml'
+    			}
+			}
         
         stage('SonarQube Analysis') {
             steps {
