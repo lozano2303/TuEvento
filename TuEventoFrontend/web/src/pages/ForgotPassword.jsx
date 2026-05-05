@@ -238,7 +238,7 @@ export default function ForgotPassword({ onBackToLogin }) {
               <button
                 type="button"
                 onClick={onBackToLogin}
-                className="text-accent hover:text-purple-300"
+                className="text-accent hover:text-primary"
               >
                 Volver al inicio de sesión
               </button>
@@ -338,7 +338,7 @@ export default function ForgotPassword({ onBackToLogin }) {
             <button
               type="button"
               onClick={onBackToLogin}
-              className="text-accent hover:text-purple-300"
+              className="text-accent hover:text-primary"
             >
               Volver al inicio de sesión
             </button>

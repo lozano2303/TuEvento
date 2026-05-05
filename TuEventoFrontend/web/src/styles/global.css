@@ -14,8 +14,10 @@
   --color-success: #059669;
 }
 
-body {
-  background-color: #1E0A3C;
+body, #root {
+  background-color: var(--color-background);
+  color: var(--color-textPrimary);
+  min-height: 100vh;
 }
 
 input[type="password"]::-ms-reveal {

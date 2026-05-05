@@ -26,13 +26,9 @@ const applyPalette = (palette) => {
       root.style.setProperty(`--color-${key}`, value);
     }
   });
-  
-  // Log de verificación
-  console.log('[ThemeContext] Palette applied:', {
-    background: root.style.getPropertyValue('--color-background'),
-    primary: root.style.getPropertyValue('--color-primary'),
-    accent: root.style.getPropertyValue('--color-accent')
-  });
+  // Fuerza repaint en browsers que cachean CSS variables
+  // eslint-disable-next-line no-unused-expressions
+  root.offsetHeight;
 };
 
 export const ThemeContext = createContext(null);
@@ -46,25 +42,25 @@ export function ThemeProvider({ children }) {
 
   const refreshPalette = useCallback(async () => {
     const token = localStorage.getItem('token');
-    if (!token) {
-      console.warn('[ThemeContext] No token available, skipping fetch');
-      return;
-    }
+    if (!token) return;
 
     setIsLoadingTheme(true);
     try {
       const data = await getActivePalette();
-      if (data) {
-        const merged = { ...DEFAULT_PALETTE, ...data.palette };
-        applyPalette(merged);
-        setPalette(merged);
-        setActiveThemeId(data.themeId);
-        localStorage.setItem('activeThemeId', data.themeId);
-        localStorage.setItem('activeThemeName', data.themeName);
-      }
+      if (!data) return;
+
+      const merged = { ...DEFAULT_PALETTE, ...data.palette };
+      applyPalette(merged);
+      setPalette(merged);
+      setActiveThemeId(data.themeId);
+      localStorage.setItem('activeThemeId', data.themeId);
+      localStorage.setItem('activeThemeName', data.themeName);
     } catch (e) {
-      console.warn('[ThemeContext] No se pudo cargar la paleta remota, usando fallback:', e.message);
-      // Fallback ya aplicado arriba — la app no se rompe
+      // 403 — token expirado o sesión cerrada: no aplicar fallback, mantener paleta actual
+      if (e.message.includes('403') || e.message.includes('Forbidden')) {
+        return;
+      }
+      applyPalette(DEFAULT_PALETTE);
     } finally {
       setIsLoadingTheme(false);
     }
@@ -74,7 +70,7 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('token');
     applyPalette(DEFAULT_PALETTE); // siempre aplica fallback primero
-    if (!token) return; // sin token no hacer fetch
+    if (!token) return;
     refreshPalette();
   }, [refreshPalette]);
 
@@ -89,7 +85,7 @@ export function ThemeProvider({ children }) {
     return () => window.removeEventListener('storage', handleStorage);
   }, [refreshPalette]);
 
-  // Efecto 3 — polling cada 30 segundos
+  // Efecto 3 — polling cada 30 segundos (sincroniza cambios desde otros dispositivos)
   useEffect(() => {
     const interval = setInterval(() => {
       const token = localStorage.getItem('token');

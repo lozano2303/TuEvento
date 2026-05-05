@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight } from "lucide-react";
 import { loginUser, registerUser, resendActivationCode } from "../services/Login.js";
 import { getProfileByUserId } from "../services/ProfileService.js";
+import { useTheme } from "../context/ThemeContext";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
-import { useTheme } from "../context/ThemeContext";
 
 export default function Login() {
   const { refreshPalette } = useTheme();
@@ -178,6 +178,9 @@ export default function Login() {
           localStorage.setItem('role', result.data.role || 'USER');
           refreshPalette(); // carga la paleta del usuario recién autenticado
           
+          // Carga la paleta del usuario recién autenticado
+          refreshPalette();
+
           // Obtener el perfil del usuario para conseguir el fullName (como en el móvil)
           let fullName = result.data.alias; // fallback al alias
           try {
@@ -244,26 +247,26 @@ export default function Login() {
             className="w-full max-w-xs drop-shadow-2xl hover:scale-105 transition-transform duration-500"
           />
         </div>
-        <div className="w-full bg-gray-900 flex items-center justify-center p-8">
+        <div className="w-full bg-background flex items-center justify-center p-8">
           <div className="w-full max-w-sm space-y-6">
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-white">Perfil de Usuario</h1>
-              <p className="text-gray-400 text-sm mt-1">Bienvenido de vuelta</p>
+              <h1 className="text-2xl font-bold text-textPrimary">Perfil de Usuario</h1>
+              <p className="text-textMuted text-sm mt-1">Bienvenido de vuelta</p>
             </div>
             <div className="space-y-4">
               {[
                 ['Nombre', userData.fullName || 'No definido'],
-                ['Alias', userData.alias], 
-                ['Correo', userData.email], 
+                ['Alias', userData.alias],
+                ['Correo', userData.email],
                 ['ID', userData.userId]
               ].map(([label, val]) => (
                 <div key={label}>
-                  <label className="block text-gray-400 text-sm mb-1">{label}</label>
-                  <p className="text-white bg-gray-800 rounded-lg px-4 py-3 text-sm">{val}</p>
+                  <label className="block text-textMuted text-sm mb-1">{label}</label>
+                  <p className="text-textPrimary bg-surface rounded-lg px-4 py-3 text-sm">{val}</p>
                 </div>
               ))}
             </div>
-            <button onClick={handleLogout} className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-all text-sm">
+            <button onClick={handleLogout} className="w-full bg-error hover:bg-red-700 text-textPrimary font-semibold py-3 rounded-lg transition-all text-sm">
               Cerrar Sesión
             </button>
           </div>
@@ -281,15 +284,15 @@ export default function Login() {
       </div>
 
       {/* Columna derecha */}
-      <div className="w-full bg-gray-900 flex items-center justify-center p-10">
+      <div className="w-full bg-background flex items-center justify-center p-10">
         <div className="w-full max-w-sm">
 
           {/* Título */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white">
+            <h1 className="text-3xl font-bold text-textPrimary">
               {view === 'login' ? "Iniciar Sesión" : "Registrarse"}
             </h1>
-            <p className="text-gray-400 text-sm mt-2">Ingresa tus datos personales</p>
+            <p className="text-textMuted text-sm mt-2">Ingresa tus datos personales</p>
           </div>
 
           {/* Formulario */}
@@ -299,12 +302,12 @@ export default function Login() {
             {view !== 'login' && (
               <div>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
                   <input
                     type="text" name="name" value={formData.name}
                     onChange={handleInputChange}
                     placeholder="Nombre completo"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                     required
                   />
                 </div>
@@ -329,12 +332,12 @@ export default function Login() {
             {/* Email */}
             <div>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
                 <input
                   type="email" name="email" value={formData.email}
                   onChange={handleInputChange}
                   placeholder="Correo electrónico"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                   required
                 />
               </div>
@@ -353,7 +356,7 @@ export default function Login() {
             {/* Contraseña */}
             <div>
               <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <input
@@ -361,11 +364,11 @@ export default function Login() {
                   onChange={handleInputChange}
                   placeholder="Contraseña"
                   autoComplete="new-password"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-12 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                   required
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted hover:text-textSecondary">
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
@@ -379,7 +382,7 @@ export default function Login() {
                       <div
                         key={i}
                         className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                          passwordStrength >= i ? barColors[passwordStrength] : 'bg-gray-700'
+                          passwordStrength >= i ? barColors[passwordStrength] : 'bg-surfaceAlt'
                         }`}
                       />
                     ))}

@@ -1,68 +1,105 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { colors } from "../theme/colors";
-import { getActivePalette } from "../services/themeService";
-import { useAuth } from "./AuthContext";
+import { colors as baseColors } from "../theme/colors";
+import { THEMES, DEFAULT_THEME_ID } from "../theme/themes";
+import { activateTheme, getActivePalette, getThemes } from "../services/themeService";
 
-export const ThemeContext = createContext(null);
+const STORAGE_KEY = "activeThemeId";
+
+const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
-  const { user } = useAuth();
-  const [palette, setPalette] = useState(colors);
-  const [isLoadingTheme, setIsLoadingTheme] = useState(false);
+  const [activeThemeId, setActiveThemeId] = useState(DEFAULT_THEME_ID);
+  const [colors, setColors] = useState({ ...baseColors });
+  // Mapa nombre → id numérico del backend, ej: { DARK: 1, LIGHT: 2, ... }
+  const backendIdMap = useRef({});
 
+  // ── Al arrancar: restaurar tema local + cargar mapa de ids del backend ──
   useEffect(() => {
-    if (!user) {
-      // Sin sesión — volver al fallback
-      setPalette(colors);
-      return;
-    }
+    const init = async () => {
+      // 1. Restaurar tema guardado localmente
+      const savedId = await AsyncStorage.getItem(STORAGE_KEY);
+      if (savedId) {
+        const found = THEMES.find((t) => t.id === savedId);
+        if (found) {
+          setActiveThemeId(found.id);
+          setColors({ ...baseColors, ...found.palette });
+        }
+      }
 
-    fetchPalette();
-  }, [user]);
+      // 2. Cargar lista de temas del backend para obtener ids numéricos
+      try {
+        const backendThemes = await getThemes();
+        if (Array.isArray(backendThemes)) {
+          const map = {};
+          backendThemes.forEach((t) => {
+            map[t.name] = t.id;
+          });
+          backendIdMap.current = map;
+        }
+      } catch (e) {
+        // silencioso — el mapa quedará vacío y applyTheme solo aplicará localmente
+      }
+    };
+    init();
+  }, []);
 
-  // Polling cada 30 segundos
+  // ── Polling cada 30 segundos — sincroniza con el backend ──
   useEffect(() => {
-    if (!user) return;
-    
     const interval = setInterval(async () => {
       try {
-        const token = await AsyncStorage.getItem('accessToken');
+        const token = await AsyncStorage.getItem("accessToken");
         if (!token) return;
-        const data = await getActivePalette(token);
-        setPalette({ ...colors, ...data });
+        const data = await getActivePalette();
+        if (!data) return;
+        const found = THEMES.find((t) => t.id === data.themeName);
+        if (found) {
+          setActiveThemeId(found.id);
+          setColors({ ...baseColors, ...found.palette });
+          await AsyncStorage.setItem(STORAGE_KEY, found.id);
+        }
       } catch (e) {
-        console.log('[ThemeContext] polling error:', e.message);
+        if (e.message.includes('403')) {
+          return;
+        }
       }
     }, 30000);
-    
     return () => clearInterval(interval);
-  }, [user]);
+  }, []);
 
-  const fetchPalette = async () => {
-    setIsLoadingTheme(true);
-    try {
-      const accessToken = await AsyncStorage.getItem("accessToken");
-      if (!accessToken) return;
-      const remotePalette = await getActivePalette(accessToken);
-      setPalette({ ...colors, ...remotePalette });
-    } catch (e) {
-      console.warn("[ThemeContext] No se pudo cargar la paleta remota, usando fallback:", e.message);
-      // Mantiene el fallback — la app no se rompe
-    } finally {
-      setIsLoadingTheme(false);
+  // ── applyTheme: aplica localmente + llama al backend ──
+  const applyTheme = async (themeId) => {
+    const found = THEMES.find((t) => t.id === themeId);
+    if (!found) return;
+
+    // 1. Aplica localmente de inmediato
+    setActiveThemeId(found.id);
+    setColors({ ...baseColors, ...found.palette });
+    await AsyncStorage.setItem(STORAGE_KEY, found.id);
+
+    // 2. Llama al backend con el id numérico
+    const numericId = backendIdMap.current[themeId];
+
+    if (numericId) {
+      try {
+        await activateTheme(numericId);
+      } catch (e) {
+        if (e.message.includes('403')) {
+          return;
+        }
+      }
     }
-  };
-
-  const refreshPalette = async () => {
-    await fetchPalette();
   };
 
   return (
-    <ThemeContext.Provider value={{ palette, isLoadingTheme, refreshPalette }}>
+    <ThemeContext.Provider value={{ colors, activeThemeId, applyTheme, themes: THEMES }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
-export const useTheme = () => useContext(ThemeContext);
+export const useTheme = () => {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme must be used inside ThemeProvider");
+  return ctx;
+};

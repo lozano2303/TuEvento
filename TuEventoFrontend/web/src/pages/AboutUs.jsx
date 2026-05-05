@@ -111,18 +111,18 @@ export default function AboutUs() {
       <section className="py-24 bg-background relative overflow-hidden">
         {/* Elementos decorativos de fondo */}
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500 rounded-full blur-3xl"></div>
+          <div className="absolute top-20 left-10 w-32 h-32 bg-primary rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 right-10 w-40 h-40 bg-blue-500 rounded-full blur-3xl"></div>
         </div>
         
         <div className="max-w-6xl mx-auto px-4 relative z-10">
           <div className="text-center mb-20">
-            <div className="inline-flex items-center px-6 py-3 bg-purple-600/20 backdrop-blur-sm rounded-full border border-purple-400/30 mb-8">
-              <Calendar className="w-5 h-5 text-purple-300 mr-2" />
-              <span className="text-sm font-medium text-purple-200">Nuestra Trayectoria</span>
+            <div className="inline-flex items-center px-6 py-3 bg-primary/20 backdrop-blur-sm rounded-full border border-primary/30 mb-8">
+              <Calendar className="w-5 h-5 text-accent mr-2" />
+              <span className="text-sm font-medium text-accent">Nuestra Trayectoria</span>
             </div>
             
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-textPrimary to-textSecondary bg-clip-text text-transparent">
               Nuestra Historia
             </h2>
             <p className="text-textSecondary text-xl max-w-4xl mx-auto leading-relaxed">
@@ -134,7 +134,7 @@ export default function AboutUs() {
 
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="space-y-8">
-              <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm p-8 rounded-2xl border border-gray-700/50 hover:border-purple-500/30 transition-all duration-300">
+              <div className="bg-gradient-to-br from-surface/50 to-background/50 backdrop-blur-sm p-8 rounded-2xl border border-surfaceAlt/50 hover:border-primary/30 transition-all duration-300">
                 <h3 className="text-3xl font-bold mb-4 text-textPrimary">Nuestra Visión</h3>
                 <p className="text-textSecondary leading-relaxed mb-6">
                   Ser la plataforma líder en gestión de eventos, facilitando conexiones significativas
@@ -142,16 +142,16 @@ export default function AboutUs() {
                   fortaleciendo comunidades a través de experiencias inolvidables.
                 </p>
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-purple-600/20 rounded-full flex items-center justify-center">
-                    <Target className="w-6 h-6 text-purple-400" />
+                  <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                    <Target className="w-6 h-6 text-accent" />
                   </div>
-                  <span className="text-lg font-semibold text-purple-200">Innovación Constante</span>
+                  <span className="text-lg font-semibold text-accent">Innovación Constante</span>
                 </div>
               </div>
             </div>
 
             <div className="space-y-8">
-              <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm p-8 rounded-2xl border border-gray-700/50 hover:border-red-500/30 transition-all duration-300">
+              <div className="bg-gradient-to-br from-surface/50 to-background/50 backdrop-blur-sm p-8 rounded-2xl border border-surfaceAlt/50 hover:border-red-500/30 transition-all duration-300">
                 <h3 className="text-3xl font-bold mb-4 text-textPrimary">Nuestra Misión</h3>
                 <p className="text-textSecondary leading-relaxed mb-6">
                   Proporcionar herramientas intuitivas y poderosas que permitan a organizadores
@@ -172,28 +172,27 @@ export default function AboutUs() {
 
       {/* Nuestros Valores */}
       <section className="py-24 bg-surface relative overflow-hidden">
-        {/* Elementos decorativos de fondo */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary rounded-full blur-3xl"></div>
           <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-blue-500 rounded-full blur-3xl"></div>
         </div>
         
         <div className="max-w-6xl mx-auto px-4 relative z-10">
           <div className="text-center mb-20">
-            <div className="inline-flex items-center px-6 py-3 bg-purple-600/20 backdrop-blur-sm rounded-full border border-purple-400/30 mb-8">
-              <Award className="w-5 h-5 text-purple-300 mr-2" />
-              <span className="text-sm font-medium text-purple-200">Lo que nos define</span>
+            <div className="inline-flex items-center px-6 py-3 bg-primary/20 backdrop-blur-sm rounded-full border border-primary/30 mb-8">
+              <Award className="w-5 h-5 text-accent mr-2" />
+              <span className="text-sm font-medium text-accent">Lo que nos define</span>
             </div>
             
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-textPrimary to-textSecondary bg-clip-text text-transparent">
               Nuestros Valores
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="group text-center space-y-6 p-8 bg-gradient-to-br from-gray-700/30 to-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-600/30 hover:border-purple-500/50 transition-all duration-300 hover:transform hover:scale-105">
-              <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <Award className="w-10 h-10 text-white" />
+            <div className="group text-center space-y-6 p-8 bg-gradient-to-br from-surfaceAlt/30 to-surface/30 backdrop-blur-sm rounded-2xl border border-surfaceAlt/30 hover:border-primary/50 transition-all duration-300 hover:transform hover:scale-105">
+              <div className="w-20 h-20 bg-gradient-to-br from-primary to-primaryDark rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <Award className="w-10 h-10 text-textPrimary" />
               </div>
               <h3 className="text-2xl font-bold text-textPrimary">Excelencia</h3>
               <p className="text-textSecondary leading-relaxed">
@@ -202,9 +201,9 @@ export default function AboutUs() {
               </p>
             </div>
 
-            <div className="group text-center space-y-6 p-8 bg-gradient-to-br from-gray-700/30 to-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-600/30 hover:border-blue-500/50 transition-all duration-300 hover:transform hover:scale-105">
+            <div className="group text-center space-y-6 p-8 bg-gradient-to-br from-surfaceAlt/30 to-surface/30 backdrop-blur-sm rounded-2xl border border-surfaceAlt/30 hover:border-blue-500/50 transition-all duration-300 hover:transform hover:scale-105">
               <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <Users className="w-10 h-10 text-white" />
+                <Users className="w-10 h-10 text-textPrimary" />
               </div>
               <h3 className="text-2xl font-bold text-textPrimary">Colaboración</h3>
               <p className="text-textSecondary leading-relaxed">
@@ -213,9 +212,9 @@ export default function AboutUs() {
               </p>
             </div>
 
-            <div className="group text-center space-y-6 p-8 bg-gradient-to-br from-gray-700/30 to-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-600/30 hover:border-green-500/50 transition-all duration-300 hover:transform hover:scale-105">
+            <div className="group text-center space-y-6 p-8 bg-gradient-to-br from-surfaceAlt/30 to-surface/30 backdrop-blur-sm rounded-2xl border border-surfaceAlt/30 hover:border-green-500/50 transition-all duration-300 hover:transform hover:scale-105">
               <div className="w-20 h-20 bg-gradient-to-br from-green-600 to-green-700 rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <CheckCircle className="w-10 h-10 text-white" />
+                <CheckCircle className="w-10 h-10 text-textPrimary" />
               </div>
               <h3 className="text-2xl font-bold text-textPrimary">Integridad</h3>
               <p className="text-textSecondary leading-relaxed">
@@ -271,7 +270,7 @@ export default function AboutUs() {
             {/* Contenido de texto */}
             <div className="space-y-8">
               <div>
-                <h2 className="text-4xl md:text-5xl font-bold mb-6 text-textPrimary">
+                <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
                   Organiza tus eventos
                 </h2>
                 <p className="text-xl text-purple-100 leading-relaxed mb-8">
@@ -287,7 +286,7 @@ export default function AboutUs() {
                     <Clock className="w-5 h-5 text-purple-800" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-textPrimary">Ahorra tiempo</h3>
+                    <h3 className="font-semibold text-white">Ahorra tiempo</h3>
                     <p className="text-purple-200 text-sm">Planifica en minutos con nuestras herramientas intuitivas</p>
                   </div>
                 </div>
@@ -297,7 +296,7 @@ export default function AboutUs() {
                     <Zap className="w-5 h-5 text-purple-800" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-textPrimary">Herramientas virtuales</h3>
+                    <h3 className="font-semibold text-white">Herramientas virtuales</h3>
                     <p className="text-purple-200 text-sm">Maquetación 2D y visualización en tiempo real</p>
                   </div>
                 </div>
@@ -307,7 +306,7 @@ export default function AboutUs() {
                     <Target className="w-5 h-5 text-purple-800" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-textPrimary">Enfoque en lo importante</h3>
+                    <h3 className="font-semibold text-white">Enfoque en lo importante</h3>
                     <p className="text-purple-200 text-sm">Dedica más tiempo a crear experiencias memorables</p>
                   </div>
                 </div>
@@ -317,21 +316,20 @@ export default function AboutUs() {
         </div>
       </section>
 
-       {/* Nuestro Equipo */}
       <section className="py-24 bg-background relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-20 right-20 w-56 h-56 bg-green-500 rounded-full blur-3xl"></div>
+          <div className="absolute top-20 right-20 w-56 h-56 bg-success rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 left-20 w-40 h-40 bg-pink-500 rounded-full blur-3xl"></div>
         </div>
         
         <div className="max-w-6xl mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center px-6 py-3 bg-purple-600/20 backdrop-blur-sm rounded-full border border-purple-400/30 mb-8">
-              <Users className="w-5 h-5 text-purple-300 mr-2" />
-              <span className="text-sm font-medium text-purple-200">Conoce al equipo</span>
+            <div className="inline-flex items-center px-6 py-3 bg-primary/20 backdrop-blur-sm rounded-full border border-primary/30 mb-8">
+              <Users className="w-5 h-5 text-accent mr-2" />
+              <span className="text-sm font-medium text-accent">Conoce al equipo</span>
             </div>
             
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-textPrimary to-textSecondary bg-clip-text text-transparent">
               Nuestro Equipo
             </h2>
             <p className="text-textSecondary text-xl max-w-3xl mx-auto leading-relaxed">
@@ -340,7 +338,7 @@ export default function AboutUs() {
           </div>
 
           {/* Carrusel del equipo */}
-          <div className="relative bg-gradient-to-br from-gray-800/40 to-gray-900/40 backdrop-blur-sm rounded-3xl border border-gray-700/30 p-8 md:p-12">
+          <div className="relative bg-gradient-to-br from-surface/40 to-background/40 backdrop-blur-sm rounded-3xl border border-surfaceAlt/30 p-8 md:p-12">
             <div className="grid md:grid-cols-2 gap-12 items-center min-h-[400px]">
               {/* Foto del miembro */}
               <div className="relative">
@@ -372,13 +370,13 @@ export default function AboutUs() {
               {/* Información del miembro */}
               <div className="space-y-6 text-center md:text-left">
                 <div>
-                  <h3 className="text-3xl md:text-4xl font-bold text-textPrimary mb-2">
+                  <h3 className="text-3xl md:text-4xl font-bold text-white mb-2">
                     {member.name}
                   </h3>
-                  <p className="text-xl text-textSecondary font-semibold mb-4">
+                  <p className="text-xl text-purple-300 font-semibold mb-4">
                     {member.role}
                   </p>
-                  <p className="text-textSecondary text-lg leading-relaxed">
+                  <p className="text-gray-300 text-lg leading-relaxed">
                     {member.description}
                   </p>
                 </div>
@@ -387,11 +385,11 @@ export default function AboutUs() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-center md:justify-start space-x-3 p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
                     <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
-                    <span className="text-textSecondary">{member.email}</span>
+                    <span className="text-gray-300">{member.email}</span>
                   </div>
                   <div className="flex items-center justify-center md:justify-start space-x-3 p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
                     <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                    <span className="text-textSecondary">{member.phone}</span>
+                    <span className="text-gray-300">{member.phone}</span>
                   </div>
                 </div>
               </div>
@@ -433,7 +431,7 @@ export default function AboutUs() {
 
             {/* Contador del miembro actual */}
             <div className="text-center mt-6">
-              <span className="text-textMuted text-sm">
+              <span className="text-gray-400 text-sm">
                 {currentMember + 1} de {teamMembers.length}
               </span>
             </div>

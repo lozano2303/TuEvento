@@ -1,26 +1,33 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
-export const getActivePalette = async (accessToken) => {
+export const getActivePalette = async () => {
+  const token = await AsyncStorage.getItem("accessToken");
+  if (!token) return null;
   const response = await fetch(`${BASE_URL}/themes/my-active`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new Error("Error fetching theme");
+  if (!response.ok) throw new Error(`Error fetching active theme: ${response.status}`);
   const json = await response.json();
-  return json.data.palette;
+  return json.data; // { themeId, themeName, userThemeId, palette }
 };
 
 export const getThemes = async () => {
   const response = await fetch(`${BASE_URL}/themes`);
-  if (!response.ok) throw new Error('Error fetching themes');
+  if (!response.ok) throw new Error(`Error fetching themes: ${response.status}`);
   const json = await response.json();
   return json.data;
 };
 
-export const activateTheme = async (themeId, accessToken) => {
+export const activateTheme = async (themeId) => {
+  const token = await AsyncStorage.getItem("accessToken");
+
   const response = await fetch(`${BASE_URL}/themes/activate/${themeId}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` }
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new Error('Error activating theme');
+
+  if (!response.ok) throw new Error(`Error activating theme: ${response.status}`);
   return await response.json();
 };

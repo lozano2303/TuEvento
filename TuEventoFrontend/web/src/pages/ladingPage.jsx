@@ -29,7 +29,7 @@ export default function LadingPage() {
     <div className="min-h-screen bg-background text-textPrimary">
   
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden pt-16 md:pt-20">
         {/* Fondo degradado */}
         <div className="absolute inset-0 bg-purple-700"></div>
 
@@ -104,7 +104,7 @@ export default function LadingPage() {
         {/* Solo la curva inferior */}
       <svg
         viewBox="0 0 1200 120"
-        className="absolute bottom-0 left-0 w-full h-16 fill-gray-900"  
+        className="absolute bottom-0 left-0 w-full h-16 fill-background"  
         preserveAspectRatio="none"
       >
       <path d="M0,60 Q150,0 300,60 T600,60 Q750,120 900,60 T1200,60 L1200,120 L0,120 Z" />
@@ -124,13 +124,13 @@ export default function LadingPage() {
                 Organiza, diseña y vive eventos
                 <span className="block">sin límites.</span>
               </h2>
-              <p className="text-textSecondary text-lg">
+              <p className="text-lg text-textSecondary">
                 Construye eventos memorables con nuestro creador de planos interactivos en línea. Diseña espacios personalizados, gestiona asistentes y visualiza cada detalle de tu evento en tiempo real, todo en una sola plataforma.
               </p>
             </div>
             
             <div className="relative">
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-2xl">
+              <div className="bg-gradient-to-br from-surface to-background rounded-2xl p-6 shadow-2xl">
                 <div className="rounded-xl mb-4 overflow-hidden h-56">
                   <img
                     src="/src/assets/images/ladingpage1.png"
@@ -139,8 +139,8 @@ export default function LadingPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <div className="h-3 bg-gray-600 rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-600 rounded w-1/2"></div>
+                  <div className="h-3 bg-surfaceAlt rounded w-3/4"></div>
+                  <div className="h-3 bg-surfaceAlt rounded w-1/2"></div>
                 </div>
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function LadingPage() {
           {/* Segunda sección */}
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative order-2 md:order-1">
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-2xl">
+              <div className="bg-gradient-to-br from-surface to-background rounded-2xl p-6 shadow-2xl">
                 <div className="aspect-video overflow-hidden rounded-xl">
                   <img
                     src="/src/assets/images/ladingpage2.png"
@@ -169,18 +169,18 @@ export default function LadingPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <div className="h-3 bg-gray-600 rounded w-2/3"></div>
-                  <div className="h-3 bg-gray-600 rounded w-1/2"></div>
+                  <div className="h-3 bg-surfaceAlt rounded w-2/3"></div>
+                  <div className="h-3 bg-surfaceAlt rounded w-1/2"></div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-6 order-1 md:order-2">
-              <h3 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+              <h3 className="text-3xl md:text-4xl font-bold text-textPrimary leading-tight">
                 Solicitud de
                 <span className="block">Eventos excepcionales.</span>
               </h3>
-              <p className="text-gray-300 text-lg">
+              <p className="text-textSecondary text-lg">
                 Si buscas nuevas experiencias, revisa nuestra lista de eventos disponibles. Explora todas las opciones y encuentra el plan perfecto para ti.
               </p>
               <button
@@ -204,7 +204,6 @@ export default function LadingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Ahorra tiempo en colas */}
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto">
                 <CheckCircle className="w-8 h-8" />
@@ -215,7 +214,6 @@ export default function LadingPage() {
               </p>
             </div>
 
-            {/* Encuentra eventos fácilmente */}
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto">
                 <Users className="w-8 h-8" />
@@ -226,7 +224,6 @@ export default function LadingPage() {
               </p>
             </div>
 
-            {/* Totalmente gratuito */}
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto">
                 <Gift className="w-8 h-8" />
