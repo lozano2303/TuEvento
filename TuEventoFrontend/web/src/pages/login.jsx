@@ -5,7 +5,6 @@ import { getProfileByUserId } from "../services/ProfileService.js";
 import { useTheme } from "../context/ThemeContext";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
-import { useTheme } from "../context/ThemeContext";
 
 export default function Login() {
   const { refreshPalette } = useTheme();
