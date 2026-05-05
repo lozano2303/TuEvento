@@ -65,7 +65,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
           </div>
         </div>
 
-        <div className="w-full md:w-1/2 bg-background flex items-center justify-center p-4 md:p-8">
+        <div className="w-1/2 bg-background flex items-center justify-center p-8">
           <div className="w-full max-w-sm space-y-6">
             <div className="text-center space-y-2">
               <h1 className="text-xl md:text-2xl font-bold text-textPrimary mb-1">Activar Cuenta</h1>
@@ -120,7 +120,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
               <button
                 type="button"
                 onClick={() => onBackToLogin ? onBackToLogin() : navigate('/login')}
-                className="text-accent hover:text-purple-300"
+                className="text-accent hover:text-primary"
               >
                 Volver al inicio de sesión
               </button>
@@ -212,7 +212,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
         </div>
       </div>
 
-      <div className="w-full md:w-1/2 bg-background flex items-center justify-center p-4 md:p-8">
+      <div className="w-1/2 bg-background flex items-center justify-center p-8">
         <div className="w-full max-w-sm space-y-6">
           <div className="text-center space-y-2">
             <h1 className="text-xl md:text-2xl font-bold text-textPrimary mb-1">Verificar Cuenta</h1>
@@ -248,7 +248,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                 type="button"
                 onClick={handleResendCode}
                 disabled={resendLoading}
-                className="text-accent hover:text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center space-x-1 mx-auto"
+                className="text-accent hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center space-x-1 mx-auto"
               >
                 {resendLoading ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -264,7 +264,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
             <button
               type="button"
               onClick={() => onBackToLogin ? onBackToLogin() : navigate('/login')}
-              className="text-accent hover:text-purple-300"
+              className="text-accent hover:text-primary"
             >
               Volver al inicio de sesión
             </button>

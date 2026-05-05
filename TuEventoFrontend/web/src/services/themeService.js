@@ -6,7 +6,7 @@ export const getActivePalette = async () => {
   const response = await fetch(`${API_URL}/themes/my-active`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new Error('Error fetching theme');
+  if (!response.ok) throw new Error(`Error fetching theme: ${response.status}`);
   const json = await response.json();
   return json.data; // retorna { themeId, themeName, userThemeId, palette }
 };
