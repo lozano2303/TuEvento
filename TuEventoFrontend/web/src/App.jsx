@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { ThemeProvider } from './context/ThemeContext'
 import Login from './pages/login'
 import LadingPage from './pages/ladingPage'
 import AboutUs from './pages/AboutUs'
@@ -12,7 +13,7 @@ import CodeVerification from './pages/CodeVerification';
 
 function AppContent() {
   const location = useLocation();
-  const showNavbar = !['/login', '/profile', '/verification'].includes(location.pathname);
+  const showNavbar = !['/login', '/verification'].includes(location.pathname);
 
   return (
     <>
@@ -34,7 +35,9 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

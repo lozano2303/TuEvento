@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { navigationRef } from "../navigation/AppNavigator";
+import { navigationRef } from "../navigation/navigationRef";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getDisplayName(fullName) {
@@ -28,11 +28,7 @@ function getInitial(fullName) {
   return getDisplayName(fullName).charAt(0).toUpperCase();
 }
 
-function getRoleBadge(role) {
-  if (role === "ADMIN")     return { label: "Administrador", color: colors.error };
-  if (role === "ORGANIZER") return { label: "Organizador",   color: "#3B82F6" };
-  return { label: "Usuario", color: colors.accent };
-}
+// getRoleBadge se define dentro del componente para acceder a colors del tema
 
 // ─── Opciones del menú de perfil ─────────────────────────────────────────────
 const MENU_OPTIONS = [
@@ -46,6 +42,13 @@ export default function ProfileScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+
+  // getRoleBadge necesita colors del tema — se define aquí dentro
+  const getRoleBadge = (role) => {
+    if (role === "ADMIN")     return { label: "Administrador", color: colors.error };
+    if (role === "ORGANIZER") return { label: "Organizador",   color: "#3B82F6" };
+    return { label: "Usuario", color: colors.accent };
+  };
 
   // Animaciones de entrada
   const cardAnim = useRef(new Animated.Value(0)).current;

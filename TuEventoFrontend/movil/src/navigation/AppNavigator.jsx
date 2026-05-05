@@ -1,25 +1,25 @@
 import { useRef } from "react";
-import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
+import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { View, Text, TouchableOpacity, Modal } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { colors } from "../theme";
-import LandingScreen      from "../screens/LandingScreen";
-import LoginScreen        from "../screens/LoginScreen";
-import RegisterScreen     from "../screens/RegisterScreen";
-import ActivateScreen     from "../screens/ActivateScreen";
-import TermsScreen        from "../screens/TermsScreen";
+import { navigationRef } from "./navigationRef";
+import LandingScreen        from "../screens/LandingScreen";
+import LoginScreen          from "../screens/LoginScreen";
+import RegisterScreen       from "../screens/RegisterScreen";
+import ActivateScreen       from "../screens/ActivateScreen";
+import TermsScreen          from "../screens/TermsScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ResetPasswordScreen  from "../screens/ResetPasswordScreen";
-import HomeScreen         from "../screens/HomeScreen";
-import ProfileScreen      from "../screens/ProfileScreen";
-import SettingsScreen     from "../screens/SettingsScreen";
+import HomeScreen           from "../screens/HomeScreen";
+import ProfileScreen        from "../screens/ProfileScreen";
+import SettingsScreen       from "../screens/SettingsScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
-export const navigationRef = createNavigationContainerRef();
 
 // ─── Modal de logout ──────────────────────────────────────────────────────────
 function LogoutModal({ visible, onConfirm, onCancel }) {
@@ -90,14 +90,13 @@ function CustomTabBar({ state, descriptors, navigation }) {
       paddingHorizontal: 16,
     }}>
       {state.routes.map((route, index) => {
-        const { options } = descriptors[route.key];
         const isFocused = state.index === index;
         const isQR = route.name === "QR";
 
         const iconName = (() => {
-          if (route.name === "Eventos") return isFocused ? "home"     : "home-outline";
-          if (route.name === "QR")      return isFocused ? "qr-code"  : "qr-code-outline";
-          if (route.name === "Perfil")  return isFocused ? "person"   : "person-outline";
+          if (route.name === "Eventos") return isFocused ? "home"    : "home-outline";
+          if (route.name === "QR")      return isFocused ? "qr-code" : "qr-code-outline";
+          if (route.name === "Perfil")  return isFocused ? "person"  : "person-outline";
           return "ellipse-outline";
         })();
 
@@ -136,7 +135,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
             style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 4 }}
           >
             {isFocused ? (
-              /* Pill activo */
               <View style={{
                 flexDirection: "row", alignItems: "center", gap: 6,
                 backgroundColor: colors.primary,
@@ -148,7 +146,6 @@ function CustomTabBar({ state, descriptors, navigation }) {
                 </Text>
               </View>
             ) : (
-              /* Ícono inactivo */
               <View style={{ alignItems: "center", paddingVertical: 4 }}>
                 <Ionicons name={iconName} size={22} color={colors.textMuted} />
               </View>
@@ -192,14 +189,14 @@ export default function AppNavigator() {
   return (
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Landing"       component={LandingScreen} />
-        <Stack.Screen name="Login"         component={LoginScreen} />
-        <Stack.Screen name="Register"      component={RegisterScreen} />
-        <Stack.Screen name="Terms"         component={TermsScreen} />
+        <Stack.Screen name="Landing"        component={LandingScreen} />
+        <Stack.Screen name="Login"          component={LoginScreen} />
+        <Stack.Screen name="Register"       component={RegisterScreen} />
+        <Stack.Screen name="Terms"          component={TermsScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="ResetPassword"  component={ResetPasswordScreen} />
-        <Stack.Screen name="Activate"      component={ActivateScreen} />
-        <Stack.Screen name="Settings"      component={SettingsScreen} />
+        <Stack.Screen name="Activate"       component={ActivateScreen} />
+        <Stack.Screen name="Settings"       component={SettingsScreen} />
         <Stack.Screen
           name="Main"
           component={MainTabs}
