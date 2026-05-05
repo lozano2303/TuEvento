@@ -22,14 +22,11 @@ export const getThemes = async () => {
 
 export const activateTheme = async (themeId) => {
   const token = await AsyncStorage.getItem("accessToken");
-  console.log("[themeService] activateTheme called — themeId:", themeId, "hasToken:", !!token);
 
   const response = await fetch(`${BASE_URL}/themes/activate/${themeId}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
-
-  console.log("[themeService] activateTheme response status:", response.status);
 
   if (!response.ok) throw new Error(`Error activating theme: ${response.status}`);
   return await response.json();

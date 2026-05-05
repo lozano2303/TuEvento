@@ -33,14 +33,12 @@ export function ThemeProvider({ children }) {
         if (Array.isArray(backendThemes)) {
           const map = {};
           backendThemes.forEach((t) => {
-            // El backend retorna { id: 1, name: "DARK", ... }
             map[t.name] = t.id;
           });
           backendIdMap.current = map;
-          console.log("[ThemeContext] Backend theme id map:", map);
         }
       } catch (e) {
-        console.warn("[ThemeContext] Could not load backend themes:", e.message);
+        // silencioso — el mapa quedará vacío y applyTheme solo aplicará localmente
       }
     };
     init();
@@ -54,7 +52,6 @@ export function ThemeProvider({ children }) {
         if (!token) return;
         const data = await getActivePalette();
         if (!data) return;
-        console.log("[ThemeContext] polling — backend theme:", data.themeName, "| background:", data.palette?.background);
         const found = THEMES.find((t) => t.id === data.themeName);
         if (found) {
           setActiveThemeId(found.id);
@@ -63,10 +60,8 @@ export function ThemeProvider({ children }) {
         }
       } catch (e) {
         if (e.message.includes('403')) {
-          console.log("[ThemeContext] Token expired — keeping current palette");
           return;
         }
-        console.log("[ThemeContext] polling error:", e.message);
       }
     }, 30000);
     return () => clearInterval(interval);
@@ -84,21 +79,15 @@ export function ThemeProvider({ children }) {
 
     // 2. Llama al backend con el id numérico
     const numericId = backendIdMap.current[themeId];
-    console.log("[ThemeContext] applyTheme — local id:", themeId, "| backend numericId:", numericId);
 
     if (numericId) {
       try {
         await activateTheme(numericId);
-        console.log("[ThemeContext] applyTheme — backend updated successfully");
       } catch (e) {
         if (e.message.includes('403')) {
-          console.log("[ThemeContext] Token expired — theme applied locally only");
           return;
         }
-        console.warn("[ThemeContext] applyTheme — backend call failed:", e.message);
       }
-    } else {
-      console.warn("[ThemeContext] applyTheme — no numeric id found for theme:", themeId, "| map:", backendIdMap.current);
     }
   };
 
