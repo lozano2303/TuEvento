@@ -16,19 +16,21 @@ function AppContent() {
   const showNavbar = !['/login', '/verification'].includes(location.pathname);
 
   return (
-    <>
+    <div className="min-h-screen bg-background">
       {showNavbar && <Navbar />}
-      <Routes>
-        <Route path="/" element={<LadingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/nosotros" element={<AboutUs />} />
-        <Route path="/events" element={<Events />} />
-        <Route path="/organizer-petition-form" element={<OrganizerPetitionForm />} />
-        <Route path="/admin-panel" element={<AdminPanel />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/verification" element={<CodeVerification />} />
-      </Routes>
-    </>
+      <div>
+        <Routes>
+          <Route path="/" element={<LadingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/nosotros" element={<AboutUs />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/organizer-petition-form" element={<OrganizerPetitionForm />} />
+          <Route path="/admin-panel" element={<AdminPanel />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/verification" element={<CodeVerification />} />
+        </Routes>
+      </div>
+    </div>
   );
 }
 

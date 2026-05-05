@@ -5,6 +5,7 @@ import { getProfileByUserId } from "../services/ProfileService.js";
 import { useTheme } from "../context/ThemeContext";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Login() {
   const { refreshPalette } = useTheme();
@@ -176,6 +177,7 @@ export default function Login() {
           localStorage.setItem('alias', result.data.alias);
           localStorage.setItem('userEmail', formData.email);
           localStorage.setItem('role', result.data.role || 'USER');
+          refreshPalette(); // carga la paleta del usuario recién autenticado
           
           // Carga la paleta del usuario recién autenticado
           refreshPalette();
