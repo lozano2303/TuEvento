@@ -26,7 +26,7 @@ export default function LadingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-background text-textPrimary">
   
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-16 md:pt-20">
@@ -104,7 +104,7 @@ export default function LadingPage() {
         {/* Solo la curva inferior */}
       <svg
         viewBox="0 0 1200 120"
-        className="absolute bottom-0 left-0 w-full h-16 fill-gray-900"  
+        className="absolute bottom-0 left-0 w-full h-16 fill-background"  
         preserveAspectRatio="none"
       >
       <path d="M0,60 Q150,0 300,60 T600,60 Q750,120 900,60 T1200,60 L1200,120 L0,120 Z" />
@@ -124,13 +124,13 @@ export default function LadingPage() {
                 Organiza, diseña y vive eventos
                 <span className="block">sin límites.</span>
               </h2>
-              <p className="text-gray-300 text-lg">
+              <p className="text-lg text-textSecondary">
                 Construye eventos memorables con nuestro creador de planos interactivos en línea. Diseña espacios personalizados, gestiona asistentes y visualiza cada detalle de tu evento en tiempo real, todo en una sola plataforma.
               </p>
             </div>
             
             <div className="relative">
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-2xl">
+              <div className="bg-gradient-to-br from-surface to-background rounded-2xl p-6 shadow-2xl">
                 <div className="rounded-xl mb-4 overflow-hidden h-56">
                   <img
                     src="/src/assets/images/ladingpage1.png"
@@ -139,8 +139,8 @@ export default function LadingPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <div className="h-3 bg-gray-600 rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-600 rounded w-1/2"></div>
+                  <div className="h-3 bg-surfaceAlt rounded w-3/4"></div>
+                  <div className="h-3 bg-surfaceAlt rounded w-1/2"></div>
                 </div>
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function LadingPage() {
           {/* Segunda sección */}
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative order-2 md:order-1">
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 shadow-2xl">
+              <div className="bg-gradient-to-br from-surface to-background rounded-2xl p-6 shadow-2xl">
                 <div className="aspect-video overflow-hidden rounded-xl">
                   <img
                     src="/src/assets/images/ladingpage2.png"
@@ -169,18 +169,18 @@ export default function LadingPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <div className="h-3 bg-gray-600 rounded w-2/3"></div>
-                  <div className="h-3 bg-gray-600 rounded w-1/2"></div>
+                  <div className="h-3 bg-surfaceAlt rounded w-2/3"></div>
+                  <div className="h-3 bg-surfaceAlt rounded w-1/2"></div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-6 order-1 md:order-2">
-              <h3 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+              <h3 className="text-3xl md:text-4xl font-bold text-textPrimary leading-tight">
                 Solicitud de
                 <span className="block">Eventos excepcionales.</span>
               </h3>
-              <p className="text-gray-300 text-lg">
+              <p className="text-textSecondary text-lg">
                 Si buscas nuevas experiencias, revisa nuestra lista de eventos disponibles. Explora todas las opciones y encuentra el plan perfecto para ti.
               </p>
               <button
@@ -195,7 +195,7 @@ export default function LadingPage() {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-20 bg-gray-900">
+      <section className="py-20 bg-background">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-8">
@@ -204,35 +204,32 @@ export default function LadingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Ahorra tiempo en colas */}
             <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto">
                 <CheckCircle className="w-8 h-8" />
               </div>
               <h3 className="text-xl font-semibold">Ahorra tiempo en colas</h3>
-              <p className="text-gray-400 text-sm">
+              <p className="text-textMuted text-sm">
                 Dale a tus clientes un proceso de planificación de eventos, reduciendo el procesamiento con ayudantes expertos y elimina las filas.
               </p>
             </div>
 
-            {/* Encuentra eventos fácilmente */}
             <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto">
                 <Users className="w-8 h-8" />
               </div>
               <h3 className="text-xl font-semibold">Encuentra eventos fácilmente</h3>
-              <p className="text-gray-400 text-sm">
+              <p className="text-textMuted text-sm">
                 Nuestro sistema te permite encontrar el asistente desde una interfaz accesible, útil que te permitirá confirmar detalles de su evento tan rápido como lo desees en complicaciones.
               </p>
             </div>
 
-            {/* Totalmente gratuito */}
             <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto">
                 <Gift className="w-8 h-8" />
               </div>
               <h3 className="text-xl font-semibold">Totalmente gratuito.</h3>
-              <p className="text-gray-400 text-sm">
+              <p className="text-textMuted text-sm">
                 Acceso a las funciones básicas de nuestro plano gratis que te convierte en un agente accesible tanto para pequeños negocios como para grandes compañías.
               </p>
             </div>
@@ -241,7 +238,7 @@ export default function LadingPage() {
       </section>
 
       {/* Compatibility Section */}
-      <section className="py-20 bg-gray-800">
+      <section className="py-20 bg-surface">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-12">
             Dispositivos con compatibilidad.
@@ -249,20 +246,20 @@ export default function LadingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-items-center">
             <div className="space-y-4">
-              <div className="w-20 h-20 bg-gray-700 rounded-2xl flex items-center justify-center mx-auto">
-                <Globe className="w-10 h-10 text-white" />
+              <div className="w-20 h-20 bg-surfaceAlt rounded-2xl flex items-center justify-center mx-auto">
+                <Globe className="w-10 h-10 text-textPrimary" />
               </div>
               <h3 className="text-xl font-semibold">WEB</h3>
             </div>
 
             <div className="space-y-4">
-              <div className="w-20 h-20 bg-gray-700 rounded-2xl flex items-center justify-center mx-auto">
-                <Smartphone className="w-10 h-10 text-white" />
+              <div className="w-20 h-20 bg-surfaceAlt rounded-2xl flex items-center justify-center mx-auto">
+                <Smartphone className="w-10 h-10 text-textPrimary" />
               </div>
               <h3 className="text-xl font-semibold">ANDROID</h3>
               <button
                 onClick={() => setShowApkModal(true)}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                className="bg-primary hover:bg-primaryDark text-textPrimary px-6 py-2 rounded-lg font-semibold transition-colors"
               >
                 Descargar APK
               </button>

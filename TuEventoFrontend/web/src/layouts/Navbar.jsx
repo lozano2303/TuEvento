@@ -66,11 +66,12 @@ export default function Navbar() {
   const isAdmin = userData?.role === 'ADMIN' || userData?.email === 'tuevento.capysoft@gmail.com';
   const isOrganizer = userData?.organizer;
 
+  // Excepciones: badges de rol usan colores semánticos fijos, no del tema
   const roleBadge = isAdmin
     ? { label: 'Admin', badgeClass: 'bg-red-500 text-white', roleText: 'Administrador' }
     : isOrganizer
     ? { label: 'Org', badgeClass: 'bg-violet-500 text-white', roleText: 'Organizador' }
-    : { label: 'User', badgeClass: 'bg-gray-500 text-white', roleText: 'Usuario' };
+    : { label: 'User', badgeClass: 'bg-surfaceAlt text-textSecondary', roleText: 'Usuario' };
 
   const displayName = (() => {
     const name = userData?.fullName || userData?.alias || '';
@@ -85,25 +86,25 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="bg-gray-900 border-b border-gray-700 shadow-lg sticky top-0 z-40">
+      <header className="bg-background border-b border-surfaceAlt shadow-lg sticky top-0 z-40">
         <nav className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
-            <span className="text-xl font-bold text-white group-hover:text-purple-400 transition-colors">
-              Tu <span className="text-purple-400 group-hover:text-white transition-colors">Evento</span>
+            <span className="text-xl font-bold text-textPrimary group-hover:text-accent transition-colors">
+              Tu <span className="text-accent group-hover:text-textPrimary transition-colors">Evento</span>
             </span>
           </Link>
 
           {/* Links centrales — solo desktop */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium flex-1 justify-center">
-            <Link to="/" className="text-gray-300 hover:text-purple-400 transition-colors">Inicio</Link>
-            <Link to="/nosotros" className="text-gray-300 hover:text-purple-400 transition-colors">Nosotros</Link>
-            <Link to="/events" className="text-gray-300 hover:text-purple-400 transition-colors">Eventos</Link>
+            <Link to="/" className="text-textSecondary hover:text-accent transition-colors">Inicio</Link>
+            <Link to="/nosotros" className="text-textSecondary hover:text-accent transition-colors">Nosotros</Link>
+            <Link to="/events" className="text-textSecondary hover:text-accent transition-colors">Eventos</Link>
             {userData && isOrganizer && (
               <button
                 onClick={() => navigate('/event-management')}
-                className="flex items-center gap-1 text-gray-300 hover:text-purple-400 transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
+                className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
                 <Plus className="w-4 h-4" /> Crear Evento
               </button>
@@ -111,7 +112,7 @@ export default function Navbar() {
             {userData && !isAdmin && !isOrganizer && (
               <button
                 onClick={() => navigate('/organizer-petition-form')}
-                className="flex items-center gap-1 text-gray-300 hover:text-purple-400 transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
+                className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
                 <Plus className="w-4 h-4" /> Solicitud Organizador
               </button>
@@ -121,17 +122,16 @@ export default function Navbar() {
           {/* Derecha: usuario + hamburguesa */}
           <div className="flex items-center gap-2">
 
-            {/* Botón usuario */}
             {userData ? (
               <div className="relative user-modal">
                 <button
                   onClick={() => setIsModalOpen(!isModalOpen)}
-                  className="group inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full bg-purple-600 hover:bg-purple-700 transition-all duration-200 outline-none cursor-pointer"
+                  className="group inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full bg-primary hover:bg-primaryDark transition-all duration-200 outline-none cursor-pointer"
                 >
                   <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-white/20">
-                    <User className="w-4 h-4 text-white" />
+                    <User className="w-4 h-4 text-textPrimary" />
                   </span>
-                  <span className="text-[13px] font-medium text-white leading-none">
+                  <span className="text-[13px] font-medium text-textPrimary leading-none">
                     {displayName}
                   </span>
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${roleBadge.badgeClass}`}>
@@ -139,10 +139,9 @@ export default function Navbar() {
                   </span>
                 </button>
 
-                {/* Dropdown mejorado */}
                 {isModalOpen && (
                   <div className="user-modal absolute right-0 mt-2 w-[230px] border rounded-2xl shadow-2xl z-50 overflow-hidden"
-                    style={{ background: '#1a1033', borderColor: 'rgba(139,92,246,0.3)', boxShadow: '0 8px 32px rgba(109,40,217,0.3)' }}>
+                    style={{ background: 'var(--color-surface)', borderColor: 'rgba(139,92,246,0.3)', boxShadow: '0 8px 32px rgba(109,40,217,0.3)' }}>
 
                     <Link
                       to="/profile"
@@ -154,13 +153,13 @@ export default function Navbar() {
                     >
                       <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0"
                         style={{ background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)' }}>
-                        <User className="w-[17px] h-[17px] text-purple-400" />
+                        <User className="w-[17px] h-[17px] text-accent" />
                       </div>
                       <div>
-                        <p className="text-[14px] font-semibold text-white leading-tight">Perfil</p>
-                        <p className="text-[11px] text-gray-400 leading-tight mt-0.5">Ver y editar tu cuenta</p>
+                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">Perfil</p>
+                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">Ver y editar tu cuenta</p>
                       </div>
-                      <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="#7c3aed" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                      <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                     </Link>
 
                     <Link
@@ -175,8 +174,8 @@ export default function Navbar() {
                         <Wallet className="w-[17px] h-[17px] text-blue-400" />
                       </div>
                       <div>
-                        <p className="text-[14px] font-semibold text-white leading-tight">Cartera</p>
-                        <p className="text-[11px] text-gray-400 leading-tight mt-0.5">Saldo y transacciones</p>
+                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">Cartera</p>
+                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">Saldo y transacciones</p>
                       </div>
                       <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="#3b82f6" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                     </Link>
@@ -192,23 +191,22 @@ export default function Navbar() {
                       >
                         <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0"
                           style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)' }}>
-                          <Calendar className="w-[17px] h-[17px] text-red-400" />
+                          <Calendar className="w-[17px] h-[17px] text-error" />
                         </div>
                         <div>
-                          <p className="text-[14px] font-semibold text-white leading-tight">Panel de Gestión</p>
-                          <p className="text-[11px] text-gray-400 leading-tight mt-0.5">Administrar plataforma</p>
+                          <p className="text-[14px] font-semibold text-textPrimary leading-tight">Panel de Gestión</p>
+                          <p className="text-[11px] text-textMuted leading-tight mt-0.5">Administrar plataforma</p>
                         </div>
-                        <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="#ef4444" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                        <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-error)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                       </Link>
                     )}
-
                   </div>
                 )}
               </div>
             ) : (
               <Link
                 to="/login"
-                className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium px-5 py-2 rounded-xl transition-colors"
+                className="bg-primary hover:bg-primaryDark text-textPrimary text-sm font-medium px-5 py-2 rounded-xl transition-colors"
               >
                 Iniciar sesión
               </Link>
@@ -217,7 +215,7 @@ export default function Navbar() {
             {/* Hamburguesa — solo mobile */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 transition-colors"
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-surfaceAlt text-textSecondary hover:text-textPrimary hover:border-accent transition-colors"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -226,41 +224,28 @@ export default function Navbar() {
 
         {/* Menú móvil desplegable */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-gray-800 border-t border-gray-700 px-4 py-3 flex flex-col gap-1">
-            <Link
-              to="/"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-300 hover:text-purple-400 hover:bg-gray-700 transition-colors text-sm font-medium px-3 py-2.5 rounded-xl"
-            >
+          <div className="md:hidden bg-surface border-t border-surfaceAlt px-4 py-3 flex flex-col gap-1">
+            <Link to="/" onClick={() => setIsMobileMenuOpen(false)}
+              className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
               Inicio
             </Link>
-            <Link
-              to="/nosotros"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-300 hover:text-purple-400 hover:bg-gray-700 transition-colors text-sm font-medium px-3 py-2.5 rounded-xl"
-            >
+            <Link to="/nosotros" onClick={() => setIsMobileMenuOpen(false)}
+              className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
               Nosotros
             </Link>
-            <Link
-              to="/events"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-300 hover:text-purple-400 hover:bg-gray-700 transition-colors text-sm font-medium px-3 py-2.5 rounded-xl"
-            >
+            <Link to="/events" onClick={() => setIsMobileMenuOpen(false)}
+              className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
               Eventos
             </Link>
             {userData && isOrganizer && (
-              <button
-                onClick={() => handleNavClick('/event-management')}
-                className="flex items-center gap-2 text-gray-300 hover:text-purple-400 hover:bg-gray-700 transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer"
-              >
+              <button onClick={() => handleNavClick('/event-management')}
+                className="flex items-center gap-2 text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer">
                 <Plus className="w-4 h-4" /> Crear Evento
               </button>
             )}
             {userData && !isAdmin && !isOrganizer && (
-              <button
-                onClick={() => handleNavClick('/organizer-petition-form')}
-                className="flex items-center gap-2 text-gray-300 hover:text-purple-400 hover:bg-gray-700 transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer"
-              >
+              <button onClick={() => handleNavClick('/organizer-petition-form')}
+                className="flex items-center gap-2 text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer">
                 <Plus className="w-4 h-4" /> Solicitud Organizador
               </button>
             )}

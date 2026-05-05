@@ -1,27 +1,24 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors as baseColors } from "../theme/colors";
 import { THEMES, DEFAULT_THEME_ID } from "../theme/themes";
+import { activateTheme, getActivePalette, getThemes } from "../services/themeService";
 
 const STORAGE_KEY = "activeThemeId";
 
 const ThemeContext = createContext(null);
 
-/**
- * ThemeProvider — envuelve la app y expone:
- *   colors        → objeto de colores reactivo (muta al cambiar tema)
- *   activeThemeId → id del tema activo ("DARK" | "LIGHT" | "VIBRANT" | "ACCESSIBLE")
- *   applyTheme(id)→ aplica un tema por id, persiste en AsyncStorage
- *   themes        → lista completa de THEMES para renderizar opciones
- */
 export function ThemeProvider({ children }) {
   const [activeThemeId, setActiveThemeId] = useState(DEFAULT_THEME_ID);
-  // Copia mutable del objeto de colores — se reemplaza al cambiar tema
   const [colors, setColors] = useState({ ...baseColors });
+  // Mapa nombre → id numérico del backend, ej: { DARK: 1, LIGHT: 2, ... }
+  const backendIdMap = useRef({});
 
-  // Restaurar tema guardado al arrancar
+  // ── Al arrancar: restaurar tema local + cargar mapa de ids del backend ──
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((savedId) => {
+    const init = async () => {
+      // 1. Restaurar tema guardado localmente
+      const savedId = await AsyncStorage.getItem(STORAGE_KEY);
       if (savedId) {
         const found = THEMES.find((t) => t.id === savedId);
         if (found) {
@@ -29,15 +26,80 @@ export function ThemeProvider({ children }) {
           setColors({ ...baseColors, ...found.palette });
         }
       }
-    });
+
+      // 2. Cargar lista de temas del backend para obtener ids numéricos
+      try {
+        const backendThemes = await getThemes();
+        if (Array.isArray(backendThemes)) {
+          const map = {};
+          backendThemes.forEach((t) => {
+            // El backend retorna { id: 1, name: "DARK", ... }
+            map[t.name] = t.id;
+          });
+          backendIdMap.current = map;
+          console.log("[ThemeContext] Backend theme id map:", map);
+        }
+      } catch (e) {
+        console.warn("[ThemeContext] Could not load backend themes:", e.message);
+      }
+    };
+    init();
   }, []);
 
+  // ── Polling cada 30 segundos — sincroniza con el backend ──
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const token = await AsyncStorage.getItem("accessToken");
+        if (!token) return;
+        const data = await getActivePalette();
+        if (!data) return;
+        console.log("[ThemeContext] polling — backend theme:", data.themeName, "| background:", data.palette?.background);
+        const found = THEMES.find((t) => t.id === data.themeName);
+        if (found) {
+          setActiveThemeId(found.id);
+          setColors({ ...baseColors, ...found.palette });
+          await AsyncStorage.setItem(STORAGE_KEY, found.id);
+        }
+      } catch (e) {
+        if (e.message.includes('403')) {
+          console.log("[ThemeContext] Token expired — keeping current palette");
+          return;
+        }
+        console.log("[ThemeContext] polling error:", e.message);
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ── applyTheme: aplica localmente + llama al backend ──
   const applyTheme = async (themeId) => {
     const found = THEMES.find((t) => t.id === themeId);
     if (!found) return;
+
+    // 1. Aplica localmente de inmediato
     setActiveThemeId(found.id);
     setColors({ ...baseColors, ...found.palette });
     await AsyncStorage.setItem(STORAGE_KEY, found.id);
+
+    // 2. Llama al backend con el id numérico
+    const numericId = backendIdMap.current[themeId];
+    console.log("[ThemeContext] applyTheme — local id:", themeId, "| backend numericId:", numericId);
+
+    if (numericId) {
+      try {
+        await activateTheme(numericId);
+        console.log("[ThemeContext] applyTheme — backend updated successfully");
+      } catch (e) {
+        if (e.message.includes('403')) {
+          console.log("[ThemeContext] Token expired — theme applied locally only");
+          return;
+        }
+        console.warn("[ThemeContext] applyTheme — backend call failed:", e.message);
+      }
+    } else {
+      console.warn("[ThemeContext] applyTheme — no numeric id found for theme:", themeId, "| map:", backendIdMap.current);
+    }
   };
 
   return (
