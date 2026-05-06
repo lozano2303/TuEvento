@@ -17,13 +17,24 @@ export function ThemeProvider({ children }) {
   // ── Al arrancar: restaurar tema local + cargar mapa de ids del backend ──
   useEffect(() => {
     const init = async () => {
-      // 1. Restaurar tema guardado localmente
-      const savedId = await AsyncStorage.getItem(STORAGE_KEY);
-      if (savedId) {
-        const found = THEMES.find((t) => t.id === savedId);
-        if (found) {
-          setActiveThemeId(found.id);
-          setColors({ ...baseColors, ...found.palette });
+      // 1. Restaurar tema guardado solo si hay sesión activa
+      //    Sin sesión → siempre DARK (tema por defecto para usuarios no autenticados)
+      const token = await AsyncStorage.getItem("accessToken");
+      if (token) {
+        const savedId = await AsyncStorage.getItem(STORAGE_KEY);
+        if (savedId) {
+          const found = THEMES.find((t) => t.id === savedId);
+          if (found) {
+            setActiveThemeId(found.id);
+            setColors({ ...baseColors, ...found.palette });
+          }
+        }
+      } else {
+        // Sin sesión: asegurar que el tema sea DARK
+        const dark = THEMES.find((t) => t.id === "DARK");
+        if (dark) {
+          setActiveThemeId("DARK");
+          setColors({ ...baseColors, ...dark.palette });
         }
       }
 
@@ -92,7 +103,7 @@ export function ThemeProvider({ children }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ colors, activeThemeId, applyTheme, themes: THEMES }}>
+    <ThemeContext.Provider value={{ colors, palette: colors, activeThemeId, applyTheme, themes: THEMES }}>
       {children}
     </ThemeContext.Provider>
   );
