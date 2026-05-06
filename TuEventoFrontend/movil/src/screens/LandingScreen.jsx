@@ -19,6 +19,10 @@ export default function LandingScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { palette } = useTheme();
+
+  // Guard defensivo — palette siempre tiene valor por el estado inicial,
+  // pero por si acaso el contexto no está listo aún
+  if (!palette) return null;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
   const buttonAnim = useRef(new Animated.Value(0)).current;
