@@ -52,14 +52,10 @@ stage('Quality Gate') {
         
         stage('Push to Registry') {
             steps {
-                script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-                        sh "docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}:${env.BUILD_ID}"
-                        sh "docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}:latest"
-                        sh "docker push ${DOCKER_REGISTRY}:${env.BUILD_ID}"
-                        sh "docker push ${DOCKER_REGISTRY}:latest"
-                    }
-                }
+                sh "docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}:${env.BUILD_ID}"
+                sh "docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}:latest"
+                sh "docker push ${DOCKER_REGISTRY}:${env.BUILD_ID}"
+                sh "docker push ${DOCKER_REGISTRY}:latest"
             }
         }
         
