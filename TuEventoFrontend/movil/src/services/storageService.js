@@ -6,7 +6,7 @@ export const getFileUrl = async (fileId, accessToken) => {
   });
   const json = await response.json();
   if (!json.success) throw new Error(json.message);
-  const url = json.data.publicUrl.replace("localhost", "10.3.232.145");
+  const url = json.data.publicUrl.replace("localhost", process.env.EXPO_PUBLIC_MINIO_HOST ?? "localhost");
   return url;
 };
 
