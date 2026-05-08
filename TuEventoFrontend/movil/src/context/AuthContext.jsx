@@ -31,6 +31,8 @@ export function AuthProvider({ children }) {
               alias: decoded.sub,
               role: decoded.role,
               fullName: profile.fullName,
+              profileId: profile.profileId,
+              storedFileId: profile.storedFileId,
             });
           }
         }
@@ -54,6 +56,8 @@ export function AuthProvider({ children }) {
       alias: data.alias,
       role: decoded.role,
       fullName: profile.fullName,
+      profileId: profile.profileId,
+      storedFileId: profile.storedFileId,
     });
   };
 
@@ -80,7 +84,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, logout, setSession, showLogoutModal, setShowLogoutModal, isLoading }}>
+    <AuthContext.Provider value={{ user, setUser, loading, error, login, logout, setSession, showLogoutModal, setShowLogoutModal, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
