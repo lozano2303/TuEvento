@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
-import { useTheme } from "../context/ThemeContext";
+import { darkColors } from "../theme/colors";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const GMAIL_PATTERN = /^[a-zA-Z0-9._%+\-]+@gmail\.com$/;
@@ -15,7 +15,7 @@ const GMAIL_PATTERN = /^[a-zA-Z0-9._%+\-]+@gmail\.com$/;
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { palette } = useTheme();
+  const palette = darkColors;
   const [email, setEmail] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);

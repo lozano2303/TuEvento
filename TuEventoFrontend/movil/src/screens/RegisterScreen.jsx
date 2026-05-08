@@ -12,7 +12,7 @@ import { oauthService } from "../services/oauthService";
 import { mapErrorMessage, parseValidationErrors } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
-import { colors } from "../theme";
+import { darkColors } from "../theme/colors";
 
 const GMAIL_PATTERN    = /^[a-zA-Z0-9._%+\-]+@gmail\.com$/;
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
@@ -21,6 +21,7 @@ const FULL_NAME_PATTERN = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{2,}(\s[a-zA-Zá
 export default function RegisterScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const colors = darkColors;
   const [form, setForm] = useState({ fullName: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
