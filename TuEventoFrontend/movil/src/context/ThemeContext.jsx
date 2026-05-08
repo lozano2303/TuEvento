@@ -14,23 +14,43 @@ export function ThemeProvider({ children }) {
   // Mapa nombre → id numérico del backend, ej: { DARK: 1, LIGHT: 2, ... }
   const backendIdMap = useRef({});
 
-  // ── Al arrancar: restaurar tema local + cargar mapa de ids del backend ──
+  // ── Al arrancar: obtener paleta resuelta del backend (incluye customizaciones) ──
   useEffect(() => {
     const init = async () => {
-      // 1. Restaurar tema guardado solo si hay sesión activa
-      //    Sin sesión → siempre DARK (tema por defecto para usuarios no autenticados)
-      const token = await AsyncStorage.getItem("accessToken");
+      // Esperar a que AsyncStorage tenga el token (cubre race condition con AuthContext)
+      let token = await AsyncStorage.getItem("accessToken");
+      if (!token) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        token = await AsyncStorage.getItem("accessToken");
+      }
+
       if (token) {
-        const savedId = await AsyncStorage.getItem(STORAGE_KEY);
-        if (savedId) {
-          const found = THEMES.find((t) => t.id === savedId);
-          if (found) {
-            setActiveThemeId(found.id);
-            setColors({ ...baseColors, ...found.palette });
+        // Con sesión: la fuente de verdad es siempre el backend.
+        try {
+          const data = await getActivePalette();
+          if (data) {
+            const found = THEMES.find((t) => t.id === data.themeName);
+            if (found) {
+              setActiveThemeId(found.id);
+              await AsyncStorage.setItem(STORAGE_KEY, found.id);
+            }
+            if (data.palette) {
+              setColors({ ...baseColors, ...data.palette });
+            }
+          }
+        } catch (e) {
+          // Fallback offline: usar el tema guardado localmente sin customizaciones
+          const savedId = await AsyncStorage.getItem(STORAGE_KEY);
+          if (savedId) {
+            const found = THEMES.find((t) => t.id === savedId);
+            if (found) {
+              setActiveThemeId(found.id);
+              setColors({ ...baseColors, ...found.palette });
+            }
           }
         }
       } else {
-        // Sin sesión: asegurar que el tema sea DARK
+        // Sin sesión: tema DARK por defecto
         const dark = THEMES.find((t) => t.id === "DARK");
         if (dark) {
           setActiveThemeId("DARK");
@@ -38,24 +58,22 @@ export function ThemeProvider({ children }) {
         }
       }
 
-      // 2. Cargar lista de temas del backend para obtener ids numéricos
+      // Cargar mapa nombre → id numérico del backend para applyTheme
       try {
         const backendThemes = await getThemes();
         if (Array.isArray(backendThemes)) {
           const map = {};
-          backendThemes.forEach((t) => {
-            map[t.name] = t.id;
-          });
+          backendThemes.forEach((t) => { map[t.name] = t.id; });
           backendIdMap.current = map;
         }
       } catch (e) {
-        // silencioso — el mapa quedará vacío y applyTheme solo aplicará localmente
+        // silencioso
       }
     };
     init();
   }, []);
 
-  // ── Polling cada 30 segundos — sincroniza con el backend ──
+  // ── Polling cada 30 segundos — sincroniza paleta resuelta con el backend ──
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
@@ -63,47 +81,85 @@ export function ThemeProvider({ children }) {
         if (!token) return;
         const data = await getActivePalette();
         if (!data) return;
+        // Actualizar activeThemeId si cambió
         const found = THEMES.find((t) => t.id === data.themeName);
         if (found) {
           setActiveThemeId(found.id);
-          setColors({ ...baseColors, ...found.palette });
           await AsyncStorage.setItem(STORAGE_KEY, found.id);
         }
-      } catch (e) {
-        if (e.message.includes('403')) {
-          return;
+        // Aplicar la paleta resuelta — preserva customizaciones
+        if (data.palette) {
+          setColors({ ...baseColors, ...data.palette });
         }
+      } catch (e) {
+        if (e?.message?.includes("403")) return;
+        // otros errores: silencioso, se reintenta en el próximo ciclo
       }
     }, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // ── applyTheme: aplica localmente + llama al backend ──
+  // ── applyTheme: activa un tema diferente en el backend y obtiene la paleta resuelta ──
   const applyTheme = async (themeId) => {
-    const found = THEMES.find((t) => t.id === themeId);
-    if (!found) return;
-
-    // 1. Aplica localmente de inmediato
-    setActiveThemeId(found.id);
-    setColors({ ...baseColors, ...found.palette });
-    await AsyncStorage.setItem(STORAGE_KEY, found.id);
-
-    // 2. Llama al backend con el id numérico
     const numericId = backendIdMap.current[themeId];
+    if (!numericId) return;
 
-    if (numericId) {
-      try {
-        await activateTheme(numericId);
-      } catch (e) {
-        if (e.message.includes('403')) {
-          return;
+    try {
+      // 1. Activar el tema en el backend
+      await activateTheme(numericId);
+
+      // 2. Obtener la paleta resuelta post-activación (incluye customizaciones del nuevo tema)
+      const data = await getActivePalette();
+      if (data) {
+        const found = THEMES.find((t) => t.id === data.themeName);
+        if (found) {
+          setActiveThemeId(found.id);
+          await AsyncStorage.setItem(STORAGE_KEY, found.id);
         }
+        if (data.palette) {
+          setColors({ ...baseColors, ...data.palette });
+        }
+      }
+    } catch (e) {
+      if (e?.message?.includes("403")) return;
+      // Fallback optimista: aplicar colores locales si el backend falla
+      const found = THEMES.find((t) => t.id === themeId);
+      if (found) {
+        setActiveThemeId(found.id);
+        setColors({ ...baseColors, ...found.palette });
+        await AsyncStorage.setItem(STORAGE_KEY, found.id);
       }
     }
   };
 
+  // ── applyPalette: aplica una paleta resuelta directamente (para customizaciones) ──
+  const applyPalette = (paletteObj) => {
+    if (!paletteObj || typeof paletteObj !== "object") return;
+    setColors((prev) => ({ ...prev, ...paletteObj }));
+  };
+
+  // ── syncTheme: fuerza sincronización con el backend (para usar post-login) ──
+  const syncTheme = async () => {
+    try {
+      const token = await AsyncStorage.getItem("accessToken");
+      if (!token) return;
+      const data = await getActivePalette();
+      if (!data) return;
+      const found = THEMES.find((t) => t.id === data.themeName);
+      if (found) {
+        setActiveThemeId(found.id);
+        await AsyncStorage.setItem(STORAGE_KEY, found.id);
+      }
+      if (data.palette) {
+        setColors({ ...baseColors, ...data.palette });
+      }
+    } catch (e) {
+      if (e?.message?.includes("403")) return;
+    }
+  };
+
   return (
-    <ThemeContext.Provider value={{ colors, palette: colors, activeThemeId, applyTheme, themes: THEMES }}>
+    <ThemeContext.Provider value={{ colors, palette: colors, activeThemeId, applyTheme, applyPalette, syncTheme, themes: THEMES }}>
       {children}
     </ThemeContext.Provider>
   );

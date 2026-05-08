@@ -210,6 +210,36 @@ export default function SettingsScreen() {
                         </Text>
                       </View>
                     )}
+                    {isActive && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate("ThemeCustomize", {
+                            themeName: theme.name,
+                            activeThemeId: theme.id,
+                          })
+                        }
+                        activeOpacity={0.75}
+                        style={{
+                          backgroundColor: colors.accent + "22",
+                          borderRadius: 10,
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          borderWidth: 1,
+                          borderColor: colors.accent + "55",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: colors.accent,
+                            fontSize: 10,
+                            fontWeight: "800",
+                            letterSpacing: 0.5,
+                          }}
+                        >
+                          PERSONALIZAR
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                   <Text
                     style={{

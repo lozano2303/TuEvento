@@ -8,13 +8,13 @@ import { authService } from "../services/authService";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
-import { useTheme } from "../context/ThemeContext";
+import { darkColors } from "../theme/colors";
 
 export default function ActivateScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const route = useRoute();
-  const { palette } = useTheme();
+  const palette = darkColors;
   const email = route.params?.email || "";
   const [code, setCode] = useState("");
   const [error, setError] = useState(null);

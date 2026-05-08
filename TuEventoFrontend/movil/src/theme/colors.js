@@ -24,3 +24,22 @@ export const colors = {
   gradientBg: ["#1E0A3C", "#2D1B4E", "#1E0A3C"],
   gradientPrimary: ["#7C3AED", "#6D28D9"],
 };
+
+// Paleta DARK fija para pantallas pre-auth — nunca cambia con customizaciones del usuario
+export const darkColors = {
+  background:    "#1E0A3C",
+  surface:       "#2D1B4E",
+  surfaceAlt:    "#3D2B5E",
+  primary:       "#7C3AED",
+  primaryDark:   "#6D28D9",
+  accent:        "#A78BFA",
+  textPrimary:   "#FFFFFF",
+  textSecondary: "#9CA3AF",
+  textMuted:     "#6B7280",
+  error:         "#EF4444",
+  errorBg:       "#EF444422",
+  success:       "#059669",
+  successBg:     "#05966922",
+  gradientBg:      ["#1E0A3C", "#2D1B4E", "#1E0A3C"],
+  gradientPrimary: ["#7C3AED", "#6D28D9"],
+};

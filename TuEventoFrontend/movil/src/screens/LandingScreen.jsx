@@ -12,17 +12,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { decorativeStyle } from "../theme";
-import { useTheme } from "../context/ThemeContext";
+import { darkColors } from "../theme/colors";
 
 export default function LandingScreen() {
   const { width, height } = useWindowDimensions();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { palette } = useTheme();
-
-  // Guard defensivo — palette siempre tiene valor por el estado inicial,
-  // pero por si acaso el contexto no está listo aún
-  if (!palette) return null;
+  const palette = darkColors;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
   const buttonAnim = useRef(new Animated.Value(0)).current;
