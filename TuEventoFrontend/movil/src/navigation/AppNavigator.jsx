@@ -5,7 +5,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { View, Text, TouchableOpacity, Modal } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 import { navigationRef } from "./navigationRef";
 import LandingScreen        from "../screens/LandingScreen";
 import LoginScreen          from "../screens/LoginScreen";
@@ -24,6 +24,7 @@ const Tab   = createBottomTabNavigator();
 
 // ─── Modal de logout ──────────────────────────────────────────────────────────
 function LogoutModal({ visible, onConfirm, onCancel }) {
+  const { colors } = useTheme();
   return (
     <Modal transparent visible={visible} animationType="fade" statusBarTranslucent>
       <View style={{
@@ -81,6 +82,7 @@ function LogoutModal({ visible, onConfirm, onCancel }) {
 
 // ─── Tab bar personalizado ────────────────────────────────────────────────────
 function CustomTabBar({ state, descriptors, navigation }) {
+  const { colors } = useTheme();
   return (
     <View style={{
       flexDirection: "row",
