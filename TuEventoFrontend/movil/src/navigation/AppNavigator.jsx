@@ -16,7 +16,8 @@ import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ResetPasswordScreen  from "../screens/ResetPasswordScreen";
 import HomeScreen           from "../screens/HomeScreen";
 import ProfileScreen        from "../screens/ProfileScreen";
-import SettingsScreen       from "../screens/SettingsScreen";
+import SettingsScreen          from "../screens/SettingsScreen";
+import ThemeCustomizeScreen   from "../screens/ThemeCustomizeScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -197,6 +198,7 @@ export default function AppNavigator() {
         <Stack.Screen name="ResetPassword"  component={ResetPasswordScreen} />
         <Stack.Screen name="Activate"       component={ActivateScreen} />
         <Stack.Screen name="Settings"       component={SettingsScreen} />
+        <Stack.Screen name="ThemeCustomize" component={ThemeCustomizeScreen} />
         <Stack.Screen
           name="Main"
           component={MainTabs}
