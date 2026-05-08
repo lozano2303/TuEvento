@@ -18,6 +18,7 @@ import HomeScreen           from "../screens/HomeScreen";
 import ProfileScreen        from "../screens/ProfileScreen";
 import SettingsScreen          from "../screens/SettingsScreen";
 import ThemeCustomizeScreen   from "../screens/ThemeCustomizeScreen";
+import EditProfileScreen      from "../screens/EditProfileScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -201,6 +202,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Activate"       component={ActivateScreen} />
         <Stack.Screen name="Settings"       component={SettingsScreen} />
         <Stack.Screen name="ThemeCustomize" component={ThemeCustomizeScreen} />
+        <Stack.Screen name="EditProfile"    component={EditProfileScreen} />
         <Stack.Screen
           name="Main"
           component={MainTabs}

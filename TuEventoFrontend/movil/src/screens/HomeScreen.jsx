@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StatusBar, Dimensions, Animated,
+  StatusBar, Dimensions, Animated, Image, ActivityIndicator,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { getFileUrl } from "../services/storageService";
 
 const { width } = Dimensions.get("window");
 
@@ -78,6 +79,29 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [activeCategory, setActiveCategory] = useState("Todos");
+
+  // Avatar del usuario en la top bar
+  const [avatarUrl, setAvatarUrl]         = useState(null);
+  const [avatarLoading, setAvatarLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAvatar = async () => {
+      if (!user?.storedFileId) {
+        setAvatarLoading(false);
+        return;
+      }
+      try {
+        const token = await AsyncStorage.getItem("accessToken");
+        const url = await getFileUrl(user.storedFileId, token);
+        setAvatarUrl(url);
+      } catch (_) {
+        // mantiene fallback con inicial
+      } finally {
+        setAvatarLoading(false);
+      }
+    };
+    loadAvatar();
+  }, [user?.storedFileId]);
 
   // Sincronizar tema con el backend al montar — garantiza que las
   // customizaciones del usuario se apliquen apenas llega al Home
@@ -159,11 +183,22 @@ export default function HomeScreen() {
             backgroundColor: colors.primary + "40",
             borderWidth: 2, borderColor: colors.accent + "80",
             alignItems: "center", justifyContent: "center",
+            overflow: "hidden",
           }}
         >
-          <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "800" }}>
-            {initial}
-          </Text>
+          {avatarLoading ? (
+            <ActivityIndicator color={colors.textPrimary} size="small" />
+          ) : avatarUrl ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={{ width: "100%", height: "100%" }}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "800" }}>
+              {getInitial(user?.fullName)}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 
