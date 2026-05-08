@@ -13,12 +13,13 @@ import { oauthService } from "../services/oauthService";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
-import { colors } from "../theme";
+import { darkColors } from "../theme/colors";
 
 export default function LoginScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { login, setSession, loading, error } = useAuth();
+  const colors = darkColors;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

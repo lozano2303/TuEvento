@@ -5,7 +5,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { View, Text, TouchableOpacity, Modal } from "react-native";
 import { useAuth } from "../context/AuthContext";
-import { colors } from "../theme";
+import { useTheme } from "../context/ThemeContext";
 import { navigationRef } from "./navigationRef";
 import LandingScreen        from "../screens/LandingScreen";
 import LoginScreen          from "../screens/LoginScreen";
@@ -16,13 +16,15 @@ import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ResetPasswordScreen  from "../screens/ResetPasswordScreen";
 import HomeScreen           from "../screens/HomeScreen";
 import ProfileScreen        from "../screens/ProfileScreen";
-import SettingsScreen       from "../screens/SettingsScreen";
+import SettingsScreen          from "../screens/SettingsScreen";
+import ThemeCustomizeScreen   from "../screens/ThemeCustomizeScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
 
 // ─── Modal de logout ──────────────────────────────────────────────────────────
 function LogoutModal({ visible, onConfirm, onCancel }) {
+  const { colors } = useTheme();
   return (
     <Modal transparent visible={visible} animationType="fade" statusBarTranslucent>
       <View style={{
@@ -80,6 +82,7 @@ function LogoutModal({ visible, onConfirm, onCancel }) {
 
 // ─── Tab bar personalizado ────────────────────────────────────────────────────
 function CustomTabBar({ state, descriptors, navigation }) {
+  const { colors } = useTheme();
   return (
     <View style={{
       flexDirection: "row",
@@ -197,6 +200,7 @@ export default function AppNavigator() {
         <Stack.Screen name="ResetPassword"  component={ResetPasswordScreen} />
         <Stack.Screen name="Activate"       component={ActivateScreen} />
         <Stack.Screen name="Settings"       component={SettingsScreen} />
+        <Stack.Screen name="ThemeCustomize" component={ThemeCustomizeScreen} />
         <Stack.Screen
           name="Main"
           component={MainTabs}

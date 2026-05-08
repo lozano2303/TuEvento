@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
-import { useTheme } from "../context/ThemeContext";
+import { darkColors } from "../theme/colors";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/;
@@ -16,7 +16,7 @@ export default function ResetPasswordScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const route = useRoute();
-  const { palette } = useTheme();
+  const palette = darkColors;
   const email = route.params?.email || "";
   const [form, setForm] = useState({ code: "", newPassword: "", confirmPassword: "" });
   const [showNew, setShowNew] = useState(false);
