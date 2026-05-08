@@ -112,22 +112,20 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
       >
-        {/* ── Hero con gradiente ── */}
-        <LinearGradient
-          colors={colors.gradientPrimary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+        {/* ── Hero con fondo surface ── */}
+        <View
           style={{
             paddingTop: insets.top + 24,
             paddingBottom: 64,
             paddingHorizontal: 24,
             alignItems: "center",
+            backgroundColor: colors.surface,
           }}
         >
           <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: "800", opacity: 0.9 }}>
             Mi Perfil
           </Text>
-        </LinearGradient>
+        </View>
 
         {/* ── Avatar solapando el hero ── */}
         <Animated.View style={[{ alignItems: "center", marginTop: -52 }, animStyle(cardAnim)]}>

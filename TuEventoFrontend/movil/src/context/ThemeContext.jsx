@@ -17,21 +17,23 @@ export function ThemeProvider({ children }) {
   // ── Al arrancar: obtener paleta resuelta del backend (incluye customizaciones) ──
   useEffect(() => {
     const init = async () => {
-      const token = await AsyncStorage.getItem("accessToken");
+      // Esperar a que AsyncStorage tenga el token (cubre race condition con AuthContext)
+      let token = await AsyncStorage.getItem("accessToken");
+      if (!token) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        token = await AsyncStorage.getItem("accessToken");
+      }
 
       if (token) {
         // Con sesión: la fuente de verdad es siempre el backend.
-        // getActivePalette retorna la paleta resuelta con customizaciones aplicadas.
         try {
           const data = await getActivePalette();
           if (data) {
-            // Actualizar activeThemeId desde el nombre que devuelve el backend
             const found = THEMES.find((t) => t.id === data.themeName);
             if (found) {
               setActiveThemeId(found.id);
               await AsyncStorage.setItem(STORAGE_KEY, found.id);
             }
-            // Aplicar la paleta resuelta — nunca usar colores locales si hay sesión
             if (data.palette) {
               setColors({ ...baseColors, ...data.palette });
             }
@@ -48,7 +50,7 @@ export function ThemeProvider({ children }) {
           }
         }
       } else {
-        // Sin sesión: tema DARK por defecto (no hay customizaciones que preservar)
+        // Sin sesión: tema DARK por defecto
         const dark = THEMES.find((t) => t.id === "DARK");
         if (dark) {
           setActiveThemeId("DARK");
@@ -65,7 +67,7 @@ export function ThemeProvider({ children }) {
           backendIdMap.current = map;
         }
       } catch (e) {
-        // silencioso — applyTheme solo activará sin confirmar con backend
+        // silencioso
       }
     };
     init();
@@ -136,8 +138,28 @@ export function ThemeProvider({ children }) {
     setColors((prev) => ({ ...prev, ...paletteObj }));
   };
 
+  // ── syncTheme: fuerza sincronización con el backend (para usar post-login) ──
+  const syncTheme = async () => {
+    try {
+      const token = await AsyncStorage.getItem("accessToken");
+      if (!token) return;
+      const data = await getActivePalette();
+      if (!data) return;
+      const found = THEMES.find((t) => t.id === data.themeName);
+      if (found) {
+        setActiveThemeId(found.id);
+        await AsyncStorage.setItem(STORAGE_KEY, found.id);
+      }
+      if (data.palette) {
+        setColors({ ...baseColors, ...data.palette });
+      }
+    } catch (e) {
+      if (e?.message?.includes("403")) return;
+    }
+  };
+
   return (
-    <ThemeContext.Provider value={{ colors, palette: colors, activeThemeId, applyTheme, applyPalette, themes: THEMES }}>
+    <ThemeContext.Provider value={{ colors, palette: colors, activeThemeId, applyTheme, applyPalette, syncTheme, themes: THEMES }}>
       {children}
     </ThemeContext.Provider>
   );

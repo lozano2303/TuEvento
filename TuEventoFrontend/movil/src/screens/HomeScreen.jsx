@@ -73,11 +73,17 @@ function getInitial(fullName) {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function HomeScreen() {
-  const { colors } = useTheme();
+  const { colors, syncTheme } = useTheme();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [activeCategory, setActiveCategory] = useState("Todos");
+
+  // Sincronizar tema con el backend al montar — garantiza que las
+  // customizaciones del usuario se apliquen apenas llega al Home
+  useEffect(() => {
+    syncTheme();
+  }, []);
 
   // Animaciones de entrada con stagger
   const heroAnim   = useRef(new Animated.Value(0)).current;
