@@ -57,11 +57,6 @@ export default function ProfileScreen() {
   // Estado del avatar
   const [avatarUrl, setAvatarUrl]       = useState(null);
   const [avatarLoading, setAvatarLoading] = useState(true);
-  
-  useEffect(() => {
-  console.log('>>> user.storedFileId:', user?.storedFileId);
-  console.log('>>> user completo:', JSON.stringify(user));
-}, [user]);
 
   useEffect(() => {
     const loadAvatar = async () => {
