@@ -1,16 +1,14 @@
 import { useRef, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StatusBar, Alert, Animated,
+  StatusBar, Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { navigationRef } from "../navigation/navigationRef";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getDisplayName(fullName) {
@@ -38,7 +36,7 @@ const MENU_OPTIONS = [
 ];
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, setShowLogoutModal } = useAuth();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
@@ -72,24 +70,9 @@ export default function ProfileScreen() {
   const email       = user?.alias || "";
 
   const handleLogout = () => {
-    Alert.alert(
-      "Cerrar sesión",
-      "¿Estás seguro de que quieres cerrar sesión?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Cerrar sesión",
-          style: "destructive",
-          onPress: async () => {
-            await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
-            await logout();
-            if (navigationRef.isReady()) {
-              navigationRef.reset({ index: 0, routes: [{ name: "Login" }] });
-            }
-          },
-        },
-      ]
-    );
+    // Delega al LogoutModal de AppNavigator — que ya maneja el flag
+    // isLoggingOut para evitar que beforeRemove dispare un segundo modal
+    setShowLogoutModal(true);
   };
 
   return (
