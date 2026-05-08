@@ -13,13 +13,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../context/ThemeContext";
-import { customizeTheme, resetCustomization } from "../services/themeService";
+import { customizeTheme, resetCustomization, getCustomizationLog, getActivePalette } from "../services/themeService";
 import BackButton from "../components/BackButton";
 
 // ─── Paleta de swatches curados ───────────────────────────────────────────────
@@ -40,29 +41,13 @@ const SWATCHES = [
 
 // ─── Grupos de propiedades personalizables ────────────────────────────────────
 const PROPERTY_GROUPS = [
-  {
-    label: "Fondos",
-    icon: "layers-outline",
-    properties: ["background", "surface", "surfaceAlt"],
-  },
-  {
-    label: "Primarios",
-    icon: "color-palette-outline",
-    properties: ["primary", "primaryDark", "accent"],
-  },
-  {
-    label: "Textos",
-    icon: "text-outline",
-    properties: ["textPrimary", "textSecondary", "textMuted"],
-  },
-  {
-    label: "Estados",
-    icon: "alert-circle-outline",
-    properties: ["error", "errorBg", "success", "successBg"],
-  },
+  { label: "Fondos",    icon: "layers-outline",       properties: ["background", "surface", "surfaceAlt"] },
+  { label: "Primarios", icon: "color-palette-outline", properties: ["primary", "primaryDark", "accent"] },
+  { label: "Textos",    icon: "text-outline",          properties: ["textPrimary", "textSecondary", "textMuted"] },
+  { label: "Estados",   icon: "alert-circle-outline",  properties: ["error", "errorBg", "success", "successBg"] },
 ];
 
-// ─── Labels en español para cada propiedad ────────────────────────────────────
+// ─── Labels en español ────────────────────────────────────────────────────────
 const PROPERTY_LABELS = {
   background:    "Fondo principal",
   surface:       "Superficie",
@@ -82,7 +67,7 @@ const PROPERTY_LABELS = {
 // ─── Regex de validación hex ──────────────────────────────────────────────────
 const HEX_REGEX = /^#([A-Fa-f0-9]{3,4}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/;
 
-// ─── Mini mockup contextual según grupo ──────────────────────────────────────
+// ─── Mini mockup contextual ───────────────────────────────────────────────────
 function ContextPreview({ property, previewColor, colors }) {
   const isBg      = ["background", "surface", "surfaceAlt"].includes(property);
   const isPrimary = ["primary", "primaryDark", "accent"].includes(property);
@@ -92,7 +77,7 @@ function ContextPreview({ property, previewColor, colors }) {
   if (isBg) {
     return (
       <View style={[ctxStyles.bgCard, { backgroundColor: previewColor, borderColor: colors.surfaceAlt }]}>
-        <View style={[ctxStyles.bgLine, { backgroundColor: colors.textSecondary + "60" }]} />
+        <View style={[ctxStyles.bgLine,      { backgroundColor: colors.textSecondary + "60" }]} />
         <View style={[ctxStyles.bgLineShort, { backgroundColor: colors.textSecondary + "40" }]} />
       </View>
     );
@@ -122,42 +107,117 @@ function ContextPreview({ property, previewColor, colors }) {
 }
 
 const ctxStyles = StyleSheet.create({
-  bgCard:        { width: 56, height: 56, borderRadius: 10, borderWidth: 1, padding: 8, justifyContent: "center", gap: 5 },
-  bgLine:        { height: 6, borderRadius: 3 },
-  bgLineShort:   { height: 6, borderRadius: 3, width: "60%" },
-  primaryBtn:    { width: 56, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  primaryBtnText:{ fontSize: 14, fontWeight: "800" },
-  textBox:       { width: 56, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  textSample:    { fontSize: 13, fontWeight: "700" },
-  stateBadge:    { borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
-  stateBadgeText:{ fontSize: 11, fontWeight: "700" },
+  bgCard:         { width: 56, height: 56, borderRadius: 10, borderWidth: 1, padding: 8, justifyContent: "center", gap: 5 },
+  bgLine:         { height: 6, borderRadius: 3 },
+  bgLineShort:    { height: 6, borderRadius: 3, width: "60%" },
+  primaryBtn:     { width: 56, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  primaryBtnText: { fontSize: 14, fontWeight: "800" },
+  textBox:        { width: 56, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  textSample:     { fontSize: 13, fontWeight: "700" },
+  stateBadge:     { borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4 },
+  stateBadgeText: { fontSize: 11, fontWeight: "700" },
 });
 
 // ─── Fila de propiedad ────────────────────────────────────────────────────────
-function PropertyRow({ property, value, colors, styles, onPress }) {
+function PropertyRow({ property, value, isCustomized, colors, styles, onPress }) {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.75} style={styles.propertyRow}>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.75}
+      style={[
+        styles.propertyRow,
+        isCustomized && { borderLeftWidth: 3, borderLeftColor: colors.accent, paddingLeft: 13 },
+      ]}
+    >
+      {/* Swatch de color */}
       <View style={[styles.colorSwatch, { backgroundColor: value, borderColor: colors.surfaceAlt }]} />
+
+      {/* Label + valor */}
       <View style={styles.propertyInfo}>
-        <Text style={[styles.propertyLabel, { color: colors.textPrimary }]}>
-          {PROPERTY_LABELS[property] ?? property}
-        </Text>
+        <View style={styles.propertyLabelRow}>
+          <Text style={[styles.propertyLabel, { color: colors.textPrimary }]}>
+            {PROPERTY_LABELS[property] ?? property}
+          </Text>
+          {isCustomized && (
+            <View style={[styles.customBadge, { backgroundColor: colors.accent + "28", borderColor: colors.accent + "55" }]}>
+              <Text style={[styles.customBadgeText, { color: colors.accent }]}>CUSTOM</Text>
+            </View>
+          )}
+        </View>
         <Text style={[styles.propertyValue, { color: colors.textMuted }]}>{value}</Text>
       </View>
+
       <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
     </TouchableOpacity>
   );
 }
+
+// ─── Entrada del historial ────────────────────────────────────────────────────
+function LogEntry({ entry, colors }) {
+  const isUpdate = entry.action === "UPDATE";
+  const date     = new Date(entry.createdAt).toLocaleDateString("es-CO", {
+    day: "2-digit", month: "short", year: "numeric",
+  });
+
+  return (
+    <View style={logStyles.row}>
+      {/* Ícono de acción */}
+      <View style={[logStyles.iconWrap, { backgroundColor: isUpdate ? colors.primary + "22" : colors.surfaceAlt }]}>
+        <Ionicons
+          name={isUpdate ? "pencil-outline" : "refresh-outline"}
+          size={14}
+          color={isUpdate ? colors.accent : colors.textSecondary}
+        />
+      </View>
+
+      {/* Contenido */}
+      <View style={logStyles.content}>
+        <Text style={[logStyles.propLabel, { color: colors.textPrimary }]}>
+          {PROPERTY_LABELS[entry.property] ?? entry.property}
+        </Text>
+
+        {isUpdate ? (
+          <View style={logStyles.colorChange}>
+            {/* oldValue */}
+            <View style={[logStyles.miniSwatch, { backgroundColor: entry.oldValue ?? colors.surfaceAlt }]} />
+            <Ionicons name="arrow-forward" size={11} color={colors.textMuted} />
+            {/* newValue */}
+            <View style={[logStyles.miniSwatch, { backgroundColor: entry.newValue ?? colors.surfaceAlt }]} />
+            <Text style={[logStyles.hexLabel, { color: colors.textMuted }]}>{entry.newValue}</Text>
+          </View>
+        ) : (
+          <Text style={[logStyles.resetLabel, { color: colors.textMuted }]}>
+            Restablecido al valor base
+          </Text>
+        )}
+      </View>
+
+      {/* Fecha */}
+      <Text style={[logStyles.date, { color: colors.textMuted }]}>{date}</Text>
+    </View>
+  );
+}
+
+const logStyles = StyleSheet.create({
+  row:         { flexDirection: "row", alignItems: "flex-start", paddingVertical: 10, gap: 12 },
+  iconWrap:    { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center", marginTop: 1 },
+  content:     { flex: 1, gap: 4 },
+  propLabel:   { fontSize: 13, fontWeight: "600" },
+  colorChange: { flexDirection: "row", alignItems: "center", gap: 6 },
+  miniSwatch:  { width: 16, height: 16, borderRadius: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  hexLabel:    { fontSize: 11, fontFamily: "monospace" },
+  resetLabel:  { fontSize: 12 },
+  date:        { fontSize: 11, marginTop: 2 },
+});
 
 // ─── Pantalla principal ───────────────────────────────────────────────────────
 export default function ThemeCustomizeScreen() {
   const route  = useRoute();
   const insets = useSafeAreaInsets();
   const { colors, palette, applyPalette } = useTheme();
-
   const { themeName } = route.params ?? {};
 
-  // ── Estado del modal ──
+  // ── Estado modal ──
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [modalVisible, setModalVisible]         = useState(false);
   const [previewColor, setPreviewColor]         = useState("#000000");
@@ -166,16 +226,62 @@ export default function ThemeCustomizeScreen() {
   const [applyError, setApplyError]             = useState(null);
   const [loading, setLoading]                   = useState(false);
 
+  // ── Estado customizaciones ──
+  const [customizedProperties, setCustomizedProperties] = useState(new Set());
+  const [resetAllError, setResetAllError]               = useState(null);
+  const [resetAllLoading, setResetAllLoading]           = useState(false);
+
+  // ── Estado historial ──
+  const [log, setLog]           = useState([]);
+  const [showLog, setShowLog]   = useState(false);
+  const chevronAnim             = useRef(new Animated.Value(0)).current;
+
   // ── Animación de entrada ──
   const fadeAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.spring(fadeAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 60,
-      friction: 8,
+      toValue: 1, useNativeDriver: true, tension: 60, friction: 8,
     }).start();
   }, []);
+
+  // ── Cargar log + customizaciones al montar ──
+  useEffect(() => {
+    const loadCustomizations = async () => {
+      try {
+        const token = await AsyncStorage.getItem("accessToken");
+        if (!token) return;
+        const logData = await getCustomizationLog(token);
+        if (!Array.isArray(logData)) return;
+
+        // Guardar log completo para la sección de historial
+        setLog(logData);
+
+        // Derivar qué propiedades están actualmente customizadas
+        const customized = new Set();
+        logData.forEach((entry) => {
+          if (entry.action === "UPDATE") customized.add(entry.property);
+          if (entry.action === "RESET")  customized.delete(entry.property);
+        });
+        setCustomizedProperties(customized);
+      } catch (e) {
+        // silencioso — no es crítico
+      }
+    };
+    loadCustomizations();
+  }, []);
+
+  // ── Toggle historial con animación del chevron ──
+  const toggleLog = () => {
+    const toValue = showLog ? 0 : 1;
+    Animated.timing(chevronAnim, {
+      toValue, duration: 200, useNativeDriver: true,
+    }).start();
+    setShowLog((prev) => !prev);
+  };
+
+  const chevronRotation = chevronAnim.interpolate({
+    inputRange: [0, 1], outputRange: ["0deg", "180deg"],
+  });
 
   const styles = makeStyles(colors);
 
@@ -190,7 +296,7 @@ export default function ThemeCustomizeScreen() {
     setModalVisible(true);
   }, [palette, colors]);
 
-  // ── Validar y actualizar desde input hex ──
+  // ── Validar hex ──
   const handleHexChange = (text) => {
     setHexInput(text);
     if (HEX_REGEX.test(text)) {
@@ -216,13 +322,25 @@ export default function ThemeCustomizeScreen() {
     try {
       const token = await AsyncStorage.getItem("accessToken");
       const data  = await customizeTheme(selectedProperty, previewColor, token);
-      // data es la paleta resuelta completa del backend
       if (data?.palette) {
         applyPalette(data.palette);
       } else if (data && typeof data === "object") {
-        // algunos backends devuelven la paleta directamente
         applyPalette(data);
       }
+      // Marcar propiedad como customizada
+      setCustomizedProperties((prev) => new Set(prev).add(selectedProperty));
+      // Agregar entrada al log local
+      setLog((prev) => [
+        {
+          logId: Date.now(),
+          action: "UPDATE",
+          property: selectedProperty,
+          oldValue: palette?.[selectedProperty] ?? colors[selectedProperty],
+          newValue: previewColor,
+          createdAt: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
       setModalVisible(false);
     } catch (e) {
       setApplyError("No se pudo aplicar el color. Intenta de nuevo.");
@@ -231,7 +349,7 @@ export default function ThemeCustomizeScreen() {
     }
   };
 
-  // ── Resetear propiedad ──
+  // ── Resetear propiedad individual ──
   const handleReset = async () => {
     if (!selectedProperty) return;
     setLoading(true);
@@ -244,11 +362,55 @@ export default function ThemeCustomizeScreen() {
       } else if (data && typeof data === "object") {
         applyPalette(data);
       }
+      // Quitar propiedad del set de customizadas
+      setCustomizedProperties((prev) => {
+        const s = new Set(prev);
+        s.delete(selectedProperty);
+        return s;
+      });
+      // Agregar entrada al log local
+      setLog((prev) => [
+        {
+          logId: Date.now(),
+          action: "RESET",
+          property: selectedProperty,
+          oldValue: null,
+          newValue: null,
+          createdAt: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
       setModalVisible(false);
     } catch (e) {
       setApplyError("No se pudo resetear el color. Intenta de nuevo.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── Restablecer todo ──
+  const handleResetAll = async () => {
+    if (customizedProperties.size === 0) return;
+    setResetAllLoading(true);
+    setResetAllError(null);
+    try {
+      const token = await AsyncStorage.getItem("accessToken");
+      if (!token) return;
+      // Resetear cada propiedad customizada en paralelo
+      await Promise.all(
+        [...customizedProperties].map((prop) => resetCustomization(prop, token))
+      );
+      // Obtener la paleta final actualizada
+      const data = await getActivePalette();
+      if (data?.palette) applyPalette(data.palette);
+      setCustomizedProperties(new Set());
+      // Refrescar log
+      const logData = await getCustomizationLog(token);
+      if (Array.isArray(logData)) setLog(logData);
+    } catch (e) {
+      setResetAllError("No se pudo restablecer todo. Intenta de nuevo.");
+    } finally {
+      setResetAllLoading(false);
     }
   };
 
@@ -259,11 +421,7 @@ export default function ThemeCustomizeScreen() {
       <TouchableOpacity
         onPress={() => handleSwatchPress(item)}
         activeOpacity={0.8}
-        style={[
-          styles.swatchItem,
-          { backgroundColor: item },
-          isSelected && styles.swatchSelected,
-        ]}
+        style={[styles.swatchItem, { backgroundColor: item }, isSelected && styles.swatchSelected]}
       />
     );
   };
@@ -287,8 +445,33 @@ export default function ThemeCustomizeScreen() {
             <Text style={[styles.headerSub, { color: colors.accent }]}>{themeName}</Text>
           ) : null}
         </View>
-        <View style={{ width: 40 }} />
+
+        {/* Botón "Restablecer todo" — solo si hay customizaciones */}
+        {customizedProperties.size > 0 ? (
+          <TouchableOpacity
+            onPress={handleResetAll}
+            disabled={resetAllLoading}
+            activeOpacity={0.75}
+            style={[styles.resetAllBtn, { borderColor: colors.error + "55" }]}
+          >
+            {resetAllLoading ? (
+              <ActivityIndicator size={12} color={colors.error} />
+            ) : (
+              <Text style={[styles.resetAllText, { color: colors.error }]}>Resetear todo</Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
       </View>
+
+      {/* Error de resetAll */}
+      {resetAllError && (
+        <View style={[styles.resetAllErrorBox, { backgroundColor: colors.errorBg, borderColor: colors.error + "44" }]}>
+          <Ionicons name="alert-circle-outline" size={14} color={colors.error} />
+          <Text style={[styles.resetAllErrorText, { color: colors.error }]}>{resetAllError}</Text>
+        </View>
+      )}
 
       {/* ── Lista de propiedades ── */}
       <ScrollView
@@ -305,6 +488,7 @@ export default function ThemeCustomizeScreen() {
             Toca cualquier propiedad para cambiar su color. Los cambios se aplican al instante y se sincronizan con tu cuenta.
           </Text>
 
+          {/* Grupos */}
           {PROPERTY_GROUPS.map((group) => (
             <View key={group.label} style={styles.group}>
               <View style={styles.groupHeader}>
@@ -316,13 +500,15 @@ export default function ThemeCustomizeScreen() {
 
               <View style={[styles.groupCard, { backgroundColor: colors.surface + "CC", borderColor: colors.primary + "30" }]}>
                 {group.properties.map((prop, idx) => {
-                  const value  = palette?.[prop] ?? colors[prop] ?? "#000000";
-                  const isLast = idx === group.properties.length - 1;
+                  const value      = palette?.[prop] ?? colors[prop] ?? "#000000";
+                  const isCustom   = customizedProperties.has(prop);
+                  const isLast     = idx === group.properties.length - 1;
                   return (
                     <View key={prop}>
                       <PropertyRow
                         property={prop}
                         value={value}
+                        isCustomized={isCustom}
                         colors={colors}
                         styles={styles}
                         onPress={() => openPicker(prop)}
@@ -337,11 +523,57 @@ export default function ThemeCustomizeScreen() {
             </View>
           ))}
 
+          {/* Nota informativa */}
           <View style={[styles.infoBox, { backgroundColor: colors.surface + "80", borderColor: colors.primary + "25" }]}>
             <Ionicons name="information-circle-outline" size={18} color={colors.accent} style={{ marginTop: 1 }} />
             <Text style={[styles.infoText, { color: colors.textSecondary }]}>
               Puedes restablecer cada color al valor original del tema en cualquier momento.
             </Text>
+          </View>
+
+          {/* ── Sección historial colapsable ── */}
+          <View style={[styles.logSection, { borderColor: colors.primary + "25" }]}>
+            {/* Header colapsable */}
+            <TouchableOpacity
+              onPress={toggleLog}
+              activeOpacity={0.75}
+              style={styles.logToggle}
+            >
+              <View style={styles.logToggleLeft}>
+                <Ionicons name="time-outline" size={16} color={colors.accent} style={{ marginRight: 8 }} />
+                <Text style={[styles.logToggleLabel, { color: colors.textPrimary }]}>
+                  Historial de cambios
+                </Text>
+                {log.length > 0 && (
+                  <View style={[styles.logCountBadge, { backgroundColor: colors.primary + "30" }]}>
+                    <Text style={[styles.logCountText, { color: colors.accent }]}>{log.length}</Text>
+                  </View>
+                )}
+              </View>
+              <Animated.View style={{ transform: [{ rotate: chevronRotation }] }}>
+                <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
+              </Animated.View>
+            </TouchableOpacity>
+
+            {/* Entradas del log */}
+            {showLog && (
+              <View style={[styles.logBody, { borderTopColor: colors.primary + "18" }]}>
+                {log.length === 0 ? (
+                  <Text style={[styles.logEmpty, { color: colors.textMuted }]}>
+                    Sin cambios registrados
+                  </Text>
+                ) : (
+                  log.map((entry, idx) => (
+                    <View key={entry.logId ?? idx}>
+                      <LogEntry entry={entry} colors={colors} />
+                      {idx < log.length - 1 && (
+                        <View style={[styles.logSeparator, { backgroundColor: colors.primary + "15" }]} />
+                      )}
+                    </View>
+                  ))
+                )}
+              </View>
+            )}
           </View>
         </Animated.View>
       </ScrollView>
@@ -365,7 +597,7 @@ export default function ThemeCustomizeScreen() {
           />
 
           <SafeAreaView style={[styles.modalSheet, { backgroundColor: colors.surface }]}>
-            {/* ── Header del modal ── */}
+            {/* Header del modal */}
             <View style={[styles.modalHeader, { borderBottomColor: colors.primary + "20" }]}>
               <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
                 {selectedProperty ? (PROPERTY_LABELS[selectedProperty] ?? selectedProperty) : ""}
@@ -383,28 +615,21 @@ export default function ThemeCustomizeScreen() {
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={styles.modalScroll}
             >
-              {/* ── Preview en tiempo real ── */}
+              {/* Preview en tiempo real */}
               <View style={styles.previewRow}>
-                {/* Rectángulo de color */}
                 <View style={styles.previewBlock}>
                   <View style={[styles.previewRect, { backgroundColor: previewColor }]} />
                   <Text style={[styles.previewHex, { color: colors.textMuted }]}>{previewColor}</Text>
                 </View>
-
-                {/* Mini mockup contextual */}
                 <View style={styles.previewContext}>
                   <Text style={[styles.previewContextLabel, { color: colors.textMuted }]}>Vista previa</Text>
                   {selectedProperty && (
-                    <ContextPreview
-                      property={selectedProperty}
-                      previewColor={previewColor}
-                      colors={colors}
-                    />
+                    <ContextPreview property={selectedProperty} previewColor={previewColor} colors={colors} />
                   )}
                 </View>
               </View>
 
-              {/* ── Grilla de swatches ── */}
+              {/* Grilla de swatches */}
               <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>COLORES</Text>
               <FlatList
                 data={SWATCHES}
@@ -416,7 +641,7 @@ export default function ThemeCustomizeScreen() {
                 style={styles.swatchGrid}
               />
 
-              {/* ── Input hex manual ── */}
+              {/* Input hex manual */}
               <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>HEX MANUAL</Text>
               <View style={[
                 styles.hexInputWrapper,
@@ -443,7 +668,7 @@ export default function ThemeCustomizeScreen() {
                 </Text>
               )}
 
-              {/* ── Error de red ── */}
+              {/* Error de red */}
               {applyError && (
                 <View style={[styles.applyErrorBox, { backgroundColor: colors.errorBg, borderColor: colors.error + "44" }]}>
                   <Ionicons name="alert-circle-outline" size={15} color={colors.error} />
@@ -451,22 +676,22 @@ export default function ThemeCustomizeScreen() {
                 </View>
               )}
 
-              {/* ── Botones de acción ── */}
+              {/* Botones de acción */}
               <View style={styles.actionRow}>
                 <TouchableOpacity
                   onPress={handleReset}
-                  disabled={loading || hexError}
+                  disabled={loading}
                   activeOpacity={0.75}
-                  style={[
-                    styles.btnReset,
-                    {
-                      borderColor: colors.surfaceAlt,
-                      opacity: loading || hexError ? 0.45 : 1,
-                    },
-                  ]}
+                  style={[styles.btnReset, { borderColor: colors.surfaceAlt, opacity: loading ? 0.45 : 1 }]}
                 >
-                  <Ionicons name="refresh-outline" size={16} color={colors.textSecondary} style={{ marginRight: 6 }} />
-                  <Text style={[styles.btnResetText, { color: colors.textSecondary }]}>Resetear</Text>
+                  {loading ? (
+                    <ActivityIndicator size={16} color={colors.textSecondary} />
+                  ) : (
+                    <>
+                      <Ionicons name="refresh-outline" size={16} color={colors.textSecondary} style={{ marginRight: 6 }} />
+                      <Text style={[styles.btnResetText, { color: colors.textSecondary }]}>Resetear</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -482,10 +707,14 @@ export default function ThemeCustomizeScreen() {
                     },
                   ]}
                 >
-                  <Ionicons name="checkmark" size={16} color={colors.textPrimary} style={{ marginRight: 6 }} />
-                  <Text style={[styles.btnApplyText, { color: colors.textPrimary }]}>
-                    {loading ? "Aplicando…" : "Aplicar"}
-                  </Text>
+                  {loading ? (
+                    <ActivityIndicator size={16} color={colors.textPrimary} />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark" size={16} color={colors.textPrimary} style={{ marginRight: 6 }} />
+                      <Text style={[styles.btnApplyText, { color: colors.textPrimary }]}>Aplicar</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -504,10 +733,16 @@ function makeStyles(colors) {
     orb2: { position: "absolute", bottom: 100, left: -60, width: 200, height: 200, borderRadius: 100 },
 
     // Header
-    header:       { paddingBottom: 12, paddingHorizontal: 24, flexDirection: "row", alignItems: "center", borderBottomWidth: 1 },
-    headerCenter: { flex: 1, alignItems: "center" },
-    headerTitle:  { fontSize: 18, fontWeight: "800" },
-    headerSub:    { fontSize: 12, fontWeight: "600", marginTop: 2, opacity: 0.85 },
+    header:         { paddingBottom: 12, paddingHorizontal: 24, flexDirection: "row", alignItems: "center", borderBottomWidth: 1 },
+    headerCenter:   { flex: 1, alignItems: "center" },
+    headerTitle:    { fontSize: 18, fontWeight: "800" },
+    headerSub:      { fontSize: 12, fontWeight: "600", marginTop: 2, opacity: 0.85 },
+    resetAllBtn:    { borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 5, minWidth: 40, alignItems: "center" },
+    resetAllText:   { fontSize: 10, fontWeight: "800", letterSpacing: 0.3 },
+
+    // Error resetAll
+    resetAllErrorBox:  { flexDirection: "row", alignItems: "center", gap: 8, marginHorizontal: 24, marginTop: 8, borderRadius: 10, borderWidth: 1, padding: 10 },
+    resetAllErrorText: { fontSize: 12, flex: 1 },
 
     // Scroll
     scrollContent: { paddingHorizontal: 24, paddingTop: 24 },
@@ -520,16 +755,30 @@ function makeStyles(colors) {
     groupCard:   { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
 
     // Fila de propiedad
-    propertyRow:   { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
-    colorSwatch:   { width: 36, height: 36, borderRadius: 10, borderWidth: 1.5, marginRight: 14 },
-    propertyInfo:  { flex: 1 },
-    propertyLabel: { fontSize: 14, fontWeight: "600", marginBottom: 2 },
-    propertyValue: { fontSize: 12, fontFamily: "monospace" },
-    separator:     { height: 1, marginHorizontal: 16 },
+    propertyRow:      { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14 },
+    colorSwatch:      { width: 36, height: 36, borderRadius: 10, borderWidth: 1.5, marginRight: 14 },
+    propertyInfo:     { flex: 1 },
+    propertyLabelRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
+    propertyLabel:    { fontSize: 14, fontWeight: "600" },
+    propertyValue:    { fontSize: 12, fontFamily: "monospace" },
+    customBadge:      { borderRadius: 6, borderWidth: 1, paddingHorizontal: 5, paddingVertical: 1 },
+    customBadgeText:  { fontSize: 9, fontWeight: "800", letterSpacing: 0.4 },
+    separator:        { height: 1, marginHorizontal: 16 },
 
     // Info box
     infoBox:  { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 12, borderWidth: 1, padding: 14, marginTop: 4 },
     infoText: { fontSize: 12, lineHeight: 18, flex: 1 },
+
+    // Historial
+    logSection:      { marginTop: 24, borderRadius: 16, borderWidth: 1, overflow: "hidden" },
+    logToggle:       { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16 },
+    logToggleLeft:   { flexDirection: "row", alignItems: "center" },
+    logToggleLabel:  { fontSize: 14, fontWeight: "700" },
+    logCountBadge:   { borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, marginLeft: 8 },
+    logCountText:    { fontSize: 11, fontWeight: "700" },
+    logBody:         { borderTopWidth: 1, paddingHorizontal: 16, paddingBottom: 8 },
+    logEmpty:        { fontSize: 13, textAlign: "center", paddingVertical: 20 },
+    logSeparator:    { height: 1, marginHorizontal: 4 },
 
     // Modal
     modalOverlay:  { flex: 1, justifyContent: "flex-end" },
@@ -548,10 +797,10 @@ function makeStyles(colors) {
     previewContextLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
 
     // Swatches
-    sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1.2, marginBottom: 10 },
-    swatchGrid:   { marginBottom: 20 },
-    swatchRow:    { justifyContent: "space-between", marginBottom: 8 },
-    swatchItem:   { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+    sectionLabel:   { fontSize: 10, fontWeight: "700", letterSpacing: 1.2, marginBottom: 10 },
+    swatchGrid:     { marginBottom: 20 },
+    swatchRow:      { justifyContent: "space-between", marginBottom: 8 },
+    swatchItem:     { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
     swatchSelected: { borderWidth: 2.5, borderColor: "#FFFFFF", transform: [{ scale: 1.2 }] },
 
     // Hex input
