@@ -102,8 +102,14 @@ export function ThemeProvider({ children }) {
     }
   };
 
+  // ── applyPalette: aplica una paleta resuelta directamente (para customizaciones) ──
+  const applyPalette = (paletteObj) => {
+    if (!paletteObj || typeof paletteObj !== "object") return;
+    setColors((prev) => ({ ...prev, ...paletteObj }));
+  };
+
   return (
-    <ThemeContext.Provider value={{ colors, palette: colors, activeThemeId, applyTheme, themes: THEMES }}>
+    <ThemeContext.Provider value={{ colors, palette: colors, activeThemeId, applyTheme, applyPalette, themes: THEMES }}>
       {children}
     </ThemeContext.Provider>
   );
