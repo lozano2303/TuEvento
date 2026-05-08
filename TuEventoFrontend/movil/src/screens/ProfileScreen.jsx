@@ -1,14 +1,16 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StatusBar, Animated,
+  StatusBar, Animated, Image, ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { getFileUrl } from "../services/storageService";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getDisplayName(fullName) {
@@ -30,7 +32,7 @@ function getInitial(fullName) {
 
 // ─── Opciones del menú de perfil ─────────────────────────────────────────────
 const MENU_OPTIONS = [
-  { icon: "person-outline",        label: "Editar perfil",    sub: "Actualiza tu información",  route: null },
+  { icon: "person-outline",        label: "Editar perfil",    sub: "Actualiza tu información",  route: "EditProfile" },
   { icon: "notifications-outline", label: "Notificaciones",   sub: "Gestiona tus alertas",       route: null },
   { icon: "settings-outline",      label: "Configuración",    sub: "Preferencias de la app",     route: "Settings" },
 ];
@@ -51,6 +53,29 @@ export default function ProfileScreen() {
   // Animaciones de entrada
   const cardAnim = useRef(new Animated.Value(0)).current;
   const menuAnim = useRef(new Animated.Value(0)).current;
+
+  // Estado del avatar
+  const [avatarUrl, setAvatarUrl]       = useState(null);
+  const [avatarLoading, setAvatarLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAvatar = async () => {
+      if (!user?.storedFileId) {
+        setAvatarLoading(false);
+        return;
+      }
+      try {
+        const token = await AsyncStorage.getItem("accessToken");
+        const url = await getFileUrl(user.storedFileId, token);
+        setAvatarUrl(url);
+      } catch (_) {
+        // mantiene fallback con inicial
+      } finally {
+        setAvatarLoading(false);
+      }
+    };
+    loadAvatar();
+  }, [user?.storedFileId]);
 
   useEffect(() => {
     Animated.stagger(100, [
@@ -121,14 +146,26 @@ export default function ProfileScreen() {
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.5, shadowRadius: 16, elevation: 12,
           }}>
-            <LinearGradient
-              colors={colors.gradientPrimary}
-              style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-            >
-              <Text style={{ color: colors.textPrimary, fontSize: 38, fontWeight: "800" }}>
-                {initial}
-              </Text>
-            </LinearGradient>
+            {avatarLoading ? (
+              <View style={{ flex: 1, backgroundColor: colors.primary + "40", alignItems: "center", justifyContent: "center" }}>
+                <ActivityIndicator color={colors.textPrimary} />
+              </View>
+            ) : avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode="cover"
+              />
+            ) : (
+              <LinearGradient
+                colors={colors.gradientPrimary}
+                style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+              >
+                <Text style={{ color: colors.textPrimary, fontSize: 38, fontWeight: "800" }}>
+                  {initial}
+                </Text>
+              </LinearGradient>
+            )}
           </View>
 
           {/* Nombre */}
@@ -173,7 +210,14 @@ export default function ProfileScreen() {
             <TouchableOpacity
               key={index}
               activeOpacity={0.75}
-              onPress={() => opt.route && navigation.navigate(opt.route)}
+              onPress={() => {
+                if (!opt.route) return;
+                if (opt.route === "EditProfile") {
+                  navigation.navigate("EditProfile", { currentAvatarUrl: avatarUrl });
+                } else {
+                  navigation.navigate(opt.route);
+                }
+              }}
               style={{
                 flexDirection: "row", alignItems: "center",
                 backgroundColor: colors.surface + "CC",
