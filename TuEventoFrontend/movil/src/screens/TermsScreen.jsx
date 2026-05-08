@@ -2,11 +2,11 @@ import { View, Text, ScrollView, StatusBar } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BackButton from "../components/BackButton";
-import { useTheme } from "../context/ThemeContext";
+import { darkColors } from "../theme/colors";
 
 export default function TermsScreen() {
   const insets = useSafeAreaInsets();
-  const { palette } = useTheme();
+  const palette = darkColors;
 
   const sections = [
     {
