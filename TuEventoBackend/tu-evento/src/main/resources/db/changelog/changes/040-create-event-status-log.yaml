@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 040-create-event-status-log
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: event_status_log
+            columns:
+              - column:
+                  name: status_log_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: old_status
+                  type: VARCHAR(20)
+              - column:
+                  name: new_status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_by
+                  type: BIGINT
+        - addForeignKeyConstraint:
+            baseTableName: event_status_log
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_event_status_log_event
+        - addForeignKeyConstraint:
+            baseTableName: event_status_log
+            baseColumnNames: changed_by
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_event_status_log_user
