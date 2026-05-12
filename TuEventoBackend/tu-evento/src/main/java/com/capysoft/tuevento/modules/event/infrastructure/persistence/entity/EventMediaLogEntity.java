@@ -30,5 +30,5 @@ public class EventMediaLogEntity {
     private int version;
 
     @Column(name = "is_visible", nullable = false)
-    private boolean isVisible;
+    private Boolean isVisible;
 }

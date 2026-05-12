@@ -15,6 +15,6 @@ public class EventCommentReply {
     private Long ratingId;
     private Long userId;
     private String replyText;
-    private boolean isVisible;
+    private Boolean isVisible;
     private LocalDateTime createdAt;
 }

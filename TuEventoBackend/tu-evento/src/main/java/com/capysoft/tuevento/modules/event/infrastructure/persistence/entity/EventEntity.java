@@ -44,7 +44,7 @@ public class EventEntity extends JpaAuditingEntity {
     private EventStatus status;
 
     @Column(name = "is_public", nullable = false)
-    private boolean isPublic;
+    private Boolean isPublic;
 
     @Column(name = "available_seats", nullable = false)
     private int availableSeats;

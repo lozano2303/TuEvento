@@ -13,6 +13,6 @@ public class EventCommentReplyResponse {
     private final Long parentReplyId;
     private final Long userId;
     private final String replyText;
-    private final boolean isVisible;
+    private final Boolean isVisible;
     private final LocalDateTime createdAt;
 }

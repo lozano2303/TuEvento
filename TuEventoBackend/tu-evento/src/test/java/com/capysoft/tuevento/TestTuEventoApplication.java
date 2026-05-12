@@ -1,6 +1,7 @@
 package com.capysoft.tuevento;
 
 import org.springframework.boot.SpringApplication;
+import com.capysoft.tuevento.TuEventoApplication;
 
 public class TestTuEventoApplication {
 

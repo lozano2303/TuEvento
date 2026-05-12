@@ -20,7 +20,7 @@ public class EventResponse {
     private final LocalDate startDate;
     private final LocalDate finishDate;
     private final EventStatus status;
-    private final boolean isPublic;
+    private final Boolean isPublic;
     private final int availableSeats;
     private final LocalDateTime createdAt;
     private final LocalDateTime updatedAt;

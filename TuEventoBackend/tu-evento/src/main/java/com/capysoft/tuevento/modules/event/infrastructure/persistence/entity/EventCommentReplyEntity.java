@@ -33,7 +33,7 @@ public class EventCommentReplyEntity {
     private String replyText;
 
     @Column(name = "is_visible", nullable = false)
-    private boolean isVisible;
+    private Boolean isVisible;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

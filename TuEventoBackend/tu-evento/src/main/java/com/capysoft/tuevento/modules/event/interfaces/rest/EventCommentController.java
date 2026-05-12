@@ -47,7 +47,7 @@ public class EventCommentController {
                         .parentReplyId(r.getParentReplyId())
                         .userId(r.getUserId())
                         .replyText(r.getReplyText())
-                        .isVisible(r.isVisible())
+                        .isVisible(r.getIsVisible())
                         .createdAt(r.getCreatedAt())
                         .build())
                 .toList();

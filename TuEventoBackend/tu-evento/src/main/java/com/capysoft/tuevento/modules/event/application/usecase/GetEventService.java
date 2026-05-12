@@ -51,7 +51,7 @@ public class GetEventService implements GetEventUseCase {
                 .startDate(e.getStartDate())
                 .finishDate(e.getFinishDate())
                 .status(e.getStatus())
-                .isPublic(e.isPublic())
+                .isPublic(e.getIsPublic())
                 .availableSeats(e.getAvailableSeats())
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())
@@ -67,7 +67,7 @@ public class GetEventService implements GetEventUseCase {
                 .status(e.getStatus())
                 .startDate(e.getStartDate())
                 .finishDate(e.getFinishDate())
-                .isPublic(e.isPublic())
+                .isPublic(e.getIsPublic())
                 .availableSeats(e.getAvailableSeats())
                 .build();
     }
