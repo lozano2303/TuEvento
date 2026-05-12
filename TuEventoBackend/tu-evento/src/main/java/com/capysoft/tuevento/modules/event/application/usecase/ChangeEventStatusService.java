@@ -7,6 +7,7 @@ import com.capysoft.tuevento.modules.event.domain.event.EventStatusChangedEvent;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatusLog;
+import com.capysoft.tuevento.modules.event.domain.repository.EventLayoutRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventStatusLogRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
@@ -24,6 +25,7 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
 
     private final EventRepository eventRepository;
     private final EventStatusLogRepository statusLogRepository;
+    private final EventLayoutRepository eventLayoutRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -39,6 +41,12 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
         }
 
         validateTransition(event.getStatus(), request.getNewStatus());
+
+        if (request.getNewStatus() == EventStatus.PUBLISHED) {
+            eventLayoutRepository.findByEventId(eventId)
+                    .orElseThrow(() -> new BusinessException("EVENT_LAYOUT_REQUIRED",
+                            "Event cannot be published without a layout"));
+        }
 
         eventRepository.save(Event.builder()
                 .eventId(event.getEventId())

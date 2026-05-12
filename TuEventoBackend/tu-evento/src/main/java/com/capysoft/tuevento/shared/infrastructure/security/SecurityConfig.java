@@ -80,6 +80,8 @@ public class SecurityConfig {
                                 "/api/v1/themes/my-active/customize/**").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/v1/themes/my-active/log").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT,
+                                "/api/v1/events/*/layout").authenticated()
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
