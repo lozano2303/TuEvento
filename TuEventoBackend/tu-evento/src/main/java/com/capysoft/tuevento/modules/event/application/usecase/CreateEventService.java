@@ -81,7 +81,7 @@ public class CreateEventService implements CreateEventUseCase {
                 .startDate(e.getStartDate())
                 .finishDate(e.getFinishDate())
                 .status(e.getStatus())
-                .isPublic(e.isPublic())
+                .isPublic(e.getIsPublic())
                 .availableSeats(e.getAvailableSeats())
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())

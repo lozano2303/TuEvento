@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.event.application.mapper;
 import com.capysoft.tuevento.modules.event.domain.model.EventMediaLog;
 import com.capysoft.tuevento.modules.event.infrastructure.persistence.entity.EventMediaLogEntity;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface EventMediaLogEntityMapper {

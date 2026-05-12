@@ -49,7 +49,7 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
                 .startDate(event.getStartDate())
                 .finishDate(event.getFinishDate())
                 .status(request.getNewStatus())
-                .isPublic(event.isPublic())
+                .isPublic(event.getIsPublic())
                 .availableSeats(event.getAvailableSeats())
                 .build());
 

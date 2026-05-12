@@ -13,5 +13,5 @@ public class EventMediaLog {
     private Long mediaId;
     private String imgUrl;
     private int version;
-    private boolean isVisible;
+    private Boolean isVisible;
 }

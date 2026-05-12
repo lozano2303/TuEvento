@@ -47,7 +47,7 @@ public class AddCommentReplyService implements AddCommentReplyUseCase {
                 .parentReplyId(reply.getParentReplyId())
                 .userId(reply.getUserId())
                 .replyText(reply.getReplyText())
-                .isVisible(reply.isVisible())
+                .isVisible(reply.getIsVisible())
                 .createdAt(reply.getCreatedAt())
                 .build();
     }

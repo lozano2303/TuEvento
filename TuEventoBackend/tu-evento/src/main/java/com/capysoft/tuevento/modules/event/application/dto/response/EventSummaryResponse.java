@@ -15,6 +15,6 @@ public class EventSummaryResponse {
     private final EventStatus status;
     private final LocalDate startDate;
     private final LocalDate finishDate;
-    private final boolean isPublic;
+    private final Boolean isPublic;
     private final int availableSeats;
 }

@@ -65,7 +65,7 @@ public class AddEventRatingService implements AddEventRatingUseCase {
                 .userId(rating.getUserId())
                 .rating(rating.getRating())
                 .comment(rating.getComment())
-                .isVisible(rating.isVisible())
+                .isVisible(rating.getIsVisible())
                 .createdAt(rating.getCreatedAt())
                 .build();
     }

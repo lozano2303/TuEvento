@@ -19,7 +19,7 @@ public class Event {
     private LocalDate startDate;
     private LocalDate finishDate;
     private EventStatus status;
-    private boolean isPublic;
+    private Boolean isPublic;
     private int availableSeats;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

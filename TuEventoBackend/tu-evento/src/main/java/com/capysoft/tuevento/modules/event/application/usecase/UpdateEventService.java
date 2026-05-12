@@ -42,7 +42,7 @@ public class UpdateEventService implements UpdateEventUseCase {
         Long siteId           = request.getSiteId()         != null ? request.getSiteId()         : event.getSiteId();
         LocalDate startDate   = request.getStartDate()      != null ? request.getStartDate()      : event.getStartDate();
         LocalDate finishDate  = request.getFinishDate()     != null ? request.getFinishDate()     : event.getFinishDate();
-        boolean isPublic      = request.getIsPublic()       != null ? request.getIsPublic()       : event.isPublic();
+        Boolean isPublic      = request.getIsPublic()       != null ? request.getIsPublic()       : event.getIsPublic();
         int availableSeats    = request.getAvailableSeats() != null ? request.getAvailableSeats() : event.getAvailableSeats();
 
         if (!finishDate.isAfter(startDate)) {
@@ -72,7 +72,7 @@ public class UpdateEventService implements UpdateEventUseCase {
                 .startDate(updated.getStartDate())
                 .finishDate(updated.getFinishDate())
                 .status(updated.getStatus())
-                .isPublic(updated.isPublic())
+                .isPublic(updated.getIsPublic())
                 .availableSeats(updated.getAvailableSeats())
                 .createdAt(updated.getCreatedAt())
                 .updatedAt(updated.getUpdatedAt())

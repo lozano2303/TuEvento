@@ -13,6 +13,6 @@ public class EventRatingResponse {
     private final Long userId;
     private final int rating;
     private final String comment;
-    private final boolean isVisible;
+    private final Boolean isVisible;
     private final LocalDateTime createdAt;
 }

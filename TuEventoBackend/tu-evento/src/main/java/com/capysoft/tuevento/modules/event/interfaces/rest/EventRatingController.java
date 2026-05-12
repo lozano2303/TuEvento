@@ -49,7 +49,7 @@ public class EventRatingController {
                         .userId(r.getUserId())
                         .rating(r.getRating())
                         .comment(r.getComment())
-                        .isVisible(r.isVisible())
+                        .isVisible(r.getIsVisible())
                         .createdAt(r.getCreatedAt())
                         .build())
                 .toList();
