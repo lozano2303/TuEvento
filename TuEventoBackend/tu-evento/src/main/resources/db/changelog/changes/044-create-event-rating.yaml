@@ -57,7 +57,8 @@ databaseChangeLog:
             referencedTableName: app_user
             referencedColumnNames: user_id
             constraintName: fk_event_rating_user
-        - addCheckConstraint:
-            constraintName: chk_event_rating_value
-            tableName: event_rating
-            constraintBody: rating BETWEEN 1 AND 5
+        - sql:
+            sql: >
+              ALTER TABLE event_rating
+              ADD CONSTRAINT chk_event_rating_value
+              CHECK (rating BETWEEN 1 AND 5);
