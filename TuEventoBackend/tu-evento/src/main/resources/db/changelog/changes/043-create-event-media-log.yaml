@@ -1,0 +1,53 @@
+databaseChangeLog:
+  - changeSet:
+      id: 043-create-event-media-log
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: event_media_log
+            columns:
+              - column:
+                  name: media_log_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: media_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: img_url
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: version
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_visible
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: event_media_log
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_event_media_log_event
+        - addForeignKeyConstraint:
+            baseTableName: event_media_log
+            baseColumnNames: media_id
+            referencedTableName: event_media
+            referencedColumnNames: media_id
+            constraintName: fk_event_media_log_media

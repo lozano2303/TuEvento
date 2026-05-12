@@ -47,7 +47,12 @@ public class SecurityConfig {
     };
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {
-            "/api/v1/themes"
+            "/api/v1/themes",
+            "/api/v1/events/*",
+            "/api/v1/events/status/**",
+            "/api/v1/events/*/ratings",
+            "/api/v1/ratings/*/replies",
+            "/api/v1/events/*/media"
     };
 
     @Bean
@@ -75,6 +80,8 @@ public class SecurityConfig {
                                 "/api/v1/themes/my-active/customize/**").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 "/api/v1/themes/my-active/log").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT,
+                                "/api/v1/events/*/layout").authenticated()
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
