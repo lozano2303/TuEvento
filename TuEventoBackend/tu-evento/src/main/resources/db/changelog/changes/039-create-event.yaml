@@ -84,14 +84,15 @@ databaseChangeLog:
             referencedTableName: site
             referencedColumnNames: site_id
             constraintName: fk_event_site
-        - addCheckConstraint:
-            constraintName: chk_event_finish_after_start
-            tableName: event
-            constraintBody: finish_date > start_date
         - addUniqueConstraint:
             constraintName: uq_event_name_start_date_site
             tableName: event
             columnNames: event_name, start_date, site_id
+        - sql:
+            sql: >
+              ALTER TABLE event
+              ADD CONSTRAINT chk_event_finish_after_start
+              CHECK (finish_date > start_date);
         - sql:
             sql: >
               ALTER TABLE event
