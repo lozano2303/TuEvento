@@ -11,14 +11,16 @@ All notable changes to this project will be documented in this file.
 - Liquibase changesets 039–045: tablas `event`, `event_status_log`, `event_layout`, `event_media`, `event_media_log`, `event_rating`, `event_comment_reply` con FKs, constraints UNIQUE y CHECK via `sql` raw (compatible con Liquibase OSS)
 - Domain layer: modelos puros (`Event`, `EventStatus`, `EventStatusLog`, `EventLayout`, `EventMedia`, `EventMediaLog`, `EventRating`, `EventCommentReply`), interfaces de repositorio sin dependencias de Spring, eventos de dominio inmutables (`EventCreatedEvent`, `EventStatusChangedEvent`, `EventCancelledEvent`, `EventRatingAddedEvent`, `EventMediaUploadedEvent`)
 - Infrastructure layer: entidades JPA (`EventEntity` extiende `JpaAuditingEntity`, más 6 entidades sin auditoría), `JpaRepository` por entidad, mappers MapStruct, implementaciones `RepositoryImpl`; `EventMediaLogJpaRepository` incluye `@Query` para `findNextVersionByEventId`
-- Application layer: 9 ports in (`CreateEventUseCase`, `UpdateEventUseCase`, `ChangeEventStatusUseCase`, `GetEventUseCase`, `DeleteEventUseCase`, `AddEventRatingUseCase`, `AddCommentReplyUseCase`, `UploadEventMediaUseCase`, `GetEventLayoutUseCase`), 8 use cases con validaciones de negocio (ownership, transiciones de estado `DRAFT→PUBLISHED→CANCELLED/COMPLETED`, unicidad, rating único por usuario)
-- REST controllers: `EventController` (`/api/v1/events`), `EventRatingController` (`/api/v1/events/{eventId}/ratings`), `EventCommentController` (`/api/v1/ratings/{ratingId}/replies`), `EventMediaController` (`/api/v1/events/{eventId}/media`), `EventLayoutController` (`/api/v1/events/{eventId}/layout`)
-- `SecurityConfig` actualizado: 5 endpoints GET públicos agregados a `PUBLIC_GET_ENDPOINTS`; endpoints de escritura protegidos por rol `ORGANIZER` o `USER` via `@PreAuthorize`
+- Application layer: 9 ports in (`CreateEventUseCase`, `UpdateEventUseCase`, `ChangeEventStatusUseCase`, `GetEventUseCase`, `DeleteEventUseCase`, `AddEventRatingUseCase`, `AddCommentReplyUseCase`, `UploadEventMediaUseCase`, `GetEventLayoutUseCase`, `SaveEventLayoutUseCase`), 9 use cases con validaciones de negocio (ownership, transiciones de estado `DRAFT→PUBLISHED→CANCELLED/COMPLETED`, unicidad, rating único por usuario, validación de layout antes de publicar)
+- REST controllers: `EventController` (`/api/v1/events`), `EventRatingController` (`/api/v1/events/{eventId}/ratings`), `EventCommentController` (`/api/v1/ratings/{ratingId}/replies`), `EventMediaController` (`/api/v1/events/{eventId}/media`), `EventLayoutController` (`/api/v1/events/{eventId}/layout` — GET público + PUT `ORGANIZER`)
+- `SecurityConfig` actualizado: 5 endpoints GET públicos en `PUBLIC_GET_ENDPOINTS`; `PUT /api/v1/events/*/layout` como autenticado; endpoints de escritura protegidos por rol via `@PreAuthorize`
 
 #### Fixed
 - Liquibase changeset 039: reemplazado `addCheckConstraint` (Liquibase Pro) por `sql` raw con `ALTER TABLE ... ADD CONSTRAINT ... CHECK (...)` — compatible con Liquibase OSS 4.x
 - Campos `boolean isPublic` / `boolean isVisible` migrados a `Boolean` objeto en modelos de dominio, entidades JPA y DTOs de response para compatibilidad con MapStruct (Lombok genera `isXxx()` para `boolean` primitivo, que MapStruct resuelve como propiedad `xxx` en lugar de `isXxx`)
 - `TestTuEventoApplication`: agregado import explícito de `TuEventoApplication` para resolver `cannot find symbol` durante `test-compile` con annotation processors activos
+- `EventLayoutEntity`: agregado `@JdbcTypeCode(SqlTypes.JSON)` sobre `layoutData` para que Hibernate haga el binding correcto al tipo `jsonb` de PostgreSQL — sin esta anotación Hibernate enviaba el valor como `character varying` causando error de tipo en la columna
+- `ChangeEventStatusService`: validación de layout antes de transición `DRAFT → PUBLISHED`; lanza `BusinessException("EVENT_LAYOUT_REQUIRED")` si no existe layout para el evento
 
 ## [develop] - 2026-04-24
 
