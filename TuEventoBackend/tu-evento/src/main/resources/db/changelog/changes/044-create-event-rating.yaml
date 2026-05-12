@@ -1,0 +1,63 @@
+databaseChangeLog:
+  - changeSet:
+      id: 044-create-event-rating
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: event_rating
+            columns:
+              - column:
+                  name: rating_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rating
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: comment
+                  type: VARCHAR
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_visible
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: event_rating
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_event_rating_event
+        - addForeignKeyConstraint:
+            baseTableName: event_rating
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_event_rating_user
+        - addCheckConstraint:
+            constraintName: chk_event_rating_value
+            tableName: event_rating
+            constraintBody: rating BETWEEN 1 AND 5

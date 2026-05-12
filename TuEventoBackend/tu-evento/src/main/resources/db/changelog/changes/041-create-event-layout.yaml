@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 041-create-event-layout
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: event_layout
+            columns:
+              - column:
+                  name: event_layout_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: layout_data
+                  type: JSONB
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: event_layout
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_event_layout_event
