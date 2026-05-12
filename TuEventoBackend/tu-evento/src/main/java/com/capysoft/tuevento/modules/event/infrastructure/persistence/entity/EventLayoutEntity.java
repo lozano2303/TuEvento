@@ -2,6 +2,8 @@ package com.capysoft.tuevento.modules.event.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -20,6 +22,7 @@ public class EventLayoutEntity {
     @Column(name = "event_id", nullable = false)
     private Long eventId;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "layout_data", nullable = false, columnDefinition = "jsonb")
     private String layoutData;
 }
