@@ -48,6 +48,22 @@ services:
     networks:
       - tuevento-network
 
+  # Image moderation service (OpenNSFW2) — internal only, no host port exposed
+  nsfw-classifier:
+    build: ./nsfw-service
+    container_name: nsfw-classifier
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    networks:
+      - tuevento-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
   # CI/CD Services
   jenkins:
     image: jenkins/jenkins:lts-jdk17
@@ -116,6 +132,7 @@ services:
       - postgres
       - minio
       - redis
+      - nsfw-classifier
     networks:
       - tuevento-network
 

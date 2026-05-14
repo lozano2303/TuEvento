@@ -1,0 +1,7 @@
+opennsfw2==0.10.2
+opencv-python-headless==4.10.0.84
+fastapi==0.111.0
+python-multipart==0.0.9
+uvicorn==0.30.1
+pillow==10.3.0
+tensorflow==2.12.0
