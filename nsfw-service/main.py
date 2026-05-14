@@ -1,4 +1,4 @@
-import io
+import io as _io
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from PIL import Image
 import opennsfw2
@@ -22,12 +22,13 @@ async def classify(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Empty file")
 
     try:
-        image = Image.open(io.BytesIO(raw)).convert("RGB")
+        Image.open(_io.BytesIO(raw)).convert("RGB")
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid or corrupted image")
 
     try:
-        nsfw_score = opennsfw2.predict_image(image)
+        image_bytes_io = _io.BytesIO(raw)
+        nsfw_score = opennsfw2.predict_image(image_bytes_io)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Model inference failed: {exc}")
 
