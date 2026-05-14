@@ -68,3 +68,13 @@ app:
 
   profile:
     default-avatar-stored-file-id: 1
+
+moderation:
+  nsfw:
+    url: ${NSFW_SERVICE_URL:http://localhost:8001}
+    threshold: ${NSFW_THRESHOLD:0.6}
+  sightengine:
+    api-user: ${SIGHTENGINE_API_USER}
+    api-secret: ${SIGHTENGINE_API_SECRET}
+    models: ${SIGHTENGINE_MODELS:gore}
+    threshold: ${SIGHTENGINE_THRESHOLD:0.6}

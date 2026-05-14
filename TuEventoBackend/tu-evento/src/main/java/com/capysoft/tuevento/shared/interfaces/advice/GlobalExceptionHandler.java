@@ -17,6 +17,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import com.capysoft.tuevento.modules.geolocation.domain.exception.SiteAlreadyExistsException;
 import com.capysoft.tuevento.modules.profile.domain.exception.ProfileAlreadyExistsException;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
+import com.capysoft.tuevento.shared.domain.exception.ImagePolicyViolationException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 
@@ -85,6 +86,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFoundException(NotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(ImagePolicyViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleImagePolicyViolation(ImagePolicyViolationException ex) {
+        return ResponseEntity.unprocessableEntity()
                 .body(ApiResponse.error(ex.getMessage()));
     }
 

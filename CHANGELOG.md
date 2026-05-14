@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [develop] - 2026-05-13
+
+### feat(storage): add image moderation via OpenNSFW2 + Sightengine cascade
+#### Added
+- `nsfw-service/`: FastAPI microservice wrapping OpenNSFW2 (`GET /health`, `POST /classify`). Returns `nsfw_score` (0.0–1.0) and `flagged` boolean. Rejects non-image content types and corrupted files with HTTP 400. Dockerized with `python:3.11-slim`.
+- `ModerationPort` (port/out): secondary port with `isNsfwSafe(byte[])` and `isGoreSafe(byte[])`. Fail-open contract documented in Javadoc.
+- `ImageModerationService` (application/service): implements `ModerationPort`, orchestrates the two-stage cascade — OpenNSFW2 first, Sightengine only if stage 1 passes. Throws `ImagePolicyViolationException` on rejection.
+- `NsfwClientAdapter` (infrastructure/external): `RestTemplate` multipart POST to `${moderation.nsfw.url}/classify`. Fail-open on any infrastructure error.
+- `SightengineAdapter` (infrastructure/external): `RestTemplate` multipart POST to `https://api.sightengine.com/1.0/check.json` with `models=gore`. Extracts `gore.prob`. Fail-open on any infrastructure error.
+- `ImagePolicyViolationException` (shared/domain/exception): extends `BusinessException`. User-facing message is intentionally generic; internal reason code (`NSFW_CONTENT` / `VIOLENT_CONTENT`) is preserved for logging.
+- `ModerationConfig` (infrastructure/config): `@ConfigurationProperties(prefix = "moderation")` with nested `Nsfw` and `Sightengine` classes. Declares `RestTemplate` bean.
+- `nsfw-classifier` service in `docker-compose.yml`: internal-only (no host port), connected to `tuevento-network`, with healthcheck on `/health`. Backend `depends_on` updated.
+- `moderation.*` properties added to `application-dev.yaml` (root-level, not under `app:`).
+- Moderation environment variables added to `.env` and `.env.example`: `NSFW_SERVICE_URL`, `NSFW_THRESHOLD`, `SIGHTENGINE_API_USER`, `SIGHTENGINE_API_SECRET`, `SIGHTENGINE_MODELS`, `SIGHTENGINE_THRESHOLD`.
+
+#### Modified
+- `UploadFileUseCase`: injected `ImageModerationService` via `@RequiredArgsConstructor`. Moderation cascade called after `validateSize()` and before `storageClient.uploadFile()`. Skipped for non-image content types (`!contentType.startsWith("image/")`).
+- `GlobalExceptionHandler`: added handler for `ImagePolicyViolationException` → HTTP 422 Unprocessable Entity.
+
+#### Design decisions
+- Cascade order (NSFW → gore) minimizes Sightengine API quota consumption (100 req/day free tier).
+- Fail-open policy: moderation service failures never block legitimate uploads; errors are logged at ERROR level.
+- Moderation is transparent to `StorageController` and `StorageClientPort` — zero changes to the REST interface or S3 adapter.
+
 ## [develop] - 2026-05-12
 
 ### feat(event): event module
