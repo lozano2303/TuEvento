@@ -4,6 +4,7 @@ import com.capysoft.tuevento.modules.storage.application.dto.request.UploadFileR
 import com.capysoft.tuevento.modules.storage.application.dto.response.UploadFileResponse;
 import com.capysoft.tuevento.modules.storage.application.port.in.UploadFilePort;
 import com.capysoft.tuevento.modules.storage.application.port.out.StorageClientPort;
+import com.capysoft.tuevento.modules.storage.application.service.ImageModerationService;
 import com.capysoft.tuevento.modules.storage.domain.event.FileUploadedEvent;
 import com.capysoft.tuevento.modules.storage.domain.model.FileCategory;
 import com.capysoft.tuevento.modules.storage.domain.model.StorageOperationLog;
@@ -34,6 +35,7 @@ public class UploadFileUseCase implements UploadFilePort {
     private final StorageOperationLogRepository operationLogRepository;
     private final StorageClientPort             storageClient;
     private final ApplicationEventPublisher     eventPublisher;
+    private final ImageModerationService        moderationService;
 
     @Value("${app.storage.bucket-default}")
     private String defaultBucket;
@@ -47,6 +49,11 @@ public class UploadFileUseCase implements UploadFilePort {
 
         validateExtension(request.getOriginalFilename(), category.getAllowedExtensions());
         validateSize(request.getContent().length, category.getMaxSizeMb());
+
+        // Moderation cascade: only for images, skipped for PDFs and other types
+        if (request.getContentType().startsWith("image/")) {
+            moderationService.moderate(request.getContent());
+        }
 
         String extension = extractExtension(request.getOriginalFilename());
         String s3Key = category.getCode().toLowerCase() + "/" + UUID.randomUUID() + "." + extension;
