@@ -52,7 +52,9 @@ public class SecurityConfig {
             "/api/v1/events/status/**",
             "/api/v1/events/*/ratings",
             "/api/v1/ratings/*/replies",
-            "/api/v1/events/*/media"
+            "/api/v1/events/*/media",
+            "/api/v1/categories/**",
+            "/api/v1/category-events/**"
     };
 
     @Bean
@@ -70,6 +72,16 @@ public class SecurityConfig {
                                 "/api/v1/geolocation/sites").hasAnyAuthority("ADMIN", "ORGANIZER")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT,
                                 "/api/v1/geolocation/sites/**").hasAnyAuthority("ADMIN", "ORGANIZER")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/v1/categories/**").hasAuthority("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT,
+                                "/api/v1/categories/**").hasAuthority("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE,
+                                "/api/v1/categories/**").hasAuthority("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/v1/category-events/**").hasAnyAuthority("ADMIN", "ORGANIZER")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE,
+                                "/api/v1/category-events/**").hasAnyAuthority("ADMIN", "ORGANIZER")
                         .requestMatchers(org.springframework.http.HttpMethod.POST,
                                 "/api/v1/themes/activate/**").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
