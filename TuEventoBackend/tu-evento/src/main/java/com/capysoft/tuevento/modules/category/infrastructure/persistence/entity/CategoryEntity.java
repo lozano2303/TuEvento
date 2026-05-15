@@ -16,7 +16,7 @@ public class CategoryEntity extends JpaAuditingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "category_id")
-    private Long categoryId;
+    private Integer categoryId;
 
     @Column(name = "name", nullable = false, length = 50)
     private String name;
@@ -32,5 +32,5 @@ public class CategoryEntity extends JpaAuditingEntity {
 
     /** Nullable — null means this is a root category. No JPA relation to avoid self-join complexity. */
     @Column(name = "dad_id")
-    private Long dadId;
+    private Integer dadId;
 }

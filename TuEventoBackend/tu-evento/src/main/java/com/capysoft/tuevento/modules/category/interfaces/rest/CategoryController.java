@@ -35,7 +35,7 @@ public class CategoryController {
     @Operation(summary = "Update a category — requires ADMIN")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<CategoryResponse>> update(
-            @PathVariable Long id,
+            @PathVariable Integer id,
             @Valid @RequestBody UpdateCategoryRequest request) {
         return ResponseEntity.ok(ApiResponse.ok("Category updated successfully",
                 categoryUseCase.updateCategory(id, request)));
@@ -43,21 +43,21 @@ public class CategoryController {
 
     @Operation(summary = "Deactivate a category — requires ADMIN")
     @PutMapping("/{id}/deactivate")
-    public ResponseEntity<ApiResponse<Void>> deactivate(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deactivate(@PathVariable Integer id) {
         categoryUseCase.deactivateCategory(id);
         return ResponseEntity.ok(ApiResponse.ok("Category deactivated successfully"));
     }
 
     @Operation(summary = "Activate a category — requires ADMIN")
     @PutMapping("/{id}/activate")
-    public ResponseEntity<ApiResponse<Void>> activate(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> activate(@PathVariable Integer id) {
         categoryUseCase.activateCategory(id);
         return ResponseEntity.ok(ApiResponse.ok("Category activated successfully"));
     }
 
     @Operation(summary = "Get category by ID — public")
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CategoryResponse>> getById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CategoryResponse>> getById(@PathVariable Integer id) {
         return ResponseEntity.ok(ApiResponse.ok("Category retrieved",
                 categoryUseCase.getCategoryById(id)));
     }
@@ -86,7 +86,7 @@ public class CategoryController {
     @Operation(summary = "Get subcategories of a parent — public")
     @GetMapping("/{id}/subcategories")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getSubcategories(
-            @PathVariable Long id) {
+            @PathVariable Integer id) {
         return ResponseEntity.ok(ApiResponse.ok("Subcategories retrieved",
                 categoryUseCase.getSubcategories(id)));
     }

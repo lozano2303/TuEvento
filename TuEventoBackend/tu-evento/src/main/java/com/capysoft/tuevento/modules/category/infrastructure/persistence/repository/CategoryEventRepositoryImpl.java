@@ -22,32 +22,32 @@ public class CategoryEventRepositoryImpl implements CategoryEventRepository {
     }
 
     @Override
-    public Optional<CategoryEvent> findById(Long id) {
+    public Optional<CategoryEvent> findById(Integer id) {
         return jpaRepository.findById(id).map(mapper::toDomain);
     }
 
     @Override
-    public List<CategoryEvent> findByEventId(Long eventId) {
+    public List<CategoryEvent> findByEventId(Integer eventId) {
         return mapper.toDomainList(jpaRepository.findByEventId(eventId));
     }
 
     @Override
-    public List<CategoryEvent> findByCategoryId(Long categoryId) {
+    public List<CategoryEvent> findByCategoryId(Integer categoryId) {
         return mapper.toDomainList(jpaRepository.findByCategoryId(categoryId));
     }
 
     @Override
-    public boolean existsByCategoryIdAndEventId(Long categoryId, Long eventId) {
+    public boolean existsByCategoryIdAndEventId(Integer categoryId, Integer eventId) {
         return jpaRepository.existsByCategoryIdAndEventId(categoryId, eventId);
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void deleteById(Integer id) {
         jpaRepository.deleteById(id);
     }
 
     @Override
-    public void deleteByEventId(Long eventId) {
+    public void deleteByEventId(Integer eventId) {
         jpaRepository.deleteByEventId(eventId);
     }
 }

@@ -25,9 +25,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CategoryEventUseCaseImpl implements CategoryEventUseCase {
 
-    private final CategoryRepository      categoryRepository;
-    private final CategoryEventRepository categoryEventRepository;
-    private final CategoryMapper          categoryMapper;
+    private final CategoryRepository        categoryRepository;
+    private final CategoryEventRepository   categoryEventRepository;
+    private final CategoryMapper            categoryMapper;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -66,25 +66,24 @@ public class CategoryEventUseCaseImpl implements CategoryEventUseCase {
 
     @Override
     @Transactional
-    public void removeCategoryFromEvent(Long categoryEventId) {
-        if (!categoryEventRepository.findById(categoryEventId).isPresent()) {
-            throw new NotFoundException("CATEGORY_EVENT_NOT_FOUND",
-                    "CategoryEvent not found: " + categoryEventId);
-        }
+    public void removeCategoryFromEvent(Integer categoryEventId) {
+        categoryEventRepository.findById(categoryEventId)
+                .orElseThrow(() -> new NotFoundException("CATEGORY_EVENT_NOT_FOUND",
+                        "CategoryEvent not found: " + categoryEventId));
         categoryEventRepository.deleteById(categoryEventId);
         log.debug("CategoryEvent removed: id={}", categoryEventId);
     }
 
     @Override
     @Transactional
-    public void removeAllCategoriesFromEvent(Long eventId) {
+    public void removeAllCategoriesFromEvent(Integer eventId) {
         categoryEventRepository.deleteByEventId(eventId);
         log.debug("All categories removed from event: id={}", eventId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CategoryResponse> getCategoriesByEvent(Long eventId) {
+    public List<CategoryResponse> getCategoriesByEvent(Integer eventId) {
         List<CategoryEvent> categoryEvents = categoryEventRepository.findByEventId(eventId);
 
         List<Category> categories = categoryEvents.stream()
@@ -98,7 +97,7 @@ public class CategoryEventUseCaseImpl implements CategoryEventUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Long> getEventIdsByCategory(Long categoryId) {
+    public List<Integer> getEventIdsByCategory(Integer categoryId) {
         if (!categoryRepository.existsById(categoryId)) {
             throw new NotFoundException("CATEGORY_NOT_FOUND",
                     "Category not found: " + categoryId);

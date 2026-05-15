@@ -20,13 +20,13 @@ public class CategoryEventEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "category_event_id")
-    private Long categoryEventId;
+    private Integer categoryEventId;
 
     /** FK to category — no JPA relation to avoid cross-module coupling. */
     @Column(name = "category_id", nullable = false)
-    private Long categoryId;
+    private Integer categoryId;
 
     /** FK to event — no JPA relation to avoid cross-module coupling. */
     @Column(name = "event_id", nullable = false)
-    private Long eventId;
+    private Integer eventId;
 }

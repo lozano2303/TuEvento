@@ -10,11 +10,11 @@ public interface CategoryEventUseCase {
 
     CategoryEventResponse assignCategoryToEvent(AssignCategoryRequest request);
 
-    void removeCategoryFromEvent(Long categoryEventId);
+    void removeCategoryFromEvent(Integer categoryEventId);
 
-    List<CategoryResponse> getCategoriesByEvent(Long eventId);
+    List<CategoryResponse> getCategoriesByEvent(Integer eventId);
 
-    List<Long> getEventIdsByCategory(Long categoryId);
+    List<Integer> getEventIdsByCategory(Integer categoryId);
 
-    void removeAllCategoriesFromEvent(Long eventId);
+    void removeAllCategoriesFromEvent(Integer eventId);
 }

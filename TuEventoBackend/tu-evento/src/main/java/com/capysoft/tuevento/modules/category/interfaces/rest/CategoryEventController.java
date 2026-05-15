@@ -34,14 +34,14 @@ public class CategoryEventController {
 
     @Operation(summary = "Remove a category from an event — requires ORGANIZER or ADMIN")
     @DeleteMapping("/{categoryEventId}")
-    public ResponseEntity<ApiResponse<Void>> remove(@PathVariable Long categoryEventId) {
+    public ResponseEntity<ApiResponse<Void>> remove(@PathVariable Integer categoryEventId) {
         categoryEventUseCase.removeCategoryFromEvent(categoryEventId);
         return ResponseEntity.ok(ApiResponse.ok("Category removed from event successfully"));
     }
 
     @Operation(summary = "Remove all categories from an event — requires ORGANIZER or ADMIN")
     @DeleteMapping("/event/{eventId}")
-    public ResponseEntity<ApiResponse<Void>> removeAll(@PathVariable Long eventId) {
+    public ResponseEntity<ApiResponse<Void>> removeAll(@PathVariable Integer eventId) {
         categoryEventUseCase.removeAllCategoriesFromEvent(eventId);
         return ResponseEntity.ok(ApiResponse.ok("All categories removed from event successfully"));
     }
@@ -49,15 +49,15 @@ public class CategoryEventController {
     @Operation(summary = "Get categories assigned to an event — public")
     @GetMapping("/event/{eventId}")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getByEvent(
-            @PathVariable Long eventId) {
+            @PathVariable Integer eventId) {
         return ResponseEntity.ok(ApiResponse.ok("Categories retrieved",
                 categoryEventUseCase.getCategoriesByEvent(eventId)));
     }
 
     @Operation(summary = "Get event IDs that have a given category — public")
     @GetMapping("/category/{categoryId}/events")
-    public ResponseEntity<ApiResponse<List<Long>>> getEventsByCategory(
-            @PathVariable Long categoryId) {
+    public ResponseEntity<ApiResponse<List<Integer>>> getEventsByCategory(
+            @PathVariable Integer categoryId) {
         return ResponseEntity.ok(ApiResponse.ok("Event IDs retrieved",
                 categoryEventUseCase.getEventIdsByCategory(categoryId)));
     }

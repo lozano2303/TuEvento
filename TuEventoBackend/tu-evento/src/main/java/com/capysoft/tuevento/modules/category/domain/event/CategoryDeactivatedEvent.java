@@ -7,6 +7,6 @@ import lombok.Getter;
 @Builder
 public class CategoryDeactivatedEvent {
 
-    private final Long   categoryId;
-    private final String name;
+    private final Integer categoryId;
+    private final String  name;
 }

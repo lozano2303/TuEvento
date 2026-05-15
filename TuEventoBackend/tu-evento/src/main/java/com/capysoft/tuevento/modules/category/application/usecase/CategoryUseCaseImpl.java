@@ -24,8 +24,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CategoryUseCaseImpl implements CategoryUseCase {
 
-    private final CategoryRepository     categoryRepository;
-    private final CategoryMapper         categoryMapper;
+    private final CategoryRepository        categoryRepository;
+    private final CategoryMapper            categoryMapper;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -61,7 +61,7 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
 
     @Override
     @Transactional
-    public CategoryResponse updateCategory(Long id, UpdateCategoryRequest request) {
+    public CategoryResponse updateCategory(Integer id, UpdateCategoryRequest request) {
         Category existing = categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND",
                         "Category not found: " + id));
@@ -92,7 +92,7 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
 
     @Override
     @Transactional
-    public void deactivateCategory(Long id) {
+    public void deactivateCategory(Integer id) {
         Category existing = categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND",
                         "Category not found: " + id));
@@ -116,7 +116,7 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
 
     @Override
     @Transactional
-    public void activateCategory(Long id) {
+    public void activateCategory(Integer id) {
         Category existing = categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND",
                         "Category not found: " + id));
@@ -135,7 +135,7 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public CategoryResponse getCategoryById(Long id) {
+    public CategoryResponse getCategoryById(Integer id) {
         return categoryMapper.toResponse(
                 categoryRepository.findById(id)
                         .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND",
@@ -156,7 +156,7 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CategoryResponse> getSubcategories(Long parentId) {
+    public List<CategoryResponse> getSubcategories(Integer parentId) {
         if (!categoryRepository.existsById(parentId)) {
             throw new NotFoundException("CATEGORY_NOT_FOUND",
                     "Category not found: " + parentId);

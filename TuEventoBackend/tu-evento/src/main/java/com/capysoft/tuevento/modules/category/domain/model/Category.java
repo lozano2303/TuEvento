@@ -11,12 +11,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Category {
 
-    private Long   categoryId;
-    private String name;
-    private String description;
+    private Integer categoryId;
+    private String  name;
+    private String  description;
     private boolean active;
     private boolean visible;
 
     /** Nullable — null means this is a root category. */
-    private Long dadId;
+    private Integer dadId;
 }

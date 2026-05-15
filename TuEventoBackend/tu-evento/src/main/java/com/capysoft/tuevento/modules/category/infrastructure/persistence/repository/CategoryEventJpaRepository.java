@@ -6,14 +6,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-public interface CategoryEventJpaRepository extends JpaRepository<CategoryEventEntity, Long> {
+public interface CategoryEventJpaRepository extends JpaRepository<CategoryEventEntity, Integer> {
 
-    List<CategoryEventEntity> findByEventId(Long eventId);
+    List<CategoryEventEntity> findByEventId(Integer eventId);
 
-    List<CategoryEventEntity> findByCategoryId(Long categoryId);
+    List<CategoryEventEntity> findByCategoryId(Integer categoryId);
 
-    boolean existsByCategoryIdAndEventId(Long categoryId, Long eventId);
+    boolean existsByCategoryIdAndEventId(Integer categoryId, Integer eventId);
 
     @Transactional
-    void deleteByEventId(Long eventId);
+    void deleteByEventId(Integer eventId);
 }

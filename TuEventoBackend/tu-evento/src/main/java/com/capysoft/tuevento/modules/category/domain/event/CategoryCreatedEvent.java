@@ -7,7 +7,7 @@ import lombok.Getter;
 @Builder
 public class CategoryCreatedEvent {
 
-    private final Long    categoryId;
+    private final Integer categoryId;
     private final String  name;
     private final boolean hasParent;
 }

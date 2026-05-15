@@ -5,11 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Long> {
+public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Integer> {
 
     List<CategoryEntity> findByActiveTrue();
 
-    List<CategoryEntity> findByDadId(Long dadId);
+    List<CategoryEntity> findByDadId(Integer dadId);
 
     List<CategoryEntity> findByDadIdIsNull();
 

@@ -20,5 +20,5 @@ public class CreateCategoryRequest {
     private String description;
 
     /** Nullable — null means root category. */
-    private Long dadId;
+    private Integer dadId;
 }

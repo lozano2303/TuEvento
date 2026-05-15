@@ -7,7 +7,7 @@ import lombok.Getter;
 @Builder
 public class CategoryAssignedToEventEvent {
 
-    private final Long categoryEventId;
-    private final Long categoryId;
-    private final Long eventId;
+    private final Integer categoryEventId;
+    private final Integer categoryId;
+    private final Integer eventId;
 }
