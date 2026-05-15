@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - changeSet:
+      id: 049-seed-categories
+      author: capysoft
+      changes:
+        - insert:
+            tableName: category
+            columns:
+              - column: { name: name,        value: "Música" }
+              - column: { name: description,  value: "Conciertos, festivales y eventos musicales" }
+              - column: { name: active,       valueBoolean: true }
+              - column: { name: visible,      valueBoolean: true }
+              - column: { name: dad_id,       value: null }
+              - column: { name: created_at,   valueComputed: NOW() }
+              - column: { name: updated_at,   valueComputed: NOW() }
+              - column: { name: created_by,   value: "system" }
+              - column: { name: updated_by,   value: "system" }
+        - insert:
+            tableName: category
+            columns:
+              - column: { name: name,        value: "Deportes" }
+              - column: { name: description,  value: "Eventos deportivos y competencias" }
+              - column: { name: active,       valueBoolean: true }
+              - column: { name: visible,      valueBoolean: true }
+              - column: { name: dad_id,       value: null }
+              - column: { name: created_at,   valueComputed: NOW() }
+              - column: { name: updated_at,   valueComputed: NOW() }
+              - column: { name: created_by,   value: "system" }
+              - column: { name: updated_by,   value: "system" }
+        - insert:
+            tableName: category
+            columns:
+              - column: { name: name,        value: "Teatro y Artes" }
+              - column: { name: description,  value: "Obras de teatro, danza y artes escénicas" }
+              - column: { name: active,       valueBoolean: true }
+              - column: { name: visible,      valueBoolean: true }
+              - column: { name: dad_id,       value: null }
+              - column: { name: created_at,   valueComputed: NOW() }
+              - column: { name: updated_at,   valueComputed: NOW() }
+              - column: { name: created_by,   value: "system" }
+              - column: { name: updated_by,   value: "system" }
+        - insert:
+            tableName: category
+            columns:
+              - column: { name: name,        value: "Tecnología" }
+              - column: { name: description,  value: "Conferencias, hackathons y eventos tech" }
+              - column: { name: active,       valueBoolean: true }
+              - column: { name: visible,      valueBoolean: true }
+              - column: { name: dad_id,       value: null }
+              - column: { name: created_at,   valueComputed: NOW() }
+              - column: { name: updated_at,   valueComputed: NOW() }
+              - column: { name: created_by,   value: "system" }
+              - column: { name: updated_by,   value: "system" }
+        - insert:
+            tableName: category
+            columns:
+              - column: { name: name,        value: "Gastronomía" }
+              - column: { name: description,  value: "Ferias de comida, catas y eventos culinarios" }
+              - column: { name: active,       valueBoolean: true }
+              - column: { name: visible,      valueBoolean: true }
+              - column: { name: dad_id,       value: null }
+              - column: { name: created_at,   valueComputed: NOW() }
+              - column: { name: updated_at,   valueComputed: NOW() }
+              - column: { name: created_by,   value: "system" }
+              - column: { name: updated_by,   value: "system" }
