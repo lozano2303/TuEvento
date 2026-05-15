@@ -9,15 +9,15 @@ public interface CategoryEventRepository {
 
     CategoryEvent save(CategoryEvent categoryEvent);
 
-    Optional<CategoryEvent> findById(Long id);
+    Optional<CategoryEvent> findById(Integer id);
 
-    List<CategoryEvent> findByEventId(Long eventId);
+    List<CategoryEvent> findByEventId(Integer eventId);
 
-    List<CategoryEvent> findByCategoryId(Long categoryId);
+    List<CategoryEvent> findByCategoryId(Integer categoryId);
 
-    boolean existsByCategoryIdAndEventId(Long categoryId, Long eventId);
+    boolean existsByCategoryIdAndEventId(Integer categoryId, Integer eventId);
 
-    void deleteById(Long id);
+    void deleteById(Integer id);
 
-    void deleteByEventId(Long eventId);
+    void deleteByEventId(Integer eventId);
 }

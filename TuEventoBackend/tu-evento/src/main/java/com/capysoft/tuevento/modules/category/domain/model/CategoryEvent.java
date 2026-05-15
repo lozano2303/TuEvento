@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CategoryEvent {
 
-    private Long categoryEventId;
-    private Long categoryId;
-    private Long eventId;
+    private Integer categoryEventId;
+    private Integer categoryId;
+    private Integer eventId;
 }

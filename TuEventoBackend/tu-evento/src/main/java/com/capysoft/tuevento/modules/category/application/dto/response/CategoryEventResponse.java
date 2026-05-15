@@ -7,8 +7,8 @@ import lombok.Getter;
 @Builder
 public class CategoryEventResponse {
 
-    private Long   categoryEventId;
-    private Long   categoryId;
-    private Long   eventId;
-    private String categoryName;
+    private Integer categoryEventId;
+    private Integer categoryId;
+    private Integer eventId;
+    private String  categoryName;
 }

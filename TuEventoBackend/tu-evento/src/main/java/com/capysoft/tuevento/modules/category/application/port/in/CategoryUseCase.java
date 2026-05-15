@@ -10,19 +10,19 @@ public interface CategoryUseCase {
 
     CategoryResponse createCategory(CreateCategoryRequest request);
 
-    CategoryResponse updateCategory(Long id, UpdateCategoryRequest request);
+    CategoryResponse updateCategory(Integer id, UpdateCategoryRequest request);
 
-    void deactivateCategory(Long id);
+    void deactivateCategory(Integer id);
 
-    void activateCategory(Long id);
+    void activateCategory(Integer id);
 
-    CategoryResponse getCategoryById(Long id);
+    CategoryResponse getCategoryById(Integer id);
 
     List<CategoryResponse> getAllCategories();
 
     List<CategoryResponse> getActiveCategories();
 
-    List<CategoryResponse> getSubcategories(Long parentId);
+    List<CategoryResponse> getSubcategories(Integer parentId);
 
     List<CategoryResponse> getRootCategories();
 }

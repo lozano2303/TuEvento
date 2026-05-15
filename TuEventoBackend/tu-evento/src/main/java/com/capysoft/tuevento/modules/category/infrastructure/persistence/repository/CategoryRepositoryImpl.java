@@ -13,8 +13,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CategoryRepositoryImpl implements CategoryRepository {
 
-    private final CategoryJpaRepository  jpaRepository;
-    private final CategoryEntityMapper   mapper;
+    private final CategoryJpaRepository jpaRepository;
+    private final CategoryEntityMapper  mapper;
 
     @Override
     public Category save(Category category) {
@@ -22,7 +22,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    public Optional<Category> findById(Long id) {
+    public Optional<Category> findById(Integer id) {
         return jpaRepository.findById(id).map(mapper::toDomain);
     }
 
@@ -37,7 +37,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    public List<Category> findByDadId(Long dadId) {
+    public List<Category> findByDadId(Integer dadId) {
         return mapper.toDomainList(jpaRepository.findByDadId(dadId));
     }
 
@@ -52,12 +52,12 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    public boolean existsById(Long id) {
+    public boolean existsById(Integer id) {
         return jpaRepository.existsById(id);
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void deleteById(Integer id) {
         jpaRepository.deleteById(id);
     }
 }

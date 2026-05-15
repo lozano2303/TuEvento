@@ -11,8 +11,8 @@ import lombok.Setter;
 public class AssignCategoryRequest {
 
     @NotNull
-    private Long categoryId;
+    private Integer categoryId;
 
     @NotNull
-    private Long eventId;
+    private Integer eventId;
 }
