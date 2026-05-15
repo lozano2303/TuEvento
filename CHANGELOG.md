@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Category y CategoryEvent: modelos de dominio puros
+- CategoryRepository y CategoryEventRepository: interfaces de dominio
+- CategoryCreatedEvent, CategoryDeactivatedEvent, CategoryAssignedToEventEvent: eventos de dominio
+- CategoryEntity, CategoryEventEntity: entidades JPA
+- CategoryJpaRepository, CategoryEventJpaRepository: repositorios Spring Data
+- CategoryRepositoryImpl, CategoryEventRepositoryImpl: implementaciones de dominio
+- CategoryEntityMapper, CategoryEventEntityMapper: mappers de infraestructura
+- CategoryUseCase, CategoryEventUseCase: ports de entrada
+- CreateCategoryRequest, UpdateCategoryRequest, AssignCategoryRequest: DTOs de request con validaciones Jakarta
+- CategoryResponse, CategoryEventResponse: DTOs de respuesta inmutables
+- CategoryUseCaseImpl, CategoryEventUseCaseImpl: casos de uso con publicación de eventos de dominio
+- CategoryMapper: mapper de aplicación
+- CategoryController: 9 endpoints REST en /api/v1/categories
+- CategoryEventController: 5 endpoints REST en /api/v1/category-events
+- SecurityConfig actualizado con permisos por rol para el módulo category
+- Módulo category completo: tablas, dominio, infraestructura, aplicación e interfaces
+- 14 endpoints REST para gestión de categorías y asignación a eventos
+- Soporte de categorías jerárquicas mediante dad_id
+- Seed inicial con 5 categorías base
+
 ## [develop] - 2026-05-13
 
 ### feat(storage): add image moderation via OpenNSFW2 + Sightengine cascade

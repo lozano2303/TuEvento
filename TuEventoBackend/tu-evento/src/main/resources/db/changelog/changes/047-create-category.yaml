@@ -1,0 +1,68 @@
+databaseChangeLog:
+  - changeSet:
+      id: 047-create-category
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: category
+            columns:
+              - column:
+                  name: category_id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: visible
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: dad_id
+                  type: INT
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_category_parent
+                    references: category(category_id)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_by
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: category
+            columnNames: name
+            constraintName: uq_category_name
