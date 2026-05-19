@@ -49,6 +49,8 @@ public class SecurityConfig {
     private static final String[] PUBLIC_GET_ENDPOINTS = {
             "/api/v1/themes",
             "/api/v1/events/*",
+            "/api/v1/events/public",
+            "/api/v1/events/public/**",
             "/api/v1/events/status/**",
             "/api/v1/events/*/ratings",
             "/api/v1/ratings/*/replies",

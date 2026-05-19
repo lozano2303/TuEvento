@@ -18,12 +18,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -103,5 +105,39 @@ public class EventController {
             @AuthenticationPrincipal SecurityUser principal) {
         return ResponseEntity.ok(ApiResponse.ok("Event status changed successfully",
                 changeEventStatusUseCase.execute(eventId, request, principal.getUserId().longValue())));
+    }
+
+    // ─── Public endpoints ─────────────────────────────────────────────────────
+
+    @Operation(summary = "List all published public events — no auth required")
+    @GetMapping("/public")
+    public ResponseEntity<ApiResponse<List<EventSummaryResponse>>> getPublishedEvents() {
+        return ResponseEntity.ok(ApiResponse.ok("Published events retrieved",
+                getEventUseCase.getPublishedEvents()));
+    }
+
+    @Operation(summary = "List published public events by city — no auth required")
+    @GetMapping("/public/city/{cityId}")
+    public ResponseEntity<ApiResponse<List<EventSummaryResponse>>> getPublishedEventsByCity(
+            @PathVariable Long cityId) {
+        return ResponseEntity.ok(ApiResponse.ok("Published events by city retrieved",
+                getEventUseCase.getPublishedEventsByCityId(cityId)));
+    }
+
+    @Operation(summary = "List published public events by category — no auth required")
+    @GetMapping("/public/category/{categoryId}")
+    public ResponseEntity<ApiResponse<List<EventSummaryResponse>>> getPublishedEventsByCategory(
+            @PathVariable Integer categoryId) {
+        return ResponseEntity.ok(ApiResponse.ok("Published events by category retrieved",
+                getEventUseCase.getPublishedEventsByCategoryId(categoryId)));
+    }
+
+    @Operation(summary = "List published public events by date range — no auth required")
+    @GetMapping("/public/date-range")
+    public ResponseEntity<ApiResponse<List<EventSummaryResponse>>> getPublishedEventsByDateRange(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(ApiResponse.ok("Published events by date range retrieved",
+                getEventUseCase.getPublishedEventsByDateRange(from, to)));
     }
 }

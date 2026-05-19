@@ -9,11 +9,13 @@ import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort;
+import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -24,6 +26,8 @@ public class GetEventService implements GetEventUseCase {
     private final EventRepository      eventRepository;
     private final CategoryEventUseCase categoryEventUseCase;
     private final GetSitePort          getSitePort;
+
+    // ─── Authenticated queries ────────────────────────────────────────────────
 
     @Override
     public EventResponse findById(Long eventId) {
@@ -47,8 +51,43 @@ public class GetEventService implements GetEventUseCase {
                 .toList();
     }
 
+    // ─── Public queries ───────────────────────────────────────────────────────
+
+    @Override
+    public List<EventSummaryResponse> getPublishedEvents() {
+        return eventRepository.findAllPublished().stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    @Override
+    public List<EventSummaryResponse> getPublishedEventsByCityId(Long cityId) {
+        return eventRepository.findByCityId(cityId).stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    @Override
+    public List<EventSummaryResponse> getPublishedEventsByCategoryId(Integer categoryId) {
+        return eventRepository.findByCategoryId(categoryId).stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    @Override
+    public List<EventSummaryResponse> getPublishedEventsByDateRange(LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            throw new BusinessException("INVALID_DATE_RANGE",
+                    "from must be before or equal to to");
+        }
+        return eventRepository.findByDateRange(from, to).stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    // ─── Mappers ──────────────────────────────────────────────────────────────
+
     private EventResponse toResponse(Event e) {
-        // Resolve categoryId — fail-soft: null if no category assigned
         Integer categoryId = null;
         try {
             List<CategoryResponse> cats = categoryEventUseCase.getCategoriesByEvent(
@@ -58,7 +97,6 @@ public class GetEventService implements GetEventUseCase {
             log.warn("Could not resolve categoryId for event {}: {}", e.getEventId(), ex.getMessage());
         }
 
-        // Resolve siteName — fail-soft: null if site lookup fails
         String siteName = null;
         try {
             siteName = getSitePort.getSite(Math.toIntExact(e.getSiteId())).getName();
@@ -87,6 +125,22 @@ public class GetEventService implements GetEventUseCase {
     }
 
     private EventSummaryResponse toSummary(Event e) {
+        String siteName = null;
+        try {
+            siteName = getSitePort.getSite(Math.toIntExact(e.getSiteId())).getName();
+        } catch (Exception ex) {
+            log.warn("Could not resolve siteName for event {}: {}", e.getEventId(), ex.getMessage());
+        }
+
+        Integer categoryId = null;
+        try {
+            List<CategoryResponse> cats = categoryEventUseCase.getCategoriesByEvent(
+                    Math.toIntExact(e.getEventId()));
+            categoryId = cats.isEmpty() ? null : cats.get(0).getCategoryId();
+        } catch (Exception ex) {
+            log.warn("Could not resolve categoryId for event {}: {}", e.getEventId(), ex.getMessage());
+        }
+
         return EventSummaryResponse.builder()
                 .eventId(e.getEventId())
                 .eventName(e.getEventName())
@@ -95,6 +149,8 @@ public class GetEventService implements GetEventUseCase {
                 .finishDate(e.getFinishDate())
                 .isPublic(e.getIsPublic())
                 .availableSeats(e.getAvailableSeats())
+                .siteName(siteName)
+                .categoryId(categoryId)
                 .build();
     }
 }
