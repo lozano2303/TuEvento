@@ -27,6 +27,14 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Ya no es posible crear un evento sin categoría
+- CreateEventService: validación de existencia de siteId y availableSeats <= site.capacity
+- UpdateEventService: validación de siteId y capacidad en actualizaciones
+- DeleteEventService: limpieza de category_event al eliminar evento DRAFT
+- UploadEventMediaService: verificación de existencia del evento antes de subir media
+- UpdateEventRequest: validaciones Jakarta en todos los campos editables
+- GetEventService: categoryId y siteName ahora se populan correctamente en todas las respuestas GET
+- CreateEventRequest: límite superior de 100000 en availableSeats
+- CreateEventService y UpdateEventService: siteName populado en EventResponse
 - Módulo category completo: tablas, dominio, infraestructura, aplicación e interfaces
 - 14 endpoints REST para gestión de categorías y asignación a eventos
 - Soporte de categorías jerárquicas mediante dad_id

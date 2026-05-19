@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.event.application.usecase;
 
+import com.capysoft.tuevento.modules.category.application.port.in.CategoryEventUseCase;
 import com.capysoft.tuevento.modules.event.application.port.in.DeleteEventUseCase;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
@@ -14,7 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DeleteEventService implements DeleteEventUseCase {
 
-    private final EventRepository eventRepository;
+    private final EventRepository      eventRepository;
+    private final CategoryEventUseCase categoryEventUseCase;
 
     @Override
     @Transactional
@@ -32,6 +34,9 @@ public class DeleteEventService implements DeleteEventUseCase {
             throw new BusinessException("EVENT_DELETE_NOT_ALLOWED",
                     "Only DRAFT events can be deleted");
         }
+
+        // Clean up category_event associations before deleting the event
+        categoryEventUseCase.removeAllCategoriesFromEvent(Math.toIntExact(eventId));
 
         eventRepository.delete(eventId);
     }
