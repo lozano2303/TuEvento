@@ -337,12 +337,12 @@ TuEvento includes a complete CI/CD pipeline with Jenkins, SonarQube, Docker, and
 ### Services Available
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| Jenkins | http://localhost:8080 | Setup required |
+| Jenkins | http://localhost:8083 | Setup required |
 | SonarQube | http://localhost:9002 | admin / admin |
 | MinIO Console | http://localhost:9001 | minioadmin / miniopassword |
 | PostgreSQL | localhost:5432 | postgres / secret |
 | Redis | localhost:6379 | - |
-| Backend Dev | http://localhost:8081 | - |
+| Backend Dev | http://localhost:8080 | - |
 
 ### Jenkins Configuration
 1. **Setup Jenkins**: Get initial password with `docker logs tuevento-jenkins`
@@ -419,10 +419,9 @@ sonarqube:
 4. Access SonarQube at: http://localhost:9002
 
 **Updated Service URLs:**
-- Jenkins: http://localhost:8080
+- Jenkins: http://localhost:8083
 - SonarQube: http://localhost:9002 *(changed)*
-- MinIO Console: http://localhost:9001
-- Backend Dev: http://localhost:8081
+- Backend Dev: http://localhost:8080
 
 ---
 
@@ -860,10 +859,10 @@ sonarqube:
 4. Acceder a SonarQube en: http://localhost:9002
 
 **URLs de Servicios Actualizadas:**
-- Jenkins: http://localhost:8080
+- Jenkins: http://localhost:8083
 - SonarQube: http://localhost:9002 *(cambiado)*
 - Consola MinIO: http://localhost:9001
-- Backend Dev: http://localhost:8081
+- Backend Dev: http://localhost:8080
 
 ---
 
