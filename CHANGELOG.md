@@ -35,6 +35,13 @@ All notable changes to this project will be documented in this file.
 - GetEventService: categoryId y siteName ahora se populan correctamente en todas las respuestas GET
 - CreateEventRequest: límite superior de 100000 en availableSeats
 - CreateEventService y UpdateEventService: siteName populado en EventResponse
+
+### Added
+- GET /api/v1/events/public: lista todos los eventos publicados y públicos
+- GET /api/v1/events/public/city/{cityId}: filtra por ciudad
+- GET /api/v1/events/public/category/{categoryId}: filtra por categoría
+- GET /api/v1/events/public/date-range?from=&to=: filtra por rango de fechas
+- EventSummaryResponse actualizado con siteName y categoryId
 - Módulo category completo: tablas, dominio, infraestructura, aplicación e interfaces
 - 14 endpoints REST para gestión de categorías y asignación a eventos
 - Soporte de categorías jerárquicas mediante dad_id
