@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: tu-evento-backend-ingress
+  name: tu-evento-ingress
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
@@ -10,6 +10,7 @@ spec:
   tls:
   - hosts:
     - api.tuevento.com
+    - app.tuevento.com
     secretName: tuevento-tls
   rules:
   - host: api.tuevento.com
@@ -20,5 +21,15 @@ spec:
         backend:
           service:
             name: tu-evento-backend-service
+            port:
+              number: 80
+  - host: app.tuevento.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: tu-evento-frontend-service
             port:
               number: 80

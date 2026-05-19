@@ -148,7 +148,15 @@ export default function Login() {
         setError(result.message || "Error al reenviar código de activación");
       }
     } catch (err) {
-      setError("Error de conexión al reenviar código de activación");
+      const errorMsg = err.message || "Error de conexión al reenviar código de activación";
+      // Traducir mensajes del backend
+      if (errorMsg === "EMAIL_NOT_FOUND") {
+        setError("Este correo no está registrado en el sistema");
+      } else if (errorMsg === "This email is already activated. Please login with your credentials.") {
+        setError("Este correo ya está activado. Inicia sesión con tus credenciales.");
+      } else {
+        setError(errorMsg);
+      }
     }
   };
 

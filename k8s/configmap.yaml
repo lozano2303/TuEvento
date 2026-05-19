@@ -8,7 +8,7 @@ data:
       profiles:
         active: prod
       datasource:
-        url: jdbc:postgresql://postgres-service:5432/tuevento
+        url: jdbc:postgresql://postgres-service:5432/tuevento_db
         driver-class-name: org.postgresql.Driver
       jpa:
         hibernate:

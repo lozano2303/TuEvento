@@ -67,31 +67,6 @@ public class RegisterUserUseCase implements RegisterUserPort {
                     .orElseThrow(() -> new NotFoundException("EMAIL_NOT_FOUND", "Email not found"));
 
             if (existingCredentials.getUser().getActivated() == null || !existingCredentials.getUser().getActivated()) {
-                String code = codeGenerator.generateActivationCode();
-                System.out.println("=== RESENDING ACTIVATION CODE ===");
-                System.out.println("Email: " + request.getEmail());
-                System.out.println("New code: " + code);
-                System.out.println("User ID: " + existingCredentials.getUser().getUserId());
-
-                // CORRECCIÓN: eliminar códigos anteriores antes de crear uno nuevo
-                accountActivationRepository.deleteByUserId(existingCredentials.getUser().getUserId());
-
-                var savedActivation = accountActivationRepository.save(AccountActivation.builder()
-                        .user(existingCredentials.getUser())
-                        .activationCode(code)
-                        .activated(false)
-                        .createdAt(LocalDateTime.now())
-                        .expiresAt(LocalDateTime.now().plusHours(ACTIVATION_EXPIRY_HOURS))
-                        .build());
-
-                System.out.println("Saved activation ID: " + savedActivation.getAccountActivationId());
-
-                try {
-                    emailNotification.sendActivationEmail(request.getEmail(), existingCredentials.getUser().getAlias(), code);
-                } catch (Exception e) {
-                    log.error("Failed to send activation email to {} — user exists but email not sent: {}",
-                            request.getEmail(), e.getMessage());
-                }
 
                 throw new BusinessException("EMAIL_NOT_ACTIVATED", "This email is already registered but not activated. If you want to activate your account, click on Resend activation email");
             }
@@ -124,22 +99,6 @@ public class RegisterUserUseCase implements RegisterUserPort {
                 .userId(user.getUserId())
                 .fullName(request.getFullName())
                 .build());
-
-        String code = codeGenerator.generateActivationCode();
-        accountActivationRepository.save(AccountActivation.builder()
-                .user(user)
-                .activationCode(code)
-                .activated(false)
-                .createdAt(LocalDateTime.now())
-                .expiresAt(LocalDateTime.now().plusHours(ACTIVATION_EXPIRY_HOURS))
-                .build());
-
-        try {
-            emailNotification.sendActivationEmail(request.getEmail(), alias, code);
-        } catch (Exception e) {
-            log.error("Failed to send activation email to {} — user registered but email not sent: {}",
-                    request.getEmail(), e.getMessage());
-        }
 
         eventPublisher.publishEvent(UserRegisteredEvent.builder()
                 .userId(user.getUserId())
