@@ -1,5 +1,9 @@
 package com.capysoft.tuevento.modules.event.application.usecase;
 
+import com.capysoft.tuevento.modules.category.application.dto.request.AssignCategoryRequest;
+import com.capysoft.tuevento.modules.category.application.dto.response.CategoryResponse;
+import com.capysoft.tuevento.modules.category.application.port.in.CategoryEventUseCase;
+import com.capysoft.tuevento.modules.category.application.port.in.CategoryUseCase;
 import com.capysoft.tuevento.modules.event.application.dto.request.CreateEventRequest;
 import com.capysoft.tuevento.modules.event.application.dto.response.EventResponse;
 import com.capysoft.tuevento.modules.event.application.port.in.CreateEventUseCase;
@@ -10,6 +14,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatusLog;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventStatusLogRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
+import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -21,9 +26,11 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class CreateEventService implements CreateEventUseCase {
 
-    private final EventRepository eventRepository;
-    private final EventStatusLogRepository statusLogRepository;
+    private final EventRepository           eventRepository;
+    private final EventStatusLogRepository  statusLogRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final CategoryUseCase           categoryUseCase;
+    private final CategoryEventUseCase      categoryEventUseCase;
 
     @Override
     @Transactional
@@ -38,6 +45,19 @@ public class CreateEventService implements CreateEventUseCase {
                 request.getEventName(), request.getStartDate(), request.getSiteId())) {
             throw new BusinessException("EVENT_ALREADY_EXISTS",
                     "An event with the same name, start date and site already exists");
+        }
+
+        // Validate that the category exists and is active
+        CategoryResponse category;
+        try {
+            category = categoryUseCase.getCategoryById(request.getCategoryId());
+        } catch (NotFoundException e) {
+            throw new BusinessException("CATEGORY_NOT_FOUND_OR_INACTIVE",
+                    "The provided category does not exist or is not active");
+        }
+        if (!category.isActive()) {
+            throw new BusinessException("CATEGORY_NOT_FOUND_OR_INACTIVE",
+                    "The provided category does not exist or is not active");
         }
 
         Event event = eventRepository.save(Event.builder()
@@ -60,6 +80,12 @@ public class CreateEventService implements CreateEventUseCase {
                 .changedBy(userId)
                 .build());
 
+        // Assign category — within the same transaction, rolls back on failure
+        categoryEventUseCase.assignCategoryToEvent(AssignCategoryRequest.builder()
+                .categoryId(request.getCategoryId())
+                .eventId(Math.toIntExact(event.getEventId()))
+                .build());
+
         eventPublisher.publishEvent(EventCreatedEvent.builder()
                 .eventId(event.getEventId())
                 .userId(userId)
@@ -68,10 +94,10 @@ public class CreateEventService implements CreateEventUseCase {
                 .occurredAt(LocalDateTime.now())
                 .build());
 
-        return toResponse(event);
+        return toResponse(event, request.getCategoryId());
     }
 
-    private EventResponse toResponse(Event e) {
+    private EventResponse toResponse(Event e, Integer categoryId) {
         return EventResponse.builder()
                 .eventId(e.getEventId())
                 .userId(e.getUserId())
@@ -83,6 +109,7 @@ public class CreateEventService implements CreateEventUseCase {
                 .status(e.getStatus())
                 .isPublic(e.getIsPublic())
                 .availableSeats(e.getAvailableSeats())
+                .categoryId(categoryId)
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())
                 .createdBy(e.getCreatedBy())

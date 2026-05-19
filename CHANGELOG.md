@@ -20,6 +20,13 @@ All notable changes to this project will be documented in this file.
 - CategoryController: 9 endpoints REST en /api/v1/categories
 - CategoryEventController: 5 endpoints REST en /api/v1/category-events
 - SecurityConfig actualizado con permisos por rol para el módulo category
+
+### Changed
+- CreateEventRequest: campo categoryId obligatorio (@NotNull Integer)
+- CreateEventService: valida categoría activa y asigna automáticamente en category_event al crear un evento
+
+### Fixed
+- Ya no es posible crear un evento sin categoría
 - Módulo category completo: tablas, dominio, infraestructura, aplicación e interfaces
 - 14 endpoints REST para gestión de categorías y asignación a eventos
 - Soporte de categorías jerárquicas mediante dad_id
