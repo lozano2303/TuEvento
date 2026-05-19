@@ -16,7 +16,7 @@ import java.util.Optional;
 public class EventRepositoryImpl implements EventRepository {
 
     private final EventJpaRepository jpaRepository;
-    private final EventEntityMapper mapper;
+    private final EventEntityMapper  mapper;
 
     @Override
     public Event save(Event event) {
@@ -51,5 +51,29 @@ public class EventRepositoryImpl implements EventRepository {
     @Override
     public void delete(Long eventId) {
         jpaRepository.deleteById(eventId);
+    }
+
+    @Override
+    public List<Event> findAllPublished() {
+        return jpaRepository.findByStatusAndIsPublic(EventStatus.PUBLISHED, true)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> findByCityId(Long cityId) {
+        return jpaRepository.findPublishedByCityId(cityId)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> findByCategoryId(Integer categoryId) {
+        return jpaRepository.findPublishedByCategoryId(categoryId)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> findByDateRange(LocalDate from, LocalDate to) {
+        return jpaRepository.findPublishedByDateRange(from, to)
+                .stream().map(mapper::toDomain).toList();
     }
 }
