@@ -42,6 +42,11 @@ All notable changes to this project will be documented in this file.
 - GET /api/v1/events/public/category/{categoryId}: filtra por categoría
 - GET /api/v1/events/public/date-range?from=&to=: filtra por rango de fechas
 - EventSummaryResponse actualizado con siteName y categoryId
+
+### Fixed
+- UpdateEventService: permite actualizar la categoría de un evento via categoryId en el request
+- UpdateEventService: categoryId ahora se popula correctamente en la respuesta del update
+- AddCommentReplyRequest: parentReplyId con @Positive para rechazar valores <= 0
 - Módulo category completo: tablas, dominio, infraestructura, aplicación e interfaces
 - 14 endpoints REST para gestión de categorías y asignación a eventos
 - Soporte de categorías jerárquicas mediante dad_id
