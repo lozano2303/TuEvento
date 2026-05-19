@@ -16,6 +16,11 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.Map;
 
+import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.AccountActivationRepository;
+import com.capysoft.tuevento.shared.domain.exception.BusinessException;
+import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -30,6 +35,8 @@ public class AuthController {
     private final RecoverPasswordPort recoverPasswordPort;
     private final ResetPasswordPort   resetPasswordPort;
     private final OauthLoginPort      oauthLoginPort;
+    private final LoginCredentialsRepository loginCredentialsRepository;
+    private final AccountActivationRepository accountActivationRepository;
 
     /** OAuth provider authorization URLs — extensible by adding entries. */
     private final Map<String, String> oauthAuthorizationUrls;
@@ -129,5 +136,20 @@ public ResponseEntity<ApiResponse<Void>> resendActivation(
         @Valid @RequestBody ResendActivationRequest request) {
     registerUserPort.resendActivationCode(request.getEmail());
     return ResponseEntity.ok(ApiResponse.ok("Se ha enviado un nuevo código de activación a tu correo"));
+}
+
+@Operation(summary = "Get activation code for testing (dev only)")
+@GetMapping("/dev/activate-code/{email}")
+public ResponseEntity<ApiResponse<String>> getActivationCodeForTesting(
+        @PathVariable String email) {
+    var credentials = loginCredentialsRepository.findByEmail(email)
+            .orElseThrow(() -> new NotFoundException("EMAIL_NOT_FOUND", "Email not found"));
+    
+    var activation = accountActivationRepository.findByUserAndActivatedFalse(credentials.getUser());
+    if (activation.isEmpty()) {
+        throw new BusinessException("NO_ACTIVATION_CODE", "No pending activation code");
+    }
+    
+    return ResponseEntity.ok(ApiResponse.ok("Activation code", activation.get().getActivationCode()));
 }
 }
