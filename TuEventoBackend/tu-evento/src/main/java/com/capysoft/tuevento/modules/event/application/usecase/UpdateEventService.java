@@ -1,5 +1,9 @@
 package com.capysoft.tuevento.modules.event.application.usecase;
 
+import com.capysoft.tuevento.modules.category.application.dto.request.AssignCategoryRequest;
+import com.capysoft.tuevento.modules.category.application.dto.response.CategoryResponse;
+import com.capysoft.tuevento.modules.category.application.port.in.CategoryEventUseCase;
+import com.capysoft.tuevento.modules.category.application.port.in.CategoryUseCase;
 import com.capysoft.tuevento.modules.event.application.dto.request.UpdateEventRequest;
 import com.capysoft.tuevento.modules.event.application.dto.response.EventResponse;
 import com.capysoft.tuevento.modules.event.application.port.in.UpdateEventUseCase;
@@ -16,14 +20,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UpdateEventService implements UpdateEventUseCase {
 
-    private final EventRepository eventRepository;
-    private final GetSitePort     getSitePort;
+    private final EventRepository      eventRepository;
+    private final GetSitePort          getSitePort;
+    private final CategoryUseCase      categoryUseCase;
+    private final CategoryEventUseCase categoryEventUseCase;
 
     @Override
     @Transactional
@@ -51,7 +58,6 @@ public class UpdateEventService implements UpdateEventUseCase {
         int       availableSeats = request.getAvailableSeats() != null ? request.getAvailableSeats() : event.getAvailableSeats();
 
         // Validate site exists and seats do not exceed capacity
-        // Always validate: siteId may have changed or availableSeats may have changed
         SiteResponse site;
         try {
             site = getSitePort.getSite(Math.toIntExact(siteId));
@@ -69,6 +75,27 @@ public class UpdateEventService implements UpdateEventUseCase {
                     "finishDate must be after startDate");
         }
 
+        // FIX 1: Update category if provided
+        if (request.getCategoryId() != null) {
+            CategoryResponse newCategory;
+            try {
+                newCategory = categoryUseCase.getCategoryById(request.getCategoryId());
+            } catch (NotFoundException e) {
+                throw new NotFoundException("CATEGORY_NOT_FOUND_OR_INACTIVE",
+                        "The provided category does not exist or is not active");
+            }
+            if (!newCategory.isActive()) {
+                throw new BusinessException("CATEGORY_NOT_FOUND_OR_INACTIVE",
+                        "The provided category does not exist or is not active");
+            }
+            // Remove current category assignment and assign the new one
+            categoryEventUseCase.removeAllCategoriesFromEvent(Math.toIntExact(event.getEventId()));
+            categoryEventUseCase.assignCategoryToEvent(AssignCategoryRequest.builder()
+                    .categoryId(request.getCategoryId())
+                    .eventId(Math.toIntExact(event.getEventId()))
+                    .build());
+        }
+
         Event updated = eventRepository.save(Event.builder()
                 .eventId(event.getEventId())
                 .userId(event.getUserId())
@@ -82,19 +109,22 @@ public class UpdateEventService implements UpdateEventUseCase {
                 .availableSeats(availableSeats)
                 .build());
 
-        // Resolve siteName for response
-        String siteName = null;
+        // FIX 2: Resolve categoryId for response — fail-soft
+        Integer resolvedCategoryId = null;
         try {
-            siteName = site.getName();
+            List<CategoryResponse> cats = categoryEventUseCase.getCategoriesByEvent(
+                    Math.toIntExact(updated.getEventId()));
+            resolvedCategoryId = cats.isEmpty() ? null : cats.get(0).getCategoryId();
         } catch (Exception ex) {
-            log.warn("Could not resolve siteName for event {}: {}", updated.getEventId(), ex.getMessage());
+            log.warn("Could not resolve categoryId for event {}: {}", updated.getEventId(), ex.getMessage());
         }
 
+        // siteName already available from the validated site object
         return EventResponse.builder()
                 .eventId(updated.getEventId())
                 .userId(updated.getUserId())
                 .siteId(updated.getSiteId())
-                .siteName(siteName)
+                .siteName(site.getName())
                 .eventName(updated.getEventName())
                 .description(updated.getDescription())
                 .startDate(updated.getStartDate())
@@ -102,6 +132,7 @@ public class UpdateEventService implements UpdateEventUseCase {
                 .status(updated.getStatus())
                 .isPublic(updated.getIsPublic())
                 .availableSeats(updated.getAvailableSeats())
+                .categoryId(resolvedCategoryId)
                 .createdAt(updated.getCreatedAt())
                 .updatedAt(updated.getUpdatedAt())
                 .createdBy(updated.getCreatedBy())
