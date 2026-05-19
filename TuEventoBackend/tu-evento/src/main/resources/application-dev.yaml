@@ -1,3 +1,6 @@
+server:
+  port: 8080
+
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/tuevento_db
@@ -5,6 +8,9 @@ spring:
     password: ${POSTGRES_PASSWORD}
   jpa:
     show-sql: true
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
   mail:
     host: smtp.gmail.com
     port: 587
@@ -36,7 +42,7 @@ app:
   mail:
     from: ${MAIL_USERNAME}
   cors:
-    allowed-origins: "http://localhost:3000"
+    allowed-origins: "http://localhost:3000,http://localhost:5173"
 
   oauth:
     google:
@@ -60,6 +66,7 @@ app:
     alias: ${ADMIN_ALIAS}
 
   storage:
+    enabled: true
     endpoint: http://localhost:9000
     access-key: ${MINIO_ROOT_USER}
     secret-key: ${MINIO_ROOT_PASSWORD}

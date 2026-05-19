@@ -5,7 +5,8 @@ metadata:
   labels:
     app: tu-evento-backend
 spec:
-  replicas: 3
+  progressDeadlineSeconds: 600
+  replicas: 1
   selector:
     matchLabels:
       app: tu-evento-backend
@@ -16,12 +17,18 @@ spec:
     spec:
       containers:
       - name: tu-evento-backend
-        image: capysoft/tu-evento:latest
+        image: jhampier23/tu-evento:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         env:
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: tu-evento-secrets
+              key: jwt-secret
         - name: SPRING_PROFILES_ACTIVE
-          value: "prod"
+          value: "k8s"
         - name: SPRING_DATASOURCE_URL
           value: "jdbc:postgresql://postgres-service:5432/tuevento"
         - name: SPRING_DATASOURCE_USERNAME
@@ -46,6 +53,51 @@ spec:
             secretKeyRef:
               name: tu-evento-secrets
               key: minio-secret-key
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: tu-evento-secrets
+              key: google-client-id
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: tu-evento-secrets
+              key: google-client-secret
+        - name: FACEBOOK_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: tu-evento-secrets
+              key: facebook-client-id
+        - name: FACEBOOK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: tu-evento-secrets
+              key: facebook-client-secret
+        - name: ADMIN_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: tu-evento-secrets
+              key: admin-email
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: tu-evento-secrets
+              key: admin-password
+        - name: ADMIN_ALIAS
+          valueFrom:
+            secretKeyRef:
+              name: tu-evento-secrets
+              key: admin-alias
+        - name: MAIL_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: tu-evento-secrets
+              key: mail-username
+        - name: MAIL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: tu-evento-secrets
+              key: mail-password
         resources:
           requests:
             memory: "512Mi"
@@ -57,11 +109,11 @@ spec:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 60
+          initialDelaySeconds: 30
           periodSeconds: 30
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 30
+          initialDelaySeconds: 15
           periodSeconds: 10

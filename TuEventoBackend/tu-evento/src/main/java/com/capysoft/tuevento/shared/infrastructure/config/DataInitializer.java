@@ -94,12 +94,16 @@ public class DataInitializer implements ApplicationRunner {
         }
 
         if (!profileExists) {
-            createProfilePort.create(CreateProfileRequest.builder()
-                    .userId(userId)
-                    .fullName(ADMIN_FULL_NAME)
-                    .storedFileId(null)
-                    .build());
-            log.info("Admin profile created for userId={}", userId);
+            try {
+                createProfilePort.create(CreateProfileRequest.builder()
+                        .userId(userId)
+                        .fullName(ADMIN_FULL_NAME)
+                        .storedFileId(null)
+                        .build());
+                log.info("Admin profile created for userId={}", userId);
+            } catch (Exception e) {
+                log.warn("Could not create admin profile (MinIO may not be available): {}", e.getMessage());
+            }
         } else {
             log.info("Admin profile already exists, skipping profile creation");
         }
