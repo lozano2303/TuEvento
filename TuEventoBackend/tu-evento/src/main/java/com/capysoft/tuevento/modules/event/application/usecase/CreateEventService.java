@@ -13,6 +13,8 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatusLog;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventStatusLogRepository;
+import com.capysoft.tuevento.modules.geolocation.application.dto.response.SiteResponse;
+import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class CreateEventService implements CreateEventUseCase {
     private final ApplicationEventPublisher eventPublisher;
     private final CategoryUseCase           categoryUseCase;
     private final CategoryEventUseCase      categoryEventUseCase;
+    private final GetSitePort               getSitePort;
 
     @Override
     @Transactional
@@ -39,6 +42,19 @@ public class CreateEventService implements CreateEventUseCase {
                 && !request.getFinishDate().isAfter(request.getStartDate())) {
             throw new BusinessException("EVENT_INVALID_DATES",
                     "finishDate must be after startDate");
+        }
+
+        // Validate site exists and seats do not exceed capacity
+        SiteResponse site;
+        try {
+            site = getSitePort.getSite(Math.toIntExact(request.getSiteId()));
+        } catch (NotFoundException e) {
+            throw new NotFoundException("SITE_NOT_FOUND",
+                    "Site not found with id: " + request.getSiteId());
+        }
+        if (request.getAvailableSeats() > site.getCapacity()) {
+            throw new BusinessException("SEATS_EXCEED_CAPACITY",
+                    "availableSeats cannot exceed site capacity of " + site.getCapacity());
         }
 
         if (eventRepository.existsByEventNameAndStartDateAndSiteId(

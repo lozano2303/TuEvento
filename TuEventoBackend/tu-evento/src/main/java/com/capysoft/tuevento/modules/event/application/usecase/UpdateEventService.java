@@ -6,6 +6,8 @@ import com.capysoft.tuevento.modules.event.application.port.in.UpdateEventUseCas
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.geolocation.application.dto.response.SiteResponse;
+import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import java.time.LocalDate;
 public class UpdateEventService implements UpdateEventUseCase {
 
     private final EventRepository eventRepository;
+    private final GetSitePort     getSitePort;
 
     @Override
     @Transactional
@@ -37,13 +40,27 @@ public class UpdateEventService implements UpdateEventUseCase {
                     "Only DRAFT events can be updated");
         }
 
-        String eventName      = request.getEventName()      != null ? request.getEventName()      : event.getEventName();
-        String description    = request.getDescription()    != null ? request.getDescription()    : event.getDescription();
-        Long siteId           = request.getSiteId()         != null ? request.getSiteId()         : event.getSiteId();
-        LocalDate startDate   = request.getStartDate()      != null ? request.getStartDate()      : event.getStartDate();
-        LocalDate finishDate  = request.getFinishDate()     != null ? request.getFinishDate()     : event.getFinishDate();
-        Boolean isPublic      = request.getIsPublic()       != null ? request.getIsPublic()       : event.getIsPublic();
-        int availableSeats    = request.getAvailableSeats() != null ? request.getAvailableSeats() : event.getAvailableSeats();
+        String    eventName      = request.getEventName()      != null ? request.getEventName()      : event.getEventName();
+        String    description    = request.getDescription()    != null ? request.getDescription()    : event.getDescription();
+        Long      siteId         = request.getSiteId()         != null ? request.getSiteId()         : event.getSiteId();
+        LocalDate startDate      = request.getStartDate()      != null ? request.getStartDate()      : event.getStartDate();
+        LocalDate finishDate     = request.getFinishDate()     != null ? request.getFinishDate()     : event.getFinishDate();
+        Boolean   isPublic       = request.getIsPublic()       != null ? request.getIsPublic()       : event.getIsPublic();
+        int       availableSeats = request.getAvailableSeats() != null ? request.getAvailableSeats() : event.getAvailableSeats();
+
+        // Validate site exists and seats do not exceed capacity
+        // Always validate: siteId may have changed or availableSeats may have changed
+        SiteResponse site;
+        try {
+            site = getSitePort.getSite(Math.toIntExact(siteId));
+        } catch (NotFoundException e) {
+            throw new NotFoundException("SITE_NOT_FOUND",
+                    "Site not found with id: " + siteId);
+        }
+        if (availableSeats > site.getCapacity()) {
+            throw new BusinessException("SEATS_EXCEED_CAPACITY",
+                    "availableSeats cannot exceed site capacity of " + site.getCapacity());
+        }
 
         if (!finishDate.isAfter(startDate)) {
             throw new BusinessException("EVENT_INVALID_DATES",
