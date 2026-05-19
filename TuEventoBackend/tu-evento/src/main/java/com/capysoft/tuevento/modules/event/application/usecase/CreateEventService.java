@@ -18,12 +18,14 @@ import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CreateEventService implements CreateEventUseCase {
@@ -114,10 +116,19 @@ public class CreateEventService implements CreateEventUseCase {
     }
 
     private EventResponse toResponse(Event e, Integer categoryId) {
+        // Resolve siteName — already fetched during create, re-fetch here for consistency
+        String siteName = null;
+        try {
+            siteName = getSitePort.getSite(Math.toIntExact(e.getSiteId())).getName();
+        } catch (Exception ex) {
+            log.warn("Could not resolve siteName for event {}: {}", e.getEventId(), ex.getMessage());
+        }
+
         return EventResponse.builder()
                 .eventId(e.getEventId())
                 .userId(e.getUserId())
                 .siteId(e.getSiteId())
+                .siteName(siteName)
                 .eventName(e.getEventName())
                 .description(e.getDescription())
                 .startDate(e.getStartDate())

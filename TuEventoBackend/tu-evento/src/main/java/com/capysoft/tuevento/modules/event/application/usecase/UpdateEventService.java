@@ -11,11 +11,13 @@ import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UpdateEventService implements UpdateEventUseCase {
@@ -80,10 +82,19 @@ public class UpdateEventService implements UpdateEventUseCase {
                 .availableSeats(availableSeats)
                 .build());
 
+        // Resolve siteName for response
+        String siteName = null;
+        try {
+            siteName = site.getName();
+        } catch (Exception ex) {
+            log.warn("Could not resolve siteName for event {}: {}", updated.getEventId(), ex.getMessage());
+        }
+
         return EventResponse.builder()
                 .eventId(updated.getEventId())
                 .userId(updated.getUserId())
                 .siteId(updated.getSiteId())
+                .siteName(siteName)
                 .eventName(updated.getEventName())
                 .description(updated.getDescription())
                 .startDate(updated.getStartDate())
