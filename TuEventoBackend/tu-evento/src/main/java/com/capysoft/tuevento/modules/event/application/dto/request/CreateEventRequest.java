@@ -34,4 +34,7 @@ public class CreateEventRequest {
 
     @Min(1)
     private int availableSeats;
+
+    @NotNull(message = "categoryId is required")
+    private Integer categoryId;
 }
