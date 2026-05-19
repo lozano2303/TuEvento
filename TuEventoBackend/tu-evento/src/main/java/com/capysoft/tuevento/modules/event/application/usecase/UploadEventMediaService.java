@@ -8,10 +8,12 @@ import com.capysoft.tuevento.modules.event.domain.model.EventMedia;
 import com.capysoft.tuevento.modules.event.domain.model.EventMediaLog;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaLogRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
+import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.storage.application.dto.request.UploadFileRequest;
 import com.capysoft.tuevento.modules.storage.application.dto.response.UploadFileResponse;
 import com.capysoft.tuevento.modules.storage.application.port.in.UploadFilePort;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
+import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -26,14 +28,20 @@ public class UploadEventMediaService implements UploadEventMediaUseCase {
 
     private static final String FILE_CATEGORY_CODE = "EVENT_MEDIA";
 
-    private final EventMediaRepository mediaRepository;
+    private final EventMediaRepository    mediaRepository;
     private final EventMediaLogRepository mediaLogRepository;
-    private final UploadFilePort uploadFilePort;
+    private final EventRepository         eventRepository;
+    private final UploadFilePort          uploadFilePort;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
     public EventMediaResponse execute(UploadEventMediaRequest request, Long userId) {
+        // Verify event exists before uploading any file
+        eventRepository.findById(request.getEventId())
+                .orElseThrow(() -> new NotFoundException("EVENT_NOT_FOUND",
+                        "Event not found with id: " + request.getEventId()));
+
         byte[] content;
         try {
             content = request.getFile().getBytes();
