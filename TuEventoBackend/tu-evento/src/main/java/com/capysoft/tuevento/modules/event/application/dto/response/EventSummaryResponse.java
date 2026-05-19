@@ -10,11 +10,13 @@ import java.time.LocalDate;
 @Builder
 public class EventSummaryResponse {
 
-    private final Long eventId;
-    private final String eventName;
+    private final Long        eventId;
+    private final String      eventName;
     private final EventStatus status;
-    private final LocalDate startDate;
-    private final LocalDate finishDate;
-    private final Boolean isPublic;
-    private final int availableSeats;
+    private final LocalDate   startDate;
+    private final LocalDate   finishDate;
+    private final Boolean     isPublic;
+    private final int         availableSeats;
+    private final String      siteName;
+    private final Integer     categoryId;
 }
