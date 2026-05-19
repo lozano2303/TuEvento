@@ -60,7 +60,15 @@ public class JavaMailEmailNotification implements EmailNotificationPort {
             
             helper.setText(htmlContent, true);
             mailSender.send(message);
+            System.out.println("=== ACTIVATION EMAIL SENT SUCCESSFULLY ===");
+            System.out.println("To: " + toEmail);
+            System.out.println("Alias: " + alias);
+            System.out.println("Activation Code: " + activationCode);
         } catch (Exception e) {
+            System.err.println("=== FAILED TO SEND ACTIVATION EMAIL ===");
+            System.err.println("To: " + toEmail);
+            System.err.println("Error: " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Failed to send activation email", e);
         }
     }
