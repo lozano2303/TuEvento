@@ -130,7 +130,17 @@ export default function Login() {
   };
 
   const handleVerificationSuccess = () => setView('login');
-  const handleContinueToVerification = () => { setShowSuccessNotification(false); setView('verification'); };
+  const handleContinueToVerification = async () => {
+    setShowSuccessNotification(false);
+    try {
+      await resendActivationCode(formData.email);
+    } catch (err) {
+      // Si falla el reenvío, igual se permite ir a verificación
+      console.error('No se pudo reenviar el código de activación:', err);
+    }
+    setUserID(formData.userID);
+    setView('verification');
+  };
   const handleContinueToHome = () => { setShowLoginSuccessNotification(false); window.location.href = '/'; };
   const handleLogout = () => { clearAuth(); setUserData(null); setView('login'); };
 
