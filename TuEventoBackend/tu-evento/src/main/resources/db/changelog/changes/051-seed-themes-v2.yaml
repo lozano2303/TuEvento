@@ -1,0 +1,136 @@
+databaseChangeLog:
+  - changeSet:
+      id: 051-seed-theme-principal
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: PRINCIPAL
+              - column:
+                  name: description
+                  value: "Tema oficial de Tu Evento — identidad de la plataforma"
+              - column:
+                  name: default_palette
+                  value: '{"background":"#1E0A3C","surface":"#2D1B4E","surfaceAlt":"#3D2B5E","primary":"#7C3AED","primaryDark":"#6D28D9","accent":"#A78BFA","textPrimary":"#FFFFFF","textSecondary":"#9CA3AF","textMuted":"#6B7280","error":"#EF4444","errorBg":"#EF444422","success":"#059669","successBg":"#05966922","gradientBg":["#1E0A3C","#2D1B4E","#1E0A3C"],"gradientPrimary":["#7C3AED","#6D28D9"],"borderRadius":"8px","fontFamily":"Inter"}'
+
+  - changeSet:
+      id: 051-seed-theme-dark
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: DARK
+              - column:
+                  name: description
+                  value: "Tema oscuro con grises profundos y acentos sutiles"
+              - column:
+                  name: default_palette
+                  value: '{"background":"#0D0D0D","surface":"#1A1A1A","surfaceAlt":"#2C2C2C","primary":"#E0E0E0","primaryDark":"#BDBDBD","accent":"#757575","textPrimary":"#FFFFFF","textSecondary":"#B0B0B0","textMuted":"#6E6E6E","error":"#CF6679","errorBg":"#CF667922","success":"#4CAF50","successBg":"#4CAF5022","gradientBg":["#0D0D0D","#1A1A1A","#0D0D0D"],"gradientPrimary":["#2C2C2C","#1A1A1A"],"borderRadius":"8px","fontFamily":"Inter"}'
+
+  - changeSet:
+      id: 051-seed-theme-light
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: LIGHT
+              - column:
+                  name: description
+                  value: "Tema claro y limpio con fondos blancos y grises suaves"
+              - column:
+                  name: default_palette
+                  value: '{"background":"#FFFFFF","surface":"#F5F5F5","surfaceAlt":"#EEEEEE","primary":"#424242","primaryDark":"#212121","accent":"#757575","textPrimary":"#212121","textSecondary":"#616161","textMuted":"#9E9E9E","error":"#D32F2F","errorBg":"#D32F2F22","success":"#388E3C","successBg":"#388E3C22","gradientBg":["#FFFFFF","#F5F5F5","#FFFFFF"],"gradientPrimary":["#424242","#212121"],"borderRadius":"8px","fontFamily":"Inter"}'
+
+  - changeSet:
+      id: 051-seed-theme-pastel
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: PASTEL
+              - column:
+                  name: description
+                  value: "Colores suaves y relajados para una experiencia tranquila"
+              - column:
+                  name: default_palette
+                  value: '{"background":"#FFF9FB","surface":"#FFE4EE","surfaceAlt":"#FFD6E7","primary":"#F48FB1","primaryDark":"#F06292","accent":"#CE93D8","textPrimary":"#4A0E2A","textSecondary":"#7B4A5E","textMuted":"#AD8A98","error":"#E57373","errorBg":"#E5737322","success":"#81C784","successBg":"#81C78422","gradientBg":["#FFF9FB","#FFE4EE","#FFF9FB"],"gradientPrimary":["#F48FB1","#F06292"],"borderRadius":"12px","fontFamily":"Inter"}'
+
+  - changeSet:
+      id: 051-seed-theme-vibrant
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: VIBRANT
+              - column:
+                  name: description
+                  value: "Colores saturados y energéticos para destacar"
+              - column:
+                  name: default_palette
+                  value: '{"background":"#0A0A0A","surface":"#1A0533","surfaceAlt":"#2D0A4E","primary":"#FF1744","primaryDark":"#D50000","accent":"#FFEA00","textPrimary":"#FFFFFF","textSecondary":"#E0E0E0","textMuted":"#9E9E9E","error":"#FF5252","errorBg":"#FF525222","success":"#69F0AE","successBg":"#69F0AE22","gradientBg":["#0A0A0A","#1A0533","#0A0A0A"],"gradientPrimary":["#FF1744","#D50000"],"borderRadius":"8px","fontFamily":"Poppins"}'
+
+  - changeSet:
+      id: 051-seed-theme-nature
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: NATURE
+              - column:
+                  name: description
+                  value: "Verdes orgánicos y tierras para una experiencia natural"
+              - column:
+                  name: default_palette
+                  value: '{"background":"#F1F8E9","surface":"#DCEDC8","surfaceAlt":"#C5E1A5","primary":"#2E7D32","primaryDark":"#1B5E20","accent":"#8D6E63","textPrimary":"#1B2E1C","textSecondary":"#4E6B4F","textMuted":"#7B9E7D","error":"#BF360C","errorBg":"#BF360C22","success":"#33691E","successBg":"#33691E22","gradientBg":["#F1F8E9","#DCEDC8","#F1F8E9"],"gradientPrimary":["#2E7D32","#1B5E20"],"borderRadius":"8px","fontFamily":"Inter"}'
+
+  - changeSet:
+      id: 051-seed-theme-ocean
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: OCEAN
+              - column:
+                  name: description
+                  value: "Azules profundos y turquesas para una experiencia marina"
+              - column:
+                  name: default_palette
+                  value: '{"background":"#E3F2FD","surface":"#BBDEFB","surfaceAlt":"#90CAF9","primary":"#0277BD","primaryDark":"#01579B","accent":"#00BCD4","textPrimary":"#01234F","textSecondary":"#1A5276","textMuted":"#5B8DB8","error":"#C62828","errorBg":"#C6282822","success":"#00695C","successBg":"#00695C22","gradientBg":["#E3F2FD","#BBDEFB","#E3F2FD"],"gradientPrimary":["#0277BD","#01579B"],"borderRadius":"8px","fontFamily":"Inter"}'
+
+  - changeSet:
+      id: 051-seed-theme-sunset
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: SUNSET
+              - column:
+                  name: description
+                  value: "Naranjas cálidos y rosas para una experiencia vibrante y acogedora"
+              - column:
+                  name: default_palette
+                  value: '{"background":"#FFF3E0","surface":"#FFE0B2","surfaceAlt":"#FFCC80","primary":"#E64A19","primaryDark":"#BF360C","accent":"#FF8A65","textPrimary":"#2E1503","textSecondary":"#6D3B1A","textMuted":"#A07050","error":"#C62828","errorBg":"#C6282822","success":"#2E7D32","successBg":"#2E7D3222","gradientBg":["#FFF3E0","#FFE0B2","#FFF3E0"],"gradientPrimary":["#E64A19","#BF360C"],"borderRadius":"8px","fontFamily":"Inter"}'
