@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 050-delete-existing-themes
+      author: capysoft
+      changes:
+        - sql:
+            sql: DELETE FROM theme_customization;
+        - sql:
+            sql: DELETE FROM theme_log;
+        - sql:
+            sql: DELETE FROM user_theme;
+        - sql:
+            sql: DELETE FROM theme;
+        - sql:
+            sql: ALTER SEQUENCE theme_theme_id_seq RESTART WITH 1;
