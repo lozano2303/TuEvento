@@ -19,7 +19,7 @@ pipeline {
         stage('Clean & Compile Backend') {
             steps {
                 dir('TuEventoBackend/tu-evento') {
-                    sh 'mvn clean compile'
+                    sh 'chmod +x mvnw && ./mvnw clean compile'
                 }
             }
         }
@@ -27,7 +27,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('TuEventoBackend/tu-evento') {
-                    sh 'mvn test'
+                    sh 'chmod +x mvnw && ./mvnw test'
                 }
                 publishTestResults testResultsPattern: 'TuEventoBackend/tu-evento/target/surefire-reports/*.xml'
             }
@@ -37,7 +37,7 @@ pipeline {
             steps {
                 dir('TuEventoBackend/tu-evento') {
                     withSonarQubeEnv(env.SONARQUBE_SERVER) {
-                        sh 'mvn sonar:sonar -Dsonar.projectKey=tu-evento-backend -Dsonar.host.url=http://sonarqube:9000'
+                        sh 'chmod +x mvnw && ./mvnw sonar:sonar -Dsonar.projectKey=tu-evento-backend -Dsonar.host.url=http://sonarqube:9000'
                     }
                 }
             }
@@ -47,6 +47,14 @@ pipeline {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+        
+        stage('Package Backend JAR') {
+            steps {
+                dir('TuEventoBackend/tu-evento') {
+                    sh 'chmod +x mvnw && ./mvnw clean package -DskipTests'
                 }
             }
         }
@@ -108,21 +116,10 @@ pipeline {
     
     post {
         success {
-            echo '✅ Pipeline completed successfully!'
-            slackSend(
-                color: 'good',
-                message: "✅ TuEvento backend deployed successfully - Build ${env.BUILD_ID}"
-            )
+            echo 'Pipeline completed successfully!'
         }
         failure {
-            echo '❌ Pipeline failed!'
-            slackSend(
-                color: 'danger',
-                message: "❌ TuEvento backend deployment failed - Build ${env.BUILD_ID}"
-            )
-        }
-        always {
-            cleanWs()
+            echo 'Pipeline failed!'
         }
     }
 }
