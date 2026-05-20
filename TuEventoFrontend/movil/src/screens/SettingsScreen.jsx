@@ -1,7 +1,7 @@
 import { useRef, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StatusBar, Animated,
+  StatusBar, Animated, StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -9,9 +9,33 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../context/ThemeContext";
 import BackButton from "../components/BackButton";
 
+// ─── Descripciones cortas por tema ───────────────────────────────────────────
+const THEME_DESCRIPTIONS = {
+  PRINCIPAL: "Identidad oficial de Tu Evento",
+  DARK:      "Oscuro neutro con grises profundos",
+  LIGHT:     "Claro y limpio para el día",
+  PASTEL:    "Suave y relajado",
+  VIBRANT:   "Colores saturados y energéticos",
+  NATURE:    "Verde orgánico y tierras",
+  OCEAN:     "Azules profundos y turquesas",
+  SUNSET:    "Cálido y acogedor",
+};
+
+// ─── Colores de preview hardcodeados por tema ─────────────────────────────────
+const THEME_PREVIEWS = {
+  PRINCIPAL: { background: "#1E0A3C", primary: "#7C3AED", accent: "#A78BFA" },
+  DARK:      { background: "#0D0D0D", primary: "#E0E0E0", accent: "#757575" },
+  LIGHT:     { background: "#FFFFFF", primary: "#424242", accent: "#757575" },
+  PASTEL:    { background: "#FFF9FB", primary: "#F48FB1", accent: "#CE93D8" },
+  VIBRANT:   { background: "#0A0A0A", primary: "#FF1744", accent: "#FFEA00" },
+  NATURE:    { background: "#F1F8E9", primary: "#2E7D32", accent: "#8D6E63" },
+  OCEAN:     { background: "#E3F2FD", primary: "#0277BD", accent: "#00BCD4" },
+  SUNSET:    { background: "#FFF3E0", primary: "#E64A19", accent: "#FF8A65" },
+};
+
 export default function SettingsScreen() {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
+  const insets     = useSafeAreaInsets();
   const { colors, activeThemeId, applyTheme, themes } = useTheme();
 
   // Animación de entrada
@@ -24,6 +48,8 @@ export default function SettingsScreen() {
       friction: 8,
     }).start();
   }, []);
+
+  const styles = makeStyles(colors);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -123,198 +149,57 @@ export default function SettingsScreen() {
             Elige el tema que mejor se adapte a tus preferencias. El cambio se aplica de inmediato.
           </Text>
 
-          {/* Cards de temas */}
+          {/* ── Cards de temas ── */}
           {themes.map((theme) => {
             const isActive = theme.id === activeThemeId;
+            const preview  = THEME_PREVIEWS[theme.name] ?? THEME_PREVIEWS.PRINCIPAL;
 
             return (
               <TouchableOpacity
                 key={theme.id}
                 onPress={() => applyTheme(theme.id)}
                 activeOpacity={0.75}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: isActive
-                    ? colors.primary + "20"
-                    : colors.surface + "CC",
-                  borderRadius: 16,
-                  borderWidth: 1.5,
-                  borderColor: isActive
-                    ? colors.primary
-                    : colors.primary + "30",
-                  padding: 16,
-                  marginBottom: 12,
-                }}
+                style={[styles.themeCard, isActive && styles.themeCardActive]}
               >
-                {/* Emoji del tema */}
-                <View
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
-                    backgroundColor: isActive
-                      ? colors.primary + "30"
-                      : colors.surface,
-                    borderWidth: 1,
-                    borderColor: isActive
-                      ? colors.primary + "60"
-                      : colors.surfaceAlt,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: 14,
-                  }}
-                >
-                  <Text style={{ fontSize: 22 }}>{theme.emoji}</Text>
+                {/* Preview visual */}
+                <View style={[styles.themePreviewBanner, { backgroundColor: preview.background }]}>
+                  <View style={[styles.previewCircle, { backgroundColor: preview.primary }]} />
+                  <View style={[styles.previewCircle, { backgroundColor: preview.accent }]} />
                 </View>
 
-                {/* Info del tema */}
-                <View style={{ flex: 1 }}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 8,
-                      marginBottom: 4,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: colors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: "700",
-                      }}
-                    >
-                      {theme.name}
-                    </Text>
-                    {isActive && (
-                      <View
-                        style={{
-                          backgroundColor: colors.primary + "30",
-                          borderRadius: 10,
-                          paddingHorizontal: 8,
-                          paddingVertical: 2,
-                          borderWidth: 1,
-                          borderColor: colors.primary + "60",
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: colors.primary,
-                            fontSize: 10,
-                            fontWeight: "800",
-                            letterSpacing: 0.5,
-                          }}
-                        >
-                          ACTIVO
-                        </Text>
-                      </View>
-                    )}
-                    {isActive && theme.name !== "PRINCIPAL" && (
-                      <TouchableOpacity
-                        onPress={() =>
-                          navigation.navigate("ThemeCustomize", {
-                            themeName: theme.name,
-                            activeThemeId: theme.id,
-                          })
-                        }
-                        activeOpacity={0.75}
-                        style={{
-                          backgroundColor: colors.accent + "22",
-                          borderRadius: 10,
-                          paddingHorizontal: 8,
-                          paddingVertical: 2,
-                          borderWidth: 1,
-                          borderColor: colors.accent + "55",
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: colors.accent,
-                            fontSize: 10,
-                            fontWeight: "800",
-                            letterSpacing: 0.5,
-                          }}
-                        >
-                          PERSONALIZAR
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    {isActive && theme.name === "PRINCIPAL" && (
-                      <View
-                        style={{
-                          backgroundColor: colors.accent,
-                          borderRadius: 8,
-                          paddingHorizontal: 10,
-                          paddingVertical: 4,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: colors.background,
-                            fontSize: 11,
-                            fontWeight: "600",
-                          }}
-                        >
-                          OFICIAL
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text
-                    style={{
-                      color: colors.textMuted,
-                      fontSize: 12,
-                      lineHeight: 17,
-                    }}
-                  >
-                    {theme.description}
+                {/* Info */}
+                <View style={styles.themeInfo}>
+                  <Text style={styles.themeName}>{theme.name}</Text>
+                  <Text style={styles.themeDescription}>
+                    {THEME_DESCRIPTIONS[theme.name] ?? ""}
                   </Text>
-
-                  {/* Preview de colores */}
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      gap: 6,
-                      marginTop: 10,
-                    }}
-                  >
-                    {Object.values(theme.preview).map((hex, i) => (
-                      <View
-                        key={i}
-                        style={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: 10,
-                          backgroundColor: hex,
-                          borderWidth: 1,
-                          borderColor: colors.surfaceAlt,
-                        }}
-                      />
-                    ))}
-                  </View>
                 </View>
 
-                {/* Indicador de selección */}
-                <View
-                  style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: isActive ? colors.primary : colors.surfaceAlt,
-                    backgroundColor: isActive ? colors.primary : "transparent",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginLeft: 12,
-                  }}
-                >
+                {/* Badges */}
+                <View style={styles.themeBadges}>
                   {isActive && (
-                    <Ionicons
-                      name="checkmark"
-                      size={14}
-                      color={colors.textPrimary}
-                    />
+                    <View style={styles.activeBadge}>
+                      <Text style={styles.activeBadgeText}>ACTIVO</Text>
+                    </View>
+                  )}
+                  {isActive && theme.name === "PRINCIPAL" && (
+                    <View style={styles.officialBadge}>
+                      <Text style={styles.officialBadgeText}>OFICIAL</Text>
+                    </View>
+                  )}
+                  {isActive && theme.name !== "PRINCIPAL" && (
+                    <TouchableOpacity
+                      activeOpacity={0.75}
+                      style={styles.customizeButton}
+                      onPress={() =>
+                        navigation.navigate("ThemeCustomize", {
+                          themeName: theme.name,
+                          activeThemeId: theme.id,
+                        })
+                      }
+                    >
+                      <Text style={styles.customizeButtonText}>PERSONALIZAR</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
               </TouchableOpacity>
@@ -356,4 +241,103 @@ export default function SettingsScreen() {
       </ScrollView>
     </View>
   );
+}
+
+// ─── Estilos ──────────────────────────────────────────────────────────────────
+function makeStyles(colors) {
+  return StyleSheet.create({
+    // Tarjeta base
+    themeCard: {
+      backgroundColor: colors.surface + "CC",
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: colors.primary + "30",
+      marginBottom: 12,
+      overflow: "hidden",
+    },
+    themeCardActive: {
+      backgroundColor: colors.primary + "20",
+      borderColor: colors.primary,
+    },
+
+    // Preview visual
+    themePreviewBanner: {
+      height: 48,
+      borderRadius: 0,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 12,
+      gap: 8,
+    },
+    previewCircle: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: "rgba(255,255,255,0.3)",
+    },
+
+    // Info
+    themeInfo: {
+      paddingHorizontal: 16,
+      paddingTop: 12,
+      marginBottom: 10,
+    },
+    themeName: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: colors.textPrimary,
+      marginBottom: 2,
+    },
+    themeDescription: {
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+
+    // Badges
+    themeBadges: {
+      flexDirection: "row",
+      gap: 8,
+      flexWrap: "wrap",
+      paddingHorizontal: 16,
+      paddingBottom: 14,
+    },
+    activeBadge: {
+      backgroundColor: colors.primary,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    activeBadgeText: {
+      color: "#FFFFFF",
+      fontSize: 10,
+      fontWeight: "700",
+      letterSpacing: 0.5,
+    },
+    officialBadge: {
+      backgroundColor: colors.accent,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    officialBadgeText: {
+      color: colors.background,
+      fontSize: 10,
+      fontWeight: "700",
+    },
+    customizeButton: {
+      backgroundColor: colors.accent + "22",
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderWidth: 1,
+      borderColor: colors.accent + "55",
+    },
+    customizeButtonText: {
+      color: colors.accent,
+      fontSize: 10,
+      fontWeight: "800",
+      letterSpacing: 0.5,
+    },
+  });
 }
