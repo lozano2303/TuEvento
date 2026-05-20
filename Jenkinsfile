@@ -7,6 +7,8 @@ pipeline {
         DOCKER_REGISTRY = "capysoft/tu-evento"
         SONARQUBE_SERVER = 'SonarQube'
         VITE_API_URL = 'http://localhost:8080'
+        TESTCONTAINERS_RYUK_DISABLED = 'true'
+        TESTCONTAINERS_HOST_OVERRIDE = 'host.docker.internal'
     }
     
     stages {
@@ -23,18 +25,16 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Unit Tests') {
             steps {
                 dir('TuEventoBackend/tu-evento') {
-                    withEnv(['DOCKER_HOST=unix:///var/run/docker.sock', 'MAVEN_OPTS=-Dtestcontainers.ryuk.disabled=true -Ddocker.client.strategy=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy']) {
-                        sh 'chmod +x mvnw && ./mvnw test'
-                    }
+                    sh 'chmod +x mvnw && ./mvnw test -Dtestcontainers.ryuk.disabled=true'
                 }
                 publishTestResults testResultsPattern: 'TuEventoBackend/tu-evento/target/surefire-reports/*.xml'
             }
         }
-        
+
         stage('SonarQube Analysis') {
             steps {
                 dir('TuEventoBackend/tu-evento') {
@@ -90,13 +90,11 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-                        // Backend images
                         sh "docker tag ${BACKEND_IMAGE} ${DOCKER_REGISTRY}:${env.BUILD_ID}"
                         sh "docker tag ${BACKEND_IMAGE} ${DOCKER_REGISTRY}:latest"
                         sh "docker push ${DOCKER_REGISTRY}:${env.BUILD_ID}"
                         sh "docker push ${DOCKER_REGISTRY}:latest"
                         
-                        // Frontend images
                         sh "docker tag ${FRONTEND_IMAGE} ${DOCKER_REGISTRY}:frontend-${env.BUILD_ID}"
                         sh "docker tag ${FRONTEND_IMAGE} ${DOCKER_REGISTRY}:frontend-latest"
                         sh "docker push ${DOCKER_REGISTRY}:frontend-${env.BUILD_ID}"
