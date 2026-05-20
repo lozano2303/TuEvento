@@ -151,8 +151,10 @@ export default function SettingsScreen() {
 
           {/* ── Cards de temas ── */}
           {themes.map((theme) => {
-            const isActive = theme.id === activeThemeId;
-            const preview  = THEME_PREVIEWS[theme.name] ?? THEME_PREVIEWS.PRINCIPAL;
+            const isActive    = theme.id === activeThemeId;
+            const themeKey    = (theme.id ?? theme.name)?.toUpperCase();
+            const preview     = THEME_PREVIEWS[themeKey] ?? THEME_PREVIEWS.PRINCIPAL;
+            const description = THEME_DESCRIPTIONS[themeKey] ?? "";
 
             return (
               <TouchableOpacity
@@ -171,7 +173,7 @@ export default function SettingsScreen() {
                 <View style={styles.themeInfo}>
                   <Text style={styles.themeName}>{theme.name}</Text>
                   <Text style={styles.themeDescription}>
-                    {THEME_DESCRIPTIONS[theme.name] ?? ""}
+                    {description}
                   </Text>
                 </View>
 
@@ -182,18 +184,18 @@ export default function SettingsScreen() {
                       <Text style={styles.activeBadgeText}>ACTIVO</Text>
                     </View>
                   )}
-                  {isActive && theme.name === "PRINCIPAL" && (
+                  {isActive && themeKey === "PRINCIPAL" && (
                     <View style={styles.officialBadge}>
                       <Text style={styles.officialBadgeText}>OFICIAL</Text>
                     </View>
                   )}
-                  {isActive && theme.name !== "PRINCIPAL" && (
+                  {isActive && themeKey !== "PRINCIPAL" && (
                     <TouchableOpacity
                       activeOpacity={0.75}
                       style={styles.customizeButton}
                       onPress={() =>
                         navigation.navigate("ThemeCustomize", {
-                          themeName: theme.name,
+                          themeName: themeKey,
                           activeThemeId: theme.id,
                         })
                       }
