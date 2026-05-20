@@ -23,21 +23,45 @@ import { useTheme } from "../context/ThemeContext";
 import { customizeTheme, resetCustomization, getCustomizationLog, getActivePalette } from "../services/themeService";
 import BackButton from "../components/BackButton";
 
-// ─── Paleta de swatches curados ───────────────────────────────────────────────
-const SWATCHES = [
-  // Púrpuras — identidad Tu Evento
-  "#1E0A3C", "#2D1B4E", "#3D2B5E", "#6D28D9", "#7C3AED", "#8B5CF6", "#A78BFA", "#C4B5FD",
-  // Rosas y rojos
-  "#E91E63", "#FF4081", "#EF4444", "#DC2626", "#FF5252", "#F43F5E",
-  // Verdes
-  "#059669", "#10B981", "#22C55E", "#16A34A", "#69F0AE",
-  // Azules
-  "#005FCC", "#1D4ED8", "#3B82F6", "#60A5FA", "#1877F2",
-  // Amarillos y naranjas
-  "#F59E0B", "#FFEB3B", "#FDE047", "#E65100", "#D97706",
-  // Neutros
-  "#FFFFFF", "#F5F5F5", "#9CA3AF", "#6B7280", "#374151", "#1F2937", "#111827", "#000000",
-];
+// ─── Paletas de swatches por tema ────────────────────────────────────────────
+const THEME_SWATCHES = {
+  DARK: [
+    '#0D0D0D', '#1A1A1A', '#2C2C2C', '#3D3D3D', '#4F4F4F',
+    '#616161', '#757575', '#8E8E8E', '#B0B0B0', '#BDBDBD',
+    '#E0E0E0', '#EEEEEE', '#FFFFFF', '#CF6679', '#4CAF50',
+  ],
+  LIGHT: [
+    '#FFFFFF', '#FAFAFA', '#F5F5F5', '#EEEEEE', '#E0E0E0',
+    '#BDBDBD', '#9E9E9E', '#757575', '#616161', '#424242',
+    '#212121', '#D32F2F', '#388E3C', '#1565C0', '#F57F17',
+  ],
+  PASTEL: [
+    '#FFF9FB', '#FFE4EE', '#FFD6E7', '#F8BBD9', '#F48FB1',
+    '#F06292', '#CE93D8', '#BA68C8', '#80DEEA', '#80CBC4',
+    '#A5D6A7', '#E6EE9C', '#FFF59D', '#FFCC80', '#E57373',
+  ],
+  VIBRANT: [
+    '#FF1744', '#D50000', '#FF6D00', '#FFEA00', '#00E676',
+    '#00B0FF', '#651FFF', '#FF4081', '#F50057', '#69F0AE',
+    '#40C4FF', '#E040FB', '#FF6E40', '#CCFF90', '#FFD740',
+  ],
+  NATURE: [
+    '#F1F8E9', '#DCEDC8', '#C5E1A5', '#AED581', '#8BC34A',
+    '#7CB342', '#558B2F', '#33691E', '#1B5E20', '#8D6E63',
+    '#795548', '#6D4C41', '#BF360C', '#FF8F00', '#F9A825',
+  ],
+  OCEAN: [
+    '#E3F2FD', '#BBDEFB', '#90CAF9', '#64B5F6', '#42A5F5',
+    '#1E88E5', '#1565C0', '#0D47A1', '#01579B', '#006064',
+    '#00838F', '#00ACC1', '#00BCD4', '#80DEEA', '#B2EBF2',
+  ],
+  SUNSET: [
+    '#FFF3E0', '#FFE0B2', '#FFCC80', '#FFB74D', '#FFA726',
+    '#FB8C00', '#F57C00', '#E65100', '#BF360C', '#FF8A65',
+    '#FF7043', '#FF5722', '#E64A19', '#D84315', '#C62828',
+  ],
+  PRINCIPAL: [], // no personalizable — array vacío
+};
 
 // ─── Grupos de propiedades personalizables ────────────────────────────────────
 const PROPERTY_GROUPS = [
@@ -216,6 +240,24 @@ export default function ThemeCustomizeScreen() {
   const insets = useSafeAreaInsets();
   const { colors, palette, applyPalette } = useTheme();
   const { themeName } = route.params ?? {};
+
+  // ── Guard: PRINCIPAL no es personalizable ──
+  if (themeName === "PRINCIPAL") {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <BackButton />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
+          <Text style={{ color: colors.accent, fontSize: 48, marginBottom: 16 }}>⭐</Text>
+          <Text style={{ color: colors.textPrimary, fontSize: 20, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
+            Tema Oficial
+          </Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: "center" }}>
+            El tema PRINCIPAL es la identidad oficial de Tu Evento y no puede ser personalizado.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // ── Estado modal ──
   const [selectedProperty, setSelectedProperty] = useState(null);
@@ -632,7 +674,7 @@ export default function ThemeCustomizeScreen() {
               {/* Grilla de swatches */}
               <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>COLORES</Text>
               <FlatList
-                data={SWATCHES}
+                data={THEME_SWATCHES[themeName] ?? THEME_SWATCHES.DARK}
                 renderItem={renderSwatch}
                 keyExtractor={(item) => item}
                 numColumns={8}
