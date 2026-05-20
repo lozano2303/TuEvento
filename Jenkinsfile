@@ -27,7 +27,9 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('TuEventoBackend/tu-evento') {
-                    sh 'chmod +x mvnw && ./mvnw test'
+                    withEnv(['TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock']) {
+                        sh 'chmod +x mvnw && ./mvnw test'
+                    }
                 }
                 publishTestResults testResultsPattern: 'TuEventoBackend/tu-evento/target/surefire-reports/*.xml'
             }

@@ -11,6 +11,12 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 class TestcontainersConfiguration {
 
+	static {
+		// Forzar Testcontainers a usar el Docker Socket en vez de TCP
+		// Soluciona el error "Could not connect to Ryuk at 172.17.0.1:64622"
+		System.setProperty("testcontainers.ryuk.disabled", "true");
+	}
+
 	@Bean
 	@ServiceConnection
 	KafkaContainer kafkaContainer() {
