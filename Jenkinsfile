@@ -27,7 +27,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('TuEventoBackend/tu-evento') {
-                    withEnv(['TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock']) {
+                    withEnv(['DOCKER_HOST=unix:///var/run/docker.sock', 'MAVEN_OPTS=-Dtestcontainers.ryuk.disabled=true -Ddocker.client.strategy=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy']) {
                         sh 'chmod +x mvnw && ./mvnw test'
                     }
                 }

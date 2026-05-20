@@ -248,6 +248,17 @@
 				<artifactId>sonar-maven-plugin</artifactId>
 				<version>3.9.1.2184</version>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemPropertyVariables>
+						<DOCKER_HOST>unix:///var/run/docker.sock</DOCKER_HOST>
+						<TESTCONTAINERS_RYUK_DISABLED>true</TESTCONTAINERS_RYUK_DISABLED>
+						<testcontainers.ryuk.disabled>true</testcontainers.ryuk.disabled>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
