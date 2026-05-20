@@ -210,7 +210,7 @@ export default function SettingsScreen() {
                         </Text>
                       </View>
                     )}
-                    {isActive && (
+                    {isActive && theme.name !== "PRINCIPAL" && (
                       <TouchableOpacity
                         onPress={() =>
                           navigation.navigate("ThemeCustomize", {
@@ -239,6 +239,26 @@ export default function SettingsScreen() {
                           PERSONALIZAR
                         </Text>
                       </TouchableOpacity>
+                    )}
+                    {isActive && theme.name === "PRINCIPAL" && (
+                      <View
+                        style={{
+                          backgroundColor: colors.accent,
+                          borderRadius: 8,
+                          paddingHorizontal: 10,
+                          paddingVertical: 4,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: colors.background,
+                            fontSize: 11,
+                            fontWeight: "600",
+                          }}
+                        >
+                          OFICIAL
+                        </Text>
+                      </View>
                     )}
                   </View>
                   <Text
