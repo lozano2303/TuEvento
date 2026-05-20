@@ -241,6 +241,24 @@ export default function ThemeCustomizeScreen() {
   const { colors, palette, applyPalette } = useTheme();
   const { themeName } = route.params ?? {};
 
+  // ── Guard: PRINCIPAL no es personalizable ──
+  if (themeName === "PRINCIPAL") {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <BackButton />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
+          <Text style={{ color: colors.accent, fontSize: 48, marginBottom: 16 }}>⭐</Text>
+          <Text style={{ color: colors.textPrimary, fontSize: 20, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
+            Tema Oficial
+          </Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: "center" }}>
+            El tema PRINCIPAL es la identidad oficial de Tu Evento y no puede ser personalizado.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   // ── Estado modal ──
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [modalVisible, setModalVisible]         = useState(false);
