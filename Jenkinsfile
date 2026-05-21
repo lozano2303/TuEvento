@@ -4,7 +4,7 @@ pipeline {
     environment {
         BACKEND_IMAGE = "tu-evento-backend:${env.BUILD_ID}"
         FRONTEND_IMAGE = "tu-evento-frontend:${env.BUILD_ID}"
-        DOCKER_REGISTRY = "capysoft/tu-evento"
+        DOCKER_REGISTRY = "jhampier23/tu-evento"
         VITE_API_URL = 'http://localhost:8080'
         TESTCONTAINERS_RYUK_DISABLED = 'true'
         TESTCONTAINERS_HOST_OVERRIDE = 'host.docker.internal'
