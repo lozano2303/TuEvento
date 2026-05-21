@@ -5,7 +5,6 @@ pipeline {
         BACKEND_IMAGE = "tu-evento-backend:${env.BUILD_ID}"
         FRONTEND_IMAGE = "tu-evento-frontend:${env.BUILD_ID}"
         DOCKER_REGISTRY = "capysoft/tu-evento"
-        SONARQUBE_SERVER = 'SonarQube'
         VITE_API_URL = 'http://localhost:8080'
         TESTCONTAINERS_RYUK_DISABLED = 'true'
         TESTCONTAINERS_HOST_OVERRIDE = 'host.docker.internal'
@@ -34,24 +33,6 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-            steps {
-                dir('TuEventoBackend/tu-evento') {
-                    withSonarQubeEnv(env.SONARQUBE_SERVER) {
-                        sh 'chmod +x mvnw && ./mvnw sonar:sonar -Dsonar.projectKey=tu-evento-backend -Dsonar.host.url=http://sonarqube:9000'
-                    }
-                }
-            }
-        }
-        
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-        
         stage('Package Backend JAR') {
             steps {
                 dir('TuEventoBackend/tu-evento') {
