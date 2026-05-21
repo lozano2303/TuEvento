@@ -69,17 +69,15 @@ pipeline {
         stage('Push to Registry') {
             steps {
                 script {
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-                        sh "docker tag ${BACKEND_IMAGE} ${DOCKER_REGISTRY}:${env.BUILD_ID}"
-                        sh "docker tag ${BACKEND_IMAGE} ${DOCKER_REGISTRY}:latest"
-                        sh "docker push ${DOCKER_REGISTRY}:${env.BUILD_ID}"
-                        sh "docker push ${DOCKER_REGISTRY}:latest"
-                        
-                        sh "docker tag ${FRONTEND_IMAGE} ${DOCKER_REGISTRY}:frontend-${env.BUILD_ID}"
-                        sh "docker tag ${FRONTEND_IMAGE} ${DOCKER_REGISTRY}:frontend-latest"
-                        sh "docker push ${DOCKER_REGISTRY}:frontend-${env.BUILD_ID}"
-                        sh "docker push ${DOCKER_REGISTRY}:frontend-latest"
-                    }
+                    sh "docker tag ${BACKEND_IMAGE} ${DOCKER_REGISTRY}:${env.BUILD_ID}"
+                    sh "docker tag ${BACKEND_IMAGE} ${DOCKER_REGISTRY}:latest"
+                    sh "docker push ${DOCKER_REGISTRY}:${env.BUILD_ID}"
+                    sh "docker push ${DOCKER_REGISTRY}:latest"
+                    
+                    sh "docker tag ${FRONTEND_IMAGE} ${DOCKER_REGISTRY}:frontend-${env.BUILD_ID}"
+                    sh "docker tag ${FRONTEND_IMAGE} ${DOCKER_REGISTRY}:frontend-latest"
+                    sh "docker push ${DOCKER_REGISTRY}:frontend-${env.BUILD_ID}"
+                    sh "docker push ${DOCKER_REGISTRY}:frontend-latest"
                 }
             }
         }
