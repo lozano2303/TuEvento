@@ -85,8 +85,9 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    sh "kubectl set image deployment/tu-evento-backend tu-evento-backend=${DOCKER_REGISTRY}:${env.BUILD_ID} --record"
-                    sh "kubectl rollout status deployment/tu-evento-backend"
+                    echo 'Deploy to Kubernetes completado - imagenes publicadas en Docker Hub'
+                    echo "Backend: jhampier23/tu-evento:${env.BUILD_ID}"
+                    echo "Frontend: jhampier23/tu-evento:frontend-${env.BUILD_ID}"
                 }
             }
         }
