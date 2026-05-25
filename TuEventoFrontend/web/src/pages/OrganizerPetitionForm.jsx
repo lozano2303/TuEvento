@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileText, UserCheck, Info, ArrowLeft, Send, Delete, CheckCircle, Bell } from 'lucide-react';
+import { Upload, FileText, UserCheck, Info, Send, Delete } from 'lucide-react';
 
 const OrganizerPetitionForm = () => {
   const navigate = useNavigate();
@@ -45,7 +45,6 @@ const OrganizerPetitionForm = () => {
     }
     
     setLoading(true);
-    // Aquí iría la lógica para enviar el archivo
     setTimeout(() => {
       setLoading(false);
       alert('Solicitud enviada exitosamente');
@@ -55,10 +54,7 @@ const OrganizerPetitionForm = () => {
 
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-[#191022] text-slate-100 font-sans">
-      
       <div className="flex h-full grow flex-col">
-
-        {/* Main Content */}
         <main className="flex-1 max-w-[1024px] mx-auto w-full px-6 py-10">
           <section className="mb-10">
             <div className="flex flex-col gap-2">
@@ -71,7 +67,6 @@ const OrganizerPetitionForm = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 flex flex-col gap-6">
-              {/* Upload Area */}
               <div className="bg-[#251a31]/40 border border-[#3d2a4d] rounded-xl p-8 transition-all hover:bg-[#251a31]/60">
                 <div className={`flex flex-col items-center gap-6 rounded-xl border-2 border-dashed ${dragActive ? 'border-[#7f13ec]' : 'border-[#7f13ec]/40'} px-6 py-12 bg-[#7f13ec]/5`}
                      onDragEnter={handleDrag}
@@ -106,9 +101,43 @@ const OrganizerPetitionForm = () => {
                 </div>
               </div>
 
-              </div>
+              {selectedFile && (
+                <div className="bg-[#251a31]/40 border border-[#3d2a4d] rounded-xl p-5 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FileText className="text-[#7f13ec] w-5 h-5" />
+                    <div>
+                      <p className="text-white text-sm font-medium">{selectedFile.name}</p>
+                      <p className="text-slate-400 text-xs">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                    <button
+                      onClick={handleRemoveFile}
+                      className="ml-2 p-1 rounded hover:bg-[#3d2a4d] transition-colors"
+                    >
+                      <Delete className="text-slate-400 w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
 
-            {/* Sidebar */}
+              <button
+                onClick={handleSubmit}
+                disabled={!selectedFile || loading}
+                className="flex items-center justify-center gap-2 w-full h-14 rounded-xl bg-gradient-to-r from-[#7f13ec] to-[#9d17f1] text-white font-bold text-lg tracking-wide transition-all hover:shadow-lg hover:shadow-[#7f13ec]/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5" />
+                    Enviar solicitud
+                  </>
+                )}
+              </button>
+            </div>
+
             <aside className="flex flex-col gap-6">
               <div className="bg-[#251a31] border border-[#3d2a4d] rounded-xl p-6">
                 <h3 className="text-white text-lg font-bold leading-tight mb-6 flex items-center gap-2">
@@ -160,8 +189,7 @@ const OrganizerPetitionForm = () => {
               </div>
             </aside>
           </div>
-
-          </main>
+        </main>
       </div>
     </div>
   );
