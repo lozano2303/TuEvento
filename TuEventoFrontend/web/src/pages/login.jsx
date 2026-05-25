@@ -233,6 +233,8 @@ export default function Login() {
         setError("Este correo ya está registrado y activado. Inicia sesión con tus credenciales.");
       } else if (errorMsg === "This email is already registered but not activated. If you want to activate your account, click on Resend activation email") {
         setError("Este correo ya está registrado pero no activado. Si quieres activar tu cuenta, haz clic en Reenviar correo de activación");
+      } else if (errorMsg === "Account is not activated") {
+        setError("Cuenta no activada");
       } else {
         setError(errorMsg);
       }
