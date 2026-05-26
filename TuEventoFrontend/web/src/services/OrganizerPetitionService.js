@@ -11,15 +11,16 @@ export const createPetition = async (formData) => {
       body: formData,
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
 
     if (!response.ok) {
-      throw new Error(data.message || 'Error al crear solicitud');
+      throw new Error(data?.message || response.statusText || 'Error al crear solicitud');
     }
 
     return {
       success: true,
-      data: data.data,
+      data: data?.data,
     };
   } catch (error) {
     console.error('Error en createPetition:', error);
@@ -38,15 +39,23 @@ export const getPetitionStatus = async () => {
       },
     });
 
-    const data = await response.json();
+    if (response.status === 404) {
+      return {
+        success: true,
+        data: null,
+      };
+    }
+
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
 
     if (!response.ok) {
-      throw new Error(data.message || 'Error al obtener estado');
+      throw new Error(data?.message || response.statusText || 'Error al obtener estado');
     }
 
     return {
       success: true,
-      data: data.data,
+      data: data?.data,
     };
   } catch (error) {
     console.error('Error en getPetitionStatus:', error);
