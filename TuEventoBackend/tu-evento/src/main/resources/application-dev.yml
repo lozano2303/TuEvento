@@ -1,0 +1,58 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration: 900000
+    refresh-token-expiration: 604800000
+  storage:
+    enabled: true
+    endpoint: http://localhost:9000
+    access-key: ${MINIO_ROOT_USER}
+    secret-key: ${MINIO_ROOT_PASSWORD}
+    region: us-east-1
+    bucket-default: tuevento
+  oauth:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID}
+      client-secret: ${GOOGLE_CLIENT_SECRET}
+      redirect-uri: http://localhost:8080/api/v1/auth/oauth/google/callback
+      token-uri: https://oauth2.googleapis.com/token
+      userinfo-uri: https://www.googleapis.com/oauth2/v3/userinfo
+      authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+    facebook:
+      client-id: ${FACEBOOK_CLIENT_ID}
+      client-secret: ${FACEBOOK_CLIENT_SECRET}
+      redirect-uri: http://localhost:8080/api/v1/auth/oauth/facebook/callback
+      auth-uri: https://www.facebook.com/v18.0/dialog/oauth
+      token-uri: https://graph.facebook.com/v18.0/oauth/access_token
+      profile-uri: https://graph.facebook.com/me
+  admin:
+    email: ${ADMIN_EMAIL}
+    password: ${ADMIN_PASSWORD}
+    alias: ${ADMIN_ALIAS}
+  mail:
+    from: ${MAIL_USERNAME}
+  cors:
+    allowed-origins: "http://localhost:3000"
