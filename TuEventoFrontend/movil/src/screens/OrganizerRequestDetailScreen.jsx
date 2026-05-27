@@ -241,7 +241,8 @@ export default function OrganizerRequestDetailScreen() {
     try {
       const token = await AsyncStorage.getItem("accessToken");
       const data = await getFilePresignedUrl(storedFileId, token);
-      setPdfUrl(data?.publicUrl ?? null);
+      const fixedUrl = data?.publicUrl?.replace('localhost', process.env.EXPO_PUBLIC_MINIO_HOST);
+      setPdfUrl(fixedUrl ?? null);
     } catch (e) {
       setPdfError("No se pudo cargar el documento. Intenta de nuevo.");
     } finally {
