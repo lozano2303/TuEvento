@@ -25,6 +25,7 @@ public class GetOrganizerRequestsUseCase implements GetOrganizerRequestsPort {
                         .alias(petition.getUser().getAlias())
                         .status(petition.getStatus())
                         .applicationDate(petition.getApplicationDate())
+                        .storedFileId(petition.getStoredFileId())
                         .build())
                 .toList();
     }
