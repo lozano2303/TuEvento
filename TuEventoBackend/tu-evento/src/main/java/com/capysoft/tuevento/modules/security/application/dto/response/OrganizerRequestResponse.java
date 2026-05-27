@@ -17,4 +17,5 @@ public class OrganizerRequestResponse {
     private String alias;
     private String status;
     private LocalDateTime applicationDate;
+    private Integer storedFileId;
 }
