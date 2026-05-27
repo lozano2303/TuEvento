@@ -73,6 +73,9 @@ app:
     region: us-east-1
     bucket-default: tuevento
 
+minio:
+  public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
+
   profile:
     default-avatar-stored-file-id: 1
 
