@@ -3,62 +3,74 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors as baseColors } from "../theme/colors";
 import { THEMES, DEFAULT_THEME_ID } from "../theme/themes";
 import { activateTheme, getActivePalette, getThemes } from "../services/themeService";
+import { useAuth } from "./AuthContext";
 
 const STORAGE_KEY = "activeThemeId";
 
 const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
+  const { user } = useAuth();
   const [activeThemeId, setActiveThemeId] = useState(DEFAULT_THEME_ID);
-  const [colors, setColors] = useState({ ...baseColors });
+  // Estado inicial siempre PRINCIPAL
+  const principalPalette = THEMES.find((t) => t.id === "PRINCIPAL")?.palette ?? baseColors;
+  const [colors, setColors] = useState({ ...baseColors, ...principalPalette });
   // Mapa nombre → id numérico del backend, ej: { DARK: 1, LIGHT: 2, ... }
   const backendIdMap = useRef({});
 
-  // ── Al arrancar: obtener paleta resuelta del backend (incluye customizaciones) ──
+  // ── Reacciona a cambios de sesión: resetea a PRINCIPAL en logout / sin sesión ──
   useEffect(() => {
-    const init = async () => {
-      // Esperar a que AsyncStorage tenga el token (cubre race condition con AuthContext)
-      let token = await AsyncStorage.getItem("accessToken");
-      if (!token) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        token = await AsyncStorage.getItem("accessToken");
+    if (!user) {
+      // Sin sesión — resetear al tema PRINCIPAL
+      const principalTheme = THEMES.find((t) => t.id === "PRINCIPAL");
+      if (principalTheme) {
+        setActiveThemeId("PRINCIPAL");
+        setColors({ ...baseColors, ...principalTheme.palette });
       }
+      return;
+    }
 
-      if (token) {
-        // Con sesión: la fuente de verdad es siempre el backend.
-        try {
-          const data = await getActivePalette();
-          if (data) {
-            const found = THEMES.find((t) => t.id === data.themeName);
-            if (found) {
-              setActiveThemeId(found.id);
-              await AsyncStorage.setItem(STORAGE_KEY, found.id);
-            }
-            if (data.palette) {
-              setColors({ ...baseColors, ...data.palette });
-            }
+    // Con sesión — cargar tema del usuario desde backend
+    const loadTheme = async () => {
+      try {
+        let token = await AsyncStorage.getItem("accessToken");
+        if (!token) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          token = await AsyncStorage.getItem("accessToken");
+        }
+        if (!token) return;
+        const data = await getActivePalette(token);
+        if (data) {
+          const found = THEMES.find((t) => t.id === data.themeName);
+          if (found) {
+            setActiveThemeId(found.id);
+            await AsyncStorage.setItem(STORAGE_KEY, found.id);
           }
-        } catch (e) {
-          // Fallback offline: usar el tema guardado localmente sin customizaciones
-          const savedId = await AsyncStorage.getItem(STORAGE_KEY);
-          if (savedId) {
-            const found = THEMES.find((t) => t.id === savedId);
-            if (found) {
-              setActiveThemeId(found.id);
-              setColors({ ...baseColors, ...found.palette });
-            }
+          if (data.palette) {
+            applyPalette(data.palette);
+          } else {
+            applyPalette(data);
           }
         }
-      } else {
-        // Sin sesión: tema DARK por defecto
-        const dark = THEMES.find((t) => t.id === "DARK");
-        if (dark) {
-          setActiveThemeId("DARK");
-          setColors({ ...baseColors, ...dark.palette });
+      } catch (e) {
+        if (e?.message?.includes("403")) return;
+        // Fallback offline: usar el tema guardado localmente
+        const savedId = await AsyncStorage.getItem(STORAGE_KEY);
+        if (savedId) {
+          const found = THEMES.find((t) => t.id === savedId);
+          if (found) {
+            setActiveThemeId(found.id);
+            setColors({ ...baseColors, ...found.palette });
+          }
         }
       }
+    };
+    loadTheme();
+  }, [user]);
 
-      // Cargar mapa nombre → id numérico del backend para applyTheme
+  // ── Al arrancar: cargar mapa nombre → id numérico del backend para applyTheme ──
+  useEffect(() => {
+    const loadBackendMap = async () => {
       try {
         const backendThemes = await getThemes();
         if (Array.isArray(backendThemes)) {
@@ -70,11 +82,12 @@ export function ThemeProvider({ children }) {
         // silencioso
       }
     };
-    init();
+    loadBackendMap();
   }, []);
 
   // ── Polling cada 30 segundos — sincroniza paleta resuelta con el backend ──
   useEffect(() => {
+    if (!user) return; // sin sesión no hacer polling
     const interval = setInterval(async () => {
       try {
         const token = await AsyncStorage.getItem("accessToken");
@@ -97,7 +110,7 @@ export function ThemeProvider({ children }) {
       }
     }, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   // ── applyTheme: activa un tema diferente en el backend y obtiene la paleta resuelta ──
   const applyTheme = async (themeId) => {
