@@ -8,8 +8,8 @@ import {
   StatusBar,
   StyleSheet,
   Alert,
+  Linking,
 } from "react-native";
-import { WebView } from "react-native-webview";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -165,12 +165,19 @@ export default function OrganizerRequestDetailScreen() {
       textAlign: "center",
       marginTop: 4,
     },
-    webview: {
-      height: 420,
+    btnViewDoc: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
       borderRadius: 14,
-      overflow: "hidden",
-      borderWidth: 1,
-      borderColor: colors.primary + "30",
+      paddingVertical: 14,
+      backgroundColor: colors.primary,
+    },
+    btnViewDocText: {
+      color: "#FFFFFF",
+      fontSize: 15,
+      fontWeight: "700",
     },
     // ── Barra de acciones ──
     actionBar: {
@@ -371,19 +378,19 @@ export default function OrganizerRequestDetailScreen() {
       );
     }
 
-    // URL lista — mostrar WebView
+    // URL lista — abrir con Linking
     return (
-      <WebView
-        source={{ uri: pdfUrl }}
-        style={styles.webview}
-        startInLoadingState
-        renderLoading={() => (
-          <View style={[styles.pdfPlaceholder, { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }]}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.pdfPlaceholderText}>Cargando documento...</Text>
-          </View>
-        )}
-      />
+      <View style={styles.pdfPlaceholder}>
+        <Ionicons name="document-outline" size={44} color={colors.primary} />
+        <TouchableOpacity
+          onPress={() => Linking.openURL(pdfUrl)}
+          activeOpacity={0.75}
+          style={styles.btnViewDoc}
+        >
+          <Ionicons name="document-outline" size={18} color="#FFFFFF" />
+          <Text style={styles.btnViewDocText}>Ver documento</Text>
+        </TouchableOpacity>
+      </View>
     );
   };
 
