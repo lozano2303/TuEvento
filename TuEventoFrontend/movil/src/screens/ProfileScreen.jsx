@@ -199,6 +199,55 @@ export default function ProfileScreen() {
 
         {/* ── Opciones de menú ── */}
         <Animated.View style={[{ paddingHorizontal: 24, marginTop: 32 }, animStyle(menuAnim)]}>
+
+          {/* ── Sección Administración — solo visible para ADMIN ── */}
+          {user?.role === "ADMIN" && (
+            <>
+              <Text style={{
+                color: colors.textSecondary, fontSize: 11, fontWeight: "700",
+                letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12,
+              }}>
+                Administración
+              </Text>
+
+              <TouchableOpacity
+                activeOpacity={0.75}
+                onPress={() => navigation.navigate("OrganizerRequests")}
+                style={{
+                  flexDirection: "row", alignItems: "center",
+                  backgroundColor: colors.surface + "CC",
+                  borderRadius: 14, borderWidth: 1,
+                  borderColor: colors.primary + "30",
+                  padding: 16, marginBottom: 24,
+                }}
+              >
+                {/* Ícono */}
+                <View style={{
+                  width: 40, height: 40, borderRadius: 12,
+                  backgroundColor: colors.primary + "28",
+                  borderWidth: 1, borderColor: colors.primary + "40",
+                  alignItems: "center", justifyContent: "center",
+                  marginRight: 14,
+                }}>
+                  <Ionicons name="people-outline" size={20} color={colors.accent} />
+                </View>
+
+                {/* Texto */}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "600" }}>
+                    Solicitudes de organizador
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>
+                    Revisar y gestionar solicitudes
+                  </Text>
+                </View>
+
+                {/* Chevron */}
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </TouchableOpacity>
+            </>
+          )}
+
           <Text style={{
             color: colors.textSecondary, fontSize: 11, fontWeight: "700",
             letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12,
