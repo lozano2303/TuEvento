@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   StatusBar,
   StyleSheet,
-  Alert,
   Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,6 +19,7 @@ import {
   approveOrganizerRequest,
   rejectOrganizerRequest,
 } from "../services/adminService";
+import AppModal from "../components/AppModal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -51,6 +51,22 @@ export default function OrganizerRequestDetailScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   // Estado local del status para reflejar cambios tras aprobar/rechazar
   const [currentStatus, setCurrentStatus] = useState(status);
+
+  // ── Estado del modal ──────────────────────────────────────────────────────
+  const [modal, setModal] = useState({
+    visible:   false,
+    type:      "info",
+    title:     "",
+    message:   "",
+    onConfirm: null,
+    onCancel:  null,
+  });
+
+  const showModal = (type, title, message, onConfirm = null, onCancel = null) =>
+    setModal({ visible: true, type, title, message, onConfirm, onCancel });
+
+  const hideModal = () =>
+    setModal((prev) => ({ ...prev, visible: false }));
 
   // ── StyleSheet dentro del componente para acceder a colors ───────────────
   const styles = StyleSheet.create({
@@ -263,69 +279,62 @@ export default function OrganizerRequestDetailScreen() {
 
   // ── Acciones ─────────────────────────────────────────────────────────────
   const handleReject = () => {
-    Alert.alert(
+    showModal(
+      "confirm",
       "¿Rechazar solicitud?",
       "Esta acción no se puede deshacer.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Rechazar",
-          style: "destructive",
-          onPress: async () => {
-            setActionLoading(true);
-            try {
-              const token = await AsyncStorage.getItem("accessToken");
-              await rejectOrganizerRequest(petitionId, token);
-              setCurrentStatus("REJECTED");
-              Alert.alert(
-                "Solicitud rechazada",
-                "La solicitud ha sido rechazada correctamente.",
-                [{ text: "OK", onPress: () => navigation.goBack() }]
-              );
-            } catch (e) {
-              Alert.alert(
-                "Error",
-                "No se pudo rechazar la solicitud. Intenta de nuevo."
-              );
-            } finally {
-              setActionLoading(false);
-            }
-          },
-        },
-      ]
+      // onConfirm — ejecuta la lógica de rechazo
+      async () => {
+        hideModal();
+        setActionLoading(true);
+        try {
+          const token = await AsyncStorage.getItem("accessToken");
+          await rejectOrganizerRequest(petitionId, token);
+          setCurrentStatus("REJECTED");
+          showModal(
+            "success",
+            "Solicitud rechazada",
+            "La solicitud ha sido rechazada correctamente.",
+            () => { hideModal(); navigation.goBack(); }
+          );
+        } catch (e) {
+          showModal("error", "Error", "No se pudo rechazar la solicitud. Intenta de nuevo.");
+        } finally {
+          setActionLoading(false);
+        }
+      },
+      // onCancel
+      hideModal
     );
   };
 
   const handleApprove = () => {
-    Alert.alert(
+    showModal(
+      "confirm",
       "¿Aprobar solicitud?",
       "El usuario recibirá el rol de organizador.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Aprobar",
-          onPress: async () => {
-            setActionLoading(true);
-            try {
-              const token = await AsyncStorage.getItem("accessToken");
-              await approveOrganizerRequest(petitionId, token);
-              setCurrentStatus("APPROVED");
-              Alert.alert(
-                "Solicitud aprobada",
-                "El usuario ahora tiene el rol de organizador.",
-                [{ text: "OK", onPress: () => navigation.goBack() }]
-              );
-            } catch (e) {
-              Alert.alert(
-                "Error",
-                "No se pudo aprobar la solicitud. Intenta de nuevo."
-              );
-            } finally {
-              setActionLoading(false);
-            }
-          },
-        },
-      ]
+      // onConfirm — ejecuta la lógica de aprobación
+      async () => {
+        hideModal();
+        setActionLoading(true);
+        try {
+          const token = await AsyncStorage.getItem("accessToken");
+          await approveOrganizerRequest(petitionId, token);
+          setCurrentStatus("APPROVED");
+          showModal(
+            "success",
+            "Solicitud aprobada",
+            "El usuario ahora tiene el rol de organizador.",
+            () => { hideModal(); navigation.goBack(); }
+          );
+        } catch (e) {
+          showModal("error", "Error", "No se pudo aprobar la solicitud. Intenta de nuevo.");
+        } finally {
+          setActionLoading(false);
+        }
+      },
+      // onCancel
+      hideModal
     );
   };
 
@@ -525,6 +534,13 @@ export default function OrganizerRequestDetailScreen() {
 
       {/* ── Barra de acciones fija al fondo ── */}
       {renderActionBar()}
+
+      {/* ── Modal ── */}
+      <AppModal
+        {...modal}
+        onConfirm={() => { modal.onConfirm?.(); }}
+        onCancel={modal.onCancel ? () => { modal.onCancel?.(); } : undefined}
+      />
     </View>
   );
 }
