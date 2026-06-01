@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Alert,
   StatusBar,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -17,15 +16,33 @@ import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { uploadFile, getFileUrl } from "../services/storageService";
 import { profileService } from "../services/profileService";
+import AppModal from "../components/AppModal";
 
 export default function EditProfileScreen({ navigation, route }) {
   const { colors } = useTheme();
   const { user, setUser } = useAuth();
 
   const currentAvatarUrl = route.params?.currentAvatarUrl ?? null;
-  const [avatarUrl, setAvatarUrl]   = useState(currentAvatarUrl);
-  const [uploading, setUploading]   = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(currentAvatarUrl);
+  const [uploading, setUploading] = useState(false);
 
+  // ── Estado del modal ──────────────────────────────────────────────────────
+  const [modal, setModal] = useState({
+    visible:   false,
+    type:      "info",
+    title:     "",
+    message:   "",
+    onConfirm: null,
+    onCancel:  null,
+  });
+
+  const showModal = (type, title, message, onConfirm = null, onCancel = null) =>
+    setModal({ visible: true, type, title, message, onConfirm, onCancel });
+
+  const hideModal = () =>
+    setModal((prev) => ({ ...prev, visible: false }));
+
+  // ── Estilos ───────────────────────────────────────────────────────────────
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -106,10 +123,12 @@ export default function EditProfileScreen({ navigation, route }) {
     },
   });
 
+  // ── Lógica de imagen ──────────────────────────────────────────────────────
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(
+      showModal(
+        "info",
         "Permiso requerido",
         "Necesitamos acceso a tu galería para cambiar la foto de perfil."
       );
@@ -146,9 +165,9 @@ export default function EditProfileScreen({ navigation, route }) {
       setAvatarUrl(newUrl);
       setUser((prev) => ({ ...prev, storedFileId: newStoredFileId }));
 
-      Alert.alert("¡Listo!", "Tu foto de perfil fue actualizada.");
+      showModal("success", "¡Listo!", "Tu foto de perfil fue actualizada.");
     } catch (err) {
-      Alert.alert("Error", err.message ?? "No se pudo actualizar la foto.");
+      showModal("error", "Error", err.message ?? "No se pudo actualizar la foto.");
     } finally {
       setUploading(false);
     }
@@ -199,6 +218,13 @@ export default function EditProfileScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* ── Modal ── */}
+      <AppModal
+        {...modal}
+        onConfirm={() => { modal.onConfirm?.(); hideModal(); }}
+        onCancel={modal.onCancel ? hideModal : undefined}
+      />
     </SafeAreaView>
   );
 }

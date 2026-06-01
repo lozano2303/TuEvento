@@ -31,7 +31,7 @@ function LogoutModal({ visible, onConfirm, onCancel }) {
   return (
     <Modal transparent visible={visible} animationType="fade" statusBarTranslucent>
       <View style={{
-        flex: 1, backgroundColor: "#00000088",
+        flex: 1, backgroundColor: "rgba(0,0,0,0.55)",
         justifyContent: "center", alignItems: "center",
         paddingHorizontal: 32,
       }}>
