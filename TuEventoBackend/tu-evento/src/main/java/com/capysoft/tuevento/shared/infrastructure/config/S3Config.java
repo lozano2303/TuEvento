@@ -16,12 +16,20 @@ import java.net.URI;
  * Configures the AWS S3 client and presigner beans.
  * In development, endpoint override points to MinIO.
  * In production, remove the endpoint override to use real AWS S3.
+ *
+ * S3Client  → uses the internal endpoint (localhost / container) for upload/delete ops.
+ * S3Presigner → uses the public endpoint so generated URLs are reachable from
+ *               external clients (e.g. mobile devices on the same network).
  */
 @Configuration
 public class S3Config {
 
     @Value("${app.storage.endpoint}")
     private String endpoint;
+
+    /** Public-facing MinIO URL used in presigned URLs — must be reachable by clients. */
+    @Value("${minio.public-url:http://localhost:9000}")
+    private String publicUrl;
 
     @Value("${app.storage.access-key}")
     private String accessKey;
@@ -47,8 +55,10 @@ public class S3Config {
 
     @Bean
     public S3Presigner s3Presigner() {
+        // Uses publicUrl so presigned URLs contain the network-accessible host,
+        // not localhost — required for mobile clients on the same LAN.
         return S3Presigner.builder()
-                .endpointOverride(URI.create(endpoint))
+                .endpointOverride(URI.create(publicUrl))
                 .credentialsProvider(StaticCredentialsProvider.create(
                         AwsBasicCredentials.create(accessKey, secretKey)))
                 .region(Region.of(region))
