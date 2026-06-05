@@ -236,11 +236,11 @@ export default function AdminPanel() {
                     {filteredRequests.map((req, idx) => {
                       const { bg, label } = statusStyle(req.status);
                       return (
-                        <tr
-                          key={req.id}
-                          className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors
-                            ${idx % 2 !== 0 ? 'bg-white/[0.02]' : ''}`}
-                        >
+<tr
+                           key={req.organizerPetitionId}
+                           className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors
+                             ${idx % 2 !== 0 ? 'bg-white/[0.02]' : ''}`}
+                         >
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">

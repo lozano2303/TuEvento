@@ -100,18 +100,17 @@ public class RegisterUserUseCase implements RegisterUserPort {
                 .fullName(request.getFullName())
                 .build());
 
-        // Generar y persistir código de activación — mismo mecanismo que resendActivationCode()
-        String activationCode = codeGenerator.generateActivationCode();
+        String code = codeGenerator.generateActivationCode();
         accountActivationRepository.save(AccountActivation.builder()
                 .user(user)
-                .activationCode(activationCode)
+                .activationCode(code)
                 .activated(false)
                 .createdAt(LocalDateTime.now())
                 .expiresAt(LocalDateTime.now().plusHours(ACTIVATION_EXPIRY_HOURS))
                 .build());
 
         try {
-            emailNotification.sendActivationEmail(request.getEmail(), alias, activationCode);
+            emailNotification.sendActivationEmail(request.getEmail(), alias, code);
         } catch (Exception e) {
             log.error("Failed to send activation email to {} — user registered but email not sent: {}",
                     request.getEmail(), e.getMessage());

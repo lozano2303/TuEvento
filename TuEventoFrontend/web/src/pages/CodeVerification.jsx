@@ -161,6 +161,8 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
         setError("El código ha expirado. Solicita uno nuevo.");
       } else if (errorMsg.includes("USER_NOT_FOUND")) {
         setError("Usuario no encontrado");
+      } else if (errorMsg.toLowerCase().includes("cuenta ya está activada")) {
+        setError("Esta cuenta ya está activada");
       } else {
         setError("Error al verificar el código");
       }

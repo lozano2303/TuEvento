@@ -37,6 +37,16 @@ export default function Login() {
       localStorage.setItem('token', token);
       localStorage.setItem('userID', userID);
       localStorage.setItem('role', role);
+      (async () => {
+        try {
+          const profileResult = await getProfileByUserId(userID);
+          if (profileResult.success && profileResult.data.fullName) {
+            localStorage.setItem('name', profileResult.data.fullName);
+          }
+        } catch (error) {
+          console.error('Error al obtener perfil OAuth:', error);
+        }
+      })();
       window.history.replaceState({}, document.title, window.location.pathname);
       window.location.href = '/';
       return;
@@ -46,7 +56,7 @@ export default function Login() {
     const storedUserID = localStorage.getItem('userID');
     const storedAlias = localStorage.getItem('alias');
     const storedEmail = localStorage.getItem('userEmail');
-    const storedFullName = localStorage.getItem('fullName');
+    const storedFullName = localStorage.getItem('name');
     if (storedToken && storedUserID) {
       setUserData({ userId: storedUserID, alias: storedAlias, email: storedEmail, fullName: storedFullName });
       setView('profile');
@@ -130,7 +140,17 @@ export default function Login() {
   };
 
   const handleVerificationSuccess = () => setView('login');
-  const handleContinueToVerification = () => { setShowSuccessNotification(false); setView('verification'); };
+  const handleContinueToVerification = async () => {
+    setShowSuccessNotification(false);
+    try {
+      await resendActivationCode(formData.email);
+    } catch (err) {
+      // Si falla el reenvío, igual se permite ir a verificación
+      console.error('No se pudo reenviar el código de activación:', err);
+    }
+    setUserID(formData.userID);
+    setView('verification');
+  };
   const handleContinueToHome = () => { setShowLoginSuccessNotification(false); window.location.href = '/'; };
   const handleLogout = () => { clearAuth(); setUserData(null); setView('login'); };
 
@@ -231,6 +251,8 @@ export default function Login() {
         setError("Este correo ya está registrado y activado. Inicia sesión con tus credenciales.");
       } else if (errorMsg === "This email is already registered but not activated. If you want to activate your account, click on Resend activation email") {
         setError("Este correo ya está registrado pero no activado. Si quieres activar tu cuenta, haz clic en Reenviar correo de activación");
+      } else if (errorMsg === "Account is not activated") {
+        setError("Cuenta no activada");
       } else {
         setError(errorMsg);
       }
@@ -672,14 +694,9 @@ export default function Login() {
                       const firstName = parts[0];
                       const lastName = parts[1];
                       
-                      // Si el nombre es corto (≤3 caracteres)
+                      // Si el nombre es corto (≤3 caracteres), mostrar nombre completo
                       if (firstName.length <= 3) {
-                        // Si el apellido es más largo que el nombre, mostrar apellido
-                        if (lastName.length > firstName.length) {
-                          return lastName;
-                        }
-                        // Si el apellido también es corto, mostrar solo el nombre
-                        return firstName;
+                        return `${firstName} ${lastName}`;
                       }
                       
                       // Si el nombre es largo (>3 caracteres), mostrar solo el nombre

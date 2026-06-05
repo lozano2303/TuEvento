@@ -73,14 +73,15 @@ export default function Navbar() {
     ? { label: 'Org', badgeClass: 'bg-violet-500 text-white', roleText: 'Organizador' }
     : { label: 'User', badgeClass: 'bg-surfaceAlt text-textSecondary', roleText: 'Usuario' };
 
-  const displayName = (() => {
+const displayName = (() => {
     const name = userData?.fullName || userData?.alias || '';
     const parts = name.split(' ').filter(p => p.trim().length > 0);
     if (parts.length === 0) return userData?.alias || name;
     if (parts.length === 1) return parts[0];
     const firstName = parts[0];
     const lastName = parts[1];
-    if (firstName.length <= 3) return lastName.length > firstName.length ? lastName : firstName;
+    // Si el nombre es corto (≤3 caracteres), mostrar nombre completo
+    if (firstName.length <= 3) return `${firstName} ${lastName}`;
     return firstName;
   })();
 

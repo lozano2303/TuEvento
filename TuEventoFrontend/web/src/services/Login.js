@@ -29,10 +29,14 @@ export const loginUser = async (email, password) => {
         role: data.data.role || 'USER',
       },
     };
-  } catch (error) {
-    console.error('Error en login:', error);
-    throw error;
-  }
+    } catch (error) {
+      console.error('Error en login:', error);
+      // Traducir mensaje específico del backend
+      if (error.message === "Account is not activated") {
+        throw new Error("Cuenta no activada");
+      }
+      throw error;
+    }
 };
 
 // Función para registrar usuario
@@ -113,10 +117,14 @@ export const verifyActivationCode = async (email, code) => {
       success: true,
       message: data.message,
     };
-  } catch (error) {
-    console.error('Error en verifyActivationCode:', error);
-    throw error;
-  }
+    } catch (error) {
+      console.error('Error en verifyActivationCode:', error);
+      // Si el backend nos dice que la cuenta ya está activada, lanzamos un error con el mensaje exacto para mostrar
+      if (error.message && error.message.toLowerCase().includes("cuenta ya está activada")) {
+        throw new Error("Esta cuenta ya está activada");
+      }
+      throw error;
+    }
 };
 
 // Función para reenviar código de activación
