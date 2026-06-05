@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:           # ← agregar esto
+    networks:
       - tuevento-network
 
   minio:
@@ -66,22 +66,21 @@ services:
       retries: 3
 
 
-  # CI/CD Services
   jenkins:
     image: jenkins/jenkins:lts-jdk17
     container_name: tuevento-jenkins
     restart: unless-stopped
+    user: root
     ports:
       - "8083:8080"
       - "50000:50000"
     environment:
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false -Xmx1g -Xms512m
       - JENKINS_OPTS=--httpPort=8080
-    user: root
+      - TESTCONTAINERS_RYUK_DISABLED=true
     volumes:
       - jenkins_data:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-      - ~/.jenkins:/root/.jenkins
     networks:
       - tuevento-network
 
@@ -126,23 +125,22 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=dev
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - ADMIN_ALIAS=${ADMIN_ALIAS}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID}
       - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET}
-      - ADMIN_EMAIL=${ADMIN_EMAIL}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - ADMIN_ALIAS=${ADMIN_ALIAS}
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-      - SPRING_DATA_REDIS_HOST=redis
     depends_on:
       - postgres
       - minio

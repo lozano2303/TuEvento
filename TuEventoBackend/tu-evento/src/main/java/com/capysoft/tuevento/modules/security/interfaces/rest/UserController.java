@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -22,6 +24,7 @@ public class UserController {
     private final ChangePasswordPort   changePasswordPort;
     private final LinkOauthAccountPort linkOauthAccountPort;
     private final RequestOrganizerPort requestOrganizerPort;
+    private final GetPetitionStatusPort getPetitionStatusPort;
 
     @Operation(summary = "Change password for the authenticated user")
     @PostMapping("/change-password")
@@ -48,5 +51,15 @@ public class UserController {
                 .build();
         RequestOrganizerResponse response = requestOrganizerPort.request(request);
         return ResponseEntity.ok(ApiResponse.ok("Organizer request submitted successfully", response));
+    }
+
+    @Operation(summary = "Get the current user's organizer petition status")
+    @GetMapping("/organizer-petition")
+    public ResponseEntity<ApiResponse<RequestOrganizerResponse>> getPetitionStatus() {
+        RequestOrganizerResponse response = getPetitionStatusPort.getByUserId();
+        if (response == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(ApiResponse.ok("Petition status retrieved", response));
     }
 }

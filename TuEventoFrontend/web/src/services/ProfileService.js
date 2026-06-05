@@ -8,8 +8,13 @@ export const getProfileByUserId = async (userId) => {
       'Content-Type': 'application/json',
     },
   });
+  const data = await response.json();
   if (!response.ok) throw new Error('Error al obtener perfil');
-  return response.json();
+  // Guardar fullName en localStorage para uso posterior
+  if (data?.data?.fullName) {
+    localStorage.setItem('name', data.data.fullName);
+  }
+  return data;
 };
 
 export const createProfile = async (profileData) => {
