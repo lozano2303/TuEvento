@@ -22,21 +22,26 @@ const ProfilePage = () => {
   const userRole = localStorage.getItem('role') || 'USER';
 
   const getDisplayName = (name) => {
-    if (!name) return 'Usuario';
+    // Si el nombre es "Evento" (nombre del admin genérico), usar "Tu Evento"
+    if (!name || name === 'Evento') return 'Tu Evento';
     const parts = name.split(' ').filter(part => part.trim().length > 0);
-    if (parts.length === 0) return 'Usuario';
-    if (parts.length === 1) return parts[0];
+    if (parts.length === 0) return 'Tu Evento';
+    // Si solo hay un nombre corto (≤3 caracteres), mostrar "Tu Evento"
+    if (parts.length === 1) {
+      return parts[0].length <= 3 ? 'Tu Evento' : parts[0];
+    }
     const firstName = parts[0];
     const lastName = parts[1];
+    // Si el nombre es corto (≤3 caracteres), mostrar nombre completo
     if (firstName.length <= 3) {
-      return lastName.length > firstName.length ? lastName : firstName;
+      return `${firstName} ${lastName}`;
     }
     return firstName;
   };
 
   const displayName = getDisplayName(storedName);
   const firstLetter = displayName ? displayName.charAt(0).toUpperCase() : 'F';
-  const roleLabel = userRole === 'ADMIN' ? 'Administrador' : userRole === 'ORGANIZER' ? 'Organizador Premium' : 'Usuario';
+  const roleLabel = userRole === 'ADMIN' ? 'Administrador' : userRole === 'ORGANIZER' ? 'Organizador' : 'Usuario';
 
   const [formData, setFormData] = useState({
     nombreCompleto: storedName || 'Francisco Rodríguez',

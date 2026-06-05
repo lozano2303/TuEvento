@@ -112,6 +112,7 @@ public class LoginUseCase implements LoginPort {
                 .refreshToken(refreshToken)
                 .userId(user.getUserId())
                 .alias(user.getAlias())
+                .role(user.getRole().getCode())
                 .build();
     }
 

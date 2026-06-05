@@ -11,15 +11,16 @@ export const createPetition = async (formData) => {
       body: formData,
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
 
     if (!response.ok) {
-      throw new Error(data.message || 'Error al crear solicitud');
+      throw new Error(data?.message || response.statusText || 'Error al crear solicitud');
     }
 
     return {
       success: true,
-      data: data.data,
+      data: data?.data,
     };
   } catch (error) {
     console.error('Error en createPetition:', error);
@@ -30,23 +31,32 @@ export const createPetition = async (formData) => {
 export const getPetitionStatus = async () => {
   try {
     const token = localStorage.getItem('token');
-    const userID = localStorage.getItem('userID');
-    const response = await fetch(`${API_URL}/organizer-petition/user/${userID}`, {
+    const response = await fetch(`${API_URL}/users/organizer-petition`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
 
-    const data = await response.json();
+    if (response.status === 404 || response.status === 200) {
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : null;
+      return {
+        success: true,
+        data: data?.data || null,
+      };
+    }
+
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
 
     if (!response.ok) {
-      throw new Error(data.message || 'Error al obtener estado');
+      throw new Error(data?.message || response.statusText || 'Error al obtener estado');
     }
 
     return {
       success: true,
-      data: data.data,
+      data: data?.data,
     };
   } catch (error) {
     console.error('Error en getPetitionStatus:', error);

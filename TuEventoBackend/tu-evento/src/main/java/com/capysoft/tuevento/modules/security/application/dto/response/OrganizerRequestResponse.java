@@ -14,8 +14,9 @@ import java.time.LocalDateTime;
 public class OrganizerRequestResponse {
     private Integer organizerPetitionId;
     private Integer userId;
-    private String alias;
+    private String fullName;
+    private String email;
+    private String documentType;
     private String status;
     private LocalDateTime applicationDate;
-    private Integer storedFileId;
 }

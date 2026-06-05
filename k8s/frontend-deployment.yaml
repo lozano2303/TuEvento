@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tu-evento-frontend
+  labels:
+    app: tu-evento-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tu-evento-frontend
+  template:
+    metadata:
+      labels:
+        app: tu-evento-frontend
+    spec:
+      containers:
+      - name: tu-evento-frontend
+        image: capysoft/tu-evento:frontend-latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        env:
+        - name: VITE_API_URL
+          value: "http://tu-evento-backend-service"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 10
