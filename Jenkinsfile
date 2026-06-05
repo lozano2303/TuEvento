@@ -98,7 +98,11 @@ pipeline {
             echo 'Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed!'
+            echo 'Pipeline falló. Revisa logs.'
+            echo "TuEvento backend deployment failed - Build ${env.BUILD_ID}"
+        }
+        always {
+            echo 'Pipeline completed.'
         }
     }
 }
