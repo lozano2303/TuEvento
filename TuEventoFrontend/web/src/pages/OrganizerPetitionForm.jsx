@@ -166,82 +166,90 @@ const OrganizerPetitionForm = () => {
             )}
 
             {showFileUpload && (
-               <>
-                 <div 
-                   className={`bg-[#251a31]/40 border border-[#3d2a4d] rounded-xl p-8 transition-all hover:bg-[#251a31]/60 ${dragActive ? 'border-[#7f13ec]' : ''}`}
-                   onDragEnter={handleDrag}
-                   onDragLeave={handleDrag}
-                   onDragOver={handleDrag}
-                   onDrop={handleDrop}
-                 >
-                   <div className={`flex flex-col items-center gap-6 rounded-xl border-2 border-dashed ${dragActive ? 'border-[#7f13ec] bg-[#7f13ec]/5' : 'border-[#7f13ec]/40 bg-[#7f13ec]/5'} px-6 py-12`}>
-                     <div className="flex flex-col items-center gap-4 text-center">
-                       <div className="size-16 bg-[#7f13ec]/20 rounded-full flex items-center justify-center text-[#7f13ec]">
-                         <Upload className="w-10 h-10" />
-                       </div>
-                       <div className="flex flex-col gap-1">
-                         <p className="text-white text-xl font-bold">Arrastra y suelta tu documento aquí</p>
-                         <p className="text-slate-400 text-sm">O haz clic para seleccionar un archivo manualmente</p>
-                       </div>
-                     </div>
-                     <input 
-                       type="file" 
-                       className="hidden" 
-                       accept=".pdf,.jpg,.jpeg,.png"
-                       onChange={handleFileSelect}
-                       id="file-upload"
-                     />
-                     <label 
-                       htmlFor="file-upload"
-                       className="flex min-w-[200px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-6 bg-[#7f13ec] text-white text-sm font-bold leading-normal tracking-wide transition-transform active:scale-95 shadow-lg shadow-[#7f13ec]/20"
-                     >
-                       Seleccionar archivo
-                     </label>
-                     <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">
-                       PDF, JPG, PNG • Máx 5MB
-                     </p>
-                   </div>
-                 </div>
+              <>
+                <div 
+                  className={`bg-[#251a31]/40 border border-[#3d2a4d] rounded-xl p-8 transition-all hover:bg-[#251a31]/60 ${dragActive ? 'border-[#7f13ec]' : ''}`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                >
+                  <div className={`flex flex-col items-center gap-6 rounded-xl border-2 border-dashed ${dragActive ? 'border-[#7f13ec] bg-[#7f13ec]/5' : 'border-[#7f13ec]/40 bg-[#7f13ec]/5'} px-6 py-12`}>
+                    <div className="flex flex-col items-center gap-4 text-center">
+                      <div className="size-16 bg-[#7f13ec]/20 rounded-full flex items-center justify-center text-[#7f13ec]">
+                        <Upload className="w-10 h-10" />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-white text-xl font-bold">Arrastra y suelta tu documento aquí</p>
+                        <p className="text-slate-400 text-sm">O haz clic para seleccionar un archivo manualmente</p>
+                      </div>
+                    </div>
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={handleFileSelect}
+                      id="file-upload"
+                    />
+                    <label 
+                      htmlFor="file-upload"
+                      className="flex min-w-[200px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-6 bg-[#7f13ec] text-white text-sm font-bold leading-normal tracking-wide transition-transform active:scale-95 shadow-lg shadow-[#7f13ec]/20"
+                    >
+                      Seleccionar archivo
+                    </label>
+                    <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">
+                      PDF, JPG, PNG • Máx 5MB
+                    </p>
+                  </div>
+                </div>
 
-                 {selectedFile && (
-                   <div className="bg-[#251a31]/40 border border-[#3d2a4d] rounded-xl p-5 flex items-center justify-between">
-                     <div className="flex items-center gap-3">
-                       <FileText className="text-[#7f13ec] w-5 h-5" />
-                       <div>
-                         <p className="text-white text-sm font-medium">{selectedFile.name}</p>
-                         <p className="text-slate-400 text-xs">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                       </div>
-                       <button
-                         onClick={handleRemoveFile}
-                         className="ml-2 p-1 rounded hover:bg-[#3d2a4d] transition-colors"
-                       >
-                         <Delete className="text-slate-400 w-4 h-4" />
-                       </button>
-                     </div>
-                   </div>
-                 )}
-               </>
-             )}
+                {selectedFile && (
+                  <div className="bg-[#251a31]/40 border border-[#3d2a4d] rounded-xl p-5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <FileText className="text-[#7f13ec] w-5 h-5" />
+                      <div>
+                        <p className="text-white text-sm font-medium">{selectedFile.name}</p>
+                        <p className="text-slate-400 text-xs">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                      <button
+                        onClick={handleRemoveFile}
+                        className="ml-2 p-1 rounded hover:bg-[#3d2a4d] transition-colors"
+                      >
+                        <Delete className="text-slate-400 w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
 
-             {showFileUpload && (
-               <button
-                 onClick={handleSubmit}
-                 disabled={!selectedFile || loading}
-                 className="flex items-center justify-center gap-2 w-full h-14 rounded-xl bg-gradient-to-r from-[#7f13ec] to-[#9d17f1] text-white font-bold text-lg tracking-wide transition-all hover:shadow-lg hover:shadow-[#7f13ec]/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
-               >
-                 {loading ? (
-                   <>
-                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                     Enviando...
-                   </>
-                 ) : (
-                   <>
-                     <Send className="w-5 h-5" />
-                     Enviar solicitud
-                   </>
-                 )}
-               </button>
-             )}
+            <button
+              onClick={handleSubmit}
+              disabled={!selectedFile || loading || petitionStatus?.status === 'PENDING' || petitionStatus?.status === 'APPROVED'}
+              className="flex items-center justify-center gap-2 w-full h-14 rounded-xl bg-gradient-to-r from-[#7f13ec] to-[#9d17f1] text-white font-bold text-lg tracking-wide transition-all hover:shadow-lg hover:shadow-[#7f13ec]/30 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Enviando...
+                </>
+              ) : petitionStatus?.status === 'PENDING' ? (
+                <>
+                  En revisión
+                  <Clock className="w-5 h-5" />
+                </>
+              ) : petitionStatus?.status === 'APPROVED' ? (
+                <>
+                  Aprobado
+                  <CheckCircle className="w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" />
+                  Enviar solicitud
+                </>
+              )}
+            </button>
           </div>
 
           <aside className="flex flex-col gap-6">
