@@ -52,14 +52,9 @@ export default function LadingPage() {
                       const firstName = parts[0];
                       const lastName = parts[1];
                       
-                      // Si el nombre es corto (≤3 caracteres)
+                      // Si el nombre es corto (≤3 caracteres), mostrar nombre completo
                       if (firstName.length <= 3) {
-                        // Si el apellido es más largo que el nombre, mostrar apellido
-                        if (lastName.length > firstName.length) {
-                          return `¡Hola, ${lastName}!`;
-                        }
-                        // Si el apellido también es corto, mostrar solo el nombre
-                        return `¡Hola, ${firstName}!`;
+                        return `¡Hola, ${firstName} ${lastName}!`;
                       }
                       
                       // Si el nombre es largo (>3 caracteres), mostrar solo el nombre

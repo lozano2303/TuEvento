@@ -11,8 +11,11 @@ import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.
 
 public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
 
-    Optional<UserEntity> findByAlias(String alias);
-    boolean existsByAlias(String alias);
+    @Query("SELECT u FROM UserEntity u JOIN FETCH u.role WHERE u.alias = :alias")
+    Optional<UserEntity> findByAlias(@Param("alias") String alias);
+    
+    @Query("SELECT COUNT(u) > 0 FROM UserEntity u WHERE u.alias = :alias")
+    boolean existsByAlias(@Param("alias") String alias);
 
     @Modifying
     @Query("UPDATE UserEntity u SET u.userStatus = (SELECT s FROM UserStatusEntity s WHERE s.code = :statusCode) WHERE u.userId = :userId")

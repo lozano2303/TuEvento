@@ -9,16 +9,14 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", uses = {UserMapper.class})
 public interface OrganizerPetitionMapper {
 
-    @Mapping(target = "storedFileId", source = "storedFile.storedFileId")
+    @org.mapstruct.Mapping(target = "storedFileId", source = "storedFile", qualifiedByName = "storedFileIdToInteger")
     OrganizerPetition toDomain(OrganizerPetitionEntity entity);
 
-    @Mapping(target = "storedFile",
-             expression = "java(domain.getStoredFileId() != null ? buildStoredFileRef(domain.getStoredFileId()) : null)")
+    @org.mapstruct.Mapping(target = "storedFile", ignore = true)
     OrganizerPetitionEntity toEntity(OrganizerPetition domain);
 
-    default StoredFileEntity buildStoredFileRef(Integer storedFileId) {
-        StoredFileEntity ref = new StoredFileEntity();
-        ref.setStoredFileId(storedFileId);
-        return ref;
+    @org.mapstruct.Named("storedFileIdToInteger")
+    default Integer mapStoredFileIdToInteger(StoredFileEntity storedFile) {
+        return storedFile != null ? storedFile.getStoredFileId() : null;
     }
 }

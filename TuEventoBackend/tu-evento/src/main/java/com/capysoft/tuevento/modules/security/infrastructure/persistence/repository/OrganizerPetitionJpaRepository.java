@@ -10,8 +10,9 @@ import java.util.Optional;
 
 public interface OrganizerPetitionJpaRepository extends JpaRepository<OrganizerPetitionEntity, Integer> {
 
-    @Query("SELECT o FROM OrganizerPetitionEntity o WHERE o.user.userId = :userId AND o.status = 'PENDING'")
+    @Query("SELECT o FROM OrganizerPetitionEntity o LEFT JOIN FETCH o.storedFile WHERE o.user.userId = :userId AND o.status = 'PENDING'")
     Optional<OrganizerPetitionEntity> findPendingByUserId(@Param("userId") Integer userId);
 
-    List<OrganizerPetitionEntity> findByStatus(String status);
+    @Query("SELECT o FROM OrganizerPetitionEntity o LEFT JOIN FETCH o.storedFile LEFT JOIN FETCH o.user WHERE o.status = :status")
+    List<OrganizerPetitionEntity> findByStatus(@Param("status") String status);
 }
