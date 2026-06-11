@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 054-seed-section-types
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type
+            columns:
+              - column:
+                  name: name
+                  value: "General"
+        - insert:
+            tableName: section_type
+            columns:
+              - column:
+                  name: name
+                  value: "VIP"
+        - insert:
+            tableName: section_type
+            columns:
+              - column:
+                  name: name
+                  value: "Palco"
+        - insert:
+            tableName: section_type
+            columns:
+              - column:
+                  name: name
+                  value: "Tribuna"
+        - insert:
+            tableName: section_type
+            columns:
+              - column:
+                  name: name
+                  value: "Pista"

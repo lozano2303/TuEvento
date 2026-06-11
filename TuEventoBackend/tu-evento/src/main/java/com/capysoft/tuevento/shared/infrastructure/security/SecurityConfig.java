@@ -66,7 +66,9 @@ public class SecurityConfig {
             "/api/v1/ratings/*/replies",
             "/api/v1/events/*/media",
             "/api/v1/categories/**",
-            "/api/v1/category-events/**"
+            "/api/v1/category-events/**",
+            "/api/v1/section-types",
+            "/api/v1/event-sections/event/**"
     };
 
     @Bean
