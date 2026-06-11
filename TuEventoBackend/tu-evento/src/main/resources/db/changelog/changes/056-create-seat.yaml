@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 056-create-seat
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: seat
+            columns:
+              - column:
+                  name: seat_id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: seat_block_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_section_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: row
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: position
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  defaultValue: "available"
+        - addForeignKeyConstraint:
+            baseTableName: seat
+            baseColumnNames: seat_block_id
+            referencedTableName: seat_block
+            referencedColumnNames: seat_block_id
+            constraintName: fk_seat_seat_block
+        - addForeignKeyConstraint:
+            baseTableName: seat
+            baseColumnNames: event_section_id
+            referencedTableName: event_section
+            referencedColumnNames: event_section_id
+            constraintName: fk_seat_event_section
+        - sql:
+            sql: "ALTER TABLE seat ADD CONSTRAINT chk_seat_type CHECK (type IN ('regular', 'courtesy'));"
+        - sql:
+            sql: "ALTER TABLE seat ADD CONSTRAINT chk_seat_status CHECK (status IN ('available', 'reserved', 'sold', 'courtesy'));"
