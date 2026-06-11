@@ -1,0 +1,68 @@
+databaseChangeLog:
+  - changeSet:
+      id: 053-create-event-section
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: event_section
+            columns:
+              - column:
+                  name: event_section_id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: section_type_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: capacity
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: available_seats
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: DECIMAL(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: event_section
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_event_section_event
+        - addForeignKeyConstraint:
+            baseTableName: event_section
+            baseColumnNames: section_type_id
+            referencedTableName: section_type
+            referencedColumnNames: section_type_id
+            constraintName: fk_event_section_section_type
+        - sql:
+            sql: "ALTER TABLE event_section ADD CONSTRAINT chk_event_section_capacity_positive CHECK (capacity > 0)"
+        - sql:
+            sql: "ALTER TABLE event_section ADD CONSTRAINT chk_event_section_available_lte_capacity CHECK (available_seats <= capacity)"
+        - sql:
+            sql: "ALTER TABLE event_section ADD CONSTRAINT chk_event_section_price_non_negative CHECK (price >= 0)"
+        - addUniqueConstraint:
+            tableName: event_section
+            columnNames: event_id, section_type_id
+            constraintName: uq_event_section_event_type
