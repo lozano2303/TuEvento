@@ -5,6 +5,8 @@ import com.capysoft.tuevento.modules.section.application.dto.request.UpdateEvent
 import com.capysoft.tuevento.modules.section.application.dto.response.EventSectionResponse;
 import com.capysoft.tuevento.modules.section.application.port.in.EventSectionUseCase;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,10 +19,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/event-sections")
 @RequiredArgsConstructor
+@Tag(name = "Event Sections", description = "Event section management endpoints")
 public class EventSectionController {
 
     private final EventSectionUseCase eventSectionUseCase;
 
+    @Operation(summary = "Get sections for an event — public")
     @GetMapping("/event/{eventId}")
     public ResponseEntity<ApiResponse<List<EventSectionResponse>>> getByEvent(
             @PathVariable Integer eventId) {
@@ -28,6 +32,7 @@ public class EventSectionController {
                 eventSectionUseCase.getSectionsByEvent(eventId)));
     }
 
+    @Operation(summary = "Create a section for an event")
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ORGANIZER', 'ADMIN')")
     public ResponseEntity<ApiResponse<EventSectionResponse>> create(
@@ -37,6 +42,7 @@ public class EventSectionController {
                         eventSectionUseCase.createEventSection(request)));
     }
 
+    @Operation(summary = "Update a section")
     @PutMapping("/{eventSectionId}")
     @PreAuthorize("hasAnyAuthority('ORGANIZER', 'ADMIN')")
     public ResponseEntity<ApiResponse<EventSectionResponse>> update(
@@ -46,6 +52,7 @@ public class EventSectionController {
                 eventSectionUseCase.updateEventSection(eventSectionId, request)));
     }
 
+    @Operation(summary = "Delete a section")
     @DeleteMapping("/{eventSectionId}")
     @PreAuthorize("hasAnyAuthority('ORGANIZER', 'ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(
