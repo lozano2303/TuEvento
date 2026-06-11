@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 057-create-seat-log
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: seat_log
+            columns:
+              - column:
+                  name: seat_log_id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: seat_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: old_status
+                  type: VARCHAR(20)
+              - column:
+                  name: new_status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+                  defaultValueComputed: "CURRENT_TIMESTAMP"
+              - column:
+                  name: changed_by
+                  type: INT
+              - column:
+                  name: reason
+                  type: VARCHAR(255)
+        - addForeignKeyConstraint:
+            baseTableName: seat_log
+            baseColumnNames: seat_id
+            referencedTableName: seat
+            referencedColumnNames: seat_id
+            constraintName: fk_seat_log_seat
+        - addForeignKeyConstraint:
+            baseTableName: seat_log
+            baseColumnNames: changed_by
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_seat_log_user
+        - sql:
+            sql: "ALTER TABLE seat_log ADD CONSTRAINT chk_seat_log_old_status CHECK (old_status IN ('available', 'reserved', 'sold', 'courtesy'));"
+        - sql:
+            sql: "ALTER TABLE seat_log ADD CONSTRAINT chk_seat_log_new_status CHECK (new_status IN ('available', 'reserved', 'sold', 'courtesy'));"
