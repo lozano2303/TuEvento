@@ -2,14 +2,17 @@ import { useState } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw, Code2, Trash2, Save, X } from 'lucide-react';
 import { serializeLayout } from './layoutEditorUtils';
 
-export default function EditorToolbar({ elements, zoom, onZoomIn, onZoomOut, onResetZoom, onClear }) {
+export default function EditorToolbar({ elements, canvasSize, zoom, onZoomIn, onZoomOut, onResetZoom, onClear }) {
   const [showJson, setShowJson] = useState(false);
   const [saveMsg, setSaveMsg] = useState(null);
 
-  const layoutJson = JSON.stringify(serializeLayout(elements), null, 2);
+  const layoutJson = JSON.stringify(
+    serializeLayout(elements, canvasSize?.width ?? 1200, canvasSize?.height ?? 800),
+    null, 2
+  );
 
   const handleSave = () => {
-    console.log('[Layout Editor] layoutData:', serializeLayout(elements));
+    console.log('[Layout Editor] layoutData:', serializeLayout(elements, canvasSize?.width, canvasSize?.height));
     setSaveMsg('Guardado simulado — Fase 2 conectará esto al backend');
     setTimeout(() => setSaveMsg(null), 3000);
   };
