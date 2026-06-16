@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 052-replace-organizer-petition-user-status-unique
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: postgresql
+      changes:
+        - dropUniqueConstraint:
+            tableName: organizer_petition
+            constraintName: uq_organizer_petition_user_pending
+        - createIndex:
+            tableName: organizer_petition
+            indexName: ux_organizer_petition_user_pending
+            unique: true
+            where: "status = 'PENDING'"
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: status

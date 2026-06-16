@@ -40,7 +40,8 @@ public class GetOrganizerRequestsUseCase implements GetOrganizerRequestsPort {
                             .documentType("Cédula")
                             .status(petition.getStatus())
                             .applicationDate(petition.getApplicationDate())
-                            .build();
+                             .storedFileId(petition.getStoredFileId())
+                             .build();
                 })
                 .toList();
     }
