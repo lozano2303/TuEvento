@@ -1,3 +1,5 @@
+import { computeSectionSize } from './layoutEditorUtils';
+
 const SECTION_COLORS = [
   { label: 'Morado', value: '#7C3AED' },
   { label: 'Verde',  value: '#16A34A' },
@@ -169,14 +171,12 @@ export default function PropertiesPanel({ element, onChange, onDelete }) {
                   value={element.seatLayout.rows}
                   min={1}
                   max={20}
-                  onChange={(e) =>
-                    update({
-                      seatLayout: {
-                        ...element.seatLayout,
-                        rows: Math.max(1, Number(e.target.value)),
-                      },
-                    })
-                  }
+                  onChange={(e) => {
+                    const rows = Math.max(1, Number(e.target.value));
+                    const newLayout = { ...element.seatLayout, rows };
+                    const newSize = computeSectionSize(newLayout);
+                    update({ seatLayout: newLayout, ...(newSize ?? {}) });
+                  }}
                 />
               </div>
               <div>
@@ -187,14 +187,12 @@ export default function PropertiesPanel({ element, onChange, onDelete }) {
                   value={element.seatLayout.cols}
                   min={1}
                   max={30}
-                  onChange={(e) =>
-                    update({
-                      seatLayout: {
-                        ...element.seatLayout,
-                        cols: Math.max(1, Number(e.target.value)),
-                      },
-                    })
-                  }
+                  onChange={(e) => {
+                    const cols = Math.max(1, Number(e.target.value));
+                    const newLayout = { ...element.seatLayout, cols };
+                    const newSize = computeSectionSize(newLayout);
+                    update({ seatLayout: newLayout, ...(newSize ?? {}) });
+                  }}
                 />
               </div>
             </div>

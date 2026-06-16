@@ -1,15 +1,19 @@
 import { useRef, useEffect } from 'react';
 import { Group, Rect, Circle, Text, Transformer } from 'react-konva';
-import { computeSeatPositions, snapToGrid } from '../layoutEditorUtils';
+import { computeSeatPositions, computeMinSectionSize, snapToGrid } from '../layoutEditorUtils';
 
 export default function SectionElement({
   element,
   isSelected,
-  onChange,
+  isGroupLeader,      // Fix 5: true cuando este elemento lidera el drag grupal
   onSelect,
+  onChange,
+  onGroupDragStart,   // Fix 5: (elementId, startPos) => void
+  onGroupDragMove,    // Fix 5: (elementId, currentPos) => void
+  onGroupDragEnd,     // Fix 5: (elementId, finalPos)  => void
 }) {
   const groupRef = useRef();
-  const trRef = useRef();
+  const trRef    = useRef();
 
   useEffect(() => {
     if (isSelected && trRef.current && groupRef.current) {
@@ -23,31 +27,48 @@ export default function SectionElement({
     element.height,
     element.seatLayout
   );
-  const totalSeats = element.seatLayout
-    ? element.seatLayout.rows * element.seatLayout.cols
-    : 0;
-  const showGrid = seatPositions.length > 0;
+
+  // Fix 6: tamaño mínimo calculado según la grilla actual
+  const minSize = computeMinSectionSize(element.seatLayout);
+
+  // ── Handlers de drag ──────────────────────────────────────────────────────
+  const handleDragStart = (e) => {
+    if (onGroupDragStart) {
+      onGroupDragStart(element.id, { x: e.target.x(), y: e.target.y() });
+    }
+  };
+
+  const handleDragMove = (e) => {
+    if (onGroupDragMove) {
+      onGroupDragMove(element.id, { x: e.target.x(), y: e.target.y() });
+    }
+  };
 
   const handleDragEnd = (e) => {
-    onChange({
-      ...element,
-      x: snapToGrid(e.target.x()),
-      y: snapToGrid(e.target.y()),
-    });
+    if (onGroupDragEnd) {
+      onGroupDragEnd(element.id, { x: e.target.x(), y: e.target.y() });
+    } else {
+      // Drag individual (selectedIds.length === 1)
+      onChange({
+        ...element,
+        x: snapToGrid(e.target.x()),
+        y: snapToGrid(e.target.y()),
+      });
+    }
   };
 
   const handleTransformEnd = () => {
-    const node = groupRef.current;
+    const node  = groupRef.current;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
     node.scaleX(1);
     node.scaleY(1);
     onChange({
       ...element,
-      x: snapToGrid(node.x()),
-      y: snapToGrid(node.y()),
-      width: snapToGrid(Math.max(60, node.width() * scaleX)),
-      height: snapToGrid(Math.max(40, node.height() * scaleY)),
+      x:      snapToGrid(node.x()),
+      y:      snapToGrid(node.y()),
+      width:  snapToGrid(Math.max(minSize.width,  node.width()  * scaleX)),
+      height: snapToGrid(Math.max(minSize.height, node.height() * scaleY)),
       rotation: node.rotation(),
     });
   };
@@ -64,10 +85,11 @@ export default function SectionElement({
         draggable
         onClick={onSelect}
         onTap={onSelect}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
         onTransformEnd={handleTransformEnd}
       >
-        {/* Fondo de la sección */}
         <Rect
           width={element.width}
           height={element.height}
@@ -78,33 +100,19 @@ export default function SectionElement({
           strokeWidth={isSelected ? 2 : 1}
         />
 
-        {/* Grilla de sillas */}
-        {showGrid &&
-          seatPositions.map((pos, i) => (
-            <Circle
-              key={i}
-              x={pos.x}
-              y={pos.y}
-              radius={pos.r}
-              fill="rgba(255,255,255,0.75)"
-              stroke="rgba(255,255,255,0.4)"
-              strokeWidth={0.5}
-            />
-          ))}
-
-        {/* Badge cuando la grilla es demasiado pequeña para mostrarse */}
-        {!showGrid && totalSeats > 0 && (
-          <Text
-            x={4}
-            y={4}
-            text={`${totalSeats} asientos`}
-            fontSize={10}
-            fill="rgba(255,255,255,0.7)"
-            fontStyle="italic"
+        {seatPositions.map((pos, i) => (
+          <Circle
+            key={i}
+            x={pos.x}
+            y={pos.y}
+            radius={pos.r}
+            fill="rgba(255,255,255,0.75)"
+            stroke="rgba(255,255,255,0.4)"
+            strokeWidth={0.5}
+            listening={false}
           />
-        )}
+        ))}
 
-        {/* Label centrado */}
         <Text
           x={0}
           y={element.height / 2 - 8}
@@ -128,8 +136,9 @@ export default function SectionElement({
             'middle-left', 'middle-right',
             'top-center', 'bottom-center',
           ]}
+          // Fix 6: tamaño mínimo específico de esta sección
           boundBoxFunc={(oldBox, newBox) => {
-            if (newBox.width < 60 || newBox.height < 40) return oldBox;
+            if (newBox.width < minSize.width || newBox.height < minSize.height) return oldBox;
             return newBox;
           }}
         />

@@ -2,7 +2,6 @@ import { useRef, useEffect } from 'react';
 import { Group, Rect, Text, Transformer } from 'react-konva';
 import { snapToGrid } from '../layoutEditorUtils';
 
-// Abreviaciones visuales para cada tipo de infraestructura
 const TYPE_ABBR = {
   stage:       '🎭',
   screen:      '🖥',
@@ -16,11 +15,14 @@ const TYPE_ABBR = {
 export default function InfraElement({
   element,
   isSelected,
-  onChange,
   onSelect,
+  onChange,
+  onGroupDragStart,   // Fix 5
+  onGroupDragMove,    // Fix 5
+  onGroupDragEnd,     // Fix 5
 }) {
   const groupRef = useRef();
-  const trRef = useRef();
+  const trRef    = useRef();
 
   useEffect(() => {
     if (isSelected && trRef.current && groupRef.current) {
@@ -29,32 +31,49 @@ export default function InfraElement({
     }
   }, [isSelected]);
 
+  // ── Handlers de drag ──────────────────────────────────────────────────────
+  const handleDragStart = (e) => {
+    if (onGroupDragStart) {
+      onGroupDragStart(element.id, { x: e.target.x(), y: e.target.y() });
+    }
+  };
+
+  const handleDragMove = (e) => {
+    if (onGroupDragMove) {
+      onGroupDragMove(element.id, { x: e.target.x(), y: e.target.y() });
+    }
+  };
+
   const handleDragEnd = (e) => {
-    onChange({
-      ...element,
-      x: snapToGrid(e.target.x()),
-      y: snapToGrid(e.target.y()),
-    });
+    if (onGroupDragEnd) {
+      onGroupDragEnd(element.id, { x: e.target.x(), y: e.target.y() });
+    } else {
+      onChange({
+        ...element,
+        x: snapToGrid(e.target.x()),
+        y: snapToGrid(e.target.y()),
+      });
+    }
   };
 
   const handleTransformEnd = () => {
-    const node = groupRef.current;
+    const node   = groupRef.current;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
     node.scaleX(1);
     node.scaleY(1);
     onChange({
       ...element,
-      x: snapToGrid(node.x()),
-      y: snapToGrid(node.y()),
-      width: snapToGrid(Math.max(40, node.width() * scaleX)),
-      height: snapToGrid(Math.max(30, node.height() * scaleY)),
+      x:        snapToGrid(node.x()),
+      y:        snapToGrid(node.y()),
+      width:    snapToGrid(Math.max(40, node.width()  * scaleX)),
+      height:   snapToGrid(Math.max(30, node.height() * scaleY)),
       rotation: node.rotation(),
     });
   };
 
-  const abbr = TYPE_ABBR[element.type] ?? element.type.slice(0, 3).toUpperCase();
-  const iconFontSize = Math.min(element.width, element.height) * 0.3;
+  const abbr          = TYPE_ABBR[element.type] ?? element.type.slice(0, 3).toUpperCase();
+  const iconFontSize  = Math.min(element.width, element.height) * 0.3;
   const labelFontSize = Math.max(10, Math.min(13, element.width / 10));
 
   return (
@@ -69,6 +88,8 @@ export default function InfraElement({
         draggable
         onClick={onSelect}
         onTap={onSelect}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
         onTransformEnd={handleTransformEnd}
       >
@@ -82,7 +103,6 @@ export default function InfraElement({
           strokeWidth={isSelected ? 2 : 1}
         />
 
-        {/* Ícono */}
         <Text
           x={0}
           y={element.height / 2 - iconFontSize - 2}
@@ -93,7 +113,6 @@ export default function InfraElement({
           listening={false}
         />
 
-        {/* Label */}
         <Text
           x={0}
           y={element.height / 2 + 4}

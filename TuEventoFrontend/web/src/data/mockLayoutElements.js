@@ -1,5 +1,16 @@
 // Catálogo de elementos disponibles en la paleta del editor.
 // NO son datos del backend — son la configuración de qué se puede arrastrar al canvas.
+//
+// Fix 4: los defaultWidth/defaultHeight de secciones con seatLayout se calculan
+// con la misma fórmula que computeSectionSize() para que sean proporcionales
+// a la grilla desde el primer momento.
+//   width  = cols * (seatRadius*2 + gap) + padding*2
+//   height = rows * (seatRadius*2 + gap) + padding*2 + labelSpace(28)
+
+const calcSize = (rows, cols, seatRadius = 7, gap = 4, padding = 12, labelSpace = 28) => ({
+  defaultWidth:  Math.round(cols * (seatRadius * 2 + gap) + padding * 2),
+  defaultHeight: Math.round(rows * (seatRadius * 2 + gap) + padding * 2 + labelSpace),
+});
 
 export const PALETTE_ELEMENTS = [
   // ── Infraestructura ────────────────────────────────────────────────────────
@@ -67,15 +78,14 @@ export const PALETTE_ELEMENTS = [
     seatLayout: null,
   },
 
-  // ── Secciones ─────────────────────────────────────────────────────────────
+  // ── Secciones (tamaño calculado con fórmula) ──────────────────────────────
   {
     type: 'section',
     sectionType: 'VIP',
     label: 'VIP',
     icon: '⭐',
-    defaultWidth: 200,
-    defaultHeight: 150,
-    color: '#7C3AED',            // morado
+    ...calcSize(4, 6),           // 216 × 140
+    color: '#7C3AED',
     seatLayout: { rows: 4, cols: 6, seatRadius: 7, gap: 4 },
   },
   {
@@ -83,9 +93,8 @@ export const PALETTE_ELEMENTS = [
     sectionType: 'General',
     label: 'General',
     icon: '👥',
-    defaultWidth: 240,
-    defaultHeight: 180,
-    color: '#16A34A',            // verde
+    ...calcSize(6, 8),           // 264 × 168
+    color: '#16A34A',
     seatLayout: { rows: 6, cols: 8, seatRadius: 7, gap: 4 },
   },
   {
@@ -93,9 +102,8 @@ export const PALETTE_ELEMENTS = [
     sectionType: 'Palco',
     label: 'Palco',
     icon: '🎪',
-    defaultWidth: 180,
-    defaultHeight: 120,
-    color: '#EA580C',            // naranja
+    ...calcSize(3, 5),           // 174 × 112
+    color: '#EA580C',
     seatLayout: { rows: 3, cols: 5, seatRadius: 7, gap: 4 },
   },
   {
@@ -103,9 +111,8 @@ export const PALETTE_ELEMENTS = [
     sectionType: 'Tribuna',
     label: 'Tribuna',
     icon: '🏟️',
-    defaultWidth: 260,
-    defaultHeight: 160,
-    color: '#2563EB',            // azul
+    ...calcSize(5, 8),           // 264 × 140
+    color: '#2563EB',
     seatLayout: { rows: 5, cols: 8, seatRadius: 7, gap: 4 },
   },
   {
@@ -115,7 +122,7 @@ export const PALETTE_ELEMENTS = [
     icon: '🎶',
     defaultWidth: 200,
     defaultHeight: 200,
-    color: '#DB2777',            // rosado
-    seatLayout: null,            // área libre — sin grilla de sillas
+    color: '#DB2777',
+    seatLayout: null,            // área libre — sin grilla
   },
 ];
