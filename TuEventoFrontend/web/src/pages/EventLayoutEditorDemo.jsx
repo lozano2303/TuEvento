@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import ElementPalette from '../components/layout-editor/ElementPalette';
 import LayoutEditorCanvas from '../components/layout-editor/LayoutEditorCanvas';
 import PropertiesPanel from '../components/layout-editor/PropertiesPanel';
@@ -49,7 +49,6 @@ const ZOOM_MIN  = 0.2;
 const ZOOM_MAX  = 4;
 const ZOOM_STEP = 0.15;
 
-// ── Helper: recalcula canvasSize tras cualquier movimiento (Fix 7) ────────────
 function reconcileCanvas(nextElements, currentCanvas) {
   const { newCanvasSize, offsetDelta } = computeCanvasForElements(nextElements, currentCanvas);
   const needsOffset = offsetDelta.x !== 0 || offsetDelta.y !== 0;
@@ -60,58 +59,53 @@ function reconcileCanvas(nextElements, currentCanvas) {
 }
 
 export default function EventLayoutEditorDemo() {
-  const [elements,    setElements]    = useState(INITIAL_ELEMENTS);
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [zoom,        setZoom]        = useState(0.75);
-  const [canvasSize,  setCanvasSize]  = useState(CANVAS_DEFAULT);
+  const [elements,          setElements]          = useState(INITIAL_ELEMENTS);
+  const [selectedIds,       setSelectedIds]       = useState([]);
+  const [zoom,              setZoom]              = useState(0.75);
+  const [canvasSize,        setCanvasSize]        = useState(CANVAS_DEFAULT);
+  const [editingPolygonId,  setEditingPolygonId]  = useState(null); // Fase 1.3
   const containerRef = useRef();
+
+  // ── Fase 1.3: salir del modo edición si se cambia la selección ────────────
+  useEffect(() => {
+    if (editingPolygonId && !selectedIds.includes(editingPolygonId)) {
+      setEditingPolygonId(null);
+    }
+  }, [selectedIds, editingPolygonId]);
 
   // ── Selección ─────────────────────────────────────────────────────────────
   const handleSelect = useCallback((ids) => {
     setSelectedIds(Array.isArray(ids) ? ids : [ids]);
   }, []);
 
-  // ── Modificar un elemento (drag individual, transform, props panel) ───────
-  // Fix 7: después de cada cambio, recalcular el canvas
+  // ── Modificar elemento ────────────────────────────────────────────────────
   const handleChange = useCallback((updated) => {
     setElements((prev) => {
       const next = prev.map((el) => (el.id === updated.id ? updated : el));
       const { adjustedElements, newCanvasSize } = reconcileCanvas(next, canvasSize);
-      // Si el canvas cambió, actualizarlo en el mismo ciclo mediante un
-      // setTimeout(0) no es ideal — usamos un ref para pasarlo afuera
-      if (
-        newCanvasSize.width  !== canvasSize.width ||
-        newCanvasSize.height !== canvasSize.height
-      ) {
-        // Programar la actualización de canvasSize fuera del setState de elements
+      if (newCanvasSize.width !== canvasSize.width || newCanvasSize.height !== canvasSize.height) {
         queueMicrotask(() => setCanvasSize(newCanvasSize));
       }
       return adjustedElements;
     });
   }, [canvasSize]);
 
-  // ── Fix 5 + 7: drag grupal finalizado en el canvas ────────────────────────
-  // Recibe el array completo de elementos con las posiciones ya actualizadas
+  // ── Fix 5 + 7: drag grupal ────────────────────────────────────────────────
   const handleGroupDragEnd = useCallback((updatedElements) => {
     setElements((prev) => {
-      // Mezclar: los elementos del grupo con sus nuevas posiciones, los demás intactos
-      const idSet = new Set(updatedElements.map((e) => e.id));
       const merged = prev.map((el) => {
         const u = updatedElements.find((ue) => ue.id === el.id);
         return u ?? el;
       });
       const { adjustedElements, newCanvasSize } = reconcileCanvas(merged, canvasSize);
-      if (
-        newCanvasSize.width  !== canvasSize.width ||
-        newCanvasSize.height !== canvasSize.height
-      ) {
+      if (newCanvasSize.width !== canvasSize.width || newCanvasSize.height !== canvasSize.height) {
         queueMicrotask(() => setCanvasSize(newCanvasSize));
       }
       return adjustedElements;
     });
   }, [canvasSize]);
 
-  // ── Fix 3: expansión de canvas por desbordamiento ─────────────────────────
+  // ── Fix 3: expansión ──────────────────────────────────────────────────────
   const handleExpandCanvas = useCallback(({ updatedElement, offsetDelta, newCanvasSize }) => {
     setElements((prev) =>
       prev.map((el) => {
@@ -122,14 +116,15 @@ export default function EventLayoutEditorDemo() {
     setCanvasSize(newCanvasSize);
   }, []);
 
-  // ── Añadir desde paleta ───────────────────────────────────────────────────
+  // ── Paleta ────────────────────────────────────────────────────────────────
   const handleAddElement = useCallback((newElement) => {
     setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
   }, []);
 
-  // ── Eliminar seleccionado ─────────────────────────────────────────────────
+  // ── Eliminar ──────────────────────────────────────────────────────────────
   const handleDelete = useCallback(() => {
+    setEditingPolygonId(null);
     setElements((prev) => {
       const next = prev.filter((el) => !selectedIds.includes(el.id));
       const { adjustedElements, newCanvasSize } = reconcileCanvas(next, canvasSize);
@@ -138,6 +133,17 @@ export default function EventLayoutEditorDemo() {
     });
     setSelectedIds([]);
   }, [selectedIds, canvasSize]);
+
+  // ── Fase 1.3: edición de vértices ─────────────────────────────────────────
+  const handleStartVertexEdit = useCallback((elementId) => {
+    setEditingPolygonId(elementId);
+    // Asegurar que ese elemento esté seleccionado
+    setSelectedIds([elementId]);
+  }, []);
+
+  const handleEndVertexEdit = useCallback(() => {
+    setEditingPolygonId(null);
+  }, []);
 
   // ── Zoom ──────────────────────────────────────────────────────────────────
   const handleZoomIn    = () => setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)));
@@ -148,6 +154,8 @@ export default function EventLayoutEditorDemo() {
     selectedIds.length === 1
       ? elements.find((el) => el.id === selectedIds[0]) ?? null
       : null;
+
+  const isEditingVertices = editingPolygonId !== null;
 
   return (
     <div
@@ -160,6 +168,11 @@ export default function EventLayoutEditorDemo() {
           DEMO · Fase 1
         </span>
         <span className="text-textMuted text-xs ml-1">Sin conexión al backend — datos en memoria</span>
+        {isEditingVertices && (
+          <span className="text-[10px] font-bold text-accent border border-accent/40 px-2 py-0.5 rounded-full">
+            ✏ Editando vértices — Esc para salir
+          </span>
+        )}
         <span className="ml-auto text-[10px] text-textMuted">
           Canvas {canvasSize.width}×{canvasSize.height}
           {selectedIds.length > 1 && ` · ${selectedIds.length} seleccionados`}
@@ -173,7 +186,12 @@ export default function EventLayoutEditorDemo() {
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onResetZoom={handleResetZoom}
-        onClear={() => { setElements([]); setSelectedIds([]); setCanvasSize(CANVAS_DEFAULT); }}
+        onClear={() => {
+          setElements([]);
+          setSelectedIds([]);
+          setCanvasSize(CANVAS_DEFAULT);
+          setEditingPolygonId(null);
+        }}
       />
 
       <div className="flex flex-1 min-h-0">
@@ -183,10 +201,13 @@ export default function EventLayoutEditorDemo() {
           elements={elements}
           selectedIds={selectedIds}
           canvasSize={canvasSize}
+          editingPolygonId={editingPolygonId}
           onSelect={handleSelect}
           onChange={handleChange}
           onExpandCanvas={handleExpandCanvas}
           onGroupDragEnd={handleGroupDragEnd}
+          onStartVertexEdit={handleStartVertexEdit}
+          onEndVertexEdit={handleEndVertexEdit}
           onAddElement={handleAddElement}
           zoom={zoom}
           onZoomChange={setZoom}
@@ -197,6 +218,9 @@ export default function EventLayoutEditorDemo() {
           element={selectedElement}
           onChange={handleChange}
           onDelete={handleDelete}
+          isEditingVertices={isEditingVertices}
+          onStartVertexEdit={() => selectedElement && handleStartVertexEdit(selectedElement.id)}
+          onEndVertexEdit={handleEndVertexEdit}
         />
       </div>
     </div>

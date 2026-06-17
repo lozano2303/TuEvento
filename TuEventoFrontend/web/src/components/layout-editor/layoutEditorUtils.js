@@ -18,17 +18,19 @@ export const serializeLayout = (elements, canvasWidth = 1200, canvasHeight = 800
     id: el.id,
     type: el.type,
     ...(el.type === 'section' && {
-      sectionType: el.sectionType,
-      eventSectionId: null,       // siempre null en Fase 1
-      seatLayout: el.seatLayout,
+      sectionType:    el.sectionType,
+      eventSectionId: null,
+      seatLayout:     el.seatLayout,
+      shapeMode:      el.shapeMode ?? 'rect',
+      polygonPoints:  el.polygonPoints ?? null,
     }),
     x: el.x,
     y: el.y,
-    width: el.width,
-    height: el.height,
+    width:    el.width,
+    height:   el.height,
     rotation: el.rotation ?? 0,
-    label: el.label,
-    color: el.color,
+    label:    el.label,
+    color:    el.color,
   })),
 });
 
@@ -160,4 +162,110 @@ export const computeCanvasForElements = (elements, currentCanvas) => {
     newCanvasSize: { width: finalW, height: finalH },
     offsetDelta:   { x: offsetX, y: offsetY },
   };
+};
+
+// ── Fase 1.3: utilidades para polígonos ──────────────────────────────────────
+
+/**
+ * Calcula el bounding box de un array de vértices [[x,y], ...].
+ * Devuelve { minX, minY, maxX, maxY, width, height }.
+ */
+export const polyBoundingBox = (points) => {
+  if (!points || points.length === 0) return { minX: 0, minY: 0, maxX: 0, maxY: 0, width: 0, height: 0 };
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [x, y] of points) {
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+  }
+  return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+};
+
+/**
+ * Dados los polígonos en coordenadas relativas y el seatLayout, genera las
+ * posiciones de asientos adaptadas al contorno del polígono.
+ *
+ * Algoritmo:
+ *   1. Dividir el rango vertical en `rows` franjas.
+ *   2. Para cada fila, encontrar las intersecciones horizontales con los bordes.
+ *   3. Calcular cuántos asientos caben en el ancho disponible.
+ *   4. Distribuirlos centrados en ese segmento.
+ */
+export const computePolygonSeatRows = (polygonPoints, seatLayout) => {
+  if (!polygonPoints || polygonPoints.length < 3 || !seatLayout) return [];
+  const { rows, cols, seatRadius, gap } = seatLayout;
+  const bb = polyBoundingBox(polygonPoints);
+  const pad = 8; // margen interior mínimo
+  const minY = bb.minY + pad;
+  const maxY = bb.maxY - pad;
+  if (maxY <= minY) return [];
+
+  const rowH = (maxY - minY) / rows;
+  const seatDiam = seatRadius * 2 + gap;
+  const positions = [];
+
+  for (let r = 0; r < rows; r++) {
+    const y = minY + r * rowH + rowH / 2;
+    const xs = polyHorizontalIntersections(polygonPoints, y);
+    if (xs.length < 2) continue;
+
+    // Usar el segmento más ancho disponible
+    xs.sort((a, b) => a - b);
+    const xLeft  = xs[0]  + pad;
+    const xRight = xs[xs.length - 1] - pad;
+    const availW = xRight - xLeft;
+    if (availW < seatDiam) continue;
+
+    // Cuántos asientos caben (sin exceder cols como límite superior)
+    const count = Math.min(cols, Math.floor(availW / seatDiam));
+    if (count <= 0) continue;
+
+    // Centrar los asientos en el segmento
+    const totalW = count * seatDiam - gap;
+    const startX = xLeft + (availW - totalW) / 2;
+    for (let c = 0; c < count; c++) {
+      positions.push({
+        x: startX + c * seatDiam + seatRadius,
+        y,
+        r: seatRadius,
+      });
+    }
+  }
+
+  return positions;
+};
+
+/**
+ * Calcula las intersecciones de una línea horizontal (y = scanY) con
+ * los bordes del polígono definido por `points` ([[x,y], ...]).
+ * Devuelve un array de valores X de intersección.
+ */
+function polyHorizontalIntersections(points, scanY) {
+  const xs = [];
+  const n  = points.length;
+  for (let i = 0; i < n; i++) {
+    const [ax, ay] = points[i];
+    const [bx, by] = points[(i + 1) % n];
+    if ((ay <= scanY && by > scanY) || (by <= scanY && ay > scanY)) {
+      const t = (scanY - ay) / (by - ay);
+      xs.push(ax + t * (bx - ax));
+    }
+  }
+  return xs;
+}
+
+/**
+ * Aplana [[x0,y0],[x1,y1],...] al formato plano [x0,y0,x1,y1,...] que Konva espera.
+ */
+export const flattenPoints = (points) => points.flatMap(([x, y]) => [x, y]);
+
+/**
+ * Calcula el centroide (promedio) de un array de vértices.
+ */
+export const polyCentroid = (points) => {
+  if (!points || points.length === 0) return { x: 0, y: 0 };
+  const sumX = points.reduce((s, [x]) => s + x, 0);
+  const sumY = points.reduce((s, [, y]) => s + y, 0);
+  return { x: sumX / points.length, y: sumY / points.length };
 };
