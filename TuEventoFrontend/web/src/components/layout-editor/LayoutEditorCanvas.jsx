@@ -23,10 +23,13 @@ export default function LayoutEditorCanvas({
   elements,
   selectedIds,
   canvasSize,
+  editingPolygonId,    // Fase 1.3: id del elemento en modo edición de vértices, o null
   onSelect,
   onChange,
   onExpandCanvas,
-  onGroupDragEnd,      // Fix 5 + 7: notifica al padre con todos los elementos movidos
+  onGroupDragEnd,
+  onStartVertexEdit,   // Fase 1.3: (elementId) => void
+  onEndVertexEdit,     // Fase 1.3: () => void
   onAddElement,
   zoom,
   onZoomChange,
@@ -133,10 +136,13 @@ export default function LayoutEditorCanvas({
       const pos = stageRef.current.getRelativePointerPosition();
       setSelBox({ x: pos.x, y: pos.y, width: 0, height: 0, startX: pos.x, startY: pos.y });
     } else {
+      // Fase 1.3: click en el fondo mientras se editan vértices → salir del modo edición
+      // El componente padre maneja esto via onSelect([]) que dispara onEndVertexEdit si
+      // está activo — no necesitamos un callback extra aquí porque EventLayoutEditorDemo
+      // escucha el cambio de selectedIds y cancela editingPolygonId.
       onSelect([]);
     }
   };
-
   const handleStageMouseMove = (e) => {
     if (panState.current.active) {
       const dx = e.evt.clientX - panState.current.startPointer.x;
@@ -356,11 +362,19 @@ export default function LayoutEditorCanvas({
               key:              el.id,
               element:          displayEl,
               isSelected,
+              isEditingVertices: editingPolygonId === el.id,  // Fase 1.3
               onSelect:         () => onSelect([el.id]),
               onChange:         handleElementChange,
               onGroupDragStart: isMulti ? handleGroupDragStart : undefined,
               onGroupDragMove:  isMulti ? handleGroupDragMove  : undefined,
               onGroupDragEnd:   isMulti ? handleGroupDragEnd   : undefined,
+              // Fase 1.3: solo secciones usan estos callbacks
+              onStartVertexEdit: el.type === 'section'
+                ? () => onStartVertexEdit?.(el.id)
+                : undefined,
+              onEndVertexEdit: el.type === 'section'
+                ? () => onEndVertexEdit?.()
+                : undefined,
             };
 
             return el.type === 'section'
