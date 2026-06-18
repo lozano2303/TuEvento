@@ -6,9 +6,10 @@ import { generateId, snapToGrid, rectsIntersect } from './layoutEditorUtils';
 
 const GRID_SIZE        = 20;
 const ZOOM_MIN         = 0.2;
-const ZOOM_MAX         = 4;
+const ZOOM_MAX         = 3;
 const ZOOM_STEP        = 0.1;
 const EXPAND_INCREMENT = 200;
+const FIT_MARGIN       = 40;   // px de margen para el fit/auto zoom
 
 function buildGridLines(width, height, step) {
   const lines = [];
@@ -23,13 +24,13 @@ export default function LayoutEditorCanvas({
   elements,
   selectedIds,
   canvasSize,
-  editingPolygonId,    // Fase 1.3: id del elemento en modo edición de vértices, o null
+  editingPolygonId,
   onSelect,
   onChange,
   onExpandCanvas,
   onGroupDragEnd,
-  onStartVertexEdit,   // Fase 1.3: (elementId) => void
-  onEndVertexEdit,     // Fase 1.3: () => void
+  onStartVertexEdit,
+  onEndVertexEdit,
   onAddElement,
   zoom,
   onZoomChange,
@@ -45,15 +46,15 @@ export default function LayoutEditorCanvas({
   const [selBox, setSelBox] = useState(null);
   const isRubberBand = useRef(false);
 
-  // Fix 5: estado del drag grupal — solo en refs para no re-renderizar en onDragMove
+  // Fix 5: drag grupal
   const groupDragState = useRef({
-    active:       false,
-    leaderId:     null,
-    startPositions: {},   // { [id]: { x, y } } — posiciones al iniciar el drag
-    leaderStart:  null,   // { x, y } del líder al iniciar
+    active: false, leaderId: null, startPositions: {}, leaderStart: null,
   });
-  // Posiciones "en vuelo" de los seguidores durante onDragMove
   const [followerPositions, setFollowerPositions] = useState({});
+
+  // Fix B: ref al callback commitAndExit del SectionElement activo en edición
+  // SectionElement lo registra via onSaveVertexEdit cuando cambia
+  const commitVertexEditRef = useRef(null);
 
   const gridLines = useMemo(
     () => buildGridLines(canvasSize.width, canvasSize.height, GRID_SIZE),
@@ -72,7 +73,7 @@ export default function LayoutEditorCanvas({
         y: (pointer.y - stage.y()) / oldScale,
       };
       const direction = e.evt.deltaY < 0 ? 1 : -1;
-      const newScale  = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, oldScale + direction * ZOOM_STEP));
+      const newScale  = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(oldScale + direction * ZOOM_STEP).toFixed(2)));
       const newPos    = {
         x: pointer.x - mousePointTo.x * newScale,
         y: pointer.y - mousePointTo.y * newScale,
@@ -82,6 +83,67 @@ export default function LayoutEditorCanvas({
     },
     [zoom, onZoomChange]
   );
+
+  // ── Fix D2: botones de zoom ───────────────────────────────────────────────
+  const handleZoomIn = useCallback(() => {
+    const next = Math.min(ZOOM_MAX, +(zoom + ZOOM_STEP).toFixed(2));
+    onZoomChange(next);
+    // Ajustar posición para que el zoom quede centrado en el viewport
+    const stageW = containerRef?.current?.clientWidth  ?? 800;
+    const stageH = containerRef?.current?.clientHeight ?? 600;
+    setStagePos((pos) => {
+      const cx = stageW / 2;
+      const cy = stageH / 2;
+      const mousePointTo = { x: (cx - pos.x) / zoom, y: (cy - pos.y) / zoom };
+      return { x: cx - mousePointTo.x * next, y: cy - mousePointTo.y * next };
+    });
+  }, [zoom, onZoomChange, containerRef]);
+
+  const handleZoomOut = useCallback(() => {
+    const next = Math.max(ZOOM_MIN, +(zoom - ZOOM_STEP).toFixed(2));
+    onZoomChange(next);
+    const stageW = containerRef?.current?.clientWidth  ?? 800;
+    const stageH = containerRef?.current?.clientHeight ?? 600;
+    setStagePos((pos) => {
+      const cx = stageW / 2;
+      const cy = stageH / 2;
+      const mousePointTo = { x: (cx - pos.x) / zoom, y: (cy - pos.y) / zoom };
+      return { x: cx - mousePointTo.x * next, y: cy - mousePointTo.y * next };
+    });
+  }, [zoom, onZoomChange, containerRef]);
+
+  const handleFit = useCallback(() => {
+    const stageW = containerRef?.current?.clientWidth  ?? 800;
+    const stageH = containerRef?.current?.clientHeight ?? 600;
+
+    if (elements.length === 0) {
+      onZoomChange(1);
+      setStagePos({ x: 0, y: 0 });
+      return;
+    }
+
+    // Bounding box de todos los elementos
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const el of elements) {
+      minX = Math.min(minX, el.x);
+      minY = Math.min(minY, el.y);
+      maxX = Math.max(maxX, el.x + el.width);
+      maxY = Math.max(maxY, el.y + el.height);
+    }
+    const contentW = maxX - minX;
+    const contentH = maxY - minY;
+
+    const scaleX = (stageW - FIT_MARGIN * 2) / contentW;
+    const scaleY = (stageH - FIT_MARGIN * 2) / contentH;
+    const newScale = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(Math.min(scaleX, scaleY)).toFixed(2)));
+
+    // Centrar el contenido en el viewport
+    const newX = (stageW - contentW * newScale) / 2 - minX * newScale;
+    const newY = (stageH - contentH * newScale) / 2 - minY * newScale;
+
+    onZoomChange(newScale);
+    setStagePos({ x: newX, y: newY });
+  }, [elements, onZoomChange, containerRef]);
 
   // ── Drop desde la paleta ──────────────────────────────────────────────────
   const handleDrop = useCallback(
@@ -114,7 +176,7 @@ export default function LayoutEditorCanvas({
   );
   const handleDragOver = (e) => e.preventDefault();
 
-  // ── Fix 1 + 2: handlers del Stage ────────────────────────────────────────
+  // ── Fix 1 + 2 + B: handlers del Stage ────────────────────────────────────
   const handleStageMouseDown = (e) => {
     const isRightClick = e.evt.button === 2;
     const isLeftClick  = e.evt.button === 0;
@@ -130,19 +192,29 @@ export default function LayoutEditorCanvas({
       };
       return;
     }
-    if (!isLeftClick || !isOverStage) return;
-    if (ctrlOrCmd) {
+
+    if (!isLeftClick) return;
+
+    // Fix B: si hay edición de vértices activa y el click cayó fuera del Stage
+    // (sobre otro elemento), igualmente hacemos commit y salimos
+    if (editingPolygonId) {
+      commitVertexEditRef.current?.();
+      onEndVertexEdit?.();
+      return;
+    }
+
+    if (!isOverStage) return;
+
+    // Fix B: deshabilitar rubber-band durante edición de vértices
+    if (ctrlOrCmd && !editingPolygonId) {
       isRubberBand.current = true;
       const pos = stageRef.current.getRelativePointerPosition();
       setSelBox({ x: pos.x, y: pos.y, width: 0, height: 0, startX: pos.x, startY: pos.y });
-    } else {
-      // Fase 1.3: click en el fondo mientras se editan vértices → salir del modo edición
-      // El componente padre maneja esto via onSelect([]) que dispara onEndVertexEdit si
-      // está activo — no necesitamos un callback extra aquí porque EventLayoutEditorDemo
-      // escucha el cambio de selectedIds y cancela editingPolygonId.
+    } else if (!editingPolygonId) {
       onSelect([]);
     }
   };
+
   const handleStageMouseMove = (e) => {
     if (panState.current.active) {
       const dx = e.evt.clientX - panState.current.startPointer.x;
@@ -186,52 +258,29 @@ export default function LayoutEditorCanvas({
     isRubberBand.current = false;
   };
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // Fix 5: callbacks de drag grupal
-  // ────────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Al iniciar el drag de un elemento que pertenece a una selección múltiple,
-   * guardamos las posiciones iniciales de todos los seleccionados.
-   */
+  // ── Fix 5: drag grupal ────────────────────────────────────────────────────
   const handleGroupDragStart = useCallback(
     (leaderId, startPos) => {
-      if (selectedIds.length <= 1) return; // drag individual, no hacer nada aquí
-
+      if (selectedIds.length <= 1) return;
       const startPositions = {};
       for (const el of elements) {
-        if (selectedIds.includes(el.id)) {
-          startPositions[el.id] = { x: el.x, y: el.y };
-        }
+        if (selectedIds.includes(el.id)) startPositions[el.id] = { x: el.x, y: el.y };
       }
-
-      groupDragState.current = {
-        active:         true,
-        leaderId,
-        startPositions,
-        leaderStart:    startPos,
-      };
-      // Inicializar followerPositions con las posiciones actuales
+      groupDragState.current = { active: true, leaderId, startPositions, leaderStart: startPos };
       setFollowerPositions({ ...startPositions });
     },
     [elements, selectedIds]
   );
 
-  /**
-   * Durante el drag, calculamos el delta del líder y aplicamos el mismo delta
-   * a los seguidores — actualiza React state para moverlos visualmente.
-   */
   const handleGroupDragMove = useCallback(
     (leaderId, currentPos) => {
       const state = groupDragState.current;
       if (!state.active || state.leaderId !== leaderId) return;
-
       const deltaX = currentPos.x - state.leaderStart.x;
       const deltaY = currentPos.y - state.leaderStart.y;
-
       const newPositions = {};
       for (const id of selectedIds) {
-        if (id === leaderId) continue; // el líder lo maneja Konva directamente
+        if (id === leaderId) continue;
         newPositions[id] = {
           x: state.startPositions[id].x + deltaX,
           y: state.startPositions[id].y + deltaY,
@@ -242,41 +291,23 @@ export default function LayoutEditorCanvas({
     [selectedIds]
   );
 
-  /**
-   * Al soltar, aplicamos snapping a todos, llamamos onGroupDragEnd en el padre
-   * para que actualice el estado canónico y recalcule el canvas (Fix 7).
-   */
   const handleGroupDragEnd = useCallback(
     (leaderId, finalPos) => {
       const state = groupDragState.current;
-
       if (!state.active || state.leaderId !== leaderId) {
-        // Drag individual — delegar al handler normal
         const el = elements.find((e) => e.id === leaderId);
-        if (el) {
-          handleElementChange({ ...el, x: snapToGrid(finalPos.x), y: snapToGrid(finalPos.y) });
-        }
+        if (el) handleElementChange({ ...el, x: snapToGrid(finalPos.x), y: snapToGrid(finalPos.y) });
         return;
       }
-
-      // Drag grupal: calcular posiciones finales con snapping para todos
       const deltaX = finalPos.x - state.leaderStart.x;
       const deltaY = finalPos.y - state.leaderStart.y;
-
       const updatedElements = elements.map((el) => {
         if (!selectedIds.includes(el.id)) return el;
-        const startPos = state.startPositions[el.id];
-        return {
-          ...el,
-          x: snapToGrid(startPos.x + deltaX),
-          y: snapToGrid(startPos.y + deltaY),
-        };
+        const sp = state.startPositions[el.id];
+        return { ...el, x: snapToGrid(sp.x + deltaX), y: snapToGrid(sp.y + deltaY) };
       });
-
       groupDragState.current = { active: false, leaderId: null, startPositions: {}, leaderStart: null };
       setFollowerPositions({});
-
-      // Notificar al padre con todos los elementos actualizados (Fix 7)
       if (onGroupDragEnd) onGroupDragEnd(updatedElements);
     },
     [elements, selectedIds, onGroupDragEnd] // eslint-disable-line react-hooks/exhaustive-deps
@@ -289,12 +320,10 @@ export default function LayoutEditorCanvas({
       const bottom = updated.y + updated.height;
       let newW = canvasSize.width, newH = canvasSize.height;
       let offsetX = 0, offsetY = 0;
-
       if (right  > newW) newW = right  + EXPAND_INCREMENT;
       if (bottom > newH) newH = bottom + EXPAND_INCREMENT;
       if (updated.x < 0) { offsetX = Math.ceil(-updated.x / EXPAND_INCREMENT) * EXPAND_INCREMENT; newW += offsetX; }
       if (updated.y < 0) { offsetY = Math.ceil(-updated.y / EXPAND_INCREMENT) * EXPAND_INCREMENT; newH += offsetY; }
-
       const needsExpansion = newW !== canvasSize.width || newH !== canvasSize.height;
       if (needsExpansion) {
         onExpandCanvas({
@@ -309,10 +338,10 @@ export default function LayoutEditorCanvas({
     [canvasSize, onChange, onExpandCanvas]
   );
 
-  // ── Dimensiones del viewport ──────────────────────────────────────────────
   const stageW = containerRef?.current?.clientWidth  ?? window.innerWidth  - 460;
   const stageH = containerRef?.current?.clientHeight ?? window.innerHeight - 88;
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
       className="flex-1 overflow-hidden bg-background relative"
@@ -349,31 +378,32 @@ export default function LayoutEditorCanvas({
 
         <Layer>
           {elements.map((el) => {
-            const isSelected = selectedIds.includes(el.id);
-            const isMulti    = selectedIds.length > 1 && isSelected;
-
-            // Fix 5: si hay drag grupal activo, los seguidores usan posición en vuelo
+            const isSelected  = selectedIds.includes(el.id);
+            const isMulti     = selectedIds.length > 1 && isSelected;
             const followerPos = followerPositions[el.id];
-            const displayEl = (isMulti && followerPos && el.id !== groupDragState.current.leaderId)
+            const displayEl   = (isMulti && followerPos && el.id !== groupDragState.current.leaderId)
               ? { ...el, x: followerPos.x, y: followerPos.y }
               : el;
+
+            const isEditingThisEl = editingPolygonId === el.id;
 
             const sharedProps = {
               key:              el.id,
               element:          displayEl,
               isSelected,
-              isEditingVertices: editingPolygonId === el.id,  // Fase 1.3
+              isEditingVertices: isEditingThisEl,
               onSelect:         () => onSelect([el.id]),
               onChange:         handleElementChange,
               onGroupDragStart: isMulti ? handleGroupDragStart : undefined,
               onGroupDragMove:  isMulti ? handleGroupDragMove  : undefined,
               onGroupDragEnd:   isMulti ? handleGroupDragEnd   : undefined,
-              // Fase 1.3: solo secciones usan estos callbacks
               onStartVertexEdit: el.type === 'section'
-                ? () => onStartVertexEdit?.(el.id)
-                : undefined,
+                ? () => onStartVertexEdit?.(el.id) : undefined,
               onEndVertexEdit: el.type === 'section'
-                ? () => onEndVertexEdit?.()
+                ? () => onEndVertexEdit?.() : undefined,
+              // Fix B: el SectionElement en edición registra su commitAndExit aquí
+              onSaveVertexEdit: isEditingThisEl
+                ? (fn) => { commitVertexEditRef.current = fn; }
                 : undefined,
             };
 
@@ -394,11 +424,52 @@ export default function LayoutEditorCanvas({
         </Layer>
       </Stage>
 
-      <div className="absolute bottom-2 right-2 text-[10px] text-textMuted pointer-events-none select-none space-y-0.5">
-        <div>🖱 Rueda → zoom</div>
-        <div>🖱 Derecho + arrastrar → mover canvas</div>
-        <div>⌨ Ctrl + arrastrar fondo → selección múltiple</div>
+      {/* Fix D2: controles de zoom flotantes */}
+      <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1
+                      bg-surface border border-surfaceAlt rounded-lg px-2 py-1 shadow-lg
+                      shadow-black/30">
+        <button
+          onClick={handleZoomOut}
+          className="w-6 h-6 flex items-center justify-center rounded text-textSecondary
+                     hover:text-textPrimary hover:bg-surfaceAlt transition-colors text-sm font-bold"
+          title="Alejar (−)"
+        >−</button>
+
+        <span className="text-xs font-mono text-textSecondary w-10 text-center select-none">
+          {Math.round(zoom * 100)}%
+        </span>
+
+        <button
+          onClick={handleZoomIn}
+          className="w-6 h-6 flex items-center justify-center rounded text-textSecondary
+                     hover:text-textPrimary hover:bg-surfaceAlt transition-colors text-sm font-bold"
+          title="Acercar (+)"
+        >+</button>
+
+        <div className="w-px h-4 bg-surfaceAlt mx-0.5" />
+
+        <button
+          onClick={handleFit}
+          className="w-6 h-6 flex items-center justify-center rounded text-textSecondary
+                     hover:text-textPrimary hover:bg-surfaceAlt transition-colors text-sm"
+          title="Ajustar todo al área visible"
+        >⊡</button>
       </div>
+
+      {/* Hint */}
+      {!editingPolygonId && (
+        <div className="absolute bottom-4 left-4 text-[10px] text-textMuted pointer-events-none select-none space-y-0.5">
+          <div>🖱 Rueda → zoom · Derecho+drag → pan</div>
+          <div>⌨ Ctrl+drag fondo → selección múltiple</div>
+        </div>
+      )}
+      {editingPolygonId && (
+        <div className="absolute bottom-4 left-4 text-[10px] text-accent pointer-events-none select-none space-y-0.5">
+          <div>✏ Click fuera o <kbd className="bg-surfaceAlt px-1 rounded text-textMuted">Listo</kbd> → guardar</div>
+          <div><kbd className="bg-surfaceAlt px-1 rounded text-textMuted">Esc</kbd> → descartar cambios</div>
+          <div>Click derecho en vértice → eliminar</div>
+        </div>
+      )}
     </div>
   );
 }

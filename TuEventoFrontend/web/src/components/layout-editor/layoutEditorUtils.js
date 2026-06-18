@@ -183,53 +183,50 @@ export const polyBoundingBox = (points) => {
 };
 
 /**
- * Dados los polígonos en coordenadas relativas y el seatLayout, genera las
- * posiciones de asientos adaptadas al contorno del polígono.
- *
- * Algoritmo:
- *   1. Dividir el rango vertical en `rows` franjas.
- *   2. Para cada fila, encontrar las intersecciones horizontales con los bordes.
- *   3. Calcular cuántos asientos caben en el ancho disponible.
- *   4. Distribuirlos centrados en ese segmento.
+ * Fix C: algoritmo even-odd correcto para polígonos cóncavos.
+ * Para cada fila, encuentra TODOS los segmentos de intersección (pares de Xs)
+ * y coloca sillas dentro de cada segmento válido — no solo el más ancho.
  */
 export const computePolygonSeatRows = (polygonPoints, seatLayout) => {
   if (!polygonPoints || polygonPoints.length < 3 || !seatLayout) return [];
   const { rows, cols, seatRadius, gap } = seatLayout;
-  const bb = polyBoundingBox(polygonPoints);
-  const pad = 8; // margen interior mínimo
+  const bb  = polyBoundingBox(polygonPoints);
+  const pad = 6;
   const minY = bb.minY + pad;
   const maxY = bb.maxY - pad;
   if (maxY <= minY) return [];
 
-  const rowH = (maxY - minY) / rows;
+  const rowH     = (maxY - minY) / rows;
   const seatDiam = seatRadius * 2 + gap;
   const positions = [];
 
   for (let r = 0; r < rows; r++) {
-    const y = minY + r * rowH + rowH / 2;
+    const y  = minY + (r + 0.5) * rowH;
     const xs = polyHorizontalIntersections(polygonPoints, y);
     if (xs.length < 2) continue;
 
-    // Usar el segmento más ancho disponible
     xs.sort((a, b) => a - b);
-    const xLeft  = xs[0]  + pad;
-    const xRight = xs[xs.length - 1] - pad;
-    const availW = xRight - xLeft;
-    if (availW < seatDiam) continue;
 
-    // Cuántos asientos caben (sin exceder cols como límite superior)
-    const count = Math.min(cols, Math.floor(availW / seatDiam));
-    if (count <= 0) continue;
+    // Even-odd: pares de intersecciones forman segmentos rellenos
+    for (let s = 0; s + 1 < xs.length; s += 2) {
+      const xLeft  = xs[s]     + pad;
+      const xRight = xs[s + 1] - pad;
+      const availW = xRight - xLeft;
+      if (availW < seatDiam) continue;
 
-    // Centrar los asientos en el segmento
-    const totalW = count * seatDiam - gap;
-    const startX = xLeft + (availW - totalW) / 2;
-    for (let c = 0; c < count; c++) {
-      positions.push({
-        x: startX + c * seatDiam + seatRadius,
-        y,
-        r: seatRadius,
-      });
+      // Cuántos asientos caben en este segmento (sin exceder cols)
+      const count = Math.min(cols, Math.floor((availW + gap) / seatDiam));
+      if (count <= 0) continue;
+
+      const totalW = count * seatDiam - gap;
+      const startX = xLeft + (availW - totalW) / 2;
+      for (let c = 0; c < count; c++) {
+        positions.push({
+          x: startX + c * seatDiam + seatRadius,
+          y,
+          r: seatRadius,
+        });
+      }
     }
   }
 

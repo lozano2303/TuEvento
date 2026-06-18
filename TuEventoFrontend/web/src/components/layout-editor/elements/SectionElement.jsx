@@ -15,38 +15,46 @@ const MIDPOINT_RADIUS = 5;
 
 function darkenHex(hex, amount = 40) {
   const num = parseInt((hex || '#000000').replace('#', ''), 16);
-  const r   = Math.max(0, (num >> 16)        - amount);
+  const r   = Math.max(0, (num >> 16)         - amount);
   const g   = Math.max(0, ((num >> 8) & 0xff) - amount);
-  const b   = Math.max(0, (num & 0xff)        - amount);
+  const b   = Math.max(0, (num & 0xff)         - amount);
   return `rgb(${r},${g},${b})`;
 }
 
 export default function SectionElement({
   element,
   isSelected,
-  isEditingVertices,  // Fase 1.3
+  isEditingVertices,
   onSelect,
   onChange,
   onGroupDragStart,
   onGroupDragMove,
   onGroupDragEnd,
-  onStartVertexEdit,  // Fase 1.3: () => void
-  onEndVertexEdit,    // Fase 1.3: () => void
+  onStartVertexEdit,
+  onEndVertexEdit,     // Fix B: siempre guarda (commit) — Escape descarta via snapshot
+  onSaveVertexEdit,    // Fix B: callback explícito para commit — si no llega, onEndVertexEdit hace commit
 }) {
   const groupRef = useRef();
   const trRef    = useRef();
-  const [localPoints, setLocalPoints] = useState(null);
 
-  // Sincronizar localPoints al entrar/salir del modo edición
+  // Estado local de vértices durante la edición
+  const [localPoints, setLocalPoints]       = useState(null);
+  // Fix B: snapshot de los puntos al entrar en edición (para revertir con Escape)
+  const snapshotRef = useRef(null);
+
+  // ── Sincronizar al entrar/salir del modo edición ──────────────────────────
   useEffect(() => {
     if (isEditingVertices && element.polygonPoints) {
-      setLocalPoints(element.polygonPoints.map((p) => [...p]));
+      const copy = element.polygonPoints.map((p) => [...p]);
+      setLocalPoints(copy);
+      snapshotRef.current = copy;          // Fix B: guardar snapshot inicial
     } else {
       setLocalPoints(null);
+      snapshotRef.current = null;
     }
   }, [isEditingVertices]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Transformer: adjuntar solo cuando seleccionado y fuera de modo edición
+  // ── Transformer ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (isSelected && !isEditingVertices && trRef.current && groupRef.current) {
       trRef.current.nodes([groupRef.current]);
@@ -57,26 +65,54 @@ export default function SectionElement({
     }
   }, [isSelected, isEditingVertices]);
 
-  // Escape → confirmar y salir
+  // ── Fix B: Escape → DESCARTAR (restaurar snapshot) ───────────────────────
   useEffect(() => {
     if (!isEditingVertices) return;
-    const handler = (e) => { if (e.key === 'Escape') commitAndExit(); };
+    const handler = (e) => {
+      if (e.key !== 'Escape') return;
+      // Restaurar snapshot, no commitear
+      if (snapshotRef.current) {
+        onChange({
+          ...element,
+          polygonPoints: snapshotRef.current,
+        });
+      }
+      onEndVertexEdit?.();
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isEditingVertices, localPoints]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isEditingVertices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const shapeMode = element.shapeMode ?? 'rect';
   const minSize   = computeMinSectionSize(element.seatLayout);
 
-  // Sillas: polígono usa el algoritmo de escaneo horizontal, rect usa la grilla simple
   const seatPositions = shapeMode === 'polygon' && element.polygonPoints
     ? computePolygonSeatRows(element.polygonPoints, element.seatLayout)
     : computeSeatPositions(element.width, element.height, element.seatLayout);
 
-  // Centroide para el label
   const labelCenter = shapeMode === 'polygon' && element.polygonPoints
     ? polyCentroid(element.polygonPoints)
     : { x: element.width / 2, y: element.height / 2 };
+
+  // ── Fix B: commit (guardar) al hacer click fuera o "Listo" ────────────────
+  const commitAndExit = useCallback(() => {
+    if (localPoints) {
+      const bb = polyBoundingBox(localPoints);
+      onChange({
+        ...element,
+        polygonPoints: localPoints,
+        width:  Math.max(minSize.width,  Math.round(bb.width)),
+        height: Math.max(minSize.height, Math.round(bb.height)),
+      });
+    }
+    onEndVertexEdit?.();
+  }, [localPoints, element, onChange, onEndVertexEdit, minSize]);
+
+  // Exponemos commitAndExit al padre via ref-callback para que LayoutEditorCanvas
+  // pueda llamarlo cuando detecta click-fuera
+  useEffect(() => {
+    if (onSaveVertexEdit) onSaveVertexEdit(commitAndExit);
+  }, [commitAndExit, onSaveVertexEdit]);
 
   // ── Drag ──────────────────────────────────────────────────────────────────
   const handleDragStart = (e) => {
@@ -100,12 +136,9 @@ export default function SectionElement({
     const scaleY = node.scaleY();
     node.scaleX(1);
     node.scaleY(1);
-
     const newW = snapToGrid(Math.max(minSize.width,  node.width()  * scaleX));
     const newH = snapToGrid(Math.max(minSize.height, node.height() * scaleY));
-    let patch  = { x: snapToGrid(node.x()), y: snapToGrid(node.y()), width: newW, height: newH, rotation: node.rotation() };
-
-    // Polígono: escalar vértices al nuevo bounding box
+    let patch   = { x: snapToGrid(node.x()), y: snapToGrid(node.y()), width: newW, height: newH, rotation: node.rotation() };
     if (shapeMode === 'polygon' && element.polygonPoints) {
       const bb     = polyBoundingBox(element.polygonPoints);
       const ratioX = bb.width  > 0 ? newW / bb.width  : 1;
@@ -118,28 +151,40 @@ export default function SectionElement({
     onChange({ ...element, ...patch });
   };
 
-  // ── Doble-click → entrar en modo edición de vértices ─────────────────────
   const handleDoubleClick = () => {
     if (shapeMode === 'polygon' && onStartVertexEdit) onStartVertexEdit();
   };
 
   // ── Edición de vértices ───────────────────────────────────────────────────
-  const commitAndExit = useCallback(() => {
-    if (localPoints) {
-      const bb = polyBoundingBox(localPoints);
-      onChange({
-        ...element,
-        polygonPoints: localPoints,
-        width:  Math.max(minSize.width,  Math.round(bb.width)),
-        height: Math.max(minSize.height, Math.round(bb.height)),
+  // Fix D1: al soltar un vértice, verificar si el bounding box absoluto
+  // desborda el canvas y notificar via onChange (que ya tiene lógica de expansión)
+  const handleVertexDragEnd = useCallback((idx, e) => {
+    const node = e.target;
+    setLocalPoints((prev) => {
+      if (!prev) return prev;
+      const next = prev.map((p) => [...p]);
+      next[idx] = [node.x(), node.y()];
+      // Recalcular bounding box con los nuevos puntos y notificar onChange
+      const bb = polyBoundingBox(next);
+      const newW = Math.max(minSize.width,  Math.round(bb.width));
+      const newH = Math.max(minSize.height, Math.round(bb.height));
+      // Usamos queueMicrotask para no llamar onChange dentro del setState
+      queueMicrotask(() => {
+        onChange({
+          ...element,
+          polygonPoints: next,
+          width:  newW,
+          height: newH,
+        });
       });
-    }
-    onEndVertexEdit?.();
-  }, [localPoints, element, onChange, onEndVertexEdit, minSize]);
+      return next;
+    });
+  }, [element, onChange, minSize]);
 
   const handleVertexDragMove = (idx, e) => {
     const node = e.target;
     setLocalPoints((prev) => {
+      if (!prev) return prev;
       const next = prev.map((p) => [...p]);
       next[idx] = [node.x(), node.y()];
       return next;
@@ -148,6 +193,7 @@ export default function SectionElement({
 
   const handleMidpointClick = (idx) => {
     setLocalPoints((prev) => {
+      if (!prev) return prev;
       const next = [...prev];
       const a    = prev[idx];
       const b    = prev[(idx + 1) % prev.length];
@@ -159,7 +205,7 @@ export default function SectionElement({
   const handleVertexRightClick = (idx, e) => {
     e.evt.preventDefault();
     setLocalPoints((prev) => {
-      if (prev.length <= 3) return prev;
+      if (!prev || prev.length <= 3) return prev;
       return prev.filter((_, i) => i !== idx);
     });
   };
@@ -176,6 +222,7 @@ export default function SectionElement({
         width={element.width}
         height={element.height}
         rotation={element.rotation ?? 0}
+        // Fix A: deshabilitar drag del Group mientras se editan vértices
         draggable={!isEditingVertices}
         onClick={isEditingVertices ? undefined : onSelect}
         onTap={isEditingVertices ? undefined : onSelect}
@@ -193,6 +240,9 @@ export default function SectionElement({
             closed
             fill={element.color}
             opacity={0.85}
+            // Fix A: durante edición, el <Line> no captura eventos para no
+            // interferir con los clicks en vértices ni con la detección de click-fuera
+            listening={!isEditingVertices}
             stroke={isSelected || isEditingVertices ? '#ffffff' : darkenHex(element.color)}
             strokeWidth={isSelected || isEditingVertices ? 2 : 1}
           />
@@ -208,7 +258,7 @@ export default function SectionElement({
           />
         )}
 
-        {/* ── Sillas (ocultas durante edición de vértices) ──────────────── */}
+        {/* ── Sillas (ocultas durante edición) ──────────────────────────── */}
         {!isEditingVertices && seatPositions.map((pos, i) => (
           <Circle
             key={i}
@@ -233,14 +283,14 @@ export default function SectionElement({
           listening={false}
         />
 
-        {/* ── Controles de vértices (modo edición) ──────────────────────── */}
+        {/* ── Controles de vértices ─────────────────────────────────────── */}
         {isEditingVertices && workPoints && workPoints.map((pt, idx) => {
           const nextPt = workPoints[(idx + 1) % workPoints.length];
           const midX   = (pt[0] + nextPt[0]) / 2;
           const midY   = (pt[1] + nextPt[1]) / 2;
           return (
             <React.Fragment key={`v-${idx}`}>
-              {/* Punto medio: añadir vértice */}
+              {/* Punto medio */}
               <Circle
                 x={midX} y={midY}
                 radius={MIDPOINT_RADIUS}
@@ -259,6 +309,7 @@ export default function SectionElement({
                 strokeWidth={1.5}
                 draggable
                 onDragMove={(e) => handleVertexDragMove(idx, e)}
+                onDragEnd={(e) => handleVertexDragEnd(idx, e)}
                 onContextMenu={(e) => handleVertexRightClick(idx, e)}
               />
             </React.Fragment>
@@ -266,7 +317,7 @@ export default function SectionElement({
         })}
       </Group>
 
-      {/* Transformer: visible solo cuando seleccionado y fuera de edición */}
+      {/* Transformer */}
       {isSelected && !isEditingVertices && (
         <Transformer
           ref={trRef}
@@ -282,19 +333,19 @@ export default function SectionElement({
         />
       )}
 
-      {/* Botón flotante "Listo" durante edición de vértices */}
+      {/* Botón flotante "Guardar forma" (Fix B: mismo comportamiento que click-fuera) */}
       {isEditingVertices && (
         <Group
-          x={element.x + element.width / 2 - 36}
+          x={element.x + element.width / 2 - 44}
           y={element.y - 32}
           onClick={commitAndExit}
           onTap={commitAndExit}
         >
-          <Rect width={72} height={24} fill="#7C3AED" cornerRadius={6} />
+          <Rect width={88} height={24} fill="#7C3AED" cornerRadius={6} />
           <Text
-            x={0} y={5} width={72}
-            text="✓ Listo"
-            fontSize={11} fontStyle="bold"
+            x={0} y={5} width={88}
+            text="✓ Guardar forma"
+            fontSize={10} fontStyle="bold"
             fill="#ffffff" align="center"
             listening={false}
           />
