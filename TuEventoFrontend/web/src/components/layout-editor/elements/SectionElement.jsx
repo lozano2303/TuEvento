@@ -27,12 +27,14 @@ export default function SectionElement({
   isEditingVertices,
   onSelect,
   onChange,
+  onDragMove,          // Fase 1.6: smart guides — notifica posición tentativa
+  onDragEnd,           // Fase 1.6: smart guides — confirma posición final con snap
   onGroupDragStart,
   onGroupDragMove,
   onGroupDragEnd,
   onStartVertexEdit,
-  onEndVertexEdit,     // Fix B: siempre guarda (commit) — Escape descarta via snapshot
-  onSaveVertexEdit,    // Fix B: callback explícito para commit — si no llega, onEndVertexEdit hace commit
+  onEndVertexEdit,
+  onSaveVertexEdit,
 }) {
   const groupRef = useRef();
   const trRef    = useRef();
@@ -128,12 +130,28 @@ export default function SectionElement({
   const handleDragStart = (e) => {
     if (onGroupDragStart) onGroupDragStart(element.id, { x: e.target.x(), y: e.target.y() });
   };
+
   const handleDragMove = (e) => {
-    if (onGroupDragMove) onGroupDragMove(element.id, { x: e.target.x(), y: e.target.y() });
+    if (onGroupDragMove) {
+      // Multi-drag: delegar al canvas
+      onGroupDragMove(element.id, { x: e.target.x(), y: e.target.y() });
+    } else if (onDragMove) {
+      // Drag individual: notificar para smart guides y aplicar el snap delta si hay guía
+      const result = onDragMove(element.id, { x: e.target.x(), y: e.target.y() });
+      if (result && (result.dx !== 0 || result.dy !== 0)) {
+        // Ajustar la posición del nodo de Konva con el delta de alineación
+        e.target.x(e.target.x() + result.dx);
+        e.target.y(e.target.y() + result.dy);
+      }
+    }
   };
+
   const handleDragEnd = (e) => {
     if (onGroupDragEnd) {
       onGroupDragEnd(element.id, { x: e.target.x(), y: e.target.y() });
+    } else if (onDragEnd) {
+      // Drag individual con smart guides: aplicar snapping y notificar
+      onDragEnd({ ...element, x: snapToGrid(e.target.x()), y: snapToGrid(e.target.y()) });
     } else {
       onChange({ ...element, x: snapToGrid(e.target.x()), y: snapToGrid(e.target.y()) });
     }

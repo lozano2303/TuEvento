@@ -17,9 +17,11 @@ export default function InfraElement({
   isSelected,
   onSelect,
   onChange,
-  onGroupDragStart,   // Fix 5
-  onGroupDragMove,    // Fix 5
-  onGroupDragEnd,     // Fix 5
+  onDragMove,          // Fase 1.6: smart guides
+  onDragEnd,           // Fase 1.6: smart guides
+  onGroupDragStart,
+  onGroupDragMove,
+  onGroupDragEnd,
 }) {
   const groupRef = useRef();
   const trRef    = useRef();
@@ -33,26 +35,28 @@ export default function InfraElement({
 
   // ── Handlers de drag ──────────────────────────────────────────────────────
   const handleDragStart = (e) => {
-    if (onGroupDragStart) {
-      onGroupDragStart(element.id, { x: e.target.x(), y: e.target.y() });
-    }
+    if (onGroupDragStart) onGroupDragStart(element.id, { x: e.target.x(), y: e.target.y() });
   };
 
   const handleDragMove = (e) => {
     if (onGroupDragMove) {
       onGroupDragMove(element.id, { x: e.target.x(), y: e.target.y() });
+    } else if (onDragMove) {
+      const result = onDragMove(element.id, { x: e.target.x(), y: e.target.y() });
+      if (result && (result.dx !== 0 || result.dy !== 0)) {
+        e.target.x(e.target.x() + result.dx);
+        e.target.y(e.target.y() + result.dy);
+      }
     }
   };
 
   const handleDragEnd = (e) => {
     if (onGroupDragEnd) {
       onGroupDragEnd(element.id, { x: e.target.x(), y: e.target.y() });
+    } else if (onDragEnd) {
+      onDragEnd({ ...element, x: snapToGrid(e.target.x()), y: snapToGrid(e.target.y()) });
     } else {
-      onChange({
-        ...element,
-        x: snapToGrid(e.target.x()),
-        y: snapToGrid(e.target.y()),
-      });
+      onChange({ ...element, x: snapToGrid(e.target.x()), y: snapToGrid(e.target.y()) });
     }
   };
 
