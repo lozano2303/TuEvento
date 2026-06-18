@@ -69,19 +69,121 @@ export const computeSeatPositions = (
   return positions;
 };
 
-// ── Tamaño mínimo proporcional a la grilla de sillas (Fix 4) ─────────────────
+// ── Tamaño mínimo proporcional a la grilla de sillas (Fix 4 / Fase 1.5) ──────
 /**
- * Calcula el width/height mínimo para que la grilla de sillas sea legible.
- * Fórmula: dimension = cells * (seatRadius * 2 + gap) + padding * 2 + labelSpace
+ * Fase 1.5: ya no depende de rows/cols. Devuelve un tamaño mínimo fijo
+ * para que la sección siempre tenga espacio legible.
  */
-export const computeSectionSize = (seatLayout, labelSpace = 28, padding = 12) => {
-  if (!seatLayout) return null;
-  const { rows, cols, seatRadius = 7, gap = 4 } = seatLayout;
-  const cellSize = seatRadius * 2 + gap;
+export const computeMinSectionSize = (_seatLayout, _padding, _labelSpace) => {
+  return { width: 80, height: 60 };
+};
+
+// ── Fase 1.5: migrar seatLayout legacy (rows/cols → targetSeats) ─────────────
+/**
+ * Si el seatLayout tiene rows/cols (formato antiguo), convierte a targetSeats.
+ * Siempre retorna un objeto con targetSeats, seatRadius, gap — sin rows/cols.
+ */
+export const normalizeSeatLayout = (sl) => {
+  if (!sl) return null;
+  if (sl.targetSeats !== undefined) return sl;
+  // Migración automática
   return {
-    width: Math.round(cols * cellSize + padding * 2),
-    height: Math.round(rows * cellSize + padding * 2 + labelSpace),
+    targetSeats: (sl.rows ?? 1) * (sl.cols ?? 1),
+    seatRadius:  sl.seatRadius ?? 7,
+    gap:         sl.gap        ?? 4,
   };
+};
+
+// ── Fase 1.5: capacidad máxima según forma y tamaño ──────────────────────────
+/**
+ * Cuántas sillas caben físicamente en una sección dada su forma y tamaño.
+ * Para rect: deriva rows/cols del tamaño disponible.
+ * Para polygon: usa computePolygonSeatRows con una densidad máxima.
+ */
+export const computeMaxSeats = (element, seatRadius, gap) => {
+  const r = seatRadius ?? 7;
+  const g = gap        ?? 4;
+  const shapeMode = element.shapeMode ?? 'rect';
+  const cellSize  = r * 2 + g;
+  const LABEL_H   = 20;
+  const PADDING   = 12;
+
+  if (shapeMode === 'polygon' && element.polygonPoints) {
+    // Llenado máximo del polígono con densidad alta (999 filas = sin límite de filas)
+    const positions = computePolygonSeatRows(
+      element.polygonPoints,
+      { rows: 999, cols: 9999, seatRadius: r, gap: g }
+    );
+    return positions.length;
+  }
+
+  // Rect
+  const cols = Math.floor((element.width  - PADDING * 2 + g) / cellSize);
+  const rows = Math.floor((element.height - PADDING * 2 - LABEL_H + g) / cellSize);
+  return Math.max(0, cols * rows);
+};
+
+// ── Fase 1.5: distribuir sillas a partir de targetSeats ───────────────────────
+/**
+ * Calcula las posiciones de las sillas para una sección, dado targetSeats.
+ * - Si targetSeats > maxSeats: dibuja solo maxSeats (las que caben).
+ * - Devuelve array de { x, y, r }.
+ */
+export const distributeSeats = (element) => {
+  const sl = normalizeSeatLayout(element.seatLayout);
+  if (!sl) return [];
+
+  const { targetSeats, seatRadius, gap } = sl;
+  const shapeMode = element.shapeMode ?? 'rect';
+  const PADDING   = 12;
+  const LABEL_H   = 20;
+  const cellSize  = seatRadius * 2 + gap;
+
+  if (shapeMode === 'polygon' && element.polygonPoints) {
+    // Generar todas las posiciones posibles y tomar las primeras targetSeats
+    const all = computePolygonSeatRows(
+      element.polygonPoints,
+      { rows: 999, cols: 9999, seatRadius, gap }
+    );
+    return all.slice(0, targetSeats);
+  }
+
+  // Rect: derivar rows/cols óptimos para targetSeats dadas las dimensiones
+  const availW     = element.width  - PADDING * 2;
+  const availH     = element.height - PADDING * 2 - LABEL_H;
+  const maxCols    = Math.max(1, Math.floor((availW + gap) / cellSize));
+  const maxRows    = Math.max(1, Math.floor((availH + gap) / cellSize));
+  const maxSeats   = maxCols * maxRows;
+  const actual     = Math.min(targetSeats, maxSeats);
+
+  if (actual <= 0) return [];
+
+  // Calcular cols óptimas para la relación de aspecto
+  const aspectRatio = availW / Math.max(1, availH);
+  let cols = Math.min(maxCols, Math.max(1, Math.round(Math.sqrt(actual * aspectRatio))));
+  let rows = Math.min(maxRows, Math.ceil(actual / cols));
+  // Ajustar si rows*cols > maxSeats
+  while (rows * cols > maxSeats && rows > 1) rows--;
+  while (rows * cols > maxSeats && cols > 1) cols--;
+
+  const cellW = availW / cols;
+  const cellH = availH / rows;
+  const positions = [];
+  let count = 0;
+
+  outer:
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (count >= actual) break outer;
+      positions.push({
+        x: PADDING + c * cellW + cellW / 2,
+        y: PADDING + LABEL_H / 2 + r * cellH + cellH / 2,
+        r: Math.max(2, Math.min(seatRadius, (Math.min(cellW, cellH) - gap) / 2)),
+      });
+      count++;
+    }
+  }
+  return positions;
 };
 
 // ── Intersección para rubber-band selection ───────────────────────────────────
@@ -91,24 +193,6 @@ export const rectsIntersect = (a, b) => {
   const bx2 = b.x + b.width;
   const by2 = b.y + b.height;
   return a.x < bx2 && ax2 > b.x && a.y < by2 && ay2 > b.y;
-};
-
-// ── Fix 6: tamaño mínimo de sección para Transformer ─────────────────────────
-/**
- * Calcula el tamaño mínimo absoluto de una sección con seatLayout,
- * usando los valores mínimos de seatRadius y gap que aún producen
- * sillas reconocibles como círculos.
- */
-export const computeMinSectionSize = (seatLayout, padding = 12, labelSpace = 28) => {
-  if (!seatLayout) return { width: 60, height: 40 };
-  const MIN_RADIUS = 4;
-  const MIN_GAP    = 2;
-  const { rows, cols } = seatLayout;
-  const cellSize = MIN_RADIUS * 2 + MIN_GAP;
-  return {
-    width:  Math.max(60, Math.round(cols * cellSize + padding * 2)),
-    height: Math.max(40, Math.round(rows * cellSize + padding * 2 + labelSpace)),
-  };
 };
 
 // ── Fix 7: recalcular canvas a partir del bounding box de los elementos ───────

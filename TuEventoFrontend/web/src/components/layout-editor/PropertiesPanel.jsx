@@ -1,4 +1,4 @@
-import { computeSectionSize, polyBoundingBox } from './layoutEditorUtils';
+import { computeMaxSeats, normalizeSeatLayout, polyBoundingBox } from './layoutEditorUtils';
 
 const SECTION_COLORS = [
   { label: 'Morado', value: '#7C3AED' },
@@ -22,9 +22,9 @@ export default function PropertiesPanel({
   element,
   onChange,
   onDelete,
-  isEditingVertices,   // Fase 1.3
-  onStartVertexEdit,   // Fase 1.3
-  onEndVertexEdit,     // Fase 1.3
+  isEditingVertices,
+  onStartVertexEdit,
+  onEndVertexEdit,
 }) {
   if (!element) {
     return (
@@ -36,16 +36,62 @@ export default function PropertiesPanel({
     );
   }
 
-  const update  = (patch) => onChange({ ...element, ...patch });
-  const colors  = element.type === 'section' ? SECTION_COLORS : INFRA_COLORS;
+  const update    = (patch) => onChange({ ...element, ...patch });
+  const colors    = element.type === 'section' ? SECTION_COLORS : INFRA_COLORS;
   const shapeMode = element.type === 'section' ? (element.shapeMode ?? 'rect') : null;
+
+  // Fase 1.5: normalizar seatLayout (migración automática de rows/cols)
+  const sl = element.type === 'section' ? normalizeSeatLayout(element.seatLayout) : null;
+
+  // Capacidad máxima calculada con los valores actuales
+  const maxSeats = sl
+    ? computeMaxSeats(element, sl.seatRadius, sl.gap)
+    : 0;
+
+  const targetSeats = sl?.targetSeats ?? 0;
+  const pct = maxSeats > 0 ? Math.min(100, Math.round((targetSeats / maxSeats) * 100)) : 0;
+
+  // Estado del badge
+  let badgeColor = 'bg-success/20 text-success border-success/30';
+  let badgeText  = 'Caben';
+  let hintText   = `Máximo estimado: ${maxSeats} sillas`;
+  if (maxSeats > 0) {
+    if (targetSeats > maxSeats) {
+      badgeColor = 'bg-error/20 text-error border-error/30';
+      badgeText  = 'No caben';
+      hintText   = `Excede por ${targetSeats - maxSeats}. Agranda la forma o reduce la cantidad`;
+    } else if (targetSeats > Math.floor(maxSeats * 0.8)) {
+      badgeColor = 'bg-yellow-500/20 text-yellow-400 border-yellow-400/30';
+      badgeText  = 'Ajustado';
+      hintText   = `Quedan solo ${maxSeats - targetSeats} de margen`;
+    }
+  }
+
+  // Color de la barra de progreso
+  const barColor = targetSeats > maxSeats
+    ? 'bg-error'
+    : targetSeats > Math.floor(maxSeats * 0.8)
+    ? 'bg-yellow-400'
+    : 'bg-success';
+
+  const updateSeatLayout = (patch) => {
+    const updated = { ...sl, ...patch };
+    // Solo actualizar la grilla en el canvas si targetSeats <= maxSeats (nuevo)
+    const newMax = computeMaxSeats(element, updated.seatRadius, updated.gap);
+    if (updated.targetSeats <= newMax) {
+      update({ seatLayout: updated });
+    } else {
+      // Solo actualizar el seatLayout sin cambiar la grilla visual
+      update({ seatLayout: updated });
+    }
+  };
 
   const inputClass =
     'w-full bg-background border border-surfaceAlt rounded px-2 py-1.5 text-xs text-textPrimary ' +
     'focus:outline-none focus:border-accent transition-colors';
   const labelClass = 'text-[10px] font-semibold text-textMuted uppercase tracking-wider mb-1 block';
 
-  // ── Fase 1.3: convertir a polígono ────────────────────────────────────────
+  // ── Conversor a polígono ──────────────────────────────────────────────────
   const handleConvertToPolygon = () => {
     update({
       shapeMode:     'polygon',
@@ -58,7 +104,6 @@ export default function PropertiesPanel({
     });
   };
 
-  // ── Fase 1.3: volver a rectángulo ─────────────────────────────────────────
   const handleRevertToRect = () => {
     if (!window.confirm(
       '¿Volver a rectángulo? Si el polígono no era ya un rectángulo, la forma se simplificará.'
@@ -70,7 +115,6 @@ export default function PropertiesPanel({
       width:  Math.max(60, Math.round(bb.width  || element.width)),
       height: Math.max(40, Math.round(bb.height || element.height)),
     });
-    // Si estaba en modo edición, salir también
     onEndVertexEdit?.();
   };
 
@@ -99,7 +143,7 @@ export default function PropertiesPanel({
 
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
 
-        {/* ── Fase 1.3: controles de forma ─────────────────────────────── */}
+        {/* Controles de forma — solo secciones */}
         {element.type === 'section' && (
           <div>
             <label className={labelClass}>Forma</label>
@@ -121,7 +165,7 @@ export default function PropertiesPanel({
                   className="w-full py-1.5 rounded-lg text-xs font-semibold bg-accent/15
                              text-accent border border-accent/40 hover:bg-accent/25 transition-colors"
                 >
-                  ✓ Listo (o Esc)
+                  ✓ Guardar forma
                 </button>
               </div>
             ) : (
@@ -145,15 +189,14 @@ export default function PropertiesPanel({
           </div>
         )}
 
-        {/* Label */}
+        {/* Etiqueta */}
         <div>
           <label className={labelClass}>Etiqueta</label>
           <input
-            type="text"
-            className={inputClass}
+            type="text" className={inputClass}
             value={element.label}
-            onChange={(e) => update({ label: e.target.value })}
             disabled={isEditingVertices}
+            onChange={(e) => update({ label: e.target.value })}
           />
         </div>
 
@@ -165,8 +208,7 @@ export default function PropertiesPanel({
               <div key={key}>
                 <span className="text-[9px] text-textMuted mb-0.5 block">{lab}</span>
                 <input
-                  type="number"
-                  className={inputClass}
+                  type="number" className={inputClass}
                   value={Math.round(element[key])}
                   disabled={isEditingVertices}
                   onChange={(e) => update({ [key]: Number(e.target.value) })}
@@ -176,26 +218,22 @@ export default function PropertiesPanel({
           </div>
         </div>
 
-        {/* Tamaño — solo editable en modo rect o cuando no editamos vértices */}
+        {/* Tamaño (solo rect) */}
         {shapeMode !== 'polygon' && (
           <div>
             <label className={labelClass}>Tamaño</label>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <span className="text-[9px] text-textMuted mb-0.5 block">Ancho</span>
-                <input
-                  type="number" className={inputClass} min={40}
+                <input type="number" className={inputClass} min={40}
                   value={Math.round(element.width)}
-                  onChange={(e) => update({ width: Math.max(40, Number(e.target.value)) })}
-                />
+                  onChange={(e) => update({ width: Math.max(40, Number(e.target.value)) })} />
               </div>
               <div>
                 <span className="text-[9px] text-textMuted mb-0.5 block">Alto</span>
-                <input
-                  type="number" className={inputClass} min={30}
+                <input type="number" className={inputClass} min={30}
                   value={Math.round(element.height)}
-                  onChange={(e) => update({ height: Math.max(30, Number(e.target.value)) })}
-                />
+                  onChange={(e) => update({ height: Math.max(30, Number(e.target.value)) })} />
               </div>
             </div>
           </div>
@@ -219,19 +257,14 @@ export default function PropertiesPanel({
           <div className="flex flex-wrap gap-2">
             {colors.map((c) => (
               <button
-                key={c.value}
-                title={c.label}
+                key={c.value} title={c.label}
                 onClick={() => update({ color: c.value })}
                 className="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
-                style={{
-                  background:  c.value,
-                  borderColor: element.color === c.value ? '#ffffff' : 'transparent',
-                }}
+                style={{ background: c.value, borderColor: element.color === c.value ? '#ffffff' : 'transparent' }}
               />
             ))}
             <input
-              type="color"
-              value={element.color}
+              type="color" value={element.color}
               onChange={(e) => update({ color: e.target.value })}
               className="w-7 h-7 rounded-full cursor-pointer border-2 border-surfaceAlt"
               title="Color personalizado"
@@ -239,52 +272,62 @@ export default function PropertiesPanel({
           </div>
         </div>
 
-        {/* Grilla de sillas */}
-        {element.type === 'section' && element.seatLayout && !isEditingVertices && (
-          <div>
+        {/* ── Fase 1.5: Capacidad de sillas ─────────────────────────────── */}
+        {element.type === 'section' && sl && !isEditingVertices && (
+          <div className="space-y-3">
             <label className={labelClass}>
-              Grilla de sillas
+              Sillas
               {shapeMode === 'polygon' && (
-                <span className="ml-1 text-accent normal-case font-normal">(adaptada al contorno)</span>
+                <span className="ml-1 text-accent normal-case font-normal">(contorno)</span>
               )}
             </label>
+
+            {/* Input targetSeats + badge */}
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <input
+                  type="number" className={`${inputClass} flex-1`} min={1}
+                  value={targetSeats}
+                  onChange={(e) => updateSeatLayout({ targetSeats: Math.max(1, Number(e.target.value)) })}
+                />
+                <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded border ${badgeColor}`}>
+                  {badgeText}
+                </span>
+              </div>
+
+              {/* Barra de progreso */}
+              <div className="h-1.5 w-full bg-surfaceAlt rounded-full overflow-hidden mb-1">
+                <div
+                  className={`h-full rounded-full transition-all duration-200 ${barColor}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+
+              {/* Hint */}
+              <p className={`text-[10px] leading-tight ${targetSeats > maxSeats ? 'text-error' : 'text-textMuted'}`}>
+                {hintText}
+              </p>
+            </div>
+
+            {/* Tamaño del radio + separación */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <span className="text-[9px] text-textMuted mb-0.5 block">Filas</span>
+                <span className="text-[9px] text-textMuted mb-0.5 block">Radio (px)</span>
                 <input
-                  type="number" className={inputClass} min={1} max={20}
-                  value={element.seatLayout.rows}
-                  onChange={(e) => {
-                    const rows      = Math.max(1, Number(e.target.value));
-                    const newLayout = { ...element.seatLayout, rows };
-                    const newSize   = computeSectionSize(newLayout);
-                    // Para polígonos, no forzar el resize (el contorno ya define el espacio)
-                    update(shapeMode === 'polygon'
-                      ? { seatLayout: newLayout }
-                      : { seatLayout: newLayout, ...(newSize ?? {}) });
-                  }}
+                  type="number" className={inputClass} min={4} max={20}
+                  value={sl.seatRadius}
+                  onChange={(e) => updateSeatLayout({ seatRadius: Math.min(20, Math.max(4, Number(e.target.value))) })}
                 />
               </div>
               <div>
-                <span className="text-[9px] text-textMuted mb-0.5 block">Columnas</span>
+                <span className="text-[9px] text-textMuted mb-0.5 block">Separación</span>
                 <input
-                  type="number" className={inputClass} min={1} max={30}
-                  value={element.seatLayout.cols}
-                  onChange={(e) => {
-                    const cols      = Math.max(1, Number(e.target.value));
-                    const newLayout = { ...element.seatLayout, cols };
-                    const newSize   = computeSectionSize(newLayout);
-                    update(shapeMode === 'polygon'
-                      ? { seatLayout: newLayout }
-                      : { seatLayout: newLayout, ...(newSize ?? {}) });
-                  }}
+                  type="number" className={inputClass} min={2} max={20}
+                  value={sl.gap}
+                  onChange={(e) => updateSeatLayout({ gap: Math.min(20, Math.max(2, Number(e.target.value))) })}
                 />
               </div>
             </div>
-            <p className="text-[10px] text-textMuted mt-1">
-              Máx {element.seatLayout.rows * element.seatLayout.cols} asientos
-              {shapeMode === 'polygon' && ' (según forma)'}
-            </p>
           </div>
         )}
       </div>
