@@ -1,16 +1,8 @@
 // Catálogo de elementos disponibles en la paleta del editor.
 // NO son datos del backend — son la configuración de qué se puede arrastrar al canvas.
 //
-// Fix 4: los defaultWidth/defaultHeight de secciones con seatLayout se calculan
-// con la misma fórmula que computeSectionSize() para que sean proporcionales
-// a la grilla desde el primer momento.
-//   width  = cols * (seatRadius*2 + gap) + padding*2
-//   height = rows * (seatRadius*2 + gap) + padding*2 + labelSpace(28)
-
-const calcSize = (rows, cols, seatRadius = 7, gap = 4, padding = 12, labelSpace = 28) => ({
-  defaultWidth:  Math.round(cols * (seatRadius * 2 + gap) + padding * 2),
-  defaultHeight: Math.round(rows * (seatRadius * 2 + gap) + padding * 2 + labelSpace),
-});
+// Fase 1.5: seatLayout usa targetSeats en vez de rows/cols.
+// defaultWidth/defaultHeight calculados para que las sillas quepan con margen.
 
 export const PALETTE_ELEMENTS = [
   // ── Infraestructura ────────────────────────────────────────────────────────
@@ -78,42 +70,47 @@ export const PALETTE_ELEMENTS = [
     seatLayout: null,
   },
 
-  // ── Secciones (tamaño calculado con fórmula) ──────────────────────────────
+  // ── Secciones ─────────────────────────────────────────────────────────────
+  // defaultWidth/defaultHeight dimensionados para que las sillas default quepan cómodamente.
   {
     type: 'section',
     sectionType: 'VIP',
     label: 'VIP',
     icon: '⭐',
-    ...calcSize(4, 6),           // 216 × 140
+    defaultWidth: 240,
+    defaultHeight: 180,
     color: '#7C3AED',
-    seatLayout: { rows: 4, cols: 6, seatRadius: 7, gap: 4 },
+    seatLayout: { targetSeats: 24, seatRadius: 8, gap: 4 },
   },
   {
     type: 'section',
     sectionType: 'General',
     label: 'General',
     icon: '👥',
-    ...calcSize(6, 8),           // 264 × 168
+    defaultWidth: 320,
+    defaultHeight: 260,
     color: '#16A34A',
-    seatLayout: { rows: 6, cols: 8, seatRadius: 7, gap: 4 },
+    seatLayout: { targetSeats: 80, seatRadius: 6, gap: 3 },
   },
   {
     type: 'section',
     sectionType: 'Palco',
     label: 'Palco',
     icon: '🎪',
-    ...calcSize(3, 5),           // 174 × 112
+    defaultWidth: 200,
+    defaultHeight: 140,
     color: '#EA580C',
-    seatLayout: { rows: 3, cols: 5, seatRadius: 7, gap: 4 },
+    seatLayout: { targetSeats: 15, seatRadius: 8, gap: 4 },
   },
   {
     type: 'section',
     sectionType: 'Tribuna',
     label: 'Tribuna',
     icon: '🏟️',
-    ...calcSize(5, 8),           // 264 × 140
+    defaultWidth: 300,
+    defaultHeight: 220,
     color: '#2563EB',
-    seatLayout: { rows: 5, cols: 8, seatRadius: 7, gap: 4 },
+    seatLayout: { targetSeats: 60, seatRadius: 6, gap: 3 },
   },
   {
     type: 'section',
@@ -123,6 +120,6 @@ export const PALETTE_ELEMENTS = [
     defaultWidth: 200,
     defaultHeight: 200,
     color: '#DB2777',
-    seatLayout: null,            // área libre — sin grilla
+    seatLayout: null,  // área libre — sin grilla
   },
 ];

@@ -1,9 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Group, Rect, Line, Circle, Text, Transformer } from 'react-konva';
 import {
-  computeSeatPositions,
   computeMinSectionSize,
-  computePolygonSeatRows,
+  distributeSeats,
+  normalizeSeatLayout,
   flattenPoints,
   polyCentroid,
   polyBoundingBox,
@@ -86,9 +86,8 @@ export default function SectionElement({
   const shapeMode = element.shapeMode ?? 'rect';
   const minSize   = computeMinSectionSize(element.seatLayout);
 
-  const seatPositions = shapeMode === 'polygon' && element.polygonPoints
-    ? computePolygonSeatRows(element.polygonPoints, element.seatLayout)
-    : computeSeatPositions(element.width, element.height, element.seatLayout);
+  // Fase 1.5: distributeSeats normaliza automáticamente rows/cols → targetSeats
+  const seatPositions = distributeSeats(element);
 
   const labelCenter = shapeMode === 'polygon' && element.polygonPoints
     ? polyCentroid(element.polygonPoints)
