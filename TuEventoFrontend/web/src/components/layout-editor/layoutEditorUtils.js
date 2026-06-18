@@ -355,3 +355,74 @@ export const polyCentroid = (points) => {
   const sumY = points.reduce((s, [, y]) => s + y, 0);
   return { x: sumX / points.length, y: sumY / points.length };
 };
+
+// ── Fase 1.6: Smart guides ────────────────────────────────────────────────────
+
+/**
+ * Calcula los 6 bordes de snapping de un elemento (3 verticales + 3 horizontales).
+ * Trabaja con coordenadas absolutas del canvas.
+ */
+export const getElementSnapEdges = (element) => {
+  const left    = element.x;
+  const right   = element.x + element.width;
+  const centerX = element.x + element.width  / 2;
+  const top     = element.y;
+  const bottom  = element.y + element.height;
+  const centerY = element.y + element.height / 2;
+  return {
+    vertical:   [
+      { type: 'left',    value: left    },
+      { type: 'centerX', value: centerX },
+      { type: 'right',   value: right   },
+    ],
+    horizontal: [
+      { type: 'top',     value: top     },
+      { type: 'centerY', value: centerY },
+      { type: 'bottom',  value: bottom  },
+    ],
+  };
+};
+
+/**
+ * Compara los bordes del elemento activo contra todos los demás y devuelve
+ * las mejores guías de alineación (la de menor delta por eje).
+ *
+ * @param {object}   activeElement  — elemento con posición tentativa actual
+ * @param {object[]} otherElements  — elementos a comparar (ya filtrados: sin el activo)
+ * @param {number}   threshold      — distancia máxima en px para considerar alineación
+ * @returns {{ vertical: Guide|null, horizontal: Guide|null }}
+ *          Guide = { position, delta }
+ */
+export const findSnapGuides = (activeElement, otherElements, threshold = 6) => {
+  const activeEdges = getElementSnapEdges(activeElement);
+  const vCandidates = [];
+  const hCandidates = [];
+
+  for (const other of otherElements) {
+    if (other.id === activeElement.id) continue;
+    const otherEdges = getElementSnapEdges(other);
+
+    for (const ae of activeEdges.vertical) {
+      for (const oe of otherEdges.vertical) {
+        const diff = ae.value - oe.value;
+        if (Math.abs(diff) <= threshold) {
+          vCandidates.push({ position: oe.value, delta: oe.value - ae.value });
+        }
+      }
+    }
+    for (const ae of activeEdges.horizontal) {
+      for (const oe of otherEdges.horizontal) {
+        const diff = ae.value - oe.value;
+        if (Math.abs(diff) <= threshold) {
+          hCandidates.push({ position: oe.value, delta: oe.value - ae.value });
+        }
+      }
+    }
+  }
+
+  const best = (arr) =>
+    arr.length === 0 ? null
+    : arr.reduce((a, b) => Math.abs(a.delta) <= Math.abs(b.delta) ? a : b);
+
+  return { vertical: best(vCandidates), horizontal: best(hCandidates) };
+};
