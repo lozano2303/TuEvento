@@ -109,11 +109,8 @@ export const computeMaxSeats = (element, seatRadius, gap) => {
   const PADDING   = 12;
 
   if (shapeMode === 'polygon' && element.polygonPoints) {
-    // Llenado máximo del polígono con densidad alta (999 filas = sin límite de filas)
-    const positions = computePolygonSeatRows(
-      element.polygonPoints,
-      { rows: 999, cols: 9999, seatRadius: r, gap: g }
-    );
+    // computePolygonSeatRows calcula las filas desde el espacio real del polígono
+    const positions = computePolygonSeatRows(element.polygonPoints, { seatRadius: r, gap: g });
     return positions.length;
   }
 
@@ -140,11 +137,9 @@ export const distributeSeats = (element) => {
   const cellSize  = seatRadius * 2 + gap;
 
   if (shapeMode === 'polygon' && element.polygonPoints) {
-    // Generar todas las posiciones posibles y tomar las primeras targetSeats
-    const all = computePolygonSeatRows(
-      element.polygonPoints,
-      { rows: 999, cols: 9999, seatRadius, gap }
-    );
+    // Generar todas las posiciones posibles y tomar las primeras targetSeats.
+    // computePolygonSeatRows ya calcula las filas desde el espacio real del polígono.
+    const all = computePolygonSeatRows(element.polygonPoints, { seatRadius, gap });
     return all.slice(0, targetSeats);
   }
 
@@ -267,48 +262,58 @@ export const polyBoundingBox = (points) => {
 };
 
 /**
- * Fix C: algoritmo even-odd correcto para polígonos cóncavos.
- * Para cada fila, encuentra TODOS los segmentos de intersección (pares de Xs)
- * y coloca sillas dentro de cada segmento válido — no solo el más ancho.
+ * Fase 1.5 / hotfix: algoritmo even-odd que calcula las filas desde el rango
+ * vertical REAL del polígono. No usa `rows` como parámetro de densidad fija —
+ * en su lugar calcula cuántas filas caben físicamente dado seatRadius y gap.
+ *
+ * seatLayout debe tener: { seatRadius, gap } — rows/cols se ignoran aquí.
+ * Devuelve TODAS las posiciones que caben físicamente en el polígono.
+ * distributeSeats se encarga de recortar al targetSeats deseado.
  */
 export const computePolygonSeatRows = (polygonPoints, seatLayout) => {
   if (!polygonPoints || polygonPoints.length < 3 || !seatLayout) return [];
-  const { rows, cols, seatRadius, gap } = seatLayout;
+
+  const { seatRadius, gap } = seatLayout;
+  const r = seatRadius ?? 7;
+  const g = gap        ?? 4;
+
   const bb  = polyBoundingBox(polygonPoints);
   const pad = 6;
   const minY = bb.minY + pad;
   const maxY = bb.maxY - pad;
   if (maxY <= minY) return [];
 
-  const rowH     = (maxY - minY) / rows;
-  const seatDiam = seatRadius * 2 + gap;
+  // Fix: calcular las filas desde el espacio vertical REAL, no desde un `rows` fijo
+  const cellH    = r * 2 + g;
+  const maxRows  = Math.max(1, Math.floor((maxY - minY) / cellH));
+  const seatDiam = r * 2 + g;
   const positions = [];
 
-  for (let r = 0; r < rows; r++) {
-    const y  = minY + (r + 0.5) * rowH;
+  for (let row = 0; row < maxRows; row++) {
+    // Y del centro de esta fila — en coordenadas relativas al elemento
+    const y = minY + (row + 0.5) * ((maxY - minY) / maxRows);
+
     const xs = polyHorizontalIntersections(polygonPoints, y);
     if (xs.length < 2) continue;
-
     xs.sort((a, b) => a - b);
 
-    // Even-odd: pares de intersecciones forman segmentos rellenos
+    // Even-odd: pares consecutivos de intersecciones = segmentos rellenos
     for (let s = 0; s + 1 < xs.length; s += 2) {
       const xLeft  = xs[s]     + pad;
       const xRight = xs[s + 1] - pad;
       const availW = xRight - xLeft;
       if (availW < seatDiam) continue;
 
-      // Cuántos asientos caben en este segmento (sin exceder cols)
-      const count = Math.min(cols, Math.floor((availW + gap) / seatDiam));
+      const count = Math.floor((availW + g) / seatDiam);
       if (count <= 0) continue;
 
-      const totalW = count * seatDiam - gap;
+      const totalW = count * seatDiam - g;
       const startX = xLeft + (availW - totalW) / 2;
       for (let c = 0; c < count; c++) {
         positions.push({
-          x: startX + c * seatDiam + seatRadius,
+          x: startX + c * seatDiam + r,
           y,
-          r: seatRadius,
+          r,
         });
       }
     }

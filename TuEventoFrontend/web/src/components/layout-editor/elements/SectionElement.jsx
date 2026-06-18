@@ -86,10 +86,21 @@ export default function SectionElement({
   const shapeMode = element.shapeMode ?? 'rect';
   const minSize   = computeMinSectionSize(element.seatLayout);
 
-  // Fase 1.5: distributeSeats normaliza automáticamente rows/cols → targetSeats
-  const seatPositions = distributeSeats(element);
+  // Fase 1.5: distributeSeats normaliza automáticamente rows/cols → targetSeats.
+  // Hotfix: si estamos en modo edición usamos workPoints (localPoints en tiempo real)
+  // para que la previsualización de sillas sea inmediata durante el drag de vértices.
+  const workPoints = (isEditingVertices && localPoints) ? localPoints : element.polygonPoints;
 
-  const labelCenter = shapeMode === 'polygon' && element.polygonPoints
+  const seatPositions = (() => {
+    const shapeForSeats = element.shapeMode ?? 'rect';
+    if (shapeForSeats === 'polygon' && workPoints) {
+      // Pasar workPoints en vez de element.polygonPoints para la previsualización
+      return distributeSeats({ ...element, polygonPoints: workPoints });
+    }
+    return distributeSeats(element);
+  })();
+
+  const labelCenter = shapeMode === 'polygon' && workPoints
     ? polyCentroid(element.polygonPoints)
     : { x: element.width / 2, y: element.height / 2 };
 
@@ -209,7 +220,7 @@ export default function SectionElement({
     });
   };
 
-  const workPoints = (isEditingVertices && localPoints) ? localPoints : element.polygonPoints;
+  // workPoints ya fue declarado arriba junto a seatPositions
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
