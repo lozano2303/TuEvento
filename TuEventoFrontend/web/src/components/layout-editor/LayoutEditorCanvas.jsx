@@ -195,11 +195,22 @@ export default function LayoutEditorCanvas({
 
     if (!isLeftClick) return;
 
-    // Fix B: si hay edición de vértices activa y el click cayó fuera del Stage
-    // (sobre otro elemento), igualmente hacemos commit y salimos
+    // Fix B + hotfix: si hay edición de vértices activa, detectar si el click
+    // cayó sobre un nodo de la sesión de edición (vértice, punto medio, superficie)
+    // usando el atributo name de Konva para identificarlos de forma robusta.
     if (editingPolygonId) {
-      commitVertexEditRef.current?.();
-      onEndVertexEdit?.();
+      const targetName = e.target?.name?.() ?? e.target?.attrs?.name ?? '';
+      const isVertexHandle   = targetName.startsWith('vertex-handle-');
+      const isMidpointHandle = targetName.startsWith('midpoint-handle-');
+      const isPolygonShape   = targetName.startsWith('polygon-shape-');
+      const isInternalClick  = isVertexHandle || isMidpointHandle || isPolygonShape;
+
+      if (!isInternalClick) {
+        // Click genuinamente fuera → guardar y salir
+        commitVertexEditRef.current?.();
+        onEndVertexEdit?.();
+      }
+      // En ambos casos: no disparar lógica de selección normal mientras se edita
       return;
     }
 

@@ -236,6 +236,7 @@ export default function SectionElement({
         {/* ── Fondo ──────────────────────────────────────────────────────── */}
         {shapeMode === 'polygon' && workPoints ? (
           <Line
+            name={`polygon-shape-${element.id}`}
             points={flattenPoints(workPoints)}
             closed
             fill={element.color}
@@ -292,6 +293,7 @@ export default function SectionElement({
             <React.Fragment key={`v-${idx}`}>
               {/* Punto medio */}
               <Circle
+                name={`midpoint-handle-${element.id}`}
                 x={midX} y={midY}
                 radius={MIDPOINT_RADIUS}
                 fill="rgba(167,139,250,0.45)"
@@ -302,6 +304,7 @@ export default function SectionElement({
               />
               {/* Vértice arrastrable */}
               <Circle
+                name={`vertex-handle-${element.id}`}
                 x={pt[0]} y={pt[1]}
                 radius={VERTEX_RADIUS}
                 fill="#A78BFA"
