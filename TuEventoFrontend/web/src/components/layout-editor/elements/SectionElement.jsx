@@ -8,6 +8,7 @@ import {
   polyCentroid,
   polyBoundingBox,
   snapToGrid,
+  findVertexSnapGuides,
 } from '../layoutEditorUtils';
 
 const VERTEX_RADIUS   = 7;
@@ -35,6 +36,8 @@ export default function SectionElement({
   onStartVertexEdit,
   onEndVertexEdit,
   onSaveVertexEdit,
+  onVertexGuideChange,         // Fase 1.7: setter de guías para vértices individuales
+  otherElementsForVertexSnap,  // Fase 1.7: elementos del canvas (excl. este) para snap contra bordes
 }) {
   const groupRef = useRef();
   const trRef    = useRef();
@@ -188,6 +191,8 @@ export default function SectionElement({
   // desborda el canvas y notificar via onChange (que ya tiene lógica de expansión)
   const handleVertexDragEnd = useCallback((idx, e) => {
     const node = e.target;
+    // Fase 1.7: limpiar guías al soltar el vértice
+    onVertexGuideChange?.({ vertical: null, horizontal: null });
     setLocalPoints((prev) => {
       if (!prev) return prev;
       const next = prev.map((p) => [...p]);
@@ -207,10 +212,40 @@ export default function SectionElement({
       });
       return next;
     });
-  }, [element, onChange, minSize]);
+  }, [element, onChange, minSize, onVertexGuideChange]);
 
   const handleVertexDragMove = (idx, e) => {
     const node = e.target;
+
+    // Fase 1.7: calcular smart guides para este vértice
+    if (onVertexGuideChange && localPoints) {
+      // Posición tentativa del vértice activo en coordenadas absolutas del canvas.
+      // Los Circle viven dentro del Group (posicionado en element.x/y),
+      // por lo que node.x()/node.y() ya son RELATIVAS al elemento.
+      const tentativeAbsolute = {
+        x: element.x + node.x(),
+        y: element.y + node.y(),
+      };
+
+      // Demás vértices de la misma forma → convertir a absolutas
+      const ownOthers = localPoints
+        .filter((_, i) => i !== idx)
+        .map(([vx, vy]) => ({ x: element.x + vx, y: element.y + vy }));
+
+      const guides = findVertexSnapGuides(
+        tentativeAbsolute,
+        ownOthers,
+        otherElementsForVertexSnap ?? [],
+        6,
+      );
+
+      // Aplicar snap: ajustar la posición del nodo Konva con el delta
+      if (guides.vertical)   node.x(node.x() + guides.vertical.delta);
+      if (guides.horizontal) node.y(node.y() + guides.horizontal.delta);
+
+      onVertexGuideChange(guides);
+    }
+
     setLocalPoints((prev) => {
       if (!prev) return prev;
       const next = prev.map((p) => [...p]);

@@ -4,7 +4,7 @@ import SectionElement from './elements/SectionElement';
 import InfraElement from './elements/InfraElement';
 import {
   generateId, snapToGrid, rectsIntersect,
-  findSnapGuides,
+  findSnapGuides, findVertexSnapGuides,
 } from './layoutEditorUtils';
 
 const GRID_SIZE        = 20;
@@ -15,6 +15,7 @@ const EXPAND_INCREMENT = 200;
 const FIT_MARGIN       = 40;
 const SNAP_THRESHOLD   = 6;   // px — tolerancia para smart guides
 const GUIDE_COLOR      = '#FF4D8F'; // magenta — estándar Figma/Canva
+const GUIDE_COLOR_VERTEX = '#9B6BFF'; // violeta — alineación con vértice propio (Fase 1.7)
 const GUIDE_EXTENT     = 10000;     // longitud de las líneas guía en px de canvas
 
 function buildGridLines(width, height, step) {
@@ -301,6 +302,19 @@ export default function LayoutEditorCanvas({
     handleElementChange(updated);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Fase 1.7: setter de guías para drag de vértices individuales ──────────
+  // SectionElement lo llama durante onDragMove/onDragEnd de cada vértice.
+  // Reutiliza el mismo estado activeGuides de la Fase 1.6; el campo `source`
+  // permite que la layer de guías use un color diferente por tipo.
+  const handleVertexGuideChange = useCallback((guides) => {
+    setActiveGuides({
+      vertical:         guides.vertical?.position   ?? null,
+      verticalSource:   guides.vertical?.source     ?? null,
+      horizontal:       guides.horizontal?.position ?? null,
+      horizontalSource: guides.horizontal?.source   ?? null,
+    });
+  }, []);
+
   // ── Fix 3: expandir canvas ────────────────────────────────────────────────
   const handleElementChange = useCallback((updated) => {
     const right = updated.x + updated.width, bottom = updated.y + updated.height;
@@ -376,6 +390,11 @@ export default function LayoutEditorCanvas({
               onStartVertexEdit: el.type === 'section' ? () => onStartVertexEdit?.(el.id) : undefined,
               onEndVertexEdit:   el.type === 'section' ? () => onEndVertexEdit?.()         : undefined,
               onSaveVertexEdit:  isEditingThis ? (fn) => { commitVertexEditRef.current = fn; } : undefined,
+              // Fase 1.7: guías para drag de vértices individuales
+              onVertexGuideChange: isEditingThis ? handleVertexGuideChange : undefined,
+              otherElementsForVertexSnap: isEditingThis
+                ? elements.filter((e) => e.id !== el.id)
+                : undefined,
             };
 
             return el.type === 'section'
@@ -396,13 +415,15 @@ export default function LayoutEditorCanvas({
           {activeGuides.vertical !== null && (
             <Line
               points={[activeGuides.vertical, -GUIDE_EXTENT, activeGuides.vertical, GUIDE_EXTENT]}
-              stroke={GUIDE_COLOR} strokeWidth={1} dash={[4, 4]} listening={false}
+              stroke={activeGuides.verticalSource === 'vertex' ? GUIDE_COLOR_VERTEX : GUIDE_COLOR}
+              strokeWidth={1} dash={[4, 4]} listening={false}
             />
           )}
           {activeGuides.horizontal !== null && (
             <Line
               points={[-GUIDE_EXTENT, activeGuides.horizontal, GUIDE_EXTENT, activeGuides.horizontal]}
-              stroke={GUIDE_COLOR} strokeWidth={1} dash={[4, 4]} listening={false}
+              stroke={activeGuides.horizontalSource === 'vertex' ? GUIDE_COLOR_VERTEX : GUIDE_COLOR}
+              strokeWidth={1} dash={[4, 4]} listening={false}
             />
           )}
         </Layer>
