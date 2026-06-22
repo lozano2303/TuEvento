@@ -1,7 +1,6 @@
 import { Circle } from 'react-konva';
 import {
   findVertexSnapGuides,
-  polyBoundingBox,
 } from './layoutEditorUtils';
 
 const VERTEX_RADIUS   = 7;
