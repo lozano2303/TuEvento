@@ -471,6 +471,7 @@ export const findVertexSnapGuides = (
         position: v.x,
         delta:    v.x - activeVertexAbsolute.x,
         source:   'vertex',
+        matchY:   v.y,  // Y del vértice con el que coincide → para calcular largo de línea
       });
     }
     if (Math.abs(v.y - activeVertexAbsolute.y) <= threshold) {
@@ -478,6 +479,7 @@ export const findVertexSnapGuides = (
         position: v.y,
         delta:    v.y - activeVertexAbsolute.y,
         source:   'vertex',
+        matchX:   v.x,  // X del vértice con el que coincide → para calcular largo de línea
       });
     }
   }
@@ -487,19 +489,33 @@ export const findVertexSnapGuides = (
     const edges = getElementSnapEdges(el);
     for (const edge of edges.vertical) {
       if (Math.abs(edge.value - activeVertexAbsolute.x) <= threshold) {
+        // elementEdgeY: Y representativa del borde del elemento para extender la línea hasta él
+        const elementEdgeY = edge.type === 'centerX'
+          ? el.y + el.height / 2
+          : el.y; // para left/right usamos el top del elemento como ancla
         verticalCandidates.push({
-          position: edge.value,
-          delta:    edge.value - activeVertexAbsolute.x,
-          source:   'element',
+          position:     edge.value,
+          delta:        edge.value - activeVertexAbsolute.x,
+          source:       'element',
+          elementEdgeY, // Y hasta donde extender la guía vertical
+          elementMinY:  el.y,
+          elementMaxY:  el.y + el.height,
         });
       }
     }
     for (const edge of edges.horizontal) {
       if (Math.abs(edge.value - activeVertexAbsolute.y) <= threshold) {
+        // elementEdgeX: X representativa del borde del elemento para extender la línea hasta él
+        const elementEdgeX = edge.type === 'centerY'
+          ? el.x + el.width / 2
+          : el.x; // para top/bottom usamos el left del elemento como ancla
         horizontalCandidates.push({
-          position: edge.value,
-          delta:    edge.value - activeVertexAbsolute.y,
-          source:   'element',
+          position:     edge.value,
+          delta:        edge.value - activeVertexAbsolute.y,
+          source:       'element',
+          elementEdgeX, // X hasta donde extender la guía horizontal
+          elementMinX:  el.x,
+          elementMaxX:  el.x + el.width,
         });
       }
     }
