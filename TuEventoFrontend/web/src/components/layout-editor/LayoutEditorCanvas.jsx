@@ -5,7 +5,7 @@ import InfraElement from './elements/InfraElement';
 import VertexEditorOverlay from './VertexEditorOverlay';
 import {
   generateId, snapToGrid, rectsIntersect,
-  findSnapGuides, polyBoundingBox,
+  findSnapGuides,
 } from './layoutEditorUtils';
 
 const GRID_SIZE          = 20;
@@ -126,17 +126,31 @@ export default function LayoutEditorCanvas({
     setStagePos({ x: (sw - (maxX - minX) * ns) / 2 - minX * ns, y: (sh - (maxY - minY) * ns) / 2 - minY * ns });
   }, [elements, onZoomChange, containerRef]);
 
-  // ── Drop ─────────────────────────────────────────────────────────────────
+  // ── Drop — Fix 2: compensar zoom y pan para posición correcta ───────────
   const handleDrop = useCallback((e) => {
     e.preventDefault();
     const raw = e.dataTransfer.getData('template');
     if (!raw) return;
     const template = JSON.parse(raw);
     const stage = stageRef.current;
-    stage.setPointersPositions(e);
-    const pos = stage.getPointerPosition();
-    const cx = snapToGrid((pos.x - stagePos.x) / zoom - template.defaultWidth  / 2);
-    const cy = snapToGrid((pos.y - stagePos.y) / zoom - template.defaultHeight / 2);
+    if (!stage) return;
+
+    // Leer posición y escala directamente del nodo Konva (evita stale closure)
+    const scale    = stage.scaleX();
+    const pos      = stage.position();
+    const rect     = stage.container().getBoundingClientRect();
+
+    // Coordenadas del puntero relativas al contenedor DOM del Stage
+    const pointerX = e.clientX - rect.left;
+    const pointerY = e.clientY - rect.top;
+
+    // Convertir a coordenadas del canvas compensando zoom y pan
+    const canvasX = (pointerX - pos.x) / scale;
+    const canvasY = (pointerY - pos.y) / scale;
+
+    const cx = snapToGrid(canvasX - template.defaultWidth  / 2);
+    const cy = snapToGrid(canvasY - template.defaultHeight / 2);
+
     onAddElement({
       id: generateId(), type: template.type,
       sectionType: template.sectionType ?? null, eventSectionId: null,
@@ -145,7 +159,7 @@ export default function LayoutEditorCanvas({
       width: template.defaultWidth, height: template.defaultHeight,
       rotation: 0, label: template.label, color: template.color,
     });
-  }, [zoom, stagePos, onAddElement]);
+  }, [onAddElement]);
   const handleDragOver = (e) => e.preventDefault();
 
   // ── Fase 1.8: Vertex edit — commit / discard ──────────────────────────────
@@ -153,14 +167,9 @@ export default function LayoutEditorCanvas({
     if (!editingPolygonId || !vertexPreview) { onEndVertexEdit?.(); return; }
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) { onEndVertexEdit?.(); return; }
-    const pts = vertexPreview;
-    const bb  = polyBoundingBox(pts);
-    onChange({
-      ...el,
-      polygonPoints: pts,
-      width:  Math.max(80, Math.round(bb.width)),
-      height: Math.max(60, Math.round(bb.height)),
-    });
+    // Fix 1: normalizar también al hacer commit
+    const patch = normalizePoints(vertexPreview, el.x, el.y);
+    onChange({ ...el, ...patch });
     setVertexPreview(null);
     vertexSnapshotRef.current = null;
     onEndVertexEdit?.();
@@ -215,16 +224,40 @@ export default function LayoutEditorCanvas({
     }
   }
 
-  // ── Fase 1.8: Handlers de vértices (migrados desde SectionElement) ────────
+  // ── Fase 1.8/1.9: Handlers de vértices ───────────────────────────────────
+
+  /**
+   * Normaliza polygonPoints para que siempre minX=0, minY=0
+   * y absorbe el desplazamiento en el.x / el.y.
+   * Esto evita que coords relativas negativas deformen el render
+   * (el Group está posicionado en el.x/el.y y la Line usa coords relativas).
+   */
+  function normalizePoints(pts, elX, elY) {
+    const xs   = pts.map((p) => p[0]);
+    const ys   = pts.map((p) => p[1]);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    const normalized = pts.map(([px, py]) => [px - minX, py - minY]);
+    return {
+      polygonPoints: normalized,
+      x: elX + minX,
+      y: elY + minY,
+      width:  Math.max(80, Math.max(...normalized.map((p) => p[0]))),
+      height: Math.max(60, Math.max(...normalized.map((p) => p[1]))),
+    };
+  }
+
   const handleVertexDrag = useCallback((vertexIdx, absX, absY) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
     setVertexPreview((prev) => {
-      const pts = prev ?? el.polygonPoints;
-      const next = pts.map((p, i) =>
+      const pts  = prev ?? el.polygonPoints;
+      const raw  = pts.map((p, i) =>
         i === vertexIdx ? [absX - el.x, absY - el.y] : [...p],
       );
-      return next;
+      // Fix 1: normalizar para que minX=0, minY=0 y el.x/el.y absorban el offset
+      const { polygonPoints } = normalizePoints(raw, el.x, el.y);
+      return polygonPoints;
     });
   }, [elements, editingPolygonId]);
 
@@ -232,16 +265,14 @@ export default function LayoutEditorCanvas({
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
     setVertexPreview((prev) => {
-      const pts = prev ?? el.polygonPoints;
-      const next = pts.map((p, i) =>
+      const pts  = prev ?? el.polygonPoints;
+      const raw  = pts.map((p, i) =>
         i === vertexIdx ? [absX - el.x, absY - el.y] : [...p],
       );
-      // Notificar onChange para persistencia y posible expansión del canvas
-      const bb   = polyBoundingBox(next);
-      const newW = Math.max(80, Math.round(bb.width));
-      const newH = Math.max(60, Math.round(bb.height));
-      queueMicrotask(() => onChange({ ...el, polygonPoints: next, width: newW, height: newH }));
-      return next;
+      // Fix 1: normalizar antes de persistir
+      const patch = normalizePoints(raw, el.x, el.y);
+      queueMicrotask(() => onChange({ ...el, ...patch }));
+      return patch.polygonPoints;
     });
   }, [elements, editingPolygonId, onChange]);
 
@@ -563,13 +594,27 @@ export default function LayoutEditorCanvas({
         </Layer>
       </Stage>
 
-      {/* ── Controles de zoom flotantes ──────────────────────────────────── */}
-      <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1 bg-surface border border-surfaceAlt rounded-lg px-2 py-1 shadow-lg shadow-black/30">
-        <button onClick={handleZoomOut} className="w-6 h-6 flex items-center justify-center rounded text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt transition-colors text-sm font-bold" title="Alejar">−</button>
-        <span className="text-xs font-mono text-textSecondary w-10 text-center select-none">{Math.round(zoom * 100)}%</span>
-        <button onClick={handleZoomIn} className="w-6 h-6 flex items-center justify-center rounded text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt transition-colors text-sm font-bold" title="Acercar">+</button>
-        <div className="w-px h-4 bg-surfaceAlt mx-0.5" />
-        <button onClick={handleFit} className="w-6 h-6 flex items-center justify-center rounded text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt transition-colors text-sm" title="Ajustar al canvas">⊡</button>
+      {/* ── Controles de zoom flotantes (Fix 3 — visibles y accesibles) ── */}
+      <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1 bg-surface border border-surfaceAlt rounded-lg px-2 py-1.5 shadow-xl shadow-black/40 select-none">
+        <button
+          onClick={handleZoomOut}
+          className="w-7 h-7 flex items-center justify-center rounded text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt transition-colors text-base font-bold"
+          title="Reducir zoom (−)"
+        >−</button>
+        <span className="text-xs font-mono text-textPrimary w-12 text-center tabular-nums">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          onClick={handleZoomIn}
+          className="w-7 h-7 flex items-center justify-center rounded text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt transition-colors text-base font-bold"
+          title="Aumentar zoom (+)"
+        >+</button>
+        <div className="w-px h-4 bg-surfaceAlt mx-1" />
+        <button
+          onClick={handleFit}
+          className="w-7 h-7 flex items-center justify-center rounded text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt transition-colors text-sm"
+          title="Ajustar todo al viewport (⊡)"
+        >⊡</button>
       </div>
 
       {/* ── Botón flotante "Guardar forma" + hints ───────────────────────── */}
