@@ -426,3 +426,91 @@ export const findSnapGuides = (activeElement, otherElements, threshold = 6) => {
 
   return { vertical: best(vCandidates), horizontal: best(hCandidates) };
 };
+
+// ── Fase 1.7: Smart guides para vértices individuales ────────────────────────
+
+/**
+ * Calcula guías de alineación para un vértice individual que se está arrastrando.
+ * Compara contra dos fuentes:
+ *   1. Los demás vértices de la misma forma (alineación interna — simetría).
+ *   2. Bordes y centros de los demás elementos del canvas (reutiliza getElementSnapEdges).
+ *
+ * Todas las coordenadas de entrada son ABSOLUTAS (canvas-space).
+ *
+ * @param {{ x: number, y: number }} activeVertexAbsolute
+ *   Posición tentativa del vértice que se arrastra, en coordenadas de canvas.
+ *
+ * @param {{ x: number, y: number }[]} ownOtherVerticesAbsolute
+ *   Resto de vértices de la misma forma (todos excepto el activo), en coordenadas de canvas.
+ *
+ * @param {object[]} otherElements
+ *   Elementos del canvas que no son la sección en edición.
+ *
+ * @param {number} threshold
+ *   Tolerancia en px (default: 6).
+ *
+ * @returns {{ vertical: VertexGuide|null, horizontal: VertexGuide|null }}
+ *   VertexGuide = { position, delta, source: 'vertex' | 'element' }
+ *   position — coordenada absoluta donde dibujar la línea guía
+ *   delta    — desplazamiento a aplicar para hacer snap exacto
+ *   source   — 'vertex' si la guía viene de otro vértice propio, 'element' si viene de elemento externo
+ */
+export const findVertexSnapGuides = (
+  activeVertexAbsolute,
+  ownOtherVerticesAbsolute,
+  otherElements,
+  threshold = 6,
+) => {
+  const verticalCandidates   = [];
+  const horizontalCandidates = [];
+
+  // Fuente 1 — otros vértices de la misma forma
+  for (const v of ownOtherVerticesAbsolute) {
+    if (Math.abs(v.x - activeVertexAbsolute.x) <= threshold) {
+      verticalCandidates.push({
+        position: v.x,
+        delta:    v.x - activeVertexAbsolute.x,
+        source:   'vertex',
+      });
+    }
+    if (Math.abs(v.y - activeVertexAbsolute.y) <= threshold) {
+      horizontalCandidates.push({
+        position: v.y,
+        delta:    v.y - activeVertexAbsolute.y,
+        source:   'vertex',
+      });
+    }
+  }
+
+  // Fuente 2 — bordes/centros de otros elementos del canvas
+  for (const el of otherElements) {
+    const edges = getElementSnapEdges(el);
+    for (const edge of edges.vertical) {
+      if (Math.abs(edge.value - activeVertexAbsolute.x) <= threshold) {
+        verticalCandidates.push({
+          position: edge.value,
+          delta:    edge.value - activeVertexAbsolute.x,
+          source:   'element',
+        });
+      }
+    }
+    for (const edge of edges.horizontal) {
+      if (Math.abs(edge.value - activeVertexAbsolute.y) <= threshold) {
+        horizontalCandidates.push({
+          position: edge.value,
+          delta:    edge.value - activeVertexAbsolute.y,
+          source:   'element',
+        });
+      }
+    }
+  }
+
+  const best = (arr) =>
+    arr.length === 0 ? null
+    : arr.reduce((a, b) => Math.abs(a.delta) <= Math.abs(b.delta) ? a : b);
+
+  return {
+    vertical:   best(verticalCandidates),
+    horizontal: best(horizontalCandidates),
+  };
+};
