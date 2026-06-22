@@ -2,21 +2,22 @@ import { useRef, useState, useCallback, useMemo } from 'react';
 import { Stage, Layer, Line, Rect } from 'react-konva';
 import SectionElement from './elements/SectionElement';
 import InfraElement from './elements/InfraElement';
+import VertexEditorOverlay from './VertexEditorOverlay';
 import {
   generateId, snapToGrid, rectsIntersect,
-  findSnapGuides,
+  findSnapGuides, polyBoundingBox,
 } from './layoutEditorUtils';
 
-const GRID_SIZE        = 20;
-const ZOOM_MIN         = 0.2;
-const ZOOM_MAX         = 3;
-const ZOOM_STEP        = 0.1;
-const EXPAND_INCREMENT = 200;
-const FIT_MARGIN       = 40;
-const SNAP_THRESHOLD   = 6;   // px — tolerancia para smart guides
-const GUIDE_COLOR      = '#FF4D8F'; // magenta — estándar Figma/Canva
-const GUIDE_COLOR_VERTEX = '#9B6BFF'; // violeta — alineación con vértice propio (Fase 1.7)
-const GUIDE_EXTENT     = 10000;     // longitud de las líneas guía en px de canvas
+const GRID_SIZE          = 20;
+const ZOOM_MIN           = 0.2;
+const ZOOM_MAX           = 3;
+const ZOOM_STEP          = 0.1;
+const EXPAND_INCREMENT   = 200;
+const FIT_MARGIN         = 40;
+const SNAP_THRESHOLD     = 6;
+const GUIDE_COLOR        = '#FF4D8F';
+const GUIDE_COLOR_VERTEX = '#9B6BFF';
+const GUIDE_EXTENT       = 10000;
 
 function buildGridLines(width, height, step) {
   const lines = [];
@@ -46,31 +47,33 @@ export default function LayoutEditorCanvas({
   const stageRef = useRef();
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
 
-  // Fix 1: pan manual con click derecho
+  // Pan (click derecho)
   const panState = useRef({ active: false, startPointer: null, startStagePos: null });
 
-  // Fix 2: rubber-band solo con Ctrl
+  // Rubber-band (Ctrl+drag)
   const [selBox, setSelBox] = useState(null);
   const isRubberBand = useRef(false);
 
-  // Fix 5: drag grupal
-  const groupDragState = useRef({
-    active: false, leaderId: null, startPositions: {}, leaderStart: null,
-  });
+  // Multi-drag
+  const groupDragState = useRef({ active: false, leaderId: null, startPositions: {}, leaderStart: null });
   const [followerPositions, setFollowerPositions] = useState({});
 
-  // Fix B: ref al commitAndExit del SectionElement en edición
-  const commitVertexEditRef = useRef(null);
-
-  // Fase 1.6: smart guides — posición de las líneas guía activas (coord. canvas)
+  // Fase 1.6: smart guides globales
   const [activeGuides, setActiveGuides] = useState({ vertical: null, horizontal: null });
 
-  // Fase 1.7: guías de vértices — líneas cortas punto a punto { x1, y1, x2, y2 }
+  // Fase 1.7/1.8: guías de vértices — líneas cortas { x1,y1,x2,y2 }
   const [activeVertexGuides, setActiveVertexGuides] = useState({ vertical: null, horizontal: null });
+
+  // Fase 1.8: estado local de preview de vértices mientras se arrastra
+  // { points: [[rx,ry],...] } — solo se usa como previewPoints en SectionElement y VertexEditorOverlay
+  const [vertexPreview, setVertexPreview] = useState(null);
+
+  // Fase 1.8: snapshot para revertir con Escape
+  const vertexSnapshotRef = useRef(null);
 
   const gridLines = useMemo(
     () => buildGridLines(canvasSize.width, canvasSize.height, GRID_SIZE),
-    [canvasSize.width, canvasSize.height]
+    [canvasSize.width, canvasSize.height],
   );
 
   // ── Zoom ─────────────────────────────────────────────────────────────────
@@ -145,6 +148,130 @@ export default function LayoutEditorCanvas({
   }, [zoom, stagePos, onAddElement]);
   const handleDragOver = (e) => e.preventDefault();
 
+  // ── Fase 1.8: Vertex edit — commit / discard ──────────────────────────────
+  const commitVertexEdit = useCallback(() => {
+    if (!editingPolygonId || !vertexPreview) { onEndVertexEdit?.(); return; }
+    const el = elements.find((e) => e.id === editingPolygonId);
+    if (!el) { onEndVertexEdit?.(); return; }
+    const pts = vertexPreview;
+    const bb  = polyBoundingBox(pts);
+    onChange({
+      ...el,
+      polygonPoints: pts,
+      width:  Math.max(80, Math.round(bb.width)),
+      height: Math.max(60, Math.round(bb.height)),
+    });
+    setVertexPreview(null);
+    vertexSnapshotRef.current = null;
+    onEndVertexEdit?.();
+  }, [editingPolygonId, vertexPreview, elements, onChange, onEndVertexEdit]);
+
+  const discardVertexEdit = useCallback(() => {
+    if (editingPolygonId && vertexSnapshotRef.current) {
+      const el = elements.find((e) => e.id === editingPolygonId);
+      if (el) onChange({ ...el, polygonPoints: vertexSnapshotRef.current });
+    }
+    setVertexPreview(null);
+    vertexSnapshotRef.current = null;
+    onEndVertexEdit?.();
+  }, [editingPolygonId, elements, onChange, onEndVertexEdit]);
+
+  // Inicializar preview y snapshot al entrar en modo edición
+  const prevEditingPolygonId = useRef(null);
+  if (editingPolygonId !== prevEditingPolygonId.current) {
+    prevEditingPolygonId.current = editingPolygonId;
+    if (editingPolygonId) {
+      const el = elements.find((e) => e.id === editingPolygonId);
+      if (el?.polygonPoints) {
+        const copy = el.polygonPoints.map((p) => [...p]);
+        vertexSnapshotRef.current = copy;
+        setVertexPreview(copy);
+      }
+    } else {
+      // Al salir sin commit explícito (p.ej. desde el padre), limpiar
+      setVertexPreview(null);
+      vertexSnapshotRef.current = null;
+    }
+  }
+
+  // ── Fase 1.8: Escape → descartar cambios de vértices ─────────────────────
+  // Usamos un ref para que el listener tenga siempre la versión más reciente
+  // sin necesidad de re-registrar con cada render.
+  const discardRef = useRef(discardVertexEdit);
+  discardRef.current = discardVertexEdit;
+  const editingRef = useRef(editingPolygonId);
+  editingRef.current = editingPolygonId;
+
+  // El listener se registra una sola vez al montar el componente.
+  useCallback(() => {}, []); // eslint lint-hint: no-op para satisfacer orden de hooks
+  // Registrar Escape como efecto de montaje usando ref estables:
+  const escapeRegistered = useRef(false);
+  if (!escapeRegistered.current) {
+    escapeRegistered.current = true;
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && editingRef.current) discardRef.current();
+      });
+    }
+  }
+
+  // ── Fase 1.8: Handlers de vértices (migrados desde SectionElement) ────────
+  const handleVertexDrag = useCallback((vertexIdx, absX, absY) => {
+    const el = elements.find((e) => e.id === editingPolygonId);
+    if (!el) return;
+    setVertexPreview((prev) => {
+      const pts = prev ?? el.polygonPoints;
+      const next = pts.map((p, i) =>
+        i === vertexIdx ? [absX - el.x, absY - el.y] : [...p],
+      );
+      return next;
+    });
+  }, [elements, editingPolygonId]);
+
+  const handleVertexDragEnd = useCallback((vertexIdx, absX, absY) => {
+    const el = elements.find((e) => e.id === editingPolygonId);
+    if (!el) return;
+    setVertexPreview((prev) => {
+      const pts = prev ?? el.polygonPoints;
+      const next = pts.map((p, i) =>
+        i === vertexIdx ? [absX - el.x, absY - el.y] : [...p],
+      );
+      // Notificar onChange para persistencia y posible expansión del canvas
+      const bb   = polyBoundingBox(next);
+      const newW = Math.max(80, Math.round(bb.width));
+      const newH = Math.max(60, Math.round(bb.height));
+      queueMicrotask(() => onChange({ ...el, polygonPoints: next, width: newW, height: newH }));
+      return next;
+    });
+  }, [elements, editingPolygonId, onChange]);
+
+  const handleMidpointClick = useCallback((insertAfterIdx) => {
+    const el = elements.find((e) => e.id === editingPolygonId);
+    if (!el) return;
+    setVertexPreview((prev) => {
+      const pts  = prev ?? el.polygonPoints;
+      const a    = pts[insertAfterIdx];
+      const b    = pts[(insertAfterIdx + 1) % pts.length];
+      const newPt = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      return [
+        ...pts.slice(0, insertAfterIdx + 1),
+        newPt,
+        ...pts.slice(insertAfterIdx + 1),
+      ];
+    });
+  }, [elements, editingPolygonId]);
+
+  const handleVertexRightClick = useCallback((vertexIdx) => {
+    setVertexPreview((prev) => {
+      if (!prev || prev.length <= 3) return prev;
+      return prev.filter((_, i) => i !== vertexIdx);
+    });
+  }, []);
+
+  const handleVertexGuideChange = useCallback(({ vertical, horizontal }) => {
+    setActiveVertexGuides({ vertical: vertical ?? null, horizontal: horizontal ?? null });
+  }, []);
+
   // ── Stage mouse handlers ──────────────────────────────────────────────────
   const handleStageMouseDown = (e) => {
     const isRight = e.evt.button === 2;
@@ -161,10 +288,14 @@ export default function LayoutEditorCanvas({
 
     if (editingPolygonId) {
       const name = e.target?.name?.() ?? e.target?.attrs?.name ?? '';
-      if (!name.startsWith('vertex-handle-') && !name.startsWith('midpoint-handle-') && !name.startsWith('polygon-shape-')) {
-        commitVertexEditRef.current?.();
-        onEndVertexEdit?.();
-      }
+      // Clicks sobre handles de vértices o la propia forma: no salir
+      if (
+        name.startsWith('vertex-handle-') ||
+        name.startsWith('midpoint-handle-') ||
+        name.startsWith('polygon-shape-')
+      ) return;
+      // Cualquier otro click → commit y salir
+      commitVertexEdit();
       return;
     }
     if (!isOver) return;
@@ -198,14 +329,16 @@ export default function LayoutEditorCanvas({
     if (panState.current.active) { panState.current.active = false; return; }
     if (isRubberBand.current && selBox) {
       if (selBox.width > 5 || selBox.height > 5) {
-        const sel = elements.filter((el) => rectsIntersect(selBox, { x: el.x, y: el.y, width: el.width, height: el.height })).map((el) => el.id);
+        const sel = elements
+          .filter((el) => rectsIntersect(selBox, { x: el.x, y: el.y, width: el.width, height: el.height }))
+          .map((el) => el.id);
         onSelect(sel.length > 0 ? sel : []);
       }
     }
     setSelBox(null); isRubberBand.current = false;
   };
 
-  // ── Fix 5 + Fase 1.6: drag grupal con smart guides ────────────────────────
+  // ── Multi-drag (Fase 1.6) ─────────────────────────────────────────────────
   const handleGroupDragStart = useCallback((leaderId, startPos) => {
     if (selectedIds.length <= 1) return;
     const sp = {};
@@ -217,15 +350,10 @@ export default function LayoutEditorCanvas({
   const handleGroupDragMove = useCallback((leaderId, currentPos) => {
     const state = groupDragState.current;
     if (!state.active || state.leaderId !== leaderId) return;
-
     const rawDx = currentPos.x - state.leaderStart.x;
     const rawDy = currentPos.y - state.leaderStart.y;
-
-    // Fase 1.6: calcular bounding box del grupo en la posición tentativa
-    // y buscar smart guides contra los elementos que NO están en la selección
     const outsiders = elements.filter((el) => !selectedIds.includes(el.id));
     if (outsiders.length > 0) {
-      // Bounding box del grupo con el desplazamiento tentativo
       let gMinX = Infinity, gMinY = Infinity, gMaxX = -Infinity, gMaxY = -Infinity;
       for (const id of selectedIds) {
         const el = elements.find((e) => e.id === id);
@@ -236,16 +364,12 @@ export default function LayoutEditorCanvas({
       }
       const groupProxy = { id: '__group__', x: gMinX, y: gMinY, width: gMaxX - gMinX, height: gMaxY - gMinY };
       const guides = findSnapGuides(groupProxy, outsiders, SNAP_THRESHOLD);
-
-      // Ajustar el delta con el snap de smart guide (prioridad sobre snap de grilla)
       const finalDx = guides.vertical   ? rawDx + guides.vertical.delta   : rawDx;
       const finalDy = guides.horizontal ? rawDy + guides.horizontal.delta : rawDy;
-
       setActiveGuides({
         vertical:   guides.vertical   ? guides.vertical.position   : null,
         horizontal: guides.horizontal ? guides.horizontal.position : null,
       });
-
       const newPositions = {};
       for (const id of selectedIds) {
         if (id === leaderId) continue;
@@ -254,8 +378,6 @@ export default function LayoutEditorCanvas({
       setFollowerPositions(newPositions);
       return;
     }
-
-    // Sin outsiders: sólo mover seguidores
     const newPositions = {};
     for (const id of selectedIds) {
       if (id === leaderId) continue;
@@ -285,18 +407,17 @@ export default function LayoutEditorCanvas({
     if (onGroupDragEnd) onGroupDragEnd(updated);
   }, [elements, selectedIds, onGroupDragEnd]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Fase 1.6: drag individual con smart guides ────────────────────────────
+  // ── Drag individual con smart guides (Fase 1.6) ───────────────────────────
   const handleElementDragMove = useCallback((elementId, tentativePos) => {
     const el = elements.find((e) => e.id === elementId);
     if (!el) return;
     const tentative = { ...el, x: tentativePos.x, y: tentativePos.y };
-    const outsiders  = elements.filter((e) => e.id !== elementId);
-    const guides     = findSnapGuides(tentative, outsiders, SNAP_THRESHOLD);
+    const outsiders = elements.filter((e) => e.id !== elementId);
+    const guides    = findSnapGuides(tentative, outsiders, SNAP_THRESHOLD);
     setActiveGuides({
       vertical:   guides.vertical   ? guides.vertical.position   : null,
       horizontal: guides.horizontal ? guides.horizontal.position : null,
     });
-    // devolver el delta para que el componente hijo pueda aplicarlo
     return { dx: guides.vertical?.delta ?? 0, dy: guides.horizontal?.delta ?? 0 };
   }, [elements]);
 
@@ -305,14 +426,6 @@ export default function LayoutEditorCanvas({
     setActiveVertexGuides({ vertical: null, horizontal: null });
     handleElementChange(updated);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Fase 1.7: setter de guías para drag de vértices individuales ──────────
-  // Recibe geometría de línea corta { vertical: {x1,y1,x2,y2}|null, horizontal: {x1,y1,x2,y2}|null }
-  // calculada en SectionElement. Escribe en el estado separado activeVertexGuides,
-  // dejando activeGuides (Fase 1.6) completamente intacto.
-  const handleVertexGuideChange = useCallback(({ vertical, horizontal }) => {
-    setActiveVertexGuides({ vertical: vertical ?? null, horizontal: horizontal ?? null });
-  }, []);
 
   // ── Fix 3: expandir canvas ────────────────────────────────────────────────
   const handleElementChange = useCallback((updated) => {
@@ -353,7 +466,7 @@ export default function LayoutEditorCanvas({
         onMouseMove={handleStageMouseMove}
         onMouseUp={handleStageMouseUp}
       >
-        {/* Layer de grilla */}
+        {/* ── Layer de grilla ──────────────────────────────────────────── */}
         <Layer listening={false}>
           <Rect x={0} y={0} width={canvasSize.width} height={canvasSize.height} fill="var(--color-surface)" cornerRadius={8} />
           {gridLines.map((l) => (
@@ -362,7 +475,7 @@ export default function LayoutEditorCanvas({
           <Rect x={0} y={0} width={canvasSize.width} height={canvasSize.height} stroke="rgba(124,58,237,0.3)" strokeWidth={1} fill="transparent" cornerRadius={8} listening={false} />
         </Layer>
 
-        {/* Layer de elementos */}
+        {/* ── Layer de elementos ───────────────────────────────────────── */}
         <Layer>
           {elements.map((el) => {
             const isSelected    = selectedIds.includes(el.id);
@@ -375,30 +488,29 @@ export default function LayoutEditorCanvas({
               : el;
 
             const sharedProps = {
-              key:              el.id,
-              element:          displayEl,
+              key:       el.id,
+              element:   displayEl,
               isSelected,
-              isEditingVertices: isEditingThis,
-              onSelect:         () => onSelect([el.id]),
-              onChange:         handleElementChange,
-              onDragMove:       handleElementDragMove,    // Fase 1.6
-              onDragEnd:        handleElementDragEnd,     // Fase 1.6
+              onSelect:  () => onSelect([el.id]),
+              onChange:  handleElementChange,
+              onDragMove:       handleElementDragMove,
+              onDragEnd:        handleElementDragEnd,
               onGroupDragStart: isMulti ? handleGroupDragStart : undefined,
               onGroupDragMove:  isMulti ? handleGroupDragMove  : undefined,
               onGroupDragEnd:   isMulti ? handleGroupDragEnd   : undefined,
-              onStartVertexEdit: el.type === 'section' ? () => onStartVertexEdit?.(el.id) : undefined,
-              onEndVertexEdit:   el.type === 'section' ? () => onEndVertexEdit?.()         : undefined,
-              onSaveVertexEdit:  isEditingThis ? (fn) => { commitVertexEditRef.current = fn; } : undefined,
-              // Fase 1.7: guías para drag de vértices individuales
-              onVertexGuideChange: isEditingThis ? handleVertexGuideChange : undefined,
-              otherElementsForVertexSnap: isEditingThis
-                ? elements.filter((e) => e.id !== el.id)
-                : undefined,
             };
 
-            return el.type === 'section'
-              ? <SectionElement {...sharedProps} />
-              : <InfraElement   {...sharedProps} />;
+            if (el.type === 'section') {
+              return (
+                <SectionElement
+                  {...sharedProps}
+                  isEditingVertices={isEditingThis}
+                  previewPoints={isEditingThis ? vertexPreview : null}
+                  onEnterVertexEdit={() => onStartVertexEdit?.(el.id)}
+                />
+              );
+            }
+            return <InfraElement {...sharedProps} />;
           })}
 
           {/* Rubber-band */}
@@ -409,44 +521,49 @@ export default function LayoutEditorCanvas({
           )}
         </Layer>
 
-        {/* Fase 1.6: Layer de smart guides — siempre encima */}
+        {/* ── Layer de smart guides globales (Fase 1.6) ────────────────── */}
         <Layer listening={false}>
-          {/* Guías globales (drag de elementos completos) — líneas full-canvas, sin cambios */}
           {activeGuides.vertical !== null && (
-            <Line
-              points={[activeGuides.vertical, -GUIDE_EXTENT, activeGuides.vertical, GUIDE_EXTENT]}
-              stroke={GUIDE_COLOR} strokeWidth={1} dash={[4, 4]} listening={false}
-            />
+            <Line points={[activeGuides.vertical, -GUIDE_EXTENT, activeGuides.vertical, GUIDE_EXTENT]}
+              stroke={GUIDE_COLOR} strokeWidth={1} dash={[4, 4]} listening={false} />
           )}
           {activeGuides.horizontal !== null && (
-            <Line
-              points={[-GUIDE_EXTENT, activeGuides.horizontal, GUIDE_EXTENT, activeGuides.horizontal]}
-              stroke={GUIDE_COLOR} strokeWidth={1} dash={[4, 4]} listening={false}
-            />
+            <Line points={[-GUIDE_EXTENT, activeGuides.horizontal, GUIDE_EXTENT, activeGuides.horizontal]}
+              stroke={GUIDE_COLOR} strokeWidth={1} dash={[4, 4]} listening={false} />
           )}
-          {/* Fase 1.7: guías de vértices — líneas cortas punto a punto, color violeta */}
+          {/* Guías de vértices — líneas cortas (Fase 1.7/1.8) */}
           {activeVertexGuides.vertical !== null && (() => {
             const g = activeVertexGuides.vertical;
-            return (
-              <Line
-                points={[g.x1, g.y1, g.x2, g.y2]}
-                stroke={GUIDE_COLOR_VERTEX} strokeWidth={1.5} dash={[3, 3]} listening={false}
-              />
-            );
+            return <Line points={[g.x1, g.y1, g.x2, g.y2]} stroke={GUIDE_COLOR_VERTEX} strokeWidth={1.5} dash={[3, 3]} listening={false} />;
           })()}
           {activeVertexGuides.horizontal !== null && (() => {
             const g = activeVertexGuides.horizontal;
+            return <Line points={[g.x1, g.y1, g.x2, g.y2]} stroke={GUIDE_COLOR_VERTEX} strokeWidth={1.5} dash={[3, 3]} listening={false} />;
+          })()}
+        </Layer>
+
+        {/* ── Layer de edición de vértices (Fase 1.8) — separada del Group ── */}
+        <Layer>
+          {editingPolygonId !== null && (() => {
+            const el = elements.find((e) => e.id === editingPolygonId);
+            if (!el) return null;
             return (
-              <Line
-                points={[g.x1, g.y1, g.x2, g.y2]}
-                stroke={GUIDE_COLOR_VERTEX} strokeWidth={1.5} dash={[3, 3]} listening={false}
+              <VertexEditorOverlay
+                element={{ ...el, polygonPoints: vertexPreview ?? el.polygonPoints }}
+                previewPoints={vertexPreview}
+                onVertexDrag={handleVertexDrag}
+                onVertexDragEnd={handleVertexDragEnd}
+                onMidpointClick={handleMidpointClick}
+                onVertexRightClick={handleVertexRightClick}
+                onVertexGuideChange={handleVertexGuideChange}
+                otherElements={elements.filter((e) => e.id !== editingPolygonId)}
               />
             );
           })()}
         </Layer>
       </Stage>
 
-      {/* Controles de zoom flotantes */}
+      {/* ── Controles de zoom flotantes ──────────────────────────────────── */}
       <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1 bg-surface border border-surfaceAlt rounded-lg px-2 py-1 shadow-lg shadow-black/30">
         <button onClick={handleZoomOut} className="w-6 h-6 flex items-center justify-center rounded text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt transition-colors text-sm font-bold" title="Alejar">−</button>
         <span className="text-xs font-mono text-textSecondary w-10 text-center select-none">{Math.round(zoom * 100)}%</span>
@@ -455,7 +572,16 @@ export default function LayoutEditorCanvas({
         <button onClick={handleFit} className="w-6 h-6 flex items-center justify-center rounded text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt transition-colors text-sm" title="Ajustar al canvas">⊡</button>
       </div>
 
-      {/* Hint */}
+      {/* ── Botón flotante "Guardar forma" + hints ───────────────────────── */}
+      {editingPolygonId && (
+        <button
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-accent text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg hover:bg-accent/90 transition-colors"
+          onClick={commitVertexEdit}
+        >
+          ✓ Guardar forma
+        </button>
+      )}
+
       {!editingPolygonId && (
         <div className="absolute bottom-4 left-4 text-[10px] text-textMuted pointer-events-none select-none space-y-0.5">
           <div>🖱 Rueda → zoom · Derecho+drag → pan</div>
@@ -464,7 +590,7 @@ export default function LayoutEditorCanvas({
       )}
       {editingPolygonId && (
         <div className="absolute bottom-4 left-4 text-[10px] text-accent pointer-events-none select-none space-y-0.5">
-          <div>✏ Click fuera o <kbd className="bg-surfaceAlt px-1 rounded text-textMuted">Listo</kbd> → guardar</div>
+          <div>✏ Click fuera o <kbd className="bg-surfaceAlt px-1 rounded text-textMuted">Guardar forma</kbd> → guardar</div>
           <div><kbd className="bg-surfaceAlt px-1 rounded text-textMuted">Esc</kbd> → descartar</div>
         </div>
       )}
