@@ -62,16 +62,14 @@ export default function SectionElement({
   // ── Hotfix: forzar draggable del Group a nivel imperativo (Causa A) ───────
   // La prop React draggable={!isEditingVertices} puede tener un ciclo de render
   // de retraso. Este efecto escribe directamente sobre el nodo Konva para
-  // cerrar esa ventana y cancelar cualquier drag que pudiera estar en curso.
+  // cerrar esa ventana sin que haya un drag activo que cancelar.
+  // IMPORTANTE: NO llamar stopDrag() aquí — cancelaría el drag de los Circle
+  // hijos si el usuario acaba de hacer doble-click y empieza a arrastrar
+  // un vértice en el mismo gesto.
   useEffect(() => {
     const node = groupRef.current;
     if (!node) return;
-    if (isEditingVertices) {
-      node.draggable(false);
-      node.stopDrag?.();
-    } else {
-      node.draggable(true);
-    }
+    node.draggable(!isEditingVertices);
   }, [isEditingVertices]);
 
   // ── Transformer ───────────────────────────────────────────────────────────
@@ -146,9 +144,11 @@ export default function SectionElement({
 
   // ── Drag ──────────────────────────────────────────────────────────────────
   const handleDragStart = (e) => {
-    // Hotfix (Causa C): red de seguridad — si el drag del Group se dispara
-    // mientras se editan vértices (por cualquier edge case), cancelarlo de inmediato.
-    if (isEditingVertices) {
+    // Hotfix (Causa C): solo cancelar si el drag lo inició el Group mismo,
+    // no un Circle hijo. En Konva dragstart burbujea, por lo que e.target puede
+    // ser el Circle cuando el usuario arrastra un vértice — cancelarlo aquí
+    // mataría el drag del vértice.
+    if (isEditingVertices && e.target === groupRef.current) {
       e.target.stopDrag();
       return;
     }
