@@ -25,17 +25,87 @@ export default function PropertiesPanel({
   isEditingVertices,
   onStartVertexEdit,
   onEndVertexEdit,
+  canvasSize,
+  onCanvasSizeChange,
 }) {
+  const inputClass =
+    'w-full bg-background border border-surfaceAlt rounded px-2 py-1.5 text-xs text-textPrimary ' +
+    'focus:outline-none focus:border-accent transition-colors';
+  const labelClass = 'text-[10px] font-semibold text-textMuted uppercase tracking-wider mb-1 block';
+
   if (!element) {
+    const CANVAS_PRESETS = [
+      { label: 'S',  w: 800,  h: 600  },
+      { label: 'M',  w: 1200, h: 800  },
+      { label: 'L',  w: 1600, h: 1000 },
+      { label: 'XL', w: 2000, h: 1400 },
+    ];
     return (
-      <aside className="w-[240px] flex-shrink-0 bg-surface border-l border-surfaceAlt flex items-center justify-center p-4">
-        <p className="text-textMuted text-xs text-center leading-relaxed">
-          Selecciona o arrastra un elemento al canvas para editar sus propiedades.
-        </p>
+      <aside className="w-[240px] flex-shrink-0 bg-surface border-l border-surfaceAlt flex flex-col overflow-hidden">
+        <div className="px-3 py-3 border-b border-surfaceAlt">
+          <h2 className="text-xs font-bold text-textSecondary uppercase tracking-wider">Canvas</h2>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3 space-y-4">
+          {onCanvasSizeChange && canvasSize ? (
+            <>
+              <div>
+                <label className={labelClass}>Tamaño del canvas</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    className={inputClass}
+                    style={{ width: '72px' }}
+                    value={Math.round(canvasSize.width)}
+                    min={800} step={100}
+                    onChange={(e) => onCanvasSizeChange({
+                      width:  Math.max(800, parseInt(e.target.value) || 800),
+                      height: canvasSize.height,
+                    })}
+                  />
+                  <span className="text-[11px] text-textMuted shrink-0">×</span>
+                  <input
+                    type="number"
+                    className={inputClass}
+                    style={{ width: '72px' }}
+                    value={Math.round(canvasSize.height)}
+                    min={600} step={100}
+                    onChange={(e) => onCanvasSizeChange({
+                      width:  canvasSize.width,
+                      height: Math.max(600, parseInt(e.target.value) || 600),
+                    })}
+                  />
+                  <span className="text-[11px] text-textMuted shrink-0">px</span>
+                </div>
+                <p className="text-[10px] text-textMuted mt-1">Ancho × Alto del área de diseño</p>
+              </div>
+              <div>
+                <label className={labelClass}>Tamaños rápidos</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {CANVAS_PRESETS.map((p) => (
+                    <button
+                      key={p.label}
+                      onClick={() => onCanvasSizeChange({ width: p.w, height: p.h })}
+                      className="text-[10px] px-2 py-1 rounded border border-surfaceAlt
+                                 text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt
+                                 transition-colors"
+                    >
+                      {p.label} <span className="text-textMuted">{p.w}×{p.h}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="text-textMuted text-xs text-center leading-relaxed">
+              Selecciona o arrastra un elemento al canvas para editar sus propiedades.
+            </p>
+          )}
+        </div>
       </aside>
     );
   }
 
+  // ── Variables para el render del elemento seleccionado ──────────────────
   const update    = (patch) => onChange({ ...element, ...patch });
   const colors    = element.type === 'section' ? SECTION_COLORS : INFRA_COLORS;
   const shapeMode = element.type === 'section' ? (element.shapeMode ?? 'rect') : null;
@@ -85,11 +155,6 @@ export default function PropertiesPanel({
       update({ seatLayout: updated });
     }
   };
-
-  const inputClass =
-    'w-full bg-background border border-surfaceAlt rounded px-2 py-1.5 text-xs text-textPrimary ' +
-    'focus:outline-none focus:border-accent transition-colors';
-  const labelClass = 'text-[10px] font-semibold text-textMuted uppercase tracking-wider mb-1 block';
 
   // ── Conversor a polígono ──────────────────────────────────────────────────
   const handleConvertToPolygon = () => {

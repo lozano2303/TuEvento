@@ -32,6 +32,7 @@ export default function LayoutEditorCanvas({
   elements,
   selectedIds,
   canvasSize,
+  onCanvasSizeChange,   // Fase 1.10: resize manual del canvas
   editingPolygonId,
   onSelect,
   onChange,
@@ -57,6 +58,28 @@ export default function LayoutEditorCanvas({
   // Multi-drag
   const groupDragState = useRef({ active: false, leaderId: null, startPositions: {}, leaderStart: null });
   const [followerPositions, setFollowerPositions] = useState({});
+
+  // Fase 1.10: handle de resize del canvas
+  const startCanvasResize = useCallback((e) => {
+    if (!onCanvasSizeChange) return;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = canvasSize.width;
+    const startH = canvasSize.height;
+    const onMouseMove = (ev) => {
+      onCanvasSizeChange({
+        width:  Math.max(800,  startW + (ev.clientX - startX)),
+        height: Math.max(600, startH + (ev.clientY - startY)),
+      });
+    };
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [canvasSize, onCanvasSizeChange]);
 
   // Fase 1.6: smart guides globales
   const [activeGuides, setActiveGuides] = useState({ vertical: null, horizontal: null });
@@ -616,6 +639,44 @@ export default function LayoutEditorCanvas({
           title="Ajustar todo al viewport (⊡)"
         >⊡</button>
       </div>
+
+      {/* ── Handle de resize del canvas (Fase 1.10) ─────────────────────── */}
+      {onCanvasSizeChange && (() => {
+        // Calcular posición en pantalla de la esquina inferior derecha del canvas
+        const handleSize = 18;
+        const cornerCanvasX = canvasSize.width;
+        const cornerCanvasY = canvasSize.height;
+        // Convertir a coordenadas del Stage (pantalla relativa al contenedor)
+        const cornerScreenX = cornerCanvasX * zoom + stagePos.x - handleSize;
+        const cornerScreenY = cornerCanvasY * zoom + stagePos.y - handleSize;
+        return (
+          <div
+            onMouseDown={startCanvasResize}
+            title="Arrastra para redimensionar el canvas"
+            style={{
+              position:   'absolute',
+              left:       `${cornerScreenX}px`,
+              top:        `${cornerScreenY}px`,
+              width:      `${handleSize}px`,
+              height:     `${handleSize}px`,
+              cursor:     'se-resize',
+              zIndex:     25,
+              background: 'var(--color-surface)',
+              border:     '1px solid var(--color-surfaceAlt)',
+              borderRadius: '3px 0 0 0',
+              display:    'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              userSelect: 'none',
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" style={{ color: 'var(--color-textMuted)' }}>
+              <line x1="2" y1="10" x2="10" y2="2" stroke="currentColor" strokeWidth="1.5" opacity="0.7"/>
+              <line x1="5" y1="10" x2="10" y2="5" stroke="currentColor" strokeWidth="1.5" opacity="0.7"/>
+            </svg>
+          </div>
+        );
+      })()}
 
       {/* ── Botón flotante "Guardar forma" + hints ───────────────────────── */}
       {editingPolygonId && (

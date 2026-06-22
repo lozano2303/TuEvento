@@ -201,6 +201,7 @@ export default function EventLayoutEditorDemo() {
           elements={elements}
           selectedIds={selectedIds}
           canvasSize={canvasSize}
+          onCanvasSizeChange={setCanvasSize}
           editingPolygonId={editingPolygonId}
           onSelect={handleSelect}
           onChange={handleChange}
@@ -221,6 +222,8 @@ export default function EventLayoutEditorDemo() {
           isEditingVertices={isEditingVertices}
           onStartVertexEdit={() => selectedElement && handleStartVertexEdit(selectedElement.id)}
           onEndVertexEdit={handleEndVertexEdit}
+          canvasSize={canvasSize}
+          onCanvasSizeChange={setCanvasSize}
         />
       </div>
     </div>
