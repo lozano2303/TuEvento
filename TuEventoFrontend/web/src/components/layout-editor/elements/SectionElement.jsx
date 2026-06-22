@@ -59,6 +59,21 @@ export default function SectionElement({
     }
   }, [isEditingVertices]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Hotfix: forzar draggable del Group a nivel imperativo (Causa A) ───────
+  // La prop React draggable={!isEditingVertices} puede tener un ciclo de render
+  // de retraso. Este efecto escribe directamente sobre el nodo Konva para
+  // cerrar esa ventana y cancelar cualquier drag que pudiera estar en curso.
+  useEffect(() => {
+    const node = groupRef.current;
+    if (!node) return;
+    if (isEditingVertices) {
+      node.draggable(false);
+      node.stopDrag?.();
+    } else {
+      node.draggable(true);
+    }
+  }, [isEditingVertices]);
+
   // ── Transformer ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (isSelected && !isEditingVertices && trRef.current && groupRef.current) {
@@ -131,6 +146,12 @@ export default function SectionElement({
 
   // ── Drag ──────────────────────────────────────────────────────────────────
   const handleDragStart = (e) => {
+    // Hotfix (Causa C): red de seguridad — si el drag del Group se dispara
+    // mientras se editan vértices (por cualquier edge case), cancelarlo de inmediato.
+    if (isEditingVertices) {
+      e.target.stopDrag();
+      return;
+    }
     if (onGroupDragStart) onGroupDragStart(element.id, { x: e.target.x(), y: e.target.y() });
   };
 
