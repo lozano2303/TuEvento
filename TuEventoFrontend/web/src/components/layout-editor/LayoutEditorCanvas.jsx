@@ -12,7 +12,6 @@ const GRID_SIZE          = 20;
 const ZOOM_MIN           = 0.2;
 const ZOOM_MAX           = 3;
 const ZOOM_STEP          = 0.1;
-const EXPAND_INCREMENT   = 200;
 const FIT_MARGIN         = 40;
 const SNAP_THRESHOLD     = 6;
 const GUIDE_COLOR        = '#FF4D8F';
@@ -32,15 +31,15 @@ export default function LayoutEditorCanvas({
   elements,
   selectedIds,
   canvasSize,
-  onCanvasSizeChange,   // Fase 1.10: resize manual del canvas
+  onCanvasSizeChange,
   editingPolygonId,
   onSelect,
   onChange,
-  onExpandCanvas,
   onGroupDragEnd,
   onStartVertexEdit,
   onEndVertexEdit,
   onAddElement,
+  onNormalizePositions,  // Fase 1.11: normalizar coords negativas tras dragEnd
   zoom,
   onZoomChange,
   containerRef,
@@ -478,24 +477,18 @@ export default function LayoutEditorCanvas({
   const handleElementDragEnd = useCallback((updated) => {
     setActiveGuides({ vertical: null, horizontal: null });
     setActiveVertexGuides({ vertical: null, horizontal: null });
-    handleElementChange(updated);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Fase 1.11: persistir el elemento y luego normalizar si tiene coords negativas
+    onChange(updated);
+    // Normalizar el array completo con el elemento actualizado
+    const next = elements.map((el) => (el.id === updated.id ? updated : el));
+    onNormalizePositions?.(next);
+  }, [elements, onChange, onNormalizePositions]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Fix 3: expandir canvas ────────────────────────────────────────────────
+  // ── Fase 1.11: handleElementChange simplificado ───────────────────────────
+  // canvasSize ya es un valor derivado en el padre — no hay que expandir aquí.
   const handleElementChange = useCallback((updated) => {
-    const right = updated.x + updated.width, bottom = updated.y + updated.height;
-    let nW = canvasSize.width, nH = canvasSize.height, ox = 0, oy = 0;
-    if (right  > nW) nW = right  + EXPAND_INCREMENT;
-    if (bottom > nH) nH = bottom + EXPAND_INCREMENT;
-    if (updated.x < 0) { ox = Math.ceil(-updated.x / EXPAND_INCREMENT) * EXPAND_INCREMENT; nW += ox; }
-    if (updated.y < 0) { oy = Math.ceil(-updated.y / EXPAND_INCREMENT) * EXPAND_INCREMENT; nH += oy; }
-    const exp = nW !== canvasSize.width || nH !== canvasSize.height;
-    if (exp) {
-      onExpandCanvas({ updatedElement: { ...updated, x: updated.x + ox, y: updated.y + oy }, offsetDelta: { x: ox, y: oy }, newCanvasSize: { width: nW, height: nH } });
-    } else {
-      onChange(updated);
-    }
-  }, [canvasSize, onChange, onExpandCanvas]);
+    onChange(updated);
+  }, [onChange]);
 
   const stageW = containerRef?.current?.clientWidth  ?? window.innerWidth  - 460;
   const stageH = containerRef?.current?.clientHeight ?? window.innerHeight - 88;
