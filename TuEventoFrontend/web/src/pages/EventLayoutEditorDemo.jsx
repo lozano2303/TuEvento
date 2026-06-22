@@ -1,9 +1,9 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import ElementPalette from '../components/layout-editor/ElementPalette';
 import LayoutEditorCanvas from '../components/layout-editor/LayoutEditorCanvas';
 import PropertiesPanel from '../components/layout-editor/PropertiesPanel';
 import EditorToolbar from '../components/layout-editor/EditorToolbar';
-import { generateId, computeCanvasForElements } from '../components/layout-editor/layoutEditorUtils';
+import { generateId } from '../components/layout-editor/layoutEditorUtils';
 
 const INITIAL_ELEMENTS = [
   {
@@ -44,27 +44,53 @@ const INITIAL_ELEMENTS = [
   },
 ];
 
-const CANVAS_DEFAULT = { width: 1200, height: 800 };
+// ── Constantes de canvas ──────────────────────────────────────────────────────
+const CANVAS_MIN_W  = 1200;
+const CANVAS_MIN_H  = 800;
+const CANVAS_MARGIN = 150;
+const CANVAS_DEFAULT_MANUAL = { width: CANVAS_MIN_W, height: CANVAS_MIN_H };
+
 const ZOOM_MIN  = 0.2;
 const ZOOM_MAX  = 4;
 const ZOOM_STEP = 0.15;
 
-function reconcileCanvas(nextElements, currentCanvas) {
-  const { newCanvasSize, offsetDelta } = computeCanvasForElements(nextElements, currentCanvas);
-  const needsOffset = offsetDelta.x !== 0 || offsetDelta.y !== 0;
-  const adjustedElements = needsOffset
-    ? nextElements.map((el) => ({ ...el, x: el.x + offsetDelta.x, y: el.y + offsetDelta.y }))
-    : nextElements;
-  return { adjustedElements, newCanvasSize };
+/**
+ * Normaliza las posiciones de los elementos para que ninguno tenga
+ * coords menores que CANVAS_MARGIN.
+ * Solo se llama en dragEnd, nunca durante el drag.
+ */
+function normalizePositions(elements) {
+  if (elements.length === 0) return elements;
+  const minX = Math.min(...elements.map((el) => el.x));
+  const minY = Math.min(...elements.map((el) => el.y));
+  const offsetX = minX < CANVAS_MARGIN ? CANVAS_MARGIN - minX : 0;
+  const offsetY = minY < CANVAS_MARGIN ? CANVAS_MARGIN - minY : 0;
+  if (offsetX === 0 && offsetY === 0) return elements;
+  return elements.map((el) => ({ ...el, x: el.x + offsetX, y: el.y + offsetY }));
 }
 
 export default function EventLayoutEditorDemo() {
-  const [elements,          setElements]          = useState(INITIAL_ELEMENTS);
-  const [selectedIds,       setSelectedIds]       = useState([]);
-  const [zoom,              setZoom]              = useState(0.75);
-  const [canvasSize,        setCanvasSize]        = useState(CANVAS_DEFAULT);
-  const [editingPolygonId,  setEditingPolygonId]  = useState(null); // Fase 1.3
+  const [elements,         setElements]         = useState(INITIAL_ELEMENTS);
+  const [selectedIds,      setSelectedIds]      = useState([]);
+  const [zoom,             setZoom]             = useState(0.75);
+  const [editingPolygonId, setEditingPolygonId] = useState(null);
+  // Fase 1.11: tamaño manual del canvas (resize por el usuario).
+  // El canvas real = max(manualCanvasSize, bboxDeElementos + margen).
+  const [manualCanvasSize, setManualCanvasSize] = useState(CANVAS_DEFAULT_MANUAL);
   const containerRef = useRef();
+
+  // ── Fase 1.11: canvasSize derivado — siempre envuelve a los elementos ─────
+  const canvasSize = useMemo(() => {
+    if (elements.length === 0) {
+      return { width: manualCanvasSize.width, height: manualCanvasSize.height };
+    }
+    const maxX = Math.max(...elements.map((el) => el.x + el.width));
+    const maxY = Math.max(...elements.map((el) => el.y + el.height));
+    return {
+      width:  Math.max(manualCanvasSize.width,  CANVAS_MIN_W, maxX + CANVAS_MARGIN),
+      height: Math.max(manualCanvasSize.height, CANVAS_MIN_H, maxY + CANVAS_MARGIN),
+    };
+  }, [elements, manualCanvasSize]);
 
   // ── Fase 1.3: salir del modo edición si se cambia la selección ────────────
   useEffect(() => {
@@ -79,41 +105,21 @@ export default function EventLayoutEditorDemo() {
   }, []);
 
   // ── Modificar elemento ────────────────────────────────────────────────────
+  // Sin reconcileCanvas ni setCanvasSize — canvasSize se deriva automáticamente.
   const handleChange = useCallback((updated) => {
-    setElements((prev) => {
-      const next = prev.map((el) => (el.id === updated.id ? updated : el));
-      const { adjustedElements, newCanvasSize } = reconcileCanvas(next, canvasSize);
-      if (newCanvasSize.width !== canvasSize.width || newCanvasSize.height !== canvasSize.height) {
-        queueMicrotask(() => setCanvasSize(newCanvasSize));
-      }
-      return adjustedElements;
-    });
-  }, [canvasSize]);
+    setElements((prev) => prev.map((el) => (el.id === updated.id ? updated : el)));
+  }, []);
 
-  // ── Fix 5 + 7: drag grupal ────────────────────────────────────────────────
+  // ── Drag grupal ───────────────────────────────────────────────────────────
   const handleGroupDragEnd = useCallback((updatedElements) => {
     setElements((prev) => {
       const merged = prev.map((el) => {
         const u = updatedElements.find((ue) => ue.id === el.id);
         return u ?? el;
       });
-      const { adjustedElements, newCanvasSize } = reconcileCanvas(merged, canvasSize);
-      if (newCanvasSize.width !== canvasSize.width || newCanvasSize.height !== canvasSize.height) {
-        queueMicrotask(() => setCanvasSize(newCanvasSize));
-      }
-      return adjustedElements;
+      // Normalizar coords negativas al soltar
+      return normalizePositions(merged);
     });
-  }, [canvasSize]);
-
-  // ── Fix 3: expansión ──────────────────────────────────────────────────────
-  const handleExpandCanvas = useCallback(({ updatedElement, offsetDelta, newCanvasSize }) => {
-    setElements((prev) =>
-      prev.map((el) => {
-        const base = el.id === updatedElement.id ? updatedElement : el;
-        return { ...base, x: base.x + offsetDelta.x, y: base.y + offsetDelta.y };
-      })
-    );
-    setCanvasSize(newCanvasSize);
   }, []);
 
   // ── Paleta ────────────────────────────────────────────────────────────────
@@ -125,19 +131,13 @@ export default function EventLayoutEditorDemo() {
   // ── Eliminar ──────────────────────────────────────────────────────────────
   const handleDelete = useCallback(() => {
     setEditingPolygonId(null);
-    setElements((prev) => {
-      const next = prev.filter((el) => !selectedIds.includes(el.id));
-      const { adjustedElements, newCanvasSize } = reconcileCanvas(next, canvasSize);
-      queueMicrotask(() => setCanvasSize(newCanvasSize));
-      return adjustedElements;
-    });
+    setElements((prev) => prev.filter((el) => !selectedIds.includes(el.id)));
     setSelectedIds([]);
-  }, [selectedIds, canvasSize]);
+  }, [selectedIds]);
 
   // ── Fase 1.3: edición de vértices ─────────────────────────────────────────
   const handleStartVertexEdit = useCallback((elementId) => {
     setEditingPolygonId(elementId);
-    // Asegurar que ese elemento esté seleccionado
     setSelectedIds([elementId]);
   }, []);
 
@@ -189,7 +189,7 @@ export default function EventLayoutEditorDemo() {
         onClear={() => {
           setElements([]);
           setSelectedIds([]);
-          setCanvasSize(CANVAS_DEFAULT);
+          setManualCanvasSize(CANVAS_DEFAULT_MANUAL);
           setEditingPolygonId(null);
         }}
       />
@@ -201,11 +201,10 @@ export default function EventLayoutEditorDemo() {
           elements={elements}
           selectedIds={selectedIds}
           canvasSize={canvasSize}
-          onCanvasSizeChange={setCanvasSize}
+          onCanvasSizeChange={setManualCanvasSize}
           editingPolygonId={editingPolygonId}
           onSelect={handleSelect}
           onChange={handleChange}
-          onExpandCanvas={handleExpandCanvas}
           onGroupDragEnd={handleGroupDragEnd}
           onStartVertexEdit={handleStartVertexEdit}
           onEndVertexEdit={handleEndVertexEdit}
@@ -213,6 +212,7 @@ export default function EventLayoutEditorDemo() {
           zoom={zoom}
           onZoomChange={setZoom}
           containerRef={containerRef}
+          onNormalizePositions={(els) => setElements(normalizePositions(els))}
         />
 
         <PropertiesPanel
@@ -223,7 +223,7 @@ export default function EventLayoutEditorDemo() {
           onStartVertexEdit={() => selectedElement && handleStartVertexEdit(selectedElement.id)}
           onEndVertexEdit={handleEndVertexEdit}
           canvasSize={canvasSize}
-          onCanvasSizeChange={setCanvasSize}
+          onCanvasSizeChange={setManualCanvasSize}
         />
       </div>
     </div>
