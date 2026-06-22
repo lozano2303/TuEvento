@@ -243,7 +243,58 @@ export default function SectionElement({
       if (guides.vertical)   node.x(node.x() + guides.vertical.delta);
       if (guides.horizontal) node.y(node.y() + guides.horizontal.delta);
 
-      onVertexGuideChange(guides);
+      // Calcular coordenadas absolutas del vértice tras aplicar el snap
+      const snappedAbsX = element.x + node.x();
+      const snappedAbsY = element.y + node.y();
+
+      // Construir geometría de línea corta { x1, y1, x2, y2 } para cada guía
+      let verticalLine   = null;
+      let horizontalLine = null;
+      const GUIDE_MARGIN = 10; // px de margen extra en cada extremo
+
+      if (guides.vertical) {
+        const g = guides.vertical;
+        if (g.source === 'vertex') {
+          // Línea vertical entre el vértice activo y el vértice propio con el que coincide
+          const minY = Math.min(snappedAbsY, g.matchY);
+          const maxY = Math.max(snappedAbsY, g.matchY);
+          verticalLine = {
+            x1: g.position, y1: minY - GUIDE_MARGIN,
+            x2: g.position, y2: maxY + GUIDE_MARGIN,
+          };
+        } else {
+          // Línea vertical desde el vértice activo hasta el span del elemento externo
+          const minY = Math.min(snappedAbsY, g.elementMinY);
+          const maxY = Math.max(snappedAbsY, g.elementMaxY);
+          verticalLine = {
+            x1: g.position, y1: minY - GUIDE_MARGIN,
+            x2: g.position, y2: maxY + GUIDE_MARGIN,
+          };
+        }
+      }
+
+      if (guides.horizontal) {
+        const g = guides.horizontal;
+        if (g.source === 'vertex') {
+          // Línea horizontal entre el vértice activo y el vértice propio con el que coincide
+          const minX = Math.min(snappedAbsX, g.matchX);
+          const maxX = Math.max(snappedAbsX, g.matchX);
+          horizontalLine = {
+            x1: minX - GUIDE_MARGIN, y1: g.position,
+            x2: maxX + GUIDE_MARGIN, y2: g.position,
+          };
+        } else {
+          // Línea horizontal desde el vértice activo hasta el span del elemento externo
+          const minX = Math.min(snappedAbsX, g.elementMinX);
+          const maxX = Math.max(snappedAbsX, g.elementMaxX);
+          horizontalLine = {
+            x1: minX - GUIDE_MARGIN, y1: g.position,
+            x2: maxX + GUIDE_MARGIN, y2: g.position,
+          };
+        }
+      }
+
+      onVertexGuideChange({ vertical: verticalLine, horizontal: horizontalLine });
     }
 
     setLocalPoints((prev) => {

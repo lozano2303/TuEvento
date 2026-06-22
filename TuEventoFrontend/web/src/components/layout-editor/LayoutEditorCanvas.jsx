@@ -4,7 +4,7 @@ import SectionElement from './elements/SectionElement';
 import InfraElement from './elements/InfraElement';
 import {
   generateId, snapToGrid, rectsIntersect,
-  findSnapGuides, findVertexSnapGuides,
+  findSnapGuides,
 } from './layoutEditorUtils';
 
 const GRID_SIZE        = 20;
@@ -64,6 +64,9 @@ export default function LayoutEditorCanvas({
 
   // Fase 1.6: smart guides — posición de las líneas guía activas (coord. canvas)
   const [activeGuides, setActiveGuides] = useState({ vertical: null, horizontal: null });
+
+  // Fase 1.7: guías de vértices — líneas cortas punto a punto { x1, y1, x2, y2 }
+  const [activeVertexGuides, setActiveVertexGuides] = useState({ vertical: null, horizontal: null });
 
   const gridLines = useMemo(
     () => buildGridLines(canvasSize.width, canvasSize.height, GRID_SIZE),
@@ -299,20 +302,16 @@ export default function LayoutEditorCanvas({
 
   const handleElementDragEnd = useCallback((updated) => {
     setActiveGuides({ vertical: null, horizontal: null });
+    setActiveVertexGuides({ vertical: null, horizontal: null });
     handleElementChange(updated);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Fase 1.7: setter de guías para drag de vértices individuales ──────────
-  // SectionElement lo llama durante onDragMove/onDragEnd de cada vértice.
-  // Reutiliza el mismo estado activeGuides de la Fase 1.6; el campo `source`
-  // permite que la layer de guías use un color diferente por tipo.
-  const handleVertexGuideChange = useCallback((guides) => {
-    setActiveGuides({
-      vertical:         guides.vertical?.position   ?? null,
-      verticalSource:   guides.vertical?.source     ?? null,
-      horizontal:       guides.horizontal?.position ?? null,
-      horizontalSource: guides.horizontal?.source   ?? null,
-    });
+  // Recibe geometría de línea corta { vertical: {x1,y1,x2,y2}|null, horizontal: {x1,y1,x2,y2}|null }
+  // calculada en SectionElement. Escribe en el estado separado activeVertexGuides,
+  // dejando activeGuides (Fase 1.6) completamente intacto.
+  const handleVertexGuideChange = useCallback(({ vertical, horizontal }) => {
+    setActiveVertexGuides({ vertical: vertical ?? null, horizontal: horizontal ?? null });
   }, []);
 
   // ── Fix 3: expandir canvas ────────────────────────────────────────────────
@@ -412,20 +411,38 @@ export default function LayoutEditorCanvas({
 
         {/* Fase 1.6: Layer de smart guides — siempre encima */}
         <Layer listening={false}>
+          {/* Guías globales (drag de elementos completos) — líneas full-canvas, sin cambios */}
           {activeGuides.vertical !== null && (
             <Line
               points={[activeGuides.vertical, -GUIDE_EXTENT, activeGuides.vertical, GUIDE_EXTENT]}
-              stroke={activeGuides.verticalSource === 'vertex' ? GUIDE_COLOR_VERTEX : GUIDE_COLOR}
-              strokeWidth={1} dash={[4, 4]} listening={false}
+              stroke={GUIDE_COLOR} strokeWidth={1} dash={[4, 4]} listening={false}
             />
           )}
           {activeGuides.horizontal !== null && (
             <Line
               points={[-GUIDE_EXTENT, activeGuides.horizontal, GUIDE_EXTENT, activeGuides.horizontal]}
-              stroke={activeGuides.horizontalSource === 'vertex' ? GUIDE_COLOR_VERTEX : GUIDE_COLOR}
-              strokeWidth={1} dash={[4, 4]} listening={false}
+              stroke={GUIDE_COLOR} strokeWidth={1} dash={[4, 4]} listening={false}
             />
           )}
+          {/* Fase 1.7: guías de vértices — líneas cortas punto a punto, color violeta */}
+          {activeVertexGuides.vertical !== null && (() => {
+            const g = activeVertexGuides.vertical;
+            return (
+              <Line
+                points={[g.x1, g.y1, g.x2, g.y2]}
+                stroke={GUIDE_COLOR_VERTEX} strokeWidth={1.5} dash={[3, 3]} listening={false}
+              />
+            );
+          })()}
+          {activeVertexGuides.horizontal !== null && (() => {
+            const g = activeVertexGuides.horizontal;
+            return (
+              <Line
+                points={[g.x1, g.y1, g.x2, g.y2]}
+                stroke={GUIDE_COLOR_VERTEX} strokeWidth={1.5} dash={[3, 3]} listening={false}
+              />
+            );
+          })()}
         </Layer>
       </Stage>
 
