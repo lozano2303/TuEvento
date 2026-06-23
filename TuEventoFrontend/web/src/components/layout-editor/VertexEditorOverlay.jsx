@@ -19,19 +19,20 @@ const GUIDE_MARGIN    = 10;
  *    • Arrastrar          — mueve el vértice; snap a otros vértices y bordes.
  *    • Click derecho      — elimina el vértice (mínimo 3 vértices).
  *
- *  Puntos medios (círculos semitransparentes, en mitad de cada segmento)
+ *  Puntos medios (círculos semitransparentes, en mitad de cada segmento RECTO)
  *    • Click simple       — inserta un vértice nuevo en ese punto.
  *    • Alt + arrastrar    — convierte ese segmento en una curva Bézier cúbica.
  *                           Los dos handles aparecen a 1/3 y 2/3 del segmento
  *                           y se desplazan juntos simétricamente mientras arrastras.
+ *    • El midpoint desaparece una vez que el segmento ya tiene curva.
  *
  *  Handles de control (círculos pequeños huecos, conectados al ancla por línea punteada)
  *    • Arrastrar          — ajusta la curvatura del segmento adyacente.
  *                           Si el vértice es simétrico (por defecto), el handle
  *                           opuesto se mueve en espejo automáticamente → curva suave.
  *    • Click derecho      — alterna entre simétrico e independiente para ese vértice.
- *                           En modo independiente, cada handle se mueve por separado
- *                           → esquina con curvatura distinta en cada lado.
+ *    • Shift + click derecho — elimina la curva del segmento adyacente, devuelve
+ *                           el segmento a recto y hace que el midpoint reaparezca.
  *
  * ── Notas de implementación ─────────────────────────────────────────────────
  *
@@ -39,6 +40,9 @@ const GUIDE_MARGIN    = 10;
  *    por lo que el drag de un handle/vértice nunca propaga al Group padre.
  *  • Todas las coordenadas aquí son ABSOLUTAS (canvas-space). La conversión
  *    relativo↔absoluto se hace con element.x/element.y al subir/bajar callbacks.
+ *  • Los handles llevan name="bezier-handle-{id}" para que el filtro de
+ *    handleStageMouseDown en LayoutEditorCanvas los reconozca como clicks
+ *    internos y no expulse al usuario del modo edición al iniciar un drag.
  *  • El algoritmo de relleno de sillas (Prompt B) no usa handleIn/handleOut —
  *    trabaja solo con vértices ancla hasta que Prompt B lo corrija.
  */
@@ -109,6 +113,7 @@ function computeVertexGuideLines(snappedAbs, guides) {
  *   onHandleDrag        — (vertexIdx, side, absX, absY) => void  — 'in' | 'out'
  *   onHandleDragEnd     — (vertexIdx, side, absX, absY) => void
  *   onHandleRightClick  — (vertexIdx) => void  — toggle symmetric
+ *   onClearCurve        — (vertexIdx, side) => void  — Shift+click derecho → eliminar curva
  *   onVertexGuideChange — ({ vertical, horizontal }) => void
  *   otherElements       — elementos del canvas excepto la sección en edición
  */
@@ -123,6 +128,7 @@ export default function VertexEditorOverlay({
   onHandleDrag,
   onHandleDragEnd,
   onHandleRightClick,
+  onClearCurve,
   onVertexGuideChange,
   otherElements,
 }) {
@@ -144,11 +150,6 @@ export default function VertexEditorOverlay({
     absHandleOut: pt.handleOut ? { x: element.x + pt.handleOut.x, y: element.y + pt.handleOut.y } : null,
   }));
 
-  // ── Ref para el drag de Alt+midpoint ────────────────────────────────────
-  // (necesitamos guardar el estado del drag de curvatura entre eventos)
-  // Se usa un ref global en el componente para no perder el estado entre renders.
-  // El patrón funciona porque los Konva event handlers son síncrónos en un mismo frame.
-
   return (
     <>
       {/* ── Líneas "bigotes" de handles Bézier ─────────────────────────── */}
@@ -157,16 +158,20 @@ export default function VertexEditorOverlay({
       ))}
 
       {/* ── Puntos medios — insertar vértice o Alt+drag para curvar ──────── */}
-      {/* Renderizados ANTES que los handles para que los handles queden      */}
-      {/* en z-order superior y ganen el hit-test cuando se superponen.       */}
+      {/* Renderizados ANTES que los handles Bézier para que los handles      */}
+      {/* queden en z-order superior y ganen el hit-test si se superponen.   */}
       {absPoints.map((pt, i) => {
         const next = absPoints[(i + 1) % absPoints.length];
 
-        // Si el segmento ya es curvo (ambos handles existen), omitir el midpoint:
-        // evita que compita con los handles de Bézier en hit-testing y z-order.
-        // El flujo de Alt+drag para CREAR la curva solo aplica a segmentos rectos,
-        // así que este midpoint no hace falta una vez que la curva ya existe.
-        const segmentIsCurved = pt.handleOut !== null && next.handleIn !== null;
+        // Un segmento es curvo si Y SOLO SI el vértice de salida (pt) tiene
+        // handleOut no-nulo Y el vértice de llegada (next) tiene handleIn no-nulo.
+        // Se usa ?? null para tratar undefined igual que null (defensivo).
+        const ptHandleOut  = pt.handleOut  ?? null;
+        const nextHandleIn = next.handleIn ?? null;
+        const segmentIsCurved = ptHandleOut !== null && nextHandleIn !== null;
+
+        // Segmento curvo → omitir midpoint (ya existe la curva, no tiene sentido
+        // insertar un vértice en el medio ni crear otra curva encima).
         if (segmentIsCurved) return null;
 
         const mx = (pt.absX + next.absX) / 2;
@@ -192,9 +197,11 @@ export default function VertexEditorOverlay({
           key={`handles-${i}`}
           pt={pt}
           vertexIdx={i}
+          elementId={element.id}
           onHandleDrag={onHandleDrag}
           onHandleDragEnd={onHandleDragEnd}
           onHandleRightClick={onHandleRightClick}
+          onClearCurve={onClearCurve}
         />
       ))}
 
@@ -249,17 +256,35 @@ function BezierWhiskers({ pt }) {
   );
 }
 
-/** Círculos arrastrables de los handles de control Bézier. */
-function BezierHandles({ pt, vertexIdx, onHandleDrag, onHandleDragEnd, onHandleRightClick }) {
+/**
+ * Círculos arrastrables de los handles de control Bézier.
+ *
+ * Señal visual del estado simétrico/independiente (prop `symmetric` del vértice):
+ *   • Simétrico  (default): hueco, stroke morado — mismo estilo base que siempre tuvo.
+ *   • Independiente:        relleno ámbar tenue + stroke ámbar — claramente distinto,
+ *                           sin confundirse con vértices (morado sólido), midpoints
+ *                           (morado semitransparente) ni guías (rosa/violeta).
+ *
+ * Llevan name="bezier-handle-{elementId}" para que handleStageMouseDown
+ * en LayoutEditorCanvas los reconozca como clicks internos al modo edición
+ * y NO expulse al usuario cuando inicia el drag de un handle.
+ */
+function BezierHandles({ pt, vertexIdx, elementId, onHandleDrag, onHandleDragEnd, onHandleRightClick, onClearCurve }) {
+  // El estado simétrico/independiente vive en el vértice ancla, no en el handle.
+  // Ambos handles (handleIn y handleOut) del mismo vértice comparten el mismo estado.
+  const isSymmetric = pt.symmetric !== false; // true por defecto si undefined
+
+  const fillColor   = isSymmetric ? 'transparent'           : 'rgba(245,158,11,0.15)';
+  const strokeColor = isSymmetric ? '#A78BFA'               : '#F59E0B';
+
   const renderHandle = (absHandle, side) => (
-    // key no tiene efecto aquí (no es array de JSX) pero lo dejamos para claridad.
-    // El key real lo pone el padre en <BezierHandles key={...} />.
     <Circle
+      name={`bezier-handle-${elementId}`}
       x={absHandle.x}
       y={absHandle.y}
       radius={HANDLE_RADIUS}
-      fill="transparent"
-      stroke="#A78BFA"
+      fill={fillColor}
+      stroke={strokeColor}
       strokeWidth={1.5}
       draggable
       onDragMove={(e) => {
@@ -271,7 +296,13 @@ function BezierHandles({ pt, vertexIdx, onHandleDrag, onHandleDragEnd, onHandleR
       }}
       onContextMenu={(e) => {
         e.evt.preventDefault();
-        onHandleRightClick?.(vertexIdx);
+        if (e.evt.shiftKey) {
+          // Shift+click derecho → eliminar la curva del segmento adyacente
+          onClearCurve?.(vertexIdx, side);
+        } else {
+          // Click derecho simple → toggle simétrico/independiente
+          onHandleRightClick?.(vertexIdx);
+        }
       }}
     />
   );
@@ -286,6 +317,7 @@ function BezierHandles({ pt, vertexIdx, onHandleDrag, onHandleDragEnd, onHandleR
 
 /**
  * Punto medio de un segmento.
+ * Solo se renderiza para segmentos RECTOS (sin curva).
  * - Click simple → insertar vértice (onMidpointClick)
  * - Alt + DragStart → curvar el segmento (onSegmentCurve)
  */
@@ -314,30 +346,27 @@ function MidpointHandle({ mx, my, segmentIdx, pt, next, elementId, onMidpointCli
       }}
       onDragMove={(e) => {
         if (!altDragRef.current) return;
-        const node    = e.target;
-        const currX   = node.x();
-        const currY   = node.y();
-        const dx      = currX - dragStartRef.current.x;
-        const dy      = currY - dragStartRef.current.y;
+        const node  = e.target;
+        const currX = node.x();
+        const currY = node.y();
+        const dx    = currX - dragStartRef.current.x;
+        const dy    = currY - dragStartRef.current.y;
 
-        // Calcular handles a 1/3 y 2/3 desplazados por el delta del drag
-        // Punto ancla i (pt) y ancla siguiente (next)
+        // Calcular handles a 1/3 y 2/3 desplazados por el delta del drag.
+        // pt.absX/absY y next.absX/absY son las posiciones absolutas de los
+        // vértices ancla del segmento (ya calculadas en el componente padre).
         const baseHOut = {
           x: pt.absX   + (next.absX - pt.absX)   * (1 / 3) + dx,
           y: pt.absY   + (next.absY - pt.absY)   * (1 / 3) + dy,
         };
-        const baseHIn  = {
+        const baseHIn = {
           x: next.absX - (next.absX - pt.absX) * (1 / 3) + dx,
           y: next.absY - (next.absY - pt.absY) * (1 / 3) + dy,
         };
 
         onSegmentCurve?.(segmentIdx, baseHOut, baseHIn);
       }}
-      onDragEnd={(e) => {
-        if (!altDragRef.current) {
-          // Era un click (drag cancelado), no hacer nada especial
-          return;
-        }
+      onDragEnd={() => {
         altDragRef.current = false;
         // La curva ya quedó persistida por onDragMove — no hace falta re-emitir
       }}
