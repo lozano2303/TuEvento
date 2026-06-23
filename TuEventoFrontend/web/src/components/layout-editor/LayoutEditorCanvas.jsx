@@ -273,13 +273,13 @@ export default function LayoutEditorCanvas({
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
     setVertexPreview((prev) => {
-      const pts  = prev ?? el.polygonPoints;
-      const raw  = pts.map((p, i) =>
+      const pts = prev ?? el.polygonPoints;
+      // Solo actualiza el vértice activo en coords relativas al elemento.
+      // NO se normaliza aquí: normalizePoints desplazaría el.x/el.y y
+      // causaría que toda la figura se mueva mientras se arrastra.
+      return pts.map((p, i) =>
         i === vertexIdx ? [absX - el.x, absY - el.y] : [...p],
       );
-      // Fix 1: normalizar para que minX=0, minY=0 y el.x/el.y absorban el offset
-      const { polygonPoints } = normalizePoints(raw, el.x, el.y);
-      return polygonPoints;
     });
   }, [elements, editingPolygonId]);
 
