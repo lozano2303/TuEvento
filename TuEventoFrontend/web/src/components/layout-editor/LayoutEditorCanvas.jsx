@@ -5,7 +5,7 @@ import InfraElement from './elements/InfraElement';
 import VertexEditorOverlay from './VertexEditorOverlay';
 import {
   generateId, snapToGrid, rectsIntersect,
-  findSnapGuides,
+  findSnapGuides, migratePolygonPoints,
 } from './layoutEditorUtils';
 
 const GRID_SIZE          = 20;
@@ -189,8 +189,9 @@ export default function LayoutEditorCanvas({
     if (!editingPolygonId || !vertexPreview) { onEndVertexEdit?.(); return; }
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) { onEndVertexEdit?.(); return; }
-    // Fix 1: normalizar también al hacer commit
-    const patch = normalizePoints(vertexPreview, el.x, el.y);
+    // Migrar y normalizar al guardar
+    const migrated = migratePolygonPoints(vertexPreview);
+    const patch = normalizePoints(migrated, el.x, el.y);
     onChange({ ...el, ...patch });
     setVertexPreview(null);
     vertexSnapshotRef.current = null;
@@ -214,7 +215,9 @@ export default function LayoutEditorCanvas({
     if (editingPolygonId) {
       const el = elements.find((e) => e.id === editingPolygonId);
       if (el?.polygonPoints) {
-        const copy = el.polygonPoints.map((p) => [...p]);
+        // Fase 1.12: siempre migrar al nuevo formato al entrar en edición
+        const migrated = migratePolygonPoints(el.polygonPoints);
+        const copy = migrated.map((p) => ({ ...p }));
         vertexSnapshotRef.current = copy;
         setVertexPreview(copy);
       }
@@ -251,21 +254,29 @@ export default function LayoutEditorCanvas({
   /**
    * Normaliza polygonPoints para que siempre minX=0, minY=0
    * y absorbe el desplazamiento en el.x / el.y.
-   * Esto evita que coords relativas negativas deformen el render
-   * (el Group está posicionado en el.x/el.y y la Line usa coords relativas).
+   * Fase 1.12: también traslada handleIn/handleOut restando el mismo offset
+   * para que las curvas permanezcan alineadas con sus anclas tras normalizar.
+   * Trabaja con el nuevo formato [{x,y,handleIn,handleOut,symmetric},...].
    */
   function normalizePoints(pts, elX, elY) {
-    const xs   = pts.map((p) => p[0]);
-    const ys   = pts.map((p) => p[1]);
+    const migrated = migratePolygonPoints(pts);
+    const xs   = migrated.map((p) => p.x);
+    const ys   = migrated.map((p) => p.y);
     const minX = Math.min(...xs);
     const minY = Math.min(...ys);
-    const normalized = pts.map(([px, py]) => [px - minX, py - minY]);
+    const normalized = migrated.map((p) => ({
+      ...p,
+      x: p.x - minX,
+      y: p.y - minY,
+      handleIn:  p.handleIn  ? { x: p.handleIn.x  - minX, y: p.handleIn.y  - minY } : null,
+      handleOut: p.handleOut ? { x: p.handleOut.x - minX, y: p.handleOut.y - minY } : null,
+    }));
     return {
       polygonPoints: normalized,
       x: elX + minX,
       y: elY + minY,
-      width:  Math.max(80, Math.max(...normalized.map((p) => p[0]))),
-      height: Math.max(60, Math.max(...normalized.map((p) => p[1]))),
+      width:  Math.max(80, Math.max(...normalized.map((p) => p.x))),
+      height: Math.max(60, Math.max(...normalized.map((p) => p.y))),
     };
   }
 
@@ -273,12 +284,12 @@ export default function LayoutEditorCanvas({
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
     setVertexPreview((prev) => {
-      const pts = prev ?? el.polygonPoints;
-      // Solo actualiza el vértice activo en coords relativas al elemento.
-      // NO se normaliza aquí: normalizePoints desplazaría el.x/el.y y
-      // causaría que toda la figura se mueva mientras se arrastra.
+      const pts = migratePolygonPoints(prev ?? el.polygonPoints);
+      // Solo actualiza el vértice activo — NO normaliza (evita que la figura se mueva)
       return pts.map((p, i) =>
-        i === vertexIdx ? [absX - el.x, absY - el.y] : [...p],
+        i === vertexIdx
+          ? { ...p, x: absX - el.x, y: absY - el.y }
+          : { ...p },
       );
     });
   }, [elements, editingPolygonId]);
@@ -287,11 +298,12 @@ export default function LayoutEditorCanvas({
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
     setVertexPreview((prev) => {
-      const pts  = prev ?? el.polygonPoints;
-      const raw  = pts.map((p, i) =>
-        i === vertexIdx ? [absX - el.x, absY - el.y] : [...p],
+      const pts = migratePolygonPoints(prev ?? el.polygonPoints);
+      const raw = pts.map((p, i) =>
+        i === vertexIdx
+          ? { ...p, x: absX - el.x, y: absY - el.y }
+          : { ...p },
       );
-      // Fix 1: normalizar antes de persistir
       const patch = normalizePoints(raw, el.x, el.y);
       queueMicrotask(() => onChange({ ...el, ...patch }));
       return patch.polygonPoints;
@@ -302,10 +314,16 @@ export default function LayoutEditorCanvas({
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
     setVertexPreview((prev) => {
-      const pts  = prev ?? el.polygonPoints;
+      const pts  = migratePolygonPoints(prev ?? el.polygonPoints);
       const a    = pts[insertAfterIdx];
       const b    = pts[(insertAfterIdx + 1) % pts.length];
-      const newPt = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      const newPt = {
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2,
+        handleIn:  null,
+        handleOut: null,
+        symmetric: true,
+      };
       return [
         ...pts.slice(0, insertAfterIdx + 1),
         newPt,
@@ -324,6 +342,117 @@ export default function LayoutEditorCanvas({
   const handleVertexGuideChange = useCallback(({ vertical, horizontal }) => {
     setActiveVertexGuides({ vertical: vertical ?? null, horizontal: horizontal ?? null });
   }, []);
+
+  // ── Fase 1.12: handlers de handles Bézier ────────────────────────────────
+
+  /**
+   * Callback del Alt+drag sobre punto medio — crea/actualiza la curva del segmento i.
+   * handleOutAbs y handleInAbs ya vienen en coordenadas absolutas del canvas.
+   * Se llama continuamente durante el drag (onDragMove), así que solo actualiza
+   * el preview. El persist ocurre en onDragEnd del midpoint (que ya terminó el drag
+   * antes de llegar aquí — el commit lo hace el mismo gesto al soltar).
+   */
+  const handleSegmentCurve = useCallback((segmentIdx, handleOutAbs, handleInAbs) => {
+    const el = elements.find((e) => e.id === editingPolygonId);
+    if (!el) return;
+    setVertexPreview((prev) => {
+      const pts     = migratePolygonPoints(prev ?? el.polygonPoints);
+      const nextIdx = (segmentIdx + 1) % pts.length;
+      const updated = pts.map((p, i) => {
+        if (i === segmentIdx) {
+          return { ...p, handleOut: { x: handleOutAbs.x - el.x, y: handleOutAbs.y - el.y } };
+        }
+        if (i === nextIdx) {
+          return { ...p, handleIn: { x: handleInAbs.x - el.x, y: handleInAbs.y - el.y } };
+        }
+        return p;
+      });
+      // Persistir inmediatamente (el midpoint drag no tiene onDragEnd significativo)
+      queueMicrotask(() => onChange({ ...el, polygonPoints: updated }));
+      return updated;
+    });
+  }, [elements, editingPolygonId, onChange]);
+
+  /**
+   * Preview en tiempo real del drag de un handle de control.
+   * side: 'in' | 'out'
+   * NO llama a normalizePoints — mismo patrón que handleVertexDrag.
+   */
+  const handleHandleDrag = useCallback((vertexIdx, side, absX, absY) => {
+    const el = elements.find((e) => e.id === editingPolygonId);
+    if (!el) return;
+    setVertexPreview((prev) => {
+      const pts = migratePolygonPoints(prev ?? el.polygonPoints);
+      return pts.map((p, i) => {
+        if (i !== vertexIdx) return p;
+        const relX = absX - el.x;
+        const relY = absY - el.y;
+        if (side === 'out') {
+          const updated = { ...p, handleOut: { x: relX, y: relY } };
+          // Si es simétrico y tiene handleIn, reflejar
+          if (p.symmetric && p.handleIn !== null) {
+            updated.handleIn = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
+          }
+          return updated;
+        } else {
+          // side === 'in'
+          const updated = { ...p, handleIn: { x: relX, y: relY } };
+          if (p.symmetric && p.handleOut !== null) {
+            updated.handleOut = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
+          }
+          return updated;
+        }
+      });
+    });
+  }, [elements, editingPolygonId]);
+
+  /**
+   * Commit del drag de un handle — normaliza y persiste.
+   */
+  const handleHandleDragEnd = useCallback((vertexIdx, side, absX, absY) => {
+    const el = elements.find((e) => e.id === editingPolygonId);
+    if (!el) return;
+    setVertexPreview((prev) => {
+      const pts = migratePolygonPoints(prev ?? el.polygonPoints);
+      const raw = pts.map((p, i) => {
+        if (i !== vertexIdx) return p;
+        const relX = absX - el.x;
+        const relY = absY - el.y;
+        if (side === 'out') {
+          const updated = { ...p, handleOut: { x: relX, y: relY } };
+          if (p.symmetric && p.handleIn !== null) {
+            updated.handleIn = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
+          }
+          return updated;
+        } else {
+          const updated = { ...p, handleIn: { x: relX, y: relY } };
+          if (p.symmetric && p.handleOut !== null) {
+            updated.handleOut = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
+          }
+          return updated;
+        }
+      });
+      const patch = normalizePoints(raw, el.x, el.y);
+      queueMicrotask(() => onChange({ ...el, ...patch }));
+      return patch.polygonPoints;
+    });
+  }, [elements, editingPolygonId, onChange]);
+
+  /**
+   * Click derecho sobre un handle — alterna symmetric para ese vértice.
+   */
+  const handleHandleRightClick = useCallback((vertexIdx) => {
+    const el = elements.find((e) => e.id === editingPolygonId);
+    if (!el) return;
+    setVertexPreview((prev) => {
+      const pts = migratePolygonPoints(prev ?? el.polygonPoints);
+      const updated = pts.map((p, i) =>
+        i === vertexIdx ? { ...p, symmetric: !p.symmetric } : p,
+      );
+      queueMicrotask(() => onChange({ ...el, polygonPoints: updated }));
+      return updated;
+    });
+  }, [elements, editingPolygonId, onChange]);
 
   // ── Stage mouse handlers ──────────────────────────────────────────────────
   const handleStageMouseDown = (e) => {
@@ -601,7 +730,11 @@ export default function LayoutEditorCanvas({
                 onVertexDrag={handleVertexDrag}
                 onVertexDragEnd={handleVertexDragEnd}
                 onMidpointClick={handleMidpointClick}
+                onSegmentCurve={handleSegmentCurve}
                 onVertexRightClick={handleVertexRightClick}
+                onHandleDrag={handleHandleDrag}
+                onHandleDragEnd={handleHandleDragEnd}
+                onHandleRightClick={handleHandleRightClick}
                 onVertexGuideChange={handleVertexGuideChange}
                 otherElements={elements.filter((e) => e.id !== editingPolygonId)}
               />

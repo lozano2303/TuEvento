@@ -1,12 +1,12 @@
 import { useRef, useEffect } from 'react';
-import { Group, Rect, Line, Circle, Text, Transformer } from 'react-konva';
+import { Group, Rect, Shape, Circle, Text, Transformer } from 'react-konva';
 import {
   computeMinSectionSize,
   distributeSeats,
-  flattenPoints,
   polyCentroid,
   polyBoundingBox,
   snapToGrid,
+  migratePolygonPoints,
 } from '../layoutEditorUtils';
 
 const VERTEX_RADIUS = 7; // eslint-disable-line no-unused-vars — reservado por si se necesita
@@ -74,8 +74,11 @@ export default function SectionElement({
   }, [isSelected, isEditingVertices]);
 
   // Puntos de trabajo: previewPoints durante edición (tiempo real), luego los del elemento
-  const workPoints = (isEditingVertices && previewPoints) ? previewPoints
-    : element.polygonPoints;
+  // Asegurar siempre el formato nuevo con migratePolygonPoints
+  const workPoints = (() => {
+    const raw = (isEditingVertices && previewPoints) ? previewPoints : element.polygonPoints;
+    return raw ? migratePolygonPoints(raw) : raw;
+  })();
 
   const seatPositions = (() => {
     if ((element.shapeMode ?? 'rect') === 'polygon' && workPoints) {
@@ -133,13 +136,17 @@ export default function SectionElement({
       width: newW, height: newH, rotation: node.rotation(),
     };
     if (shapeMode === 'polygon' && element.polygonPoints) {
-      const bb     = polyBoundingBox(element.polygonPoints);
+      const pts    = migratePolygonPoints(element.polygonPoints);
+      const bb     = polyBoundingBox(pts);
       const ratioX = bb.width  > 0 ? newW / bb.width  : 1;
       const ratioY = bb.height > 0 ? newH / bb.height : 1;
-      patch.polygonPoints = element.polygonPoints.map(([px, py]) => [
-        bb.minX + (px - bb.minX) * ratioX,
-        bb.minY + (py - bb.minY) * ratioY,
-      ]);
+      patch.polygonPoints = pts.map((pt) => ({
+        ...pt,
+        x: bb.minX + (pt.x - bb.minX) * ratioX,
+        y: bb.minY + (pt.y - bb.minY) * ratioY,
+        handleIn:  pt.handleIn  ? { x: bb.minX + (pt.handleIn.x  - bb.minX) * ratioX, y: bb.minY + (pt.handleIn.y  - bb.minY) * ratioY } : null,
+        handleOut: pt.handleOut ? { x: bb.minX + (pt.handleOut.x - bb.minX) * ratioX, y: bb.minY + (pt.handleOut.y - bb.minY) * ratioY } : null,
+      }));
     }
     onChange({ ...element, ...patch });
   };
@@ -172,16 +179,34 @@ export default function SectionElement({
       >
         {/* ── Fondo ────────────────────────────────────────────────────── */}
         {shapeMode === 'polygon' && workPoints ? (
-          <Line
+          <Shape
             name={`polygon-shape-${element.id}`}
-            points={flattenPoints(workPoints)}
-            closed
+            sceneFunc={(context, shape) => {
+              const pts = workPoints;
+              if (!pts || pts.length < 2) return;
+              context.beginPath();
+              context.moveTo(pts[0].x, pts[0].y);
+              for (let i = 0; i < pts.length; i++) {
+                const curr = pts[i];
+                const next = pts[(i + 1) % pts.length];
+                const isCurved = curr.handleOut && next.handleIn;
+                if (isCurved) {
+                  context.bezierCurveTo(
+                    curr.handleOut.x, curr.handleOut.y,
+                    next.handleIn.x,  next.handleIn.y,
+                    next.x,           next.y,
+                  );
+                } else {
+                  context.lineTo(next.x, next.y);
+                }
+              }
+              context.closePath();
+              context.fillStrokeShape(shape);
+            }}
             fill={element.color}
             opacity={0.85}
             stroke={isSelected || isEditingVertices ? '#ffffff' : darkenHex(element.color)}
             strokeWidth={isSelected || isEditingVertices ? 2 : 1}
-            // Fase 1.8: la Line siempre escucha — ya no hay conflicto con los
-            // Circle de vértices porque esos viven en otra Layer
             listening={true}
           />
         ) : (

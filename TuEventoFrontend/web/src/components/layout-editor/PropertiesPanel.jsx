@@ -1,4 +1,4 @@
-import { computeMaxSeats, normalizeSeatLayout, polyBoundingBox } from './layoutEditorUtils';
+import { computeMaxSeats, normalizeSeatLayout, polyBoundingBox, migratePolygonPoints } from './layoutEditorUtils';
 
 const SECTION_COLORS = [
   { label: 'Morado', value: '#7C3AED' },
@@ -161,10 +161,10 @@ export default function PropertiesPanel({
     update({
       shapeMode:     'polygon',
       polygonPoints: [
-        [0,             0],
-        [element.width, 0],
-        [element.width, element.height],
-        [0,             element.height],
+        { x: 0,             y: 0,              handleIn: null, handleOut: null, symmetric: true },
+        { x: element.width, y: 0,              handleIn: null, handleOut: null, symmetric: true },
+        { x: element.width, y: element.height, handleIn: null, handleOut: null, symmetric: true },
+        { x: 0,             y: element.height, handleIn: null, handleOut: null, symmetric: true },
       ],
     });
   };
@@ -173,7 +173,8 @@ export default function PropertiesPanel({
     if (!window.confirm(
       '¿Volver a rectángulo? Si el polígono no era ya un rectángulo, la forma se simplificará.'
     )) return;
-    const bb = polyBoundingBox(element.polygonPoints || []);
+    const migrated = migratePolygonPoints(element.polygonPoints || []);
+    const bb = polyBoundingBox(migrated);
     update({
       shapeMode:     'rect',
       polygonPoints: null,

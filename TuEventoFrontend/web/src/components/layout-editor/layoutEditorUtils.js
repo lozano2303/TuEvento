@@ -2,6 +2,40 @@
 export const generateId = () =>
   `elem-${Math.random().toString(36).slice(2, 9)}-${Date.now().toString(36)}`;
 
+// ── Fase 1.12: Migración de polygonPoints al nuevo formato con handles Bézier ──
+/**
+ * Convierte polygonPoints del formato viejo [[x,y], ...] al nuevo formato
+ * [{ x, y, handleIn, handleOut, symmetric }, ...].
+ * Si ya tiene el nuevo formato (primer elemento es un objeto con x,y) lo devuelve tal cual.
+ * Nunca crashea — devuelve array vacío si la entrada es inválida.
+ */
+export const migratePolygonPoints = (points) => {
+  if (!Array.isArray(points) || points.length === 0) return points ?? [];
+  // Detectar si ya tiene el nuevo formato (objeto con propiedad x)
+  if (typeof points[0] === 'object' && points[0] !== null && !Array.isArray(points[0]) && 'x' in points[0]) {
+    return points; // ya migrado
+  }
+  // Formato viejo: [[x,y], ...]
+  return points.map(([x, y]) => ({
+    x,
+    y,
+    handleIn:  null,
+    handleOut: null,
+    symmetric: true,
+  }));
+};
+
+/**
+ * Asegura que un elemento de tipo polygon tenga polygonPoints en el nuevo formato.
+ * Úsalo en cualquier punto de carga/inicialización.
+ */
+export const migrateElement = (el) => {
+  if (el.shapeMode === 'polygon' && Array.isArray(el.polygonPoints) && el.polygonPoints.length > 0) {
+    return { ...el, polygonPoints: migratePolygonPoints(el.polygonPoints) };
+  }
+  return el;
+};
+
 // ── Snapping ─────────────────────────────────────────────────────────────────
 export const snapToGrid = (value, gridSize = 10) =>
   Math.round(value / gridSize) * gridSize;
@@ -246,13 +280,15 @@ export const computeCanvasForElements = (elements, currentCanvas) => {
 // ── Fase 1.3: utilidades para polígonos ──────────────────────────────────────
 
 /**
- * Calcula el bounding box de un array de vértices [[x,y], ...].
+ * Calcula el bounding box de un array de vértices en formato nuevo [{x,y,...}].
  * Devuelve { minX, minY, maxX, maxY, width, height }.
  */
 export const polyBoundingBox = (points) => {
   if (!points || points.length === 0) return { minX: 0, minY: 0, maxX: 0, maxY: 0, width: 0, height: 0 };
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (const [x, y] of points) {
+  for (const pt of points) {
+    const x = Array.isArray(pt) ? pt[0] : pt.x;
+    const y = Array.isArray(pt) ? pt[1] : pt.y;
     if (x < minX) minX = x;
     if (y < minY) minY = y;
     if (x > maxX) maxX = x;
@@ -265,6 +301,9 @@ export const polyBoundingBox = (points) => {
  * Fase 1.5 / hotfix: algoritmo even-odd que calcula las filas desde el rango
  * vertical REAL del polígono. No usa `rows` como parámetro de densidad fija —
  * en su lugar calcula cuántas filas caben físicamente dado seatRadius y gap.
+ *
+ * Fase 1.12: usa solo las coordenadas ancla (x,y) de cada vértice — ignora
+ * handleIn/handleOut intencionalmente (se corrige en Prompt B).
  *
  * seatLayout debe tener: { seatRadius, gap } — rows/cols se ignoran aquí.
  * Devuelve TODAS las posiciones que caben físicamente en el polígono.
@@ -324,15 +363,20 @@ export const computePolygonSeatRows = (polygonPoints, seatLayout) => {
 
 /**
  * Calcula las intersecciones de una línea horizontal (y = scanY) con
- * los bordes del polígono definido por `points` ([[x,y], ...]).
+ * los bordes del polígono. Acepta el nuevo formato [{x,y,...}].
+ * Usa solo coordenadas ancla — ignora curvas (Prompt A).
  * Devuelve un array de valores X de intersección.
  */
 function polyHorizontalIntersections(points, scanY) {
   const xs = [];
   const n  = points.length;
   for (let i = 0; i < n; i++) {
-    const [ax, ay] = points[i];
-    const [bx, by] = points[(i + 1) % n];
+    const a = points[i];
+    const b = points[(i + 1) % n];
+    const ax = Array.isArray(a) ? a[0] : a.x;
+    const ay = Array.isArray(a) ? a[1] : a.y;
+    const bx = Array.isArray(b) ? b[0] : b.x;
+    const by = Array.isArray(b) ? b[1] : b.y;
     if ((ay <= scanY && by > scanY) || (by <= scanY && ay > scanY)) {
       const t = (scanY - ay) / (by - ay);
       xs.push(ax + t * (bx - ax));
@@ -342,17 +386,23 @@ function polyHorizontalIntersections(points, scanY) {
 }
 
 /**
- * Aplana [[x0,y0],[x1,y1],...] al formato plano [x0,y0,x1,y1,...] que Konva espera.
+ * Aplana el nuevo formato [{x,y,...}] al formato plano [x0,y0,x1,y1,...] que Konva espera.
+ * Compatible también con el formato viejo [[x,y],...] como fallback defensivo.
  */
-export const flattenPoints = (points) => points.flatMap(([x, y]) => [x, y]);
+export const flattenPoints = (points) => points.flatMap((pt) =>
+  Array.isArray(pt) ? pt : [pt.x, pt.y]
+);
 
 /**
- * Calcula el centroide (promedio) de un array de vértices.
+ * Calcula el centroide (promedio) de un array de vértices en el nuevo formato [{x,y,...}].
  */
 export const polyCentroid = (points) => {
   if (!points || points.length === 0) return { x: 0, y: 0 };
-  const sumX = points.reduce((s, [x]) => s + x, 0);
-  const sumY = points.reduce((s, [, y]) => s + y, 0);
+  let sumX = 0, sumY = 0;
+  for (const pt of points) {
+    sumX += Array.isArray(pt) ? pt[0] : pt.x;
+    sumY += Array.isArray(pt) ? pt[1] : pt.y;
+  }
   return { x: sumX / points.length, y: sumY / points.length };
 };
 
