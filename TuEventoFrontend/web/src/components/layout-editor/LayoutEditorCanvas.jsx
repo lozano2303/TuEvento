@@ -454,6 +454,42 @@ export default function LayoutEditorCanvas({
     });
   }, [elements, editingPolygonId, onChange]);
 
+  /**
+   * Shift+click derecho sobre un handle — elimina la curva del segmento
+   * adyacente al vértice. Limpia handleOut del vértice i y handleIn del
+   * vértice i+1 (si side='out'), o handleIn del vértice i y handleOut del
+   * vértice i-1 (si side='in').
+   * El midpoint de inserción reaparecerá automáticamente al perder los handles.
+   */
+  const handleClearCurve = useCallback((vertexIdx, side) => {
+    const el = elements.find((e) => e.id === editingPolygonId);
+    if (!el) return;
+    setVertexPreview((prev) => {
+      const pts = migratePolygonPoints(prev ?? el.polygonPoints);
+      const n   = pts.length;
+      let updated;
+      if (side === 'out') {
+        // Segmento que sale de vertexIdx hacia vertexIdx+1
+        const nextIdx = (vertexIdx + 1) % n;
+        updated = pts.map((p, i) => {
+          if (i === vertexIdx) return { ...p, handleOut: null };
+          if (i === nextIdx)   return { ...p, handleIn:  null };
+          return p;
+        });
+      } else {
+        // Segmento que entra a vertexIdx desde vertexIdx-1
+        const prevIdx = (vertexIdx - 1 + n) % n;
+        updated = pts.map((p, i) => {
+          if (i === vertexIdx) return { ...p, handleIn:  null };
+          if (i === prevIdx)   return { ...p, handleOut: null };
+          return p;
+        });
+      }
+      queueMicrotask(() => onChange({ ...el, polygonPoints: updated }));
+      return updated;
+    });
+  }, [elements, editingPolygonId, onChange]);
+
   // ── Stage mouse handlers ──────────────────────────────────────────────────
   const handleStageMouseDown = (e) => {
     const isRight = e.evt.button === 2;
@@ -470,10 +506,11 @@ export default function LayoutEditorCanvas({
 
     if (editingPolygonId) {
       const name = e.target?.name?.() ?? e.target?.attrs?.name ?? '';
-      // Clicks sobre handles de vértices o la propia forma: no salir
+      // Clicks sobre handles de vértices, midpoints, handles de curva o la propia forma: no salir
       if (
         name.startsWith('vertex-handle-') ||
         name.startsWith('midpoint-handle-') ||
+        name.startsWith('bezier-handle-') ||
         name.startsWith('polygon-shape-')
       ) return;
 
@@ -755,6 +792,7 @@ export default function LayoutEditorCanvas({
                 onHandleDrag={handleHandleDrag}
                 onHandleDragEnd={handleHandleDragEnd}
                 onHandleRightClick={handleHandleRightClick}
+                onClearCurve={handleClearCurve}
                 onVertexGuideChange={handleVertexGuideChange}
                 otherElements={elements.filter((e) => e.id !== editingPolygonId)}
               />
@@ -846,8 +884,17 @@ export default function LayoutEditorCanvas({
           <div><kbd className="bg-surfaceAlt px-1 rounded text-textMuted">Esc</kbd> → descartar</div>
           <div className="mt-1 pt-1 border-t border-accent/20 space-y-0.5">
             <div>⌥ Alt+arrastrar punto medio → convierte segmento en curva</div>
-            <div>⬤ Arrastrar handle (círculo hueco) → ajusta la curvatura</div>
-            <div>↔ Por defecto simétrico · Click derecho en handle → independiente</div>
+            <div>⬤ Arrastrar handle (círculo) → ajusta la curvatura</div>
+            <div className="flex items-center gap-1">
+              <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', border:'1.5px solid #A78BFA', marginRight:2 }} />
+              hueco morado = simétrico (ambos lados se mueven juntos)
+            </div>
+            <div className="flex items-center gap-1">
+              <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', border:'1.5px solid #F59E0B', background:'rgba(245,158,11,0.15)', marginRight:2 }} />
+              relleno ámbar = independiente (cada lado se mueve solo)
+            </div>
+            <div>↔ Click derecho en handle → alterna simétrico / independiente</div>
+            <div>✕ Shift+click derecho en handle → elimina la curva (vuelve a recto)</div>
             <div>✕ Click derecho en vértice ancla → elimina vértice</div>
             <div>＋ Click en punto medio → inserta vértice</div>
           </div>
