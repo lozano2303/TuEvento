@@ -476,7 +476,27 @@ export default function LayoutEditorCanvas({
         name.startsWith('midpoint-handle-') ||
         name.startsWith('polygon-shape-')
       ) return;
-      // Cualquier otro click → commit y salir
+
+      // Opción 1: point-in-polygon real via Konva intersects().
+      // Si el click cayó dentro del contorno visual real de la sección en edición
+      // (incluyendo curvas Bézier, gracias al hitFunc ya corregido), no salimos.
+      // Esto cubre el caso de clicks en la "zona vacía" que quedó entre el bbox
+      // original y el nuevo contorno curvo.
+      const shapeNode = stageRef.current?.findOne(
+        `[name=polygon-shape-${editingPolygonId}]`
+      );
+      if (shapeNode) {
+        const stage   = stageRef.current;
+        const pointer = stage.getPointerPosition();
+        // getPointerPosition devuelve coords de pantalla; hay que convertir
+        // a coords del canvas (compensar zoom y pan del Stage).
+        const transform = stage.getAbsoluteTransform().copy().invert();
+        const canvasPos = transform.point(pointer);
+        // intersects() usa el hitFunc del nodo — el mismo que ya dibuja la curva real.
+        if (shapeNode.intersects(canvasPos)) return;
+      }
+
+      // Click realmente fuera del contorno → commit y salir
       commitVertexEdit();
       return;
     }
@@ -824,6 +844,13 @@ export default function LayoutEditorCanvas({
         <div className="absolute bottom-4 left-4 text-[10px] text-accent pointer-events-none select-none space-y-0.5">
           <div>✏ Click fuera o <kbd className="bg-surfaceAlt px-1 rounded text-textMuted">Guardar forma</kbd> → guardar</div>
           <div><kbd className="bg-surfaceAlt px-1 rounded text-textMuted">Esc</kbd> → descartar</div>
+          <div className="mt-1 pt-1 border-t border-accent/20 space-y-0.5">
+            <div>⌥ Alt+arrastrar punto medio → convierte segmento en curva</div>
+            <div>⬤ Arrastrar handle (círculo hueco) → ajusta la curvatura</div>
+            <div>↔ Por defecto simétrico · Click derecho en handle → independiente</div>
+            <div>✕ Click derecho en vértice ancla → elimina vértice</div>
+            <div>＋ Click en punto medio → inserta vértice</div>
+          </div>
         </div>
       )}
     </div>

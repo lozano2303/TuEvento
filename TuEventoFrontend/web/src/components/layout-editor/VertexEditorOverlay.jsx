@@ -11,6 +11,39 @@ const HANDLE_RADIUS   = 5;
 const GUIDE_MARGIN    = 10;
 
 /**
+ * VertexEditorOverlay — handles de edición del polígono libre.
+ *
+ * ── Interacciones disponibles ───────────────────────────────────────────────
+ *
+ *  Vértices ancla (círculos morados sólidos)
+ *    • Arrastrar          — mueve el vértice; snap a otros vértices y bordes.
+ *    • Click derecho      — elimina el vértice (mínimo 3 vértices).
+ *
+ *  Puntos medios (círculos semitransparentes, en mitad de cada segmento)
+ *    • Click simple       — inserta un vértice nuevo en ese punto.
+ *    • Alt + arrastrar    — convierte ese segmento en una curva Bézier cúbica.
+ *                           Los dos handles aparecen a 1/3 y 2/3 del segmento
+ *                           y se desplazan juntos simétricamente mientras arrastras.
+ *
+ *  Handles de control (círculos pequeños huecos, conectados al ancla por línea punteada)
+ *    • Arrastrar          — ajusta la curvatura del segmento adyacente.
+ *                           Si el vértice es simétrico (por defecto), el handle
+ *                           opuesto se mueve en espejo automáticamente → curva suave.
+ *    • Click derecho      — alterna entre simétrico e independiente para ese vértice.
+ *                           En modo independiente, cada handle se mueve por separado
+ *                           → esquina con curvatura distinta en cada lado.
+ *
+ * ── Notas de implementación ─────────────────────────────────────────────────
+ *
+ *  • Esta Layer vive separada del Group draggable de la sección (Fase 1.8),
+ *    por lo que el drag de un handle/vértice nunca propaga al Group padre.
+ *  • Todas las coordenadas aquí son ABSOLUTAS (canvas-space). La conversión
+ *    relativo↔absoluto se hace con element.x/element.y al subir/bajar callbacks.
+ *  • El algoritmo de relleno de sillas (Prompt B) no usa handleIn/handleOut —
+ *    trabaja solo con vértices ancla hasta que Prompt B lo corrija.
+ */
+
+/**
  * Calcula la geometría de línea corta { x1,y1,x2,y2 } para una guía de vértice.
  */
 function computeVertexGuideLines(snappedAbs, guides) {
@@ -123,25 +156,21 @@ export default function VertexEditorOverlay({
         <BezierWhiskers key={`whiskers-${i}`} pt={pt} />
       ))}
 
-      {/* ── Handles de control Bézier ───────────────────────────────────── */}
-      {absPoints.map((pt, i) => (
-        <BezierHandles
-          key={`handles-${i}`}
-          pt={pt}
-          vertexIdx={i}
-          elementX={element.x}
-          elementY={element.y}
-          onHandleDrag={onHandleDrag}
-          onHandleDragEnd={onHandleDragEnd}
-          onHandleRightClick={onHandleRightClick}
-        />
-      ))}
-
       {/* ── Puntos medios — insertar vértice o Alt+drag para curvar ──────── */}
+      {/* Renderizados ANTES que los handles para que los handles queden      */}
+      {/* en z-order superior y ganen el hit-test cuando se superponen.       */}
       {absPoints.map((pt, i) => {
         const next = absPoints[(i + 1) % absPoints.length];
-        const mx   = (pt.absX + next.absX) / 2;
-        const my   = (pt.absY + next.absY) / 2;
+
+        // Si el segmento ya es curvo (ambos handles existen), omitir el midpoint:
+        // evita que compita con los handles de Bézier en hit-testing y z-order.
+        // El flujo de Alt+drag para CREAR la curva solo aplica a segmentos rectos,
+        // así que este midpoint no hace falta una vez que la curva ya existe.
+        const segmentIsCurved = pt.handleOut !== null && next.handleIn !== null;
+        if (segmentIsCurved) return null;
+
+        const mx = (pt.absX + next.absX) / 2;
+        const my = (pt.absY + next.absY) / 2;
         return (
           <MidpointHandle
             key={`mid-${i}`}
@@ -155,7 +184,23 @@ export default function VertexEditorOverlay({
         );
       })}
 
+      {/* ── Handles de control Bézier ───────────────────────────────────── */}
+      {/* Renderizados DESPUÉS de midpoints → z-order superior → capturan   */}
+      {/* los clicks/drags antes que cualquier midpoint adyacente.           */}
+      {absPoints.map((pt, i) => (
+        <BezierHandles
+          key={`handles-${i}`}
+          pt={pt}
+          vertexIdx={i}
+          onHandleDrag={onHandleDrag}
+          onHandleDragEnd={onHandleDragEnd}
+          onHandleRightClick={onHandleRightClick}
+        />
+      ))}
+
       {/* ── Vértices ancla arrastrables ─────────────────────────────────── */}
+      {/* Encima de todo — siempre tienen prioridad de click sobre handles   */}
+      {/* y midpoints cuando se superponen en esquinas.                      */}
       {absPoints.map((pt, i) => (
         <AnchorVertex
           key={`v-${i}`}
@@ -205,10 +250,11 @@ function BezierWhiskers({ pt }) {
 }
 
 /** Círculos arrastrables de los handles de control Bézier. */
-function BezierHandles({ pt, vertexIdx, elementX, elementY, onHandleDrag, onHandleDragEnd, onHandleRightClick }) {
+function BezierHandles({ pt, vertexIdx, onHandleDrag, onHandleDragEnd, onHandleRightClick }) {
   const renderHandle = (absHandle, side) => (
+    // key no tiene efecto aquí (no es array de JSX) pero lo dejamos para claridad.
+    // El key real lo pone el padre en <BezierHandles key={...} />.
     <Circle
-      key={`handle-${vertexIdx}-${side}`}
       x={absHandle.x}
       y={absHandle.y}
       radius={HANDLE_RADIUS}

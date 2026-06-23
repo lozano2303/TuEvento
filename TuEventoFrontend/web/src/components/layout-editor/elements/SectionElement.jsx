@@ -4,12 +4,67 @@ import {
   computeMinSectionSize,
   distributeSeats,
   polyCentroid,
-  polyBoundingBox,
   snapToGrid,
   migratePolygonPoints,
 } from '../layoutEditorUtils';
 
 const VERTEX_RADIUS = 7; // eslint-disable-line no-unused-vars — reservado por si se necesita
+
+/**
+ * Construye el path del polígono en el contexto 2D de Konva.
+ * Compartida entre sceneFunc y hitFunc del <Shape> para garantizar que
+ * el hit-test siga exactamente el contorno visual — incluyendo curvas Bézier.
+ * Si algún punto tiene handleOut y el siguiente tiene handleIn → bezierCurveTo.
+ * En cualquier otro caso → lineTo (segmento recto).
+ *
+ * @param {CanvasRenderingContext2D} context
+ * @param {Array<{x,y,handleIn,handleOut}>} points  — formato nuevo (migrado)
+ */
+function drawPolygonPath(context, points) {
+  if (!points || points.length < 2) return;
+  context.beginPath();
+  context.moveTo(points[0].x, points[0].y);
+  for (let i = 0; i < points.length; i++) {
+    const curr = points[i];
+    const next = points[(i + 1) % points.length];
+    if (curr.handleOut && next.handleIn) {
+      context.bezierCurveTo(
+        curr.handleOut.x, curr.handleOut.y,
+        next.handleIn.x,  next.handleIn.y,
+        next.x,           next.y,
+      );
+    } else {
+      context.lineTo(next.x, next.y);
+    }
+  }
+  context.closePath();
+}
+
+/**
+ * Calcula el bounding box visual del polígono incluyendo los puntos de control
+ * Bézier (handleIn/handleOut). Los puntos de control de una cúbica siempre
+ * contienen a la curva real, así que este BB es una cota segura para el
+ * Transformer — sin necesidad de tesela la curva punto a punto.
+ *
+ * @param {Array<{x,y,handleIn?,handleOut?}>} points — formato nuevo (migrado)
+ * @returns {{ minX, minY, maxX, maxY, width, height }}
+ */
+function computePolygonVisualBB(points) {
+  if (!points || points.length === 0) {
+    return { minX: 0, minY: 0, maxX: 0, maxY: 0, width: 0, height: 0 };
+  }
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const expand = (x, y) => {
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  };
+  for (const pt of points) {
+    expand(pt.x, pt.y);
+    if (pt.handleIn)  expand(pt.handleIn.x,  pt.handleIn.y);
+    if (pt.handleOut) expand(pt.handleOut.x, pt.handleOut.y);
+  }
+  return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
+}
 
 function darkenHex(hex, amount = 40) {
   const num = parseInt((hex || '#000000').replace('#', ''), 16);
@@ -62,23 +117,34 @@ export default function SectionElement({
   const shapeMode = element.shapeMode ?? 'rect';
   const minSize   = computeMinSectionSize(element.seatLayout);
 
+  // Puntos de trabajo: previewPoints durante edición (tiempo real), luego los del elemento.
+  // Declarado ANTES del useEffect del Transformer para que pueda listarse como dependencia.
+  const workPoints = (() => {
+    const raw = (isEditingVertices && previewPoints) ? previewPoints : element.polygonPoints;
+    return raw ? migratePolygonPoints(raw) : raw;
+  })();
+
+  // BB visual real del polígono, incluyendo puntos de control Bézier.
+  // El Transformer usa estas dimensiones para no quedarse "congelado" al curvar.
+  const visualBB = (shapeMode === 'polygon' && workPoints)
+    ? computePolygonVisualBB(workPoints)
+    : null;
+  const groupWidth  = visualBB ? Math.max(minSize.width,  visualBB.width)  : element.width;
+  const groupHeight = visualBB ? Math.max(minSize.height, visualBB.height) : element.height;
+
   // ── Transformer ───────────────────────────────────────────────────────────
+  // Se fuerza forceUpdate() cuando workPoints cambia (curvar segmento, mover
+  // handle, mover vértice) para que el cuadro siga la geometría real.
   useEffect(() => {
     if (isSelected && !isEditingVertices && trRef.current && groupRef.current) {
       trRef.current.nodes([groupRef.current]);
+      trRef.current.forceUpdate();
       trRef.current.getLayer()?.batchDraw();
     } else if (trRef.current) {
       trRef.current.nodes([]);
       trRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected, isEditingVertices]);
-
-  // Puntos de trabajo: previewPoints durante edición (tiempo real), luego los del elemento
-  // Asegurar siempre el formato nuevo con migratePolygonPoints
-  const workPoints = (() => {
-    const raw = (isEditingVertices && previewPoints) ? previewPoints : element.polygonPoints;
-    return raw ? migratePolygonPoints(raw) : raw;
-  })();
+  }, [isSelected, isEditingVertices, workPoints]); // workPoints → re-evalúa al curvar/mover handles
 
   const seatPositions = (() => {
     if ((element.shapeMode ?? 'rect') === 'polygon' && workPoints) {
@@ -136,8 +202,9 @@ export default function SectionElement({
       width: newW, height: newH, rotation: node.rotation(),
     };
     if (shapeMode === 'polygon' && element.polygonPoints) {
-      const pts    = migratePolygonPoints(element.polygonPoints);
-      const bb     = polyBoundingBox(pts);
+      const pts = migratePolygonPoints(element.polygonPoints);
+      // Usar BB visual (incluye handles) para que el escalado no deje handles fuera
+      const bb  = computePolygonVisualBB(pts);
       const ratioX = bb.width  > 0 ? newW / bb.width  : 1;
       const ratioY = bb.height > 0 ? newH / bb.height : 1;
       patch.polygonPoints = pts.map((pt) => ({
@@ -162,8 +229,8 @@ export default function SectionElement({
         ref={groupRef}
         x={element.x}
         y={element.y}
-        width={element.width}
-        height={element.height}
+        width={groupWidth}
+        height={groupHeight}
         rotation={element.rotation ?? 0}
         // Fase 1.8: el Group es SIEMPRE draggable — los vértices ya no viven aquí,
         // así que no hay conflicto estructural de drag.
@@ -179,36 +246,41 @@ export default function SectionElement({
       >
         {/* ── Fondo ────────────────────────────────────────────────────── */}
         {shapeMode === 'polygon' && workPoints ? (
-          <Shape
-            name={`polygon-shape-${element.id}`}
-            sceneFunc={(context, shape) => {
-              const pts = workPoints;
-              if (!pts || pts.length < 2) return;
-              context.beginPath();
-              context.moveTo(pts[0].x, pts[0].y);
-              for (let i = 0; i < pts.length; i++) {
-                const curr = pts[i];
-                const next = pts[(i + 1) % pts.length];
-                const isCurved = curr.handleOut && next.handleIn;
-                if (isCurved) {
-                  context.bezierCurveTo(
-                    curr.handleOut.x, curr.handleOut.y,
-                    next.handleIn.x,  next.handleIn.y,
-                    next.x,           next.y,
-                  );
-                } else {
-                  context.lineTo(next.x, next.y);
-                }
-              }
-              context.closePath();
-              context.fillStrokeShape(shape);
-            }}
-            fill={element.color}
-            opacity={0.85}
-            stroke={isSelected || isEditingVertices ? '#ffffff' : darkenHex(element.color)}
-            strokeWidth={isSelected || isEditingVertices ? 2 : 1}
-            listening={true}
-          />
+          <>
+            {/* Rect invisible que fija las dimensiones del Group para que
+                el Transformer pueda calcular getClientRect() correctamente.
+                <Shape> con sceneFunc no tiene dimensiones implícitas en Konva —
+                el Transformer usaría solo el bbox de sillas+label sin esto. */}
+            <Rect
+              x={visualBB ? visualBB.minX : 0}
+              y={visualBB ? visualBB.minY : 0}
+              width={visualBB ? visualBB.width : groupWidth}
+              height={visualBB ? visualBB.height : groupHeight}
+              fill="transparent"
+              stroke="transparent"
+              strokeWidth={0}
+              listening={false}
+              perfectDrawEnabled={false}
+            />
+            <Shape
+              name={`polygon-shape-${element.id}`}
+              sceneFunc={(context, shape) => {
+                drawPolygonPath(context, workPoints);
+                context.fillStrokeShape(shape);
+              }}
+              hitFunc={(context, shape) => {
+                // Mismo path que sceneFunc — garantiza que el hit-test siga el
+                // contorno real (incluidas curvas Bézier), no el bounding box.
+                drawPolygonPath(context, workPoints);
+                context.fillStrokeShape(shape);
+              }}
+              fill={element.color}
+              opacity={0.85}
+              stroke={isSelected || isEditingVertices ? '#ffffff' : darkenHex(element.color)}
+              strokeWidth={isSelected || isEditingVertices ? 2 : 1}
+              listening={true}
+            />
+          </>
         ) : (
           <Rect
             width={element.width}
