@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, memo } from 'react';
 import { Circle, Line } from 'react-konva';
 import {
   findVertexSnapGuides,
@@ -231,7 +231,7 @@ export default function VertexEditorOverlay({
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Líneas finas "bigotes" que conectan cada vértice con sus handles. */
-function BezierWhiskers({ pt }) {
+const BezierWhiskers = memo(function BezierWhiskers({ pt }) {
   return (
     <>
       {pt.absHandleIn && (
@@ -254,7 +254,7 @@ function BezierWhiskers({ pt }) {
       )}
     </>
   );
-}
+});
 
 /**
  * Círculos arrastrables de los handles de control Bézier.
@@ -269,7 +269,7 @@ function BezierWhiskers({ pt }) {
  * en LayoutEditorCanvas los reconozca como clicks internos al modo edición
  * y NO expulse al usuario cuando inicia el drag de un handle.
  */
-function BezierHandles({ pt, vertexIdx, elementId, onHandleDrag, onHandleDragEnd, onHandleRightClick, onClearCurve }) {
+const BezierHandles = memo(function BezierHandles({ pt, vertexIdx, elementId, onHandleDrag, onHandleDragEnd, onHandleRightClick, onClearCurve }) {
   // El estado simétrico/independiente vive en el vértice ancla, no en el handle.
   // Ambos handles (handleIn y handleOut) del mismo vértice comparten el mismo estado.
   const isSymmetric = pt.symmetric !== false; // true por defecto si undefined
@@ -313,7 +313,7 @@ function BezierHandles({ pt, vertexIdx, elementId, onHandleDrag, onHandleDragEnd
       {pt.absHandleOut && renderHandle(pt.absHandleOut, 'out')}
     </>
   );
-}
+});
 
 /**
  * Punto medio de un segmento.
@@ -321,7 +321,7 @@ function BezierHandles({ pt, vertexIdx, elementId, onHandleDrag, onHandleDragEnd
  * - Click simple → insertar vértice (onMidpointClick)
  * - Alt + DragStart → curvar el segmento (onSegmentCurve)
  */
-function MidpointHandle({ mx, my, segmentIdx, pt, next, elementId, onMidpointClick, onSegmentCurve }) {
+const MidpointHandle = memo(function MidpointHandle({ mx, my, segmentIdx, pt, next, elementId, onMidpointClick, onSegmentCurve }) {
   // Guardamos si el drag fue iniciado con Alt
   const altDragRef = useRef(false);
   // Posición inicial del midpoint al empezar el drag (para calcular deltas)
@@ -377,10 +377,20 @@ function MidpointHandle({ mx, my, segmentIdx, pt, next, elementId, onMidpointCli
       onTap={() => onMidpointClick(segmentIdx)}
     />
   );
-}
+});
 
-/** Vértice ancla arrastrable con snap y smart guides. */
-function AnchorVertex({ pt, vertexIdx, elementId, absPoints, otherElements, onVertexDrag, onVertexDragEnd, onVertexRightClick, onVertexGuideChange }) {
+/**
+ * Vértice ancla arrastrable con snap y smart guides.
+ *
+ * PERF: El snap (findVertexSnapGuides) está throttleado con rAF — se ejecuta
+ * como máximo una vez por frame de pintura (~16ms a 60fps), aunque Konva
+ * dispare dragmove más rápido. Esto elimina el freeze en polígonos con muchos
+ * vértices donde el cálculo O(n) en cada evento de mouse era el cuello de botella.
+ */
+const AnchorVertex = memo(function AnchorVertex({ pt, vertexIdx, elementId, absPoints, otherElements, onVertexDrag, onVertexDragEnd, onVertexRightClick, onVertexGuideChange }) {
+  // RAF handle para throttling del snap — un único rAF pendiente a la vez.
+  const rafRef = useRef(null);
+
   return (
     <Circle
       x={pt.absX} y={pt.absY}
@@ -392,29 +402,55 @@ function AnchorVertex({ pt, vertexIdx, elementId, absPoints, otherElements, onVe
       draggable
       onDragMove={(e) => {
         const node = e.target;
+        // Capturar la posición inmediatamente (el nodo Konva puede moverse
+        // antes del siguiente frame) y emitir el preview sin esperar al RAF.
         const absX = node.x();
         const absY = node.y();
 
-        // Otros vértices absolutos (excepto el activo) → para snap interno
-        const ownOthers = absPoints
-          .filter((_, idx) => idx !== vertexIdx)
-          .map((p) => ({ x: p.absX, y: p.absY }));
+        // Emitir el preview de posición en tiempo real SIN throttle —
+        // necesitamos que el polígono siga visualmente al cursor sin lag.
+        onVertexDrag(vertexIdx, absX, absY);
 
-        const guides = findVertexSnapGuides(
-          { x: absX, y: absY },
-          ownOthers,
-          otherElements ?? [],
-          6,
-        );
+        // Throttlear SOLO el cálculo de snap + guías visuales con rAF.
+        // Si ya hay un frame pendiente, cancelarlo y reagendar con la
+        // posición más reciente (coalescing de eventos de mouse).
+        if (rafRef.current !== null) {
+          cancelAnimationFrame(rafRef.current);
+        }
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null;
+          const currentAbsX = node.x();
+          const currentAbsY = node.y();
 
-        if (guides.vertical)   node.x(absX + guides.vertical.delta);
-        if (guides.horizontal) node.y(absY + guides.horizontal.delta);
+          const ownOthers = absPoints
+            .filter((_, idx) => idx !== vertexIdx)
+            .map((p) => ({ x: p.absX, y: p.absY }));
 
-        const snappedAbs = { x: node.x(), y: node.y() };
-        onVertexGuideChange?.(computeVertexGuideLines(snappedAbs, guides));
-        onVertexDrag(vertexIdx, node.x(), node.y());
+          const guides = findVertexSnapGuides(
+            { x: currentAbsX, y: currentAbsY },
+            ownOthers,
+            otherElements ?? [],
+            6,
+          );
+
+          if (guides.vertical)   node.x(currentAbsX + guides.vertical.delta);
+          if (guides.horizontal) node.y(currentAbsY + guides.horizontal.delta);
+
+          const snappedAbs = { x: node.x(), y: node.y() };
+          onVertexGuideChange?.(computeVertexGuideLines(snappedAbs, guides));
+
+          // Re-emitir la posición con snap aplicado si hubo corrección
+          if (guides.vertical || guides.horizontal) {
+            onVertexDrag(vertexIdx, node.x(), node.y());
+          }
+        });
       }}
       onDragEnd={(e) => {
+        // Cancelar cualquier RAF pendiente al soltar
+        if (rafRef.current !== null) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
         onVertexGuideChange?.({ vertical: null, horizontal: null });
         onVertexDragEnd(vertexIdx, e.target.x(), e.target.y());
       }}
@@ -424,4 +460,4 @@ function AnchorVertex({ pt, vertexIdx, elementId, absPoints, otherElements, onVe
       }}
     />
   );
-}
+});

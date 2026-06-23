@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { Group, Rect, Shape, Circle, Text, Transformer } from 'react-konva';
 import {
   computeMinSectionSize,
@@ -118,17 +118,20 @@ export default function SectionElement({
   const minSize   = computeMinSectionSize(element.seatLayout);
 
   // Puntos de trabajo: previewPoints durante edición (tiempo real), luego los del elemento.
-  // Declarado ANTES del useEffect del Transformer para que pueda listarse como dependencia.
-  const workPoints = (() => {
+  // useMemo evita recalcular migratePolygonPoints en renders que no cambian los puntos
+  // (p.ej. cambios de color, label, etc. que re-renderizan SectionElement por otras razones).
+  const workPoints = useMemo(() => {
     const raw = (isEditingVertices && previewPoints) ? previewPoints : element.polygonPoints;
     return raw ? migratePolygonPoints(raw) : raw;
-  })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditingVertices, previewPoints, element.polygonPoints]);
 
   // BB visual real del polígono, incluyendo puntos de control Bézier.
-  // El Transformer usa estas dimensiones para no quedarse "congelado" al curvar.
-  const visualBB = (shapeMode === 'polygon' && workPoints)
-    ? computePolygonVisualBB(workPoints)
-    : null;
+  // useMemo: solo recalcular cuando workPoints cambia, no en cada render.
+  const visualBB = useMemo(() => {
+    if (shapeMode !== 'polygon' || !workPoints) return null;
+    return computePolygonVisualBB(workPoints);
+  }, [shapeMode, workPoints]);
   const groupWidth  = visualBB ? Math.max(minSize.width,  visualBB.width)  : element.width;
   const groupHeight = visualBB ? Math.max(minSize.height, visualBB.height) : element.height;
 
@@ -146,16 +149,19 @@ export default function SectionElement({
     }
   }, [isSelected, isEditingVertices, workPoints]); // workPoints → re-evalúa al curvar/mover handles
 
-  const seatPositions = (() => {
+  const seatPositions = useMemo(() => {
     if ((element.shapeMode ?? 'rect') === 'polygon' && workPoints) {
       return distributeSeats({ ...element, polygonPoints: workPoints });
     }
     return distributeSeats(element);
-  })();
+  // distributeSeats depende de element.seatLayout y la geometría — workPoints captura la geometría
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [element.seatLayout, element.shapeMode, element.width, element.height, workPoints]);
 
-  const labelCenter = shapeMode === 'polygon' && workPoints
-    ? polyCentroid(workPoints)
-    : { x: element.width / 2, y: element.height / 2 };
+  const labelCenter = useMemo(() => {
+    if (shapeMode === 'polygon' && workPoints) return polyCentroid(workPoints);
+    return { x: element.width / 2, y: element.height / 2 };
+  }, [shapeMode, workPoints, element.width, element.height]);
 
   // ── Drag ──────────────────────────────────────────────────────────────────
   const handleDragStart = (e) => {

@@ -189,11 +189,11 @@ export default function LayoutEditorCanvas({
     if (!editingPolygonId || !vertexPreview) { onEndVertexEdit?.(); return; }
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) { onEndVertexEdit?.(); return; }
-    // Migrar y normalizar al guardar
     const migrated = migratePolygonPoints(vertexPreview);
     const patch = normalizePoints(migrated, el.x, el.y);
     onChange({ ...el, ...patch });
     setVertexPreview(null);
+    vertexPreviewRef.current = null;
     vertexSnapshotRef.current = null;
     onEndVertexEdit?.();
   }, [editingPolygonId, vertexPreview, elements, onChange, onEndVertexEdit]);
@@ -204,6 +204,7 @@ export default function LayoutEditorCanvas({
       if (el) onChange({ ...el, polygonPoints: vertexSnapshotRef.current });
     }
     setVertexPreview(null);
+    vertexPreviewRef.current = null;
     vertexSnapshotRef.current = null;
     onEndVertexEdit?.();
   }, [editingPolygonId, elements, onChange, onEndVertexEdit]);
@@ -215,15 +216,15 @@ export default function LayoutEditorCanvas({
     if (editingPolygonId) {
       const el = elements.find((e) => e.id === editingPolygonId);
       if (el?.polygonPoints) {
-        // Fase 1.12: siempre migrar al nuevo formato al entrar en edición
         const migrated = migratePolygonPoints(el.polygonPoints);
         const copy = migrated.map((p) => ({ ...p }));
         vertexSnapshotRef.current = copy;
+        vertexPreviewRef.current  = copy;
         setVertexPreview(copy);
       }
     } else {
-      // Al salir sin commit explícito (p.ej. desde el padre), limpiar
       setVertexPreview(null);
+      vertexPreviewRef.current  = null;
       vertexSnapshotRef.current = null;
     }
   }
@@ -280,34 +281,41 @@ export default function LayoutEditorCanvas({
     };
   }
 
+  // Ref que siempre contiene el valor más reciente de vertexPreview.
+  // Permite leer el preview actual en dragEnd sin depender de closures stale
+  // ni meter efectos secundarios dentro de updaters de setState.
+  const vertexPreviewRef = useRef(null);
+
   const handleVertexDrag = useCallback((vertexIdx, absX, absY) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
     setVertexPreview((prev) => {
       const pts = migratePolygonPoints(prev ?? el.polygonPoints);
-      // Solo actualiza el vértice activo — NO normaliza (evita que la figura se mueva)
-      return pts.map((p, i) =>
+      const next = pts.map((p, i) =>
         i === vertexIdx
           ? { ...p, x: absX - el.x, y: absY - el.y }
           : { ...p },
       );
+      vertexPreviewRef.current = next;
+      return next;
     });
   }, [elements, editingPolygonId]);
 
   const handleVertexDragEnd = useCallback((vertexIdx, absX, absY) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
-    setVertexPreview((prev) => {
-      const pts = migratePolygonPoints(prev ?? el.polygonPoints);
-      const raw = pts.map((p, i) =>
-        i === vertexIdx
-          ? { ...p, x: absX - el.x, y: absY - el.y }
-          : { ...p },
-      );
-      const patch = normalizePoints(raw, el.x, el.y);
-      queueMicrotask(() => onChange({ ...el, ...patch }));
-      return patch.polygonPoints;
-    });
+    // Calcular el estado final con la posición del dragEnd
+    const pts = migratePolygonPoints(vertexPreviewRef.current ?? el.polygonPoints);
+    const raw = pts.map((p, i) =>
+      i === vertexIdx
+        ? { ...p, x: absX - el.x, y: absY - el.y }
+        : { ...p },
+    );
+    const patch = normalizePoints(raw, el.x, el.y);
+    // setState y onChange en el cuerpo del callback, nunca dentro de un updater
+    setVertexPreview(patch.polygonPoints);
+    vertexPreviewRef.current = patch.polygonPoints;
+    onChange({ ...el, ...patch });
   }, [elements, editingPolygonId, onChange]);
 
   const handleMidpointClick = useCallback((insertAfterIdx) => {
@@ -324,18 +332,22 @@ export default function LayoutEditorCanvas({
         handleOut: null,
         symmetric: true,
       };
-      return [
+      const next = [
         ...pts.slice(0, insertAfterIdx + 1),
         newPt,
         ...pts.slice(insertAfterIdx + 1),
       ];
+      vertexPreviewRef.current = next;
+      return next;
     });
   }, [elements, editingPolygonId]);
 
   const handleVertexRightClick = useCallback((vertexIdx) => {
     setVertexPreview((prev) => {
       if (!prev || prev.length <= 3) return prev;
-      return prev.filter((_, i) => i !== vertexIdx);
+      const next = prev.filter((_, i) => i !== vertexIdx);
+      vertexPreviewRef.current = next;
+      return next;
     });
   }, []);
 
@@ -348,54 +360,48 @@ export default function LayoutEditorCanvas({
   /**
    * Callback del Alt+drag sobre punto medio — crea/actualiza la curva del segmento i.
    * handleOutAbs y handleInAbs ya vienen en coordenadas absolutas del canvas.
-   * Se llama continuamente durante el drag (onDragMove), así que solo actualiza
-   * el preview. El persist ocurre en onDragEnd del midpoint (que ya terminó el drag
-   * antes de llegar aquí — el commit lo hace el mismo gesto al soltar).
    */
   const handleSegmentCurve = useCallback((segmentIdx, handleOutAbs, handleInAbs) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
-    setVertexPreview((prev) => {
-      const pts     = migratePolygonPoints(prev ?? el.polygonPoints);
-      const nextIdx = (segmentIdx + 1) % pts.length;
-      const updated = pts.map((p, i) => {
-        if (i === segmentIdx) {
-          return { ...p, handleOut: { x: handleOutAbs.x - el.x, y: handleOutAbs.y - el.y } };
-        }
-        if (i === nextIdx) {
-          return { ...p, handleIn: { x: handleInAbs.x - el.x, y: handleInAbs.y - el.y } };
-        }
-        return p;
-      });
-      // Persistir inmediatamente (el midpoint drag no tiene onDragEnd significativo)
-      queueMicrotask(() => onChange({ ...el, polygonPoints: updated }));
-      return updated;
+    const pts     = migratePolygonPoints(vertexPreviewRef.current ?? el.polygonPoints);
+    const nextIdx = (segmentIdx + 1) % pts.length;
+    const updated = pts.map((p, i) => {
+      if (i === segmentIdx) {
+        return { ...p, handleOut: { x: handleOutAbs.x - el.x, y: handleOutAbs.y - el.y } };
+      }
+      if (i === nextIdx) {
+        return { ...p, handleIn: { x: handleInAbs.x - el.x, y: handleInAbs.y - el.y } };
+      }
+      return p;
     });
+    vertexPreviewRef.current = updated;
+    setVertexPreview(updated);
+    // onChange directo en el cuerpo — no dentro de un updater
+    onChange({ ...el, polygonPoints: updated });
   }, [elements, editingPolygonId, onChange]);
 
   /**
    * Preview en tiempo real del drag de un handle de control.
    * side: 'in' | 'out'
-   * NO llama a normalizePoints — mismo patrón que handleVertexDrag.
+   * Solo actualiza el preview visual — no persiste (eso lo hace handleHandleDragEnd).
    */
   const handleHandleDrag = useCallback((vertexIdx, side, absX, absY) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
     setVertexPreview((prev) => {
       const pts = migratePolygonPoints(prev ?? el.polygonPoints);
-      return pts.map((p, i) => {
+      const next = pts.map((p, i) => {
         if (i !== vertexIdx) return p;
         const relX = absX - el.x;
         const relY = absY - el.y;
         if (side === 'out') {
           const updated = { ...p, handleOut: { x: relX, y: relY } };
-          // Si es simétrico y tiene handleIn, reflejar
           if (p.symmetric && p.handleIn !== null) {
             updated.handleIn = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
           }
           return updated;
         } else {
-          // side === 'in'
           const updated = { ...p, handleIn: { x: relX, y: relY } };
           if (p.symmetric && p.handleOut !== null) {
             updated.handleOut = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
@@ -403,39 +409,41 @@ export default function LayoutEditorCanvas({
           return updated;
         }
       });
+      vertexPreviewRef.current = next;
+      return next;
     });
   }, [elements, editingPolygonId]);
 
   /**
    * Commit del drag de un handle — normaliza y persiste.
+   * onChange se llama en el cuerpo del callback, NUNCA dentro de un updater.
    */
   const handleHandleDragEnd = useCallback((vertexIdx, side, absX, absY) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
-    setVertexPreview((prev) => {
-      const pts = migratePolygonPoints(prev ?? el.polygonPoints);
-      const raw = pts.map((p, i) => {
-        if (i !== vertexIdx) return p;
-        const relX = absX - el.x;
-        const relY = absY - el.y;
-        if (side === 'out') {
-          const updated = { ...p, handleOut: { x: relX, y: relY } };
-          if (p.symmetric && p.handleIn !== null) {
-            updated.handleIn = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
-          }
-          return updated;
-        } else {
-          const updated = { ...p, handleIn: { x: relX, y: relY } };
-          if (p.symmetric && p.handleOut !== null) {
-            updated.handleOut = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
-          }
-          return updated;
+    const pts = migratePolygonPoints(vertexPreviewRef.current ?? el.polygonPoints);
+    const raw = pts.map((p, i) => {
+      if (i !== vertexIdx) return p;
+      const relX = absX - el.x;
+      const relY = absY - el.y;
+      if (side === 'out') {
+        const updated = { ...p, handleOut: { x: relX, y: relY } };
+        if (p.symmetric && p.handleIn !== null) {
+          updated.handleIn = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
         }
-      });
-      const patch = normalizePoints(raw, el.x, el.y);
-      queueMicrotask(() => onChange({ ...el, ...patch }));
-      return patch.polygonPoints;
+        return updated;
+      } else {
+        const updated = { ...p, handleIn: { x: relX, y: relY } };
+        if (p.symmetric && p.handleOut !== null) {
+          updated.handleOut = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
+        }
+        return updated;
+      }
     });
+    const patch = normalizePoints(raw, el.x, el.y);
+    setVertexPreview(patch.polygonPoints);
+    vertexPreviewRef.current = patch.polygonPoints;
+    onChange({ ...el, ...patch });
   }, [elements, editingPolygonId, onChange]);
 
   /**
@@ -444,50 +452,42 @@ export default function LayoutEditorCanvas({
   const handleHandleRightClick = useCallback((vertexIdx) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
-    setVertexPreview((prev) => {
-      const pts = migratePolygonPoints(prev ?? el.polygonPoints);
-      const updated = pts.map((p, i) =>
-        i === vertexIdx ? { ...p, symmetric: !p.symmetric } : p,
-      );
-      queueMicrotask(() => onChange({ ...el, polygonPoints: updated }));
-      return updated;
-    });
+    const pts = migratePolygonPoints(vertexPreviewRef.current ?? el.polygonPoints);
+    const updated = pts.map((p, i) =>
+      i === vertexIdx ? { ...p, symmetric: !p.symmetric } : p,
+    );
+    vertexPreviewRef.current = updated;
+    setVertexPreview(updated);
+    onChange({ ...el, polygonPoints: updated });
   }, [elements, editingPolygonId, onChange]);
 
   /**
-   * Shift+click derecho sobre un handle — elimina la curva del segmento
-   * adyacente al vértice. Limpia handleOut del vértice i y handleIn del
-   * vértice i+1 (si side='out'), o handleIn del vértice i y handleOut del
-   * vértice i-1 (si side='in').
-   * El midpoint de inserción reaparecerá automáticamente al perder los handles.
+   * Shift+click derecho sobre un handle — elimina la curva del segmento adyacente.
    */
   const handleClearCurve = useCallback((vertexIdx, side) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
-    setVertexPreview((prev) => {
-      const pts = migratePolygonPoints(prev ?? el.polygonPoints);
-      const n   = pts.length;
-      let updated;
-      if (side === 'out') {
-        // Segmento que sale de vertexIdx hacia vertexIdx+1
-        const nextIdx = (vertexIdx + 1) % n;
-        updated = pts.map((p, i) => {
-          if (i === vertexIdx) return { ...p, handleOut: null };
-          if (i === nextIdx)   return { ...p, handleIn:  null };
-          return p;
-        });
-      } else {
-        // Segmento que entra a vertexIdx desde vertexIdx-1
-        const prevIdx = (vertexIdx - 1 + n) % n;
-        updated = pts.map((p, i) => {
-          if (i === vertexIdx) return { ...p, handleIn:  null };
-          if (i === prevIdx)   return { ...p, handleOut: null };
-          return p;
-        });
-      }
-      queueMicrotask(() => onChange({ ...el, polygonPoints: updated }));
-      return updated;
-    });
+    const pts = migratePolygonPoints(vertexPreviewRef.current ?? el.polygonPoints);
+    const n   = pts.length;
+    let updated;
+    if (side === 'out') {
+      const nextIdx = (vertexIdx + 1) % n;
+      updated = pts.map((p, i) => {
+        if (i === vertexIdx) return { ...p, handleOut: null };
+        if (i === nextIdx)   return { ...p, handleIn:  null };
+        return p;
+      });
+    } else {
+      const prevIdx = (vertexIdx - 1 + n) % n;
+      updated = pts.map((p, i) => {
+        if (i === vertexIdx) return { ...p, handleIn:  null };
+        if (i === prevIdx)   return { ...p, handleOut: null };
+        return p;
+      });
+    }
+    vertexPreviewRef.current = updated;
+    setVertexPreview(updated);
+    onChange({ ...el, polygonPoints: updated });
   }, [elements, editingPolygonId, onChange]);
 
   // ── Stage mouse handlers ──────────────────────────────────────────────────
