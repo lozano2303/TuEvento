@@ -145,6 +145,14 @@ export default function EventLayoutEditorDemo() {
     setEditingPolygonId(null);
   }, []);
 
+  // ── Formas sugeridas (preset) ─────────────────────────────────────────────
+  // onApplyPreset se pasa a PropertiesPanel y delega a LayoutEditorCanvas
+  // via una ref para no recrear el callback en cada render.
+  const applyPresetRef = useRef(null);
+  const handleApplyPreset = useCallback((newPolygonPoints) => {
+    applyPresetRef.current?.(newPolygonPoints);
+  }, []);
+
   // ── Zoom ──────────────────────────────────────────────────────────────────
   const handleZoomIn    = () => setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)));
   const handleZoomOut   = () => setZoom((z) => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)));
@@ -213,6 +221,7 @@ export default function EventLayoutEditorDemo() {
           onZoomChange={setZoom}
           containerRef={containerRef}
           onNormalizePositions={(els) => setElements(normalizePositions(els))}
+          onRegisterApplyPreset={(fn) => { applyPresetRef.current = fn; }}
         />
 
         <PropertiesPanel
@@ -224,6 +233,7 @@ export default function EventLayoutEditorDemo() {
           onEndVertexEdit={handleEndVertexEdit}
           canvasSize={canvasSize}
           onCanvasSizeChange={setManualCanvasSize}
+          onApplyPreset={handleApplyPreset}
         />
       </div>
     </div>

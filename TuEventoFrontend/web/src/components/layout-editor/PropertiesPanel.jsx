@@ -1,4 +1,4 @@
-import { computeMaxSeats, normalizeSeatLayout, polyBoundingBox, migratePolygonPoints } from './layoutEditorUtils';
+import { computeMaxSeats, normalizeSeatLayout, polyBoundingBox, migratePolygonPoints, getPresetPolygonPoints } from './layoutEditorUtils';
 
 const SECTION_COLORS = [
   { label: 'Morado', value: '#7C3AED' },
@@ -18,6 +18,43 @@ const INFRA_COLORS = [
   { label: 'Gris',    value: '#475569' },
 ];
 
+// ── Formas sugeridas: íconos SVG inline ──────────────────────────────────────
+const PRESET_ICONS = {
+  rect: (stroke) => (
+    <polyline points="4,4 36,4 36,36 4,36 4,4" stroke={stroke} strokeWidth="2" fill="none" />
+  ),
+  circle: (stroke) => (
+    <ellipse cx="20" cy="20" rx="16" ry="16" stroke={stroke} strokeWidth="2" fill="none" />
+  ),
+  semicircle: (stroke) => (
+    <path d="M4,36 L4,20 Q4,4 20,4 Q36,4 36,20 L36,36 Z" stroke={stroke} strokeWidth="2" fill="none" />
+  ),
+  trapezoid: (stroke) => (
+    <polygon points="8,6 32,6 36,34 4,34" stroke={stroke} strokeWidth="2" fill="none" />
+  ),
+  triangle: (stroke) => (
+    <polygon points="20,4 36,36 4,36" stroke={stroke} strokeWidth="2" fill="none" />
+  ),
+  hexagon: (stroke) => (
+    <polygon points="20,4 36,14 36,26 20,36 4,26 4,14" stroke={stroke} strokeWidth="2" fill="none" />
+  ),
+  lshape: (stroke) => (
+    <polygon points="4,4 20,4 20,20 36,20 36,36 4,36" stroke={stroke} strokeWidth="2" fill="none" />
+  ),
+};
+
+const PRESET_LABELS = {
+  rect:       'Rect.',
+  circle:     'Círculo',
+  semicircle: 'Semicírc.',
+  trapezoid:  'Trapecio',
+  triangle:   'Triáng.',
+  hexagon:    'Hexág.',
+  lshape:     'L',
+};
+
+const PRESET_ORDER = ['rect', 'circle', 'semicircle', 'trapezoid', 'triangle', 'hexagon', 'lshape'];
+
 export default function PropertiesPanel({
   element,
   onChange,
@@ -27,6 +64,7 @@ export default function PropertiesPanel({
   onEndVertexEdit,
   canvasSize,
   onCanvasSizeChange,
+  onApplyPreset,
 }) {
   const inputClass =
     'w-full bg-background border border-surfaceAlt rounded px-2 py-1.5 text-xs text-textPrimary ' +
@@ -233,6 +271,43 @@ export default function PropertiesPanel({
                 >
                   ✓ Guardar forma
                 </button>
+
+                {/* ── Formas sugeridas ── */}
+                {onApplyPreset && (
+                  <div className="pt-1">
+                    <span className="text-[9px] font-semibold text-textMuted uppercase tracking-wider block mb-1.5">
+                      Formas sugeridas
+                    </span>
+                    <div className="grid grid-cols-4 gap-1">
+                      {PRESET_ORDER.map((preset) => (
+                        <button
+                          key={preset}
+                          title={PRESET_LABELS[preset]}
+                          onClick={() => {
+                            const pts = getPresetPolygonPoints(preset, element.width, element.height);
+                            onApplyPreset(pts);
+                          }}
+                          className="flex flex-col items-center justify-center gap-0.5 rounded-md
+                                     bg-surfaceAlt hover:bg-accent/20 border border-transparent
+                                     hover:border-accent/40 transition-colors cursor-pointer"
+                          style={{ width: '100%', aspectRatio: '1 / 1', padding: '4px' }}
+                        >
+                          <svg
+                            viewBox="0 0 40 40"
+                            width="28" height="28"
+                            xmlns="http://www.w3.org/2000/svg"
+                            style={{ overflow: 'visible' }}
+                          >
+                            {PRESET_ICONS[preset]?.(element.color ?? '#7C3AED')}
+                          </svg>
+                          <span className="text-[8px] text-textMuted leading-none truncate w-full text-center">
+                            {PRESET_LABELS[preset]}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-1.5">
