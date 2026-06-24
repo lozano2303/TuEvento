@@ -298,12 +298,91 @@ export const polyBoundingBox = (points) => {
 };
 
 /**
+ * Fase 1.12 Prompt B: Subdivide un segmento Bézier cúbico en N puntos {x,y}.
+ *
+ * P0 = vértice ancla i, P1 = handleOut de i, P2 = handleIn de i+1, P3 = vértice ancla i+1.
+ * Usa la fórmula estándar B(t) = (1-t)³P0 + 3(1-t)²tP1 + 3(1-t)t²P2 + t³P3.
+ *
+ * @param {{ x,y }} p0  — punto de inicio (ancla i)
+ * @param {{ x,y }} p1  — handle de salida de p0
+ * @param {{ x,y }} p2  — handle de entrada de p3
+ * @param {{ x,y }} p3  — punto de llegada (ancla i+1)
+ * @param {number}  n   — número de puntos de subdivisión (sin incluir extremos)
+ * @returns {{ x, y }[]}  — n puntos intermedios a lo largo de la curva
+ */
+function subdivideBezierSegment(p0, p1, p2, p3, n = 16) {
+  const pts = [];
+  for (let k = 1; k <= n; k++) {
+    const t  = k / (n + 1);
+    const mt = 1 - t;
+    pts.push({
+      x: mt * mt * mt * p0.x + 3 * mt * mt * t * p1.x + 3 * mt * t * t * p2.x + t * t * t * p3.x,
+      y: mt * mt * mt * p0.y + 3 * mt * mt * t * p1.y + 3 * mt * t * t * p2.y + t * t * t * p3.y,
+    });
+  }
+  return pts;
+}
+
+/**
+ * Fase 1.12 Prompt B: "Aplana" el contorno de un polígono con curvas Bézier
+ * en un array de puntos {x,y} que aproxima fielmente el contorno visual real.
+ *
+ * Segmentos RECTOS aportan solo sus dos anclas (comportamiento idéntico al anterior).
+ * Segmentos CURVOS aportan: ancla i + N puntos de subdivisión + ancla i+1.
+ * Los extremos compartidos entre segmentos consecutivos NO se duplican.
+ *
+ * El resultado es un polígono "denso" que el algoritmo even-odd puede usar
+ * directamente — la lógica interna del even-odd no cambia, solo su input.
+ *
+ * N = 16 puntos por segmento curvo:
+ *   • Para curvas de 50–300px de longitud → error < 0.5px respecto a la cúbica real.
+ *   • Más que suficiente para que las sillas sigan el contorno sin costuras visibles.
+ *   • Para un polígono típico (4-8 curvas) produce ≤ 8 × (16+2) = 144 puntos totales,
+ *     completamente manejable para el algoritmo O(n×rows) del even-odd.
+ *
+ * @param {Array<{x,y,handleIn?,handleOut?,symmetric?}>} points — formato nuevo (migrado)
+ * @returns {{ x, y }[]}  — contorno aplanado, listo para polyHorizontalIntersections
+ */
+export const flattenPolygonForFill = (points) => {
+  if (!points || points.length < 3) return points ?? [];
+
+  const SUBDIVISIONS = 16;
+  const flat = [];
+
+  for (let i = 0; i < points.length; i++) {
+    const curr = points[i];
+    const next = points[(i + 1) % points.length];
+
+    // Incluir el vértice ancla actual (sin duplicar el punto de cierre)
+    flat.push({ x: curr.x, y: curr.y });
+
+    // Segmento curvo: interpolar con Bézier cúbica
+    if (curr.handleOut && next.handleIn) {
+      const subdivided = subdivideBezierSegment(
+        { x: curr.x,           y: curr.y           },
+        { x: curr.handleOut.x, y: curr.handleOut.y },
+        { x: next.handleIn.x,  y: next.handleIn.y  },
+        { x: next.x,           y: next.y           },
+        SUBDIVISIONS,
+      );
+      for (const pt of subdivided) flat.push(pt);
+    }
+    // Segmento recto: solo las dos anclas (ya incluida la ancla de inicio arriba)
+    // El ancla de llegada (next) se incluirá en la siguiente iteración como curr
+  }
+
+  return flat;
+};
+
+/**
  * Fase 1.5 / hotfix: algoritmo even-odd que calcula las filas desde el rango
  * vertical REAL del polígono. No usa `rows` como parámetro de densidad fija —
  * en su lugar calcula cuántas filas caben físicamente dado seatRadius y gap.
  *
- * Fase 1.12: usa solo las coordenadas ancla (x,y) de cada vértice — ignora
- * handleIn/handleOut intencionalmente (se corrige en Prompt B).
+ * Fase 1.12 Prompt B: antes de calcular intersecciones, aplana el contorno
+ * con flattenPolygonForFill para que los segmentos curvos sean seguidos
+ * fielmente (subdivisión Bézier con N=16 puntos por segmento curvo).
+ * Segmentos rectos no se ven afectados.
  *
  * seatLayout debe tener: { seatRadius, gap } — rows/cols se ignoran aquí.
  * Devuelve TODAS las posiciones que caben físicamente en el polígono.
@@ -316,7 +395,12 @@ export const computePolygonSeatRows = (polygonPoints, seatLayout) => {
   const r = seatRadius ?? 7;
   const g = gap        ?? 4;
 
-  const bb  = polyBoundingBox(polygonPoints);
+  // Fase 1.12 Prompt B: aplanar el contorno con subdivisión Bézier antes de
+  // calcular intersecciones. Para polígonos sin curvas esto es equivalente al
+  // array de vértices ancla original — sin cambio de comportamiento.
+  const flatPoints = flattenPolygonForFill(polygonPoints);
+
+  const bb  = polyBoundingBox(flatPoints);
   const pad = 6;
   const minY = bb.minY + pad;
   const maxY = bb.maxY - pad;
@@ -332,7 +416,7 @@ export const computePolygonSeatRows = (polygonPoints, seatLayout) => {
     // Y del centro de esta fila — en coordenadas relativas al elemento
     const y = minY + (row + 0.5) * ((maxY - minY) / maxRows);
 
-    const xs = polyHorizontalIntersections(polygonPoints, y);
+    const xs = polyHorizontalIntersections(flatPoints, y);
     if (xs.length < 2) continue;
     xs.sort((a, b) => a - b);
 
@@ -363,8 +447,9 @@ export const computePolygonSeatRows = (polygonPoints, seatLayout) => {
 
 /**
  * Calcula las intersecciones de una línea horizontal (y = scanY) con
- * los bordes del polígono. Acepta el nuevo formato [{x,y,...}].
- * Usa solo coordenadas ancla — ignora curvas (Prompt A).
+ * los bordes del polígono. Acepta el nuevo formato [{x,y,...}] o {x,y}.
+ * Fase 1.12 Prompt B: recibe el contorno aplanado (flatPoints) que ya incluye
+ * la subdivisión Bézier — todos los segmentos son tratados como rectos aquí.
  * Devuelve un array de valores X de intersección.
  */
 function polyHorizontalIntersections(points, scanY) {
