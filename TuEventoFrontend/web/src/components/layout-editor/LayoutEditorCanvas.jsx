@@ -39,7 +39,8 @@ export default function LayoutEditorCanvas({
   onStartVertexEdit,
   onEndVertexEdit,
   onAddElement,
-  onNormalizePositions,  // Fase 1.11: normalizar coords negativas tras dragEnd
+  onNormalizePositions,
+  onRegisterApplyPreset, // Formas sugeridas: registra handleApplyPreset en el padre
   zoom,
   onZoomChange,
   containerRef,
@@ -208,6 +209,29 @@ export default function LayoutEditorCanvas({
     vertexSnapshotRef.current = null;
     onEndVertexEdit?.();
   }, [editingPolygonId, elements, onChange, onEndVertexEdit]);
+
+  /**
+   * Aplica un preset de forma al elemento en edición.
+   * Actualiza preview, ref y snapshot — el usuario sigue en modo edición
+   * y Escape revertirá al preset (no a la forma anterior al preset).
+   */
+  const handleApplyPreset = useCallback((newPolygonPoints) => {
+    if (!editingPolygonId) return;
+    const el = elements.find((e) => e.id === editingPolygonId);
+    if (!el) return;
+    const copy = newPolygonPoints.map((p) => ({ ...p }));
+    // Actualizar snapshot: Escape ahora revierte al preset recién aplicado
+    vertexSnapshotRef.current = copy;
+    vertexPreviewRef.current  = copy;
+    setVertexPreview(copy);
+    // Persistir en el estado del elemento (shapeMode puede ya ser 'polygon')
+    onChange({ ...el, shapeMode: 'polygon', polygonPoints: copy });
+  }, [editingPolygonId, elements, onChange]);
+
+  // Registrar el handler en el padre para que PropertiesPanel lo invoque
+  useEffect(() => {
+    onRegisterApplyPreset?.(handleApplyPreset);
+  }, [handleApplyPreset, onRegisterApplyPreset]);
 
   // Inicializar preview y snapshot al entrar/salir del modo edición.
   // useEffect garantiza que la inicialización ocurre DESPUÉS de que React
