@@ -69,6 +69,8 @@ function normalizePositions(elements) {
   return elements.map((el) => ({ ...el, x: el.x + offsetX, y: el.y + offsetY }));
 }
 
+const MAX_HISTORY = 15;
+
 export default function EventLayoutEditorDemo() {
   const [elements,         setElements]         = useState(INITIAL_ELEMENTS);
   const [selectedIds,      setSelectedIds]      = useState([]);
@@ -78,6 +80,10 @@ export default function EventLayoutEditorDemo() {
   // El canvas real = max(manualCanvasSize, bboxDeElementos + margen).
   const [manualCanvasSize, setManualCanvasSize] = useState(CANVAS_DEFAULT_MANUAL);
   const containerRef = useRef();
+
+  // ── Undo / Redo ───────────────────────────────────────────────────────────
+  const [history, setHistory] = useState([]);   // snapshots anteriores de elements
+  const [future,  setFuture]  = useState([]);   // snapshots para redo
 
   // ── Fase 1.11: canvasSize derivado — siempre envuelve a los elementos ─────
   const canvasSize = useMemo(() => {
@@ -105,9 +111,14 @@ export default function EventLayoutEditorDemo() {
   }, []);
 
   // ── Modificar elemento ────────────────────────────────────────────────────
+  // Empuja al historial antes de aplicar el cambio.
   // Sin reconcileCanvas ni setCanvasSize — canvasSize se deriva automáticamente.
   const handleChange = useCallback((updated) => {
-    setElements((prev) => prev.map((el) => (el.id === updated.id ? updated : el)));
+    setElements((prev) => {
+      setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), prev]);
+      setFuture([]);
+      return prev.map((el) => (el.id === updated.id ? updated : el));
+    });
   }, []);
 
   // ── Drag grupal ───────────────────────────────────────────────────────────
@@ -131,7 +142,23 @@ export default function EventLayoutEditorDemo() {
   // ── Eliminar ──────────────────────────────────────────────────────────────
   const handleDelete = useCallback(() => {
     setEditingPolygonId(null);
-    setElements((prev) => prev.filter((el) => !selectedIds.includes(el.id)));
+    setElements((prev) => {
+      setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), prev]);
+      setFuture([]);
+      return prev.filter((el) => !selectedIds.includes(el.id));
+    });
+    setSelectedIds([]);
+  }, [selectedIds]);
+
+  // ── Eliminar seleccionados por teclado ────────────────────────────────────
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedIds.length === 0) return;
+    setEditingPolygonId(null);
+    setElements((prev) => {
+      setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), prev]);
+      setFuture([]);
+      return prev.filter((el) => !selectedIds.includes(el.id));
+    });
     setSelectedIds([]);
   }, [selectedIds]);
 
@@ -152,6 +179,64 @@ export default function EventLayoutEditorDemo() {
   const handleApplyPreset = useCallback((newPolygonPoints) => {
     applyPresetRef.current?.(newPolygonPoints);
   }, []);
+
+  // ── Undo ──────────────────────────────────────────────────────────────────
+  const handleUndo = useCallback(() => {
+    setHistory((h) => {
+      if (h.length === 0) return h;
+      const prev = h[h.length - 1];
+      setFuture((f) => [elements, ...f.slice(0, MAX_HISTORY - 1)]);
+      setElements(prev);
+      return h.slice(0, -1);
+    });
+  }, [elements]);
+
+  // ── Redo ──────────────────────────────────────────────────────────────────
+  const handleRedo = useCallback(() => {
+    setFuture((f) => {
+      if (f.length === 0) return f;
+      const next = f[0];
+      setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), elements]);
+      setElements(next);
+      return f.slice(1);
+    });
+  }, [elements]);
+
+  // ── Atajos de teclado globales ─────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const tag = document.activeElement?.tagName;
+      const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+      if (isInput) return;
+
+      // Undo
+      if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+      // Redo
+      if ((e.ctrlKey && e.shiftKey && e.key === 'z') || (e.ctrlKey && e.key === 'y')) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+      // Eliminar seleccionados
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0) {
+        e.preventDefault();
+        handleDeleteSelected();
+        return;
+      }
+      // Deseleccionar
+      if (e.key === 'Escape' && selectedIds.length > 0 && !editingPolygonId) {
+        e.preventDefault();
+        setSelectedIds([]);
+        return;
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleUndo, handleRedo, selectedIds, handleDeleteSelected, editingPolygonId]);
 
   // ── Zoom ──────────────────────────────────────────────────────────────────
   const handleZoomIn    = () => setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)));
@@ -194,11 +279,17 @@ export default function EventLayoutEditorDemo() {
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onResetZoom={handleResetZoom}
+        canUndo={history.length > 0}
+        canRedo={future.length > 0}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
         onClear={() => {
           setElements([]);
           setSelectedIds([]);
           setManualCanvasSize(CANVAS_DEFAULT_MANUAL);
           setEditingPolygonId(null);
+          setHistory([]);
+          setFuture([]);
         }}
       />
 
