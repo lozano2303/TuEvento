@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useMemo } from 'react';
+import { useRef, useState, useCallback, useMemo, useEffect} from 'react';
 import { Stage, Layer, Line, Rect } from 'react-konva';
 import SectionElement from './elements/SectionElement';
 import InfraElement from './elements/InfraElement';
@@ -209,10 +209,11 @@ export default function LayoutEditorCanvas({
     onEndVertexEdit?.();
   }, [editingPolygonId, elements, onChange, onEndVertexEdit]);
 
-  // Inicializar preview y snapshot al entrar en modo edición
-  const prevEditingPolygonId = useRef(null);
-  if (editingPolygonId !== prevEditingPolygonId.current) {
-    prevEditingPolygonId.current = editingPolygonId;
+  // Inicializar preview y snapshot al entrar/salir del modo edición.
+  // useEffect garantiza que la inicialización ocurre DESPUÉS de que React
+  // commitea el render, eliminando la carrera entre commitVertexEdit de la
+  // sesión anterior y setVertexPreview de la nueva.
+  useEffect(() => {
     if (editingPolygonId) {
       const el = elements.find((e) => e.id === editingPolygonId);
       if (el?.polygonPoints) {
@@ -227,7 +228,7 @@ export default function LayoutEditorCanvas({
       vertexPreviewRef.current  = null;
       vertexSnapshotRef.current = null;
     }
-  }
+  }, [editingPolygonId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Fase 1.8: Escape → descartar cambios de vértices ─────────────────────
   // Usamos un ref para que el listener tenga siempre la versión más reciente
