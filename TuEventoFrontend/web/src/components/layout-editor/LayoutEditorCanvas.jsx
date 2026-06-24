@@ -259,18 +259,22 @@ export default function LayoutEditorCanvas({
   // sin necesidad de re-registrar con cada render.
   const discardRef = useRef(discardVertexEdit);
   discardRef.current = discardVertexEdit;
+  const commitRef = useRef(commitVertexEdit);
+  commitRef.current = commitVertexEdit;
   const editingRef = useRef(editingPolygonId);
   editingRef.current = editingPolygonId;
 
   // El listener se registra una sola vez al montar el componente.
   useCallback(() => {}, []); // eslint lint-hint: no-op para satisfacer orden de hooks
-  // Registrar Escape como efecto de montaje usando ref estables:
+  // Registrar Escape/Enter como efecto de montaje usando ref estables:
   const escapeRegistered = useRef(false);
   if (!escapeRegistered.current) {
     escapeRegistered.current = true;
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && editingRef.current) discardRef.current();
+        if (!editingRef.current) return;
+        if (e.key === 'Escape') discardRef.current();
+        if (e.key === 'Enter') { e.preventDefault(); commitRef.current(); }
       });
     }
   }

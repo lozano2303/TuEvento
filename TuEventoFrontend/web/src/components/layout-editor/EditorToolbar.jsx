@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw, Code2, Trash2, Save, X } from 'lucide-react';
 import { serializeLayout } from './layoutEditorUtils';
 
-export default function EditorToolbar({ elements, canvasSize, zoom, onZoomIn, onZoomOut, onResetZoom, onClear }) {
+export default function EditorToolbar({ elements, canvasSize, zoom, onZoomIn, onZoomOut, onResetZoom, onClear, canUndo, canRedo, onUndo, onRedo }) {
   const [showJson, setShowJson] = useState(false);
   const [saveMsg, setSaveMsg] = useState(null);
 
@@ -60,6 +60,34 @@ export default function EditorToolbar({ elements, canvasSize, zoom, onZoomIn, on
         <span className="text-textMuted text-xs">
           {elements.length} elemento{elements.length !== 1 ? 's' : ''}
         </span>
+
+        <div className="w-px h-5 bg-surfaceAlt" />
+
+        {/* Undo / Redo */}
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            title="Deshacer (Ctrl+Z)"
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors
+                       text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt
+                       disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-textSecondary"
+          >
+            <span className="text-base leading-none">↩</span>
+            <span className="hidden sm:inline">Deshacer</span>
+          </button>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            title="Rehacer (Ctrl+Shift+Z)"
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors
+                       text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt
+                       disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-textSecondary"
+          >
+            <span className="text-base leading-none">↪</span>
+            <span className="hidden sm:inline">Rehacer</span>
+          </button>
+        </div>
 
         <div className="flex-1" />
 
