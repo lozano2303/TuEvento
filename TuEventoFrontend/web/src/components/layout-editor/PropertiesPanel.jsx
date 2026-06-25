@@ -380,18 +380,6 @@ export default function PropertiesPanel({
           </div>
         )}
 
-        {/* Rotación */}
-        <div>
-          <label className={labelClass}>Rotación ({Math.round(element.rotation ?? 0)}°)</label>
-          <input
-            type="range" min={0} max={360} step={1}
-            value={element.rotation ?? 0}
-            disabled={isEditingVertices}
-            onChange={(e) => update({ rotation: Number(e.target.value) })}
-            className="w-full accent-primary"
-          />
-        </div>
-
         {/* Color */}
         <div>
           <label className={labelClass}>Color</label>

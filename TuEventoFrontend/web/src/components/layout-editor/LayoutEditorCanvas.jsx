@@ -5,7 +5,7 @@ import InfraElement from './elements/InfraElement';
 import VertexEditorOverlay from './VertexEditorOverlay';
 import {
   generateId, snapToGrid, rectsIntersect,
-  findSnapGuides, migratePolygonPoints,
+  findSnapGuides, migratePolygonPoints, getElementAABB,
 } from './layoutEditorUtils';
 
 const GRID_SIZE          = 20;
@@ -31,6 +31,7 @@ export default function LayoutEditorCanvas({
   elements,
   selectedIds,
   canvasSize,
+  canvasSizeRef,
   onCanvasSizeChange,
   editingPolygonId,
   onSelect,
@@ -39,7 +40,6 @@ export default function LayoutEditorCanvas({
   onStartVertexEdit,
   onEndVertexEdit,
   onAddElement,
-  onNormalizePositions,
   onRegisterApplyPreset, // Formas sugeridas: registra handleApplyPreset en el padre
   zoom,
   onZoomChange,
@@ -47,6 +47,13 @@ export default function LayoutEditorCanvas({
 }) {
   const stageRef = useRef();
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+
+  // Refs estables para zoom y stagePos — usados en dragBoundFunc para evitar closures stale
+  const zoomRef     = useRef(zoom);
+  const stagePosRef = useRef(stagePos);
+  const stageRefForBound = stageRef; // alias para pasar a elementos
+  zoomRef.current     = zoom;
+  stagePosRef.current = stagePos;
 
   // Pan (click derecho)
   const panState = useRef({ active: false, startPointer: null, startStagePos: null });
@@ -598,7 +605,10 @@ export default function LayoutEditorCanvas({
     if (isRubberBand.current && selBox) {
       if (selBox.width > 5 || selBox.height > 5) {
         const sel = elements
-          .filter((el) => rectsIntersect(selBox, { x: el.x, y: el.y, width: el.width, height: el.height }))
+          .filter((el) => {
+            const aabb = getElementAABB(el);
+            return rectsIntersect(selBox, { x: aabb.minX, y: aabb.minY, width: aabb.maxX - aabb.minX, height: aabb.maxY - aabb.minY });
+          })
           .map((el) => el.id);
         onSelect(sel.length > 0 ? sel : []);
       }
@@ -692,12 +702,8 @@ export default function LayoutEditorCanvas({
   const handleElementDragEnd = useCallback((updated) => {
     setActiveGuides({ vertical: null, horizontal: null });
     setActiveVertexGuides({ vertical: null, horizontal: null });
-    // Fase 1.11: persistir el elemento y luego normalizar si tiene coords negativas
     onChange(updated);
-    // Normalizar el array completo con el elemento actualizado
-    const next = elements.map((el) => (el.id === updated.id ? updated : el));
-    onNormalizePositions?.(next);
-  }, [elements, onChange, onNormalizePositions]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [onChange]);
 
   // ── Fase 1.11: handleElementChange simplificado ───────────────────────────
   // canvasSize ya es un valor derivado en el padre — no hay que expandir aquí.
@@ -750,7 +756,6 @@ export default function LayoutEditorCanvas({
               : el;
 
             const sharedProps = {
-              key:       el.id,
               element:   displayEl,
               isSelected,
               onSelect:  () => onSelect([el.id]),
@@ -760,11 +765,14 @@ export default function LayoutEditorCanvas({
               onGroupDragStart: isMulti ? handleGroupDragStart : undefined,
               onGroupDragMove:  isMulti ? handleGroupDragMove  : undefined,
               onGroupDragEnd:   isMulti ? handleGroupDragEnd   : undefined,
+              canvasSize,
+              canvasSizeRef,
             };
 
             if (el.type === 'section') {
               return (
                 <SectionElement
+                  key={el.id}
                   {...sharedProps}
                   isEditingVertices={isEditingThis}
                   previewPoints={isEditingThis ? vertexPreview : null}
@@ -772,7 +780,7 @@ export default function LayoutEditorCanvas({
                 />
               );
             }
-            return <InfraElement {...sharedProps} />;
+            return <InfraElement key={el.id} {...sharedProps} />;
           })}
 
           {/* Rubber-band */}

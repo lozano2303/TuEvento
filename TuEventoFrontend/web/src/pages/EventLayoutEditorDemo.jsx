@@ -3,7 +3,7 @@ import ElementPalette from '../components/layout-editor/ElementPalette';
 import LayoutEditorCanvas from '../components/layout-editor/LayoutEditorCanvas';
 import PropertiesPanel from '../components/layout-editor/PropertiesPanel';
 import EditorToolbar from '../components/layout-editor/EditorToolbar';
-import { generateId } from '../components/layout-editor/layoutEditorUtils';
+import { generateId, getElementAABB, CANVAS_MARGIN } from '../components/layout-editor/layoutEditorUtils';
 
 const INITIAL_ELEMENTS = [
   {
@@ -47,7 +47,6 @@ const INITIAL_ELEMENTS = [
 // ── Constantes de canvas ──────────────────────────────────────────────────────
 const CANVAS_MIN_W  = 1200;
 const CANVAS_MIN_H  = 800;
-const CANVAS_MARGIN = 150;
 const CANVAS_DEFAULT_MANUAL = { width: CANVAS_MIN_W, height: CANVAS_MIN_H };
 
 const ZOOM_MIN  = 0.2;
@@ -55,18 +54,21 @@ const ZOOM_MAX  = 4;
 const ZOOM_STEP = 0.15;
 
 /**
- * Normaliza las posiciones de los elementos para que ninguno tenga
- * coords menores que CANVAS_MARGIN.
- * Solo se llama en dragEnd, nunca durante el drag.
+ * Normaliza las posiciones de los elementos para que ningún AABB rotado
+ * tenga minX/minY menores que CANVAS_MARGIN.
+ * Usa getElementAABB para detectar elementos rotados que salen por
+ * el borde superior/izquierdo.
+ * Solo se llama en dragEnd / transformEnd, nunca durante el drag.
  */
-function normalizePositions(elements) {
-  if (elements.length === 0) return elements;
-  const minX = Math.min(...elements.map((el) => el.x));
-  const minY = Math.min(...elements.map((el) => el.y));
+function normalizePositions(els) {
+  if (els.length === 0) return els;
+  const aabbs  = els.map(getElementAABB);
+  const minX   = Math.min(...aabbs.map((b) => b.minX));
+  const minY   = Math.min(...aabbs.map((b) => b.minY));
+  if (minX >= CANVAS_MARGIN && minY >= CANVAS_MARGIN) return els;
   const offsetX = minX < CANVAS_MARGIN ? CANVAS_MARGIN - minX : 0;
   const offsetY = minY < CANVAS_MARGIN ? CANVAS_MARGIN - minY : 0;
-  if (offsetX === 0 && offsetY === 0) return elements;
-  return elements.map((el) => ({ ...el, x: el.x + offsetX, y: el.y + offsetY }));
+  return els.map((el) => ({ ...el, x: el.x + offsetX, y: el.y + offsetY }));
 }
 
 const MAX_HISTORY = 15;
@@ -77,8 +79,10 @@ export default function EventLayoutEditorDemo() {
   const [zoom,             setZoom]             = useState(0.75);
   const [editingPolygonId, setEditingPolygonId] = useState(null);
   // Fase 1.11: tamaño manual del canvas (resize por el usuario).
-  // El canvas real = max(manualCanvasSize, bboxDeElementos + margen).
-  const [manualCanvasSize, setManualCanvasSize] = useState(CANVAS_DEFAULT_MANUAL);
+  // El canvas real = auto (bbox elementos) a menos que el usuario haya
+  // arrastrado el handle de resize — en ese caso se respeta como mínimo.
+  const [manualCanvasSize,  setManualCanvasSize]  = useState(CANVAS_DEFAULT_MANUAL);
+  const [userResizedCanvas, setUserResizedCanvas] = useState(false);
   const containerRef = useRef();
 
   // ── Undo / Redo ───────────────────────────────────────────────────────────
@@ -86,17 +90,30 @@ export default function EventLayoutEditorDemo() {
   const [future,  setFuture]  = useState([]);   // snapshots para redo
 
   // ── Fase 1.11: canvasSize derivado — siempre envuelve a los elementos ─────
+  // Solo crece hacia abajo/derecha. dragBoundFunc en los elementos impide
+  // que salgan por arriba/izquierda, por lo que manualCanvasSize ya no se
+  // usa como piso automático — solo actúa si el usuario arrastró el handle.
   const canvasSize = useMemo(() => {
-    if (elements.length === 0) {
-      return { width: manualCanvasSize.width, height: manualCanvasSize.height };
-    }
-    const maxX = Math.max(...elements.map((el) => el.x + el.width));
-    const maxY = Math.max(...elements.map((el) => el.y + el.height));
+    if (elements.length === 0)
+      return { width: CANVAS_MIN_W, height: CANVAS_MIN_H };
+    const aabbs = elements.map(getElementAABB);
+    const maxX  = Math.max(...aabbs.map((b) => b.maxX));
+    const maxY  = Math.max(...aabbs.map((b) => b.maxY));
     return {
-      width:  Math.max(manualCanvasSize.width,  CANVAS_MIN_W, maxX + CANVAS_MARGIN),
-      height: Math.max(manualCanvasSize.height, CANVAS_MIN_H, maxY + CANVAS_MARGIN),
+      width:  Math.max(CANVAS_MIN_W, maxX + CANVAS_MARGIN),
+      height: Math.max(CANVAS_MIN_H, maxY + CANVAS_MARGIN),
     };
-  }, [elements, manualCanvasSize]);
+  }, [elements]);
+
+  // Ref estable para canvasSize — dragBoundFunc lo lee para evitar closures stale.
+  const canvasSizeRef = useRef(canvasSize);
+  useEffect(() => { canvasSizeRef.current = canvasSize; }, [canvasSize]);
+
+  // Callback para resize manual del canvas — activa el flag de override.
+  const handleCanvasSizeChange = useCallback((size) => {
+    setManualCanvasSize(size);
+    setUserResizedCanvas(true);
+  }, []);
 
   // ── Fase 1.3: salir del modo edición si se cambia la selección ────────────
   useEffect(() => {
@@ -111,8 +128,8 @@ export default function EventLayoutEditorDemo() {
   }, []);
 
   // ── Modificar elemento ────────────────────────────────────────────────────
-  // Empuja al historial antes de aplicar el cambio.
-  // Sin reconcileCanvas ni setCanvasSize — canvasSize se deriva automáticamente.
+  // Empuja al historial. dragBoundFunc impide que los elementos salgan por
+  // cualquier borde durante el drag — normalizePositions ya no es necesaria aquí.
   const handleChange = useCallback((updated) => {
     setElements((prev) => {
       setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), prev]);
@@ -134,8 +151,9 @@ export default function EventLayoutEditorDemo() {
   }, []);
 
   // ── Paleta ────────────────────────────────────────────────────────────────
+  // normalizePositions aquí cubre el caso de drop cerca del borde superior/izquierdo.
   const handleAddElement = useCallback((newElement) => {
-    setElements((prev) => [...prev, newElement]);
+    setElements((prev) => normalizePositions([...prev, newElement]));
     setSelectedIds([newElement.id]);
   }, []);
 
@@ -287,6 +305,7 @@ export default function EventLayoutEditorDemo() {
           setElements([]);
           setSelectedIds([]);
           setManualCanvasSize(CANVAS_DEFAULT_MANUAL);
+          setUserResizedCanvas(false);
           setEditingPolygonId(null);
           setHistory([]);
           setFuture([]);
@@ -300,7 +319,8 @@ export default function EventLayoutEditorDemo() {
           elements={elements}
           selectedIds={selectedIds}
           canvasSize={canvasSize}
-          onCanvasSizeChange={setManualCanvasSize}
+          canvasSizeRef={canvasSizeRef}
+          onCanvasSizeChange={handleCanvasSizeChange}
           editingPolygonId={editingPolygonId}
           onSelect={handleSelect}
           onChange={handleChange}
@@ -311,7 +331,6 @@ export default function EventLayoutEditorDemo() {
           zoom={zoom}
           onZoomChange={setZoom}
           containerRef={containerRef}
-          onNormalizePositions={(els) => setElements(normalizePositions(els))}
           onRegisterApplyPreset={(fn) => { applyPresetRef.current = fn; }}
         />
 
@@ -323,7 +342,7 @@ export default function EventLayoutEditorDemo() {
           onStartVertexEdit={() => selectedElement && handleStartVertexEdit(selectedElement.id)}
           onEndVertexEdit={handleEndVertexEdit}
           canvasSize={canvasSize}
-          onCanvasSizeChange={setManualCanvasSize}
+          onCanvasSizeChange={handleCanvasSizeChange}
           onApplyPreset={handleApplyPreset}
         />
       </div>

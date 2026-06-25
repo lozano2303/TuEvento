@@ -227,7 +227,7 @@ export const rectsIntersect = (a, b) => {
 // ── Fix 7: recalcular canvas a partir del bounding box de los elementos ───────
 const CANVAS_MIN_W   = 1200;
 const CANVAS_MIN_H   = 800;
-const CANVAS_MARGIN  = 150;   // respiro alrededor del contenido
+export const CANVAS_MARGIN  = 150;   // respiro alrededor del contenido
 const SHRINK_THRESHOLD = 150; // solo contraer si hay más de esto de espacio vacío
 
 /**
@@ -620,6 +620,26 @@ export function getPresetPolygonPoints(preset, width, height) {
     default:
       return [pt(0, 0), pt(w, 0), pt(w, h), pt(0, h)];
   }
+}
+
+// ── AABB rotado ───────────────────────────────────────────────────────────────
+
+/**
+ * Devuelve el axis-aligned bounding box (AABB) real de un elemento,
+ * teniendo en cuenta su rotación alrededor del centro.
+ * Para rotation === 0 equivale exactamente a { x, y, x+w, y+h }.
+ */
+export function getElementAABB(el) {
+  const { x, y, width, height, rotation = 0 } = el;
+  if (rotation === 0) return { minX: x, minY: y, maxX: x + width, maxY: y + height };
+  const rad = (rotation * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(rad));
+  const sin = Math.abs(Math.sin(rad));
+  const cx  = x + width  / 2;
+  const cy  = y + height / 2;
+  const hw  = (width  * cos + height * sin) / 2;
+  const hh  = (width  * sin + height * cos) / 2;
+  return { minX: cx - hw, minY: cy - hh, maxX: cx + hw, maxY: cy + hh };
 }
 
 // ── Fase 1.6: Smart guides ────────────────────────────────────────────────────
