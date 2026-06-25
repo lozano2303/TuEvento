@@ -6,6 +6,8 @@ import {
   polyCentroid,
   snapToGrid,
   migratePolygonPoints,
+  getElementAABB,
+  CANVAS_MARGIN,
 } from '../layoutEditorUtils';
 
 const VERTEX_RADIUS = 7; // eslint-disable-line no-unused-vars — reservado por si se necesita
@@ -110,6 +112,7 @@ export default function SectionElement({
   onGroupDragMove,
   onGroupDragEnd,
   onEnterVertexEdit,
+  canvasSizeRef,
 }) {
   const groupRef = useRef();
   const trRef    = useRef();
@@ -173,25 +176,60 @@ export default function SectionElement({
 
   const handleDragMove = (e) => {
     if (isEditingVertices) return;
+    const node = e.target;
+    const cs   = canvasSizeRef?.current ?? { width: 9999, height: 9999 };
+
+    // getClientRect devuelve el AABB visual real en canvas-space (Layer coords)
+    // sin ambigüedad sobre el eje de rotación de Konva.
+    const clamp = (px, py) => {
+      // Movemos el nodo temporalmente y leemos su AABB real
+      const origX = node.x(), origY = node.y();
+      node.x(px); node.y(py);
+      const r = node.getClientRect({ relativeTo: node.getLayer() });
+      node.x(origX); node.y(origY);
+      let ox = px, oy = py;
+      if (r.x < 0)                      ox += -r.x;
+      if (r.y < 0)                      oy += -r.y;
+      if (r.x + r.width  > cs.width)    ox -= (r.x + r.width)  - cs.width;
+      if (r.y + r.height > cs.height)   oy -= (r.y + r.height) - cs.height;
+      return { x: ox, y: oy };
+    };
+
+    const raw = { x: node.x(), y: node.y() };
+    const clamped = clamp(raw.x, raw.y);
+    if (clamped.x !== raw.x) node.x(clamped.x);
+    if (clamped.y !== raw.y) node.y(clamped.y);
+
     if (onGroupDragMove) {
-      onGroupDragMove(element.id, { x: e.target.x(), y: e.target.y() });
+      onGroupDragMove(element.id, { x: clamped.x, y: clamped.y });
     } else if (onDragMove) {
-      const result = onDragMove(element.id, { x: e.target.x(), y: e.target.y() });
+      const result = onDragMove(element.id, { x: clamped.x, y: clamped.y });
       if (result && (result.dx !== 0 || result.dy !== 0)) {
-        e.target.x(e.target.x() + result.dx);
-        e.target.y(e.target.y() + result.dy);
+        const afterSnap = clamp(node.x() + result.dx, node.y() + result.dy);
+        node.x(afterSnap.x);
+        node.y(afterSnap.y);
       }
     }
   };
 
   const handleDragEnd = (e) => {
     if (isEditingVertices) return;
+    const node = e.target;
+    const cs   = canvasSizeRef?.current ?? { width: 9999, height: 9999 };
+    const r    = node.getClientRect({ relativeTo: node.getLayer() });
+    let fx = node.x(), fy = node.y();
+    if (r.x < 0)                    fx += -r.x;
+    if (r.y < 0)                    fy += -r.y;
+    if (r.x + r.width  > cs.width)  fx -= (r.x + r.width)  - cs.width;
+    if (r.y + r.height > cs.height) fy -= (r.y + r.height) - cs.height;
+    const finalX = snapToGrid(fx);
+    const finalY = snapToGrid(fy);
     if (onGroupDragEnd) {
-      onGroupDragEnd(element.id, { x: e.target.x(), y: e.target.y() });
+      onGroupDragEnd(element.id, { x: finalX, y: finalY });
     } else if (onDragEnd) {
-      onDragEnd({ ...element, x: snapToGrid(e.target.x()), y: snapToGrid(e.target.y()) });
+      onDragEnd({ ...element, x: finalX, y: finalY });
     } else {
-      onChange({ ...element, x: snapToGrid(e.target.x()), y: snapToGrid(e.target.y()) });
+      onChange({ ...element, x: finalX, y: finalY });
     }
   };
 
@@ -203,13 +241,20 @@ export default function SectionElement({
     node.scaleX(1); node.scaleY(1);
     const newW = snapToGrid(Math.max(minSize.width,  node.width()  * scaleX));
     const newH = snapToGrid(Math.max(minSize.height, node.height() * scaleY));
+    const cs   = canvasSizeRef?.current ?? { width: 9999, height: 9999 };
+    // Usar getClientRect para el AABB real en canvas-space (sin ambigüedad de eje)
+    const r    = node.getClientRect({ relativeTo: node.getLayer() });
+    let px = node.x(), py = node.y();
+    if (r.x < 0)                    px += -r.x;
+    if (r.y < 0)                    py += -r.y;
+    if (r.x + r.width  > cs.width)  px -= (r.x + r.width)  - cs.width;
+    if (r.y + r.height > cs.height) py -= (r.y + r.height) - cs.height;
     let patch = {
-      x: snapToGrid(node.x()), y: snapToGrid(node.y()),
+      x: snapToGrid(px), y: snapToGrid(py),
       width: newW, height: newH, rotation: node.rotation(),
     };
     if (shapeMode === 'polygon' && element.polygonPoints) {
       const pts = migratePolygonPoints(element.polygonPoints);
-      // Usar BB visual (incluye handles) para que el escalado no deje handles fuera
       const bb  = computePolygonVisualBB(pts);
       const ratioX = bb.width  > 0 ? newW / bb.width  : 1;
       const ratioY = bb.height > 0 ? newH / bb.height : 1;
@@ -330,10 +375,26 @@ export default function SectionElement({
         <Transformer
           ref={trRef}
           rotateEnabled
+          rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
+          rotationSnapTolerance={10}
+          rotateAnchorOffset={28}
+          rotateAnchorCursor="grab"
           enabledAnchors={[
             'top-left', 'top-right', 'bottom-left', 'bottom-right',
             'middle-left', 'middle-right', 'top-center', 'bottom-center',
           ]}
+          anchorStyleFunc={(anchor) => {
+            if (anchor.hasName('rotater')) {
+              anchor.cornerRadius(10);
+              anchor.fill('#818cf8');
+              anchor.stroke('#6366f1');
+              anchor.strokeWidth(2);
+              anchor.width(18);
+              anchor.height(18);
+              anchor.offsetX(9);
+              anchor.offsetY(9);
+            }
+          }}
           boundBoxFunc={(oldBox, newBox) => {
             if (newBox.width < minSize.width || newBox.height < minSize.height) return oldBox;
             return newBox;
