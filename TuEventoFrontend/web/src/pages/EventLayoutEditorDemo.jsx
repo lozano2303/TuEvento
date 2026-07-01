@@ -82,15 +82,17 @@ export default function EventLayoutEditorDemo() {
   // ── canvasSize derivado ───────────────────────────────────────────────────
   const canvasSize = useMemo(() => {
     if (elements.length === 0)
-      return { width: CANVAS_MIN_W, height: CANVAS_MIN_H };
+      return { width: manualCanvasSize.width, height: manualCanvasSize.height };
     const aabbs = elements.map(getElementAABB);
     const maxX  = Math.max(...aabbs.map((b) => b.maxX));
     const maxY  = Math.max(...aabbs.map((b) => b.maxY));
+    const autoW = Math.max(CANVAS_MIN_W, maxX + CANVAS_MARGIN);
+    const autoH = Math.max(CANVAS_MIN_H, maxY + CANVAS_MARGIN);
     return {
-      width:  Math.max(CANVAS_MIN_W, maxX + CANVAS_MARGIN),
-      height: Math.max(CANVAS_MIN_H, maxY + CANVAS_MARGIN),
+      width:  userResizedCanvas ? Math.max(manualCanvasSize.width,  autoW) : autoW,
+      height: userResizedCanvas ? Math.max(manualCanvasSize.height, autoH) : autoH,
     };
-  }, [elements]);
+  }, [elements, manualCanvasSize, userResizedCanvas]);
 
   const canvasSizeRef = useRef(canvasSize);
   useEffect(() => { canvasSizeRef.current = canvasSize; }, [canvasSize]);
