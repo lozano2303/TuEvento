@@ -2,6 +2,9 @@
 export const generateId = () =>
   `elem-${Math.random().toString(36).slice(2, 9)}-${Date.now().toString(36)}`;
 
+export const generateSectionId = () =>
+  `section-${Math.random().toString(36).slice(2, 9)}-${Date.now().toString(36)}`;
+
 // ── Fase 1.12: Migración de polygonPoints al nuevo formato con handles Bézier ──
 /**
  * Convierte polygonPoints del formato viejo [[x,y], ...] al nuevo formato
