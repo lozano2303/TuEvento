@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 
 export default function SectionsList({ elements, selectedIds, onSelect }) {
-  // Índice de navegación por grupo: { [eventSectionId]: number }
   const [groupCursor, setGroupCursor] = useState({});
 
   const sections = useMemo(
@@ -9,7 +8,6 @@ export default function SectionsList({ elements, selectedIds, onSelect }) {
     [elements],
   );
 
-  // Agrupar por eventSectionId preservando orden de aparición
   const groups = useMemo(() => {
     const map = new Map();
     for (const el of sections) {
@@ -25,51 +23,53 @@ export default function SectionsList({ elements, selectedIds, onSelect }) {
     }));
   }, [sections]);
 
+  const header = (
+    <div className="px-3 py-3 border-b border-surfaceAlt">
+      <h2 className="text-sm font-bold text-textPrimary">Secciones del layout</h2>
+    </div>
+  );
+
   if (groups.length === 0) {
     return (
-      <aside className="flex flex-col overflow-hidden">
-        <div className="px-3 py-3 border-b border-surfaceAlt">
-          <h2 className="text-xs font-bold text-textSecondary uppercase tracking-wider">Secciones</h2>
-        </div>
-        <p className="text-textMuted text-xs text-center p-4 leading-relaxed">
-          Sin secciones en el canvas
+      <div className="flex flex-col overflow-hidden">
+        {header}
+        <p className="text-textSecondary text-xs text-center p-4 leading-relaxed">
+          Sin secciones en el layout
         </p>
-      </aside>
+      </div>
     );
   }
 
   return (
-    <aside className="flex flex-col overflow-hidden h-full">
-      <div className="px-3 py-3 border-b border-surfaceAlt">
-        <h2 className="text-xs font-bold text-textSecondary uppercase tracking-wider">Secciones</h2>
-      </div>
-
+    <div className="flex flex-col overflow-hidden h-full">
+      {header}
       <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
         {groups.map(({ sectionId, instances, color, baseLabel }) => {
-          const cursor      = groupCursor[sectionId] ?? 0;
-          const safeIdx     = Math.min(cursor, instances.length - 1);
-          const activeInst  = instances[safeIdx];
-          const isSelected  = selectedIds.includes(activeInst.id);
-
-          // Si alguna instancia del grupo está seleccionada, resaltarla
+          const cursor          = groupCursor[sectionId] ?? 0;
+          const safeIdx         = Math.min(cursor, instances.length - 1);
+          const activeInst      = instances[safeIdx];
           const selectedInGroup = instances.find((i) => selectedIds.includes(i.id));
+
+          // Cuando hay instancia seleccionada, mostrarla como activa en la navegación
+          const displayInst = selectedInGroup ?? activeInst;
+          const displayIdx  = selectedInGroup
+            ? instances.indexOf(selectedInGroup)
+            : safeIdx;
 
           const handlePrev = (e) => {
             e.stopPropagation();
-            const newIdx = (safeIdx - 1 + instances.length) % instances.length;
+            const newIdx = (displayIdx - 1 + instances.length) % instances.length;
             setGroupCursor((c) => ({ ...c, [sectionId]: newIdx }));
             onSelect(instances[newIdx].id);
           };
           const handleNext = (e) => {
             e.stopPropagation();
-            const newIdx = (safeIdx + 1) % instances.length;
+            const newIdx = (displayIdx + 1) % instances.length;
             setGroupCursor((c) => ({ ...c, [sectionId]: newIdx }));
             onSelect(instances[newIdx].id);
           };
           const handleHeaderClick = () => {
-            // Si ya hay una instancia del grupo seleccionada, mantenerla; si no, ir a la activa
-            const target = selectedInGroup ?? activeInst;
-            onSelect(target.id);
+            onSelect((selectedInGroup ?? activeInst).id);
           };
 
           return (
@@ -78,8 +78,11 @@ export default function SectionsList({ elements, selectedIds, onSelect }) {
               onClick={handleHeaderClick}
               className="rounded-lg overflow-hidden cursor-pointer transition-all"
               style={{
-                border: `2px solid ${selectedInGroup ? color : 'transparent'}`,
-                background: selectedInGroup ? `${color}18` : 'var(--color-surfaceAlt)',
+                borderLeft:  `4px solid ${selectedInGroup ? color : 'transparent'}`,
+                background:  selectedInGroup ? `${color}15` : 'var(--color-surfaceAlt)',
+                border:      selectedInGroup ? `1px solid ${color}40` : '1px solid transparent',
+                borderLeftWidth: '4px',
+                borderLeftColor: selectedInGroup ? color : 'transparent',
               }}
             >
               {/* Header */}
@@ -93,40 +96,40 @@ export default function SectionsList({ elements, selectedIds, onSelect }) {
                 </span>
                 {instances.length > 1 && (
                   <span
-                    className="text-[9px] font-bold px-1 py-0.5 rounded"
-                    style={{ background: `${color}30`, color }}
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{ background: `${color}25`, color }}
                   >
-                    {instances.length}
+                    {instances.length} partes
                   </span>
                 )}
               </div>
 
-              {/* Instancias navegables */}
+              {/* Navegación entre instancias */}
               {instances.length > 1 && (
                 <div className="flex items-center gap-1 px-2 pb-2">
                   <button
                     onClick={handlePrev}
-                    className="text-textMuted hover:text-textPrimary transition-colors text-xs px-1.5 py-0.5
-                               rounded hover:bg-surfaceAlt"
-                    title="Instancia anterior"
+                    className="text-textMuted hover:text-textPrimary transition-colors text-xs
+                               px-1.5 py-0.5 rounded hover:bg-black/10"
+                    title="Parte anterior"
                   >
                     ←
                   </button>
                   <span className="flex-1 text-[10px] text-textMuted text-center truncate">
-                    {activeInst.label}
+                    {displayInst.label}
                   </span>
                   <button
                     onClick={handleNext}
-                    className="text-textMuted hover:text-textPrimary transition-colors text-xs px-1.5 py-0.5
-                               rounded hover:bg-surfaceAlt"
-                    title="Siguiente instancia"
+                    className="text-textMuted hover:text-textPrimary transition-colors text-xs
+                               px-1.5 py-0.5 rounded hover:bg-black/10"
+                    title="Siguiente parte"
                   >
                     →
                   </button>
                 </div>
               )}
 
-              {/* Instancia única — mostrar label */}
+              {/* Instancia única */}
               {instances.length === 1 && (
                 <p className="text-[10px] text-textMuted px-2.5 pb-2 truncate">
                   {activeInst.label}
@@ -136,6 +139,6 @@ export default function SectionsList({ elements, selectedIds, onSelect }) {
           );
         })}
       </div>
-    </aside>
+    </div>
   );
 }

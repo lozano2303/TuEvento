@@ -4,7 +4,8 @@ import { generateId } from './layoutEditorUtils';
 const INFRA    = PALETTE_ELEMENTS.filter((e) => e.type !== 'section');
 const SECTIONS = PALETTE_ELEMENTS.filter((e) => e.type === 'section');
 
-export default function ElementPalette({ onAddElement, occupiedSectionTypes = [] }) {
+export default function ElementPalette({ onAddElement, occupiedSectionCounts = {} }) {
+  // occupiedSectionCounts: { [sectionType]: number } — 0 means not occupied
   const handleDragStart = (e, template) => {
     e.dataTransfer.setData('template', JSON.stringify(template));
   };
@@ -27,7 +28,8 @@ export default function ElementPalette({ onAddElement, occupiedSectionTypes = []
   };
 
   const SectionItem = ({ template }) => {
-    const occupied = occupiedSectionTypes.includes(template.sectionType);
+    const count    = occupiedSectionCounts[template.sectionType] ?? 0;
+    const occupied = count > 0;
     return (
       <div className="relative">
         <div
@@ -58,8 +60,8 @@ export default function ElementPalette({ onAddElement, occupiedSectionTypes = []
         </div>
         {occupied && (
           <span className="absolute top-1 right-2 text-[9px] font-bold px-1 py-0.5 rounded
-                           bg-accent/20 text-accent border border-accent/30 pointer-events-none">
-            En uso
+                           bg-accent/20 text-accent border border-accent/30 pointer-events-none leading-none">
+            En uso ({count})
           </span>
         )}
       </div>

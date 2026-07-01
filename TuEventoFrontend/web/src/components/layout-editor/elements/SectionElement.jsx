@@ -175,7 +175,9 @@ export default function SectionElement({
     const node = groupRef.current;
     if (!node) return;
     const r = node.getClientRect({ relativeTo: node.getLayer() });
-    setLabelPos({ x: r.x + r.width / 2, y: r.y - 18 });
+    // Clamp: el label nunca queda por encima del margen mínimo del canvas
+    const clampedY = Math.max(CANVAS_MARGIN / 2, r.y - 18);
+    setLabelPos({ x: r.x + r.width / 2, y: clampedY });
   }, []);
 
   // Sync en cada render (cubre cambios de posición, rotación, resize desde estado)
