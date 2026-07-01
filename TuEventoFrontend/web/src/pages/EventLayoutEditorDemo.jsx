@@ -119,7 +119,18 @@ export default function EventLayoutEditorDemo() {
     setElements((prev) => {
       setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), prev]);
       setFuture([]);
-      return prev.map((el) => (el.id === updated.id ? updated : el));
+      return prev.map((el) => {
+        if (el.id === updated.id) return updated;
+        // Propagar cambio de color a hermanos (mismo eventSectionId)
+        if (
+          updated.eventSectionId &&
+          el.eventSectionId === updated.eventSectionId &&
+          el.color !== updated.color
+        ) {
+          return { ...el, color: updated.color };
+        }
+        return el;
+      });
     });
   }, []);
 
