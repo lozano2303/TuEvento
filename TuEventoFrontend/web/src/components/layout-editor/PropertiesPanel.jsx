@@ -163,14 +163,12 @@ export default function PropertiesPanel({
 
   const updateSeatLayout = (patch) => {
     const updated = { ...sl, ...patch };
-    // Solo actualizar la grilla en el canvas si targetSeats <= maxSeats (nuevo)
-    const newMax = computeMaxSeats(element, updated.seatRadius, updated.gap);
-    if (updated.targetSeats <= newMax) {
-      update({ seatLayout: updated });
-    } else {
-      // Solo actualizar el seatLayout sin cambiar la grilla visual
-      update({ seatLayout: updated });
+    // Clampear targetSeats al máximo físico disponible — previene renderizado masivo
+    if (updated.targetSeats !== undefined) {
+      const newMax = computeMaxSeats(element, updated.seatRadius, updated.gap);
+      updated.targetSeats = Math.min(newMax || updated.targetSeats, Math.max(1, updated.targetSeats));
     }
+    update({ seatLayout: updated });
   };
 
   // ── Conversor a polígono ──────────────────────────────────────────────────
@@ -408,14 +406,61 @@ export default function PropertiesPanel({
               )}
             </label>
 
-            {/* Input targetSeats + badge */}
+            {/* Input targetSeats + botones ±  + botón Máx + badge */}
             <div>
-              <div className="flex items-center gap-2 mb-1.5">
+              <div className="flex items-center gap-1.5 mb-1">
+                {/* Botón − */}
+                <button
+                  onClick={() => updateSeatLayout({ targetSeats: Math.max(1, targetSeats - 1) })}
+                  className="shrink-0 w-6 h-7 flex items-center justify-center rounded border
+                             border-surfaceAlt text-textMuted hover:text-textPrimary
+                             hover:bg-surfaceAlt transition-colors text-sm leading-none"
+                  title="Restar una silla"
+                >−</button>
+
                 <input
-                  type="number" className={`${inputClass} flex-1`} min={1}
+                  type="number"
+                  className={`${inputClass} flex-1 min-w-0 text-center [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+                  style={{ MozAppearance: 'textfield' }}
+                  min={1}
+                  max={maxSeats || undefined}
                   value={targetSeats}
-                  onChange={(e) => updateSeatLayout({ targetSeats: Math.max(1, Number(e.target.value)) })}
+                  onChange={(e) => {
+                    const v = Math.min(maxSeats || Infinity, Math.max(1, Number(e.target.value)));
+                    updateSeatLayout({ targetSeats: v });
+                  }}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const pasted = parseInt(e.clipboardData.getData('text'), 10);
+                    if (!isNaN(pasted)) {
+                      const v = Math.min(maxSeats || Infinity, Math.max(1, pasted));
+                      updateSeatLayout({ targetSeats: v });
+                    }
+                  }}
                 />
+
+                {/* Botón + */}
+                <button
+                  onClick={() => updateSeatLayout({ targetSeats: Math.min(maxSeats || Infinity, targetSeats + 1) })}
+                  disabled={maxSeats > 0 && targetSeats >= maxSeats}
+                  className="shrink-0 w-6 h-7 flex items-center justify-center rounded border
+                             border-surfaceAlt text-textMuted hover:text-textPrimary
+                             hover:bg-surfaceAlt transition-colors text-sm leading-none
+                             disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Sumar una silla"
+                >+</button>
+
+                {maxSeats > 0 && (
+                  <button
+                    onClick={() => updateSeatLayout({ targetSeats: maxSeats })}
+                    className="shrink-0 text-[9px] font-bold px-2 py-1 rounded border
+                               border-surfaceAlt text-textMuted hover:text-textPrimary
+                               hover:bg-surfaceAlt transition-colors"
+                    title={`Establecer máximo (${maxSeats})`}
+                  >
+                    Máx
+                  </button>
+                )}
                 <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded border ${badgeColor}`}>
                   {badgeText}
                 </span>
