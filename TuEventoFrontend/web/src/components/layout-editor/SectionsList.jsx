@@ -27,7 +27,7 @@ export default function SectionsList({ elements, selectedIds, onSelect }) {
 
   if (groups.length === 0) {
     return (
-      <aside className="w-[200px] flex-shrink-0 bg-surface border-l border-surfaceAlt flex flex-col overflow-hidden">
+      <aside className="flex flex-col overflow-hidden">
         <div className="px-3 py-3 border-b border-surfaceAlt">
           <h2 className="text-xs font-bold text-textSecondary uppercase tracking-wider">Secciones</h2>
         </div>
@@ -39,7 +39,7 @@ export default function SectionsList({ elements, selectedIds, onSelect }) {
   }
 
   return (
-    <aside className="w-[200px] flex-shrink-0 bg-surface border-l border-surfaceAlt flex flex-col overflow-hidden">
+    <aside className="flex flex-col overflow-hidden h-full">
       <div className="px-3 py-3 border-b border-surfaceAlt">
         <h2 className="text-xs font-bold text-textSecondary uppercase tracking-wider">Secciones</h2>
       </div>

@@ -357,12 +357,7 @@ export default function EventLayoutEditorDemo() {
           onRegisterApplyPreset={(fn) => { applyPresetRef.current = fn; }}
         />
 
-        <div className="flex flex-col">
-          <SectionsList
-            elements={elements}
-            selectedIds={selectedIds}
-            onSelect={(id) => setSelectedIds([id])}
-          />
+        <div className="flex flex-col flex-shrink-0 h-full overflow-hidden">
           <PropertiesPanel
             element={selectedElement}
             onChange={handleChange}
@@ -374,6 +369,13 @@ export default function EventLayoutEditorDemo() {
             onCanvasSizeChange={handleCanvasSizeChange}
             onApplyPreset={handleApplyPreset}
           />
+          <div className="flex-1 overflow-y-auto border-t border-surfaceAlt min-h-0 w-[240px] bg-surface">
+            <SectionsList
+              elements={elements}
+              selectedIds={selectedIds}
+              onSelect={(id) => setSelectedIds([id])}
+            />
+          </div>
         </div>
       </div>
     </div>
