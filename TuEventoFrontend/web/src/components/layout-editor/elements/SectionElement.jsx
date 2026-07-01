@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
 import { Group, Rect, Shape, Circle, Text, Transformer } from 'react-konva';
 import {
   computeMinSectionSize,
@@ -166,7 +166,21 @@ export default function SectionElement({
     return { x: element.width / 2, y: element.height / 2 };
   }, [shapeMode, workPoints, element.width, element.height]);
 
-  // ── Drag ──────────────────────────────────────────────────────────────────
+  // ── Label flotante — posición en canvas-space (fuera del Group rotado) ────
+  // Calculamos el AABB del grupo en coordenadas del Layer usando getClientRect.
+  // Usamos estado para actualizarlo en tiempo real durante el drag.
+  const [labelPos, setLabelPos] = useState({ x: element.x + element.width / 2, y: element.y - 18 });
+
+  const updateLabelPos = useCallback(() => {
+    const node = groupRef.current;
+    if (!node) return;
+    const r = node.getClientRect({ relativeTo: node.getLayer() });
+    setLabelPos({ x: r.x + r.width / 2, y: r.y - 18 });
+  }, []);
+
+  // Sync en cada render (cubre cambios de posición, rotación, resize desde estado)
+  useEffect(() => { updateLabelPos(); });
+
   const handleDragStart = (e) => {
     // Durante edición de vértices el Group no debería ser draggable,
     // pero si por algún edge case llega aquí, cancelarlo.
@@ -199,6 +213,7 @@ export default function SectionElement({
     const clamped = clamp(raw.x, raw.y);
     if (clamped.x !== raw.x) node.x(clamped.x);
     if (clamped.y !== raw.y) node.y(clamped.y);
+    updateLabelPos();
 
     if (onGroupDragMove) {
       onGroupDragMove(element.id, { x: clamped.x, y: clamped.y });
@@ -355,20 +370,24 @@ export default function SectionElement({
             listening={false}
           />
         ))}
-
-        {/* ── Label ────────────────────────────────────────────────────── */}
-        <Text
-          x={labelCenter.x - element.width / 2}
-          y={labelCenter.y - 8}
-          width={element.width}
-          text={element.label}
-          fontSize={13}
-          fontStyle="bold"
-          fill="#ffffff"
-          align="center"
-          listening={false}
-        />
       </Group>
+
+      {/* ── Label flotante — fuera del Group, no rota con el elemento ───── */}
+      <Text
+        x={labelPos.x}
+        y={labelPos.y}
+        text={element.label}
+        fontSize={12}
+        fontStyle="bold"
+        fill="#ffffff"
+        align="center"
+        offsetX={0}
+        shadowColor="black"
+        shadowBlur={4}
+        shadowOpacity={0.8}
+        listening={false}
+        perfectDrawEnabled={false}
+      />
 
       {/* Transformer — solo cuando está seleccionado y fuera del modo edición */}
       {isSelected && !isEditingVertices && (

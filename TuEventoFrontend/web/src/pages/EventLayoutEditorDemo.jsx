@@ -3,7 +3,8 @@ import ElementPalette from '../components/layout-editor/ElementPalette';
 import LayoutEditorCanvas from '../components/layout-editor/LayoutEditorCanvas';
 import PropertiesPanel from '../components/layout-editor/PropertiesPanel';
 import EditorToolbar from '../components/layout-editor/EditorToolbar';
-import { generateId, getElementAABB, CANVAS_MARGIN } from '../components/layout-editor/layoutEditorUtils';
+import SectionsList from '../components/layout-editor/SectionsList';
+import { generateId, generateSectionId, getElementAABB, CANVAS_MARGIN } from '../components/layout-editor/layoutEditorUtils';
 
 const INITIAL_ELEMENTS = [
   {
@@ -19,7 +20,7 @@ const INITIAL_ELEMENTS = [
     id: generateId(),
     type: 'section',
     sectionType: 'VIP',
-    eventSectionId: null,
+    eventSectionId: generateSectionId(),
     seatLayout: { rows: 4, cols: 6, seatRadius: 7, gap: 4 },
     x: 100, y: 200, width: 216, height: 140,
     rotation: 0, label: 'VIP Izquierda', color: '#7C3AED',
@@ -28,7 +29,7 @@ const INITIAL_ELEMENTS = [
     id: generateId(),
     type: 'section',
     sectionType: 'General',
-    eventSectionId: null,
+    eventSectionId: generateSectionId(),
     seatLayout: { rows: 6, cols: 8, seatRadius: 7, gap: 4 },
     x: 400, y: 220, width: 264, height: 168,
     rotation: 0, label: 'General', color: '#16A34A',
@@ -45,21 +46,14 @@ const INITIAL_ELEMENTS = [
 ];
 
 // ── Constantes de canvas ──────────────────────────────────────────────────────
-const CANVAS_MIN_W  = 1200;
-const CANVAS_MIN_H  = 800;
+const CANVAS_MIN_W          = 1200;
+const CANVAS_MIN_H          = 800;
 const CANVAS_DEFAULT_MANUAL = { width: CANVAS_MIN_W, height: CANVAS_MIN_H };
-
 const ZOOM_MIN  = 0.2;
 const ZOOM_MAX  = 4;
 const ZOOM_STEP = 0.15;
+const MAX_HISTORY = 15;
 
-/**
- * Normaliza las posiciones de los elementos para que ningún AABB rotado
- * tenga minX/minY menores que CANVAS_MARGIN.
- * Usa getElementAABB para detectar elementos rotados que salen por
- * el borde superior/izquierdo.
- * Solo se llama en dragEnd / transformEnd, nunca durante el drag.
- */
 function normalizePositions(els) {
   if (els.length === 0) return els;
   const aabbs  = els.map(getElementAABB);
@@ -71,28 +65,21 @@ function normalizePositions(els) {
   return els.map((el) => ({ ...el, x: el.x + offsetX, y: el.y + offsetY }));
 }
 
-const MAX_HISTORY = 15;
-
 export default function EventLayoutEditorDemo() {
   const [elements,         setElements]         = useState(INITIAL_ELEMENTS);
   const [selectedIds,      setSelectedIds]      = useState([]);
   const [zoom,             setZoom]             = useState(0.75);
   const [editingPolygonId, setEditingPolygonId] = useState(null);
-  // Fase 1.11: tamaño manual del canvas (resize por el usuario).
-  // El canvas real = auto (bbox elementos) a menos que el usuario haya
-  // arrastrado el handle de resize — en ese caso se respeta como mínimo.
-  const [manualCanvasSize,  setManualCanvasSize]  = useState(CANVAS_DEFAULT_MANUAL);
+  const [manualCanvasSize, setManualCanvasSize] = useState(CANVAS_DEFAULT_MANUAL);
   const [userResizedCanvas, setUserResizedCanvas] = useState(false);
   const containerRef = useRef();
 
   // ── Undo / Redo ───────────────────────────────────────────────────────────
-  const [history, setHistory] = useState([]);   // snapshots anteriores de elements
-  const [future,  setFuture]  = useState([]);   // snapshots para redo
+  const [history,   setHistory]   = useState([]);
+  const [future,    setFuture]    = useState([]);
+  const [clipboard, setClipboard] = useState(null);
 
-  // ── Fase 1.11: canvasSize derivado — siempre envuelve a los elementos ─────
-  // Solo crece hacia abajo/derecha. dragBoundFunc en los elementos impide
-  // que salgan por arriba/izquierda, por lo que manualCanvasSize ya no se
-  // usa como piso automático — solo actúa si el usuario arrastró el handle.
+  // ── canvasSize derivado ───────────────────────────────────────────────────
   const canvasSize = useMemo(() => {
     if (elements.length === 0)
       return { width: CANVAS_MIN_W, height: CANVAS_MIN_H };
@@ -105,17 +92,15 @@ export default function EventLayoutEditorDemo() {
     };
   }, [elements]);
 
-  // Ref estable para canvasSize — dragBoundFunc lo lee para evitar closures stale.
   const canvasSizeRef = useRef(canvasSize);
   useEffect(() => { canvasSizeRef.current = canvasSize; }, [canvasSize]);
 
-  // Callback para resize manual del canvas — activa el flag de override.
   const handleCanvasSizeChange = useCallback((size) => {
     setManualCanvasSize(size);
     setUserResizedCanvas(true);
   }, []);
 
-  // ── Fase 1.3: salir del modo edición si se cambia la selección ────────────
+  // ── Salir del modo edición si cambia la selección ─────────────────────────
   useEffect(() => {
     if (editingPolygonId && !selectedIds.includes(editingPolygonId)) {
       setEditingPolygonId(null);
@@ -128,8 +113,6 @@ export default function EventLayoutEditorDemo() {
   }, []);
 
   // ── Modificar elemento ────────────────────────────────────────────────────
-  // Empuja al historial. dragBoundFunc impide que los elementos salgan por
-  // cualquier borde durante el drag — normalizePositions ya no es necesaria aquí.
   const handleChange = useCallback((updated) => {
     setElements((prev) => {
       setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), prev]);
@@ -145,16 +128,17 @@ export default function EventLayoutEditorDemo() {
         const u = updatedElements.find((ue) => ue.id === el.id);
         return u ?? el;
       });
-      // Normalizar coords negativas al soltar
       return normalizePositions(merged);
     });
   }, []);
 
-  // ── Paleta ────────────────────────────────────────────────────────────────
-  // normalizePositions aquí cubre el caso de drop cerca del borde superior/izquierdo.
+  // ── Paleta — asigna eventSectionId a nuevas secciones ────────────────────
   const handleAddElement = useCallback((newElement) => {
-    setElements((prev) => normalizePositions([...prev, newElement]));
-    setSelectedIds([newElement.id]);
+    const el = newElement.type === 'section' && !newElement.eventSectionId
+      ? { ...newElement, eventSectionId: generateSectionId() }
+      : newElement;
+    setElements((prev) => normalizePositions([...prev, el]));
+    setSelectedIds([el.id]);
   }, []);
 
   // ── Eliminar ──────────────────────────────────────────────────────────────
@@ -168,7 +152,6 @@ export default function EventLayoutEditorDemo() {
     setSelectedIds([]);
   }, [selectedIds]);
 
-  // ── Eliminar seleccionados por teclado ────────────────────────────────────
   const handleDeleteSelected = useCallback(() => {
     if (selectedIds.length === 0) return;
     setEditingPolygonId(null);
@@ -180,7 +163,7 @@ export default function EventLayoutEditorDemo() {
     setSelectedIds([]);
   }, [selectedIds]);
 
-  // ── Fase 1.3: edición de vértices ─────────────────────────────────────────
+  // ── Edición de vértices ───────────────────────────────────────────────────
   const handleStartVertexEdit = useCallback((elementId) => {
     setEditingPolygonId(elementId);
     setSelectedIds([elementId]);
@@ -191,14 +174,12 @@ export default function EventLayoutEditorDemo() {
   }, []);
 
   // ── Formas sugeridas (preset) ─────────────────────────────────────────────
-  // onApplyPreset se pasa a PropertiesPanel y delega a LayoutEditorCanvas
-  // via una ref para no recrear el callback en cada render.
   const applyPresetRef = useRef(null);
   const handleApplyPreset = useCallback((newPolygonPoints) => {
     applyPresetRef.current?.(newPolygonPoints);
   }, []);
 
-  // ── Undo ──────────────────────────────────────────────────────────────────
+  // ── Undo / Redo ───────────────────────────────────────────────────────────
   const handleUndo = useCallback(() => {
     setHistory((h) => {
       if (h.length === 0) return h;
@@ -209,7 +190,6 @@ export default function EventLayoutEditorDemo() {
     });
   }, [elements]);
 
-  // ── Redo ──────────────────────────────────────────────────────────────────
   const handleRedo = useCallback(() => {
     setFuture((f) => {
       if (f.length === 0) return f;
@@ -220,13 +200,45 @@ export default function EventLayoutEditorDemo() {
     });
   }, [elements]);
 
-  // ── Atajos de teclado globales ─────────────────────────────────────────────
+  // ── Atajos de teclado globales ────────────────────────────────────────────
   useEffect(() => {
     const handler = (e) => {
-      const tag = document.activeElement?.tagName;
+      const tag     = document.activeElement?.tagName;
       const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
       if (isInput) return;
 
+      // Ctrl+C — copiar sección seleccionada
+      if (e.ctrlKey && e.key === 'c') {
+        if (selectedIds.length === 1) {
+          const el = elements.find((x) => x.id === selectedIds[0]);
+          if (el?.type === 'section') {
+            e.preventDefault();
+            setClipboard(el);
+          }
+        }
+        return;
+      }
+      // Ctrl+V — pegar con mismo eventSectionId, offset 20px
+      if (e.ctrlKey && e.key === 'v') {
+        if (!clipboard) return;
+        e.preventDefault();
+        const siblings  = elements.filter((x) => x.eventSectionId === clipboard.eventSectionId);
+        const suffix    = siblings.length + 1;
+        const baseLabel = clipboard.label.replace(/ \d+$/, '');
+        const newEl = {
+          ...clipboard,
+          id:             generateId(),
+          eventSectionId: clipboard.eventSectionId,
+          label:          `${baseLabel} ${suffix}`,
+          x:              clipboard.x + 20,
+          y:              clipboard.y + 20,
+        };
+        setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), elements]);
+        setFuture([]);
+        setElements((prev) => [...prev, newEl]);
+        setSelectedIds([newEl.id]);
+        return;
+      }
       // Undo
       if (e.ctrlKey && !e.shiftKey && e.key === 'z') {
         e.preventDefault();
@@ -239,13 +251,13 @@ export default function EventLayoutEditorDemo() {
         handleRedo();
         return;
       }
-      // Eliminar seleccionados
+      // Delete
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0) {
         e.preventDefault();
         handleDeleteSelected();
         return;
       }
-      // Deseleccionar
+      // Escape
       if (e.key === 'Escape' && selectedIds.length > 0 && !editingPolygonId) {
         e.preventDefault();
         setSelectedIds([]);
@@ -254,12 +266,18 @@ export default function EventLayoutEditorDemo() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleUndo, handleRedo, selectedIds, handleDeleteSelected, editingPolygonId]);
+  }, [handleUndo, handleRedo, selectedIds, handleDeleteSelected, editingPolygonId, clipboard, elements]);
 
   // ── Zoom ──────────────────────────────────────────────────────────────────
   const handleZoomIn    = () => setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)));
   const handleZoomOut   = () => setZoom((z) => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)));
   const handleResetZoom = () => setZoom(0.75);
+
+  // ── Tipos de sección ocupados (para bloquear paleta) ─────────────────────
+  const occupiedSectionTypes = useMemo(
+    () => [...new Set(elements.filter((el) => el.type === 'section').map((el) => el.sectionType))],
+    [elements],
+  );
 
   const selectedElement =
     selectedIds.length === 1
@@ -273,6 +291,7 @@ export default function EventLayoutEditorDemo() {
       className="fixed inset-0 flex flex-col bg-background text-textPrimary overflow-hidden"
       style={{ fontFamily: 'Inter, sans-serif' }}
     >
+      {/* ── Topbar ──────────────────────────────────────────────────────── */}
       <div className="flex-shrink-0 bg-surface border-b border-surfaceAlt px-4 py-2 flex items-center gap-3">
         <span className="text-sm font-bold text-textPrimary">Editor de Layout</span>
         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-dashed border-accent text-accent">
@@ -309,11 +328,15 @@ export default function EventLayoutEditorDemo() {
           setEditingPolygonId(null);
           setHistory([]);
           setFuture([]);
+          setClipboard(null);
         }}
       />
 
       <div className="flex flex-1 min-h-0">
-        <ElementPalette onAddElement={handleAddElement} />
+        <ElementPalette
+          onAddElement={handleAddElement}
+          occupiedSectionTypes={occupiedSectionTypes}
+        />
 
         <LayoutEditorCanvas
           elements={elements}
@@ -334,17 +357,24 @@ export default function EventLayoutEditorDemo() {
           onRegisterApplyPreset={(fn) => { applyPresetRef.current = fn; }}
         />
 
-        <PropertiesPanel
-          element={selectedElement}
-          onChange={handleChange}
-          onDelete={handleDelete}
-          isEditingVertices={isEditingVertices}
-          onStartVertexEdit={() => selectedElement && handleStartVertexEdit(selectedElement.id)}
-          onEndVertexEdit={handleEndVertexEdit}
-          canvasSize={canvasSize}
-          onCanvasSizeChange={handleCanvasSizeChange}
-          onApplyPreset={handleApplyPreset}
-        />
+        <div className="flex flex-col">
+          <SectionsList
+            elements={elements}
+            selectedIds={selectedIds}
+            onSelect={(id) => setSelectedIds([id])}
+          />
+          <PropertiesPanel
+            element={selectedElement}
+            onChange={handleChange}
+            onDelete={handleDelete}
+            isEditingVertices={isEditingVertices}
+            onStartVertexEdit={() => selectedElement && handleStartVertexEdit(selectedElement.id)}
+            onEndVertexEdit={handleEndVertexEdit}
+            canvasSize={canvasSize}
+            onCanvasSizeChange={handleCanvasSizeChange}
+            onApplyPreset={handleApplyPreset}
+          />
+        </div>
       </div>
     </div>
   );

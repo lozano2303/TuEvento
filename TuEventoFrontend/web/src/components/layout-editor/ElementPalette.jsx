@@ -1,16 +1,15 @@
 import { PALETTE_ELEMENTS } from '../../data/mockLayoutElements';
 import { generateId } from './layoutEditorUtils';
 
-const INFRA = PALETTE_ELEMENTS.filter((e) => e.type !== 'section');
+const INFRA    = PALETTE_ELEMENTS.filter((e) => e.type !== 'section');
 const SECTIONS = PALETTE_ELEMENTS.filter((e) => e.type === 'section');
 
-export default function ElementPalette({ onAddElement }) {
+export default function ElementPalette({ onAddElement, occupiedSectionTypes = [] }) {
   const handleDragStart = (e, template) => {
     e.dataTransfer.setData('template', JSON.stringify(template));
   };
 
   const handleClick = (template) => {
-    // Añadir en el centro del canvas como fallback para dispositivos sin drag
     onAddElement({
       id: generateId(),
       type: template.type,
@@ -27,7 +26,47 @@ export default function ElementPalette({ onAddElement }) {
     });
   };
 
-  const PaletteItem = ({ template }) => (
+  const SectionItem = ({ template }) => {
+    const occupied = occupiedSectionTypes.includes(template.sectionType);
+    return (
+      <div className="relative">
+        <div
+          draggable={!occupied}
+          onDragStart={occupied ? undefined : (e) => handleDragStart(e, template)}
+          onClick={occupied ? undefined : () => handleClick(template)}
+          className={[
+            'flex items-center gap-2 px-3 py-2 rounded-lg select-none transition-colors',
+            occupied
+              ? 'opacity-40 cursor-not-allowed'
+              : 'cursor-grab active:cursor-grabbing hover:bg-surfaceAlt',
+          ].join(' ')}
+          title={occupied ? 'Ya existe en el canvas — usa Ctrl+C/V para duplicar' : 'Arrastra al canvas o haz clic para añadir'}
+        >
+          <span className="text-lg leading-none">{template.icon}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-textPrimary truncate">{template.label}</p>
+            {template.seatLayout && (
+              <p className="text-[10px] text-textMuted">
+                {template.seatLayout.rows}×{template.seatLayout.cols} asientos
+              </p>
+            )}
+          </div>
+          <div
+            className="w-3 h-3 rounded-sm flex-shrink-0"
+            style={{ background: template.color }}
+          />
+        </div>
+        {occupied && (
+          <span className="absolute top-1 right-2 text-[9px] font-bold px-1 py-0.5 rounded
+                           bg-accent/20 text-accent border border-accent/30 pointer-events-none">
+            En uso
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const InfraItem = ({ template }) => (
     <div
       draggable
       onDragStart={(e) => handleDragStart(e, template)}
@@ -39,11 +78,6 @@ export default function ElementPalette({ onAddElement }) {
       <span className="text-lg leading-none">{template.icon}</span>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-textPrimary truncate">{template.label}</p>
-        {template.seatLayout && (
-          <p className="text-[10px] text-textMuted">
-            {template.seatLayout.rows}×{template.seatLayout.cols} asientos
-          </p>
-        )}
       </div>
       <div
         className="w-3 h-3 rounded-sm flex-shrink-0"
@@ -64,26 +98,24 @@ export default function ElementPalette({ onAddElement }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-3">
-        {/* Secciones */}
         <div>
           <p className="text-[10px] font-semibold text-textMuted uppercase tracking-wider px-1 mb-1">
             Secciones
           </p>
           <div className="space-y-0.5">
             {SECTIONS.map((t) => (
-              <PaletteItem key={`${t.type}-${t.sectionType}`} template={t} />
+              <SectionItem key={`${t.type}-${t.sectionType}`} template={t} />
             ))}
           </div>
         </div>
 
-        {/* Infraestructura */}
         <div>
           <p className="text-[10px] font-semibold text-textMuted uppercase tracking-wider px-1 mb-1">
             Infraestructura
           </p>
           <div className="space-y-0.5">
             {INFRA.map((t) => (
-              <PaletteItem key={t.type} template={t} />
+              <InfraItem key={t.type} template={t} />
             ))}
           </div>
         </div>
