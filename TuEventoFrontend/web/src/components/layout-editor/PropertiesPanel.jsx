@@ -73,12 +73,6 @@ export default function PropertiesPanel({
   const labelClass = 'text-[10px] font-semibold text-textMuted uppercase tracking-wider mb-1 block';
 
   if (!element) {
-    const CANVAS_PRESETS = [
-      { label: 'S',  w: 800,  h: 600  },
-      { label: 'M',  w: 1200, h: 800  },
-      { label: 'L',  w: 1600, h: 1000 },
-      { label: 'XL', w: 2000, h: 1400 },
-    ];
     return (
       <aside className="w-[240px] flex-shrink-0 bg-surface border-l border-surfaceAlt flex flex-col overflow-hidden">
         <div className="px-3 py-3 border-b border-surfaceAlt">
@@ -116,22 +110,6 @@ export default function PropertiesPanel({
                   <span className="text-[11px] text-textMuted shrink-0">px</span>
                 </div>
                 <p className="text-[10px] text-textMuted mt-1">Ancho × Alto del área de diseño</p>
-              </div>
-              <div>
-                <label className={labelClass}>Tamaños rápidos</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {CANVAS_PRESETS.map((p) => (
-                    <button
-                      key={p.label}
-                      onClick={() => onCanvasSizeChange({ width: p.w, height: p.h })}
-                      className="text-[10px] px-2 py-1 rounded border border-surfaceAlt
-                                 text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt
-                                 transition-colors"
-                    >
-                      {p.label} <span className="text-textMuted">{p.w}×{p.h}</span>
-                    </button>
-                  ))}
-                </div>
               </div>
             </>
           ) : (
