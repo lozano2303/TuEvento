@@ -57,6 +57,7 @@ const PRESET_ORDER = ['rect', 'circle', 'semicircle', 'trapezoid', 'triangle', '
 
 export default function PropertiesPanel({
   element,
+  elements,
   onChange,
   onDelete,
   isEditingVertices,
@@ -222,6 +223,13 @@ export default function PropertiesPanel({
     onEndVertexEdit?.();
   };
 
+  // ── Subsecciones — hermanos con mismo eventSectionId ────────────────────
+  const siblings = element.type === 'section' && element.eventSectionId && elements
+    ? (elements).filter(
+        (el) => el.eventSectionId === element.eventSectionId && el.id !== element.id
+      )
+    : [];
+
   return (
     <aside className="w-[240px] flex-shrink-0 bg-surface border-l border-surfaceAlt flex flex-col overflow-hidden">
       <div className="px-3 py-3 border-b border-surfaceAlt flex items-center justify-between">
@@ -246,6 +254,17 @@ export default function PropertiesPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
+
+        {/* Badge de subsección */}
+        {siblings.length > 0 && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surfaceAlt border border-surfaceAlt text-xs text-textSecondary">
+            <span
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{ background: element.color }}
+            />
+            Subsección de {element.sectionType} · {siblings.length + 1} partes
+          </div>
+        )}
 
         {/* Controles de forma — solo secciones */}
         {element.type === 'section' && (

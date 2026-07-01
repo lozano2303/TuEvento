@@ -273,11 +273,16 @@ export default function EventLayoutEditorDemo() {
   const handleZoomOut   = () => setZoom((z) => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)));
   const handleResetZoom = () => setZoom(0.75);
 
-  // ── Tipos de sección ocupados (para bloquear paleta) ─────────────────────
-  const occupiedSectionTypes = useMemo(
-    () => [...new Set(elements.filter((el) => el.type === 'section').map((el) => el.sectionType))],
-    [elements],
-  );
+  // ── Conteo de secciones por tipo (para badge en paleta) ─────────────────
+  const occupiedSectionCounts = useMemo(() => {
+    const counts = {};
+    for (const el of elements) {
+      if (el.type === 'section' && el.sectionType) {
+        counts[el.sectionType] = (counts[el.sectionType] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [elements]);
 
   const selectedElement =
     selectedIds.length === 1
@@ -335,7 +340,7 @@ export default function EventLayoutEditorDemo() {
       <div className="flex flex-1 min-h-0">
         <ElementPalette
           onAddElement={handleAddElement}
-          occupiedSectionTypes={occupiedSectionTypes}
+          occupiedSectionCounts={occupiedSectionCounts}
         />
 
         <LayoutEditorCanvas
@@ -360,6 +365,7 @@ export default function EventLayoutEditorDemo() {
         <div className="flex flex-col flex-shrink-0 h-full overflow-hidden">
           <PropertiesPanel
             element={selectedElement}
+            elements={elements}
             onChange={handleChange}
             onDelete={handleDelete}
             isEditingVertices={isEditingVertices}
