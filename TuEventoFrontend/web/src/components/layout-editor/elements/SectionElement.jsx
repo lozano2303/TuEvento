@@ -1,5 +1,5 @@
 import { useRef, useEffect, useMemo, useState, useCallback } from 'react';
-import { Group, Rect, Shape, Circle, Text, Transformer } from 'react-konva';
+import { Group, Rect, Shape, Text, Transformer } from 'react-konva';
 import {
   computeMinSectionSize,
   distributeSeats,
@@ -361,17 +361,29 @@ export default function SectionElement({
           />
         )}
 
-        {/* ── Sillas ───────────────────────────────────────────────────── */}
-        {!isEditingVertices && seatPositions.map((pos, i) => (
-          <Circle
-            key={i}
-            x={pos.x} y={pos.y} radius={pos.r}
-            fill="rgba(255,255,255,0.75)"
-            stroke="rgba(255,255,255,0.4)"
-            strokeWidth={0.5}
+        {/* ── Sillas — un solo <Shape> con sceneFunc batcheado ────────────
+             Un único beginPath + fill() + stroke() para todas las sillas,
+             independientemente de cuántas haya. Sin nodos Konva individuales. */}
+        {!isEditingVertices && seatPositions.length > 0 && (
+          <Shape
+            sceneFunc={(ctx) => {
+              ctx.beginPath();
+              for (const pos of seatPositions) {
+                // moveTo obliga a que cada arco sea un subpath independiente,
+                // evitando que stroke() dibuje líneas entre sillas consecutivas.
+                ctx.moveTo(pos.x + pos.r, pos.y);
+                ctx.arc(pos.x, pos.y, pos.r, 0, Math.PI * 2);
+              }
+              ctx.fillStyle = 'rgba(255,255,255,0.75)';
+              ctx.fill();
+              ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+              ctx.lineWidth = 0.5;
+              ctx.stroke();
+            }}
             listening={false}
+            perfectDrawEnabled={false}
           />
-        ))}
+        )}
       </Group>
 
       {/* ── Label flotante — fuera del Group, no rota con el elemento ───── */}
