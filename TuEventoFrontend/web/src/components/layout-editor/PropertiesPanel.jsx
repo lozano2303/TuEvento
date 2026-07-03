@@ -479,26 +479,6 @@ export default function PropertiesPanel({
                 {hintText}
               </p>
             </div>
-
-            {/* Tamaño del radio + separación */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <span className="text-[9px] text-textMuted mb-0.5 block">Radio (px)</span>
-                <input
-                  type="number" className={inputClass} min={4} max={20}
-                  value={sl.seatRadius}
-                  onChange={(e) => updateSeatLayout({ seatRadius: Math.min(20, Math.max(4, Number(e.target.value))) })}
-                />
-              </div>
-              <div>
-                <span className="text-[9px] text-textMuted mb-0.5 block">Separación</span>
-                <input
-                  type="number" className={inputClass} min={2} max={20}
-                  value={sl.gap}
-                  onChange={(e) => updateSeatLayout({ gap: Math.min(20, Math.max(2, Number(e.target.value))) })}
-                />
-              </div>
-            </div>
           </div>
         )}
       </div>
