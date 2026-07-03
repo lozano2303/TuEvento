@@ -325,11 +325,19 @@ export default function LayoutEditorCanvas({
   const handleVertexDrag = useCallback((vertexIdx, absX, absY) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
+    // abs→local: inversa de la rotación del Group
+    const rad = (el.rotation ?? 0) * Math.PI / 180;
+    const cosR = Math.cos(rad), sinR = Math.sin(rad);
+    const toLocal = (ax, ay) => {
+      const dx = ax - el.x, dy = ay - el.y;
+      return { x: dx * cosR + dy * sinR, y: -dx * sinR + dy * cosR };
+    };
+    const local = toLocal(absX, absY);
     setVertexPreview((prev) => {
       const pts = migratePolygonPoints(prev ?? el.polygonPoints);
       const next = pts.map((p, i) =>
         i === vertexIdx
-          ? { ...p, x: absX - el.x, y: absY - el.y }
+          ? { ...p, x: local.x, y: local.y }
           : { ...p },
       );
       vertexPreviewRef.current = next;
@@ -340,11 +348,18 @@ export default function LayoutEditorCanvas({
   const handleVertexDragEnd = useCallback((vertexIdx, absX, absY) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
+    const rad = (el.rotation ?? 0) * Math.PI / 180;
+    const cosR = Math.cos(rad), sinR = Math.sin(rad);
+    const toLocal = (ax, ay) => {
+      const dx = ax - el.x, dy = ay - el.y;
+      return { x: dx * cosR + dy * sinR, y: -dx * sinR + dy * cosR };
+    };
+    const local = toLocal(absX, absY);
     // Calcular el estado final con la posición del dragEnd
     const pts = migratePolygonPoints(vertexPreviewRef.current ?? el.polygonPoints);
     const raw = pts.map((p, i) =>
       i === vertexIdx
-        ? { ...p, x: absX - el.x, y: absY - el.y }
+        ? { ...p, x: local.x, y: local.y }
         : { ...p },
     );
     const patch = normalizePoints(raw, el.x, el.y);
@@ -400,20 +415,23 @@ export default function LayoutEditorCanvas({
   const handleSegmentCurve = useCallback((segmentIdx, handleOutAbs, handleInAbs) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
+    const rad = (el.rotation ?? 0) * Math.PI / 180;
+    const cosR = Math.cos(rad), sinR = Math.sin(rad);
+    const toLocal = (ax, ay) => {
+      const dx = ax - el.x, dy = ay - el.y;
+      return { x: dx * cosR + dy * sinR, y: -dx * sinR + dy * cosR };
+    };
     const pts     = migratePolygonPoints(vertexPreviewRef.current ?? el.polygonPoints);
     const nextIdx = (segmentIdx + 1) % pts.length;
+    const locOut  = toLocal(handleOutAbs.x, handleOutAbs.y);
+    const locIn   = toLocal(handleInAbs.x,  handleInAbs.y);
     const updated = pts.map((p, i) => {
-      if (i === segmentIdx) {
-        return { ...p, handleOut: { x: handleOutAbs.x - el.x, y: handleOutAbs.y - el.y } };
-      }
-      if (i === nextIdx) {
-        return { ...p, handleIn: { x: handleInAbs.x - el.x, y: handleInAbs.y - el.y } };
-      }
+      if (i === segmentIdx) return { ...p, handleOut: locOut };
+      if (i === nextIdx)    return { ...p, handleIn:  locIn  };
       return p;
     });
     vertexPreviewRef.current = updated;
     setVertexPreview(updated);
-    // onChange directo en el cuerpo — no dentro de un updater
     onChange({ ...el, polygonPoints: updated });
   }, [elements, editingPolygonId, onChange]);
 
@@ -425,22 +443,27 @@ export default function LayoutEditorCanvas({
   const handleHandleDrag = useCallback((vertexIdx, side, absX, absY) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
+    const rad = (el.rotation ?? 0) * Math.PI / 180;
+    const cosR = Math.cos(rad), sinR = Math.sin(rad);
+    const toLocal = (ax, ay) => {
+      const dx = ax - el.x, dy = ay - el.y;
+      return { x: dx * cosR + dy * sinR, y: -dx * sinR + dy * cosR };
+    };
+    const loc = toLocal(absX, absY);
     setVertexPreview((prev) => {
       const pts = migratePolygonPoints(prev ?? el.polygonPoints);
       const next = pts.map((p, i) => {
         if (i !== vertexIdx) return p;
-        const relX = absX - el.x;
-        const relY = absY - el.y;
         if (side === 'out') {
-          const updated = { ...p, handleOut: { x: relX, y: relY } };
+          const updated = { ...p, handleOut: { x: loc.x, y: loc.y } };
           if (p.symmetric && p.handleIn !== null) {
-            updated.handleIn = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
+            updated.handleIn = { x: p.x - (loc.x - p.x), y: p.y - (loc.y - p.y) };
           }
           return updated;
         } else {
-          const updated = { ...p, handleIn: { x: relX, y: relY } };
+          const updated = { ...p, handleIn: { x: loc.x, y: loc.y } };
           if (p.symmetric && p.handleOut !== null) {
-            updated.handleOut = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
+            updated.handleOut = { x: p.x - (loc.x - p.x), y: p.y - (loc.y - p.y) };
           }
           return updated;
         }
@@ -457,21 +480,26 @@ export default function LayoutEditorCanvas({
   const handleHandleDragEnd = useCallback((vertexIdx, side, absX, absY) => {
     const el = elements.find((e) => e.id === editingPolygonId);
     if (!el) return;
+    const rad = (el.rotation ?? 0) * Math.PI / 180;
+    const cosR = Math.cos(rad), sinR = Math.sin(rad);
+    const toLocal = (ax, ay) => {
+      const dx = ax - el.x, dy = ay - el.y;
+      return { x: dx * cosR + dy * sinR, y: -dx * sinR + dy * cosR };
+    };
+    const loc = toLocal(absX, absY);
     const pts = migratePolygonPoints(vertexPreviewRef.current ?? el.polygonPoints);
     const raw = pts.map((p, i) => {
       if (i !== vertexIdx) return p;
-      const relX = absX - el.x;
-      const relY = absY - el.y;
       if (side === 'out') {
-        const updated = { ...p, handleOut: { x: relX, y: relY } };
+        const updated = { ...p, handleOut: { x: loc.x, y: loc.y } };
         if (p.symmetric && p.handleIn !== null) {
-          updated.handleIn = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
+          updated.handleIn = { x: p.x - (loc.x - p.x), y: p.y - (loc.y - p.y) };
         }
         return updated;
       } else {
-        const updated = { ...p, handleIn: { x: relX, y: relY } };
+        const updated = { ...p, handleIn: { x: loc.x, y: loc.y } };
         if (p.symmetric && p.handleOut !== null) {
-          updated.handleOut = { x: p.x - (relX - p.x), y: p.y - (relY - p.y) };
+          updated.handleOut = { x: p.x - (loc.x - p.x), y: p.y - (loc.y - p.y) };
         }
         return updated;
       }
