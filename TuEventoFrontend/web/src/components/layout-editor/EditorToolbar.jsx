@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw, Code2, Trash2, Save, X } from 'lucide-react';
 import { serializeLayout } from './layoutEditorUtils';
 
-export default function EditorToolbar({ elements, canvasSize, zoom, onZoomIn, onZoomOut, onResetZoom, onClear, canUndo, canRedo, onUndo, onRedo }) {
+export default function EditorToolbar({ elements, canvasSize, zoom, onZoomIn, onZoomOut, onResetZoom, onClear, canUndo, canRedo, onUndo, onRedo, onOpenHelp }) {
   const [showJson, setShowJson] = useState(false);
   const [saveMsg, setSaveMsg] = useState(null);
 
@@ -117,6 +117,18 @@ export default function EditorToolbar({ elements, canvasSize, zoom, onZoomIn, on
         >
           <Save className="w-3.5 h-3.5" />
           Guardar
+        </button>
+
+        {/* Botón de ayuda */}
+        <button
+          onClick={onOpenHelp}
+          className="w-7 h-7 rounded-full flex items-center justify-center border border-surfaceAlt
+                     text-textMuted hover:text-textPrimary hover:bg-surfaceAlt transition-colors
+                     text-xs font-bold leading-none flex-shrink-0"
+          title="Ayuda"
+          aria-label="Abrir ayuda"
+        >
+          ?
         </button>
       </div>
 

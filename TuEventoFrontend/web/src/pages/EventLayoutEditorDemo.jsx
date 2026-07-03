@@ -4,6 +4,7 @@ import LayoutEditorCanvas from '../components/layout-editor/LayoutEditorCanvas';
 import PropertiesPanel from '../components/layout-editor/PropertiesPanel';
 import EditorToolbar from '../components/layout-editor/EditorToolbar';
 import SectionsList from '../components/layout-editor/SectionsList';
+import HelpModal from '../components/layout-editor/HelpModal';
 import { generateId, generateSectionId, getElementAABB, CANVAS_MARGIN } from '../components/layout-editor/layoutEditorUtils';
 
 const INITIAL_ELEMENTS = [
@@ -78,6 +79,7 @@ export default function EventLayoutEditorDemo() {
   const [history,   setHistory]   = useState([]);
   const [future,    setFuture]    = useState([]);
   const [clipboard, setClipboard] = useState(null);
+  const [helpOpen,  setHelpOpen]  = useState(false);
 
   // ── canvasSize derivado ───────────────────────────────────────────────────
   const canvasSize = useMemo(() => {
@@ -338,6 +340,7 @@ export default function EventLayoutEditorDemo() {
         canRedo={future.length > 0}
         onUndo={handleUndo}
         onRedo={handleRedo}
+        onOpenHelp={() => setHelpOpen(true)}
         onClear={() => {
           setElements([]);
           setSelectedIds([]);
@@ -397,6 +400,8 @@ export default function EventLayoutEditorDemo() {
           </div>
         </div>
       </div>
+
+      <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }
