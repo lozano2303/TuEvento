@@ -139,15 +139,26 @@ export default function VertexEditorOverlay({
   const points = rawPoints ? migratePolygonPoints(rawPoints) : null;
   if (!points || points.length < 3) return null;
 
+  // Pre-calcular trigonometría para la rotación del elemento
+  const rad = (element.rotation ?? 0) * Math.PI / 180;
+  const cosR = Math.cos(rad);
+  const sinR = Math.sin(rad);
+
+  // Convierte coordenadas locales del Group → absolutas del canvas (canvas-space)
+  const toAbs = (lx, ly) => ({
+    x: element.x + lx * cosR - ly * sinR,
+    y: element.y + lx * sinR + ly * cosR,
+  });
+
   // Convertir vértices ancla de coordenadas relativas → absolutas del canvas
   const absPoints = points.map((pt) => ({
     ...pt,
     // Posición absoluta del ancla
-    absX: element.x + pt.x,
-    absY: element.y + pt.y,
+    absX: toAbs(pt.x, pt.y).x,
+    absY: toAbs(pt.x, pt.y).y,
     // Handles absolutos (si existen)
-    absHandleIn:  pt.handleIn  ? { x: element.x + pt.handleIn.x,  y: element.y + pt.handleIn.y  } : null,
-    absHandleOut: pt.handleOut ? { x: element.x + pt.handleOut.x, y: element.y + pt.handleOut.y } : null,
+    absHandleIn:  pt.handleIn  ? toAbs(pt.handleIn.x,  pt.handleIn.y)  : null,
+    absHandleOut: pt.handleOut ? toAbs(pt.handleOut.x, pt.handleOut.y) : null,
   }));
 
   return (
