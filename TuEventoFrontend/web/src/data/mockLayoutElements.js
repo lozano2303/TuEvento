@@ -2,7 +2,8 @@
 // NO son datos del backend — son la configuración de qué se puede arrastrar al canvas.
 //
 // Fase 1.5: seatLayout usa targetSeats en vez de rows/cols.
-// defaultWidth/defaultHeight calculados para que las sillas quepan con margen.
+// Todas las secciones se crean con 100×100 y 9 sillas por defecto para evitar
+// que desborden el canvas antes de que el usuario las ajuste manualmente.
 
 export const PALETTE_ELEMENTS = [
   // ── Infraestructura ────────────────────────────────────────────────────────
@@ -70,56 +71,45 @@ export const PALETTE_ELEMENTS = [
     seatLayout: null,
   },
 
-  // ── Secciones ─────────────────────────────────────────────────────────────
-  // defaultWidth/defaultHeight dimensionados para que las sillas default quepan cómodamente.
+  // ── Secciones (100×100, 9 sillas por defecto) ─────────────────────────────
   {
     type: 'section',
     sectionType: 'VIP',
     label: 'VIP',
     icon: '⭐',
-    defaultWidth: 240,
-    defaultHeight: 180,
+    defaultWidth: 100,
+    defaultHeight: 100,
     color: '#7C3AED',
-    seatLayout: { targetSeats: 24, seatRadius: 8, gap: 4 },
+    seatLayout: { targetSeats: 9, seatRadius: 8, gap: 4 },
   },
   {
     type: 'section',
     sectionType: 'General',
     label: 'General',
     icon: '👥',
-    defaultWidth: 320,
-    defaultHeight: 260,
+    defaultWidth: 100,
+    defaultHeight: 100,
     color: '#16A34A',
-    seatLayout: { targetSeats: 80, seatRadius: 6, gap: 3 },
+    seatLayout: { targetSeats: 9, seatRadius: 8, gap: 4 },
   },
   {
     type: 'section',
     sectionType: 'Palco',
     label: 'Palco',
     icon: '🎪',
-    defaultWidth: 200,
-    defaultHeight: 140,
+    defaultWidth: 100,
+    defaultHeight: 100,
     color: '#EA580C',
-    seatLayout: { targetSeats: 15, seatRadius: 8, gap: 4 },
+    seatLayout: { targetSeats: 9, seatRadius: 8, gap: 4 },
   },
   {
     type: 'section',
     sectionType: 'Tribuna',
     label: 'Tribuna',
     icon: '🏟️',
-    defaultWidth: 300,
-    defaultHeight: 220,
+    defaultWidth: 100,
+    defaultHeight: 100,
     color: '#2563EB',
-    seatLayout: { targetSeats: 60, seatRadius: 6, gap: 3 },
-  },
-  {
-    type: 'section',
-    sectionType: 'Pista',
-    label: 'Pista',
-    icon: '🎶',
-    defaultWidth: 200,
-    defaultHeight: 200,
-    color: '#DB2777',
-    seatLayout: null,  // área libre — sin grilla
+    seatLayout: { targetSeats: 9, seatRadius: 8, gap: 4 },
   },
 ];

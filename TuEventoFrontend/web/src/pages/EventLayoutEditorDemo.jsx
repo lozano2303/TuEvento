@@ -23,8 +23,8 @@ const INITIAL_ELEMENTS = [
     type: 'section',
     sectionType: 'VIP',
     eventSectionId: generateSectionId(),
-    seatLayout: { rows: 4, cols: 6, seatRadius: 7, gap: 4 },
-    x: 100, y: 200, width: 216, height: 140,
+    seatLayout: { targetSeats: 9, seatRadius: 8, gap: 4 },
+    x: 100, y: 200, width: 100, height: 100,
     rotation: 0, label: 'VIP Izquierda', color: '#7C3AED',
   },
   {
@@ -32,8 +32,8 @@ const INITIAL_ELEMENTS = [
     type: 'section',
     sectionType: 'General',
     eventSectionId: generateSectionId(),
-    seatLayout: { rows: 6, cols: 8, seatRadius: 7, gap: 4 },
-    x: 400, y: 220, width: 264, height: 168,
+    seatLayout: { targetSeats: 9, seatRadius: 8, gap: 4 },
+    x: 400, y: 220, width: 100, height: 100,
     rotation: 0, label: 'General', color: '#16A34A',
   },
   {
