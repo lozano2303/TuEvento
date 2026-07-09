@@ -76,47 +76,7 @@ export default function PropertiesPanel({
     return (
       <aside className="w-[240px] flex-shrink-0 bg-surface border-l border-surfaceAlt flex flex-col overflow-hidden">
         <div className="px-3 py-3 border-b border-surfaceAlt">
-          <h2 className="text-xs font-bold text-textSecondary uppercase tracking-wider">Canvas</h2>
-        </div>
-        <div className="flex-1 overflow-y-auto p-3 space-y-4">
-          {onCanvasSizeChange && canvasSize ? (
-            <>
-              <div>
-                <label className={labelClass}>Tamaño del canvas</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    className={inputClass}
-                    style={{ width: '72px' }}
-                    value={Math.round(canvasSize.width)}
-                    min={800} step={100}
-                    onChange={(e) => onCanvasSizeChange({
-                      width:  Math.max(800, parseInt(e.target.value) || 800),
-                      height: canvasSize.height,
-                    })}
-                  />
-                  <span className="text-[11px] text-textMuted shrink-0">×</span>
-                  <input
-                    type="number"
-                    className={inputClass}
-                    style={{ width: '72px' }}
-                    value={Math.round(canvasSize.height)}
-                    min={600} step={100}
-                    onChange={(e) => onCanvasSizeChange({
-                      width:  canvasSize.width,
-                      height: Math.max(600, parseInt(e.target.value) || 600),
-                    })}
-                  />
-                  <span className="text-[11px] text-textMuted shrink-0">px</span>
-                </div>
-                <p className="text-[10px] text-textMuted mt-1">Ancho × Alto del área de diseño</p>
-              </div>
-            </>
-          ) : (
-            <p className="text-textMuted text-xs text-center leading-relaxed">
-              Selecciona o arrastra un elemento al canvas para editar sus propiedades.
-            </p>
-          )}
+          <h2 className="text-xs font-bold text-textSecondary tracking-wider">Arrastre o seleccione una seccion del mapa para ver sus propiedades.</h2>
         </div>
       </aside>
     );
