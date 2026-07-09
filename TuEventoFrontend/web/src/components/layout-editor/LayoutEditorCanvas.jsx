@@ -866,8 +866,8 @@ export default function LayoutEditorCanvas({
         </Layer>
       </Stage>
 
-      {/* ── Controles de zoom flotantes (Fix 3 — visibles y accesibles) ── */}
-      <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1 bg-surface border border-surfaceAlt rounded-lg px-2 py-1.5 shadow-xl shadow-black/40 select-none">
+      {/* ── Controles de zoom — esquina superior izquierda del canvas ──── */}
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-1 bg-surface border border-surfaceAlt rounded-lg px-2 py-1.5 shadow-xl shadow-black/40 select-none">
         <button
           onClick={handleZoomOut}
           className="w-7 h-7 flex items-center justify-center rounded text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt transition-colors text-base font-bold"

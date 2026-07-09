@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, Code2, Trash2, Save, X } from 'lucide-react';
+import { Code2, Trash2, Save, X } from 'lucide-react';
 import { serializeLayout } from './layoutEditorUtils';
 
-export default function EditorToolbar({ elements, canvasSize, zoom, onZoomIn, onZoomOut, onResetZoom, onClear, canUndo, canRedo, onUndo, onRedo, onOpenHelp }) {
+export default function EditorToolbar({ elements, canvasSize, onClear, canUndo, canRedo, onUndo, onRedo, onOpenHelp }) {
   const [showJson, setShowJson] = useState(false);
   const [saveMsg, setSaveMsg] = useState(null);
 
@@ -29,32 +29,6 @@ export default function EditorToolbar({ elements, canvasSize, zoom, onZoomIn, on
   return (
     <>
       <div className="h-11 flex-shrink-0 bg-surface border-b border-surfaceAlt flex items-center px-3 gap-2">
-        {/* Zoom */}
-        <div className="flex items-center gap-1 bg-background rounded-lg px-2 py-1 border border-surfaceAlt">
-          <button
-            onClick={onZoomOut}
-            className="text-textSecondary hover:text-textPrimary transition-colors"
-            title="Alejar"
-          >
-            <ZoomOut className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={onResetZoom}
-            className="text-textSecondary hover:text-accent transition-colors text-xs w-10 text-center font-mono"
-            title="Resetear zoom"
-          >
-            {Math.round(zoom * 100)}%
-          </button>
-          <button
-            onClick={onZoomIn}
-            className="text-textSecondary hover:text-textPrimary transition-colors"
-            title="Acercar"
-          >
-            <ZoomIn className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="w-px h-5 bg-surfaceAlt" />
 
         {/* Elementos count */}
         <span className="text-textMuted text-xs">
