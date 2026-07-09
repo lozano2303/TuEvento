@@ -37,7 +37,7 @@ export default function EditorToolbar({ elements, canvasSize, onClear, canUndo, 
 
         <div className="w-px h-5 bg-surfaceAlt" />
 
-        {/* Undo / Redo */}
+        {/* Undo / Redo / Ayuda */}
         <div className="flex items-center gap-0.5">
           <button
             onClick={onUndo}
@@ -60,6 +60,16 @@ export default function EditorToolbar({ elements, canvasSize, onClear, canUndo, 
           >
             <span className="text-base leading-none">↪</span>
             <span className="hidden sm:inline">Rehacer</span>
+          </button>
+          <button
+            onClick={onOpenHelp}
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors
+                       text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt flex-shrink-0"
+            title="Ayuda"
+            aria-label="Abrir ayuda"
+          >
+            <span className="text-sm leading-none">?</span>
+            <span className="hidden sm:inline">Cómo usar el editor</span>
           </button>
         </div>
 
@@ -91,18 +101,6 @@ export default function EditorToolbar({ elements, canvasSize, onClear, canUndo, 
         >
           <Save className="w-3.5 h-3.5" />
           Guardar
-        </button>
-
-        {/* Botón de ayuda */}
-        <button
-          onClick={onOpenHelp}
-          className="w-7 h-7 rounded-full flex items-center justify-center border border-surfaceAlt
-                     text-textMuted hover:text-textPrimary hover:bg-surfaceAlt transition-colors
-                     text-xs font-bold leading-none flex-shrink-0"
-          title="Ayuda"
-          aria-label="Abrir ayuda"
-        >
-          ?
         </button>
       </div>
 

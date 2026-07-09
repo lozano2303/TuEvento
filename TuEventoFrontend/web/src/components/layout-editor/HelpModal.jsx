@@ -135,7 +135,7 @@ export default function HelpModal({ isOpen, onClose }) {
     >
       <div
         className="relative w-full bg-surface border border-surfaceAlt rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-        style={{ maxWidth: '600px', maxHeight: '80vh' }}
+        style={{ maxWidth: '600px', maxHeight: '90vh' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -153,7 +153,8 @@ export default function HelpModal({ isOpen, onClose }) {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-surfaceAlt flex-shrink-0 overflow-x-auto">
+        <div className="flex border-b border-surfaceAlt flex-shrink-0 overflow-x-auto
+                        [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {TABS.map((tab, i) => (
             <button
               key={tab}
@@ -169,10 +170,9 @@ export default function HelpModal({ isOpen, onClose }) {
             </button>
           ))}
         </div>
-
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          <Content />
+        <div className="flex-1 overflow-y-auto px-5 py-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <Content />
         </div>
       </div>
     </div>
