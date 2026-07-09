@@ -4,3 +4,5 @@ node_modules/
 
 .kilo/
 postgres*.tar
+
+TuEventoFrontend/web/dist/

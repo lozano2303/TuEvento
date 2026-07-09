@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, User, Settings, ChevronDown, X } from 'lucide-react';
+import { rejectOrganizerRequest } from '../services/OrganizerPetitionService';
 import { useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
@@ -10,6 +11,10 @@ export default function AdminPanel() {
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [documentUrl, setDocumentUrl] = useState(null);
+  const [documentLoading, setDocumentLoading] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   const navigate = useNavigate();
 
@@ -103,12 +108,74 @@ export default function AdminPanel() {
     { key: 'rejected', label: 'Rechazadas'},
   ];
 
+  const fetchDocumentUrl = async (req) => {
+    if (!req) return;
+    if (!req.storedFileId) {
+      setDocumentLoading(false);
+      return;
+    }
+    setDocumentLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/admin/organizer-requests/${req.organizerPetitionId}/document`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      if (response.ok && data.data?.publicUrl) {
+        setDocumentUrl(data.data.publicUrl);
+      } else {
+        setError('No se pudo obtener la URL del documento');
+      }
+    } catch (err) {
+      setError('Error al obtener documento: ' + err.message);
+    } finally {
+      setDocumentLoading(false);
+    }
+  };
+
+  const handleViewDocument = (req) => {
+    setSelectedRequest(req);
+    setDocumentUrl(null);
+    setShowDocumentModal(true);
+    fetchDocumentUrl(req);
+  };
+
+  const handleReject = async (req) => {
+    if (!req) return;
+
+    const confirmed = window.confirm(`¿Rechazar la solicitud de ${req.fullName || 'este usuario'}? El usuario podrá enviar un nuevo documento.`);
+    if (!confirmed) return;
+
+    try {
+      setError(null);
+      await rejectOrganizerRequest(req.organizerPetitionId);
+      closeDocumentModal();
+      await fetchRequests();
+    } catch (err) {
+      setError(err.message || 'Error al rechazar solicitud');
+    }
+  };
+
+  const handleOpenDocument = () => {
+    if (documentUrl) {
+      window.open(documentUrl, '_blank');
+    }
+  };
+
+  const closeDocumentModal = () => {
+    setShowDocumentModal(false);
+    setDocumentUrl(null);
+    setSelectedRequest(null);
+  };
+
   return (
     <div className="min-h-screen flex bg-[#12091b] text-white font-sans">
 
-      {/* ── Sidebar ── */}
+      {/* Sidebar */}
       <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-[#12091b] border-r border-white/5 h-screen sticky top-0">
-      
 
         <nav className="flex flex-col gap-0.5">
           {navItems.map((item, idx) => (
@@ -127,7 +194,7 @@ export default function AdminPanel() {
           ))}
         </nav>
 
-        {/* User Profile Card - Fixed at bottom left of sidebar */}
+        {/* User Profile Card */}
         <div className="pt-4 border-t border-white/5 relative user-menu-container flex-shrink-0">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
@@ -174,7 +241,7 @@ export default function AdminPanel() {
         </div>
       </aside>
 
-      {/* ── Main ── */}
+      {/* Main */}
       <main className="flex-1 overflow-y-auto bg-[#16091f]">
         <div className="p-8 max-w-6xl mx-auto w-full">
 
@@ -236,11 +303,11 @@ export default function AdminPanel() {
                     {filteredRequests.map((req, idx) => {
                       const { bg, label } = statusStyle(req.status);
                       return (
-<tr
-                           key={req.organizerPetitionId}
-                           className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors
-                             ${idx % 2 !== 0 ? 'bg-white/[0.02]' : ''}`}
-                         >
+                        <tr
+                          key={req.organizerPetitionId}
+                          className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors
+                            ${idx % 2 !== 0 ? 'bg-white/[0.02]' : ''}`}
+                        >
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
@@ -261,7 +328,7 @@ export default function AdminPanel() {
                             </span>
                           </td>
                           <td className="px-5 py-3.5 text-sm text-slate-400">
-                            {req.createdAt ? new Date(req.createdAt).toLocaleDateString('es-CO') : '-'}
+                            {req.applicationDate ? new Date(req.applicationDate).toLocaleDateString('es-CO') : '-'}
                           </td>
                           <td className="px-5 py-3.5 text-center">
                             <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold text-white ${bg}`}>
@@ -270,6 +337,7 @@ export default function AdminPanel() {
                           </td>
                           <td className="px-5 py-3.5 text-right">
                             <button
+                              onClick={() => handleViewDocument(req)}
                               className="p-1.5 hover:bg-[#7f13ec]/20 rounded-full transition-colors text-[#7f13ec]"
                               title="Ver solicitud"
                             >
@@ -300,6 +368,121 @@ export default function AdminPanel() {
               </div>
             </div>
           </div>
+
+          {/* Document Modal */}
+          {showDocumentModal && selectedRequest && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-[#1a0d28] rounded-2xl border border-white/10 shadow-2xl shadow-black/60 max-w-lg w-full flex flex-col">
+
+                {/* Modal Header */}
+                <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7f13ec] to-[#5a189a] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                      {selectedRequest.profilePicture
+                        ? <img src={selectedRequest.profilePicture} alt={selectedRequest.fullName} className="w-full h-full object-cover rounded-full" />
+                        : selectedRequest.fullName?.charAt(0).toUpperCase() || '?'
+                      }
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-white leading-tight">{selectedRequest.fullName}</h2>
+                      <p className="text-xs text-slate-400">{selectedRequest.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={closeDocumentModal}
+                    className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Info Grid */}
+                <div className="px-6 py-4 grid grid-cols-2 gap-3">
+                  <div className="bg-white/[0.04] rounded-xl p-3 border border-white/5">
+                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-1">Tipo de documento</p>
+                    <p className="text-sm font-semibold text-white">{selectedRequest.documentType || 'Cédula'}</p>
+                  </div>
+                  <div className="bg-white/[0.04] rounded-xl p-3 border border-white/5">
+                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-1">Fecha de solicitud</p>
+                    <p className="text-sm font-semibold text-white">
+                      {selectedRequest.applicationDate
+                        ? new Date(selectedRequest.applicationDate).toLocaleDateString('es-CO')
+                        : '-'}
+                    </p>
+                  </div>
+                  <div className="bg-white/[0.04] rounded-xl p-3 border border-white/5 col-span-2">
+                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-1">Estado actual</p>
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold text-white ${statusStyle(selectedRequest.status).bg}`}>
+                      {statusStyle(selectedRequest.status).label}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Document Button */}
+                <div className="px-6 pb-2">
+                  <button
+                    onClick={handleOpenDocument}
+                    disabled={!documentUrl || documentLoading}
+                    className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl border transition-all group
+                      ${documentUrl
+                        ? 'bg-[#7f13ec]/10 border-[#7f13ec]/30 hover:bg-[#7f13ec]/20 hover:border-[#7f13ec]/60 cursor-pointer'
+                        : 'bg-white/[0.03] border-white/5 cursor-not-allowed opacity-50'
+                      }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0
+                        ${documentUrl ? 'bg-[#7f13ec]/20' : 'bg-white/5'}`}>
+                        <svg className={`w-4 h-4 ${documentUrl ? 'text-[#7f13ec]' : 'text-slate-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="text-left">
+                        <p className={`text-sm font-semibold ${documentUrl ? 'text-white' : 'text-slate-500'}`}>
+                          {documentLoading ? 'Cargando documento...' : documentUrl ? 'Ver documento adjunto' : 'Sin documento disponible'}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {documentUrl ? 'Se abrirá en una nueva pestaña' : ''}
+                        </p>
+                      </div>
+                    </div>
+                    {documentLoading && (
+                      <svg className="w-4 h-4 text-slate-500 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4z" />
+                      </svg>
+                    )}
+                    {!documentLoading && documentUrl && (
+                      <svg className="w-4 h-4 text-[#7f13ec] group-hover:translate-x-0.5 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+
+                {/* Actions */}
+                <div className="px-6 py-5 flex gap-3">
+                  <button
+                    disabled
+                    className="flex-1 py-2.5 rounded-full text-sm font-bold bg-emerald-500/10 text-emerald-400/60 border border-emerald-500/10 cursor-not-allowed transition-all"
+                  >
+                    Aceptar
+                  </button>
+                  <button
+                    onClick={() => handleReject(selectedRequest)}
+                    disabled={selectedRequest.status !== 'PENDING'}
+                    className={`flex-1 py-2.5 rounded-full text-sm font-bold border transition-all
+                      ${selectedRequest.status === 'PENDING'
+                        ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500 hover:text-white hover:border-rose-500'
+                        : 'bg-rose-500/10 text-rose-400/60 border-rose-500/10 cursor-not-allowed'
+                      }`}
+                  >
+                    Rechazar
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
 
         </div>
       </main>
