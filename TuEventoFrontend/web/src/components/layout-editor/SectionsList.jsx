@@ -25,7 +25,7 @@ export default function SectionsList({ elements, selectedIds, onSelect }) {
 
   const header = (
     <div className="px-3 py-3 border-b border-surfaceAlt">
-      <h2 className="text-sm font-bold text-textPrimary">Secciones del layout</h2>
+      <h2 className="text-sm font-bold text-textPrimary">Secciones del mapa</h2>
     </div>
   );
 

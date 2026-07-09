@@ -564,6 +564,7 @@ export default function LayoutEditorCanvas({
     if (isRight) {
       e.evt.preventDefault();
       panState.current = { active: true, startPointer: { x: e.evt.clientX, y: e.evt.clientY }, startStagePos: { ...stagePos } };
+      if (stageRef.current) stageRef.current.container().style.cursor = 'grabbing';
       return;
     }
     if (!isLeft) return;
@@ -629,7 +630,11 @@ export default function LayoutEditorCanvas({
   };
 
   const handleStageMouseUp = () => {
-    if (panState.current.active) { panState.current.active = false; return; }
+    if (panState.current.active) {
+      panState.current.active = false;
+      if (stageRef.current) stageRef.current.container().style.cursor = 'default';
+      return;
+    }
     if (isRubberBand.current && selBox) {
       if (selBox.width > 5 || selBox.height > 5) {
         const sel = elements
