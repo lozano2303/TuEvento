@@ -28,6 +28,33 @@ export const createPetition = async (formData) => {
   }
 };
 
+export const rejectOrganizerRequest = async (petitionId) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/admin/organizer-requests/${petitionId}/reject`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
+
+    if (!response.ok) {
+      throw new Error(data?.message || response.statusText || 'Error al rechazar solicitud');
+    }
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('Error en rejectOrganizerRequest:', error);
+    throw error;
+  }
+};
+
 export const getPetitionStatus = async () => {
   try {
     const token = localStorage.getItem('token');
