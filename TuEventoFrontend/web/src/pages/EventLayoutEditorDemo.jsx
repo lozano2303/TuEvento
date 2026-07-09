@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ElementPalette from '../components/layout-editor/ElementPalette';
 import LayoutEditorCanvas from '../components/layout-editor/LayoutEditorCanvas';
 import PropertiesPanel from '../components/layout-editor/PropertiesPanel';
@@ -77,6 +78,10 @@ export default function EventLayoutEditorDemo() {
   const [future,    setFuture]    = useState([]);
   const [clipboard, setClipboard] = useState(null);
   const [helpOpen,  setHelpOpen]  = useState(false);
+
+  // ── Paneles colapsables ───────────────────────────────────────────────────
+  const [isLeftPanelOpen,  setIsLeftPanelOpen]  = useState(true);
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
 
   // ── canvasSize derivado ───────────────────────────────────────────────────
   const canvasSize = useMemo(() => {
@@ -342,10 +347,33 @@ export default function EventLayoutEditorDemo() {
       />
 
       <div className="flex flex-1 min-h-0">
-        <ElementPalette
-          onAddElement={handleAddElement}
-          occupiedSectionCounts={occupiedSectionCounts}
-        />
+
+        {/* ── Panel izquierdo colapsable ──────────────────────────────── */}
+        <div className="relative flex-shrink-0">
+          <div
+            className={`overflow-hidden transition-[max-width] duration-200 ease-in-out h-full ${
+              isLeftPanelOpen ? 'max-w-[220px]' : 'max-w-0'
+            }`}
+          >
+            <ElementPalette
+              onAddElement={handleAddElement}
+              occupiedSectionCounts={occupiedSectionCounts}
+            />
+          </div>
+          <button
+            onClick={() => setIsLeftPanelOpen((v) => !v)}
+            className="absolute top-1/2 -right-3 -translate-y-1/2 z-30 w-6 h-6 rounded-full
+                       bg-surface border border-surfaceAlt shadow-md
+                       flex items-center justify-center text-textMuted hover:text-textPrimary
+                       hover:bg-surfaceAlt transition-colors"
+            title={isLeftPanelOpen ? 'Ocultar panel' : 'Mostrar panel'}
+            aria-label={isLeftPanelOpen ? 'Ocultar panel de elementos' : 'Mostrar panel de elementos'}
+          >
+            {isLeftPanelOpen
+              ? <ChevronLeft className="w-3.5 h-3.5" />
+              : <ChevronRight className="w-3.5 h-3.5" />}
+          </button>
+        </div>
 
         <LayoutEditorCanvas
           elements={elements}
@@ -366,26 +394,46 @@ export default function EventLayoutEditorDemo() {
           onRegisterApplyPreset={(fn) => { applyPresetRef.current = fn; }}
         />
 
-        <div className="flex flex-col flex-shrink-0 h-full overflow-hidden">
-          <PropertiesPanel
-            element={selectedElement}
-            elements={elements}
-            onChange={handleChange}
-            onDelete={handleDelete}
-            isEditingVertices={isEditingVertices}
-            onStartVertexEdit={() => selectedElement && handleStartVertexEdit(selectedElement.id)}
-            onEndVertexEdit={handleEndVertexEdit}
-            canvasSize={canvasSize}
-            onCanvasSizeChange={handleCanvasSizeChange}
-            onApplyPreset={handleApplyPreset}
-          />
-          <div className="flex-1 overflow-y-auto border-t border-surfaceAlt min-h-0 w-[240px] bg-surface">
-            <SectionsList
+        {/* ── Panel derecho colapsable ────────────────────────────────── */}
+        <div className="relative flex-shrink-0 h-full">
+          <div
+            className={`flex flex-col h-full overflow-hidden transition-[max-width] duration-200 ease-in-out ${
+              isRightPanelOpen ? 'max-w-[240px]' : 'max-w-0'
+            }`}
+          >
+            <PropertiesPanel
+              element={selectedElement}
               elements={elements}
-              selectedIds={selectedIds}
-              onSelect={(id) => setSelectedIds([id])}
+              onChange={handleChange}
+              onDelete={handleDelete}
+              isEditingVertices={isEditingVertices}
+              onStartVertexEdit={() => selectedElement && handleStartVertexEdit(selectedElement.id)}
+              onEndVertexEdit={handleEndVertexEdit}
+              canvasSize={canvasSize}
+              onCanvasSizeChange={handleCanvasSizeChange}
+              onApplyPreset={handleApplyPreset}
             />
+            <div className="flex-1 overflow-y-auto border-t border-surfaceAlt min-h-0 w-[240px] bg-surface">
+              <SectionsList
+                elements={elements}
+                selectedIds={selectedIds}
+                onSelect={(id) => setSelectedIds([id])}
+              />
+            </div>
           </div>
+          <button
+            onClick={() => setIsRightPanelOpen((v) => !v)}
+            className="absolute top-1/2 -left-3 -translate-y-1/2 z-30 w-6 h-6 rounded-full
+                       bg-surface border border-surfaceAlt shadow-md
+                       flex items-center justify-center text-textMuted hover:text-textPrimary
+                       hover:bg-surfaceAlt transition-colors"
+            title={isRightPanelOpen ? 'Ocultar panel' : 'Mostrar panel'}
+            aria-label={isRightPanelOpen ? 'Ocultar panel de propiedades' : 'Mostrar panel de propiedades'}
+          >
+            {isRightPanelOpen
+              ? <ChevronRight className="w-3.5 h-3.5" />
+              : <ChevronLeft className="w-3.5 h-3.5" />}
+          </button>
         </div>
       </div>
 
