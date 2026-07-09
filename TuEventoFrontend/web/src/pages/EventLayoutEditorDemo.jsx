@@ -8,45 +8,6 @@ import SectionsList from '../components/layout-editor/SectionsList';
 import HelpModal from '../components/layout-editor/HelpModal';
 import { generateId, generateSectionId, getElementAABB, CANVAS_MARGIN } from '../components/layout-editor/layoutEditorUtils';
 
-const INITIAL_ELEMENTS = [
-  {
-    id: generateId(),
-    type: 'stage',
-    sectionType: null,
-    eventSectionId: null,
-    seatLayout: null,
-    x: 490, y: 60, width: 220, height: 90,
-    rotation: 0, label: 'Escenario', color: '#1E293B',
-  },
-  {
-    id: generateId(),
-    type: 'section',
-    sectionType: 'VIP',
-    eventSectionId: generateSectionId(),
-    seatLayout: { targetSeats: 9, seatRadius: 8, gap: 4 },
-    x: 100, y: 200, width: 100, height: 100,
-    rotation: 0, label: 'VIP Izquierda', color: '#7C3AED',
-  },
-  {
-    id: generateId(),
-    type: 'section',
-    sectionType: 'General',
-    eventSectionId: generateSectionId(),
-    seatLayout: { targetSeats: 9, seatRadius: 8, gap: 4 },
-    x: 400, y: 220, width: 100, height: 100,
-    rotation: 0, label: 'General', color: '#16A34A',
-  },
-  {
-    id: generateId(),
-    type: 'entrance',
-    sectionType: null,
-    eventSectionId: null,
-    seatLayout: null,
-    x: 560, y: 700, width: 80, height: 50,
-    rotation: 0, label: 'Entrada', color: '#15803D',
-  },
-];
-
 // ── Constantes de canvas ──────────────────────────────────────────────────────
 const CANVAS_MIN_W          = 1200;
 const CANVAS_MIN_H          = 800;
@@ -65,7 +26,7 @@ function normalizePositions(els) {
 }
 
 export default function EventLayoutEditorDemo() {
-  const [elements,         setElements]         = useState(INITIAL_ELEMENTS);
+  const [elements,         setElements]         = useState([]);
   const [selectedIds,      setSelectedIds]      = useState([]);
   const [zoom,             setZoom]             = useState(0.75);
   const [editingPolygonId, setEditingPolygonId] = useState(null);
