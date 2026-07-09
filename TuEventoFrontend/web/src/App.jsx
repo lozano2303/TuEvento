@@ -9,11 +9,12 @@ import OrganizerPetitionForm from './pages/OrganizerPetitionForm'
 import AdminPanel from './pages/AdminPanel'
 import ProfilePage from './pages/ProfilePage';
 import CodeVerification from './pages/CodeVerification';
+import EventLayoutEditorDemo from './pages/EventLayoutEditorDemo';
 
 
 function AppContent() {
   const location = useLocation();
-  const showNavbar = !['/login', '/verification'].includes(location.pathname);
+  const showNavbar = !['/login', '/verification', '/layout-editor-demo'].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-background">
@@ -28,6 +29,7 @@ function AppContent() {
           <Route path="/admin-panel" element={<AdminPanel />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/verification" element={<CodeVerification />} />
+          <Route path="/layout-editor-demo" element={<EventLayoutEditorDemo />} />
         </Routes>
       </div>
     </div>
