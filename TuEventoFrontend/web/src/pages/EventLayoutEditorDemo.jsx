@@ -247,8 +247,8 @@ export default function EventLayoutEditorDemo() {
           id:             generateId(),
           eventSectionId: clipboard.eventSectionId,
           label:          `${baseLabel} ${suffix}`,
-          x:              clipboard.x + 20,
-          y:              clipboard.y + 20,
+          x:              clipboard.x + siblings.length * 20,
+          y:              clipboard.y + siblings.length * 20,
         };
         setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), elements]);
         setFuture([]);
