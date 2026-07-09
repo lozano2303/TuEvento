@@ -50,9 +50,6 @@ const INITIAL_ELEMENTS = [
 const CANVAS_MIN_W          = 1200;
 const CANVAS_MIN_H          = 800;
 const CANVAS_DEFAULT_MANUAL = { width: CANVAS_MIN_W, height: CANVAS_MIN_H };
-const ZOOM_MIN  = 0.2;
-const ZOOM_MAX  = 4;
-const ZOOM_STEP = 0.15;
 const MAX_HISTORY = 15;
 
 function normalizePositions(els) {
@@ -283,11 +280,6 @@ export default function EventLayoutEditorDemo() {
     return () => window.removeEventListener('keydown', handler);
   }, [handleUndo, handleRedo, selectedIds, handleDeleteSelected, editingPolygonId, clipboard, elements]);
 
-  // ── Zoom ──────────────────────────────────────────────────────────────────
-  const handleZoomIn    = () => setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)));
-  const handleZoomOut   = () => setZoom((z) => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)));
-  const handleResetZoom = () => setZoom(0.75);
-
   // ── Conteo de secciones por tipo (para badge en paleta) ─────────────────
   const occupiedSectionCounts = useMemo(() => {
     const counts = {};
@@ -332,10 +324,6 @@ export default function EventLayoutEditorDemo() {
       <EditorToolbar
         elements={elements}
         canvasSize={canvasSize}
-        zoom={zoom}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onResetZoom={handleResetZoom}
         canUndo={history.length > 0}
         canRedo={future.length > 0}
         onUndo={handleUndo}
