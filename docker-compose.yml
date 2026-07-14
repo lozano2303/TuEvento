@@ -1,120 +1,3 @@
-services:
-  postgres:
-    image: postgres:17
-    container_name: tuevento-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: tuevento_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - tuevento-network
-
-  minio:
-    image: minio/minio:latest
-    container_name: tuevento-minio
-    restart: unless-stopped
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    command: server /data --console-address ":9001"
-    volumes:
-      - minio_data:/data
-    networks:
-      - tuevento-network
-
-  minio-init:
-    image: minio/minio:latest
-    container_name: tuevento-minio-init
-    depends_on:
-      - minio
-    entrypoint:
-      - /bin/sh
-      - -c
-      - >-
-        sleep 5;
-        mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
-        mc mb --ignore-existing local/tuevento;
-        mc anonymous set download local/tuevento/profile_picture;
-        exit 0;
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    networks:
-      - tuevento-network
-
-  # Image moderation service (OpenNSFW2) — internal only, no host port exposed
-  nsfw-classifier:
-    build: ./nsfw-service
-    container_name: nsfw-classifier
-    restart: unless-stopped
-    ports:
-      - "8001:8000"
-    networks:
-      - tuevento-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-
-  jenkins:
-    image: jenkins/jenkins:lts-jdk17
-    container_name: tuevento-jenkins
-    restart: unless-stopped
-    user: root
-    ports:
-      - "8083:8080"
-      - "50000:50000"
-    environment:
-      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false -Xmx1g -Xms512m
-      - JENKINS_OPTS=--httpPort=8080
-      - TESTCONTAINERS_RYUK_DISABLED=true
-    volumes:
-      - jenkins_data:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - tuevento-network
-
-  sonarqube:
-    image: sonarqube:lts-community
-    container_name: tuevento-sonarqube
-    restart: unless-stopped
-    ports:
-      - "9002:9000"
-    environment:
-      - SONAR_JDBC_URL=jdbc:postgresql://postgres:5432/sonarqube
-      - SONAR_JDBC_USERNAME=${POSTGRES_USER}
-      - SONAR_JDBC_PASSWORD=${POSTGRES_PASSWORD}
-    volumes:
-      - sonarqube_data:/opt/sonarqube/data
-      - sonarqube_logs:/opt/sonarqube/logs
-      - sonarqube_extensions:/opt/sonarqube/extensions
-    depends_on:
-      - postgres
-    networks:
-      - tuevento-network
-
-  redis:
-    image: redis:7-alpine
-    container_name: tuevento-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - tuevento-network
-
-  # Development backend service
   backend:
     build:
       context: ./TuEventoBackend/tu-evento
@@ -125,39 +8,52 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=dev
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
-      - JWT_SECRET=${JWT_SECRET}
+
+      - APP_JWT_SECRET=${JWT_SECRET}
+      - APP_JWT_ACCESS_TOKEN_EXPIRATION=900000
+      - APP_JWT_REFRESH_TOKEN_EXPIRATION=604800000
+
       - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - APP_STORAGE_ENDPOINT=http://minio:9000
+
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
+
       - ADMIN_EMAIL=${ADMIN_EMAIL}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - ADMIN_ALIAS=${ADMIN_ALIAS}
+
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+
       - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID}
       - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET}
+
+      - NSFW_SERVICE_URL=http://nsfw-classifier:8000
+      - NSFW_THRESHOLD=0.4
+
+      - SIGHTENGINE_API_USER=${SIGHTENGINE_API_USER}
+      - SIGHTENGINE_API_SECRET=${SIGHTENGINE_API_SECRET}
+      - SIGHTENGINE_MODELS=${SIGHTENGINE_MODELS}
+      - SIGHTENGINE_THRESHOLD=${SIGHTENGINE_THRESHOLD}
+      - SIGHTENGINE_NUDITY_THRESHOLD=${SIGHTENGINE_NUDITY_THRESHOLD}
+
+      - APP_CORS_ALLOWED_ORIGINS=http://localhost:3000
     depends_on:
-      - postgres
-      - minio
-      - redis
-      - nsfw-classifier
+      postgres:
+        condition: service_started
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      nsfw-classifier:
+        condition: service_healthy
     networks:
       - tuevento-network
-
-networks:
-  tuevento-network:
-    driver: bridge
-
-volumes:
-  postgres_data:
-  minio_data:
-  jenkins_data:
-  sonarqube_data:
-  sonarqube_logs:
-  sonarqube_extensions:
-  redis_data:

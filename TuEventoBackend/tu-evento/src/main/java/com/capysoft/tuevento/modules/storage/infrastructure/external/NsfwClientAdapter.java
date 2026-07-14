@@ -8,17 +8,13 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
-/**
- * Calls the self-hosted OpenNSFW2 microservice to detect sexually explicit content.
- * Fail-open: returns {@code true} (safe) on any infrastructure error so that a
- * downed moderation service never blocks legitimate uploads.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -26,13 +22,21 @@ public class NsfwClientAdapter {
 
     private final ModerationConfig moderationConfig;
 
-    /**
-     * @return {@code true} if the image is safe (nsfw_score below threshold),
-     *         {@code true} on any error (fail-open).
-     */
     public boolean isSafe(byte[] imageBytes) {
         try {
-            String url = moderationConfig.getNsfw().getUrl() + "/classify";
+            String nsfwUrl = moderationConfig.getNsfw().getUrl();
+
+            if (nsfwUrl == null || nsfwUrl.isBlank()) {
+                log.warn("NSFW URL not configured — failing open");
+                return true;
+            }
+
+            String url = nsfwUrl + "/classify";
+
+            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(10000);
+            factory.setReadTimeout(30000);
+            RestTemplate rt = new RestTemplate(factory);
 
             ByteArrayResource resource = new ByteArrayResource(imageBytes) {
                 @Override
@@ -48,7 +52,6 @@ public class NsfwClientAdapter {
             HttpHeaders requestHeaders = new HttpHeaders();
             requestHeaders.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-            RestTemplate rt = new RestTemplate();
             @SuppressWarnings("rawtypes")
             ResponseEntity<Map> response = rt.postForEntity(
                     url,
