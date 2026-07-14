@@ -27,6 +27,11 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - tuevento-network
 
@@ -34,12 +39,12 @@ services:
     image: minio/minio:latest
     container_name: tuevento-minio-init
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     entrypoint:
       - /bin/sh
       - -c
       - >-
-        sleep 5;
         mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
         mc mb --ignore-existing local/tuevento;
         mc anonymous set download local/tuevento/profile_picture;
@@ -50,7 +55,6 @@ services:
     networks:
       - tuevento-network
 
-  # Image moderation service (OpenNSFW2) — internal only, no host port exposed
   nsfw-classifier:
     build: ./nsfw-service
     container_name: nsfw-classifier
@@ -64,7 +68,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
+      start_period: 20s
 
   jenkins:
     image: jenkins/jenkins:lts-jdk17
@@ -114,7 +118,6 @@ services:
     networks:
       - tuevento-network
 
-  # Development backend service
   backend:
     build:
       context: ./TuEventoBackend/tu-evento
@@ -125,27 +128,44 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=dev
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
-      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
-      - JWT_SECRET=${JWT_SECRET}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
+      - SPRING_DATASOURCE_USERNAME=Tu Evento Admin
+      - SPRING_DATASOURCE_PASSWORD=Cris-Jhampi-2323
+      - APP_JWT_SECRET=un_secret_muy_largo_de_al_menos_256_bits_para_hmac_sha256
+      - APP_JWT_ACCESS_TOKEN_EXPIRATION=900000
+      - APP_JWT_REFRESH_TOKEN_EXPIRATION=604800000
       - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
-      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-      - ADMIN_EMAIL=${ADMIN_EMAIL}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - ADMIN_ALIAS=${ADMIN_ALIAS}
+      - MINIO_ACCESS_KEY=tuevento_minIO
+      - MINIO_SECRET_KEY=Minio2323@
+      - MINIO_ROOT_USER=tuevento_minIO
+      - MINIO_ROOT_PASSWORD=Minio2323@
+      - APP_STORAGE_ENDPOINT=http://minio:9000
+      - MAIL_USERNAME=tuevento.capysoft@gmail.com
+      - MAIL_PASSWORD=eodl scoo mlzm vmgl
+      - ADMIN_EMAIL=tuevento.capysoft@gmail.com
+      - ADMIN_PASSWORD=Tuevento2323@
+      - ADMIN_ALIAS=TueventoADMIN
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID}
-      - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET}
+      - FACEBOOK_CLIENT_ID=775774005405098
+      - FACEBOOK_CLIENT_SECRET=1f8b05dab2a72472aed8a7bc5af6ab0d
+      - NSFW_SERVICE_URL=http://nsfw-classifier:8000
+      - NSFW_THRESHOLD=0.4
+      - SIGHTENGINE_API_USER=1912763291
+      - SIGHTENGINE_API_SECRET=tKTUYYiU5Xeyjrr5mrZyAYw6szQvss6s
+      - SIGHTENGINE_MODELS=gore,nudity,weapon
+      - SIGHTENGINE_THRESHOLD=0.4
+      - SIGHTENGINE_NUDITY_THRESHOLD=0.15
+      - APP_CORS_ALLOWED_ORIGINS=http://localhost:3000
     depends_on:
-      - postgres
-      - minio
-      - redis
-      - nsfw-classifier
+      postgres:
+        condition: service_started
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      nsfw-classifier:
+        condition: service_healthy
     networks:
       - tuevento-network
 
