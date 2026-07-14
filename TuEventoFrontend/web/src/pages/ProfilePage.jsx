@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Footer from '../layouts/Footer';
 import { useTheme } from '../context/ThemeContext';
 import { getThemes, activateTheme } from '../services/themeService';
+import { getProfileByUserId, getProfilePictureUrl, updateProfile, uploadProfilePicture } from '../services/ProfileService';
+import { AlertCircle, Camera, CheckCircle, Loader2 } from 'lucide-react';
 
 const THEME_PREVIEWS = {
   DARK:       { background: "#1E0A3C", primary: "#7C3AED", accent: "#A78BFA" },
@@ -10,12 +12,23 @@ const THEME_PREVIEWS = {
   ACCESSIBLE: { background: "#FFFFFF", primary: "#005FCC", accent: "#E65100" },
 };
 
+const MAX_AVATAR_SIZE_MB = 2;
+const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 const ProfilePage = () => {
   const { refreshPalette, activeThemeId } = useTheme();
   const [selectedLanguage, setSelectedLanguage] = useState('es');
   const [loading, setLoading] = useState(false);
   const [themes, setThemes] = useState([]);
   const [loadingTheme, setLoadingTheme] = useState(false);
+  const [profileId, setProfileId] = useState(null);
+  const [storedFileId, setStoredFileId] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState(null);
+  const avatarInputRef = useRef(null);
 
   const userEmail = localStorage.getItem('userEmail') || 'francisco@tuevento.com';
   const storedName = localStorage.getItem('name') || localStorage.getItem('fullName') || 'Francisco';
@@ -59,6 +72,43 @@ const ProfilePage = () => {
       .catch(err => console.error('[ProfilePage] Error cargando temas:', err));
   }, []);
 
+  useEffect(() => {
+    const loadProfileAvatar = async () => {
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userID');
+      if (!token || !userId) return;
+
+      setAvatarLoading(true);
+      try {
+        const result = await getProfileByUserId(userId);
+        const profile = result?.data;
+        if (!profile) return;
+
+        setProfileId(profile.profileId);
+        setStoredFileId(profile.storedFileId);
+        if (profile.fullName) {
+          localStorage.setItem('name', profile.fullName);
+        }
+        if (profile.storedFileId) {
+          const url = await getProfilePictureUrl(profile.storedFileId);
+          setAvatarUrl(url || null);
+        }
+      } catch (err) {
+        console.error('[ProfilePage] Error cargando foto de perfil:', err);
+      } finally {
+        setAvatarLoading(false);
+      }
+    };
+
+    loadProfileAvatar();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
   const handleThemeChange = async (themeId) => {
     if (loadingTheme || themeId === activeThemeId) return;
     setLoadingTheme(true);
@@ -75,6 +125,61 @@ const ProfilePage = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const openAvatarPicker = () => {
+    avatarInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isAllowedType = ALLOWED_AVATAR_TYPES.includes(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
+    if (!isAllowedType) {
+      setAvatarMessage({ type: 'error', text: 'Solo se permiten imágenes JPG, PNG o WEBP.' });
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_AVATAR_SIZE_MB * 1024 * 1024) {
+      setAvatarMessage({ type: 'error', text: `La imagen debe pesar menos de ${MAX_AVATAR_SIZE_MB} MB.` });
+      e.target.value = '';
+      return;
+    }
+
+    const nextPreviewUrl = URL.createObjectURL(file);
+    setPreviewUrl(nextPreviewUrl);
+    await uploadAvatar(file);
+    e.target.value = '';
+  };
+
+  const uploadAvatar = async (file) => {
+    if (!profileId) {
+      setAvatarMessage({ type: 'error', text: 'No se encontró tu perfil para actualizar la foto.' });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setAvatarMessage(null);
+
+    try {
+      const uploaded = await uploadProfilePicture(file);
+      const newStoredFileId = uploaded?.storedFileId;
+      if (!newStoredFileId) throw new Error('No se pudo subir la imagen.');
+
+      await updateProfile(profileId, { storedFileId: newStoredFileId });
+
+      const newUrl = await getProfilePictureUrl(newStoredFileId);
+      setStoredFileId(newStoredFileId);
+      setAvatarUrl(newUrl || null);
+      setAvatarMessage({ type: 'success', text: 'Foto de perfil actualizada correctamente.' });
+    } catch (err) {
+      setPreviewUrl(null);
+      setAvatarMessage({ type: 'error', text: err.message || 'No se pudo actualizar la foto de perfil.' });
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleSave = async () => {
@@ -122,14 +227,45 @@ const ProfilePage = () => {
             <div className="relative">
               <div className="absolute -inset-4 rounded-full blur-3xl" style={{ background: 'rgba(124, 23, 211, 0.2)' }}></div>
               <div className="absolute -inset-1 rounded-2xl blur-md opacity-60" style={{ background: 'linear-gradient(to top right, #7c17d3, #60a5fa, #a855f7)' }}></div>
-              <div className="relative w-32 h-32 rounded-xl bg-gradient-to-br from-[#7c17d3] to-[#5a189a] flex items-center justify-center text-5xl font-bold text-textPrimary border-2 border-white/30 shadow-2xl" style={{ boxShadow: '0 0 50px rgba(124, 23, 211, 0.6), 0 0 20px rgba(0, 212, 255, 0.4)' }}>
-                {firstLetter}
+              <div className="relative w-32 h-32 rounded-xl bg-gradient-to-br from-[#7c17d3] to-[#5a189a] flex items-center justify-center text-5xl font-bold text-textPrimary border-2 border-white/30 shadow-2xl overflow-hidden" style={{ boxShadow: '0 0 50px rgba(124, 23, 211, 0.6), 0 0 20px rgba(0, 212, 255, 0.4)' }}>
+                {avatarLoading ? (
+                  <Loader2 className="w-12 h-12 animate-spin text-textPrimary" />
+                ) : (avatarUrl || previewUrl) ? (
+                  <img
+                    src={previewUrl || avatarUrl}
+                    alt="Foto de perfil"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-textPrimary">
+                    {firstLetter}
+                  </div>
+                )}
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
+                    <Loader2 className="w-10 h-10 animate-spin text-white" />
+                  </div>
+                )}
               </div>
-              <button className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-primary flex items-center justify-center text-textPrimary shadow-xl hover:scale-110 transition-transform border-2 border-background z-20">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                </svg>
+              <button
+                type="button"
+                onClick={openAvatarPicker}
+                disabled={uploadingAvatar}
+                className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-primary flex items-center justify-center text-textPrimary shadow-xl hover:scale-110 transition-transform border-2 border-background z-20 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <Camera className="w-5 h-5" />
               </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleAvatarChange}
+                disabled={uploadingAvatar}
+                className="hidden"
+              />
+              <p className="mt-3 max-w-44 text-center text-[11px] leading-tight text-textMuted">
+                Solo JPG, PNG o WEBP. Máx. {MAX_AVATAR_SIZE_MB} MB. Sin contenido adulto, violencia o armas.
+              </p>
             </div>
             <div className="flex-1 text-center md:text-left">
               <h2 className="text-4xl font-bold text-textPrimary tracking-tight" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{formData.nombreCompleto}</h2>
@@ -143,6 +279,16 @@ const ProfilePage = () => {
                 <span className="w-1 h-1 bg-surfaceAlt rounded-full hidden md:block"></span>
                 <span className="px-3 py-1 rounded-full bg-primary/20 border border-primary/40 text-accent text-xs font-bold uppercase tracking-wider backdrop-blur-sm">{roleLabel}</span>
               </div>
+              {avatarMessage && (
+                <div className={`mt-4 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold border ${
+                  avatarMessage.type === 'success'
+                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                    : 'bg-error/10 text-error border-error/20'
+                }`}>
+                  {avatarMessage.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                  {avatarMessage.text}
+                </div>
+              )}
             </div>
           </div>
         </div>
