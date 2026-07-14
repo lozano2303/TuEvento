@@ -29,8 +29,9 @@ public class ModerationConfig {
     public static class Sightengine {
         private String apiUser;
         private String apiSecret;
-        private String models = "gore";
+        private String models = "gore,nudity,weapon,suggestive";
         private double threshold = 0.6;
+        private double nudityThreshold = 0.10;
     }
 
     @Bean

@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/${POSTGRES_DB}}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
   jpa:
@@ -18,8 +18,8 @@ spring:
       mail:
         smtp:
           auth: true
-          starttls:
-            enable: true
+starttls:
+             enable: true
 
 app:
   jwt:
@@ -28,7 +28,7 @@ app:
     refresh-token-expiration: 604800000
   storage:
     enabled: true
-    endpoint: http://localhost:9000
+    endpoint: ${APP_STORAGE_ENDPOINT:http://localhost:9000}
     access-key: ${MINIO_ROOT_USER}
     secret-key: ${MINIO_ROOT_PASSWORD}
     region: us-east-1
@@ -37,14 +37,14 @@ app:
     google:
       client-id: ${GOOGLE_CLIENT_ID}
       client-secret: ${GOOGLE_CLIENT_SECRET}
-      redirect-uri: http://localhost:8080/api/v1/auth/oauth/google/callback
+      redirect-uri: ${APP_OAUTH_GOOGLE_REDIRECT_URI:http://localhost:8080}/api/v1/auth/oauth/google/callback
       token-uri: https://oauth2.googleapis.com/token
       userinfo-uri: https://www.googleapis.com/oauth2/v3/userinfo
       authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
     facebook:
       client-id: ${FACEBOOK_CLIENT_ID}
       client-secret: ${FACEBOOK_CLIENT_SECRET}
-      redirect-uri: http://localhost:8080/api/v1/auth/oauth/facebook/callback
+      redirect-uri: ${APP_OAUTH_FACEBOOK_REDIRECT_URI:http://localhost:8080}/api/v1/auth/oauth/facebook/callback
       auth-uri: https://www.facebook.com/v18.0/dialog/oauth
       token-uri: https://graph.facebook.com/v18.0/oauth/access_token
       profile-uri: https://graph.facebook.com/me
@@ -55,4 +55,15 @@ app:
   mail:
     from: ${MAIL_USERNAME}
   cors:
-    allowed-origins: "http://localhost:3000"
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+moderation:
+  nsfw:
+    url: ${NSFW_SERVICE_URL:http://localhost:8001}
+    threshold: ${NSFW_THRESHOLD:0.4}
+  sightengine:
+    api-user: ${SIGHTENGINE_API_USER}
+    api-secret: ${SIGHTENGINE_API_SECRET}
+    models: ${SIGHTENGINE_MODELS:gore,nudity,weapon}
+    threshold: ${SIGHTENGINE_THRESHOLD:0.4}
+    nudity-threshold: ${SIGHTENGINE_NUDITY_THRESHOLD:0.15}
