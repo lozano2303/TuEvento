@@ -19,3 +19,19 @@ export const getSitesByCity = async (cityId) => {
   if (!res.ok) throw new Error('Error al obtener sedes');
   return res.json(); // ApiResponse<List<SiteResponse>>
 };
+
+// Crear nueva sede — requiere auth (ORGANIZER o ADMIN)
+export const createSite = async ({ cityId, name, address, capacity, latitude, longitude }) => {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${API_URL}/geolocation/sites`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ cityId, name, address, capacity, latitude, longitude }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Error al crear la sede');
+  return data; // ApiResponse<SiteResponse>
+};
