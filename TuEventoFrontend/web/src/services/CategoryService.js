@@ -37,3 +37,9 @@ export const removeCategoryFromEvent = async (eventId, categoryId) => {
   if (!response.ok) throw new Error('Error al eliminar categoría');
   return response.json();
 };
+
+export const getActiveCategories = async () => {
+  const response = await fetch(`${API_URL}/categories/active`);
+  if (!response.ok) throw new Error('Error al obtener categorías activas');
+  return response.json(); // ApiResponse<List<CategoryResponse>>
+};
