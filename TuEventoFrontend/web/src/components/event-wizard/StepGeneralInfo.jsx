@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { getActiveCategories } from '../../services/CategoryService';
 import { getDepartments, getCitiesByDepartment } from '../../services/GeolocationService';
 
-export default function StepGeneralInfo({ formData, onChange, onNext }) {
+export default function StepGeneralInfo({ formData, onChange, onNext, onCityChange, onDepartmentChange }) {
   const [categories,   setCategories]   = useState([]);
   const [departments,  setDepartments]  = useState([]);
   const [cities,       setCities]       = useState([]);
   const [loadingCats,  setLoadingCats]  = useState(false);
   const [loadingDepts, setLoadingDepts] = useState(false);
   const [loadingCities,setLoadingCities]= useState(false);
-  const [errors,       setErrors]       = useState({});
+  const [errors,       setErrors]       = useState([]);
 
   // ── Cargar categorías y departamentos al montar ───────────────────────────
   useEffect(() => {
@@ -162,10 +162,11 @@ export default function StepGeneralInfo({ formData, onChange, onNext }) {
         <select
           className={inputClass}
           value={formData.departmentId ?? ''}
-          onChange={e => onChange({
-            departmentId: e.target.value ? Number(e.target.value) : null,
-            cityId: null,
-          })}
+          onChange={e => {
+            const dept = departments.find(d => d.departmentId === Number(e.target.value)) ?? null;
+            onChange({ departmentId: dept ? dept.departmentId : null, cityId: null });
+            onDepartmentChange?.(dept);
+          }}
           disabled={loadingDepts}
         >
           <option value="">{loadingDepts ? 'Cargando...' : 'Selecciona un departamento'}</option>
@@ -181,7 +182,11 @@ export default function StepGeneralInfo({ formData, onChange, onNext }) {
         <select
           className={inputClass}
           value={formData.cityId ?? ''}
-          onChange={e => onChange({ cityId: e.target.value ? Number(e.target.value) : null })}
+          onChange={e => {
+            const city = cities.find(c => c.cityId === Number(e.target.value)) ?? null;
+            onChange({ cityId: city ? city.cityId : null });
+            onCityChange?.(city);
+          }}
           disabled={!formData.departmentId || loadingCities}
         >
           <option value="">
