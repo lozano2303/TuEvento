@@ -5,6 +5,18 @@ export const generateId = () =>
 export const generateSectionId = () =>
   `section-${Math.random().toString(36).slice(2, 9)}-${Date.now().toString(36)}`;
 
+/**
+ * Agrupa un array de objetos por el valor de una clave dada.
+ * groupBy([{a:1,b:'x'},{a:2,b:'x'}], 'b') → { x: [{...},{...}] }
+ */
+export const groupBy = (arr, key) =>
+  arr.reduce((acc, item) => {
+    const k = item[key] ?? '__undefined__';
+    if (!acc[k]) acc[k] = [];
+    acc[k].push(item);
+    return acc;
+  }, {});
+
 // ── Fase 1.12: Migración de polygonPoints al nuevo formato con handles Bézier ──
 /**
  * Convierte polygonPoints del formato viejo [[x,y], ...] al nuevo formato
