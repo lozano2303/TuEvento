@@ -8,7 +8,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 export const getLayout = async (eventId) => {
   const res = await fetch(`${API_URL}/events/${eventId}/layout`);
   if (res.status === 404) return null;
-  if (!res.ok) throw new Error('Error al obtener el layout');
+  if (!res.ok) {
+    // Logear el status real para diagnóstico — si ves 403 es auth, 500 es bug del controller
+    console.error(`[LayoutService.getLayout] status ${res.status} para eventId=${eventId}`);
+    throw new Error(`Error al obtener el layout (HTTP ${res.status})`);
+  }
   return res.json();
 };
 

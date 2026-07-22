@@ -45,17 +45,19 @@ export default function ElementPalette({ onAddElement, occupiedSectionCounts = {
   // Construir la lista de templates de sección a partir del backend (o fallback estático)
   const sectionTemplates = useMemo(() => {
     if (sectionTypes && sectionTypes.length > 0) {
-      return sectionTypes.map((st, idx) => ({
-        type:          'section',
-        sectionType:   st.name,
-        sectionTypeId: st.sectionTypeId,
-        label:         st.name,
-        icon:          getSectionIcon(st.name),
-        defaultWidth:  100,
-        defaultHeight: 100,
-        color:         SECTION_COLORS[idx % SECTION_COLORS.length],
-        seatLayout:    { targetSeats: 9, seatRadius: 8, gap: 4 },
-      }));
+      return sectionTypes
+        .filter((st) => st.name.toLowerCase() !== 'pista') // excluir tipo legacy del seed
+        .map((st, idx) => ({
+          type:          'section',
+          sectionType:   st.name,
+          sectionTypeId: st.sectionTypeId,
+          label:         st.name,
+          icon:          getSectionIcon(st.name),
+          defaultWidth:  100,
+          defaultHeight: 100,
+          color:         SECTION_COLORS[idx % SECTION_COLORS.length],
+          seatLayout:    { targetSeats: 9, seatRadius: 8, gap: 4 },
+        }));
     }
     // Fallback — paleta estática (modo demo sin eventId)
     return PALETTE_ELEMENTS.filter((e) => e.type === 'section').map((e) => ({
