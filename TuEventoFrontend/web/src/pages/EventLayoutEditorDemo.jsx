@@ -359,6 +359,18 @@ export default function EventLayoutEditorDemo() {
         elements.filter((e) => e.type === 'section'),
         'eventSectionId'
       );
+      // DEBUG: inspeccionar grupos antes de sincronizar — pegar salida en el issue
+      console.log('[handleSave] groups:', JSON.stringify(
+        Object.entries(groups).map(([id, g]) => ({
+          eventSectionId: id,
+          count: g.length,
+          sectionTypeId: g[0]?.sectionTypeId,
+          backendSectionId: g[0]?.backendSectionId,
+          price: g[0]?.price,
+          capacity: g.reduce((s, el) => s + (el.seatLayout?.targetSeats ?? 0), 0),
+        })),
+        null, 2
+      ));
 
       // 2. Sincronizar cada grupo contra el backend
       // KNOWN LIMITATION: si falla a mitad, algunos event_section quedan creados

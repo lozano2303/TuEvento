@@ -180,8 +180,11 @@ export default function SectionElement({
     setLabelPos({ x: r.x + r.width / 2, y: clampedY });
   }, []);
 
-  // Sync en cada render (cubre cambios de posición, rotación, resize desde estado)
-  useEffect(() => { updateLabelPos(); });
+  // Sync cuando la geometría del elemento cambia — no en cada render arbitrario
+  // (sin deps correría tras setLabelPos → loop infinito de renders)
+  useEffect(() => {
+    updateLabelPos();
+  }, [updateLabelPos, element.x, element.y, element.width, element.height, element.rotation, workPoints]);
 
   const handleDragStart = (e) => {
     // Durante edición de vértices el Group no debería ser draggable,
