@@ -8,8 +8,8 @@ import StepSiteSelection from '../components/event-wizard/StepSiteSelection';
 export default function EventCreateWizard() {
   const navigate = useNavigate();
 
-  const [step,         setStep]         = useState(1);
-  const [formData,     setFormData]     = useState({
+  const [step,            setStep]            = useState(1);
+  const [formData,        setFormData]        = useState({
     eventName:      '',
     description:    '',
     startDate:      '',
@@ -21,7 +21,9 @@ export default function EventCreateWizard() {
     siteId:         null,
     availableSeats: '',
   });
-  const [selectedSite,  setSelectedSite]  = useState(null);
+  const [selectedSite,      setSelectedSite]      = useState(null);
+  const [selectedCity,      setSelectedCity]      = useState(null);   // objeto completo { cityId, name, ... }
+  const [selectedDepartment, setSelectedDepartment] = useState(null); // objeto completo { departmentId, name, ... }
   const [isSubmitting,  setIsSubmitting]  = useState(false);
   const [submitError,   setSubmitError]   = useState(null);
 
@@ -86,6 +88,8 @@ export default function EventCreateWizard() {
             formData={formData}
             onChange={handleChange}
             onNext={() => setStep(2)}
+            onCityChange={setSelectedCity}
+            onDepartmentChange={setSelectedDepartment}
           />
         )}
 
@@ -96,6 +100,8 @@ export default function EventCreateWizard() {
             onChange={handleChange}
             selectedSite={selectedSite}
             onSiteSelect={setSelectedSite}
+            selectedCity={selectedCity}
+            selectedDepartment={selectedDepartment}
             onBack={() => setStep(1)}
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
