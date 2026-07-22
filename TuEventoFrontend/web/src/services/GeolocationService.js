@@ -20,6 +20,13 @@ export const getSitesByCity = async (cityId) => {
   return res.json(); // ApiResponse<List<SiteResponse>>
 };
 
+/** Obtiene una sede por ID — público, sin auth. */
+export const getSiteById = async (siteId) => {
+  const res = await fetch(`${API_URL}/geolocation/sites/${siteId}`);
+  if (!res.ok) throw new Error('Error al obtener la sede');
+  return res.json(); // ApiResponse<SiteResponse>
+};
+
 // Crear nueva sede — requiere auth (ORGANIZER o ADMIN)
 export const createSite = async ({ cityId, name, address, capacity, latitude, longitude }) => {
   const token = localStorage.getItem('token');

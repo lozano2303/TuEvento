@@ -1,29 +1,90 @@
+import { useMemo } from 'react';
 import { PALETTE_ELEMENTS } from '../../data/mockLayoutElements';
 import { generateId } from './layoutEditorUtils';
 
-const INFRA    = PALETTE_ELEMENTS.filter((e) => e.type !== 'section');
-const SECTIONS = PALETTE_ELEMENTS.filter((e) => e.type === 'section');
+// Infraestructura — siempre hardcodeada, sin depender del backend
+const INFRA = PALETTE_ELEMENTS.filter((e) => e.type !== 'section');
 
-export default function ElementPalette({ onAddElement, occupiedSectionCounts = {} }) {
-  // occupiedSectionCounts: { [sectionType]: number } — 0 means not occupied
+// Paleta de colores round-robin para los tipos de sección dinámicos
+const SECTION_COLORS = [
+  '#7C3AED', // morado
+  '#16A34A', // verde
+  '#EA580C', // naranja
+  '#2563EB', // azul
+  '#DB2777', // rosado
+  '#0891B2', // cyan
+  '#CA8A04', // amarillo
+  '#DC2626', // rojo
+];
+
+// Iconos por nombre de tipo de sección (fallback genérico)
+const SECTION_ICONS = {
+  vip:      '⭐',
+  general:  '👥',
+  palco:    '🎪',
+  tribuna:  '🏟️',
+  platinum: '💎',
+  gold:     '🥇',
+  silver:   '🥈',
+  bronze:   '🥉',
+};
+
+const getSectionIcon = (name) =>
+  SECTION_ICONS[(name ?? '').toLowerCase()] ?? '🪑';
+
+/**
+ * ElementPalette
+ *
+ * Props:
+ *   onAddElement         — callback cuando el usuario añade un elemento
+ *   occupiedSectionCounts — { [sectionType: string]: number } — grupos ya en canvas
+ *   sectionTypes          — array de { sectionTypeId, name } del backend.
+ *                           Si es null/undefined, usa las 4 secciones hardcodeadas.
+ */
+export default function ElementPalette({ onAddElement, occupiedSectionCounts = {}, sectionTypes }) {
+  // Construir la lista de templates de sección a partir del backend (o fallback estático)
+  const sectionTemplates = useMemo(() => {
+    if (sectionTypes && sectionTypes.length > 0) {
+      return sectionTypes.map((st, idx) => ({
+        type:          'section',
+        sectionType:   st.name,
+        sectionTypeId: st.sectionTypeId,
+        label:         st.name,
+        icon:          getSectionIcon(st.name),
+        defaultWidth:  100,
+        defaultHeight: 100,
+        color:         SECTION_COLORS[idx % SECTION_COLORS.length],
+        seatLayout:    { targetSeats: 9, seatRadius: 8, gap: 4 },
+      }));
+    }
+    // Fallback — paleta estática (modo demo sin eventId)
+    return PALETTE_ELEMENTS.filter((e) => e.type === 'section').map((e) => ({
+      ...e,
+      sectionTypeId: null,
+    }));
+  }, [sectionTypes]);
+
   const handleDragStart = (e, template) => {
     e.dataTransfer.setData('template', JSON.stringify(template));
   };
 
   const handleClick = (template) => {
     onAddElement({
-      id: generateId(),
-      type: template.type,
-      sectionType: template.sectionType ?? null,
+      id:            generateId(),
+      type:          template.type,
+      sectionType:   template.sectionType ?? null,
+      sectionTypeId: template.sectionTypeId ?? null,
+      backendSectionId: null,
       eventSectionId: null,
-      seatLayout: template.seatLayout ?? null,
-      x: 120 + Math.random() * 200,
-      y: 100 + Math.random() * 200,
-      width: template.defaultWidth,
-      height: template.defaultHeight,
-      rotation: 0,
-      label: template.label,
-      color: template.color,
+      price:         null,
+      seatLayout:    template.seatLayout ?? null,
+      x:             120 + Math.random() * 200,
+      y:             100 + Math.random() * 200,
+      width:         template.defaultWidth,
+      height:        template.defaultHeight,
+      rotation:      0,
+      label:         template.label,
+      color:         template.color,
     });
   };
 
@@ -49,7 +110,7 @@ export default function ElementPalette({ onAddElement, occupiedSectionCounts = {
             <p className="text-xs font-medium text-textPrimary truncate">{template.label}</p>
             {template.seatLayout && (
               <p className="text-[10px] text-textMuted">
-                {template.seatLayout.rows}×{template.seatLayout.cols} asientos
+                {template.seatLayout.targetSeats} asientos por defecto
               </p>
             )}
           </div>
@@ -104,11 +165,17 @@ export default function ElementPalette({ onAddElement, occupiedSectionCounts = {
           <p className="text-[10px] font-semibold text-textMuted uppercase tracking-wider px-1 mb-1">
             Secciones
           </p>
-          <div className="space-y-0.5">
-            {SECTIONS.map((t) => (
-              <SectionItem key={`${t.type}-${t.sectionType}`} template={t} />
-            ))}
-          </div>
+          {sectionTemplates.length === 0 ? (
+            <p className="text-[10px] text-textMuted px-2 py-1 italic">
+              Cargando tipos de sección…
+            </p>
+          ) : (
+            <div className="space-y-0.5">
+              {sectionTemplates.map((t) => (
+                <SectionItem key={`${t.type}-${t.sectionType}`} template={t} />
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
