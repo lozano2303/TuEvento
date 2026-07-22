@@ -63,8 +63,8 @@ export default function Navbar() {
     navigate(path);
   };
 
-  const isAdmin = userData?.role === 'ADMIN' || userData?.email === 'tuevento.capysoft@gmail.com';
-  const isOrganizer = userData?.organizer;
+  const isAdmin     = userData?.role === 'ADMIN' || userData?.email === 'tuevento.capysoft@gmail.com';
+  const isOrganizer = userData?.role === 'ORGANIZER';
 
   // Excepciones: badges de rol usan colores semánticos fijos, no del tema
   const roleBadge = isAdmin
@@ -104,7 +104,7 @@ const displayName = (() => {
             <Link to="/events" className="text-textSecondary hover:text-accent transition-colors">Eventos</Link>
             {userData && isOrganizer && (
               <button
-                onClick={() => navigate('/event-management')}
+                onClick={() => navigate('/events/create')}
                 className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
                 <Plus className="w-4 h-4" /> Crear Evento
@@ -239,7 +239,7 @@ const displayName = (() => {
               Eventos
             </Link>
             {userData && isOrganizer && (
-              <button onClick={() => handleNavClick('/event-management')}
+              <button onClick={() => handleNavClick('/events/create')}
                 className="flex items-center gap-2 text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer">
                 <Plus className="w-4 h-4" /> Crear Evento
               </button>
