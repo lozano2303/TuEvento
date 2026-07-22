@@ -67,11 +67,14 @@ export const serializeLayout = (elements, canvasWidth = 1200, canvasHeight = 800
     id: el.id,
     type: el.type,
     ...(el.type === 'section' && {
-      sectionType:    el.sectionType,
-      eventSectionId: null,
-      seatLayout:     el.seatLayout,
-      shapeMode:      el.shapeMode ?? 'rect',
-      polygonPoints:  el.polygonPoints ?? null,
+      sectionType:      el.sectionType,
+      sectionTypeId:    el.sectionTypeId    ?? null, // entero backend — necesario para create en handleSave
+      eventSectionId:   el.eventSectionId   ?? null, // antes hardcodeado a null — BUG CORREGIDO
+      backendSectionId: el.backendSectionId ?? null, // necesario para update en handleSave (evita duplicados)
+      price:            el.price            ?? null,
+      seatLayout:       el.seatLayout,
+      shapeMode:        el.shapeMode ?? 'rect',
+      polygonPoints:    el.polygonPoints ?? null,
     }),
     x: el.x,
     y: el.y,
