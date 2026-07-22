@@ -21,11 +21,12 @@ export default function StepSiteSelection({
   const [errors,          setErrors]           = useState({});
 
   // ── Estado del formulario "crear sede" ───────────────────────────────────
-  const [isCreatingSite,  setIsCreatingSite]  = useState(false);
-  const [newSite,         setNewSite]         = useState({ name: '', address: '', capacity: '', location: null });
-  const [siteFormErrors,  setSiteFormErrors]  = useState({});
-  const [siteError,       setSiteError]       = useState(null);
-  const [creatingLoading, setCreatingLoading] = useState(false);
+  const [isCreatingSite,    setIsCreatingSite]    = useState(false);
+  const [newSite,           setNewSite]           = useState({ name: '', address: '', capacity: '', location: null });
+  const [siteFormErrors,    setSiteFormErrors]    = useState({});
+  const [siteError,         setSiteError]         = useState(null);
+  const [creatingLoading,   setCreatingLoading]   = useState(false);
+  const [addressFallbackMode, setAddressFallbackMode] = useState(false);
 
   // ── Geocodificación de la ciudad para centrar el mapa ─────────────────────
   const [cityCenter, setCityCenter] = useState(null);
@@ -66,11 +67,23 @@ export default function StepSiteSelection({
   // ── Cambio de ubicación en el mapa (con reverse geocoding) ───────────────
   const handleLocationChange = async (pos, opts = {}) => {
     setNewSite(s => ({ ...s, location: pos }));
-    if (opts.skipReverseGeocode) return;
+    if (opts.skipReverseGeocode) {
+      // La dirección vino de una búsqueda por texto — salir del modo fallback
+      setAddressFallbackMode(false);
+      return;
+    }
     try {
       const addr = await reverseGeocode(pos.lat, pos.lng);
-      if (addr) setNewSite(s => ({ ...s, address: addr }));
-    } catch { /* fallo silencioso — el usuario puede escribir la dirección a mano */ }
+      if (addr) {
+        setNewSite(s => ({ ...s, address: addr }));
+        setAddressFallbackMode(false); // dirección válida → volver a readOnly
+      } else {
+        // Nominatim no devolvió dirección estructurada — ofrecer fallback manual
+        setNewSite(s => ({ ...s, address: '' }));
+      }
+    } catch {
+      // Fallo de red — no bloquear; el usuario puede escribir manualmente
+    }
   };
 
   // ── Validar capacidad en tiempo real ─────────────────────────────────────
@@ -128,6 +141,7 @@ export default function StepSiteSelection({
       onChange({ siteId: createdSite.siteId, availableSeats: '' });
       setIsCreatingSite(false);
       setNewSite({ name: '', address: '', capacity: '', location: null });
+      setAddressFallbackMode(false);
     } catch (err) {
       if (err.message?.includes('already exists near')) {
         setSiteError('Ya existe una sede registrada muy cerca de esta ubicación. Intenta marcar un punto distinto o revisa si la sede ya existe en la lista.');
@@ -240,10 +254,33 @@ export default function StepSiteSelection({
 
           <div>
             <label className={labelClass}>Dirección *</label>
-            <input type="text" maxLength={200} className={inputClass}
-              placeholder="Se completa automáticamente al hacer clic en el mapa, o escríbela"
+            <input
+              type="text"
+              maxLength={200}
+              readOnly={!addressFallbackMode}
+              className={[
+                inputClass,
+                addressFallbackMode ? '' : 'bg-surfaceAlt/40 cursor-not-allowed',
+              ].join(' ')}
+              placeholder="Busca una dirección o haz clic en el mapa"
               value={newSite.address}
-              onChange={e => setNewSite(s => ({ ...s, address: e.target.value }))} />
+              onChange={e => addressFallbackMode && setNewSite(s => ({ ...s, address: e.target.value }))}
+            />
+            {!addressFallbackMode && (
+              <p className="text-[10px] text-textMuted mt-1">
+                Se completa automáticamente al buscar o marcar un punto en el mapa
+              </p>
+            )}
+            {/* Fallback manual cuando Nominatim no devuelve dirección estructurada */}
+            {!newSite.address && !addressFallbackMode && newSite.location && (
+              <button
+                type="button"
+                onClick={() => setAddressFallbackMode(true)}
+                className="text-xs text-accent underline mt-1 bg-transparent border-none cursor-pointer"
+              >
+                No se encontró dirección — escribirla manualmente
+              </button>
+            )}
             {siteFormErrors.address && <p className={errorClass}>{siteFormErrors.address}</p>}
           </div>
 

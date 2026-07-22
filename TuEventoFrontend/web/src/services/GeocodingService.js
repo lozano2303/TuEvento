@@ -53,16 +53,41 @@ export const searchAddress = async (query, cityBoundingbox) => {
 };
 
 /**
- * Geocodificación inversa: coordenadas → dirección legible.
- * Devuelve el display_name como string o null si falla.
+ * Construye una dirección corta y legible a partir del objeto address de Nominatim.
+ * Resultado típico en Colombia: "Calle 1B, Las Acacias" (house_number casi nunca
+ * aparece en datos OSM colombianos — es una limitación del catastro, no del código).
+ * Devuelve null si no hay suficiente información estructurada.
+ */
+function buildShortAddress(address) {
+  if (!address) return null;
+
+  const road         = address.road ?? address.pedestrian ?? address.footway ?? '';
+  const houseNumber  = address.house_number ?? '';
+  const neighbourhood = address.suburb ?? address.neighbourhood ?? address.quarter ?? '';
+
+  let street = road;
+  if (houseNumber) street += ` # ${houseNumber}`;
+
+  const parts = [street.trim(), neighbourhood].filter(Boolean);
+  if (parts.length === 0) return null;
+
+  // Truncar a 200 chars para respetar @Size(max=200) del backend
+  return parts.join(', ').slice(0, 200);
+}
+
+/**
+ * Geocodificación inversa: coordenadas → dirección corta.
+ * Pide addressdetails=1 para obtener datos estructurados y construir una
+ * dirección compacta en vez del display_name crudo de 100+ caracteres.
+ * Devuelve string o null si Nominatim no tiene datos suficientes en ese punto.
  */
 export const reverseGeocode = async (lat, lng) => {
   try {
-    const url    = `${NOMINATIM_URL}/reverse?lat=${lat}&lon=${lng}&format=json`;
+    const url    = `${NOMINATIM_URL}/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
     const res    = await fetch(url);
     if (!res.ok) return null;
     const result = await res.json();
-    return result.display_name ?? null;
+    return buildShortAddress(result.address);
   } catch {
     return null;
   }
