@@ -13,8 +13,7 @@ import { serializeLayout } from './layoutEditorUtils';
  *   onOpenHelp    — abre el HelpModal
  *   onSave        — async callback de guardado real (recibe nada, lanzado desde aquí)
  *   isSaving      — boolean, bloqueado mientras guarda
- *   siteCapacity  — number | null — capacidad total del sitio (null en modo demo)
- *   saveMsg       — string | null — mensaje toast externo (opcional, si el padre lo maneja)
+ *   maxSeats      — number | null — event.availableSeats (null en modo demo)
  */
 export default function EditorToolbar({
   elements,
@@ -27,7 +26,7 @@ export default function EditorToolbar({
   onOpenHelp,
   onSave,
   isSaving = false,
-  siteCapacity = null,
+  maxSeats = null,
 }) {
   const [showJson, setShowJson] = useState(false);
 
@@ -36,7 +35,7 @@ export default function EditorToolbar({
     .filter((el) => el.type === 'section')
     .reduce((sum, el) => sum + (el.seatLayout?.targetSeats ?? 0), 0);
 
-  const isOverCapacity = siteCapacity != null && totalSeats > siteCapacity;
+  const isOverCapacity = maxSeats != null && totalSeats > maxSeats;
 
   const layoutJson = JSON.stringify(
     serializeLayout(elements, canvasSize?.width ?? 1200, canvasSize?.height ?? 800),
@@ -63,22 +62,20 @@ export default function EditorToolbar({
 
         <div className="w-px h-5 bg-surfaceAlt" />
 
-        {/* Contador de sillas vs. capacidad del sitio */}
+        {/* Contador de sillas vs. aforo del evento */}
         <span
           className={`text-xs font-mono px-2 py-1 rounded ${
-            isOverCapacity
-              ? 'text-red-400 bg-red-500/10'
-              : 'text-textMuted'
+            isOverCapacity ? 'text-red-400 bg-red-500/10' : 'text-textMuted'
           }`}
-          title={isOverCapacity ? 'Excede la capacidad del sitio' : 'Sillas en el layout'}
+          title={isOverCapacity ? 'Excede el aforo del evento' : 'Sillas en el layout'}
         >
           {totalSeats}
-          {siteCapacity != null && ` / ${siteCapacity}`} sillas
+          {maxSeats != null && ` / ${maxSeats}`} sillas
         </span>
 
         {isOverCapacity && (
           <span className="text-[10px] font-semibold text-red-400 border border-red-400/30 px-2 py-0.5 rounded-full">
-            Excede capacidad
+            Excede aforo
           </span>
         )}
 
@@ -148,7 +145,7 @@ export default function EditorToolbar({
                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary`}
           title={
             isOverCapacity
-              ? 'Excede la capacidad del sitio — ajusta las sillas antes de guardar'
+              ? 'Excede el aforo del evento — ajusta las sillas antes de guardar'
               : isSaving
               ? 'Guardando…'
               : 'Guardar y sincronizar'

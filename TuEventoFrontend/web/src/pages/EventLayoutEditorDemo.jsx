@@ -44,7 +44,7 @@ export default function EventLayoutEditorDemo() {
 
   // ── Estado de datos del backend ───────────────────────────────────────────
   const [sectionTypes,   setSectionTypes]   = useState(null);   // null = cargando, [] = vacío
-  const [siteCapacity,   setSiteCapacity]   = useState(null);   // null = desconocido/demo
+  const [maxSeats,       setMaxSeats]       = useState(null);   // event.availableSeats — null en demo
   const [isSaving,       setIsSaving]       = useState(false);
   const [saveMsg,        setSaveMsg]        = useState(null);
   const [loadError,      setLoadError]      = useState(null);
@@ -97,15 +97,16 @@ export default function EventLayoutEditorDemo() {
 
     (async () => {
       try {
-        // 1. Cargar evento → obtener siteId
+        // 1. Cargar evento → obtener availableSeats y siteId
         const eventRes = await EventService.getEventById(eventId);
         const event    = eventRes.data;
 
-        // 2. Cargar sede → obtener capacidad del sitio
-        if (event?.siteId) {
-          const siteRes = await GeolocationService.getSiteById(event.siteId);
-          setSiteCapacity(siteRes.data?.capacity ?? null);
-        }
+        // availableSeats es el tope real del evento (puede ser menor que site.capacity)
+        setMaxSeats(event?.availableSeats ?? null);
+
+        // getSiteById ya no se necesita para la validación de capacidad,
+        // pero se conserva por si más adelante queremos mostrar site.capacity como referencia.
+        // Si event.siteId no existe simplemente se omite sin romper nada.
 
         // 3. Cargar tipos de sección del backend
         const sectionTypesRes = await SectionTypeService.getAllSectionTypes();
@@ -337,7 +338,7 @@ export default function EventLayoutEditorDemo() {
       .reduce((sum, el) => sum + (el.seatLayout?.targetSeats ?? 0), 0),
     [elements]
   );
-  const isOverCapacity = siteCapacity != null && totalSeats > siteCapacity;
+  const isOverCapacity = maxSeats != null && totalSeats > maxSeats;
 
   // ── handleSave — sincronización real con el backend ───────────────────────
   const handleSave = useCallback(async () => {
@@ -347,7 +348,7 @@ export default function EventLayoutEditorDemo() {
       return;
     }
     if (isOverCapacity) {
-      setSaveMsg('Excede la capacidad del sitio — ajusta las sillas antes de guardar');
+      setSaveMsg('Excede el aforo configurado para este evento — ajusta las sillas antes de guardar');
       setTimeout(() => setSaveMsg(null), 4000);
       return;
     }
@@ -489,7 +490,7 @@ export default function EventLayoutEditorDemo() {
         onOpenHelp={() => setHelpOpen(true)}
         onSave={handleSave}
         isSaving={isSaving}
-        siteCapacity={siteCapacity}
+        maxSeats={maxSeats}
         onClear={() => {
           setElements([]);
           setSelectedIds([]);
