@@ -45,11 +45,13 @@ export default function EventManage() {
   const [isDeleting,   setIsDeleting]   = useState(false);
 
   // Modal de edición de info general
-  const [editTarget,  setEditTarget]  = useState(null); // event | null
-  const [editForm,    setEditForm]    = useState({});
-  const [categories,  setCategories]  = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editError,   setEditError]   = useState(null);
+  const [editTarget,       setEditTarget]       = useState(null);  // event summary | null (para saber qué fila actualizar)
+  const [editModalOpen,    setEditModalOpen]    = useState(false);
+  const [isLoadingEditForm, setIsLoadingEditForm] = useState(false);
+  const [editForm,         setEditForm]         = useState({});
+  const [categories,       setCategories]       = useState([]);
+  const [isSubmitting,     setIsSubmitting]     = useState(false);
+  const [editError,        setEditError]        = useState(null);
 
   // ── Carga inicial ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -99,20 +101,31 @@ export default function EventManage() {
     }
   }, [deleteTarget]);
 
-  // ── Editar info general ───────────────────────────────────────────────────
-  const openEdit = useCallback((event) => {
-    setEditTarget(event);
-    setEditForm({
-      eventName:      event.eventName ?? '',
-      description:    event.description ?? '',
-      startDate:      event.startDate ?? '',
-      finishDate:     event.finishDate ?? '',
-      isPublic:       event.isPublic ?? true,
-      availableSeats: event.availableSeats ?? '',
-      categoryId:     event.categoryId ?? '',
-    });
+  // ── Editar info general — carga EventResponse completo (tiene description) ──
+  const openEdit = async (eventSummary) => {
+    setEditTarget(eventSummary);
+    setEditModalOpen(true);
+    setIsLoadingEditForm(true);
     setEditError(null);
-  }, []);
+    try {
+      const res  = await EventService.getEventById(eventSummary.eventId);
+      const full = res.data; // EventResponse — sí incluye description
+      setEditForm({
+        eventName:      full.eventName      ?? '',
+        description:    full.description    ?? '',
+        startDate:      full.startDate      ?? '',
+        finishDate:     full.finishDate     ?? '',
+        isPublic:       full.isPublic       ?? true,
+        availableSeats: full.availableSeats ?? '',
+        categoryId:     full.categoryId     ?? '',
+      });
+    } catch (err) {
+      setEditError('No se pudo cargar la información completa del evento');
+      setEditModalOpen(false);
+    } finally {
+      setIsLoadingEditForm(false);
+    }
+  };
 
   const handleEditSubmit = useCallback(async () => {
     if (!editTarget) return;
@@ -124,20 +137,23 @@ export default function EventManage() {
     setIsSubmitting(true);
     setEditError(null);
     try {
+      // Payload completo — no usar && para no omitir campos vacíos intencionales
+      // (p.ej. description borrada a propósito debe llegar al backend como "")
       const payload = {
-        ...(editForm.eventName      && { eventName:      editForm.eventName }),
-        ...(editForm.description    && { description:    editForm.description }),
-        ...(editForm.startDate      && { startDate:      editForm.startDate }),
-        ...(editForm.finishDate     && { finishDate:     editForm.finishDate }),
-        ...(editForm.availableSeats && { availableSeats: Number(editForm.availableSeats) }),
-        ...(editForm.categoryId     && { categoryId:     Number(editForm.categoryId) }),
-        isPublic: editForm.isPublic,
+        eventName:      editForm.eventName,
+        description:    editForm.description,
+        startDate:      editForm.startDate      || undefined,
+        finishDate:     editForm.finishDate     || undefined,
+        isPublic:       editForm.isPublic,
+        availableSeats: editForm.availableSeats ? Number(editForm.availableSeats) : undefined,
+        categoryId:     editForm.categoryId     ? Number(editForm.categoryId)     : undefined,
       };
       const res = await EventService.updateEvent(editTarget.eventId, payload);
       const updated = res.data;
       setEvents((prev) =>
         prev.map((e) => e.eventId === editTarget.eventId ? { ...e, ...updated } : e)
       );
+      setEditModalOpen(false);
       setEditTarget(null);
     } catch (err) {
       setEditError(err.message);
@@ -333,14 +349,14 @@ export default function EventManage() {
       )}
 
       {/* ── Modal: editar info general ──────────────────────────────────── */}
-      {editTarget && (
+      {editModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-surface border border-surfaceAlt rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-surfaceAlt">
               <h3 className="text-sm font-bold text-textPrimary">Editar evento</h3>
               <button
-                onClick={() => setEditTarget(null)}
+                onClick={() => { setEditModalOpen(false); setEditTarget(null); }}
                 className="text-textMuted hover:text-textPrimary transition-colors"
               >
                 <X className="w-4 h-4" />
@@ -349,100 +365,111 @@ export default function EventManage() {
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              {/* Nombre */}
-              <div>
-                <label className={labelClass}>Nombre del evento</label>
-                <input
-                  type="text" className={inputClass}
-                  value={editForm.eventName}
-                  onChange={(e) => setEditForm((f) => ({ ...f, eventName: e.target.value }))}
-                  maxLength={100}
-                />
-              </div>
-
-              {/* Descripción */}
-              <div>
-                <label className={labelClass}>Descripción</label>
-                <textarea
-                  className={`${inputClass} resize-none`}
-                  rows={3}
-                  value={editForm.description}
-                  onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
-                  maxLength={255}
-                />
-              </div>
-
-              {/* Fechas */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Fecha inicio</label>
-                  <input
-                    type="date" className={inputClass}
-                    value={editForm.startDate}
-                    onChange={(e) => setEditForm((f) => ({ ...f, startDate: e.target.value }))}
-                  />
+              {/* Loading skeleton mientras carga EventResponse completo */}
+              {isLoadingEditForm ? (
+                <div className="flex flex-col gap-3 animate-pulse">
+                  {[100, 60, 80].map((w, i) => (
+                    <div key={i} className="h-9 rounded-lg bg-surfaceAlt" style={{ width: `${w}%` }} />
+                  ))}
                 </div>
-                <div>
-                  <label className={labelClass}>Fecha fin</label>
-                  <input
-                    type="date" className={inputClass}
-                    value={editForm.finishDate}
-                    onChange={(e) => setEditForm((f) => ({ ...f, finishDate: e.target.value }))}
-                  />
-                </div>
-              </div>
+              ) : (
+                <>
+                  {/* Nombre */}
+                  <div>
+                    <label className={labelClass}>Nombre del evento</label>
+                    <input
+                      type="text" className={inputClass}
+                      value={editForm.eventName}
+                      onChange={(e) => setEditForm((f) => ({ ...f, eventName: e.target.value }))}
+                      maxLength={100}
+                    />
+                  </div>
 
-              {/* Sillas y categoría */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Sillas disponibles</label>
-                  <input
-                    type="number" className={inputClass} min={1} max={100000}
-                    value={editForm.availableSeats}
-                    onChange={(e) => setEditForm((f) => ({ ...f, availableSeats: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Categoría</label>
-                  <select
-                    className={inputClass}
-                    value={editForm.categoryId}
-                    onChange={(e) => setEditForm((f) => ({ ...f, categoryId: e.target.value }))}
-                  >
-                    <option value="">Sin cambiar</option>
-                    {categories.map((c) => (
-                      <option key={c.categoryId} value={c.categoryId}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+                  {/* Descripción */}
+                  <div>
+                    <label className={labelClass}>Descripción</label>
+                    <textarea
+                      className={`${inputClass} resize-none`}
+                      rows={3}
+                      value={editForm.description}
+                      onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                      maxLength={255}
+                    />
+                  </div>
 
-              {/* Visibilidad */}
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox" id="isPublic"
-                  className="w-4 h-4 accent-accent"
-                  checked={editForm.isPublic}
-                  onChange={(e) => setEditForm((f) => ({ ...f, isPublic: e.target.checked }))}
-                />
-                <label htmlFor="isPublic" className="text-sm text-textSecondary cursor-pointer">
-                  Evento público (visible para todos)
-                </label>
-              </div>
+                  {/* Fechas */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelClass}>Fecha inicio</label>
+                      <input
+                        type="date" className={inputClass}
+                        value={editForm.startDate}
+                        onChange={(e) => setEditForm((f) => ({ ...f, startDate: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Fecha fin</label>
+                      <input
+                        type="date" className={inputClass}
+                        value={editForm.finishDate}
+                        onChange={(e) => setEditForm((f) => ({ ...f, finishDate: e.target.value }))}
+                      />
+                    </div>
+                  </div>
 
-              {/* Error */}
-              {editError && (
-                <div className="flex items-center gap-2 bg-error/10 border border-error/30 text-error rounded-xl px-3 py-2 text-xs">
-                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                  {editError}
-                </div>
+                  {/* Sillas y categoría */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelClass}>Sillas disponibles</label>
+                      <input
+                        type="number" className={inputClass} min={1} max={100000}
+                        value={editForm.availableSeats}
+                        onChange={(e) => setEditForm((f) => ({ ...f, availableSeats: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Categoría</label>
+                      <select
+                        className={inputClass}
+                        value={editForm.categoryId}
+                        onChange={(e) => setEditForm((f) => ({ ...f, categoryId: e.target.value }))}
+                      >
+                        <option value="">Sin cambiar</option>
+                        {categories.map((c) => (
+                          <option key={c.categoryId} value={c.categoryId}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Visibilidad */}
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox" id="isPublic"
+                      className="w-4 h-4 accent-accent"
+                      checked={editForm.isPublic}
+                      onChange={(e) => setEditForm((f) => ({ ...f, isPublic: e.target.checked }))}
+                    />
+                    <label htmlFor="isPublic" className="text-sm text-textSecondary cursor-pointer">
+                      Evento público (visible para todos)
+                    </label>
+                  </div>
+
+                  {/* Error */}
+                  {editError && (
+                    <div className="flex items-center gap-2 bg-error/10 border border-error/30 text-error rounded-xl px-3 py-2 text-xs">
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                      {editError}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
             {/* Footer */}
             <div className="px-5 py-4 border-t border-surfaceAlt flex justify-end gap-2">
               <button
-                onClick={() => setEditTarget(null)}
+                onClick={() => { setEditModalOpen(false); setEditTarget(null); }}
                 disabled={isSubmitting}
                 className="px-4 py-2 rounded-xl text-sm font-medium text-textSecondary bg-surfaceAlt hover:bg-surfaceAlt/80 transition-colors"
               >
@@ -450,7 +477,7 @@ export default function EventManage() {
               </button>
               <button
                 onClick={handleEditSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLoadingEditForm}
                 className="px-4 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primaryDark transition-colors disabled:opacity-60"
               >
                 {isSubmitting ? 'Guardando…' : 'Guardar cambios'}
