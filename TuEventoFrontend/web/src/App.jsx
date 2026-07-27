@@ -11,6 +11,7 @@ import ProfilePage from './pages/ProfilePage';
 import CodeVerification from './pages/CodeVerification';
 import EventLayoutEditorDemo from './pages/EventLayoutEditorDemo';
 import EventCreateWizard from './pages/EventCreateWizard';
+import EventManage from './pages/EventManage';
 
 
 function AppContent() {
@@ -27,6 +28,7 @@ function AppContent() {
           <Route path="/nosotros" element={<AboutUs />} />
           <Route path="/events" element={<Events />} />
           <Route path="/events/create" element={<EventCreateWizard />} />
+          <Route path="/events/manage" element={<EventManage />} />
           <Route path="/organizer-petition-form" element={<OrganizerPetitionForm />} />
           <Route path="/admin-panel" element={<AdminPanel />} />
           <Route path="/profile" element={<ProfilePage />} />
