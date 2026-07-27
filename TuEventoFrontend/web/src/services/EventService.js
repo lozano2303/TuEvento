@@ -7,9 +7,14 @@ export const getAllEvents = async () => {
   return response.json(); // ApiResponse<List<EventSummaryResponse>>
 };
 
-/** Eventos de un usuario específico — GET /events/user/{userId}, sin auth. */
+/** Eventos de un usuario específico — GET /events/user/{userId}, auth requerida.
+ *  Siempre se llama con el propio userId del usuario logueado, por lo que
+ *  el token siempre está disponible. Devuelve también eventos en DRAFT. */
 export const getEventsByUser = async (userId) => {
-  const res = await fetch(`${API_URL}/events/user/${userId}`);
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${API_URL}/events/user/${userId}`, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+  });
   if (!res.ok) throw new Error('Error al obtener tus eventos');
   return res.json(); // ApiResponse<List<EventSummaryResponse>>
 };

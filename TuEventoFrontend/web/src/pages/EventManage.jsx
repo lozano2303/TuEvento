@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, LayoutDashboard, Pencil, Trash2, ChevronDown, X, AlertTriangle } from 'lucide-react';
+import { Plus, LayoutDashboard, Pencil, Trash2, X, AlertTriangle } from 'lucide-react';
 import * as EventService from '../services/EventService';
 import * as CategoryService from '../services/CategoryService';
+import StatusDropdown from '../components/event-manage/StatusDropdown';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = ['DRAFT', 'PUBLISHED', 'CANCELLED', 'COMPLETED'];
@@ -145,12 +146,7 @@ export default function EventManage() {
     }
   }, [editTarget, editForm]);
 
-  // ── Cerrar dropdowns al hacer click fuera ────────────────────────────────
-  useEffect(() => {
-    const handler = () => setOpenStatusMenu(null);
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  // El cierre por click fuera lo maneja StatusDropdown internamente vía su propio useEffect.
 
   // ── Render ───────────────────────────────────────────────────────────────
   const btnBase = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors';
@@ -236,35 +232,18 @@ export default function EventManage() {
                       <p className="text-[11px] text-textMuted mt-0.5">#{event.eventId}</p>
                     </td>
 
-                    {/* Estado — dropdown */}
+                    {/* Estado — portal dropdown */}
                     <td className="px-4 py-3">
-                      <div className="relative inline-block" onMouseDown={(e) => e.stopPropagation()}>
-                        <button
-                          disabled={busy}
-                          onClick={() => setOpenStatusMenu(openStatusMenu === event.eventId ? null : event.eventId)}
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border transition-colors
-                                      ${badge.cls} ${busy ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
-                        >
-                          {badge.label}
-                          {!busy && <ChevronDown className="w-3 h-3" />}
-                          {busy && <span className="w-3 h-3 inline-block animate-spin border border-current border-t-transparent rounded-full" />}
-                        </button>
-
-                        {openStatusMenu === event.eventId && (
-                          <div className="absolute left-0 top-full mt-1 z-20 bg-surface border border-surfaceAlt rounded-xl shadow-2xl shadow-primary/20 overflow-hidden min-w-[160px]">
-                            {STATUS_OPTIONS.map((s) => (
-                              <button
-                                key={s}
-                                onClick={() => handleStatusChange(event, s)}
-                                className={`w-full text-left px-3 py-2 text-xs transition-colors hover:bg-surfaceAlt
-                                            ${event.status === s ? 'font-bold text-accent' : 'text-textSecondary'}`}
-                              >
-                                {STATUS_LABEL[s] ?? s}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <StatusDropdown
+                        event={event}
+                        badge={badge}
+                        busy={busy}
+                        isOpen={openStatusMenu === event.eventId}
+                        onToggle={setOpenStatusMenu}
+                        onSelect={handleStatusChange}
+                        statusOptions={STATUS_OPTIONS}
+                        statusLabel={STATUS_LABEL}
+                      />
                     </td>
 
                     {/* Fechas */}
