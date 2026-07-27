@@ -2,6 +2,7 @@ import { Calendar, User, LogOut, Key, Plus, Wallet, Menu, X } from "lucide-react
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ChangePassword from "../pages/ChangePassword.jsx";
+import { getEventsByUser } from "../services/EventService.js";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -66,6 +67,16 @@ export default function Navbar() {
   const isAdmin     = userData?.role === 'ADMIN' || userData?.email === 'tuevento.capysoft@gmail.com';
   const isOrganizer = userData?.role === 'ORGANIZER';
 
+  // Saber si el organizador ya tiene eventos — determina destino del botón navbar
+  const [hasEvents, setHasEvents] = useState(false);
+  useEffect(() => {
+    if (userData && isOrganizer) {
+      getEventsByUser(userData.userId)
+        .then((res) => setHasEvents((res.data?.length ?? 0) > 0))
+        .catch(() => setHasEvents(false));
+    }
+  }, [userData, isOrganizer]);
+
   // Excepciones: badges de rol usan colores semánticos fijos, no del tema
   const roleBadge = isAdmin
     ? { label: 'Admin', badgeClass: 'bg-red-500 text-white', roleText: 'Administrador' }
@@ -104,10 +115,10 @@ const displayName = (() => {
             <Link to="/events" className="text-textSecondary hover:text-accent transition-colors">Eventos</Link>
             {userData && isOrganizer && (
               <button
-                onClick={() => navigate('/events/create')}
+                onClick={() => navigate(hasEvents ? '/events/manage' : '/events/create')}
                 className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
-                <Plus className="w-4 h-4" /> Crear Evento
+                <Plus className="w-4 h-4" /> {hasEvents ? 'Mis Eventos' : 'Crear Evento'}
               </button>
             )}
             {userData && !isAdmin && !isOrganizer && (
@@ -239,9 +250,9 @@ const displayName = (() => {
               Eventos
             </Link>
             {userData && isOrganizer && (
-              <button onClick={() => handleNavClick('/events/create')}
+              <button onClick={() => handleNavClick(hasEvents ? '/events/manage' : '/events/create')}
                 className="flex items-center gap-2 text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer">
-                <Plus className="w-4 h-4" /> Crear Evento
+                <Plus className="w-4 h-4" /> {hasEvents ? 'Mis Eventos' : 'Crear Evento'}
               </button>
             )}
             {userData && !isAdmin && !isOrganizer && (
