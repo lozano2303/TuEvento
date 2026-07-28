@@ -34,4 +34,10 @@ public interface EventRepository {
 
     /** Returns published public events whose startDate falls within [from, to]. */
     List<Event> findByDateRange(LocalDate from, LocalDate to);
+
+    /**
+     * Returns all PUBLISHED events whose finishDate is before the given date.
+     * Used by the auto-completion scheduler to mark expired events as COMPLETED.
+     */
+    List<Event> findAllPublishedExpiredBefore(LocalDate date);
 }

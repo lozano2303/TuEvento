@@ -182,12 +182,21 @@ export default function LayoutEditorCanvas({
     const cy = snapToGrid(canvasY - template.defaultHeight / 2);
 
     onAddElement({
-      id: generateId(), type: template.type,
-      sectionType: template.sectionType ?? null, eventSectionId: null,
-      seatLayout: template.seatLayout ?? null,
-      x: Math.max(0, cx), y: Math.max(0, cy),
-      width: template.defaultWidth, height: template.defaultHeight,
-      rotation: 0, label: template.label, color: template.color,
+      id:               generateId(),
+      type:             template.type,
+      sectionType:      template.sectionType      ?? null,
+      sectionTypeId:    template.sectionTypeId    ?? null, // ← campo nuevo (entero backend)
+      backendSectionId: template.backendSectionId ?? null, // ← campo nuevo
+      price:            template.price            ?? null, // ← campo nuevo
+      eventSectionId:   null,
+      seatLayout:       template.seatLayout ?? null,
+      x:                Math.max(0, cx),
+      y:                Math.max(0, cy),
+      width:            template.defaultWidth,
+      height:           template.defaultHeight,
+      rotation:         0,
+      label:            template.label,
+      color:            template.color,
     });
   }, [onAddElement]);
   const handleDragOver = (e) => e.preventDefault();

@@ -7,9 +7,10 @@ import com.capysoft.tuevento.modules.event.domain.event.EventStatusChangedEvent;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatusLog;
-import com.capysoft.tuevento.modules.event.domain.repository.EventLayoutRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventStatusLogRepository;
+import com.capysoft.tuevento.modules.section.domain.model.EventSection;
+import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -17,15 +18,17 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ChangeEventStatusService implements ChangeEventStatusUseCase {
 
-    private final EventRepository eventRepository;
+    private final EventRepository          eventRepository;
     private final EventStatusLogRepository statusLogRepository;
-    private final EventLayoutRepository eventLayoutRepository;
+    private final EventSectionRepository   eventSectionRepository; // replaces eventLayoutRepository
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -43,9 +46,23 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
         validateTransition(event.getStatus(), request.getNewStatus());
 
         if (request.getNewStatus() == EventStatus.PUBLISHED) {
-            eventLayoutRepository.findByEventId(eventId)
-                    .orElseThrow(() -> new BusinessException("EVENT_LAYOUT_REQUIRED",
-                            "Event cannot be published without a layout"));
+            // Validar contra event_section real — más significativo que solo verificar
+            // la existencia del JSONB del layout. capacity tiene @Positive en el DTO/BD,
+            // así que "existe al menos una sección" implica "tiene al menos una silla".
+            List<EventSection> sections = eventSectionRepository.findAllByEventId(eventId.intValue());
+            if (sections.isEmpty()) {
+                throw new BusinessException("EVENT_SECTIONS_REQUIRED",
+                        "Event cannot be published without at least one section with seats configured");
+            }
+        }
+
+        // Validación defensiva: COMPLETED solo puede forzarse manualmente el día después
+        // de la fecha de finalización. El caso normal lo cubre el scheduler automático.
+        if (request.getNewStatus() == EventStatus.COMPLETED) {
+            if (!LocalDate.now().isAfter(event.getFinishDate())) {
+                throw new BusinessException("EVENT_COMPLETE_TOO_EARLY",
+                        "Event can only be completed the day after its finish date");
+            }
         }
 
         eventRepository.save(Event.builder()

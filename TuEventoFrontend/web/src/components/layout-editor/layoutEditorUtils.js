@@ -5,6 +5,18 @@ export const generateId = () =>
 export const generateSectionId = () =>
   `section-${Math.random().toString(36).slice(2, 9)}-${Date.now().toString(36)}`;
 
+/**
+ * Agrupa un array de objetos por el valor de una clave dada.
+ * groupBy([{a:1,b:'x'},{a:2,b:'x'}], 'b') → { x: [{...},{...}] }
+ */
+export const groupBy = (arr, key) =>
+  arr.reduce((acc, item) => {
+    const k = item[key] ?? '__undefined__';
+    if (!acc[k]) acc[k] = [];
+    acc[k].push(item);
+    return acc;
+  }, {});
+
 // ── Fase 1.12: Migración de polygonPoints al nuevo formato con handles Bézier ──
 /**
  * Convierte polygonPoints del formato viejo [[x,y], ...] al nuevo formato
@@ -55,11 +67,14 @@ export const serializeLayout = (elements, canvasWidth = 1200, canvasHeight = 800
     id: el.id,
     type: el.type,
     ...(el.type === 'section' && {
-      sectionType:    el.sectionType,
-      eventSectionId: null,
-      seatLayout:     el.seatLayout,
-      shapeMode:      el.shapeMode ?? 'rect',
-      polygonPoints:  el.polygonPoints ?? null,
+      sectionType:      el.sectionType,
+      sectionTypeId:    el.sectionTypeId    ?? null, // entero backend — necesario para create en handleSave
+      eventSectionId:   el.eventSectionId   ?? null, // antes hardcodeado a null — BUG CORREGIDO
+      backendSectionId: el.backendSectionId ?? null, // necesario para update en handleSave (evita duplicados)
+      price:            el.price            ?? null,
+      seatLayout:       el.seatLayout,
+      shapeMode:        el.shapeMode ?? 'rect',
+      polygonPoints:    el.polygonPoints ?? null,
     }),
     x: el.x,
     y: el.y,

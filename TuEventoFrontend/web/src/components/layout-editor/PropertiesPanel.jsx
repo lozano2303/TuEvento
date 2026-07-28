@@ -296,6 +296,23 @@ export default function PropertiesPanel({
           />
         </div>
 
+        {/* Precio por silla — solo secciones */}
+        {element.type === 'section' && (
+          <div>
+            <label className={labelClass}>Precio por silla</label>
+            <input
+              type="number"
+              className={inputClass}
+              min={0}
+              step={1000}
+              value={element.price ?? ''}
+              disabled={isEditingVertices}
+              placeholder="0"
+              onChange={(e) => update({ price: e.target.value === '' ? null : Number(e.target.value) })}
+            />
+          </div>
+        )}
+
         {/* Posición */}
         <div>
           <label className={labelClass}>Posición</label>

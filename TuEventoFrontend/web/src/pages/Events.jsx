@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { getAllEvents, cancelEvent } from '../services/EventService.js';
-import { getEventImages } from '../services/EventImgService.js';
+import { getEventMedia } from '../services/EventMediaService.js';
 import { getCategoriesByEvent } from '../services/CategoryService.js';
 import { searchEvents } from '../services/searchEvents.js';
 
@@ -53,7 +53,7 @@ const TuEvento = () => {
   useEffect(() => {
     if (events.length > 0) {
       const filtered = events.filter(event =>
-        event.status === 1 && eventImagesMap[event.id] && eventCategoriesMap[event.id]
+        event.status === 'PUBLISHED' && eventImagesMap[event.eventId] && eventCategoriesMap[event.eventId]
       );
       setFilteredEvents(filtered);
     }
@@ -63,13 +63,13 @@ const TuEvento = () => {
     try {
       for (const event of eventsList) {
         try {
-          const imagesResult = await getEventImages(event.id);
+          const imagesResult = await getEventMedia(event.eventId);
           if (imagesResult.success && imagesResult.data && imagesResult.data.length > 0) {
-            setHeroImage(imagesResult.data[0].url);
+            setHeroImage(imagesResult.data[0].imgUrl);
             return;
           }
         } catch (error) {
-          console.log(`No images for event ${event.id}`);
+          console.log(`No images for event ${event.eventId}`);
         }
       }
     } catch (error) {
@@ -80,14 +80,14 @@ const TuEvento = () => {
   const loadEventImages = async (eventsList) => {
     const newImagesMap = { ...eventImagesMap };
     for (const event of eventsList) {
-      if (!newImagesMap[event.id]) {
+      if (!newImagesMap[event.eventId]) {
         try {
-          const imagesResult = await getEventImages(event.id);
+          const imagesResult = await getEventMedia(event.eventId);
           if (imagesResult.success && imagesResult.data && imagesResult.data.length > 0) {
-            newImagesMap[event.id] = imagesResult.data[0].url;
+            newImagesMap[event.eventId] = imagesResult.data[0].imgUrl;
           }
         } catch (error) {
-          console.log(`No images for event ${event.id}`);
+          console.log(`No images for event ${event.eventId}`);
         }
       }
     }
@@ -97,14 +97,14 @@ const TuEvento = () => {
   const loadEventCategories = async (eventsList) => {
     const newCategoriesMap = { ...eventCategoriesMap };
     for (const event of eventsList) {
-      if (!newCategoriesMap[event.id]) {
+      if (!newCategoriesMap[event.eventId]) {
         try {
-          const categoriesResult = await getCategoriesByEvent(event.id);
+          const categoriesResult = await getCategoriesByEvent(event.eventId);
           if (categoriesResult.success && categoriesResult.data && categoriesResult.data.length > 0) {
-            newCategoriesMap[event.id] = categoriesResult.data.length;
+            newCategoriesMap[event.eventId] = categoriesResult.data.length;
           }
         } catch (error) {
-          console.log(`No categories for event ${event.id}`);
+          console.log(`No categories for event ${event.eventId}`);
         }
       }
     }
@@ -143,7 +143,7 @@ const TuEvento = () => {
       try {
         const result = await cancelEvent(eventId);
         if (result.success) {
-          const updatedEvents = events.filter(event => event.id !== eventId);
+          const updatedEvents = events.filter(event => event.eventId !== eventId);
           setEvents(updatedEvents);
           setFilteredEvents(updatedEvents);
           alert('Evento eliminado exitosamente');
@@ -260,9 +260,9 @@ const TuEvento = () => {
                 <>
                   {filteredEvents.length > 0 ? (
                     <div className="grid md:grid-cols-3 gap-6">
-                      {filteredEvents.map((event, index) => (
+                      {filteredEvents.map((event) => (
                         <div
-                          key={`event-${event.id}-${index}`}
+                          key={event.eventId}
                           className="relative rounded-xl overflow-hidden"
                           style={{
                             background: 'rgba(88, 28, 135, 0.2)',
@@ -270,10 +270,10 @@ const TuEvento = () => {
                           }}
                         >
                           {/* Imagen */}
-                          {eventImagesMap[event.id] ? (
+                          {eventImagesMap[event.eventId] ? (
                             <img
-                              src={eventImagesMap[event.id]}
-                              alt={event.name}
+                              src={eventImagesMap[event.eventId]}
+                              alt={event.eventName}
                               className="w-full h-48 object-cover"
                             />
                           ) : (
@@ -288,11 +288,11 @@ const TuEvento = () => {
                           )}
 
                           {/* Badge de estado */}
-                          {currentUserId === event.userID?.userID && event.status === 0 && (
+                          {currentUserId === event.userId && event.status === 'DRAFT' && (
                             <div className="absolute top-2 left-2 bg-yellow-500 text-black px-2 py-1 text-xs font-bold rounded">
-                              {!eventImagesMap[event.id]
+                              {!eventImagesMap[event.eventId]
                                 ? 'Falta imagen'
-                                : !eventCategoriesMap[event.id]
+                                : !eventCategoriesMap[event.eventId]
                                 ? 'Falta categoría'
                                 : 'En proceso'}
                             </div>
@@ -307,7 +307,7 @@ const TuEvento = () => {
                               className="text-sm truncate mr-3"
                               style={{ color: 'rgba(233, 213, 255, 0.8)' }}
                             >
-                              {event.name}
+                              {event.eventName}
                             </span>
                             <button
                               className="shrink-0 text-sm px-4 py-1.5 rounded-lg font-medium transition-all hover:brightness-110"
@@ -316,7 +316,7 @@ const TuEvento = () => {
                                 color: '#fff',
                                 boxShadow: '0 0 10px rgba(124, 58, 237, 0.35)'
                               }}
-                              onClick={() => navigate(`/event-info?id=${event.id}`)}
+                              onClick={() => navigate(`/events/${event.eventId}`)}
                             >
                               Ver detalles
                             </button>

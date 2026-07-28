@@ -76,4 +76,10 @@ public class EventRepositoryImpl implements EventRepository {
         return jpaRepository.findPublishedByDateRange(from, to)
                 .stream().map(mapper::toDomain).toList();
     }
+
+    @Override
+    public List<Event> findAllPublishedExpiredBefore(LocalDate date) {
+        return jpaRepository.findByStatusAndFinishDateBefore(EventStatus.PUBLISHED, date)
+                .stream().map(mapper::toDomain).toList();
+    }
 }

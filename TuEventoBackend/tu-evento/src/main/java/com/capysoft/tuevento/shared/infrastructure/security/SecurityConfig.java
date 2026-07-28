@@ -62,9 +62,10 @@ public class SecurityConfig {
             "/api/v1/events/public",
             "/api/v1/events/public/**",
             "/api/v1/events/status/**",
-            "/api/v1/events/*/ratings",
-            "/api/v1/ratings/*/replies",
-            "/api/v1/events/*/media",
+            "/api/v1/events/*/layout",   // GET layout de un evento — público para cargar el editor
+            "/api/v1/events/*/ratings",  // GET ratings de un evento — público
+            "/api/v1/events/*/media",    // GET media de un evento — público
+            "/api/v1/ratings/*/replies", // GET replies de un rating — público
             "/api/v1/categories/**",
             "/api/v1/category-events/**",
             "/api/v1/section-types",

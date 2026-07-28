@@ -2,20 +2,46 @@ import { useState } from 'react';
 import { Code2, Trash2, Save, X } from 'lucide-react';
 import { serializeLayout } from './layoutEditorUtils';
 
-export default function EditorToolbar({ elements, canvasSize, onClear, canUndo, canRedo, onUndo, onRedo, onOpenHelp }) {
+/**
+ * EditorToolbar
+ *
+ * Props:
+ *   elements      — array de elementos del canvas
+ *   canvasSize    — { width, height }
+ *   onClear       — callback para limpiar el canvas
+ *   canUndo/canRedo / onUndo/onRedo — undo-redo
+ *   onOpenHelp    — abre el HelpModal
+ *   onSave        — async callback de guardado real (recibe nada, lanzado desde aquí)
+ *   isSaving      — boolean, bloqueado mientras guarda
+ *   isReadOnly    — boolean — true cuando el evento no está en DRAFT (bloquea guardar)
+ */
+export default function EditorToolbar({
+  elements,
+  canvasSize,
+  onClear,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+  onOpenHelp,
+  onSave,
+  isSaving = false,
+  maxSeats = null,
+  isReadOnly = false,
+}) {
   const [showJson, setShowJson] = useState(false);
-  const [saveMsg, setSaveMsg] = useState(null);
+
+  // Contador de sillas totales (solo secciones)
+  const totalSeats = elements
+    .filter((el) => el.type === 'section')
+    .reduce((sum, el) => sum + (el.seatLayout?.targetSeats ?? 0), 0);
+
+  const isOverCapacity = maxSeats != null && totalSeats > maxSeats;
 
   const layoutJson = JSON.stringify(
     serializeLayout(elements, canvasSize?.width ?? 1200, canvasSize?.height ?? 800),
     null, 2
   );
-
-  const handleSave = () => {
-    console.log('[Layout Editor] layoutData:', serializeLayout(elements, canvasSize?.width, canvasSize?.height));
-    setSaveMsg('Guardado simulado — Fase 2 conectará esto al backend');
-    setTimeout(() => setSaveMsg(null), 3000);
-  };
 
   const handleClear = () => {
     if (window.confirm('¿Limpiar el canvas? Se eliminarán todos los elementos.')) {
@@ -34,6 +60,25 @@ export default function EditorToolbar({ elements, canvasSize, onClear, canUndo, 
         <span className="text-textMuted text-xs">
           {elements.length} elemento{elements.length !== 1 ? 's' : ''}
         </span>
+
+        <div className="w-px h-5 bg-surfaceAlt" />
+
+        {/* Contador de sillas vs. aforo del evento */}
+        <span
+          className={`text-xs font-mono px-2 py-1 rounded ${
+            isOverCapacity ? 'text-red-400 bg-red-500/10' : 'text-textMuted'
+          }`}
+          title={isOverCapacity ? 'Excede el aforo del evento' : 'Sillas en el layout'}
+        >
+          {totalSeats}
+          {maxSeats != null && ` / ${maxSeats}`} sillas
+        </span>
+
+        {isOverCapacity && (
+          <span className="text-[10px] font-semibold text-red-400 border border-red-400/30 px-2 py-0.5 rounded-full">
+            Excede aforo
+          </span>
+        )}
 
         <div className="w-px h-5 bg-surfaceAlt" />
 
@@ -95,24 +140,24 @@ export default function EditorToolbar({ elements, canvasSize, onClear, canUndo, 
         </button>
 
         <button
-          onClick={handleSave}
-          className={`${btnBase} bg-primary text-white hover:bg-primaryDark`}
-          title="Guardar (simulado en Fase 1)"
+          onClick={onSave}
+          disabled={isSaving || isOverCapacity || isReadOnly}
+          className={`${btnBase} bg-primary text-white hover:bg-primaryDark
+                      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary`}
+          title={
+            isReadOnly
+              ? 'Solo lectura — el layout no se puede modificar fuera de DRAFT'
+              : isOverCapacity
+              ? 'Excede el aforo del evento — ajusta las sillas antes de guardar'
+              : isSaving
+              ? 'Guardando…'
+              : 'Guardar y sincronizar'
+          }
         >
           <Save className="w-3.5 h-3.5" />
-          Guardar
+          {isSaving ? 'Guardando…' : 'Guardar'}
         </button>
       </div>
-
-      {/* Toast de guardado simulado */}
-      {saveMsg && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-surface border border-accent/40
-                        text-textPrimary text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-primary/20
-                        flex items-center gap-2 max-w-sm text-center">
-          <span>💾</span>
-          <span>{saveMsg}</span>
-        </div>
-      )}
 
       {/* Modal JSON */}
       {showJson && (
