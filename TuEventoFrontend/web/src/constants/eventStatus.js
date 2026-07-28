@@ -4,7 +4,7 @@
  */
 export const VALID_TRANSITIONS = {
   DRAFT:     ['PUBLISHED'],
-  PUBLISHED: ['CANCELLED', 'COMPLETED'],
+  PUBLISHED: ['CANCELLED'], // COMPLETED es automático — lo gestiona el scheduler del backend
   CANCELLED: [],
   COMPLETED: [],
 };
@@ -32,7 +32,7 @@ export const STATUS_LABEL = {
 export const TRANSITION_INFO = {
   PUBLISHED: {
     title:        '¿Publicar este evento?',
-    body:         'Una vez publicado, el evento será visible públicamente y ya no podrás modificar el layout ni volver a marcarlo como borrador. Solo podrás cambiarlo a Cancelado o Completado más adelante.',
+    body:         'Una vez publicado, el evento será visible públicamente y ya no podrás modificar el layout ni volver a marcarlo como borrador. El día después de la fecha de finalización, el evento se marcará automáticamente como Completado.',
     confirmLabel: 'Sí, publicar',
     confirmClass: 'bg-green-600 hover:bg-green-500 text-white',
   },

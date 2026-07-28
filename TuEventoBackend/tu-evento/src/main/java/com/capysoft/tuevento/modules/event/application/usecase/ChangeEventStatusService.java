@@ -18,6 +18,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -52,6 +53,15 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
             if (sections.isEmpty()) {
                 throw new BusinessException("EVENT_SECTIONS_REQUIRED",
                         "Event cannot be published without at least one section with seats configured");
+            }
+        }
+
+        // Validación defensiva: COMPLETED solo puede forzarse manualmente el día después
+        // de la fecha de finalización. El caso normal lo cubre el scheduler automático.
+        if (request.getNewStatus() == EventStatus.COMPLETED) {
+            if (!LocalDate.now().isAfter(event.getFinishDate())) {
+                throw new BusinessException("EVENT_COMPLETE_TOO_EARLY",
+                        "Event can only be completed the day after its finish date");
             }
         }
 

@@ -44,4 +44,7 @@ public interface EventJpaRepository extends JpaRepository<EventEntity, Long> {
               AND e.start_date >= :from AND e.start_date <= :to
             """, nativeQuery = true)
     List<EventEntity> findPublishedByDateRange(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /** PUBLISHED events (any visibility) whose finish_date < :date — used by auto-completion scheduler. */
+    List<EventEntity> findByStatusAndFinishDateBefore(EventStatus status, LocalDate date);
 }
