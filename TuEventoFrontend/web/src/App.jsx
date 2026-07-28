@@ -9,14 +9,16 @@ import OrganizerPetitionForm from './pages/OrganizerPetitionForm'
 import AdminPanel from './pages/AdminPanel'
 import ProfilePage from './pages/ProfilePage';
 import CodeVerification from './pages/CodeVerification';
-import EventLayoutEditorDemo from './pages/EventLayoutEditorDemo';
+import EventLayoutEditor from './pages/EventLayoutEditor';
 import EventCreateWizard from './pages/EventCreateWizard';
 import EventManage from './pages/EventManage';
 
 
 function AppContent() {
   const location = useLocation();
-  const showNavbar = !['/login', '/verification', '/layout-editor-demo', '/events/create'].includes(location.pathname);
+  // Rutas sin navbar — incluye el editor con ruta dinámica /events/:id/layout
+  const showNavbar = !['/login', '/verification', '/events/create'].includes(location.pathname)
+    && !location.pathname.match(/^\/events\/[^/]+\/layout$/);
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,7 +35,7 @@ function AppContent() {
           <Route path="/admin-panel" element={<AdminPanel />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/verification" element={<CodeVerification />} />
-          <Route path="/layout-editor-demo" element={<EventLayoutEditorDemo />} />
+          <Route path="/events/:eventId/layout" element={<EventLayoutEditor />} />
         </Routes>
       </div>
     </div>

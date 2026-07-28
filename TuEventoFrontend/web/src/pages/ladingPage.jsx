@@ -69,20 +69,6 @@ export default function LadingPage() {
               <button className="bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors" onClick={() => navigate('/login')}>
                 Comenzar ahora
               </button>
-
-              {/* Botón temporal DEMO — se eliminará en Fase 2 */}
-              <button
-                onClick={() => navigate('/layout-editor-demo')}
-                className="inline-flex items-center gap-2 border-2 border-dashed border-yellow-300/70
-                           text-yellow-200 px-5 py-2.5 rounded-lg text-sm font-medium
-                           hover:border-yellow-300 hover:text-yellow-100 transition-colors"
-              >
-                <span>✏️</span>
-                Editor de Layout
-                <span className="text-[10px] font-bold bg-yellow-400/20 text-yellow-300 px-1.5 py-0.5 rounded-full border border-yellow-300/40">
-                  DEMO
-                </span>
-              </button>
             </div>
 
              {/* Imagen */}
