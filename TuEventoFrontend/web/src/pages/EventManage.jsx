@@ -277,11 +277,17 @@ export default function EventManage() {
                     {/* Acciones */}
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        {/* Editar layout */}
+                        {/* Editar layout — solo disponible en DRAFT */}
                         <button
-                          onClick={() => navigate(`/events/${event.eventId}/layout`)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-accent hover:bg-accent/10 transition-colors"
-                          title="Editar layout del evento"
+                          onClick={() => event.status === 'DRAFT' && navigate(`/events/${event.eventId}/layout`)}
+                          disabled={event.status !== 'DRAFT'}
+                          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
+                            ${event.status === 'DRAFT'
+                              ? 'text-textMuted hover:text-accent hover:bg-accent/10 cursor-pointer'
+                              : 'text-textMuted/30 cursor-not-allowed'}`}
+                          title={event.status === 'DRAFT'
+                            ? 'Editar layout del evento'
+                            : 'El layout solo se puede editar en estado Borrador'}
                         >
                           <LayoutDashboard className="w-3.5 h-3.5" />
                         </button>
@@ -295,11 +301,17 @@ export default function EventManage() {
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Eliminar */}
+                        {/* Eliminar — solo disponible en DRAFT (backend lo exige también) */}
                         <button
-                          onClick={() => setDeleteTarget(event)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-error hover:bg-error/10 transition-colors"
-                          title="Eliminar evento"
+                          onClick={() => event.status === 'DRAFT' && setDeleteTarget(event)}
+                          disabled={event.status !== 'DRAFT'}
+                          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
+                            ${event.status === 'DRAFT'
+                              ? 'text-textMuted hover:text-error hover:bg-error/10 cursor-pointer'
+                              : 'text-textMuted/30 cursor-not-allowed'}`}
+                          title={event.status === 'DRAFT'
+                            ? 'Eliminar evento'
+                            : 'Solo se pueden eliminar eventos en estado Borrador'}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
