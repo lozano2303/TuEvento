@@ -12,6 +12,7 @@ import CodeVerification from './pages/CodeVerification';
 import EventLayoutEditor from './pages/EventLayoutEditor';
 import EventCreateWizard from './pages/EventCreateWizard';
 import EventManage from './pages/EventManage';
+import EventDetail from './pages/EventDetail';
 
 
 function AppContent() {
@@ -31,6 +32,7 @@ function AppContent() {
           <Route path="/events" element={<Events />} />
           <Route path="/events/create" element={<EventCreateWizard />} />
           <Route path="/events/manage" element={<EventManage />} />
+          <Route path="/events/:eventId" element={<EventDetail />} />
           <Route path="/organizer-petition-form" element={<OrganizerPetitionForm />} />
           <Route path="/admin-panel" element={<AdminPanel />} />
           <Route path="/profile" element={<ProfilePage />} />
