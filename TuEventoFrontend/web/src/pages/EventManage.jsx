@@ -279,7 +279,7 @@ export default function EventManage() {
                       <div className="flex items-center justify-end gap-1">
                         {/* Editar layout */}
                         <button
-                          onClick={() => navigate(`/layout-editor-demo?eventId=${event.eventId}`)}
+                          onClick={() => navigate(`/events/${event.eventId}/layout`)}
                           className="w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-accent hover:bg-accent/10 transition-colors"
                           title="Editar layout del evento"
                         >
