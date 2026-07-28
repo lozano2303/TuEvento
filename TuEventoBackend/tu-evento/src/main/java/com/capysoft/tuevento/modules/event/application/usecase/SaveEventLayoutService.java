@@ -5,6 +5,7 @@ import com.capysoft.tuevento.modules.event.application.dto.response.EventLayoutR
 import com.capysoft.tuevento.modules.event.application.port.in.SaveEventLayoutUseCase;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventLayout;
+import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventLayoutRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
@@ -32,6 +33,11 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
         if (!event.getUserId().equals(userId)) {
             throw new BusinessException("EVENT_ACCESS_DENIED",
                     "User " + userId + " does not own event " + eventId);
+        }
+
+        if (event.getStatus() != EventStatus.DRAFT) {
+            throw new BusinessException("EVENT_LAYOUT_EDIT_NOT_ALLOWED",
+                    "Layout can only be modified when the event is in DRAFT status. Current status: " + event.getStatus());
         }
 
         Optional<EventLayout> existing = eventLayoutRepository.findByEventId(eventId);
