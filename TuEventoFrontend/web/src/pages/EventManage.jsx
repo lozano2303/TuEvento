@@ -5,23 +5,11 @@ import * as EventService from '../services/EventService';
 import * as CategoryService from '../services/CategoryService';
 import StatusDropdown from '../components/event-manage/StatusDropdown';
 import Modal from '../components/common/Modal';
+import { STATUS_BADGE, TRANSITION_INFO } from '../constants/eventStatus';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
-const STATUS_OPTIONS = ['DRAFT', 'PUBLISHED', 'CANCELLED', 'COMPLETED'];
-
-const STATUS_BADGE = {
-  DRAFT:     { label: 'Borrador',   cls: 'bg-gray-500/20 text-gray-400 border-gray-500/30' },
-  PUBLISHED: { label: 'Publicado',  cls: 'bg-green-500/20 text-green-400 border-green-500/30' },
-  CANCELLED: { label: 'Cancelado',  cls: 'bg-red-500/20 text-red-400 border-red-500/30' },
-  COMPLETED: { label: 'Finalizado', cls: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-};
-
-const STATUS_LABEL = {
-  DRAFT:     'Borrador',
-  PUBLISHED: 'Publicar',
-  CANCELLED: 'Cancelar',
-  COMPLETED: 'Marcar finalizado',
-};
+// STATUS_BADGE y STATUS_LABEL se importan desde constants/eventStatus.js
+// STATUS_OPTIONS ya no se usa — StatusDropdown filtra por VALID_TRANSITIONS internamente
 
 const inputClass =
   'w-full bg-background border border-surfaceAlt rounded-lg px-3 py-2 text-sm text-textPrimary ' +
@@ -44,6 +32,13 @@ export default function EventManage() {
   // Modal de confirmación de eliminación
   const [deleteTarget, setDeleteTarget] = useState(null); // event | null
   const [isDeleting,   setIsDeleting]   = useState(false);
+
+  // Modal de confirmación de transición de estado
+  const [pendingTransition, setPendingTransition] = useState(null); // { event, newStatus } | null
+  const [transitionBusy,    setTransitionBusy]    = useState(false);
+
+  // Modal de error genérico (reemplaza alert())
+  const [errorModal, setErrorModal] = useState(null); // { title, message } | null
 
   // Modal de edición de info general
   const [editTarget,       setEditTarget]       = useState(null);  // event summary | null (para saber qué fila actualizar)
@@ -70,10 +65,18 @@ export default function EventManage() {
       .catch(() => setCategories([]));
   }, []);
 
-  // ── Cambio de estado ─────────────────────────────────────────────────────
-  const handleStatusChange = useCallback(async (event, newStatus) => {
+  // ── Cambio de estado — paso 1: solicitar confirmación ───────────────────
+  const handleTransitionRequest = useCallback((event, newStatus) => {
     setOpenStatusMenu(null);
-    if (event.status === newStatus) return;
+    setPendingTransition({ event, newStatus });
+  }, []);
+
+  // ── Cambio de estado — paso 2: ejecutar tras confirmación ────────────────
+  const confirmTransition = useCallback(async () => {
+    if (!pendingTransition) return;
+    const { event, newStatus } = pendingTransition;
+    setPendingTransition(null);
+    setTransitionBusy(true);
     setStatusBusy((prev) => ({ ...prev, [event.eventId]: true }));
     try {
       await EventService.changeEventStatus(event.eventId, newStatus);
@@ -81,11 +84,17 @@ export default function EventManage() {
         prev.map((e) => e.eventId === event.eventId ? { ...e, status: newStatus } : e)
       );
     } catch (err) {
-      alert(`Error al cambiar estado: ${err.message}`);
+      // Traducir el error de layout requerido a un mensaje claro para el usuario
+      let message = err.message;
+      if (message.includes('cannot be published without a layout') || message.includes('EVENT_LAYOUT_REQUIRED')) {
+        message = 'Este evento no tiene un layout guardado todavía. Ve a "Editar layout" y guarda al menos una sección antes de publicar.';
+      }
+      setErrorModal({ title: 'No se pudo cambiar el estado', message });
     } finally {
+      setTransitionBusy(false);
       setStatusBusy((prev) => ({ ...prev, [event.eventId]: false }));
     }
-  }, []);
+  }, [pendingTransition]);
 
   // ── Eliminar ─────────────────────────────────────────────────────────────
   const handleDeleteConfirm = useCallback(async () => {
@@ -96,7 +105,8 @@ export default function EventManage() {
       setEvents((prev) => prev.filter((e) => e.eventId !== deleteTarget.eventId));
       setDeleteTarget(null);
     } catch (err) {
-      alert(`Error al eliminar: ${err.message}`);
+      setDeleteTarget(null);
+      setErrorModal({ title: 'No se pudo eliminar', message: err.message });
     } finally {
       setIsDeleting(false);
     }
@@ -257,9 +267,7 @@ export default function EventManage() {
                         busy={busy}
                         isOpen={openStatusMenu === event.eventId}
                         onToggle={setOpenStatusMenu}
-                        onSelect={handleStatusChange}
-                        statusOptions={STATUS_OPTIONS}
-                        statusLabel={STATUS_LABEL}
+                        onSelect={handleTransitionRequest}
                       />
                     </td>
 
@@ -489,6 +497,57 @@ export default function EventManage() {
             </>
           )}
         </div>
+      </Modal>
+      {/* ── Modal: confirmar transición de estado ──────────────────────── */}
+      {pendingTransition && (() => {
+        const info = TRANSITION_INFO[pendingTransition.newStatus];
+        return (
+          <Modal
+            isOpen
+            onClose={() => !transitionBusy && setPendingTransition(null)}
+            title={info.title}
+            maxWidth="max-w-md"
+            hideClose={transitionBusy}
+            footer={
+              <>
+                <button
+                  onClick={() => setPendingTransition(null)}
+                  disabled={transitionBusy}
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-textSecondary bg-surfaceAlt hover:bg-surfaceAlt/80 transition-colors disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmTransition}
+                  disabled={transitionBusy}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-60 ${info.confirmClass}`}
+                >
+                  {transitionBusy ? 'Cambiando…' : info.confirmLabel}
+                </button>
+              </>
+            }
+          >
+            <p className="text-sm text-textSecondary px-5 py-4 leading-relaxed">{info.body}</p>
+          </Modal>
+        );
+      })()}
+
+      {/* ── Modal: error genérico (reemplaza alert()) ───────────────────── */}
+      <Modal
+        isOpen={!!errorModal}
+        onClose={() => setErrorModal(null)}
+        title={errorModal?.title ?? 'Error'}
+        maxWidth="max-w-sm"
+        footer={
+          <button
+            onClick={() => setErrorModal(null)}
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-surfaceAlt text-textSecondary hover:bg-surfaceAlt/80 transition-colors"
+          >
+            Entendido
+          </button>
+        }
+      >
+        <p className="text-sm text-textSecondary px-5 py-4 leading-relaxed">{errorModal?.message}</p>
       </Modal>
     </div>
   );

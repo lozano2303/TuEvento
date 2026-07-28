@@ -1,11 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
+import { VALID_TRANSITIONS, STATUS_LABEL } from '../../constants/eventStatus';
 
 /**
- * StatusDropdown — botón + panel flotante vía createPortal.
- * El panel se renderiza en document.body para escapar cualquier
- * overflow-hidden ancestral (p.ej. el contenedor rounded de la tabla).
+ * StatusDropdown — badge de estado con dropdown de transiciones válidas.
+ *
+ * Si el estado actual no tiene transiciones válidas (CANCELLED, COMPLETED),
+ * muestra solo el badge estático sin ChevronDown ni onClick.
+ *
+ * onSelect(event, newStatus) ya no ejecuta el cambio directamente —
+ * solo notifica al padre, que abre el modal de confirmación.
  */
 export default function StatusDropdown({
   event,
@@ -14,12 +19,13 @@ export default function StatusDropdown({
   isOpen,
   onToggle,
   onSelect,
-  statusOptions,
-  statusLabel,
 }) {
   const buttonRef = useRef(null);
   const menuRef   = useRef(null);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
+
+  // Transiciones disponibles desde el estado actual
+  const availableTransitions = VALID_TRANSITIONS[event.status] ?? [];
 
   // Calcular posición cuando se abre
   useEffect(() => {
@@ -38,10 +44,7 @@ export default function StatusDropdown({
     const reposition = () => {
       if (buttonRef.current) {
         const rect = buttonRef.current.getBoundingClientRect();
-        setCoords({
-          top:  rect.bottom + window.scrollY + 4,
-          left: rect.left   + window.scrollX,
-        });
+        setCoords({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX });
       }
     };
     window.addEventListener('scroll', reposition, true);
@@ -52,7 +55,7 @@ export default function StatusDropdown({
     };
   }, [isOpen]);
 
-  // Cerrar al hacer click fuera (botón O menú)
+  // Cerrar al hacer click fuera
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e) => {
@@ -66,6 +69,18 @@ export default function StatusDropdown({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onToggle]);
+
+  // Estado terminal (CANCELLED, COMPLETED) — badge estático sin interacción
+  if (availableTransitions.length === 0) {
+    return (
+      <span
+        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badge.cls}`}
+        title="Este estado no permite más transiciones"
+      >
+        {badge.label}
+      </span>
+    );
+  }
 
   return (
     <>
@@ -89,14 +104,13 @@ export default function StatusDropdown({
           style={{ position: 'absolute', top: coords.top, left: coords.left, zIndex: 9999 }}
           className="bg-surface border border-surfaceAlt rounded-xl shadow-2xl shadow-primary/20 overflow-hidden min-w-[160px]"
         >
-          {statusOptions.map((s) => (
+          {availableTransitions.map((s) => (
             <button
               key={s}
-              onClick={() => onSelect(event, s)}
-              className={`w-full text-left px-3 py-2 text-xs transition-colors hover:bg-surfaceAlt
-                          ${event.status === s ? 'font-bold text-accent' : 'text-textSecondary'}`}
+              onClick={() => { onToggle(null); onSelect(event, s); }}
+              className="w-full text-left px-3 py-2 text-xs transition-colors hover:bg-surfaceAlt text-textSecondary"
             >
-              {statusLabel[s] ?? s}
+              {STATUS_LABEL[s] ?? s}
             </button>
           ))}
         </div>,
