@@ -13,7 +13,7 @@ import { serializeLayout } from './layoutEditorUtils';
  *   onOpenHelp    — abre el HelpModal
  *   onSave        — async callback de guardado real (recibe nada, lanzado desde aquí)
  *   isSaving      — boolean, bloqueado mientras guarda
- *   maxSeats      — number | null — event.availableSeats (null en modo demo)
+ *   isReadOnly    — boolean — true cuando el evento no está en DRAFT (bloquea guardar)
  */
 export default function EditorToolbar({
   elements,
@@ -27,6 +27,7 @@ export default function EditorToolbar({
   onSave,
   isSaving = false,
   maxSeats = null,
+  isReadOnly = false,
 }) {
   const [showJson, setShowJson] = useState(false);
 
@@ -140,11 +141,13 @@ export default function EditorToolbar({
 
         <button
           onClick={onSave}
-          disabled={isSaving || isOverCapacity}
+          disabled={isSaving || isOverCapacity || isReadOnly}
           className={`${btnBase} bg-primary text-white hover:bg-primaryDark
                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary`}
           title={
-            isOverCapacity
+            isReadOnly
+              ? 'Solo lectura — el layout no se puede modificar fuera de DRAFT'
+              : isOverCapacity
               ? 'Excede el aforo del evento — ajusta las sillas antes de guardar'
               : isSaving
               ? 'Guardando…'

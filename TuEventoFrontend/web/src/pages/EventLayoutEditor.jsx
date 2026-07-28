@@ -43,11 +43,15 @@ export default function EventLayoutEditor() {
   const navigate    = useNavigate();
 
   // ── Estado backend ────────────────────────────────────────────────────────
-  const [sectionTypes, setSectionTypes] = useState(null);
-  const [maxSeats,     setMaxSeats]     = useState(null);
-  const [isSaving,     setIsSaving]     = useState(false);
-  const [saveMsg,      setSaveMsg]      = useState(null);
-  const [loadError,    setLoadError]    = useState(null);
+  const [sectionTypes,  setSectionTypes]  = useState(null);
+  const [maxSeats,      setMaxSeats]      = useState(null);
+  const [eventStatus,   setEventStatus]   = useState(null); // 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED'
+  const [isSaving,      setIsSaving]      = useState(false);
+  const [saveMsg,       setSaveMsg]       = useState(null);
+  const [loadError,     setLoadError]     = useState(null);
+
+  // El layout solo es editable cuando el evento está en DRAFT
+  const isReadOnly = eventStatus !== null && eventStatus !== 'DRAFT';
 
   // ── Estado del editor ─────────────────────────────────────────────────────
   const [elements,          setElements]          = useState([]);
@@ -94,7 +98,9 @@ export default function EventLayoutEditor() {
     (async () => {
       try {
         const eventRes = await EventService.getEventById(eventId);
-        setMaxSeats(eventRes.data?.availableSeats ?? null);
+        const eventData = eventRes.data;
+        setMaxSeats(eventData?.availableSeats ?? null);
+        setEventStatus(eventData?.status ?? null);
 
         const stRes = await SectionTypeService.getAllSectionTypes();
         setSectionTypes(stRes.data ?? []);
@@ -284,6 +290,11 @@ export default function EventLayoutEditor() {
 
   // ── handleSave ────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
+    if (isReadOnly) {
+      setSaveMsg('El layout solo se puede editar cuando el evento está en DRAFT');
+      setTimeout(() => setSaveMsg(null), 4000);
+      return;
+    }
     if (isOverCapacity) {
       setSaveMsg('Excede el aforo configurado para este evento — ajusta las sillas antes de guardar');
       setTimeout(() => setSaveMsg(null), 4000);
@@ -338,7 +349,7 @@ export default function EventLayoutEditor() {
       setIsSaving(false);
       setTimeout(() => setSaveMsg(null), 4000);
     }
-  }, [eventId, isOverCapacity, elements, canvasSize]);
+  }, [eventId, isReadOnly, isOverCapacity, elements, canvasSize]);
 
   const selectedElement   = selectedIds.length === 1 ? elements.find((el) => el.id === selectedIds[0]) ?? null : null;
   const isEditingVertices = editingPolygonId !== null;
@@ -359,6 +370,11 @@ export default function EventLayoutEditor() {
             ✏ Editando vértices — Esc para salir
           </span>
         )}
+        {isReadOnly && (
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 border border-yellow-400/30">
+            Solo lectura — el evento está {eventStatus}
+          </span>
+        )}
         <span className="ml-auto text-[10px] text-textMuted">
           Canvas {canvasSize.width}×{canvasSize.height}
           {selectedIds.length > 1 && ` · ${selectedIds.length} seleccionados`}
@@ -370,7 +386,7 @@ export default function EventLayoutEditor() {
         canUndo={history.length > 0} canRedo={future.length > 0}
         onUndo={handleUndo} onRedo={handleRedo}
         onOpenHelp={() => setHelpOpen(true)}
-        onSave={handleSave} isSaving={isSaving} maxSeats={maxSeats}
+        onSave={handleSave} isSaving={isSaving} maxSeats={maxSeats} isReadOnly={isReadOnly}
         onClear={() => {
           setElements([]); setSelectedIds([]); setManualCanvasSize(CANVAS_DEFAULT_MANUAL);
           setUserResizedCanvas(false); setEditingPolygonId(null);
