@@ -84,10 +84,12 @@ export default function EventManage() {
         prev.map((e) => e.eventId === event.eventId ? { ...e, status: newStatus } : e)
       );
     } catch (err) {
-      // Traducir el error de layout requerido a un mensaje claro para el usuario
+      // Traducir errores del backend a mensajes claros para el usuario
       let message = err.message;
       if (message.includes('cannot be published without a layout') || message.includes('EVENT_LAYOUT_REQUIRED')) {
         message = 'Este evento no tiene un layout guardado todavía. Ve a "Editar layout" y guarda al menos una sección antes de publicar.';
+      } else if (message.includes('at least one section with seats') || message.includes('EVENT_SECTIONS_REQUIRED')) {
+        message = 'Este evento no tiene ninguna sección con sillas configurada. Ve a "Editar layout", agrega al menos una sección y guarda antes de publicar.';
       }
       setErrorModal({ title: 'No se pudo cambiar el estado', message });
     } finally {
