@@ -100,6 +100,8 @@ export default function EventManage() {
         message = 'Este evento no tiene un layout guardado todavía. Ve a "Editar layout" y guarda al menos una sección antes de publicar.';
       } else if (message.includes('at least one section with seats') || message.includes('EVENT_SECTIONS_REQUIRED')) {
         message = 'Este evento no tiene ninguna sección con sillas configurada. Ve a "Editar layout", agrega al menos una sección y guarda antes de publicar.';
+      } else if (message.includes('at least one image') || message.includes('EVENT_PUBLISH_NO_MEDIA')) {
+        message = 'Este evento no tiene imágenes. Ve a "Gestionar imágenes" y sube al menos una foto antes de publicar.';
       }
       setErrorModal({ title: 'No se pudo cambiar el estado', message });
     } finally {

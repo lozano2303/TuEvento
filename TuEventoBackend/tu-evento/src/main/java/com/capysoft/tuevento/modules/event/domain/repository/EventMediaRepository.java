@@ -11,4 +11,10 @@ public interface EventMediaRepository {
     List<EventMedia> findByEventId(Long eventId);
     Optional<EventMedia> findById(Long mediaId);
     void delete(Long mediaId);
+
+    /** Cuenta imágenes de un evento — para validar que haya al menos una antes de publicar. */
+    long countByEventId(Long eventId);
+
+    /** Primera imagen de un evento (mediaId más bajo) — para coverUrl en listado público. */
+    Optional<EventMedia> findFirstByEventId(Long eventId);
 }
