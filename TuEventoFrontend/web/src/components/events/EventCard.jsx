@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom';
  * EventCard — tarjeta de evento para el listado público /events.
  *
  * Props:
- *   event    — EventSummaryResponse: { eventId, eventName, status, ... }
- *   imageUrl — string | null — URL de la imagen de portada
- *   userId   — number | null — userId del usuario logueado (para badge de borrador)
+ *   event  — EventSummaryResponse: { eventId, eventName, status, coverUrl, ... }
+ *   userId — number | null — userId del usuario logueado (para badge de borrador)
+ *
+ * coverUrl viene embebida en el objeto event desde el backend (no N+1).
  */
-export default function EventCard({ event, imageUrl, userId }) {
+export default function EventCard({ event, userId }) {
   const navigate = useNavigate();
+  const imageUrl = event.coverUrl ?? null;
 
   return (
     <div

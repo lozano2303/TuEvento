@@ -35,4 +35,14 @@ public class EventMediaRepositoryImpl implements EventMediaRepository {
     public void delete(Long mediaId) {
         jpaRepository.deleteById(mediaId);
     }
+
+    @Override
+    public long countByEventId(Long eventId) {
+        return jpaRepository.countByEventId(eventId);
+    }
+
+    @Override
+    public Optional<EventMedia> findFirstByEventId(Long eventId) {
+        return jpaRepository.findFirstByEventIdOrderByMediaIdAsc(eventId).map(mapper::toDomain);
+    }
 }

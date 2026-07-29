@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { getAllEvents, cancelEvent } from '../services/EventService.js';
-import { getEventMedia } from '../services/EventMediaService.js';
 import { getCategoriesByEvent } from '../services/CategoryService.js';
 import { searchEvents } from '../services/searchEvents.js';
 import EventCard from '../components/events/EventCard.jsx';
@@ -16,8 +15,8 @@ const TuEvento = () => {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // heroImage usa coverUrl del primer evento publicado — fallback a imagen por defecto
   const [heroImage, setHeroImage] = useState("https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1400&h=900&fit=crop");
-  const [eventImagesMap, setEventImagesMap] = useState({});
   const [eventCategoriesMap, setEventCategoriesMap] = useState({});
   const [currentUserId, setCurrentUserId] = useState(null);
 
@@ -33,8 +32,9 @@ const TuEvento = () => {
         const result = await getAllEvents();
         if (result.success) {
           setEvents(result.data);
-          await loadHeroImage(result.data);
-          await loadEventImages(result.data);
+          // coverUrl ya viene embebida en cada evento — no N+1
+          const firstWithCover = result.data.find(e => e.coverUrl);
+          if (firstWithCover) setHeroImage(firstWithCover.coverUrl);
           await loadEventCategories(result.data);
         } else {
           setError(result.message || 'Error al cargar eventos');
@@ -53,47 +53,14 @@ const TuEvento = () => {
 
   useEffect(() => {
     if (events.length > 0) {
+      // coverUrl garantizada para todo evento PUBLISHED (validación en backend al publicar).
+      // El filtro de imagen se elimina — dejar solo el de categoría que no tocamos.
       const filtered = events.filter(event =>
-        event.status === 'PUBLISHED' && eventImagesMap[event.eventId] && eventCategoriesMap[event.eventId]
+        event.status === 'PUBLISHED' && eventCategoriesMap[event.eventId]
       );
       setFilteredEvents(filtered);
     }
-  }, [events, eventImagesMap, eventCategoriesMap]);
-
-  const loadHeroImage = async (eventsList) => {
-    try {
-      for (const event of eventsList) {
-        try {
-          const imagesResult = await getEventMedia(event.eventId);
-          if (imagesResult.success && imagesResult.data && imagesResult.data.length > 0) {
-            setHeroImage(imagesResult.data[0].imgUrl);
-            return;
-          }
-        } catch (error) {
-          console.log(`No images for event ${event.eventId}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading hero image:', error);
-    }
-  };
-
-  const loadEventImages = async (eventsList) => {
-    const newImagesMap = { ...eventImagesMap };
-    for (const event of eventsList) {
-      if (!newImagesMap[event.eventId]) {
-        try {
-          const imagesResult = await getEventMedia(event.eventId);
-          if (imagesResult.success && imagesResult.data && imagesResult.data.length > 0) {
-            newImagesMap[event.eventId] = imagesResult.data[0].imgUrl;
-          }
-        } catch (error) {
-          console.log(`No images for event ${event.eventId}`);
-        }
-      }
-    }
-    setEventImagesMap(newImagesMap);
-  };
+  }, [events, eventCategoriesMap]);
 
   const loadEventCategories = async (eventsList) => {
     const newCategoriesMap = { ...eventCategoriesMap };
@@ -126,7 +93,6 @@ const TuEvento = () => {
         const eventsList = result.data;
         setEvents(eventsList);
         setFilteredEvents(eventsList);
-        await loadEventImages(eventsList);
         await loadEventCategories(eventsList);
       } else {
         setError(result.message || 'Error en la búsqueda');
@@ -265,7 +231,6 @@ const TuEvento = () => {
                         <EventCard
                           key={event.eventId}
                           event={event}
-                          imageUrl={eventImagesMap[event.eventId] ?? null}
                           userId={currentUserId}
                         />
                       ))}
