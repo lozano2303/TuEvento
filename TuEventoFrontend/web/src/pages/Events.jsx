@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { getAllEvents, cancelEvent } from '../services/EventService.js';
-import { getCategoriesByEvent } from '../services/CategoryService.js';
 import { searchEvents } from '../services/searchEvents.js';
 import EventCard from '../components/events/EventCard.jsx';
 const TuEvento = () => {
@@ -14,7 +13,6 @@ const TuEvento = () => {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [eventCategoriesMap, setEventCategoriesMap] = useState({});
   const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
@@ -29,7 +27,6 @@ const TuEvento = () => {
         const result = await getAllEvents();
         if (result.success) {
           setEvents(result.data);
-          await loadEventCategories(result.data);
         } else {
           setError(result.message || 'Error al cargar eventos');
         }
@@ -47,31 +44,14 @@ const TuEvento = () => {
 
   useEffect(() => {
     if (events.length > 0) {
-      // coverUrl garantizada para todo evento PUBLISHED (validación en backend al publicar).
-      // El filtro de imagen se elimina — dejar solo el de categoría que no tocamos.
+      // Filtro simplificado: categoryId viene embebido en EventSummaryResponse,
+      // igual que coverUrl — sin fetch adicional por evento.
       const filtered = events.filter(event =>
-        event.status === 'PUBLISHED' && eventCategoriesMap[event.eventId]
+        event.status === 'PUBLISHED' && event.categoryId
       );
       setFilteredEvents(filtered);
     }
-  }, [events, eventCategoriesMap]);
-
-  const loadEventCategories = async (eventsList) => {
-    const newCategoriesMap = { ...eventCategoriesMap };
-    for (const event of eventsList) {
-      if (!newCategoriesMap[event.eventId]) {
-        try {
-          const categoriesResult = await getCategoriesByEvent(event.eventId);
-          if (categoriesResult.success && categoriesResult.data && categoriesResult.data.length > 0) {
-            newCategoriesMap[event.eventId] = categoriesResult.data.length;
-          }
-        } catch (error) {
-          console.log(`No categories for event ${event.eventId}`);
-        }
-      }
-    }
-    setEventCategoriesMap(newCategoriesMap);
-  };
+  }, [events]);
 
   const handleServerFilter = async () => {
     try {
@@ -86,8 +66,8 @@ const TuEvento = () => {
       if (result.success) {
         const eventsList = result.data;
         setEvents(eventsList);
-        setFilteredEvents(eventsList);
-        await loadEventCategories(eventsList);
+        // filtro se aplica en el useEffect — categoryId viene embebido
+        setFilteredEvents(eventsList.filter(e => e.status === 'PUBLISHED' && e.categoryId));
       } else {
         setError(result.message || 'Error en la búsqueda');
       }
