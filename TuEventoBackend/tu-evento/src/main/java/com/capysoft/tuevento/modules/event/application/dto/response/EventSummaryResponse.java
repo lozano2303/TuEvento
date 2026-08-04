@@ -19,4 +19,6 @@ public class EventSummaryResponse {
     private final int         availableSeats;
     private final String      siteName;
     private final Integer     categoryId;
+    /** URL de la primera imagen del evento (media_id más bajo). Null si no tiene imágenes. */
+    private final String      coverUrl;
 }
