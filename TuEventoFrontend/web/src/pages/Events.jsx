@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { getAllEvents, cancelEvent } from '../services/EventService.js';
-import { getEventMedia } from '../services/EventMediaService.js';
-import { getCategoriesByEvent } from '../services/CategoryService.js';
 import { searchEvents } from '../services/searchEvents.js';
-
+import EventCard from '../components/events/EventCard.jsx';
 const TuEvento = () => {
   const navigate = useNavigate();
   const [selectedCity, setSelectedCity] = useState('Bogotá');
@@ -15,9 +13,6 @@ const TuEvento = () => {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [heroImage, setHeroImage] = useState("https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=1400&h=900&fit=crop");
-  const [eventImagesMap, setEventImagesMap] = useState({});
-  const [eventCategoriesMap, setEventCategoriesMap] = useState({});
   const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
@@ -32,9 +27,6 @@ const TuEvento = () => {
         const result = await getAllEvents();
         if (result.success) {
           setEvents(result.data);
-          await loadHeroImage(result.data);
-          await loadEventImages(result.data);
-          await loadEventCategories(result.data);
         } else {
           setError(result.message || 'Error al cargar eventos');
         }
@@ -52,64 +44,14 @@ const TuEvento = () => {
 
   useEffect(() => {
     if (events.length > 0) {
+      // Filtro simplificado: categoryId viene embebido en EventSummaryResponse,
+      // igual que coverUrl — sin fetch adicional por evento.
       const filtered = events.filter(event =>
-        event.status === 'PUBLISHED' && eventImagesMap[event.eventId] && eventCategoriesMap[event.eventId]
+        event.status === 'PUBLISHED' && event.categoryId
       );
       setFilteredEvents(filtered);
     }
-  }, [events, eventImagesMap, eventCategoriesMap]);
-
-  const loadHeroImage = async (eventsList) => {
-    try {
-      for (const event of eventsList) {
-        try {
-          const imagesResult = await getEventMedia(event.eventId);
-          if (imagesResult.success && imagesResult.data && imagesResult.data.length > 0) {
-            setHeroImage(imagesResult.data[0].imgUrl);
-            return;
-          }
-        } catch (error) {
-          console.log(`No images for event ${event.eventId}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading hero image:', error);
-    }
-  };
-
-  const loadEventImages = async (eventsList) => {
-    const newImagesMap = { ...eventImagesMap };
-    for (const event of eventsList) {
-      if (!newImagesMap[event.eventId]) {
-        try {
-          const imagesResult = await getEventMedia(event.eventId);
-          if (imagesResult.success && imagesResult.data && imagesResult.data.length > 0) {
-            newImagesMap[event.eventId] = imagesResult.data[0].imgUrl;
-          }
-        } catch (error) {
-          console.log(`No images for event ${event.eventId}`);
-        }
-      }
-    }
-    setEventImagesMap(newImagesMap);
-  };
-
-  const loadEventCategories = async (eventsList) => {
-    const newCategoriesMap = { ...eventCategoriesMap };
-    for (const event of eventsList) {
-      if (!newCategoriesMap[event.eventId]) {
-        try {
-          const categoriesResult = await getCategoriesByEvent(event.eventId);
-          if (categoriesResult.success && categoriesResult.data && categoriesResult.data.length > 0) {
-            newCategoriesMap[event.eventId] = categoriesResult.data.length;
-          }
-        } catch (error) {
-          console.log(`No categories for event ${event.eventId}`);
-        }
-      }
-    }
-    setEventCategoriesMap(newCategoriesMap);
-  };
+  }, [events]);
 
   const handleServerFilter = async () => {
     try {
@@ -124,9 +66,8 @@ const TuEvento = () => {
       if (result.success) {
         const eventsList = result.data;
         setEvents(eventsList);
-        setFilteredEvents(eventsList);
-        await loadEventImages(eventsList);
-        await loadEventCategories(eventsList);
+        // filtro se aplica en el useEffect — categoryId viene embebido
+        setFilteredEvents(eventsList.filter(e => e.status === 'PUBLISHED' && e.categoryId));
       } else {
         setError(result.message || 'Error en la búsqueda');
       }
@@ -159,22 +100,21 @@ const TuEvento = () => {
 
   return (
     <div
-      className="min-h-screen text-white"
-      style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}
+      className="min-h-screen"
+      style={{ color: 'var(--color-textPrimary)' }}
     >
-      <section className="relative min-h-screen">
-
-        {/* Imagen de fondo */}
+      <section
+        className="relative min-h-screen"
+        style={{
+          // Fondo base: gradiente entre background y surface del tema activo
+          background: 'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface) 60%, var(--color-background) 100%)',
+        }}
+      >
+        {/* Acento radial — usa primary con baja opacidad, reacciona al tema */}
         <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url("${heroImage}")` }}
-        />
-
-        {/* Overlay morado */}
-        <div
-          className="absolute inset-0"
+          className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'linear-gradient(to bottom, rgba(88, 28, 135, 0.55) 0%, rgba(15, 10, 30, 0.97) 100%)'
+            background: 'radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in srgb, var(--color-primary) 18%, transparent) 0%, transparent 70%)',
           }}
         />
 
@@ -184,27 +124,27 @@ const TuEvento = () => {
             <div
               className="flex flex-wrap items-center gap-3 p-3 rounded-2xl"
               style={{
-                background: 'rgba(139, 92, 246, 0.12)',
-                border: '0.5px solid rgba(167, 139, 250, 0.25)',
+                background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+                border: '0.5px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
                 backdropFilter: 'blur(16px)',
               }}
             >
               {/* Buscador */}
               <div className="flex items-center gap-2 flex-1 min-w-44">
-                <Search className="w-4 h-4 shrink-0" style={{ color: 'rgba(196, 181, 253, 0.6)' }} />
+                <Search className="w-4 h-4 shrink-0" style={{ color: 'var(--color-textMuted)' }} />
                 <input
                   type="text"
                   placeholder="Buscar eventos..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleServerFilter(); }}
-                  className="bg-transparent text-white text-sm outline-none w-full"
-                  style={{ '::placeholder': { color: 'rgba(196,181,253,0.4)' } }}
+                  className="bg-transparent text-sm outline-none w-full"
+                  style={{ color: 'var(--color-textPrimary)' }}
                 />
               </div>
 
               {/* Separador */}
-              <div style={{ width: '0.5px', height: '20px', background: 'rgba(167, 139, 250, 0.3)' }} />
+              <div style={{ width: '0.5px', height: '20px', background: 'var(--color-surfaceAlt)' }} />
 
               {/* Fecha */}
               <input
@@ -212,11 +152,11 @@ const TuEvento = () => {
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="bg-transparent text-sm outline-none"
-                style={{ color: selectedDate ? '#e9d5ff' : 'rgba(196,181,253,0.45)' }}
+                style={{ color: selectedDate ? 'var(--color-textPrimary)' : 'var(--color-textMuted)' }}
               />
 
               {/* Separador */}
-              <div style={{ width: '0.5px', height: '20px', background: 'rgba(167, 139, 250, 0.3)' }} />
+              <div style={{ width: '0.5px', height: '20px', background: 'var(--color-surfaceAlt)' }} />
 
               {/* Botón buscar */}
               <button
@@ -241,13 +181,13 @@ const TuEvento = () => {
 
               <h2
                 className="text-3xl font-bold mb-12 text-center tracking-wide"
-                style={{ color: '#e9d5ff' }}
+                style={{ color: 'var(--color-textPrimary)' }}
               >
                 EVENTOS
               </h2>
 
               {loading && (
-                <p className="text-center text-sm" style={{ color: 'rgba(196,181,253,0.6)' }}>
+                <p className="text-center text-sm" style={{ color: 'var(--color-textMuted)' }}>
                   Cargando eventos...
                 </p>
               )}
@@ -261,67 +201,11 @@ const TuEvento = () => {
                   {filteredEvents.length > 0 ? (
                     <div className="grid md:grid-cols-3 gap-6">
                       {filteredEvents.map((event) => (
-                        <div
+                        <EventCard
                           key={event.eventId}
-                          className="relative rounded-xl overflow-hidden"
-                          style={{
-                            background: 'rgba(88, 28, 135, 0.2)',
-                            border: '0.5px solid rgba(167, 139, 250, 0.2)',
-                          }}
-                        >
-                          {/* Imagen */}
-                          {eventImagesMap[event.eventId] ? (
-                            <img
-                              src={eventImagesMap[event.eventId]}
-                              alt={event.eventName}
-                              className="w-full h-48 object-cover"
-                            />
-                          ) : (
-                            <div
-                              className="w-full h-48 flex items-center justify-center"
-                              style={{ background: 'rgba(109, 40, 217, 0.25)' }}
-                            >
-                              <span className="text-sm" style={{ color: 'rgba(196,181,253,0.4)' }}>
-                                Sin imagen
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Badge de estado */}
-                          {currentUserId === event.userId && event.status === 'DRAFT' && (
-                            <div className="absolute top-2 left-2 bg-yellow-500 text-black px-2 py-1 text-xs font-bold rounded">
-                              {!eventImagesMap[event.eventId]
-                                ? 'Falta imagen'
-                                : !eventCategoriesMap[event.eventId]
-                                ? 'Falta categoría'
-                                : 'En proceso'}
-                            </div>
-                          )}
-
-                          {/* Footer tarjeta */}
-                          <div
-                            className="p-4 flex items-center justify-between"
-                            style={{ borderTop: '0.5px solid rgba(167, 139, 250, 0.15)' }}
-                          >
-                            <span
-                              className="text-sm truncate mr-3"
-                              style={{ color: 'rgba(233, 213, 255, 0.8)' }}
-                            >
-                              {event.eventName}
-                            </span>
-                            <button
-                              className="shrink-0 text-sm px-4 py-1.5 rounded-lg font-medium transition-all hover:brightness-110"
-                              style={{
-                                background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 100%)',
-                                color: '#fff',
-                                boxShadow: '0 0 10px rgba(124, 58, 237, 0.35)'
-                              }}
-                              onClick={() => navigate(`/events/${event.eventId}`)}
-                            >
-                              Ver detalles
-                            </button>
-                          </div>
-                        </div>
+                          event={event}
+                          userId={currentUserId}
+                        />
                       ))}
                     </div>
                   ) : (
@@ -329,15 +213,15 @@ const TuEvento = () => {
                       <div
                         className="rounded-2xl p-8 text-center max-w-sm w-full"
                         style={{
-                          background: 'rgba(88, 28, 135, 0.2)',
-                          border: '0.5px solid rgba(167, 139, 250, 0.2)',
+                          background: 'color-mix(in srgb, var(--color-primary) 12%, transparent)',
+                          border: '0.5px solid color-mix(in srgb, var(--color-primary) 25%, transparent)',
                         }}
                       >
                         <div className="text-4xl mb-4" style={{ opacity: 0.4 }}>🔍</div>
-                        <p className="font-medium mb-1" style={{ color: '#e9d5ff' }}>
+                        <p className="font-medium mb-1" style={{ color: 'var(--color-textPrimary)' }}>
                           No se encontraron eventos
                         </p>
-                        <p className="text-sm" style={{ color: 'rgba(196,181,253,0.45)' }}>
+                        <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
                           Intentá con otra búsqueda o cambiá la fecha.
                         </p>
                       </div>

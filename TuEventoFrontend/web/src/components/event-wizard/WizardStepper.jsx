@@ -2,6 +2,7 @@ export default function WizardStepper({ currentStep }) {
   const steps = [
     { number: 1, label: 'Información general' },
     { number: 2, label: 'Sede' },
+    { number: 3, label: 'Imágenes' },
   ];
 
   return (
