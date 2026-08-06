@@ -66,9 +66,14 @@ export default function LadingPage() {
                 Diseña, planifica y vive experiencias únicas que marquen la diferencia. 
                 Cada detalle cuenta y nuestro kit de asistencia lo hace realidad.
               </p>
-              <button className="bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors" onClick={() => navigate(userData ? '/events' : '/login')}>
-                {userData ? 'Ver eventos' : 'Comenzar ahora'}
-              </button>
+              {!userData && (
+                <button
+                  className="bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                  onClick={() => navigate('/login')}
+                >
+                  Comenzar ahora
+                </button>
+              )}
             </div>
 
              {/* Imagen */}
