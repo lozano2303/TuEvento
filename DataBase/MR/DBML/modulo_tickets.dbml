@@ -1,0 +1,128 @@
+Enum event_status_enum {
+  draft
+  published
+  cancelled
+  finished
+}
+
+Enum order_status_enum {
+  created
+  pending_payment
+  paid
+  cancelled
+  refunded
+}
+
+Enum seat_status_enum {
+  available
+  reserved
+  sold
+  blocked
+}
+
+Enum seat_type_enum {
+  standard
+  vip
+  accessible
+}
+
+Enum ticket_status_enum {
+  valid
+  used
+  cancelled
+  expired
+}
+
+Table ticket {
+  ticket_id int [pk, increment]
+  event_id int [not null]
+  user_id int [not null, note: "comprador"]
+  order_id int [not null]
+  code varchar(20) [not null, unique]
+  qr_code text
+  status ticket_status_enum [not null, default: 'valid']
+  expiration_date date
+  total_price decimal(10,2) [not null]
+}
+
+Table seat_ticket {
+  seat_id int
+  ticket_id int
+  price decimal(10,2) [not null]
+  Indexes {
+    (seat_id, ticket_id) [pk]
+  }
+}
+
+Table ticket_log {
+  ticket_log_id int [pk, increment]
+  ticket_id int [not null]
+  old_status ticket_status_enum
+  new_status ticket_status_enum [not null]
+  changed_at timestamp [default: `now()`]
+  changed_by int
+  reason text
+}
+
+Table ticket_checkin {
+  checkin_id int [pk, increment]
+  ticket_id int [not null, unique, note: "1:1 con ticket (un solo check-in valido)"]
+  checkin_time timestamp [default: `now()`]
+  validated_by int
+}
+
+Table user {
+  user_id int [pk, increment]
+  user_status_id int [not null, note: "FK obligatoria: todo usuario nace con un estado (ej. pending_activation)"]
+  role_id int [not null]
+  alias varchar(50) [not null, unique]
+  activated boolean [default: false]
+}
+
+Table event {
+  event_id int [pk, increment]
+  user_id int [not null, note: "organizador"]
+  site_id int [not null]
+  event_name varchar(100) [not null]
+  description varchar(255) [not null]
+  start_date date [not null]
+  finish_date date [not null]
+  status event_status_enum [not null, default: 'draft']
+  is_public boolean [default: true]
+  available_seats int [not null]
+}
+
+Table order {
+  order_id int [pk, increment]
+  user_id int [not null]
+  event_id int [not null]
+  total_amount decimal(10,2) [not null]
+  currency varchar(3) [default: 'COP']
+  status order_status_enum [not null, default: 'created']
+  created_at timestamp [default: `now()`]
+  Note: '''"order" es palabra reservada en SQL estandar; en la implementacion (CREATE TABLE) se recomienda usarla entre comillas/backticks o renombrar a "orders".'''
+}
+
+Table seat {
+  seat_id int [pk, increment]
+  seat_block_id int [not null]
+  event_section_id int [not null]
+  code varchar(20) [not null]
+  seat_row int [not null, note: "columna original 'row' es palabra reservada en SQL; renombrada a seat_row"]
+  position int [not null]
+  type seat_type_enum [not null, default: 'standard']
+  status seat_status_enum [not null, default: 'available']
+}
+
+Ref: event.user_id > user.user_id
+Ref: order.event_id > event.event_id
+Ref: order.user_id > user.user_id
+Ref: seat_ticket.seat_id > seat.seat_id
+Ref: seat_ticket.ticket_id > ticket.ticket_id
+Ref: ticket.event_id > event.event_id
+Ref: ticket.order_id > order.order_id
+Ref: ticket.user_id > user.user_id
+Ref: ticket_checkin.ticket_id > ticket.ticket_id
+Ref: ticket_checkin.validated_by > user.user_id
+Ref: ticket_log.changed_by > user.user_id
+Ref: ticket_log.ticket_id > ticket.ticket_id

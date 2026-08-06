@@ -1,0 +1,54 @@
+Enum wallet_ref_entity_enum {
+  ticket
+  order
+  refund
+  payment
+}
+
+Enum wallet_txn_status_enum {
+  pending
+  completed
+  failed
+}
+
+Enum wallet_txn_type_enum {
+  deposit
+  withdrawal
+  payment
+  refund
+}
+
+Table wallet {
+  wallet_id int [pk, increment]
+  user_id int [not null, unique, note: "1:1 con user"]
+  balance decimal(10,2) [default: 0]
+  currency varchar(3) [default: 'COP']
+}
+
+Table wallet_transaction {
+  transaction_id int [pk, increment]
+  wallet_id int [not null]
+  type wallet_txn_type_enum [not null]
+  amount decimal(10,2) [not null]
+  status wallet_txn_status_enum [not null, default: 'pending']
+  created_at timestamp [default: `now()`]
+}
+
+Table wallet_reference {
+  wallet_reference_id int [pk, increment]
+  transaction_id int [not null]
+  entity_type wallet_ref_entity_enum [not null]
+  entity_id int [not null, note: "no es FK real: el destino depende de entity_type (polimorfico)"]
+}
+
+Table user {
+  user_id int [pk, increment]
+  user_status_id int [not null, note: "FK obligatoria: todo usuario nace con un estado (ej. pending_activation)"]
+  role_id int [not null]
+  alias varchar(50) [not null, unique]
+  activated boolean [default: false]
+}
+
+Ref: wallet.user_id > user.user_id
+Ref: wallet_reference.transaction_id > wallet_transaction.transaction_id
+Ref: wallet_transaction.wallet_id > wallet.wallet_id
