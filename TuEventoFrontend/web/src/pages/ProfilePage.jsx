@@ -3,7 +3,8 @@ import Footer from '../layouts/Footer';
 import { useTheme } from '../context/ThemeContext';
 import { getThemes, activateTheme } from '../services/themeService';
 import { getProfileByUserId, getProfilePictureUrl, updateProfile, uploadProfilePicture } from '../services/ProfileService';
-import { AlertCircle, Camera, CheckCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Camera, CheckCircle, Info, Loader2 } from 'lucide-react';
+import Tooltip from '../components/common/Tooltip';
 
 const THEME_PREVIEWS = {
   DARK:       { background: "#1E0A3C", primary: "#7C3AED", accent: "#A78BFA" },
@@ -255,6 +256,23 @@ const ProfilePage = () => {
               >
                 <Camera className="w-5 h-5" />
               </button>
+              {/* Ícono de info — independiente del botón de cámara para no disparar el file picker */}
+              <div className="absolute -bottom-2 -left-2 z-20">
+                <Tooltip
+                  content={`Solo JPG, PNG o WEBP. Máx. ${MAX_AVATAR_SIZE_MB} MB. Sin contenido adulto, violencia o armas.`}
+                  position="right"
+                >
+                  <button
+                    type="button"
+                    aria-label="Requisitos de imagen de perfil"
+                    className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-background shadow-lg"
+                    style={{ background: 'var(--color-surfaceAlt)', color: 'var(--color-textMuted)' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
+                </Tooltip>
+              </div>
               <input
                 ref={avatarInputRef}
                 type="file"
@@ -263,9 +281,6 @@ const ProfilePage = () => {
                 disabled={uploadingAvatar}
                 className="hidden"
               />
-              <p className="mt-3 max-w-44 text-center text-[11px] leading-tight text-textMuted">
-                Solo JPG, PNG o WEBP. Máx. {MAX_AVATAR_SIZE_MB} MB. Sin contenido adulto, violencia o armas.
-              </p>
             </div>
             <div className="flex-1 text-center md:text-left">
               <h2 className="text-4xl font-bold text-textPrimary tracking-tight" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{formData.nombreCompleto}</h2>
