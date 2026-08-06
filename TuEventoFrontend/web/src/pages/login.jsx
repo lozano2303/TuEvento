@@ -231,8 +231,9 @@ export default function Login() {
         } else {
           const msg = result.message || "";
           if (['no activada', 'not activated', 'activar', 'revisa tu correo'].some(s => msg.toLowerCase().includes(s))) {
-            setShowActivateAccount(true);
-            setError("Tu cuenta no está activada. Activa tu cuenta para continuar.");
+            // Redirigir automáticamente a verificación y reenviar el código
+            try { await resendActivationCode(formData.email); } catch (_) {}
+            setView('verification');
           } else setError(msg || "Error en login");
         }
       } else {
@@ -319,6 +320,21 @@ export default function Login() {
 
           {/* Título */}
           <div className="text-center mb-8">
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => window.location.href = '/'}
+                className="inline-flex items-center gap-1.5 text-sm transition-colors"
+                style={{ color: 'var(--color-textMuted)' }}
+                onMouseOver={e => e.currentTarget.style.color = 'var(--color-textPrimary)'}
+                onMouseOut={e => e.currentTarget.style.color = 'var(--color-textMuted)'}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 12H5M12 5l-7 7 7 7"/>
+                </svg>
+                Volver al inicio
+              </button>
+            </div>
             <h1 className="text-3xl font-bold text-textPrimary">
               {view === 'login' ? "Iniciar Sesión" : "Registrarse"}
             </h1>
