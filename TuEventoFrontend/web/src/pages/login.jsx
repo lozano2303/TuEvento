@@ -160,13 +160,8 @@ export default function Login() {
       return;
     }
     try {
-      const result = await resendActivationCode(formData.email);
-      if (result.success) {
-        setError("Se ha enviado un nuevo código de activación a tu correo.");
-        setShowActivateAccount(true);
-      } else {
-        setError(result.message || "Error al reenviar código de activación");
-      }
+      await resendActivationCode(formData.email);
+      setView('verification'); // redirigir directo a CodeVerification con código ya reenviado
     } catch (err) {
       const errorMsg = err.message || "Error de conexión al reenviar código de activación";
       // Traducir mensajes del backend
