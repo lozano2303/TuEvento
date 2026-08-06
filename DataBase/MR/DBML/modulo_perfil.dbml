@@ -1,0 +1,231 @@
+Enum event_status_enum {
+  draft
+  published
+  cancelled
+  finished
+}
+
+Enum payment_gateway_enum {
+  stripe
+  paypal
+  mercadopago
+  wompi
+}
+
+Enum payment_method_enum {
+  credit_card
+  debit_card
+  pse
+  wallet
+  cash
+}
+
+Enum payment_status_enum {
+  pending
+  approved
+  rejected
+  refunded
+  failed
+}
+
+Enum ticket_status_enum {
+  valid
+  used
+  cancelled
+  expired
+}
+
+Enum wallet_txn_status_enum {
+  pending
+  completed
+  failed
+}
+
+Enum wallet_txn_type_enum {
+  deposit
+  withdrawal
+  payment
+  refund
+}
+
+Table profile {
+  profile_id int [pk, increment]
+  user_id int [not null, unique, note: "1:1 con user"]
+  city_id int [not null]
+  full_name varchar(100) [not null]
+  photo_url varchar(255) [not null]
+  bio varchar(255)
+}
+
+Table preferences {
+  preference_id int [pk, increment]
+  user_id int [not null, unique, note: "1:1 con user"]
+  language_id int [not null]
+  theme_id int [not null]
+  notifications boolean [default: false]
+}
+
+Table activity_log {
+  log_id int [pk, increment]
+  user_id int [not null]
+  module varchar(50) [not null]
+  action varchar(100) [not null]
+  reference_id int [note: "id del registro afectado en el modulo indicado (no es FK real: apunta a distintas tablas segun 'module')"]
+  occurred_at timestamp [default: `now()`]
+}
+
+Table profile_log {
+  log_id int [pk, increment]
+  profile_id int [not null]
+  action varchar(50) [not null]
+  old_value varchar(255)
+  new_value varchar(255)
+  occurred_at timestamp [default: `now()`]
+}
+
+Table purchase_history {
+  purchase_id int [pk, increment]
+  user_id int [not null]
+  ticket_id int [not null]
+  payment_id int [not null]
+  amount decimal(10,2) [not null]
+  status payment_status_enum [not null]
+  purchased_at timestamp [default: `now()`]
+  Note: '''tabla de lectura/historial; los datos son derivables de ticket+payment. Evaluar con el equipo si se mantiene como cache de reportes o se reemplaza por una vista (VIEW).'''
+}
+
+Table wallet_summary {
+  summary_id int [pk, increment]
+  user_id int [not null]
+  wallet_id int [not null]
+  transaction_id int [not null]
+  type wallet_txn_type_enum [not null]
+  amount decimal(10,2) [not null]
+  occurred_at timestamp [default: `now()`]
+  Note: '''tabla de lectura/historial; los datos son derivables de wallet_transaction. Evaluar si se reemplaza por una vista (VIEW).'''
+}
+
+Table review {
+  review_id int [pk, increment]
+  user_id int [not null]
+  event_id int [not null]
+  rating int [not null, note: "CHECK (rating BETWEEN 1 AND 5)"]
+  comment text [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Indexes {
+    (user_id, event_id) [unique]
+  }
+  Note: '''nota: la entidad "review" y "event_rating" describen lo mismo (usuario califica evento) en modulos distintos del MER original; se recomienda unificarlas en una sola tabla antes de implementar la BD.'''
+}
+
+Table user {
+  user_id int [pk, increment]
+  user_status_id int [not null, note: "FK obligatoria: todo usuario nace con un estado (ej. pending_activation)"]
+  role_id int [not null]
+  alias varchar(50) [not null, unique]
+  activated boolean [default: false]
+}
+
+Table city {
+  city_id int [pk, increment]
+  department_id int [not null]
+  name varchar(100) [not null]
+  code varchar(10)
+}
+
+Table event {
+  event_id int [pk, increment]
+  user_id int [not null, note: "organizador"]
+  site_id int [not null]
+  event_name varchar(100) [not null]
+  description varchar(255) [not null]
+  start_date date [not null]
+  finish_date date [not null]
+  status event_status_enum [not null, default: 'draft']
+  is_public boolean [default: true]
+  available_seats int [not null]
+}
+
+Table ticket {
+  ticket_id int [pk, increment]
+  event_id int [not null]
+  user_id int [not null, note: "comprador"]
+  order_id int [not null]
+  code varchar(20) [not null, unique]
+  qr_code text
+  status ticket_status_enum [not null, default: 'valid']
+  expiration_date date
+  total_price decimal(10,2) [not null]
+}
+
+Table payment {
+  payment_id int [pk, increment]
+  order_id int [not null]
+  gateway payment_gateway_enum [not null]
+  gateway_transaction_id varchar(100)
+  status payment_status_enum [not null, default: 'pending']
+  amount decimal(10,2) [not null]
+  payment_method payment_method_enum [not null]
+  processed_at timestamp
+}
+
+Table wallet {
+  wallet_id int [pk, increment]
+  user_id int [not null, unique, note: "1:1 con user"]
+  balance decimal(10,2) [default: 0]
+  currency varchar(3) [default: 'COP']
+}
+
+Table wallet_transaction {
+  transaction_id int [pk, increment]
+  wallet_id int [not null]
+  type wallet_txn_type_enum [not null]
+  amount decimal(10,2) [not null]
+  status wallet_txn_status_enum [not null, default: 'pending']
+  created_at timestamp [default: `now()`]
+}
+
+Table language {
+  language_id int [pk, increment]
+  code varchar(10) [not null, unique]
+  name varchar(50) [not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  created_by int
+  updated_at timestamp
+  updated_by int
+}
+
+Table theme {
+  theme_id int [pk, increment]
+  name varchar(100) [not null]
+  description varchar(255) [not null]
+  default_palette jsonb
+  created_at timestamp [default: `now()`]
+  created_by int
+}
+
+Ref: activity_log.user_id > user.user_id
+Ref: event.user_id > user.user_id
+Ref: language.created_by > user.user_id
+Ref: language.updated_by > user.user_id
+Ref: preferences.language_id > language.language_id
+Ref: preferences.theme_id > theme.theme_id
+Ref: preferences.user_id > user.user_id
+Ref: profile.city_id > city.city_id
+Ref: profile.user_id > user.user_id
+Ref: profile_log.profile_id > profile.profile_id
+Ref: purchase_history.payment_id > payment.payment_id
+Ref: purchase_history.ticket_id > ticket.ticket_id
+Ref: purchase_history.user_id > user.user_id
+Ref: review.event_id > event.event_id
+Ref: review.user_id > user.user_id
+Ref: theme.created_by > user.user_id
+Ref: ticket.event_id > event.event_id
+Ref: ticket.user_id > user.user_id
+Ref: wallet.user_id > user.user_id
+Ref: wallet_summary.transaction_id > wallet_transaction.transaction_id
+Ref: wallet_summary.user_id > user.user_id
+Ref: wallet_summary.wallet_id > wallet.wallet_id
+Ref: wallet_transaction.wallet_id > wallet.wallet_id

@@ -1,0 +1,64 @@
+Enum seat_status_enum {
+  available
+  reserved
+  sold
+  blocked
+}
+
+Enum seat_type_enum {
+  standard
+  vip
+  accessible
+}
+
+Table seat {
+  seat_id int [pk, increment]
+  seat_block_id int [not null]
+  event_section_id int [not null]
+  code varchar(20) [not null]
+  seat_row int [not null, note: "columna original 'row' es palabra reservada en SQL; renombrada a seat_row"]
+  position int [not null]
+  type seat_type_enum [not null, default: 'standard']
+  status seat_status_enum [not null, default: 'available']
+}
+
+Table seat_log {
+  seat_log_id int [pk, increment]
+  seat_id int [not null]
+  old_status seat_status_enum
+  new_status seat_status_enum [not null]
+  changed_at timestamp [default: `now()`]
+  changed_by int
+  reason text
+}
+
+Table seat_block {
+  seat_block_id int [pk, increment]
+  event_section_id int [not null]
+  name varchar(100) [not null]
+  capacity int [not null]
+}
+
+Table event_section {
+  event_section_id int [pk, increment]
+  event_id int [not null]
+  section_type_id int [not null]
+  capacity int [not null]
+  available_seats int [not null]
+  price decimal(10,2) [not null]
+  is_active boolean [default: true]
+}
+
+Table user {
+  user_id int [pk, increment]
+  user_status_id int [not null, note: "FK obligatoria: todo usuario nace con un estado (ej. pending_activation)"]
+  role_id int [not null]
+  alias varchar(50) [not null, unique]
+  activated boolean [default: false]
+}
+
+Ref: seat.event_section_id > event_section.event_section_id
+Ref: seat.seat_block_id > seat_block.seat_block_id
+Ref: seat_block.event_section_id > event_section.event_section_id
+Ref: seat_log.changed_by > user.user_id
+Ref: seat_log.seat_id > seat.seat_id

@@ -1,0 +1,37 @@
+Enum event_status_enum {
+  draft
+  published
+  cancelled
+  finished
+}
+
+Table section_type {
+  section_type_id int [pk, increment]
+  name varchar(100) [not null]
+}
+
+Table event_section {
+  event_section_id int [pk, increment]
+  event_id int [not null]
+  section_type_id int [not null]
+  capacity int [not null]
+  available_seats int [not null]
+  price decimal(10,2) [not null]
+  is_active boolean [default: true]
+}
+
+Table event {
+  event_id int [pk, increment]
+  user_id int [not null, note: "organizador"]
+  site_id int [not null]
+  event_name varchar(100) [not null]
+  description varchar(255) [not null]
+  start_date date [not null]
+  finish_date date [not null]
+  status event_status_enum [not null, default: 'draft']
+  is_public boolean [default: true]
+  available_seats int [not null]
+}
+
+Ref: event_section.event_id > event.event_id
+Ref: event_section.section_type_id > section_type.section_type_id
