@@ -1,0 +1,53 @@
+Table theme {
+  theme_id int [pk, increment]
+  name varchar(100) [not null]
+  description varchar(255) [not null]
+  default_palette jsonb
+  created_at timestamp [default: `now()`]
+  created_by int
+}
+
+Table user_theme {
+  user_theme_id int [pk, increment]
+  user_id int [not null]
+  theme_id int [not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Indexes {
+    (user_id, theme_id) [unique]
+  }
+  Note: '''fix: mismo caso que category_event: se deja user_theme_id como PK unica y user_id+theme_id como UNIQUE.'''
+}
+
+Table theme_customization {
+  customization_id int [pk, increment]
+  user_theme_id int [not null]
+  property varchar(100) [not null]
+  value varchar(255)
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+Table theme_log {
+  log_id int [pk, increment]
+  user_theme_id int [not null]
+  action varchar(50) [not null]
+  property varchar(100)
+  old_value varchar(255)
+  new_value varchar(255)
+}
+
+Table user {
+  user_id int [pk, increment]
+  user_status_id int [not null, note: "FK obligatoria: todo usuario nace con un estado (ej. pending_activation)"]
+  role_id int [not null]
+  alias varchar(50) [not null, unique]
+  activated boolean [default: false]
+}
+
+Ref: theme.created_by > user.user_id
+Ref: theme_customization.user_theme_id > user_theme.user_theme_id
+Ref: theme_log.user_theme_id > user_theme.user_theme_id
+Ref: user_theme.theme_id > theme.theme_id
+Ref: user_theme.user_id > user.user_id
