@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext'
 import Login from './pages/login'
 import LadingPage from './pages/ladingPage'
@@ -14,6 +14,23 @@ import EventCreateWizard from './pages/EventCreateWizard';
 import EventManage from './pages/EventManage';
 import EventDetail from './pages/EventDetail';
 
+/**
+ * Redirects to /login if no token, or to /events if the user's role
+ * doesn't match one of the required roles.
+ * Reads role from localStorage (written at login time, source of truth until next login).
+ */
+function ProtectedRoute({ children, requiredRoles }) {
+  const token = localStorage.getItem('token');
+  const role  = localStorage.getItem('role');
+
+  if (!token) return <Navigate to="/login" replace />;
+
+  if (requiredRoles && !requiredRoles.includes(role)) {
+    return <Navigate to="/events" replace />;
+  }
+
+  return children;
+}
 
 function AppContent() {
   const location = useLocation();
@@ -30,11 +47,23 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/nosotros" element={<AboutUs />} />
           <Route path="/events" element={<Events />} />
-          <Route path="/events/create" element={<EventCreateWizard />} />
-          <Route path="/events/manage" element={<EventManage />} />
+          <Route path="/events/create" element={
+            <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
+              <EventCreateWizard />
+            </ProtectedRoute>
+          } />
+          <Route path="/events/manage" element={
+            <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
+              <EventManage />
+            </ProtectedRoute>
+          } />
           <Route path="/events/:eventId" element={<EventDetail />} />
           <Route path="/organizer-petition-form" element={<OrganizerPetitionForm />} />
-          <Route path="/admin-panel" element={<AdminPanel />} />
+          <Route path="/admin-panel" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminPanel />
+            </ProtectedRoute>
+          } />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/verification" element={<CodeVerification />} />
           <Route path="/events/:eventId/layout" element={<EventLayoutEditor />} />

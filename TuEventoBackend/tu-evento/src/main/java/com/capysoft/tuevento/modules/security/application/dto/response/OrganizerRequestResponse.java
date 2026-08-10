@@ -20,4 +20,7 @@ public class OrganizerRequestResponse {
     private String status;
     private LocalDateTime applicationDate;
     private Integer storedFileId;
+    /** Presigned URL (60-min) of the user's profile picture. Null if the user
+     *  has no profile or their avatar is the default (stored_file_id = 1). */
+    private String profilePicture;
 }

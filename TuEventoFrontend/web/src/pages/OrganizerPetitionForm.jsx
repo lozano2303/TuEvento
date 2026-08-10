@@ -187,7 +187,7 @@ const OrganizerPetitionForm = () => {
                     <input 
                       type="file" 
                       className="hidden" 
-                      accept=".pdf,.jpg,.jpeg,.png"
+                      accept=".pdf"
                       onChange={handleFileSelect}
                       id="file-upload"
                     />
@@ -198,7 +198,7 @@ const OrganizerPetitionForm = () => {
                       Seleccionar archivo
                     </label>
                     <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">
-                      PDF, JPG, PNG • Máx 5MB
+                      PDF • Máx 5MB
                     </p>
                   </div>
                 </div>

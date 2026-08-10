@@ -90,12 +90,26 @@ const ProfilePage = () => {
         if (profile.fullName) {
           localStorage.setItem('name', profile.fullName);
         }
+
         if (profile.storedFileId) {
-          const url = await getProfilePictureUrl(profile.storedFileId);
-          setAvatarUrl(url || null);
+          try {
+            const url = await getProfilePictureUrl(profile.storedFileId);
+            if (url) {
+              setAvatarUrl(url);
+            } else {
+              // The endpoint returned 200 but publicUrl was empty — log for debugging
+              console.warn('[ProfilePage] La URL de la foto de perfil estaba vacía (storedFileId=%s)', profile.storedFileId);
+              setAvatarMessage({ type: 'error', text: 'No se pudo cargar tu foto de perfil.' });
+            }
+          } catch (avatarErr) {
+            // Separate avatar-URL errors from profile-fetch errors so we don't
+            // hide the profile data just because the image failed.
+            console.error('[ProfilePage] Error al obtener la URL de la foto de perfil (storedFileId=%s):', profile.storedFileId, avatarErr);
+            setAvatarMessage({ type: 'error', text: 'No se pudo cargar tu foto de perfil.' });
+          }
         }
       } catch (err) {
-        console.error('[ProfilePage] Error cargando foto de perfil:', err);
+        console.error('[ProfilePage] Error cargando datos del perfil:', err);
       } finally {
         setAvatarLoading(false);
       }
@@ -225,53 +239,59 @@ const ProfilePage = () => {
           <div className="absolute inset-0 z-0 rounded-2xl" style={{ background: 'radial-gradient(at 0% 0%, hsla(268,77%,35%,1) 0%, transparent 50%), radial-gradient(at 100% 0%, hsla(195,100%,45%,0.3) 0%, transparent 50%), radial-gradient(at 50% 100%, hsla(262,80%,20%,1) 0%, transparent 50%)', opacity: 0.8 }}></div>
           <div className="absolute inset-0 z-0 rounded-2xl" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")', opacity: 0.04 }}></div>
           <div className="flex flex-col md:flex-row items-center md:items-end gap-8 relative z-10">
-            <div className="relative">
+            <div className="relative flex flex-col items-center">
               <div className="absolute -inset-4 rounded-full blur-3xl" style={{ background: 'rgba(124, 23, 211, 0.2)' }}></div>
               <div className="absolute -inset-1 rounded-2xl blur-md opacity-60" style={{ background: 'linear-gradient(to top right, #7c17d3, #60a5fa, #a855f7)' }}></div>
-              <div className="relative w-32 h-32 rounded-xl bg-gradient-to-br from-[#7c17d3] to-[#5a189a] flex items-center justify-center text-5xl font-bold text-textPrimary border-2 border-white/30 shadow-2xl overflow-hidden" style={{ boxShadow: '0 0 50px rgba(124, 23, 211, 0.6), 0 0 20px rgba(0, 212, 255, 0.4)' }}>
-                {avatarLoading ? (
-                  <Loader2 className="w-12 h-12 animate-spin text-textPrimary" />
-                ) : (avatarUrl || previewUrl) ? (
-                  <img
-                    src={previewUrl || avatarUrl}
-                    alt="Foto de perfil"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-textPrimary">
-                    {firstLetter}
-                  </div>
-                )}
-                {uploadingAvatar && (
-                  <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
-                    <Loader2 className="w-10 h-10 animate-spin text-white" />
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={openAvatarPicker}
-                disabled={uploadingAvatar}
-                className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-primary flex items-center justify-center text-textPrimary shadow-xl hover:scale-110 transition-transform border-2 border-background z-20 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <Camera className="w-5 h-5" />
-              </button>
-              {/* Ícono de info — independiente del botón de cámara para no disparar el file picker */}
-              <div className="absolute -bottom-2 -left-2 z-20">
-                <Tooltip
-                  content={`Solo JPG, PNG o WEBP. Máx. ${MAX_AVATAR_SIZE_MB} MB. Sin contenido adulto, violencia o armas.`}
-                  position="right"
+              {/* Avatar container — fixed 128×128, no overflow */}
+              <div className="relative w-32 h-32 flex-shrink-0">
+                <div className="w-32 h-32 rounded-xl bg-gradient-to-br from-[#7c17d3] to-[#5a189a] flex items-center justify-center text-5xl font-bold text-textPrimary border-2 border-white/30 shadow-2xl overflow-hidden" style={{ boxShadow: '0 0 50px rgba(124, 23, 211, 0.6), 0 0 20px rgba(0, 212, 255, 0.4)' }}>
+                  {avatarLoading ? (
+                    <Loader2 className="w-12 h-12 animate-spin text-textPrimary" />
+                  ) : (avatarUrl || previewUrl) ? (
+                    <img
+                      src={previewUrl || avatarUrl}
+                      alt="Foto de perfil"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src="/default-avatar.jpg"
+                      alt="Avatar por defecto"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
+                      <Loader2 className="w-10 h-10 animate-spin text-white" />
+                    </div>
+                  )}
+                </div>
+                {/* Camera button — anchored to avatar container, not pushed by text */}
+                <button
+                  type="button"
+                  onClick={openAvatarPicker}
+                  disabled={uploadingAvatar}
+                  className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-primary flex items-center justify-center text-textPrimary shadow-xl hover:scale-110 transition-transform border-2 border-background z-20 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <button
-                    type="button"
-                    aria-label="Requisitos de imagen de perfil"
-                    className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-background shadow-lg"
-                    style={{ background: 'var(--color-surfaceAlt)', color: 'var(--color-textMuted)' }}
-                    onClick={(e) => e.stopPropagation()}
+                  <Camera className="w-5 h-5" />
+                </button>
+                {/* Ícono de info — independiente del botón de cámara para no disparar el file picker */}
+                <div className="absolute -bottom-2 -left-2 z-20">
+                  <Tooltip
+                    content={`Solo JPG, PNG o WEBP. Máx. ${MAX_AVATAR_SIZE_MB} MB. Sin contenido adulto, violencia o armas.`}
+                    position="right"
                   >
-                    <Info className="w-3.5 h-3.5" />
-                  </button>
-                </Tooltip>
+                    <button
+                      type="button"
+                      aria-label="Requisitos de imagen de perfil"
+                      className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-background shadow-lg"
+                      style={{ background: 'var(--color-surfaceAlt)', color: 'var(--color-textMuted)' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Info className="w-3.5 h-3.5" />
+                    </button>
+                  </Tooltip>
+                </div>
               </div>
               <input
                 ref={avatarInputRef}

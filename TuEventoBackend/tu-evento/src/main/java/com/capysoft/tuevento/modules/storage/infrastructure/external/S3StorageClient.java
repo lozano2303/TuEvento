@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
@@ -42,6 +44,19 @@ public class S3StorageClient implements StorageClientPort {
         } catch (Exception e) {
             log.error("Failed to upload file to S3: bucket={}, key={}", bucket, key, e);
             throw new BusinessException("S3_UPLOAD_FAILED", "Failed to upload file: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean objectExists(String bucket, String key) {
+        try {
+            s3Client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build());
+            return true;
+        } catch (NoSuchKeyException e) {
+            return false;
+        } catch (Exception e) {
+            log.warn("Could not check object existence: bucket={}, key={} — {}", bucket, key, e.getMessage());
+            return false;
         }
     }
 

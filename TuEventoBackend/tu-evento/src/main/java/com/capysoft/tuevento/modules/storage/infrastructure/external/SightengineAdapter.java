@@ -93,7 +93,11 @@ public class SightengineAdapter {
                 double raw = getDouble(nudity, "raw");
                 double partial = getDouble(nudity, "partial");
 
-                log.debug("Sightengine nudity raw:{} partial:{}", raw, partial);
+                // TODO(calibración ~2026-08-20): bajar este log a debug o eliminarlo una vez
+                // que haya suficientes datos reales para confirmar que el threshold (0.50) tiene
+                // margen cómodo. Dejarlo en INFO indefinidamente llena los logs de producción.
+                // Ver: https://github.com/capysoft/tuevento — issue de seguimiento del threshold NSFW.
+                log.info("Sightengine nudity scores — raw:{} partial:{} threshold:{}", raw, partial, nudityThreshold);
 
                 if (raw >= nudityThreshold || partial >= nudityThreshold) {
                     log.warn("Sightengine rejected: nudity raw/partial ({}/{})", raw, partial);
