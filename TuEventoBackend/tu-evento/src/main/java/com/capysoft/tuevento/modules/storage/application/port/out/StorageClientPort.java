@@ -13,6 +13,13 @@ public interface StorageClientPort {
     void deleteFile(String bucket, String key);
 
     /**
+     * Checks whether an object exists in the storage provider.
+     *
+     * @return true if the object exists, false otherwise
+     */
+    boolean objectExists(String bucket, String key);
+
+    /**
      * Generates a permanent public URL for a file.
      *
      * @return the public URL string
