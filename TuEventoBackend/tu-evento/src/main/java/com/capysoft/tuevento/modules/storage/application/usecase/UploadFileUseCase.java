@@ -50,8 +50,9 @@ public class UploadFileUseCase implements UploadFilePort {
         validateExtension(request.getOriginalFilename(), category.getAllowedExtensions());
         validateSize(request.getContent().length, category.getMaxSizeMb());
 
-        // Moderation cascade: only for images, skipped for PDFs and other types
-        if (request.getContentType().startsWith("image/")) {
+        // Moderation cascade: only for images, skipped for PDFs and other types.
+        // Null-safe: getContentType() can be null if the browser omits the part's Content-Type header.
+        if (request.getContentType() != null && request.getContentType().startsWith("image/")) {
             moderationService.moderate(request.getContent());
         }
 

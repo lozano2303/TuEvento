@@ -79,7 +79,10 @@ export const uploadProfilePicture = async (file) => {
 
 export const getProfilePictureUrl = async (storedFileId) => {
   const token = localStorage.getItem('token');
-  const response = await fetch(`${API_URL}/storage/${storedFileId}`, {
+  // Use /url endpoint to get a fresh presigned URL (60-min expiry) instead of
+  // the stale static URL stored in the DB, which points to the internal MinIO
+  // host and is not accessible from the browser.
+  const response = await fetch(`${API_URL}/storage/${storedFileId}/url`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
