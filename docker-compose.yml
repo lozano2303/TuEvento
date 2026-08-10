@@ -1,3 +1,6 @@
+version: '3.8'
+
+services:
   backend:
     build:
       context: ./TuEventoBackend/tu-evento
@@ -22,6 +25,10 @@
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
       - APP_STORAGE_ENDPOINT=http://minio:9000
+      # Public URL embedded in presigned URLs returned to the browser.
+      # Must be reachable from the user's browser, not from inside Docker.
+      # Port 9000 is mapped to the host, so localhost works for local dev.
+      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-http://localhost:9000}
 
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
@@ -54,6 +61,77 @@
       redis:
         condition: service_started
       nsfw-classifier:
-        condition: service_healthy
+        condition: service_started
     networks:
       - tuevento-network
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: tuevento-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tuevento-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: tuevento-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - tuevento-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: tuevento-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 40s
+    networks:
+      - tuevento-network
+
+  nsfw-classifier:
+    build:
+      context: ./nsfw-service
+      dockerfile: Dockerfile
+    container_name: tuevento-nsfw-classifier
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    environment:
+      - THRESHOLD=0.4
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - tuevento-network
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  tuevento-network:
+    driver: bridge

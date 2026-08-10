@@ -28,6 +28,31 @@ export const createPetition = async (formData) => {
   }
 };
 
+export const approveOrganizerRequest = async (petitionId) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/admin/organizer-requests/${petitionId}/approve`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : null;
+
+    if (!response.ok) {
+      throw new Error(data?.message || response.statusText || 'Error al aprobar solicitud');
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error en approveOrganizerRequest:', error);
+    throw error;
+  }
+};
+
 export const rejectOrganizerRequest = async (petitionId) => {
   try {
     const token = localStorage.getItem('token');
