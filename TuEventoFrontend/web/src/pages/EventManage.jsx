@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, LayoutDashboard, Pencil, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, LayoutDashboard, Pencil, Trash2, AlertTriangle, ImagePlus } from 'lucide-react';
 import * as EventService from '../services/EventService';
 import * as CategoryService from '../services/CategoryService';
+import { getEventMedia, uploadEventMedia } from '../services/EventMediaService';
 import StatusDropdown from '../components/event-manage/StatusDropdown';
 import Modal from '../components/common/Modal';
 import { STATUS_BADGE, TRANSITION_INFO } from '../constants/eventStatus';
@@ -41,13 +42,22 @@ export default function EventManage() {
   const [errorModal, setErrorModal] = useState(null); // { title, message } | null
 
   // Modal de edición de info general
-  const [editTarget,       setEditTarget]       = useState(null);  // event summary | null (para saber qué fila actualizar)
+  const [editTarget,       setEditTarget]       = useState(null);
   const [editModalOpen,    setEditModalOpen]    = useState(false);
   const [isLoadingEditForm, setIsLoadingEditForm] = useState(false);
   const [editForm,         setEditForm]         = useState({});
   const [categories,       setCategories]       = useState([]);
   const [isSubmitting,     setIsSubmitting]     = useState(false);
   const [editError,        setEditError]        = useState(null);
+
+  // Modal de gestión de imágenes
+  const [mediaTarget,      setMediaTarget]      = useState(null);   // event | null
+  const [mediaList,        setMediaList]        = useState([]);     // EventMediaResponse[]
+  const [isLoadingMedia,   setIsLoadingMedia]   = useState(false);
+  const [mediaFiles,       setMediaFiles]       = useState([]);     // { file, preview }[]
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [mediaUploadError, setMediaUploadError] = useState(null);
+  const mediaInputRef = useRef(null);
 
   // ── Carga inicial ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -90,6 +100,8 @@ export default function EventManage() {
         message = 'Este evento no tiene un layout guardado todavía. Ve a "Editar layout" y guarda al menos una sección antes de publicar.';
       } else if (message.includes('at least one section with seats') || message.includes('EVENT_SECTIONS_REQUIRED')) {
         message = 'Este evento no tiene ninguna sección con sillas configurada. Ve a "Editar layout", agrega al menos una sección y guarda antes de publicar.';
+      } else if (message.includes('at least one image') || message.includes('EVENT_PUBLISH_NO_MEDIA')) {
+        message = 'Este evento no tiene imágenes. Ve a "Gestionar imágenes" y sube al menos una foto antes de publicar.';
       }
       setErrorModal({ title: 'No se pudo cambiar el estado', message });
     } finally {
@@ -176,6 +188,57 @@ export default function EventManage() {
   }, [editTarget, editForm]);
 
   // El cierre por click fuera lo maneja StatusDropdown internamente vía su propio useEffect.
+
+  // ── Gestión de imágenes ───────────────────────────────────────────────────
+  const openMedia = async (event) => {
+    setMediaTarget(event);
+    setMediaFiles([]);
+    setMediaUploadError(null);
+    setIsLoadingMedia(true);
+    try {
+      const res = await getEventMedia(event.eventId);
+      setMediaList(res.data ?? []);
+    } catch {
+      setMediaList([]);
+    } finally {
+      setIsLoadingMedia(false);
+    }
+  };
+
+  const handleMediaFileSelect = (e) => {
+    const selected = Array.from(e.target.files ?? []).map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setMediaFiles((prev) => [...prev, ...selected]);
+    if (mediaInputRef.current) mediaInputRef.current.value = '';
+  };
+
+  const handleMediaRemoveFile = (idx) => {
+    setMediaFiles((prev) => {
+      URL.revokeObjectURL(prev[idx].preview);
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
+
+  const handleMediaUpload = async () => {
+    if (!mediaTarget || mediaFiles.length === 0) return;
+    setIsUploadingMedia(true);
+    setMediaUploadError(null);
+    try {
+      for (const { file } of mediaFiles) {
+        await uploadEventMedia(mediaTarget.eventId, file);
+      }
+      // Recargar la lista
+      const res = await getEventMedia(mediaTarget.eventId);
+      setMediaList(res.data ?? []);
+      setMediaFiles([]);
+    } catch (err) {
+      setMediaUploadError(`No se pudo subir: ${err.message}`);
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
 
   // ── Render ───────────────────────────────────────────────────────────────
   const btnBase = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors';
@@ -310,6 +373,15 @@ export default function EventManage() {
                           title="Editar información del evento"
                         >
                           <Pencil className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Gestionar imágenes */}
+                        <button
+                          onClick={() => openMedia(event)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-yellow-400 hover:bg-yellow-400/10 transition-colors"
+                          title="Gestionar imágenes del evento"
+                        >
+                          <ImagePlus className="w-3.5 h-3.5" />
                         </button>
 
                         {/* Eliminar — solo disponible en DRAFT (backend lo exige también) */}
@@ -550,6 +622,111 @@ export default function EventManage() {
         }
       >
         <p className="text-sm text-textSecondary px-5 py-4 leading-relaxed">{errorModal?.message}</p>
+      </Modal>
+
+      {/* ── Modal: gestionar imágenes ────────────────────────────────────── */}
+      <Modal
+        isOpen={!!mediaTarget}
+        onClose={() => { setMediaTarget(null); setMediaFiles([]); setMediaUploadError(null); }}
+        title={`Imágenes — ${mediaTarget?.eventName ?? ''}`}
+        footer={
+          mediaFiles.length > 0 ? (
+            <>
+              <button
+                onClick={() => setMediaFiles([])}
+                disabled={isUploadingMedia}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-textSecondary bg-surfaceAlt hover:bg-surfaceAlt/80 transition-colors disabled:opacity-60"
+              >
+                Cancelar selección
+              </button>
+              <button
+                onClick={handleMediaUpload}
+                disabled={isUploadingMedia}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primaryDark transition-colors disabled:opacity-60 flex items-center gap-2"
+              >
+                {isUploadingMedia ? (
+                  <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Subiendo…</>
+                ) : (
+                  <><ImagePlus className="w-3.5 h-3.5" /> Subir {mediaFiles.length} imagen{mediaFiles.length !== 1 ? 'es' : ''}</>
+                )}
+              </button>
+            </>
+          ) : null
+        }
+      >
+        <div className="p-5 space-y-4">
+          {/* Imágenes existentes */}
+          {isLoadingMedia ? (
+            <div className="flex justify-center py-6">
+              <span className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+            </div>
+          ) : mediaList.length > 0 ? (
+            <div>
+              <p className="text-[10px] font-semibold text-textMuted uppercase tracking-wider mb-2">
+                Imágenes subidas ({mediaList.length})
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {mediaList.map((m) => (
+                  <div key={m.mediaId} className="aspect-square rounded-lg overflow-hidden">
+                    <img src={m.imgUrl} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-textMuted text-center py-4">Este evento aún no tiene imágenes</p>
+          )}
+
+          {/* Agregar más imágenes */}
+          <div>
+            <p className="text-[10px] font-semibold text-textMuted uppercase tracking-wider mb-2">
+              Agregar imágenes
+            </p>
+            <input
+              ref={mediaInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              id="manage-media-upload"
+              className="hidden"
+              onChange={handleMediaFileSelect}
+            />
+            <label
+              htmlFor="manage-media-upload"
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed cursor-pointer transition-colors border-surfaceAlt hover:border-accent text-textMuted hover:text-accent text-sm"
+            >
+              <ImagePlus className="w-4 h-4" /> Seleccionar imágenes
+            </label>
+          </div>
+
+          {/* Preview de archivos seleccionados */}
+          {mediaFiles.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold text-textMuted uppercase tracking-wider mb-2">
+                Pendientes de subir ({mediaFiles.length})
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {mediaFiles.map(({ preview }, idx) => (
+                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden">
+                    <img src={preview} alt="" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => handleMediaRemoveFile(idx)}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-error transition-colors"
+                    >
+                      <span className="text-[10px] leading-none">✕</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {mediaUploadError && (
+            <p className="text-xs text-error bg-error/10 border border-error/30 rounded-xl px-3 py-2">
+              {mediaUploadError}
+            </p>
+          )}
+        </div>
       </Modal>
     </div>
   );

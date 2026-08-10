@@ -1,0 +1,995 @@
+Enum delivered_status_enum {
+  pending
+  sent
+  delivered
+  failed
+  read
+}
+
+Enum event_status_enum {
+  draft
+  published
+  cancelled
+  finished
+}
+
+Enum order_status_enum {
+  created
+  pending_payment
+  paid
+  cancelled
+  refunded
+}
+
+Enum payment_gateway_enum {
+  stripe
+  paypal
+  mercadopago
+  wompi
+}
+
+Enum payment_method_enum {
+  credit_card
+  debit_card
+  pse
+  wallet
+  cash
+}
+
+Enum payment_status_enum {
+  pending
+  approved
+  rejected
+  refunded
+  failed
+}
+
+Enum petition_status_enum {
+  pending
+  approved
+  rejected
+}
+
+Enum refund_status_enum {
+  requested
+  approved
+  rejected
+  completed
+}
+
+Enum seat_status_enum {
+  available
+  reserved
+  sold
+  blocked
+}
+
+Enum seat_type_enum {
+  standard
+  vip
+  accessible
+}
+
+Enum storage_op_status_enum {
+  success
+  failed
+}
+
+Enum storage_operation_enum {
+  upload
+  download
+  delete
+  update
+}
+
+Enum ticket_status_enum {
+  valid
+  used
+  cancelled
+  expired
+}
+
+Enum translation_status_enum {
+  draft
+  published
+  pending_review
+}
+
+Enum wallet_ref_entity_enum {
+  ticket
+  order
+  refund
+  payment
+}
+
+Enum wallet_txn_status_enum {
+  pending
+  completed
+  failed
+}
+
+Enum wallet_txn_type_enum {
+  deposit
+  withdrawal
+  payment
+  refund
+}
+
+Table user {
+  user_id int [pk, increment]
+  user_status_id int [not null, note: "FK obligatoria: todo usuario nace con un estado (ej. pending_activation)"]
+  role_id int [not null]
+  alias varchar(50) [not null, unique]
+  activated boolean [default: false]
+}
+
+Table user_status {
+  user_status_id int [pk, increment]
+  code varchar(30) [not null, unique]
+  name varchar(60) [not null]
+  description varchar(150) [not null]
+}
+
+Table role {
+  role_id int [pk, increment]
+  code varchar(30) [not null, unique]
+  name varchar(60) [not null]
+  description varchar(150) [not null]
+}
+
+Table permission {
+  permission_id int [pk, increment]
+  code varchar(50) [not null, unique]
+  name varchar(80) [not null]
+  description varchar(150) [not null]
+}
+
+Table role_permission {
+  role_permission_id int [pk, increment]
+  role_id int [not null]
+  permission_id int [not null]
+  Indexes {
+    (role_id, permission_id) [unique]
+  }
+}
+
+Table login_credentials {
+  login_credentials_id int [pk, increment]
+  user_id int [not null, unique, note: "1:1 con user"]
+  email varchar(255) [not null, unique]
+  password_hash varchar(255) [not null]
+  last_login_at timestamp
+}
+
+Table user_status_history {
+  user_status_history_id int [pk, increment]
+  user_id int [not null]
+  user_status_id int [not null]
+  reason varchar(150) [not null]
+  changed_at timestamp [default: `now()`]
+}
+
+Table account_activation {
+  account_activation_id int [pk, increment]
+  user_id int [not null, unique, note: "fix: en el MER original venia marcado como PK compuesta; se deja como FK unica (1 activacion vigente por usuario)"]
+  activation_code varchar(6) [not null]
+  activated boolean [default: false]
+  expires_at timestamp [not null]
+  created_at timestamp [default: `now()`]
+}
+
+Table recover_password {
+  recover_password_id int [pk, increment]
+  user_id int [not null]
+  code varchar(6) [not null]
+  code_status boolean [default: false]
+  expires_at timestamp [not null]
+  created_at timestamp [default: `now()`]
+  last_password_hash varchar(255)
+}
+
+Table password_history {
+  password_history_id int [pk, increment]
+  user_id int [not null]
+  password_hash varchar(255) [not null]
+  changed_at timestamp [default: `now()`]
+}
+
+Table auth_session {
+  auth_session_id int [pk, increment]
+  user_id int [not null]
+  access_token varchar(512) [not null]
+  issued_at timestamp [default: `now()`]
+  expires_at timestamp [not null]
+  ip_address varchar(45)
+  user_agent varchar(200)
+  revoked boolean [default: false]
+  revoked_at timestamp
+}
+
+Table refresh_token {
+  refresh_token_id int [pk, increment]
+  user_id int [not null]
+  auth_session_id int [not null]
+  token varchar(512) [not null, unique]
+  issued_at timestamp [default: `now()`]
+  expires_at timestamp [not null]
+  revoked boolean [default: false]
+  revoked_at timestamp
+}
+
+Table account_lockout {
+  account_lockout_id int [pk, increment]
+  user_id int [not null]
+  failed_attempts int [default: 0]
+  window_started_at timestamp
+  locked_until timestamp
+}
+
+Table oauth_account {
+  oauth_account_id int [pk, increment]
+  user_id int [not null]
+  provider varchar(40) [not null]
+  provider_user_id varchar(100) [not null]
+  email varchar(255)
+  linked_at timestamp [default: `now()`]
+  Indexes {
+    (provider, provider_user_id) [unique]
+  }
+}
+
+Table organizer_petition {
+  organizer_petition_id int [pk, increment]
+  user_id int [not null]
+  document blob [not null]
+  application_date timestamp [default: `now()`]
+  status petition_status_enum [not null, default: 'pending']
+}
+
+Table profile {
+  profile_id int [pk, increment]
+  user_id int [not null, unique, note: "1:1 con user"]
+  city_id int [not null]
+  full_name varchar(100) [not null]
+  photo_url varchar(255) [not null]
+  bio varchar(255)
+}
+
+Table preferences {
+  preference_id int [pk, increment]
+  user_id int [not null, unique, note: "1:1 con user"]
+  language_id int [not null]
+  theme_id int [not null]
+  notifications boolean [default: false]
+}
+
+Table activity_log {
+  log_id int [pk, increment]
+  user_id int [not null]
+  module varchar(50) [not null]
+  action varchar(100) [not null]
+  reference_id int [note: "id del registro afectado en el modulo indicado (no es FK real: apunta a distintas tablas segun 'module')"]
+  occurred_at timestamp [default: `now()`]
+}
+
+Table profile_log {
+  log_id int [pk, increment]
+  profile_id int [not null]
+  action varchar(50) [not null]
+  old_value varchar(255)
+  new_value varchar(255)
+  occurred_at timestamp [default: `now()`]
+}
+
+Table purchase_history {
+  purchase_id int [pk, increment]
+  user_id int [not null]
+  ticket_id int [not null]
+  payment_id int [not null]
+  amount decimal(10,2) [not null]
+  status payment_status_enum [not null]
+  purchased_at timestamp [default: `now()`]
+  Note: '''tabla de lectura/historial; los datos son derivables de ticket+payment. Evaluar con el equipo si se mantiene como cache de reportes o se reemplaza por una vista (VIEW).'''
+}
+
+Table wallet_summary {
+  summary_id int [pk, increment]
+  user_id int [not null]
+  wallet_id int [not null]
+  transaction_id int [not null]
+  type wallet_txn_type_enum [not null]
+  amount decimal(10,2) [not null]
+  occurred_at timestamp [default: `now()`]
+  Note: '''tabla de lectura/historial; los datos son derivables de wallet_transaction. Evaluar si se reemplaza por una vista (VIEW).'''
+}
+
+Table city {
+  city_id int [pk, increment]
+  department_id int [not null]
+  name varchar(100) [not null]
+  code varchar(10)
+}
+
+Table department {
+  department_id int [pk, increment]
+  name varchar(100) [not null]
+  code varchar(10)
+}
+
+Table site {
+  site_id int [pk, increment]
+  city_id int [not null]
+  name varchar(150) [not null]
+  address varchar(200) [not null]
+  capacity int
+  latitude decimal(9,6)
+  longitude decimal(9,6)
+}
+
+Table event {
+  event_id int [pk, increment]
+  user_id int [not null, note: "organizador"]
+  site_id int [not null]
+  event_name varchar(100) [not null]
+  description varchar(255) [not null]
+  start_date date [not null]
+  finish_date date [not null]
+  status event_status_enum [not null, default: 'draft']
+  is_public boolean [default: true]
+  available_seats int [not null]
+}
+
+Table event_layout {
+  event_layout_id int [pk, increment]
+  event_id int [not null, unique, note: "1:1 con event"]
+  layout_data jsonb [not null]
+}
+
+Table event_rating {
+  rating_id int [pk, increment]
+  event_id int [not null]
+  user_id int [not null]
+  rating int [not null, note: "CHECK (rating BETWEEN 1 AND 5)"]
+  comment text [not null]
+  is_visible boolean [default: true]
+  created_at timestamp [default: `now()`]
+  Indexes {
+    (event_id, user_id) [unique]
+  }
+}
+
+Table event_comment_reply {
+  reply_id int [pk, increment]
+  parent_reply_id int [note: "auto-referencia; NULL si es respuesta de primer nivel"]
+  rating_id int [not null]
+  user_id int [not null]
+  reply_text text [not null]
+  is_visible boolean [default: true]
+  created_at timestamp [default: `now()`]
+}
+
+Table event_media {
+  media_id int [pk, increment]
+  event_id int [not null]
+  img_url varchar(255) [not null]
+}
+
+Table event_media_log {
+  media_log_id int [pk, increment]
+  event_id int [not null]
+  media_id int [not null]
+  img_url varchar(255) [not null]
+  version int [not null]
+  is_visible boolean [default: true]
+}
+
+Table event_status_log {
+  status_log_id int [pk, increment]
+  event_id int [not null]
+  old_status event_status_enum
+  new_status event_status_enum [not null]
+  changed_at timestamp [default: `now()`]
+  changed_by int
+}
+
+Table category {
+  category_id int [pk, increment]
+  name varchar(50) [not null]
+  description varchar(100) [not null]
+  active boolean [default: true]
+  visible boolean [default: true]
+  dad_id int [note: "auto-referencia; NULL si es categoria raiz"]
+}
+
+Table category_event {
+  category_event_id int [pk, increment]
+  category_id int [not null]
+  event_id int [not null]
+  Indexes {
+    (category_id, event_id) [unique]
+  }
+  Note: '''fix: el MER marcaba category_id y event_id como PK compuesta ademas de category_event_id como PK; se deja category_event_id como PK unica y category_id+event_id como UNIQUE.'''
+}
+
+Table section_type {
+  section_type_id int [pk, increment]
+  name varchar(100) [not null]
+}
+
+Table event_section {
+  event_section_id int [pk, increment]
+  event_id int [not null]
+  section_type_id int [not null]
+  capacity int [not null]
+  available_seats int [not null]
+  price decimal(10,2) [not null]
+  is_active boolean [default: true]
+}
+
+Table seat_block {
+  seat_block_id int [pk, increment]
+  event_section_id int [not null]
+  name varchar(100) [not null]
+  capacity int [not null]
+}
+
+Table seat {
+  seat_id int [pk, increment]
+  seat_block_id int [not null]
+  event_section_id int [not null]
+  code varchar(20) [not null]
+  seat_row int [not null, note: "columna original 'row' es palabra reservada en SQL; renombrada a seat_row"]
+  position int [not null]
+  type seat_type_enum [not null, default: 'standard']
+  status seat_status_enum [not null, default: 'available']
+}
+
+Table seat_log {
+  seat_log_id int [pk, increment]
+  seat_id int [not null]
+  old_status seat_status_enum
+  new_status seat_status_enum [not null]
+  changed_at timestamp [default: `now()`]
+  changed_by int
+  reason text
+}
+
+Table ticket {
+  ticket_id int [pk, increment]
+  event_id int [not null]
+  user_id int [not null, note: "comprador"]
+  order_id int [not null]
+  code varchar(20) [not null, unique]
+  qr_code text
+  status ticket_status_enum [not null, default: 'valid']
+  expiration_date date
+  total_price decimal(10,2) [not null]
+}
+
+Table seat_ticket {
+  seat_id int
+  ticket_id int
+  price decimal(10,2) [not null]
+  Indexes {
+    (seat_id, ticket_id) [pk]
+  }
+}
+
+Table ticket_log {
+  ticket_log_id int [pk, increment]
+  ticket_id int [not null]
+  old_status ticket_status_enum
+  new_status ticket_status_enum [not null]
+  changed_at timestamp [default: `now()`]
+  changed_by int
+  reason text
+}
+
+Table ticket_checkin {
+  checkin_id int [pk, increment]
+  ticket_id int [not null, unique, note: "1:1 con ticket (un solo check-in valido)"]
+  checkin_time timestamp [default: `now()`]
+  validated_by int
+}
+
+Table order {
+  order_id int [pk, increment]
+  user_id int [not null]
+  event_id int [not null]
+  total_amount decimal(10,2) [not null]
+  currency varchar(3) [default: 'COP']
+  status order_status_enum [not null, default: 'created']
+  created_at timestamp [default: `now()`]
+  Note: '''"order" es palabra reservada en SQL estandar; en la implementacion (CREATE TABLE) se recomienda usarla entre comillas/backticks o renombrar a "orders".'''
+}
+
+Table payment {
+  payment_id int [pk, increment]
+  order_id int [not null]
+  gateway payment_gateway_enum [not null]
+  gateway_transaction_id varchar(100)
+  status payment_status_enum [not null, default: 'pending']
+  amount decimal(10,2) [not null]
+  payment_method payment_method_enum [not null]
+  processed_at timestamp
+}
+
+Table payment_log {
+  payment_log_id int [pk, increment]
+  payment_id int [not null]
+  old_status payment_status_enum
+  new_status payment_status_enum [not null]
+  changed_at timestamp [default: `now()`]
+  reason text
+  Note: '''fix: el MER original repetia la columna changed_at dos veces; se dejo una sola.'''
+}
+
+Table refund {
+  refund_id int [pk, increment]
+  payment_id int [not null]
+  status refund_status_enum [not null, default: 'requested']
+  reason text
+  requested_at timestamp [default: `now()`]
+  processed_at timestamp
+}
+
+Table transaction_webhook {
+  webhook_id int [pk, increment]
+  payment_id int [not null]
+  payload jsonb [not null]
+  received_at timestamp [default: `now()`]
+}
+
+Table wallet {
+  wallet_id int [pk, increment]
+  user_id int [not null, unique, note: "1:1 con user"]
+  balance decimal(10,2) [default: 0]
+  currency varchar(3) [default: 'COP']
+}
+
+Table wallet_transaction {
+  transaction_id int [pk, increment]
+  wallet_id int [not null]
+  type wallet_txn_type_enum [not null]
+  amount decimal(10,2) [not null]
+  status wallet_txn_status_enum [not null, default: 'pending']
+  created_at timestamp [default: `now()`]
+}
+
+Table wallet_reference {
+  wallet_reference_id int [pk, increment]
+  transaction_id int [not null]
+  entity_type wallet_ref_entity_enum [not null]
+  entity_id int [not null, note: "no es FK real: el destino depende de entity_type (polimorfico)"]
+}
+
+Table channel {
+  channel_id int [pk, increment]
+  name varchar(50) [not null]
+  description varchar(100) [not null]
+  active boolean [default: true]
+  config jsonb
+}
+
+Table notification_type {
+  notification_type_id int [pk, increment]
+  name varchar(50) [not null]
+  description varchar(100) [not null]
+  active boolean [default: true]
+}
+
+Table notification {
+  notification_id int [pk, increment]
+  channel_id int [not null]
+  notification_type_id int [not null]
+  event_id int [note: "opcional: no toda notificacion esta ligada a un evento"]
+  subject varchar(150) [not null]
+  body text [not null]
+  sent_at timestamp
+}
+
+Table notification_user {
+  notification_user_id int [pk, increment]
+  notification_id int [not null]
+  user_id int [not null]
+  email_address varchar(255) [not null]
+  delivered_status delivered_status_enum [not null, default: 'pending']
+  error_message text
+  read_at timestamp
+}
+
+Table category_translation {
+  translation_id int [pk, increment]
+  category_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100) [not null]
+  translated_description varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (category_id, language_id) [unique]
+  }
+}
+
+Table channel_translation {
+  translation_id int [pk, increment]
+  channel_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100)
+  translated_description varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (channel_id, language_id) [unique]
+  }
+}
+
+Table event_translation {
+  translation_id int [pk, increment]
+  event_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100)
+  translated_description varchar(255)
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (event_id, language_id) [unique]
+  }
+}
+
+Table event_rating_translation {
+  translation_id int [pk, increment]
+  rating_id int [not null]
+  language_id int [not null]
+  translated_comment varchar(255)
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (rating_id, language_id) [unique]
+  }
+}
+
+Table event_comment_reply_translation {
+  translation_id int [pk, increment]
+  reply_id int [not null]
+  language_id int [not null]
+  translated_reply_text varchar(255)
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (reply_id, language_id) [unique]
+  }
+}
+
+Table notification_translation {
+  translation_id int [pk, increment]
+  notification_id int [not null]
+  language_id int [not null]
+  translated_subject varchar(100)
+  translated_body varchar(255)
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (notification_id, language_id) [unique]
+  }
+}
+
+Table notification_type_translation {
+  translation_id int [pk, increment]
+  notification_type_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100) [not null]
+  translated_description varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (notification_type_id, language_id) [unique]
+  }
+}
+
+Table seat_block_translation {
+  translation_id int [pk, increment]
+  seat_block_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (seat_block_id, language_id) [unique]
+  }
+}
+
+Table section_type_translation {
+  translation_id int [pk, increment]
+  section_type_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (section_type_id, language_id) [unique]
+  }
+}
+
+Table review_translation {
+  translation_id int [pk, increment]
+  review_id int [not null]
+  language_id int [not null]
+  translated_comment varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (review_id, language_id) [unique]
+  }
+}
+
+Table profile_translation {
+  translation_id int [pk, increment]
+  profile_id int [not null]
+  language_id int [not null]
+  translated_bio varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (profile_id, language_id) [unique]
+  }
+}
+
+Table theme_translation {
+  translation_id int [pk, increment]
+  theme_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100) [not null]
+  translated_description varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (theme_id, language_id) [unique]
+  }
+}
+
+Table module_translation {
+  translation_id int [pk, increment]
+  module varchar(50) [not null, note: "fix: en el MER venia marcada como PK compuesta junto a translation_id; se deja como columna normal + UNIQUE(module, language_id)"]
+  language_id int [not null]
+  translated_name varchar(100) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (module, language_id) [unique]
+  }
+}
+
+Table action_translation {
+  translation_id int [pk, increment]
+  action varchar(100) [not null, note: "fix: mismo caso que module_translation.module"]
+  language_id int [not null]
+  translated_description varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (action, language_id) [unique]
+  }
+}
+
+Table language {
+  language_id int [pk, increment]
+  code varchar(10) [not null, unique]
+  name varchar(50) [not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  created_by int
+  updated_at timestamp
+  updated_by int
+}
+
+Table review {
+  review_id int [pk, increment]
+  user_id int [not null]
+  event_id int [not null]
+  rating int [not null, note: "CHECK (rating BETWEEN 1 AND 5)"]
+  comment text [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Indexes {
+    (user_id, event_id) [unique]
+  }
+  Note: '''nota: la entidad "review" y "event_rating" describen lo mismo (usuario califica evento) en modulos distintos del MER original; se recomienda unificarlas en una sola tabla antes de implementar la BD.'''
+}
+
+Table theme {
+  theme_id int [pk, increment]
+  name varchar(100) [not null]
+  description varchar(255) [not null]
+  default_palette jsonb
+  created_at timestamp [default: `now()`]
+  created_by int
+}
+
+Table user_theme {
+  user_theme_id int [pk, increment]
+  user_id int [not null]
+  theme_id int [not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Indexes {
+    (user_id, theme_id) [unique]
+  }
+  Note: '''fix: mismo caso que category_event: se deja user_theme_id como PK unica y user_id+theme_id como UNIQUE.'''
+}
+
+Table theme_customization {
+  customization_id int [pk, increment]
+  user_theme_id int [not null]
+  property varchar(100) [not null]
+  value varchar(255)
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+Table theme_log {
+  log_id int [pk, increment]
+  user_theme_id int [not null]
+  action varchar(50) [not null]
+  property varchar(100)
+  old_value varchar(255)
+  new_value varchar(255)
+}
+
+Table storage_provider {
+  storage_provider_id int [pk, increment]
+  name varchar(100) [not null]
+  code varchar(20) [not null, unique]
+  is_active boolean [default: false]
+  config jsonb [not null]
+}
+
+Table file_category {
+  file_category_id int [pk, increment]
+  storage_provider_id int [not null]
+  name varchar(100) [not null]
+  code varchar(50) [not null, unique]
+  is_public boolean [default: false]
+  allowed_extensions varchar(100)
+  max_size_mb int [not null]
+}
+
+Table stored_file {
+  stored_file_id int [pk, increment]
+  file_category_id int [not null]
+  uploaded_by int [not null]
+  s3_key varchar(512) [not null, unique]
+  original_filename varchar(255) [not null]
+  content_type varchar(100) [not null]
+  size_bytes bigint [not null]
+  public_url varchar(512)
+  owner_entity_id int [note: "no es FK real: apunta a distintas tablas segun owner_entity_type (polimorfico)"]
+  owner_entity_type varchar(50)
+  deleted boolean [default: false]
+  uploaded_at timestamp [default: `now()`]
+}
+
+Table storage_operation_log {
+  log_id int [pk, increment]
+  stored_file_id int [not null]
+  performed_by int
+  operation storage_operation_enum [not null]
+  status storage_op_status_enum [not null]
+  error_message varchar(500)
+  occurred_at timestamp [default: `now()`]
+}
+
+Ref: account_activation.user_id > user.user_id
+Ref: account_lockout.user_id > user.user_id
+Ref: action_translation.language_id > language.language_id
+Ref: activity_log.user_id > user.user_id
+Ref: auth_session.user_id > user.user_id
+Ref: category.dad_id > category.category_id
+Ref: category_event.category_id > category.category_id
+Ref: category_event.event_id > event.event_id
+Ref: category_translation.category_id > category.category_id
+Ref: category_translation.language_id > language.language_id
+Ref: channel_translation.channel_id > channel.channel_id
+Ref: channel_translation.language_id > language.language_id
+Ref: city.department_id > department.department_id
+Ref: event.site_id > site.site_id
+Ref: event.user_id > user.user_id
+Ref: event_comment_reply.parent_reply_id > event_comment_reply.reply_id
+Ref: event_comment_reply.rating_id > event_rating.rating_id
+Ref: event_comment_reply.user_id > user.user_id
+Ref: event_comment_reply_translation.language_id > language.language_id
+Ref: event_comment_reply_translation.reply_id > event_comment_reply.reply_id
+Ref: event_layout.event_id > event.event_id
+Ref: event_media.event_id > event.event_id
+Ref: event_media_log.event_id > event.event_id
+Ref: event_media_log.media_id > event_media.media_id
+Ref: event_rating.event_id > event.event_id
+Ref: event_rating.user_id > user.user_id
+Ref: event_rating_translation.language_id > language.language_id
+Ref: event_rating_translation.rating_id > event_rating.rating_id
+Ref: event_section.event_id > event.event_id
+Ref: event_section.section_type_id > section_type.section_type_id
+Ref: event_status_log.changed_by > user.user_id
+Ref: event_status_log.event_id > event.event_id
+Ref: event_translation.event_id > event.event_id
+Ref: event_translation.language_id > language.language_id
+Ref: file_category.storage_provider_id > storage_provider.storage_provider_id
+Ref: language.created_by > user.user_id
+Ref: language.updated_by > user.user_id
+Ref: login_credentials.user_id > user.user_id
+Ref: module_translation.language_id > language.language_id
+Ref: notification.channel_id > channel.channel_id
+Ref: notification.event_id > event.event_id
+Ref: notification.notification_type_id > notification_type.notification_type_id
+Ref: notification_translation.language_id > language.language_id
+Ref: notification_translation.notification_id > notification.notification_id
+Ref: notification_type_translation.language_id > language.language_id
+Ref: notification_type_translation.notification_type_id > notification_type.notification_type_id
+Ref: notification_user.notification_id > notification.notification_id
+Ref: notification_user.user_id > user.user_id
+Ref: oauth_account.user_id > user.user_id
+Ref: order.event_id > event.event_id
+Ref: order.user_id > user.user_id
+Ref: organizer_petition.user_id > user.user_id
+Ref: password_history.user_id > user.user_id
+Ref: payment.order_id > order.order_id
+Ref: payment_log.payment_id > payment.payment_id
+Ref: preferences.language_id > language.language_id
+Ref: preferences.theme_id > theme.theme_id
+Ref: preferences.user_id > user.user_id
+Ref: profile.city_id > city.city_id
+Ref: profile.user_id > user.user_id
+Ref: profile_log.profile_id > profile.profile_id
+Ref: profile_translation.language_id > language.language_id
+Ref: profile_translation.profile_id > profile.profile_id
+Ref: purchase_history.payment_id > payment.payment_id
+Ref: purchase_history.ticket_id > ticket.ticket_id
+Ref: purchase_history.user_id > user.user_id
+Ref: recover_password.user_id > user.user_id
+Ref: refresh_token.auth_session_id > auth_session.auth_session_id
+Ref: refresh_token.user_id > user.user_id
+Ref: refund.payment_id > payment.payment_id
+Ref: review.event_id > event.event_id
+Ref: review.user_id > user.user_id
+Ref: review_translation.language_id > language.language_id
+Ref: review_translation.review_id > review.review_id
+Ref: role_permission.permission_id > permission.permission_id
+Ref: role_permission.role_id > role.role_id
+Ref: seat.event_section_id > event_section.event_section_id
+Ref: seat.seat_block_id > seat_block.seat_block_id
+Ref: seat_block.event_section_id > event_section.event_section_id
+Ref: seat_block_translation.language_id > language.language_id
+Ref: seat_block_translation.seat_block_id > seat_block.seat_block_id
+Ref: seat_log.changed_by > user.user_id
+Ref: seat_log.seat_id > seat.seat_id
+Ref: seat_ticket.seat_id > seat.seat_id
+Ref: seat_ticket.ticket_id > ticket.ticket_id
+Ref: section_type_translation.language_id > language.language_id
+Ref: section_type_translation.section_type_id > section_type.section_type_id
+Ref: site.city_id > city.city_id
+Ref: storage_operation_log.performed_by > user.user_id
+Ref: storage_operation_log.stored_file_id > stored_file.stored_file_id
+Ref: stored_file.file_category_id > file_category.file_category_id
+Ref: stored_file.uploaded_by > user.user_id
+Ref: theme.created_by > user.user_id
+Ref: theme_customization.user_theme_id > user_theme.user_theme_id
+Ref: theme_log.user_theme_id > user_theme.user_theme_id
+Ref: theme_translation.language_id > language.language_id
+Ref: theme_translation.theme_id > theme.theme_id
+Ref: ticket.event_id > event.event_id
+Ref: ticket.order_id > order.order_id
+Ref: ticket.user_id > user.user_id
+Ref: ticket_checkin.ticket_id > ticket.ticket_id
+Ref: ticket_checkin.validated_by > user.user_id
+Ref: ticket_log.changed_by > user.user_id
+Ref: ticket_log.ticket_id > ticket.ticket_id
+Ref: transaction_webhook.payment_id > payment.payment_id
+Ref: user.role_id > role.role_id
+Ref: user.user_status_id > user_status.user_status_id
+Ref: user_status_history.user_id > user.user_id
+Ref: user_status_history.user_status_id > user_status.user_status_id
+Ref: user_theme.theme_id > theme.theme_id
+Ref: user_theme.user_id > user.user_id
+Ref: wallet.user_id > user.user_id
+Ref: wallet_reference.transaction_id > wallet_transaction.transaction_id
+Ref: wallet_summary.transaction_id > wallet_transaction.transaction_id
+Ref: wallet_summary.user_id > user.user_id
+Ref: wallet_summary.wallet_id > wallet.wallet_id
+Ref: wallet_transaction.wallet_id > wallet.wallet_id

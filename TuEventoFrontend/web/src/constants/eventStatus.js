@@ -36,7 +36,7 @@ export const TRANSITION_INFO = {
     confirmLabel: 'Sí, publicar',
     confirmClass: 'bg-green-600 hover:bg-green-500 text-white',
   },
-  CANCELLED: {
+  CANCELLED: {  
     title:        '¿Cancelar este evento?',
     body:         'El evento dejará de estar disponible públicamente. Esta acción no se puede revertir. Si ya existen tickets vendidos, el proceso de reembolso deberá gestionarse por separado.',
     confirmLabel: 'Sí, cancelar evento',

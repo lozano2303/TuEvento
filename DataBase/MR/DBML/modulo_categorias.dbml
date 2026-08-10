@@ -1,0 +1,42 @@
+Enum event_status_enum {
+  draft
+  published
+  cancelled
+  finished
+}
+
+Table category {
+  category_id int [pk, increment]
+  name varchar(50) [not null]
+  description varchar(100) [not null]
+  active boolean [default: true]
+  visible boolean [default: true]
+  dad_id int [note: "auto-referencia; NULL si es categoria raiz"]
+}
+
+Table category_event {
+  category_event_id int [pk, increment]
+  category_id int [not null]
+  event_id int [not null]
+  Indexes {
+    (category_id, event_id) [unique]
+  }
+  Note: '''fix: el MER marcaba category_id y event_id como PK compuesta ademas de category_event_id como PK; se deja category_event_id como PK unica y category_id+event_id como UNIQUE.'''
+}
+
+Table event {
+  event_id int [pk, increment]
+  user_id int [not null, note: "organizador"]
+  site_id int [not null]
+  event_name varchar(100) [not null]
+  description varchar(255) [not null]
+  start_date date [not null]
+  finish_date date [not null]
+  status event_status_enum [not null, default: 'draft']
+  is_public boolean [default: true]
+  available_seats int [not null]
+}
+
+Ref: category.dad_id > category.category_id
+Ref: category_event.category_id > category.category_id
+Ref: category_event.event_id > event.event_id

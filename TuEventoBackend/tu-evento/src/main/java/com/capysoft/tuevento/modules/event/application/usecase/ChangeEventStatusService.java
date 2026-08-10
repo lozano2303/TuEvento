@@ -8,6 +8,7 @@ import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatusLog;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventStatusLogRepository;
 import com.capysoft.tuevento.modules.section.domain.model.EventSection;
 import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
@@ -28,7 +29,8 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
 
     private final EventRepository          eventRepository;
     private final EventStatusLogRepository statusLogRepository;
-    private final EventSectionRepository   eventSectionRepository; // replaces eventLayoutRepository
+    private final EventSectionRepository   eventSectionRepository;
+    private final EventMediaRepository     eventMediaRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -46,9 +48,12 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
         validateTransition(event.getStatus(), request.getNewStatus());
 
         if (request.getNewStatus() == EventStatus.PUBLISHED) {
-            // Validar contra event_section real — más significativo que solo verificar
-            // la existencia del JSONB del layout. capacity tiene @Positive en el DTO/BD,
-            // así que "existe al menos una sección" implica "tiene al menos una silla".
+            // 1. Validar que tenga al menos una imagen
+            if (eventMediaRepository.countByEventId(eventId) == 0) {
+                throw new BusinessException("EVENT_PUBLISH_NO_MEDIA",
+                        "Event must have at least one image before publishing");
+            }
+            // 2. Validar que tenga al menos una sección con sillas configurada
             List<EventSection> sections = eventSectionRepository.findAllByEventId(eventId.intValue());
             if (sections.isEmpty()) {
                 throw new BusinessException("EVENT_SECTIONS_REQUIRED",

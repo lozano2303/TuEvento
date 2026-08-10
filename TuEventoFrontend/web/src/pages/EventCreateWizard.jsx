@@ -4,12 +4,14 @@ import { createEvent } from '../services/EventService';
 import WizardStepper     from '../components/event-wizard/WizardStepper';
 import StepGeneralInfo   from '../components/event-wizard/StepGeneralInfo';
 import StepSiteSelection from '../components/event-wizard/StepSiteSelection';
+import StepEventMedia    from '../components/event-wizard/StepEventMedia';
 import BackButton        from '../components/common/BackButton';
 
 export default function EventCreateWizard() {
   const navigate = useNavigate();
 
   const [step,               setStep]               = useState(1);
+  const [createdEventId,     setCreatedEventId]     = useState(null); // se llena al terminar paso 2
   const [formData,           setFormData]           = useState({
     eventName:      '',
     description:    '',
@@ -30,6 +32,7 @@ export default function EventCreateWizard() {
 
   const handleChange = (patch) => setFormData(prev => ({ ...prev, ...patch }));
 
+  // Paso 2 → crea el evento y avanza al paso 3 (imágenes)
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setSubmitError(null);
@@ -50,12 +53,18 @@ export default function EventCreateWizard() {
 
       if (!eventId) throw new Error(response?.message ?? 'Error al crear el evento');
 
-      navigate(`/events/${eventId}/layout`);
+      setCreatedEventId(eventId);
+      setStep(3); // avanzar al paso de imágenes
     } catch (err) {
       setSubmitError(err.message ?? 'Error inesperado. Inténtalo de nuevo.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Paso 3 → termina el wizard y navega al editor de layout
+  const handleMediaFinish = () => {
+    navigate(`/events/${createdEventId}/layout`);
   };
 
   return (
@@ -81,7 +90,7 @@ export default function EventCreateWizard() {
         {/* Indicador de pasos */}
         <WizardStepper currentStep={step} />
 
-        {/* Paso 1 */}
+        {/* Paso 1 — Info general */}
         {step === 1 && (
           <StepGeneralInfo
             formData={formData}
@@ -92,7 +101,7 @@ export default function EventCreateWizard() {
           />
         )}
 
-        {/* Paso 2 */}
+        {/* Paso 2 — Sede */}
         {step === 2 && (
           <StepSiteSelection
             formData={formData}
@@ -105,6 +114,14 @@ export default function EventCreateWizard() {
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
             submitError={submitError}
+          />
+        )}
+
+        {/* Paso 3 — Imágenes (solo alcanzable después de crear el evento) */}
+        {step === 3 && createdEventId && (
+          <StepEventMedia
+            createdEventId={createdEventId}
+            onFinish={handleMediaFinish}
           />
         )}
       </div>

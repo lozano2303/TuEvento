@@ -12,6 +12,7 @@ import CodeVerification from './pages/CodeVerification';
 import EventLayoutEditor from './pages/EventLayoutEditor';
 import EventCreateWizard from './pages/EventCreateWizard';
 import EventManage from './pages/EventManage';
+import EventDetail from './pages/EventDetail';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -56,6 +57,7 @@ function AppContent() {
               <EventManage />
             </ProtectedRoute>
           } />
+          <Route path="/events/:eventId" element={<EventDetail />} />
           <Route path="/organizer-petition-form" element={<OrganizerPetitionForm />} />
           <Route path="/admin-panel" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
