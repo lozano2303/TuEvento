@@ -7,6 +7,7 @@ import com.capysoft.tuevento.modules.event.application.dto.response.EventSummary
 import com.capysoft.tuevento.modules.event.application.port.in.GetEventUseCase;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
+import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
@@ -26,6 +27,7 @@ public class GetEventService implements GetEventUseCase {
     private final EventRepository      eventRepository;
     private final CategoryEventUseCase categoryEventUseCase;
     private final GetSitePort          getSitePort;
+    private final EventMediaRepository eventMediaRepository;
 
     // ─── Authenticated queries ────────────────────────────────────────────────
 
@@ -141,6 +143,17 @@ public class GetEventService implements GetEventUseCase {
             log.warn("Could not resolve categoryId for event {}: {}", e.getEventId(), ex.getMessage());
         }
 
+        // Primera imagen del evento (media_id más bajo) — portada del listado público.
+        // null si el evento aún no tiene imágenes (datos legacy o borrador).
+        String coverUrl = null;
+        try {
+            coverUrl = eventMediaRepository.findFirstByEventId(e.getEventId())
+                    .map(media -> media.getImgUrl())
+                    .orElse(null);
+        } catch (Exception ex) {
+            log.warn("Could not resolve coverUrl for event {}: {}", e.getEventId(), ex.getMessage());
+        }
+
         return EventSummaryResponse.builder()
                 .eventId(e.getEventId())
                 .eventName(e.getEventName())
@@ -151,6 +164,7 @@ public class GetEventService implements GetEventUseCase {
                 .availableSeats(e.getAvailableSeats())
                 .siteName(siteName)
                 .categoryId(categoryId)
+                .coverUrl(coverUrl)
                 .build();
     }
 }

@@ -1,0 +1,342 @@
+Enum event_status_enum {
+  draft
+  published
+  cancelled
+  finished
+}
+
+Enum translation_status_enum {
+  draft
+  published
+  pending_review
+}
+
+Table language {
+  language_id int [pk, increment]
+  code varchar(10) [not null, unique]
+  name varchar(50) [not null]
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  created_by int
+  updated_at timestamp
+  updated_by int
+}
+
+Table event_translation {
+  translation_id int [pk, increment]
+  event_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100)
+  translated_description varchar(255)
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (event_id, language_id) [unique]
+  }
+}
+
+Table event_rating_translation {
+  translation_id int [pk, increment]
+  rating_id int [not null]
+  language_id int [not null]
+  translated_comment varchar(255)
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (rating_id, language_id) [unique]
+  }
+}
+
+Table event_comment_reply_translation {
+  translation_id int [pk, increment]
+  reply_id int [not null]
+  language_id int [not null]
+  translated_reply_text varchar(255)
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (reply_id, language_id) [unique]
+  }
+}
+
+Table notification_translation {
+  translation_id int [pk, increment]
+  notification_id int [not null]
+  language_id int [not null]
+  translated_subject varchar(100)
+  translated_body varchar(255)
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (notification_id, language_id) [unique]
+  }
+}
+
+Table seat_block_translation {
+  translation_id int [pk, increment]
+  seat_block_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (seat_block_id, language_id) [unique]
+  }
+}
+
+Table section_type_translation {
+  translation_id int [pk, increment]
+  section_type_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (section_type_id, language_id) [unique]
+  }
+}
+
+Table review_translation {
+  translation_id int [pk, increment]
+  review_id int [not null]
+  language_id int [not null]
+  translated_comment varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (review_id, language_id) [unique]
+  }
+}
+
+Table profile_translation {
+  translation_id int [pk, increment]
+  profile_id int [not null]
+  language_id int [not null]
+  translated_bio varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (profile_id, language_id) [unique]
+  }
+}
+
+Table category_translation {
+  translation_id int [pk, increment]
+  category_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100) [not null]
+  translated_description varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (category_id, language_id) [unique]
+  }
+}
+
+Table channel_translation {
+  translation_id int [pk, increment]
+  channel_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100)
+  translated_description varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (channel_id, language_id) [unique]
+  }
+}
+
+Table notification_type_translation {
+  translation_id int [pk, increment]
+  notification_type_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100) [not null]
+  translated_description varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (notification_type_id, language_id) [unique]
+  }
+}
+
+Table theme_translation {
+  translation_id int [pk, increment]
+  theme_id int [not null]
+  language_id int [not null]
+  translated_name varchar(100) [not null]
+  translated_description varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (theme_id, language_id) [unique]
+  }
+}
+
+Table module_translation {
+  translation_id int [pk, increment]
+  module varchar(50) [not null, note: "fix: en el MER venia marcada como PK compuesta junto a translation_id; se deja como columna normal + UNIQUE(module, language_id)"]
+  language_id int [not null]
+  translated_name varchar(100) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (module, language_id) [unique]
+  }
+}
+
+Table action_translation {
+  translation_id int [pk, increment]
+  action varchar(100) [not null, note: "fix: mismo caso que module_translation.module"]
+  language_id int [not null]
+  translated_description varchar(255) [not null]
+  source varchar(50) [not null]
+  status translation_status_enum [not null, default: 'draft']
+  Indexes {
+    (action, language_id) [unique]
+  }
+}
+
+Table event {
+  event_id int [pk, increment]
+  user_id int [not null, note: "organizador"]
+  site_id int [not null]
+  event_name varchar(100) [not null]
+  description varchar(255) [not null]
+  start_date date [not null]
+  finish_date date [not null]
+  status event_status_enum [not null, default: 'draft']
+  is_public boolean [default: true]
+  available_seats int [not null]
+}
+
+Table event_rating {
+  rating_id int [pk, increment]
+  event_id int [not null]
+  user_id int [not null]
+  rating int [not null, note: "CHECK (rating BETWEEN 1 AND 5)"]
+  comment text [not null]
+  is_visible boolean [default: true]
+  created_at timestamp [default: `now()`]
+  Indexes {
+    (event_id, user_id) [unique]
+  }
+}
+
+Table profile {
+  profile_id int [pk, increment]
+  user_id int [not null, unique, note: "1:1 con user"]
+  city_id int [not null]
+  full_name varchar(100) [not null]
+  photo_url varchar(255) [not null]
+  bio varchar(255)
+}
+
+Table category {
+  category_id int [pk, increment]
+  name varchar(50) [not null]
+  description varchar(100) [not null]
+  active boolean [default: true]
+  visible boolean [default: true]
+  dad_id int [note: "auto-referencia; NULL si es categoria raiz"]
+}
+
+Table notification {
+  notification_id int [pk, increment]
+  channel_id int [not null]
+  notification_type_id int [not null]
+  event_id int [note: "opcional: no toda notificacion esta ligada a un evento"]
+  subject varchar(150) [not null]
+  body text [not null]
+  sent_at timestamp
+}
+
+Table channel {
+  channel_id int [pk, increment]
+  name varchar(50) [not null]
+  description varchar(100) [not null]
+  active boolean [default: true]
+  config jsonb
+}
+
+Table review {
+  review_id int [pk, increment]
+  user_id int [not null]
+  event_id int [not null]
+  rating int [not null, note: "CHECK (rating BETWEEN 1 AND 5)"]
+  comment text [not null]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  Indexes {
+    (user_id, event_id) [unique]
+  }
+  Note: '''nota: la entidad "review" y "event_rating" describen lo mismo (usuario califica evento) en modulos distintos del MER original; se recomienda unificarlas en una sola tabla antes de implementar la BD.'''
+}
+
+Table event_comment_reply {
+  reply_id int [pk, increment]
+  parent_reply_id int [note: "auto-referencia; NULL si es respuesta de primer nivel"]
+  rating_id int [not null]
+  user_id int [not null]
+  reply_text text [not null]
+  is_visible boolean [default: true]
+  created_at timestamp [default: `now()`]
+}
+
+Table section_type {
+  section_type_id int [pk, increment]
+  name varchar(100) [not null]
+}
+
+Table seat_block {
+  seat_block_id int [pk, increment]
+  event_section_id int [not null]
+  name varchar(100) [not null]
+  capacity int [not null]
+}
+
+Table theme {
+  theme_id int [pk, increment]
+  name varchar(100) [not null]
+  description varchar(255) [not null]
+  default_palette jsonb
+  created_at timestamp [default: `now()`]
+  created_by int
+}
+
+Table notification_type {
+  notification_type_id int [pk, increment]
+  name varchar(50) [not null]
+  description varchar(100) [not null]
+  active boolean [default: true]
+}
+
+Ref: action_translation.language_id > language.language_id
+Ref: category.dad_id > category.category_id
+Ref: category_translation.category_id > category.category_id
+Ref: category_translation.language_id > language.language_id
+Ref: channel_translation.channel_id > channel.channel_id
+Ref: channel_translation.language_id > language.language_id
+Ref: event_comment_reply.parent_reply_id > event_comment_reply.reply_id
+Ref: event_comment_reply.rating_id > event_rating.rating_id
+Ref: event_comment_reply_translation.language_id > language.language_id
+Ref: event_comment_reply_translation.reply_id > event_comment_reply.reply_id
+Ref: event_rating.event_id > event.event_id
+Ref: event_rating_translation.language_id > language.language_id
+Ref: event_rating_translation.rating_id > event_rating.rating_id
+Ref: event_translation.event_id > event.event_id
+Ref: event_translation.language_id > language.language_id
+Ref: module_translation.language_id > language.language_id
+Ref: notification.channel_id > channel.channel_id
+Ref: notification.event_id > event.event_id
+Ref: notification.notification_type_id > notification_type.notification_type_id
+Ref: notification_translation.language_id > language.language_id
+Ref: notification_translation.notification_id > notification.notification_id
+Ref: notification_type_translation.language_id > language.language_id
+Ref: notification_type_translation.notification_type_id > notification_type.notification_type_id
+Ref: profile_translation.language_id > language.language_id
+Ref: profile_translation.profile_id > profile.profile_id
+Ref: review.event_id > event.event_id
+Ref: review_translation.language_id > language.language_id
+Ref: review_translation.review_id > review.review_id
+Ref: seat_block_translation.language_id > language.language_id
+Ref: seat_block_translation.seat_block_id > seat_block.seat_block_id
+Ref: section_type_translation.language_id > language.language_id
+Ref: section_type_translation.section_type_id > section_type.section_type_id
+Ref: theme_translation.language_id > language.language_id
+Ref: theme_translation.theme_id > theme.theme_id

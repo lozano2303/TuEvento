@@ -1,0 +1,66 @@
+Enum event_status_enum {
+  draft
+  published
+  cancelled
+  finished
+}
+
+Table department {
+  department_id int [pk, increment]
+  name varchar(100) [not null]
+  code varchar(10)
+}
+
+Table city {
+  city_id int [pk, increment]
+  department_id int [not null]
+  name varchar(100) [not null]
+  code varchar(10)
+}
+
+Table site {
+  site_id int [pk, increment]
+  city_id int [not null]
+  name varchar(150) [not null]
+  address varchar(200) [not null]
+  capacity int
+  latitude decimal(9,6)
+  longitude decimal(9,6)
+}
+
+Table event {
+  event_id int [pk, increment]
+  user_id int [not null, note: "organizador"]
+  site_id int [not null]
+  event_name varchar(100) [not null]
+  description varchar(255) [not null]
+  start_date date [not null]
+  finish_date date [not null]
+  status event_status_enum [not null, default: 'draft']
+  is_public boolean [default: true]
+  available_seats int [not null]
+}
+
+Table profile {
+  profile_id int [pk, increment]
+  user_id int [not null, unique, note: "1:1 con user"]
+  city_id int [not null]
+  full_name varchar(100) [not null]
+  photo_url varchar(255) [not null]
+  bio varchar(255)
+}
+
+Table user {
+  user_id int [pk, increment]
+  user_status_id int [not null, note: "FK obligatoria: todo usuario nace con un estado (ej. pending_activation)"]
+  role_id int [not null]
+  alias varchar(50) [not null, unique]
+  activated boolean [default: false]
+}
+
+Ref: city.department_id > department.department_id
+Ref: event.site_id > site.site_id
+Ref: event.user_id > user.user_id
+Ref: profile.city_id > city.city_id
+Ref: profile.user_id > user.user_id
+Ref: site.city_id > city.city_id

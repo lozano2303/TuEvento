@@ -1,0 +1,77 @@
+Enum delivered_status_enum {
+  pending
+  sent
+  delivered
+  failed
+  read
+}
+
+Enum event_status_enum {
+  draft
+  published
+  cancelled
+  finished
+}
+
+Table notification_type {
+  notification_type_id int [pk, increment]
+  name varchar(50) [not null]
+  description varchar(100) [not null]
+  active boolean [default: true]
+}
+
+Table notification {
+  notification_id int [pk, increment]
+  channel_id int [not null]
+  notification_type_id int [not null]
+  event_id int [note: "opcional: no toda notificacion esta ligada a un evento"]
+  subject varchar(150) [not null]
+  body text [not null]
+  sent_at timestamp
+}
+
+Table channel {
+  channel_id int [pk, increment]
+  name varchar(50) [not null]
+  description varchar(100) [not null]
+  active boolean [default: true]
+  config jsonb
+}
+
+Table notification_user {
+  notification_user_id int [pk, increment]
+  notification_id int [not null]
+  user_id int [not null]
+  email_address varchar(255) [not null]
+  delivered_status delivered_status_enum [not null, default: 'pending']
+  error_message text
+  read_at timestamp
+}
+
+Table user {
+  user_id int [pk, increment]
+  user_status_id int [not null, note: "FK obligatoria: todo usuario nace con un estado (ej. pending_activation)"]
+  role_id int [not null]
+  alias varchar(50) [not null, unique]
+  activated boolean [default: false]
+}
+
+Table event {
+  event_id int [pk, increment]
+  user_id int [not null, note: "organizador"]
+  site_id int [not null]
+  event_name varchar(100) [not null]
+  description varchar(255) [not null]
+  start_date date [not null]
+  finish_date date [not null]
+  status event_status_enum [not null, default: 'draft']
+  is_public boolean [default: true]
+  available_seats int [not null]
+}
+
+Ref: event.user_id > user.user_id
+Ref: notification.channel_id > channel.channel_id
+Ref: notification.event_id > event.event_id
+Ref: notification.notification_type_id > notification_type.notification_type_id
+Ref: notification_user.notification_id > notification.notification_id
+Ref: notification_user.user_id > user.user_id
