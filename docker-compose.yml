@@ -90,6 +90,8 @@ services:
     restart: unless-stopped
     ports:
       - "8001:8000"
+    environment:
+      - THRESHOLD=0.4
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -162,7 +164,7 @@ services:
       redis:
         condition: service_started
       nsfw-classifier:
-        condition: service_healthy
+        condition: service_started
     networks:
       - tuevento-network
 

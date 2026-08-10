@@ -68,6 +68,8 @@ public class GeneratePublicUrlUseCase implements GeneratePublicUrlPort {
         if (auth != null && auth.getPrincipal() instanceof SecurityUser securityUser) {
             return securityUser.getUserId();
         }
-        return null;
+        // System-generated URL (no interactive user in context, e.g. batch/admin list).
+        // Using 0 as a sentinel for "system" so the NOT NULL constraint is satisfied.
+        return 0;
     }
 }
