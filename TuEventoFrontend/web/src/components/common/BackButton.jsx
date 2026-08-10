@@ -2,20 +2,18 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 /**
- * BackButton — botón inteligente de "volver".
- * Si hay historial dentro de la app (window.history.state.idx > 0), retrocede.
- * Si el usuario entró directo por URL (sin historial), navega al fallback.
- * Esto evita sacar al usuario de Tu Evento si no tiene historial previo.
+ * BackButton — botón que navega siempre al fallback fijo.
+ *
+ * Se usa en flujos donde el destino de "volver" es predecible y fijo
+ * independientemente de cómo llegó el usuario (wizard, link directo, etc.).
+ * No usa navigate(-1) porque el historial del browser puede llevar a pantallas
+ * inesperadas (ej. wizard → editor → atrás llevaría al wizard, no a "Mis eventos").
  */
 export default function BackButton({ fallback = '/', label = 'Volver' }) {
   const navigate = useNavigate();
 
   const handleBack = () => {
-    if (window.history.state && window.history.state.idx > 0) {
-      navigate(-1);
-    } else {
-      navigate(fallback);
-    }
+    navigate(fallback);
   };
 
   return (
