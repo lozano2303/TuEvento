@@ -18,8 +18,8 @@ spring:
       mail:
         smtp:
           auth: true
-starttls:
-             enable: true
+          starttls:
+            enable: true
 
 app:
   jwt:
@@ -33,6 +33,11 @@ app:
     secret-key: ${MINIO_ROOT_PASSWORD}
     region: us-east-1
     bucket-default: tuevento
+
+minio:
+  # Public-facing URL embedded in presigned URLs sent to the browser.
+  # Must differ from app.storage.endpoint when MinIO runs inside Docker.
+  public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
   oauth:
     google:
       client-id: ${GOOGLE_CLIENT_ID}

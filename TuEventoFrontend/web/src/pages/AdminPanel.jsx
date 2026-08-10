@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, User, Settings, ChevronDown, X } from 'lucide-react';
-import { rejectOrganizerRequest } from '../services/OrganizerPetitionService';
+import { approveOrganizerRequest, rejectOrganizerRequest } from '../services/OrganizerPetitionService';
 import { useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
@@ -15,6 +15,7 @@ export default function AdminPanel() {
   const [documentUrl, setDocumentUrl] = useState(null);
   const [documentLoading, setDocumentLoading] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const navigate = useNavigate();
 
@@ -143,19 +144,43 @@ export default function AdminPanel() {
     fetchDocumentUrl(req);
   };
 
+  const handleApprove = async (req) => {
+    if (!req || req.status !== 'PENDING') return;
+
+    const confirmed = window.confirm(
+      `¿Aprobar la solicitud de ${req.fullName || 'este usuario'}? El usuario recibirá el rol de Organizador al iniciar sesión nuevamente.`
+    );
+    if (!confirmed) return;
+
+    setActionLoading(true);
+    setError(null);
+    try {
+      await approveOrganizerRequest(req.organizerPetitionId);
+      closeDocumentModal();
+      await fetchRequests();
+    } catch (err) {
+      setError(err.message || 'Error al aprobar solicitud');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleReject = async (req) => {
     if (!req) return;
 
     const confirmed = window.confirm(`¿Rechazar la solicitud de ${req.fullName || 'este usuario'}? El usuario podrá enviar un nuevo documento.`);
     if (!confirmed) return;
 
+    setActionLoading(true);
+    setError(null);
     try {
-      setError(null);
       await rejectOrganizerRequest(req.organizerPetitionId);
       closeDocumentModal();
       await fetchRequests();
     } catch (err) {
       setError(err.message || 'Error al rechazar solicitud');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -377,9 +402,9 @@ export default function AdminPanel() {
                 {/* Modal Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7f13ec] to-[#5a189a] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7f13ec] to-[#5a189a] flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
                       {selectedRequest.profilePicture
-                        ? <img src={selectedRequest.profilePicture} alt={selectedRequest.fullName} className="w-full h-full object-cover rounded-full" />
+                        ? <img src={selectedRequest.profilePicture} alt={selectedRequest.fullName} className="w-full h-full object-cover" />
                         : selectedRequest.fullName?.charAt(0).toUpperCase() || '?'
                       }
                     </div>
@@ -462,16 +487,21 @@ export default function AdminPanel() {
                 {/* Actions */}
                 <div className="px-6 py-5 flex gap-3">
                   <button
-                    disabled
-                    className="flex-1 py-2.5 rounded-full text-sm font-bold bg-emerald-500/10 text-emerald-400/60 border border-emerald-500/10 cursor-not-allowed transition-all"
+                    onClick={() => handleApprove(selectedRequest)}
+                    disabled={selectedRequest.status !== 'PENDING' || actionLoading}
+                    className={`flex-1 py-2.5 rounded-full text-sm font-bold border transition-all
+                      ${selectedRequest.status === 'PENDING' && !actionLoading
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500 hover:text-white hover:border-emerald-500'
+                        : 'bg-emerald-500/10 text-emerald-400/60 border-emerald-500/10 cursor-not-allowed'
+                      }`}
                   >
-                    Aceptar
+                    {actionLoading ? 'Procesando...' : 'Aceptar'}
                   </button>
                   <button
                     onClick={() => handleReject(selectedRequest)}
-                    disabled={selectedRequest.status !== 'PENDING'}
+                    disabled={selectedRequest.status !== 'PENDING' || actionLoading}
                     className={`flex-1 py-2.5 rounded-full text-sm font-bold border transition-all
-                      ${selectedRequest.status === 'PENDING'
+                      ${selectedRequest.status === 'PENDING' && !actionLoading
                         ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500 hover:text-white hover:border-rose-500'
                         : 'bg-rose-500/10 text-rose-400/60 border-rose-500/10 cursor-not-allowed'
                       }`}

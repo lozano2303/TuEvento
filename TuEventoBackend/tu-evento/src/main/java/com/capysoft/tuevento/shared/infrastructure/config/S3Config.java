@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.shared.infrastructure.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -8,6 +9,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.net.URI;
@@ -40,6 +42,9 @@ public class S3Config {
     @Value("${app.storage.region}")
     private String region;
 
+    @Value("${app.storage.bucket-default:tuevento}")
+    private String bucketDefault;
+
     @Bean
     public S3Client s3Client() {
         return S3Client.builder()
@@ -51,6 +56,19 @@ public class S3Config {
                         .pathStyleAccessEnabled(true) // required for MinIO
                         .build())
                 .build();
+    }
+
+    @Bean
+    public ApplicationRunner bucketInitializer(S3Client s3Client) {
+        return args -> {
+            boolean exists = s3Client.listBuckets()
+                    .buckets().stream()
+                    .anyMatch(b -> b.name().equals(bucketDefault));
+            if (!exists) {
+                s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketDefault).build());
+                System.out.println("Bucket '" + bucketDefault + "' creado automáticamente en MinIO.");
+            }
+        };
     }
 
     @Bean
