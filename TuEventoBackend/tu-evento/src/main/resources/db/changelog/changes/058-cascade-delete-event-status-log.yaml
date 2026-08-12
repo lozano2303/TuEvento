@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 058-cascade-delete-event-status-log
+      author: capysoft
+      comment: >
+        Agrega ON DELETE CASCADE a fk_event_status_log_event.
+        Sin este cascade, eliminar un evento con historial de estados falla con un error de
+        violación de FK (23503). Se recrea la constraint sin modificar el changeset original
+        040 para no romper el checksum de Liquibase en entornos que ya corrieron las migraciones.
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: event_status_log
+            constraintName: fk_event_status_log_event
+        - addForeignKeyConstraint:
+            baseTableName: event_status_log
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_event_status_log_event
+            onDelete: CASCADE
