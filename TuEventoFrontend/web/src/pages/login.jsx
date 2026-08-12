@@ -64,7 +64,7 @@ export default function Login() {
   }, []);
 
   const clearAuth = () => {
-    ['token', 'userID', 'alias', 'userEmail', 'fullName', 'pendingActivationUserID', 'adminLoggedIn']
+    ['token', 'refreshToken', 'userID', 'alias', 'userEmail', 'fullName', 'pendingActivationUserID', 'adminLoggedIn']
       .forEach(k => localStorage.removeItem(k));
   };
 
@@ -195,6 +195,7 @@ export default function Login() {
         const result = await loginUser(formData.email, formData.password);
         if (result.success) {
           localStorage.setItem('token', result.data.token);
+          localStorage.setItem('refreshToken', result.data.refreshToken ?? '');
           localStorage.setItem('userID', result.data.userID);
           localStorage.setItem('alias', result.data.alias);
           localStorage.setItem('userEmail', formData.email);

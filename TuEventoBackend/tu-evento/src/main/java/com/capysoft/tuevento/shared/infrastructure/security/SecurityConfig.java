@@ -25,6 +25,7 @@ import org.springframework.core.Ordered;
 
 import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -93,6 +94,25 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        // 401 — sin autenticación válida (token ausente, inválido o expirado)
+                        // El interceptor del frontend escucha este código para disparar el refresh.
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json; charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"success\":false,\"message\":\"Authentication required\",\"data\":null}");
+                        })
+                        // 403 — autenticado pero sin el rol/autoridad requerida.
+                        // El frontend NO debe disparar refresh en este caso — es un problema de permisos,
+                        // no de sesión expirada.
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json; charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"success\":false,\"message\":\"Access denied\",\"data\":null}");
+                        })
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
