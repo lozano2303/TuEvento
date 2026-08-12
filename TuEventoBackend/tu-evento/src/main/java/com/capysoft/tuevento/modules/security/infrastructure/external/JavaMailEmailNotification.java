@@ -37,26 +37,13 @@ public class JavaMailEmailNotification implements EmailNotificationPort {
                         <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
                             <p style="font-size: 24px; font-weight: bold; color: #6b21a8; letter-spacing: 3px; text-align: center;">%s</p>
                         </div>
-                        <p>Or click the button below to activate your account:</p>
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="http://localhost:3000/verification?email=%s" 
-                               style="background: linear-gradient(to right, #7c3aed, #9333ea); 
-                                      color: white; 
-                                      padding: 15px 30px; 
-                                      text-decoration: none; 
-                                      border-radius: 8px; 
-                                      font-weight: bold; 
-                                      display: inline-block;">
-                                ACTIVAR CUENTA
-                            </a>
-                        </div>
                         <p style="color: #666; font-size: 14px;">This code expires in 24 hours.</p>
                         <p style="color: #666; font-size: 14px;">If you did not create an account, you can safely ignore this email.</p>
                         <p style="color: #666; font-size: 14px; margin-top: 30px;">— The Tu Evento Team</p>
                     </div>
                 </body>
                 </html>
-                """.formatted(alias, activationCode, toEmail);
+                """.formatted(alias, activationCode);
             
             helper.setText(htmlContent, true);
             mailSender.send(message);

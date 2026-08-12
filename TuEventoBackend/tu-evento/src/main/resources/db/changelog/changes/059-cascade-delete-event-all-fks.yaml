@@ -1,0 +1,135 @@
+databaseChangeLog:
+  - changeSet:
+      id: 059-cascade-delete-event-all-fks
+      author: capysoft
+      comment: >
+        Agrega ON DELETE CASCADE a todas las FKs que referencian event (directa o transitivamente),
+        para que DELETE /events/{id} elimine limpiamente todas las tablas hijas sin 500.
+
+        Tablas cubiertas (nivel 1 — directas a event):
+          event_layout, event_media, event_media_log, event_rating, event_section
+
+        Tablas cubiertas (nivel 2 — hijas de tablas del nivel 1):
+          event_comment_reply (hija de event_rating)
+          seat_block, seat (hijas de event_section)
+          seat_log (hija de seat)
+
+        Excluido intencionalmente:
+          category_event.fk_category_event_event — se limpia manualmente en código
+          (CategoryEventUseCaseImpl.removeAllCategoriesFromEvent) con lógica de negocio propia.
+          Agregar cascade aquí duplicaría la responsabilidad.
+
+        Excluido intencionalmente:
+          event_status_log.fk_event_status_log_event — ya corregido en changeset 058.
+
+      changes:
+
+        # ── Nivel 1: FKs directas a event ──────────────────────────────────────
+
+        - dropForeignKeyConstraint:
+            baseTableName: event_layout
+            constraintName: fk_event_layout_event
+        - addForeignKeyConstraint:
+            baseTableName: event_layout
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_event_layout_event
+            onDelete: CASCADE
+
+        - dropForeignKeyConstraint:
+            baseTableName: event_media
+            constraintName: fk_event_media_event
+        - addForeignKeyConstraint:
+            baseTableName: event_media
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_event_media_event
+            onDelete: CASCADE
+
+        - dropForeignKeyConstraint:
+            baseTableName: event_media_log
+            constraintName: fk_event_media_log_event
+        - addForeignKeyConstraint:
+            baseTableName: event_media_log
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_event_media_log_event
+            onDelete: CASCADE
+
+        - dropForeignKeyConstraint:
+            baseTableName: event_rating
+            constraintName: fk_event_rating_event
+        - addForeignKeyConstraint:
+            baseTableName: event_rating
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_event_rating_event
+            onDelete: CASCADE
+
+        - dropForeignKeyConstraint:
+            baseTableName: event_section
+            constraintName: fk_event_section_event
+        - addForeignKeyConstraint:
+            baseTableName: event_section
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_event_section_event
+            onDelete: CASCADE
+
+        # ── Nivel 2: hija de event_rating ──────────────────────────────────────
+        # event_comment_reply → event_rating (cascade transitivo)
+
+        - dropForeignKeyConstraint:
+            baseTableName: event_comment_reply
+            constraintName: fk_event_comment_reply_rating
+        - addForeignKeyConstraint:
+            baseTableName: event_comment_reply
+            baseColumnNames: rating_id
+            referencedTableName: event_rating
+            referencedColumnNames: rating_id
+            constraintName: fk_event_comment_reply_rating
+            onDelete: CASCADE
+
+        # ── Nivel 2: hijas de event_section ────────────────────────────────────
+        # seat_block → event_section, seat → event_section
+
+        - dropForeignKeyConstraint:
+            baseTableName: seat_block
+            constraintName: fk_seat_block_event_section
+        - addForeignKeyConstraint:
+            baseTableName: seat_block
+            baseColumnNames: event_section_id
+            referencedTableName: event_section
+            referencedColumnNames: event_section_id
+            constraintName: fk_seat_block_event_section
+            onDelete: CASCADE
+
+        - dropForeignKeyConstraint:
+            baseTableName: seat
+            constraintName: fk_seat_event_section
+        - addForeignKeyConstraint:
+            baseTableName: seat
+            baseColumnNames: event_section_id
+            referencedTableName: event_section
+            referencedColumnNames: event_section_id
+            constraintName: fk_seat_event_section
+            onDelete: CASCADE
+
+        # ── Nivel 3: hija de seat ───────────────────────────────────────────────
+        # seat_log → seat (cascade transitivo para que seat pueda eliminarse)
+
+        - dropForeignKeyConstraint:
+            baseTableName: seat_log
+            constraintName: fk_seat_log_seat
+        - addForeignKeyConstraint:
+            baseTableName: seat_log
+            baseColumnNames: seat_id
+            referencedTableName: seat
+            referencedColumnNames: seat_id
+            constraintName: fk_seat_log_seat
+            onDelete: CASCADE
