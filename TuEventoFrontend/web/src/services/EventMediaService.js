@@ -1,3 +1,5 @@
+import { httpRequest } from './httpClient.js';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 /**
@@ -18,12 +20,10 @@ export const getEventMedia = async (eventId) => {
  * Devuelve ApiResponse<EventMediaResponse>
  */
 export const uploadEventMedia = async (eventId, imageFile) => {
-  const token = localStorage.getItem('token');
   const formData = new FormData();
   formData.append('file', imageFile); // campo correcto según EventMediaController
-  const res = await fetch(`${API_URL}/events/${eventId}/media`, {
+  const res = await httpRequest(`${API_URL}/events/${eventId}/media`, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` },
     body: formData,
   });
   const data = await res.json();

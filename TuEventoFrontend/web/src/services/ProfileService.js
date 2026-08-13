@@ -1,3 +1,5 @@
+import { httpRequest } from './httpClient.js';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 const CONTENT_POLICY_MESSAGE = 'No se permiten imágenes con contenido adulto, pornografía, hentai, violencia, armas, gore o contenido sexual.';
@@ -11,10 +13,8 @@ const normalizeUploadError = (message) => {
 };
 
 export const getProfileByUserId = async (userId) => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`${API_URL}/profiles/user/${userId}`, {
+  const response = await httpRequest(`${API_URL}/profiles/user/${userId}`, {
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -28,11 +28,9 @@ export const getProfileByUserId = async (userId) => {
 };
 
 export const createProfile = async (profileData) => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`${API_URL}/profiles`, {
+  const response = await httpRequest(`${API_URL}/profiles`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(profileData),
@@ -42,11 +40,9 @@ export const createProfile = async (profileData) => {
 };
 
 export const updateProfile = async (profileId, profileData) => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`${API_URL}/profiles/${profileId}`, {
+  const response = await httpRequest(`${API_URL}/profiles/${profileId}`, {
     method: 'PUT',
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(profileData),
@@ -58,16 +54,12 @@ export const updateProfile = async (profileId, profileData) => {
 };
 
 export const uploadProfilePicture = async (file) => {
-  const token = localStorage.getItem('token');
   const formData = new FormData();
   formData.append('file', file, file.name);
   formData.append('categoryCode', 'PROFILE_PICTURE');
 
-  const response = await fetch(`${API_URL}/storage/upload`, {
+  const response = await httpRequest(`${API_URL}/storage/upload`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
     body: formData,
   });
 
@@ -78,13 +70,11 @@ export const uploadProfilePicture = async (file) => {
 };
 
 export const getProfilePictureUrl = async (storedFileId) => {
-  const token = localStorage.getItem('token');
   // Use /url endpoint to get a fresh presigned URL (60-min expiry) instead of
   // the stale static URL stored in the DB, which points to the internal MinIO
   // host and is not accessible from the browser.
-  const response = await fetch(`${API_URL}/storage/${storedFileId}/url`, {
+  const response = await httpRequest(`${API_URL}/storage/${storedFileId}/url`, {
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });

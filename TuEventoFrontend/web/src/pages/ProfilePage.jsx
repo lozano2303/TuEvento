@@ -3,6 +3,7 @@ import Footer from '../layouts/Footer';
 import { useTheme } from '../context/ThemeContext';
 import { getThemes, activateTheme } from '../services/themeService';
 import { getProfileByUserId, getProfilePictureUrl, updateProfile, uploadProfilePicture } from '../services/ProfileService';
+import { performLogout } from '../services/httpClient';
 import { AlertCircle, Camera, CheckCircle, Info, Loader2 } from 'lucide-react';
 import Tooltip from '../components/common/Tooltip';
 
@@ -205,8 +206,8 @@ const ProfilePage = () => {
     }, 1000);
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
+  const handleLogout = async () => {
+    await performLogout();
     window.location.href = '/login';
   };
 
@@ -430,7 +431,7 @@ const ProfilePage = () => {
               <div className="space-y-3">
                 {themes.length === 0 && (
                   <p className="text-textMuted text-sm text-center py-4">
-                    {localStorage.getItem('token') ? 'Cargando temas...' : 'Inicia sesión para cambiar el tema'}
+                    Cargando temas...
                   </p>
                 )}
                 {themes.map((theme) => {
