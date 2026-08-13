@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { ThemeProvider } from './context/ThemeContext'
 import Login from './pages/login'
 import LadingPage from './pages/ladingPage'
@@ -74,6 +75,21 @@ function AppContent() {
 }
 
 function App() {
+  // Sincronización de logout entre pestañas
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      // El evento storage solo se dispara en OTRAS pestañas, no en la que hizo el cambio.
+      // Si el token fue removido (logout) en otra pestaña, redirigir a /login inmediatamente.
+      if (event.key === 'token' && event.newValue === null) {
+        // Logout detectado en otra pestaña — forzar redirección
+        window.location.href = '/login';
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   return (
     <BrowserRouter>
       <ThemeProvider>
