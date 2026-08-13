@@ -61,13 +61,13 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         String token = extractTokenFromQuery(request);
 
         if (token == null) {
-            log.warn("WebSocket handshake rejected: no token provided. URI: {}", request.getURI());
+            log.warn("WebSocket handshake rejected: no token provided");
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
 
         if (!tokenGenerator.isTokenValid(token)) {
-            log.warn("WebSocket handshake rejected: invalid token. URI: {}", request.getURI());
+            log.warn("WebSocket handshake rejected: invalid or expired token");
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
@@ -79,7 +79,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                 log.debug("WebSocket handshake accepted for userId={}", userId);
             },
             () -> {
-                log.warn("WebSocket handshake: token valid but no userId claim found");
+                log.warn("WebSocket handshake rejected: token valid but no userId claim found");
                 response.setStatusCode(HttpStatus.UNAUTHORIZED);
             }
         );
