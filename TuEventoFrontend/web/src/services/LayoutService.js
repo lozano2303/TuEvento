@@ -1,3 +1,5 @@
+import { httpRequest } from './httpClient.js';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 /**
@@ -22,10 +24,9 @@ export const getLayout = async (eventId) => {
  * porque el backend espera { layoutData: string }.
  */
 export const saveLayout = async (eventId, layoutDataObject) => {
-  const token = localStorage.getItem('token');
-  const res = await fetch(`${API_URL}/events/${eventId}/layout`, {
+  const res = await httpRequest(`${API_URL}/events/${eventId}/layout`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ layoutData: JSON.stringify(layoutDataObject) }),
   });
   const data = await res.json();

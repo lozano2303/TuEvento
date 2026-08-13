@@ -3,6 +3,7 @@ import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight } from "lucide-react";
 import { loginUser, registerUser, resendActivationCode } from "../services/Login.js";
 import { getProfileByUserId } from "../services/ProfileService.js";
 import { useTheme } from "../context/ThemeContext";
+import { performLogout } from "../services/httpClient.js";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 
@@ -63,9 +64,8 @@ export default function Login() {
     }
   }, []);
 
-  const clearAuth = () => {
-    ['token', 'userID', 'alias', 'userEmail', 'fullName', 'pendingActivationUserID', 'adminLoggedIn']
-      .forEach(k => localStorage.removeItem(k));
+  const clearAuth = async () => {
+    await performLogout();
   };
 
   // ─── Calcular fortaleza de contraseña ────────────────────────────────────
@@ -152,7 +152,11 @@ export default function Login() {
     setView('verification');
   };
   const handleContinueToHome = () => { setShowLoginSuccessNotification(false); window.location.href = '/'; };
-  const handleLogout = () => { clearAuth(); setUserData(null); setView('login'); };
+  const handleLogout = async () => { 
+    await clearAuth(); 
+    setUserData(null); 
+    setView('login'); 
+  };
 
   const handleResendActivation = async () => {
     if (!formData.email || !formData.email.trim()) {
@@ -195,6 +199,7 @@ export default function Login() {
         const result = await loginUser(formData.email, formData.password);
         if (result.success) {
           localStorage.setItem('token', result.data.token);
+          localStorage.setItem('refreshToken', result.data.refreshToken ?? '');
           localStorage.setItem('userID', result.data.userID);
           localStorage.setItem('alias', result.data.alias);
           localStorage.setItem('userEmail', formData.email);

@@ -1,10 +1,10 @@
+import { httpRequest } from './httpClient.js';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export const getActivePalette = async () => {
-  const token = localStorage.getItem('token');
-  if (!token) return null;
-  const response = await fetch(`${API_URL}/themes/my-active`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const response = await httpRequest(`${API_URL}/themes/my-active`, {
+    headers: { 'Content-Type': 'application/json' },
   });
   if (!response.ok) throw new Error(`Error fetching theme: ${response.status}`);
   const json = await response.json();
@@ -19,10 +19,9 @@ export const getThemes = async () => {
 };
 
 export const activateTheme = async (themeId) => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`${API_URL}/themes/activate/${themeId}`, {
+  const response = await httpRequest(`${API_URL}/themes/activate/${themeId}`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { 'Content-Type': 'application/json' }
   });
   if (!response.ok) throw new Error('Error activating theme');
   return await response.json();

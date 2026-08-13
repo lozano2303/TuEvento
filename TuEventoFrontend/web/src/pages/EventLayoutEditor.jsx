@@ -46,6 +46,7 @@ export default function EventLayoutEditor() {
   const [sectionTypes,  setSectionTypes]  = useState(null);
   const [maxSeats,      setMaxSeats]      = useState(null);
   const [eventStatus,   setEventStatus]   = useState(null); // 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED'
+  const [eventOwnerId,  setEventOwnerId]  = useState(null);
   const [isSaving,      setIsSaving]      = useState(false);
   const [saveMsg,       setSaveMsg]       = useState(null);
   const [loadError,     setLoadError]     = useState(null);
@@ -101,6 +102,17 @@ export default function EventLayoutEditor() {
         const eventData = eventRes.data;
         setMaxSeats(eventData?.availableSeats ?? null);
         setEventStatus(eventData?.status ?? null);
+        setEventOwnerId(eventData?.userId ?? null);
+
+        // Verificar propiedad del evento (solo UX, backend valida de verdad)
+        const currentUserId = localStorage.getItem('userID');
+        const currentRole = localStorage.getItem('role');
+        if (eventData?.userId && currentUserId && currentRole !== 'ADMIN') {
+          if (String(eventData.userId) !== String(currentUserId)) {
+            setLoadError('No tienes permiso para editar el layout de este evento');
+            return;
+          }
+        }
 
         const stRes = await SectionTypeService.getAllSectionTypes();
         setSectionTypes(stRes.data ?? []);

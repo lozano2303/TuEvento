@@ -1,13 +1,11 @@
+import { httpRequest } from './httpClient.js';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export const createPetition = async (formData) => {
   try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/users/organizer-request`, {
+    const response = await httpRequest(`${API_URL}/users/organizer-request`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
       body: formData,
     });
 
@@ -30,11 +28,9 @@ export const createPetition = async (formData) => {
 
 export const approveOrganizerRequest = async (petitionId) => {
   try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/admin/organizer-requests/${petitionId}/approve`, {
+    const response = await httpRequest(`${API_URL}/admin/organizer-requests/${petitionId}/approve`, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
@@ -55,11 +51,9 @@ export const approveOrganizerRequest = async (petitionId) => {
 
 export const rejectOrganizerRequest = async (petitionId) => {
   try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/admin/organizer-requests/${petitionId}/reject`, {
+    const response = await httpRequest(`${API_URL}/admin/organizer-requests/${petitionId}/reject`, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
@@ -82,10 +76,8 @@ export const rejectOrganizerRequest = async (petitionId) => {
 
 export const getPetitionStatus = async () => {
   try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/users/organizer-petition`, {
+    const response = await httpRequest(`${API_URL}/users/organizer-petition`, {
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
