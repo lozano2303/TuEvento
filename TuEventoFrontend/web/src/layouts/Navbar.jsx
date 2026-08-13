@@ -1,6 +1,7 @@
-import { Calendar, User, LogOut, Key, Plus, Wallet, Menu, X } from "lucide-react";
+import { Calendar, User, LogOut, Plus, Wallet, Menu, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { performLogout } from "../services/httpClient.js";
 import ChangePassword from "../pages/ChangePassword.jsx";
 import { getEventsByUser } from "../services/EventService.js";
 
@@ -47,16 +48,12 @@ export default function Navbar() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userID');
-    localStorage.removeItem('role');
-    localStorage.removeItem('pendingActivationUserID');
-    localStorage.removeItem('adminLoggedIn');
+  const handleLogout = async () => {
+    await performLogout();
     setUserData(null);
     setIsModalOpen(false);
     setIsMobileMenuOpen(false);
-    window.location.reload();
+    window.location.href = '/login';
   };
 
   const handleNavClick = (path) => {
@@ -212,6 +209,24 @@ const displayName = (() => {
                         <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-error)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                       </Link>
                     )}
+
+                    {/* Logout button */}
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 px-4 py-3.5 transition-colors w-full text-left"
+                      style={{ borderTop: '1px solid rgba(239,68,68,0.15)' }}
+                      onMouseOver={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)' }}>
+                        <LogOut className="w-[17px] h-[17px] text-error" />
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-semibold text-error leading-tight">Cerrar Sesión</p>
+                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">Salir de tu cuenta</p>
+                      </div>
+                    </button>
                   </div>
                 )}
               </div>
