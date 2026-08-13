@@ -87,6 +87,8 @@ public class SeatService implements SeatUseCase {
                 .position(existing.getPosition())
                 .type(existing.getType())
                 .status(request.getNewStatus())
+                .reservedBy(existing.getReservedBy())
+                .reservedUntil(existing.getReservedUntil())
                 .build();
 
         return toResponse(seatRepository.save(updated));
@@ -120,6 +122,8 @@ public class SeatService implements SeatUseCase {
                 .position(domain.getPosition())
                 .type(domain.getType())
                 .status(domain.getStatus())
+                .reservedBy(domain.getReservedBy())
+                .reservedUntil(domain.getReservedUntil())
                 .build();
     }
 

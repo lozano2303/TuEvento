@@ -50,6 +50,8 @@ public class SeatRepositoryImpl implements SeatRepository {
                 .position(seat.getPosition())
                 .type(seat.getType())
                 .status(seat.getStatus())
+                .reservedBy(seat.getReservedBy())
+                .reservedUntil(seat.getReservedUntil())
                 .build();
         return toDomain(jpaRepository.save(entity));
     }
@@ -69,6 +71,8 @@ public class SeatRepositoryImpl implements SeatRepository {
                 .position(entity.getPosition())
                 .type(entity.getType())
                 .status(entity.getStatus())
+                .reservedBy(entity.getReservedBy())
+                .reservedUntil(entity.getReservedUntil())
                 .build();
     }
 }
