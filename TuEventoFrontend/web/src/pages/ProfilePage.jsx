@@ -431,7 +431,7 @@ const ProfilePage = () => {
               <div className="space-y-3">
                 {themes.length === 0 && (
                   <p className="text-textMuted text-sm text-center py-4">
-                    {localStorage.getItem('token') ? 'Cargando temas...' : 'Inicia sesión para cambiar el tema'}
+                    Cargando temas...
                   </p>
                 )}
                 {themes.map((theme) => {

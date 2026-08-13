@@ -59,15 +59,27 @@ function AppContent() {
             </ProtectedRoute>
           } />
           <Route path="/events/:eventId" element={<EventDetail />} />
-          <Route path="/organizer-petition-form" element={<OrganizerPetitionForm />} />
+          <Route path="/organizer-petition-form" element={
+            <ProtectedRoute>
+              <OrganizerPetitionForm />
+            </ProtectedRoute>
+          } />
           <Route path="/admin-panel" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminPanel />
             </ProtectedRoute>
           } />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
           <Route path="/verification" element={<CodeVerification />} />
-          <Route path="/events/:eventId/layout" element={<EventLayoutEditor />} />
+          <Route path="/events/:eventId/layout" element={
+            <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
+              <EventLayoutEditor />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
     </div>
