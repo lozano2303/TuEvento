@@ -5,6 +5,8 @@ import com.capysoft.tuevento.modules.seat.domain.model.SeatType;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder
 public class SeatResponse {
@@ -16,4 +18,6 @@ public class SeatResponse {
     private Integer position;
     private SeatType type;
     private SeatStatus status;
+    private Integer reservedBy;
+    private LocalDateTime reservedUntil;
 }
