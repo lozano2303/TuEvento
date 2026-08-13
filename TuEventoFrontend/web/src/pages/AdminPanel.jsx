@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, User, Settings, ChevronDown, X } from 'lucide-react';
 import { approveOrganizerRequest, rejectOrganizerRequest } from '../services/OrganizerPetitionService';
-import { performLogout } from '../services/httpClient';
+import { performLogout, httpRequest } from '../services/httpClient';
 import { useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
@@ -54,17 +54,8 @@ export default function AdminPanel() {
 
   const fetchRequests = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setError('No hay token de autenticación');
-        setLoading(false);
-        return;
-      }
-      const response = await fetch(`${API_URL}/admin/organizer-requests`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      const response = await httpRequest(`${API_URL}/admin/organizer-requests`, {
+        method: 'GET',
       });
       const data = await response.json();
       if (response.ok) {
@@ -118,12 +109,8 @@ export default function AdminPanel() {
     }
     setDocumentLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/admin/organizer-requests/${req.organizerPetitionId}/document`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      const response = await httpRequest(`${API_URL}/admin/organizer-requests/${req.organizerPetitionId}/document`, {
+        method: 'GET',
       });
       const data = await response.json();
       if (response.ok && data.data?.publicUrl) {
