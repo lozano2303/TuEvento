@@ -1,6 +1,8 @@
+import { httpRequest } from './httpClient.js';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
-// Todos los endpoints de geolocation son públicos — sin Authorization header.
+// Todos los endpoints GET de geolocation son públicos — sin Authorization header.
 
 export const getDepartments = async () => {
   const res = await fetch(`${API_URL}/geolocation/departments`);
@@ -29,12 +31,10 @@ export const getSiteById = async (siteId) => {
 
 // Crear nueva sede — requiere auth (ORGANIZER o ADMIN)
 export const createSite = async ({ cityId, name, address, capacity, latitude, longitude }) => {
-  const token = localStorage.getItem('token');
-  const res = await fetch(`${API_URL}/geolocation/sites`, {
+  const res = await httpRequest(`${API_URL}/geolocation/sites`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({ cityId, name, address, capacity, latitude, longitude }),
   });
