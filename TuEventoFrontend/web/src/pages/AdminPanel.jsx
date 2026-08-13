@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, User, Settings, ChevronDown, X } from 'lucide-react';
 import { approveOrganizerRequest, rejectOrganizerRequest } from '../services/OrganizerPetitionService';
+import { performLogout } from '../services/httpClient';
 import { useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
@@ -25,8 +26,8 @@ export default function AdminPanel() {
     role: localStorage.getItem('role') === 'ADMIN' ? 'Super Admin' : 'Admin',
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
+  const handleLogout = async () => {
+    await performLogout();
     window.location.href = '/login';
   };
 

@@ -29,17 +29,45 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 let refreshPromise = null;
 
 /**
- * Limpia todas las claves de sesión y redirige a /login.
- * Centralizado aquí para que el httpClient no dependa de login.jsx.
+ * Limpia todas las claves de sesión, revoca el token en el backend, y redirige a /login.
+ * Esta es la única función de logout que debe usarse en todo el proyecto.
+ * 
+ * Comportamiento:
+ *   1. Intenta revocar la sesión en el backend vía POST /auth/logout
+ *   2. Limpia todas las claves de localStorage relacionadas con la sesión
+ *   3. Redirige a /login
+ * 
+ * Si el backend falla (red, token ya revocado, etc.), igual limpia el cliente
+ * para garantizar que el usuario pueda iniciar sesión de nuevo.
  */
-function performLogout() {
-  const keys = [
+export async function performLogout() {
+  const accessToken = localStorage.getItem('token');
+  
+  // Intentar revocar en el backend si tenemos token
+  if (accessToken) {
+    try {
+      await fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ accessToken }),
+      });
+    } catch (err) {
+      // Si falla (red, token expirado, etc.), igual limpiamos el cliente
+      console.warn('[performLogout] No se pudo revocar la sesión en el backend:', err.message);
+    }
+  }
+
+  // Limpieza completa de todas las claves de sesión
+  const sessionKeys = [
     'token', 'refreshToken', 'userID', 'alias',
-    'userEmail', 'name', 'fullName', 'role',
-    'pendingActivationUserID', 'adminLoggedIn',
+    'userEmail', 'name', 'role',
+    'pendingActivationUserID', 'pendingActivationEmail', 'adminLoggedIn',
     'activeThemeId', 'activeThemeName',
   ];
-  keys.forEach((k) => localStorage.removeItem(k));
+  sessionKeys.forEach((k) => localStorage.removeItem(k));
 }
 
 /**
@@ -117,7 +145,7 @@ export async function httpRequest(url, options = {}) {
     res = await fetch(url, { ...options, headers: buildHeaders(newToken) });
   } catch {
     // Refresh falló (expirado, revocado, no existe) → logout limpio
-    performLogout();
+    await performLogout();
     window.location.href = '/login';
     // Lanzar para que el caller no procese una respuesta vacía
     throw new Error('SESSION_EXPIRED');
