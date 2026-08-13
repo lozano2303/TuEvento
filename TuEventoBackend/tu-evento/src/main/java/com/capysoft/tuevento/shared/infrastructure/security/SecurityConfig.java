@@ -54,7 +54,8 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/api-docs/**",
             "/v3/api-docs/**",
-            "/actuator/**"
+            "/actuator/**",
+            "/ws/**"  // WebSocket endpoint — autenticación manejada por JwtHandshakeInterceptor
     };
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {
