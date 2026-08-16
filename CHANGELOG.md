@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added - Frontend WebSocket Client and Seat Services
+- **SeatService.js**: servicios HTTP para gestión de sillas
+  - `getSeatsBySection(eventSectionId)`: GET público, no requiere auth
+  - `reserveSeat(seatId)`: POST con auth, reserva temporal de 10 minutos
+  - `releaseSeat(seatId)`: POST con auth, libera reserva antes de expiración
+  - Usa `httpRequest` con auto-refresh de JWT en 401
+- **websocketClient.js**: cliente WebSocket para actualizaciones en tiempo real
+  - `connectSeatSocket(eventId, onSeatUpdate)`: conecta vía STOMP + SockJS
+  - Suscripción a `/topic/events/{eventId}/seats`
+  - Token JWT en query param del handshake (`/ws?token=...`)
+  - Reconexión automática cada 5 segundos si se pierde conexión
+  - Heartbeat cada 10 segundos para detectar conexiones muertas
+  - **Estrategia de auth**: si no hay token, no conecta WebSocket (usuarios anónimos ven estado estático)
+- **Dependencias instaladas**: `@stomp/stompjs`, `sockjs-client`
+- Debug logging solo en desarrollo (`import.meta.env.DEV`)
+
+### Technical Details - WebSocket
+- `WS_BASE_URL`: deriva de `VITE_API_URL` quitando `/api/v1` (ej: `http://localhost:8080`)
+- SockJS negocia transporte automáticamente (WebSocket nativo, polling, streaming)
+- Callback `onSeatUpdate` recibe: `{ seatId, eventId, eventSectionId, oldStatus, newStatus, changedBy, reservedUntil }`
+- `changedBy = null` indica cambio automático del sistema (expiración de reserva)
+- Cliente retorna `null` si no hay token (permite lógica condicional en componentes)
+
 ### Fixed - Seat Constraints Case Sensitivity
 - **Changeset 061**: corrige `chk_seat_type` y `chk_seat_status` para usar MAYÚSCULAS
   - Problema: changeset 056 original creó constraints con minúsculas (`'available'`, `'reserved'`, etc.)
