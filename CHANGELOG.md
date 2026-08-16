@@ -4,6 +4,49 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added - EventSeatSelector Component (Interactive Seat Purchase View)
+- **EventSeatSelector.jsx**: componente completo de selección de sillas para compradores
+  - Carga layout visual del evento + estado real de sillas vía API
+  - Renderiza secciones con Konva (reutiliza lógica de `distributeSeats`)
+  - WebSocket en tiempo real para actualizaciones de estado de sillas
+  - **Colores por estado**:
+    - Verde: `AVAILABLE` (clickeable)
+    - Azul: `RESERVED` por usuario actual (clickeable para liberar)
+    - Amarillo: `RESERVED` por otro usuario (no clickeable)
+    - Gris: `SOLD` (no clickeable)
+    - Morado: `COURTESY` (no clickeable)
+  - **Interacción**:
+    - Click en silla verde → reserva temporal (10 min)
+    - Click en silla azul (propia) → libera reserva
+    - Manejo de estados de carga (reserving/releasing)
+    - Refrescado automático en caso de race condition
+  - **Carrito lateral**:
+    - Lista de sillas reservadas por el usuario
+    - Countdown en tiempo real del TTL (MM:SS)
+    - Botón para liberar cada silla individual
+    - Botón "Continuar al Pago" (placeholder, no implementado)
+  - **Ruta**: `/events/:eventId/select-seats` (pública para ver, auth para reservar)
+  - Sin navbar (full-screen experience)
+- **Componentes internos**:
+  - `SectionRenderer`: renderiza geometría de sección (rect/polygon) + sillas
+  - `SeatCircle`: círculo individual con lógica de color y click
+  - `CartPanel`: panel lateral con carrito y countdown
+  - `CartItem`: item individual con temporizador
+- **Zoom**: controles +/- para ajustar vista del canvas (30% - 200%)
+
+### Technical Details - EventSeatSelector
+- Usa `connectSeatSocket` para recibir actualizaciones en tiempo real
+- Actualización puntual de estado al recibir evento WebSocket (no recarga completa)
+- Estado local: `{ [seatId]: SeatResponse }` para acceso O(1)
+- Carrito derivado con `useMemo` filtrando por `reservedBy === currentUserId`
+- Detección de usuario no autenticado: redirige a `/login` al intentar reservar
+- Cleanup de WebSocket en `useEffect` para evitar memory leaks
+- Manejo de errores: muestra mensaje y refresca estado de silla en caso de fallo
+
+### Changed - App.jsx Routes
+- Nueva ruta `/events/:eventId/select-seats` sin ProtectedRoute (pública)
+- Regex actualizado en `showNavbar` para ocultar navbar en selector de sillas
+
 ### Added - Frontend WebSocket Client and Seat Services
 - **SeatService.js**: servicios HTTP para gestión de sillas
   - `getSeatsBySection(eventSectionId)`: GET público, no requiere auth
