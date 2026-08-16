@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed - SockJS Global Polyfill for Vite
+- **vite.config.js**: agregado `define: { global: 'globalThis' }` para compatibilidad con `sockjs-client`
+  - Problema: `sockjs-client` asume entorno Webpack/Node donde `global` existe implícitamente
+  - Vite no define `global` → ReferenceError que tumba todo el bundle
+  - Solución: reemplazar `global` por `globalThis` (estándar moderno de navegadores) durante build
+  - Requiere reinicio completo del dev server (hot-reload no es suficiente)
+
 ### Added - EventSeatSelector Component (Interactive Seat Purchase View)
 - **EventSeatSelector.jsx**: componente completo de selección de sillas para compradores
   - Carga layout visual del evento + estado real de sillas vía API
