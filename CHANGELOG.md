@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added - Automatic Seat Generation from Layout
+- **SaveEventLayoutService**: generación automática de `seat_block` y `seat` al guardar el layout
+  - Parsea `layoutData` JSON y extrae cada sección con `seatLayout: { targetSeats, rows, seatsPerRow }`
+  - Por cada sección con `backendSectionId`:
+    - Borra sillas existentes de esa sección (validando que estén AVAILABLE)
+    - Borra seat_blocks existentes
+    - Crea un nuevo seat_block con capacity=targetSeats
+    - Genera targetSeats registros de seat con códigos legibles (A1, A2, B1, B2...)
+  - Todas las sillas se crean con `status=AVAILABLE`, `type=REGULAR`
+  - Corre en la misma transacción que guarda el EventLayout
+- **Validación defensiva**: si alguna silla tiene `status != AVAILABLE`, lanza `SEAT_REGENERATION_CONFLICT` en lugar de borrarla
+- **Logging**: reporta cantidad de secciones procesadas y sillas generadas por sección
+- **Algoritmo de códigos**: fila como letra (A, B, C... Z, AA, AB...), posición como número (1, 2, 3...)
+
+### Changed
+- `SaveEventLayoutService`: ahora inyecta `SeatBlockRepository`, `SeatRepository` y `ObjectMapper`
+- Frontend no necesita cambios — la generación es automática en backend
+
+### Technical Details
+- Regeneración completa por sección: borra y recrea todas las sillas cada vez que se guarda el layout
+- Estrategia simple: un seat_block por sección (nombre "Bloque Principal")
+- Si el layout cambia targetSeats, las sillas se ajustan automáticamente
+- Secciones sin `seatLayout` o sin `backendSectionId` se saltan sin error
+
 ### Added - Seat Reservation System with TTL + WebSocket
 - **Seat Reservation with TTL**: Sistema completo de reservas temporales de sillas con expiración automática
   - `SeatReservationService`: servicio de aplicación con `reserveSeat()` y `releaseSeat()`
