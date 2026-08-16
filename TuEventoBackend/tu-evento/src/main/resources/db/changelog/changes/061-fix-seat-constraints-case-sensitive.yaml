@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 061-fix-seat-constraints-case-sensitive
+      author: capysoft
+      comment: "Alinear check constraints de seat con enums Java (MAYÚSCULAS). El changeset 056 original usaba minúsculas pero JPA @Enumerated(EnumType.STRING) envía los nombres en mayúsculas."
+      changes:
+        - sql:
+            sql: "ALTER TABLE seat DROP CONSTRAINT IF EXISTS chk_seat_type;"
+        - sql:
+            sql: "ALTER TABLE seat DROP CONSTRAINT IF EXISTS chk_seat_status;"
+        - sql:
+            sql: "ALTER TABLE seat ADD CONSTRAINT chk_seat_type CHECK (type IN ('REGULAR', 'COURTESY'));"
+        - sql:
+            sql: "ALTER TABLE seat ADD CONSTRAINT chk_seat_status CHECK (status IN ('AVAILABLE', 'RESERVED', 'SOLD', 'COURTESY'));"

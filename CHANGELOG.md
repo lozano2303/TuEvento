@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed - Seat Constraints Case Sensitivity
+- **Changeset 061**: corrige `chk_seat_type` y `chk_seat_status` para usar MAYÚSCULAS
+  - Problema: changeset 056 original creó constraints con minúsculas (`'available'`, `'reserved'`, etc.)
+  - JPA con `@Enumerated(EnumType.STRING)` envía nombres de enum en MAYÚSCULAS (`'AVAILABLE'`, `'RESERVED'`, etc.)
+  - Resultado: inserts violaban la constraint → `ERROR: new row for relation "seat" violates check constraint "chk_seat_status"`
+- **chk_seat_type**: ahora acepta `'REGULAR'`, `'COURTESY'` (antes: `'regular'`, `'courtesy'`)
+- **chk_seat_status**: ahora acepta `'AVAILABLE'`, `'RESERVED'`, `'SOLD'`, `'COURTESY'` (antes: minúsculas)
+- No requiere migración de datos porque la tabla `seat` estaba vacía
+
 ### Added - Automatic Seat Generation from Layout
 - **SaveEventLayoutService**: generación automática de `seat_block` y `seat` al guardar el layout
   - Parsea `layoutData` JSON y extrae cada sección con `seatLayout: { targetSeats, rows, seatsPerRow }`
