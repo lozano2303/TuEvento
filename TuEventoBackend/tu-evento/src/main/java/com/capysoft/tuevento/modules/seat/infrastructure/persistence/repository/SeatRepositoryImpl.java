@@ -1,11 +1,13 @@
 package com.capysoft.tuevento.modules.seat.infrastructure.persistence.repository;
 
 import com.capysoft.tuevento.modules.seat.domain.model.Seat;
+import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
 import com.capysoft.tuevento.modules.seat.infrastructure.persistence.entity.SeatEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -59,6 +61,13 @@ public class SeatRepositoryImpl implements SeatRepository {
     @Override
     public void deleteById(Integer seatId) {
         jpaRepository.deleteById(seatId);
+    }
+
+    @Override
+    public List<Seat> findAllByStatusAndReservedUntilBefore(SeatStatus status, LocalDateTime dateTime) {
+        return jpaRepository.findAllByStatusAndReservedUntilBefore(status, dateTime).stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     private Seat toDomain(SeatEntity entity) {
