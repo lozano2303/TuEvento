@@ -4,6 +4,50 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added - Seat Reservation System with TTL + WebSocket
+- **Seat Reservation with TTL**: Sistema completo de reservas temporales de sillas con expiración automática
+  - `SeatReservationService`: servicio de aplicación con `reserveSeat()` y `releaseSeat()`
+  - TTL de 10 minutos configurable en `RESERVATION_TTL_MINUTES`
+  - Reservas incluyen `reserved_by` (userId) y `reserved_until` (LocalDateTime)
+- **Automatic Expiration Scheduler**: 
+  - `SeatReservationExpirationScheduler`: libera automáticamente sillas cuyo `reserved_until` expiró
+  - Cron: ejecuta cada minuto (`0 * * * * *`)
+  - Catch-up: se ejecuta al iniciar la aplicación vía `@EventListener(ApplicationReadyEvent)`
+  - Self-injection con `@Lazy` para que `@Transactional` funcione correctamente
+  - Logs a nivel INFO para visibilidad en producción
+- **WebSocket Real-time Notifications**:
+  - `SeatStatusWebSocketListener`: transmite cambios de estado de sillas en tiempo real
+  - Topic: `/topic/events/{eventId}/seats` (routing por evento)
+  - Usa `SimpMessagingTemplate` para broadcast a todos los clientes conectados
+- **REST Endpoints**:
+  - `POST /api/v1/seats/{seatId}/reserve`: reservar silla (cualquier usuario autenticado)
+  - `POST /api/v1/seats/{seatId}/release`: liberar reserva (solo dueño o ADMIN)
+  - Ambos endpoints protegidos con `@PreAuthorize("isAuthenticated()")`
+- **Domain Event Extension**:
+  - `SeatStatusChangedEvent`: agregados campos `eventId` (para routing WebSocket) y `reservedUntil` (para informar TTL a clientes)
+- **Repository Extensions**:
+  - `SeatRepository.findAllByStatusAndReservedUntilBefore()`: query para buscar sillas expiradas
+  - Implementación en `SeatRepositoryImpl` y `SeatJpaRepository`
+- **Test utilities**:
+  - `test-seat-reservation.sh`: script bash para pruebas de API
+  - `websocket-test-client.html`: cliente WebSocket de prueba con interfaz gráfica
+  - `SEAT_RESERVATION_IMPLEMENTATION.md`: documentación completa con plan de verificación
+
+### Changed
+- `SeatStatusChangedEvent`: agregados campos `eventId` y `reservedUntil`
+- `SeatRepository`: agregado método `findAllByStatusAndReservedUntilBefore()`
+
+### Security
+- Solo el usuario que reservó una silla puede liberarla manualmente (excepto ADMIN)
+- Validación de estado de silla antes de reservar (debe ser AVAILABLE)
+- `changedBy = null` en eventos indica cambio automático del sistema
+
+### Technical Details
+- Scheduler sigue el patrón de `EventAutoCompletionScheduler` (catch-up + cron)
+- WebSocket usa la configuración existente en `WebSocketConfig`
+- Obtiene `eventId` desde `EventSection` para routing correcto de topics
+- Build verificado: `BUILD SUCCESS` sin errores de compilación
+
 ### Added
 - Category y CategoryEvent: modelos de dominio puros
 - CategoryRepository y CategoryEventRepository: interfaces de dominio

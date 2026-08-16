@@ -1,7 +1,9 @@
 package com.capysoft.tuevento.modules.seat.domain.repository;
 
 import com.capysoft.tuevento.modules.seat.domain.model.Seat;
+import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,4 +14,5 @@ public interface SeatRepository {
     boolean existsByEventSectionIdAndCode(Integer eventSectionId, String code);
     Seat save(Seat seat);
     void deleteById(Integer seatId);
+    List<Seat> findAllByStatusAndReservedUntilBefore(SeatStatus status, LocalDateTime dateTime);
 }
