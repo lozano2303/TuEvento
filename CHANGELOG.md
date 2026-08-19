@@ -4,6 +4,81 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed - Canvas Real Dimensions + Improved Layout Proportions
+- **EventDetail.jsx → SeatSelectorSection**: fix crítico de dimensiones del canvas
+  - **Problema**: `calculateFraming` usaba dimensiones hardcodeadas (900×600) que no coincidían con el espacio real del contenedor
+  - **Causa**: Layout de 3 columnas dejaba menos ancho disponible para el canvas, causando recorte de contenido ("General"/"VIP" fuera de borde)
+  - **Solución**: dimensiones reales del contenedor con ResizeObserver + getBoundingClientRect
+    - Estado `containerSize` { width, height } actualizado dinámicamente
+    - `useEffect` observa cambios de tamaño del contenedor (ResizeObserver)
+    - Listener de `window.resize` como fallback
+    - `calculateFraming` recibe `viewportWidth` y `viewportHeight` como parámetros (no constantes)
+    - Stage con `width={containerSize.width}` y `height={containerSize.height}` (dinámico)
+  - **Recalculo automático**: el encuadre se recalcula al montar, al redimensionar ventana, y al cambiar de sección
+  - **Centrado preciso**: offset (x, y) calculado del centro real del contenido y viewport dinámico
+- **Layout de 3 columnas rebalanceado**:
+  - **Izquierda - Menú de secciones**: `w-56` (224px, antes 256px) + `shrink-0` (ancho fijo)
+    - Más compacto, solo lista de secciones
+    - Texto "disponibles" abreviado a disponibilidad numérica (ej. "20/50")
+  - **Centro - Mapa**: `flex-1` + `minWidth: 0` (flexible, dominante)
+    - Ocupa todo el espacio restante entre los paneles laterales
+    - `minWidth: 0` previene overflow en contenedores flex
+  - **Derecha - Carrito**: `w-72` (288px, antes 320px) + `shrink-0` (ancho fijo)
+    - Panel visualmente separado con borde claro
+    - Tamaño óptimo para mostrar items del carrito sin scroll excesivo
+  - **Gap**: 16px (`gap-4`) entre columnas para separación visual clara
+
+### Changed - Guided View System: Overview → Zoom to Selected Section
+- **EventDetail.jsx → SeatSelectorSection**: reemplazado pan libre por sistema de vista guiada con animaciones automáticas
+  - **Import explícito de Konva**: agregado `import Konva from 'konva'` en lugar de depender de `window.Konva`
+    - Uso correcto: `new Konva.Tween(...)` y `Konva.Easings.EaseInOut`
+    - Más robusto y type-safe, evita dependencia de globals
+  - **Vista general (overview)**: todas las secciones visibles, centradas automáticamente con zoom-out
+    - Zoom y posición calculados dinámicamente del AABB completo del layout usando `getElementAABB`
+    - Secciones clickeables con cursor pointer, borde destacado (opacity: 0.5, stroke más grueso)
+    - Sillas NO clickeables en este estado — solo navegación de secciones
+  - **Vista de sección**: zoom automático y centrado en la sección seleccionada
+    - Animación suave (Konva.Tween, 500ms, EaseInOut) desde overview hacia la sección
+    - Sillas de la sección clickeables para seleccionar/deseleccionar
+    - Stage completamente estático — sin pan manual, sin zoom manual, sin scrollbars
+  - **Transiciones bidireccionales**: 
+    - Click en sección (mapa o menú lateral) → anima hacia esa sección
+    - Botón "Ver todas" → anima de regreso al overview
+  - **Cálculo de encuadre**: función `calculateFraming(elements)` reutiliza lógica de AABB
+    - Calcula scale óptimo para que el contenido entre con margen (80px)
+    - Calcula offset (x, y) para centrar el contenido en el viewport (900×600)
+    - Máximo 2x zoom para evitar pixelación
+  - **`animateToFraming(framing, duration)`**: wrapper de Konva.Tween para animar Stage
+    - Anima simultáneamente scaleX, scaleY, x, y
+    - Sincroniza estado de zoom con el valor final de la animación
+  - **useEffect con `selectedSectionFilter`**: trigger automático de animaciones
+    - `null` → vista general
+    - `sectionId` → vista de esa sección
+- **SectionRenderer**: lógica de interacción según modo de vista
+  - **`inOverviewMode`**: determina si las secciones son clickeables (sillas ocultas/no clickeables)
+  - **`onSectionClick`**: callback para seleccionar sección desde el mapa
+  - Fondo de sección con `listening={inOverviewMode}` y `cursor="pointer"` solo en overview
+  - Sillas renderizadas solo cuando `!inOverviewMode`
+- **Eliminados**:
+  - Controles de zoom manual (+/- buttons)
+  - Pan con clic derecho (handleStageMouseDown, handleStageMouseMove, handleStageMouseUp, handleContextMenu)
+  - Estado `stagePos`, `panState`, `panLimits`, `clampPosition`
+  - Props del Stage: `onMouseDown`, `onMouseMove`, `onMouseUp`, `onMouseLeave`, `onContextMenu`
+  - `overflow: auto` en container (ahora `overflow: hidden` — sin scrollbars)
+- **Selector de cantidad, carrito, WebSocket**: sin cambios — siguen funcionando igual
+
+### Technical Details - Guided View System
+- **Konva.Tween**: animación nativa de Konva para transiciones suaves entre estados
+- **AABB calculation**: reutiliza `getElementAABB` de layoutEditorUtils para calcular bounding boxes
+- **Viewport fixed**: 900×600px, zoom y posición calculados para ajustar contenido a estas dimensiones
+- **Zoom margin**: 80px de padding alrededor del contenido para evitar bordes cortados
+- **useEffect dependency**: recalcula y anima automáticamente al cambiar `selectedSectionFilter`
+- **Bidirectional flow**: overview ⇄ section con la misma lógica de animación
+
+### Added - Pan Navigation with Right-Click in Seat Selector
+- **OBSOLETO — Reemplazado por Guided View System**
+- ~~Pan con clic derecho y límites dinámicos~~ → ahora vista guiada automática sin interacción manual de cámara
+
 ### Changed - Integrated Seat Selector into EventDetail
 - **EventDetail.jsx**: integración completa del selector de sillas dentro de la página de detalle del evento
   - **Selector de cantidad estilo cine**: stepper +/- para elegir cantidad de sillas (1-10) antes de interactuar con el mapa

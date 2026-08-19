@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus } from 'lucide-react';
 import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
+import Konva from 'konva';
 import { getEventById } from '../services/EventService';
 import { getEventMedia } from '../services/EventMediaService';
 import * as LayoutService from '../services/LayoutService';
 import * as SeatService from '../services/SeatService';
 import * as EventSectionService from '../services/EventSectionService';
 import { connectSeatSocket, disconnectSeatSocket } from '../services/websocketClient';
-import { distributeSeats, migratePolygonPoints, polyCentroid } from '../components/layout-editor/layoutEditorUtils';
+import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
 
 export default function EventDetail() {
@@ -380,6 +381,36 @@ function SeatSelectorSection({
   setZoom,
 }) {
   const maxQuantity = 10;
+  const stageRef = useRef();
+  const containerRef = useRef();
+  const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
+
+  const ZOOM_MARGIN = 80; // Margen alrededor del contenido
+
+  // ── Observar cambios de tamaño del contenedor ──
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const updateSize = () => {
+      const rect = containerRef.current.getBoundingClientRect();
+      setContainerSize({ width: rect.width, height: rect.height });
+    };
+
+    // Actualizar al montar
+    updateSize();
+
+    // Observar cambios de tamaño
+    const resizeObserver = new ResizeObserver(updateSize);
+    resizeObserver.observe(containerRef.current);
+
+    // Escuchar resize de ventana como fallback
+    window.addEventListener('resize', updateSize);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
+  }, []);
 
   const handleQuantityDecrease = () => {
     if (selectedQuantity > 1) setSelectedQuantity(selectedQuantity - 1);
@@ -388,6 +419,77 @@ function SeatSelectorSection({
   const handleQuantityIncrease = () => {
     if (selectedQuantity < maxQuantity) setSelectedQuantity(selectedQuantity + 1);
   };
+
+  // ── Calcular encuadre (zoom + posición) para un conjunto de elementos ──
+  const calculateFraming = useCallback((elements, viewportWidth, viewportHeight) => {
+    if (elements.length === 0) {
+      return { scale: 1, x: 0, y: 0 };
+    }
+
+    // Calcular AABB de los elementos
+    const aabbs = elements.map(getElementAABB);
+    const contentMinX = Math.min(...aabbs.map((b) => b.minX));
+    const contentMinY = Math.min(...aabbs.map((b) => b.minY));
+    const contentMaxX = Math.max(...aabbs.map((b) => b.maxX));
+    const contentMaxY = Math.max(...aabbs.map((b) => b.maxY));
+
+    const contentWidth = contentMaxX - contentMinX;
+    const contentHeight = contentMaxY - contentMinY;
+    const contentCenterX = (contentMinX + contentMaxX) / 2;
+    const contentCenterY = (contentMinY + contentMaxY) / 2;
+
+    // Calcular zoom necesario para que el contenido entre en viewport con margen
+    const scaleX = (viewportWidth - ZOOM_MARGIN * 2) / contentWidth;
+    const scaleY = (viewportHeight - ZOOM_MARGIN * 2) / contentHeight;
+    const scale = Math.min(scaleX, scaleY, 2); // Máximo 2x zoom
+
+    // Calcular offset para centrar el contenido en el viewport
+    const x = viewportWidth / 2 - contentCenterX * scale;
+    const y = viewportHeight / 2 - contentCenterY * scale;
+
+    return { scale, x, y };
+  }, []);
+
+  // ── Animar transición del Stage hacia un nuevo encuadre ──
+  const animateToFraming = useCallback((framing, duration = 500) => {
+    if (!stageRef.current) return;
+
+    const stage = stageRef.current;
+    const tween = new Konva.Tween({
+      node: stage,
+      duration: duration / 1000, // Konva usa segundos
+      scaleX: framing.scale,
+      scaleY: framing.scale,
+      x: framing.x,
+      y: framing.y,
+      easing: Konva.Easings.EaseInOut,
+    });
+
+    tween.play();
+
+    // Sincronizar el estado de zoom con el valor final de la animación
+    setZoom(framing.scale);
+  }, [setZoom]);
+
+  // ── Efecto: animar a vista general o sección seleccionada ──
+  useEffect(() => {
+    if (!stageRef.current || layoutElements.length === 0) return;
+
+    if (selectedSectionFilter === null) {
+      // Vista general: todas las secciones
+      const framing = calculateFraming(layoutElements, containerSize.width, containerSize.height);
+      animateToFraming(framing);
+    } else {
+      // Vista de sección: solo la sección seleccionada
+      const selectedElement = layoutElements.find(
+        (el) => el.backendSectionId === selectedSectionFilter
+      );
+      if (selectedElement) {
+        const framing = calculateFraming([selectedElement], containerSize.width, containerSize.height);
+        animateToFraming(framing);
+      }
+    }
+  }, [selectedSectionFilter, layoutElements, containerSize, calculateFraming, animateToFraming]);
 
   // Filtrar layoutElements si hay un filtro de sección activo
   const visibleLayoutElements = selectedSectionFilter
@@ -448,9 +550,9 @@ function SeatSelectorSection({
         </span>
       </div>
 
-      {/* Layout: menú de secciones + canvas + carrito */}
+      {/* Layout: 3 columnas - menú de secciones + canvas + carrito */}
       <div className="flex gap-4">
-        {/* Menú lateral de secciones */}
+        {/* Menú lateral de secciones - columna izquierda (angosta) */}
         <SectionMenu
           sections={sections}
           layoutElements={layoutElements}
@@ -458,40 +560,19 @@ function SeatSelectorSection({
           setSelectedSectionFilter={setSelectedSectionFilter}
         />
 
-        {/* Canvas con mapa de sillas */}
-        <div className="flex-1 rounded-xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)' }}>
+        {/* Canvas con mapa de sillas - columna central (flexible, dominante) */}
+        <div className="flex-1 rounded-xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', minWidth: 0 }}>
           <div className="flex items-center justify-between p-2 border-b" style={{ borderColor: 'rgba(167,139,250,0.15)' }}>
             <span className="text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
               Mapa de Sillas
             </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setZoom((z) => Math.max(0.3, z - 0.1))}
-                className="px-2 py-1 rounded text-xs transition-all"
-                style={{
-                  background: 'rgba(167,139,250,0.15)',
-                  color: '#c4b5fd',
-                }}
-              >
-                -
-              </button>
-              <span className="text-xs w-12 text-center" style={{ color: 'rgba(196,181,253,0.6)' }}>
-                {Math.round(zoom * 100)}%
-              </span>
-              <button
-                onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
-                className="px-2 py-1 rounded text-xs transition-all"
-                style={{
-                  background: 'rgba(167,139,250,0.15)',
-                  color: '#c4b5fd',
-                }}
-              >
-                +
-              </button>
-            </div>
           </div>
-          <div style={{ height: '600px', overflow: 'auto' }}>
-            <Stage width={900} height={600} scaleX={zoom} scaleY={zoom}>
+          <div ref={containerRef} style={{ height: '600px', overflow: 'hidden' }}>
+            <Stage
+              ref={stageRef}
+              width={containerSize.width}
+              height={containerSize.height}
+            >
               <Layer>
                 {visibleLayoutElements.map((section) => (
                   <SectionRenderer
@@ -506,6 +587,12 @@ function SeatSelectorSection({
                     selectedSectionFilter={selectedSectionFilter}
                     onReserveSeat={onReserveSeat}
                     onReleaseSeat={onReleaseSeat}
+                    onSectionClick={() => {
+                      // Solo permitir selección de sección si estamos en vista general
+                      if (selectedSectionFilter === null) {
+                        setSelectedSectionFilter(section.backendSectionId);
+                      }
+                    }}
                   />
                 ))}
               </Layer>
@@ -513,7 +600,7 @@ function SeatSelectorSection({
           </div>
         </div>
 
-        {/* Carrito lateral */}
+        {/* Carrito lateral - columna derecha (fija) */}
         <CartPanel
           cart={cart}
           sections={sections}
@@ -537,7 +624,7 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
 
   return (
     <div
-      className="w-64 rounded-xl p-4 space-y-2"
+      className="w-56 shrink-0 rounded-xl p-4 space-y-2"
       style={{
         background: 'rgba(0,0,0,0.2)',
         border: '1px solid rgba(167,139,250,0.15)',
@@ -586,7 +673,7 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
                   {sec.sectionTypeName}
                 </div>
                 <div className="text-xs mt-1" style={{ color: 'rgba(196,181,253,0.6)' }}>
-                  {sec.availableSeats}/{sec.capacity} disponibles
+                  {sec.availableSeats}/{sec.capacity}
                 </div>
               </div>
               <div className="text-sm font-bold shrink-0" style={{ color: '#a78bfa' }}>
@@ -614,6 +701,7 @@ function SectionRenderer({
   selectedSectionFilter,
   onReserveSeat,
   onReleaseSeat,
+  onSectionClick,
 }) {
   const shapeMode = section.shapeMode ?? 'rect';
   const workPoints = useMemo(() => {
@@ -643,6 +731,9 @@ function SectionRenderer({
   const sectionData = sections.find((s) => s.eventSectionId === section.backendSectionId);
   const sectionPrice = sectionData?.price ?? 0;
 
+  // En vista general (sin filtro), las sillas no son clickeables, solo la sección
+  const inOverviewMode = selectedSectionFilter === null;
+
   return (
     <Group x={section.x} y={section.y} rotation={section.rotation ?? 0}>
       {/* Fondo de la sección */}
@@ -671,21 +762,27 @@ function SectionRenderer({
             ctx.fillStrokeShape(shape);
           }}
           fill={section.color}
-          opacity={0.3}
-          stroke="rgba(255,255,255,0.15)"
-          strokeWidth={1}
-          listening={false}
+          opacity={inOverviewMode ? 0.5 : 0.3}
+          stroke={inOverviewMode ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)'}
+          strokeWidth={inOverviewMode ? 2 : 1}
+          listening={inOverviewMode}
+          onClick={inOverviewMode ? onSectionClick : undefined}
+          onTap={inOverviewMode ? onSectionClick : undefined}
+          cursor={inOverviewMode ? 'pointer' : 'default'}
         />
       ) : (
         <Rect
           width={section.width}
           height={section.height}
           fill={section.color}
-          opacity={0.3}
+          opacity={inOverviewMode ? 0.5 : 0.3}
           cornerRadius={6}
-          stroke="rgba(255,255,255,0.15)"
-          strokeWidth={1}
-          listening={false}
+          stroke={inOverviewMode ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)'}
+          strokeWidth={inOverviewMode ? 2 : 1}
+          listening={inOverviewMode}
+          onClick={inOverviewMode ? onSectionClick : undefined}
+          onTap={inOverviewMode ? onSectionClick : undefined}
+          cursor={inOverviewMode ? 'pointer' : 'default'}
         />
       )}
 
@@ -712,14 +809,10 @@ function SectionRenderer({
         listening={false}
       />
 
-      {/* Sillas individuales */}
-      {seatPositions.map((pos, idx) => {
+      {/* Sillas individuales - solo visibles y clickeables cuando hay filtro activo */}
+      {!inOverviewMode && seatPositions.map((pos, idx) => {
         const seat = seatList[idx];
         if (!seat) return null;
-
-        const isSectionFiltered =
-          selectedSectionFilter !== null &&
-          selectedSectionFilter !== section.backendSectionId;
 
         return (
           <SeatCircle
@@ -730,7 +823,7 @@ function SectionRenderer({
             isReserving={reserving.has(seat.seatId)}
             cart={cart}
             selectedQuantity={selectedQuantity}
-            isSectionFiltered={isSectionFiltered}
+            isSectionFiltered={false}
             onReserve={() => onReserveSeat(seat.seatId)}
             onRelease={() => onReleaseSeat(seat.seatId)}
           />
@@ -816,7 +909,7 @@ function CartPanel({ cart, sections, onReleaseSeat, reserving }) {
   if (cart.length === 0) {
     return (
       <div
-        className="w-80 rounded-xl p-4"
+        className="w-72 shrink-0 rounded-xl p-4"
         style={{
           background: 'rgba(0,0,0,0.2)',
           border: '1px solid rgba(167,139,250,0.15)',
@@ -837,7 +930,7 @@ function CartPanel({ cart, sections, onReleaseSeat, reserving }) {
 
   return (
     <div
-      className="w-80 rounded-xl p-4 flex flex-col"
+      className="w-72 shrink-0 rounded-xl p-4 flex flex-col"
       style={{
         background: 'rgba(0,0,0,0.2)',
         border: '1px solid rgba(167,139,250,0.15)',
