@@ -14,7 +14,6 @@ import EventLayoutEditor from './pages/EventLayoutEditor';
 import EventCreateWizard from './pages/EventCreateWizard';
 import EventManage from './pages/EventManage';
 import EventDetail from './pages/EventDetail';
-import EventSeatSelector from './pages/EventSeatSelector';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -36,10 +35,9 @@ function ProtectedRoute({ children, requiredRoles }) {
 
 function AppContent() {
   const location = useLocation();
-  // Rutas sin navbar — incluye el editor con ruta dinámica /events/:id/layout y selector de sillas
+  // Rutas sin navbar — incluye el editor con ruta dinámica /events/:id/layout
   const showNavbar = !['/login', '/verification', '/events/create'].includes(location.pathname)
-    && !location.pathname.match(/^\/events\/[^/]+\/layout$/)
-    && !location.pathname.match(/^\/events\/[^/]+\/select-seats$/);
+    && !location.pathname.match(/^\/events\/[^/]+\/layout$/);
 
   return (
     <div className="min-h-screen bg-background">
@@ -61,7 +59,6 @@ function AppContent() {
             </ProtectedRoute>
           } />
           <Route path="/events/:eventId" element={<EventDetail />} />
-          <Route path="/events/:eventId/select-seats" element={<EventSeatSelector />} />
           <Route path="/organizer-petition-form" element={
             <ProtectedRoute>
               <OrganizerPetitionForm />
