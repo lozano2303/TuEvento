@@ -4,6 +4,43 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed - Integrated Seat Selector into EventDetail
+- **EventDetail.jsx**: integración completa del selector de sillas dentro de la página de detalle del evento
+  - **Selector de cantidad estilo cine**: stepper +/- para elegir cantidad de sillas (1-10) antes de interactuar con el mapa
+  - **Menú lateral de secciones**: lista todas las secciones del evento con nombre, disponibilidad y precio
+    - Click en sección → activa filtro (solo esa sección es seleccionable en el mapa)
+    - Botón "Ver todas" para desactivar el filtro
+  - **Canvas visual con Konva**: mapa interactivo de sillas reutilizando geometría de `distributeSeats`
+    - Controles de zoom +/- (30% - 200%)
+    - Sillas filtradas se muestran atenuadas y no son clickeables
+  - **Carrito lateral integrado**:
+    - Muestra código de silla, nombre de sección y precio individual
+    - Countdown en tiempo real del TTL (MM:SS)
+    - Total acumulado de todas las sillas
+    - Botón "Continuar al Pago" (placeholder)
+  - **Validación de cantidad**: bloquea reservas adicionales si se alcanza el límite elegido
+    - Muestra alert: "Ya seleccionaste N silla(s). Cambia la cantidad si necesitas más."
+  - **WebSocket en tiempo real**: sincronización automática entre pestañas/usuarios
+  - **Componentes auxiliares**:
+    - `SeatSelectorSection`: contenedor principal con layout completo
+    - `SectionMenu`: menú de secciones con filtrado
+    - `SectionRenderer`: geometría de sección (rect/polygon) + sillas
+    - `SeatCircle`: círculo individual con lógica de color, estado y click
+    - `CartPanel`: panel lateral con carrito y total
+    - `CartItem`: item individual con countdown y precio
+- **App.jsx**: eliminada ruta `/events/:eventId/select-seats` (ya no es necesaria)
+  - Actualizado regex de `showNavbar` para remover patrón de select-seats
+  - Eliminado import de `EventSeatSelector`
+- **EventSeatSelector.jsx**: archivo eliminado (funcionalidad movida a EventDetail)
+
+### Technical Details - Seat Selector Integration
+- Estado unificado en EventDetail: layout, secciones, sillas, WebSocket, carrito
+- `selectedQuantity`: límite máximo de sillas que el usuario puede reservar (validado en `handleReserveSeat`)
+- `selectedSectionFilter`: ID de sección activa para filtrar (null = todas visibles)
+- Sillas fuera de sección filtrada: `opacity: 0.3`, no clickeables
+- Carrito: derivado con `useMemo` de `seats` filtrado por `reservedBy === currentUserId`
+- Precios: obtenidos de `EventSectionService.getByEvent()` y mapeados por `eventSectionId`
+
 ### Fixed - SockJS Global Polyfill for Vite
 - **vite.config.js**: agregado `define: { global: 'globalThis' }` para compatibilidad con `sockjs-client`
   - Problema: `sockjs-client` asume entorno Webpack/Node donde `global` existe implícitamente
