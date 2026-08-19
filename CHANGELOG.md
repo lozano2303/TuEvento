@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed - Quantity Stepper Validation: Cannot Decrease Below Selected Seats
+- **EventDetail.jsx → SeatSelectorSection**: fix de validación del stepper de cantidad
+  - **Bug**: el botón - permitía bajar la cantidad por debajo de las sillas ya seleccionadas/reservadas
+    - Ejemplo: cantidad 5, 5 sillas seleccionadas → botón - permitía bajar a 4, dejando inconsistencia
+  - **Solución**: validación en `handleQuantityDecrease`
+    ```javascript
+    if (selectedQuantity > 1 && selectedQuantity > cart.length) {
+      setSelectedQuantity(selectedQuantity - 1);
+    }
+    // Bloqueado cuando selectedQuantity === cart.length
+    ```
+  - **Feedback visual**: botón - deshabilitado cuando `selectedQuantity <= cart.length`
+    - `disabled={selectedQuantity <= 1 || selectedQuantity <= cart.length}`
+    - Tooltip: "No puedes bajar de N (sillas ya seleccionadas)" cuando aplica
+  - **Comportamiento**:
+    - Cantidad 5, 4 sillas seleccionadas → permite bajar hasta 4 (bloqueado en 4)
+    - Cantidad 5, 5 sillas seleccionadas → botón - completamente bloqueado
+    - Liberar una silla → botón - se habilita de nuevo (permite bajar un paso)
+  - **UX**: evita inconsistencia entre cantidad solicitada y sillas actualmente en carrito
+
 ### Fixed - Canvas Real Dimensions + Improved Layout Proportions
 - **EventDetail.jsx → SeatSelectorSection**: fix crítico de dimensiones del canvas
   - **Problema**: `calculateFraming` usaba dimensiones hardcodeadas (900×600) que no coincidían con el espacio real del contenedor

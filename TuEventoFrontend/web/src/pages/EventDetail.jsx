@@ -413,7 +413,10 @@ function SeatSelectorSection({
   }, []);
 
   const handleQuantityDecrease = () => {
-    if (selectedQuantity > 1) setSelectedQuantity(selectedQuantity - 1);
+    // No permitir bajar por debajo de la cantidad de sillas ya reservadas
+    if (selectedQuantity > 1 && selectedQuantity > cart.length) {
+      setSelectedQuantity(selectedQuantity - 1);
+    }
   };
 
   const handleQuantityIncrease = () => {
@@ -516,13 +519,18 @@ function SeatSelectorSection({
         <div className="flex items-center gap-3">
           <button
             onClick={handleQuantityDecrease}
-            disabled={selectedQuantity <= 1}
+            disabled={selectedQuantity <= 1 || selectedQuantity <= cart.length}
             className="w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
               background: 'rgba(167,139,250,0.15)',
               border: '1px solid rgba(167,139,250,0.3)',
             }}
             aria-label="Disminuir cantidad"
+            title={
+              selectedQuantity <= cart.length && cart.length > 0
+                ? `No puedes bajar de ${cart.length} (sillas ya seleccionadas)`
+                : undefined
+            }
           >
             <Minus className="w-4 h-4" style={{ color: '#c4b5fd' }} />
           </button>
