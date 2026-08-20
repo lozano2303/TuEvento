@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity,
   StatusBar, Dimensions, Animated, Image, ActivityIndicator,
+  StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -10,51 +11,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { getFileUrl } from "../services/storageService";
+import { getPublishedEvents } from "../services/eventService";
 
 const { width } = Dimensions.get("window");
-
-// ─── Colores fijos por categoría (no del tema) ───────────────────────────────
-const CATEGORY_COLORS = {
-  Todos:    "#7C3AED",
-  Música:   "#EC4899",
-  Teatro:   "#F59E0B",
-  Deportes: "#10B981",
-  Arte:     "#3B82F6",
-  Tech:     "#06B6D4",
-};
-
-const CATEGORIES = ["Todos", "Música", "Teatro", "Deportes", "Arte", "Tech"];
-
-// ─── Datos de ejemplo (se reemplazarán con fetch real) ───────────────────────
-const SAMPLE_EVENTS = [
-  {
-    id: 1,
-    nombre: "Festival de Jazz en el Parque",
-    fecha: "15 Jun 2025",
-    ciudad: "Bogotá",
-    categoria: "Música",
-    emoji: "🎷",
-    color: CATEGORY_COLORS.Música,
-  },
-  {
-    id: 2,
-    nombre: "Hackathon TechBogotá 2025",
-    fecha: "22 Jun 2025",
-    ciudad: "Medellín",
-    categoria: "Tech",
-    emoji: "💻",
-    color: CATEGORY_COLORS.Tech,
-  },
-  {
-    id: 3,
-    nombre: "Exposición Arte Contemporáneo",
-    fecha: "1 Jul 2025",
-    ciudad: "Cali",
-    categoria: "Arte",
-    emoji: "🎨",
-    color: CATEGORY_COLORS.Arte,
-  },
-];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getDisplayName(fullName) {
@@ -78,11 +37,15 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const [activeCategory, setActiveCategory] = useState("Todos");
+  const styles = createStyles(colors);
 
   // Avatar del usuario en la top bar
   const [avatarUrl, setAvatarUrl]         = useState(null);
   const [avatarLoading, setAvatarLoading] = useState(true);
+
+  // Eventos próximos
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
 
   useEffect(() => {
     const loadAvatar = async () => {
@@ -102,6 +65,36 @@ export default function HomeScreen() {
     };
     loadAvatar();
   }, [user?.storedFileId]);
+
+  // Cargar eventos próximos
+  useEffect(() => {
+    const loadUpcomingEvents = async () => {
+      try {
+        setEventsLoading(true);
+        const data = await getPublishedEvents();
+        
+        const now = new Date();
+        
+        // Filtrar eventos futuros, ordenar por fecha ascendente, tomar los 4 más cercanos
+        const upcoming = (data || [])
+          .filter((event) => {
+            if (!event.startDate) return false;
+            const eventDate = new Date(event.startDate);
+            return eventDate >= now;
+          })
+          .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+          .slice(0, 4);
+        
+        setUpcomingEvents(upcoming);
+      } catch (err) {
+        console.error("[HomeScreen] Error loading upcoming events:", err);
+        setUpcomingEvents([]);
+      } finally {
+        setEventsLoading(false);
+      }
+    };
+    loadUpcomingEvents();
+  }, []);
 
   // Sincronizar tema con el backend al montar — garantiza que las
   // customizaciones del usuario se apliquen apenas llega al Home
@@ -130,9 +123,22 @@ export default function HomeScreen() {
   const displayName = getDisplayName(user?.fullName);
   const initial     = getInitial(user?.fullName);
 
-  const filtered = activeCategory === "Todos"
-    ? SAMPLE_EVENTS
-    : SAMPLE_EVENTS.filter((e) => e.categoria === activeCategory);
+  const formatDate = (startDate, finishDate) => {
+    if (!startDate) return "Fecha por confirmar";
+    
+    const start = new Date(startDate);
+    const finish = finishDate ? new Date(finishDate) : null;
+    
+    const options = { day: "numeric", month: "short", year: "numeric" };
+    const startStr = start.toLocaleDateString("es-ES", options);
+    
+    if (finish && finish.getTime() !== start.getTime()) {
+      const finishStr = finish.toLocaleDateString("es-ES", options);
+      return `${startStr} - ${finishStr}`;
+    }
+    
+    return startStr;
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -291,119 +297,155 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* ── Próximos eventos ── */}
-        <Animated.View style={[{ marginTop: 28 }, animStyle(eventsAnim)]}>
-          <Text style={{
-            color: colors.textPrimary, fontSize: 15, fontWeight: "700",
-            paddingHorizontal: 24, marginBottom: 14,
-          }}>
-            Próximos eventos
-          </Text>
+        {!eventsLoading && upcomingEvents.length > 0 && (
+          <Animated.View style={[{ marginTop: 28 }, animStyle(eventsAnim)]}>
+            <Text style={styles.sectionTitle}>
+              Próximos eventos
+            </Text>
 
-          {/* Chips de filtro */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 24, gap: 8 }}
-          >
-            {CATEGORIES.map((cat) => {
-              const isActive = cat === activeCategory;
-              const catColor = CATEGORY_COLORS[cat];
-              return (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.eventsCarousel}
+            >
+              {upcomingEvents.map((event) => (
                 <TouchableOpacity
-                  key={cat}
-                  onPress={() => setActiveCategory(cat)}
+                  key={event.eventId}
                   activeOpacity={0.75}
-                  style={{
-                    paddingHorizontal: 16, paddingVertical: 7,
-                    borderRadius: 20,
-                    backgroundColor: isActive ? catColor : colors.surface,
-                    borderWidth: 1,
-                    borderColor: isActive ? catColor : colors.surfaceAlt,
-                  }}
+                  onPress={() => navigation.navigate("EventDetail", { eventId: event.eventId })}
+                  style={styles.eventCard}
                 >
-                  <Text style={{
-                    color: isActive ? colors.textPrimary : colors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: isActive ? "700" : "500",
-                  }}>
-                    {cat}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          {/* Lista de eventos */}
-          <View style={{ paddingHorizontal: 24, marginTop: 14 }}>
-            {filtered.length > 0 ? (
-              filtered.map((evento) => (
-                <TouchableOpacity
-                  key={evento.id}
-                  activeOpacity={0.75}
-                  style={{
-                    flexDirection: "row",
-                    backgroundColor: colors.surface + "CC",
-                    borderRadius: 14, borderWidth: 1,
-                    borderColor: colors.surfaceAlt,
-                    marginBottom: 10, overflow: "hidden",
-                  }}
-                >
-                  {/* Franja lateral */}
-                  <View style={{
-                    width: 48,
-                    backgroundColor: evento.color + "30",
-                    borderRightWidth: 1,
-                    borderRightColor: evento.color + "40",
-                    alignItems: "center", justifyContent: "center",
-                  }}>
-                    <Text style={{ fontSize: 22 }}>{evento.emoji}</Text>
+                  {/* Imagen de portada */}
+                  <View style={styles.eventImageContainer}>
+                    {event.coverUrl ? (
+                      <Image
+                        source={{ uri: event.coverUrl }}
+                        style={styles.eventImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.eventImage, styles.placeholderImage]}>
+                        <Ionicons name="calendar" size={32} color={colors.textMuted} />
+                      </View>
+                    )}
+                    
+                    {/* Badge de asientos disponibles */}
+                    {event.availableSeats > 0 && (
+                      <View style={styles.seatsBadge}>
+                        <Ionicons name="people" size={10} color={colors.textPrimary} />
+                        <Text style={styles.seatsBadgeText}>{event.availableSeats}</Text>
+                      </View>
+                    )}
                   </View>
 
-                  {/* Contenido */}
-                  <View style={{ flex: 1, padding: 12 }}>
-                    <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                      <Text style={{
-                        color: colors.textPrimary, fontSize: 14,
-                        fontWeight: "700", flex: 1,
-                      }} numberOfLines={1}>
-                        {evento.nombre}
+                  {/* Información del evento */}
+                  <View style={styles.eventInfo}>
+                    <Text style={styles.eventName} numberOfLines={2}>
+                      {event.eventName}
+                    </Text>
+                    <View style={styles.eventMetaRow}>
+                      <Ionicons name="calendar-outline" size={12} color={colors.textSecondary} />
+                      <Text style={styles.eventDate} numberOfLines={1}>
+                        {formatDate(event.startDate, event.finishDate)}
                       </Text>
-                      <View style={{
-                        backgroundColor: evento.color + "33",
-                        borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2,
-                        borderWidth: 1, borderColor: evento.color + "66",
-                      }}>
-                        <Text style={{ color: evento.color, fontSize: 10, fontWeight: "700" }}>
-                          {evento.categoria}
+                    </View>
+                    {event.siteName && (
+                      <View style={styles.eventMetaRow}>
+                        <Ionicons name="location-outline" size={12} color={colors.textSecondary} />
+                        <Text style={styles.eventLocation} numberOfLines={1}>
+                          {event.siteName}
                         </Text>
                       </View>
-                    </View>
-                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>
-                      {evento.fecha} · {evento.ciudad}
-                    </Text>
+                    )}
                   </View>
                 </TouchableOpacity>
-              ))
-            ) : (
-              /* Estado vacío */
-              <View style={{
-                borderRadius: 14, borderWidth: 1.5,
-                borderColor: colors.surfaceAlt,
-                borderStyle: "dashed",
-                padding: 36, alignItems: "center",
-              }}>
-                <Text style={{ fontSize: 38, marginBottom: 12 }}>🗓</Text>
-                <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "700", marginBottom: 6 }}>
-                  Sin eventos por aquí
-                </Text>
-                <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: "center", lineHeight: 20 }}>
-                  Pronto habrá contenido disponible
-                </Text>
-              </View>
-            )}
-          </View>
-        </Animated.View>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        )}
       </ScrollView>
     </View>
   );
+}
+
+// ─── Estilos ─────────────────────────────────────────────────────────────────
+function createStyles(colors) {
+  return StyleSheet.create({
+    sectionTitle: {
+      color: colors.textPrimary,
+      fontSize: 15,
+      fontWeight: "700",
+      paddingHorizontal: 24,
+      marginBottom: 14,
+    },
+    eventsCarousel: {
+      paddingHorizontal: 24,
+      gap: 12,
+    },
+    eventCard: {
+      width: 180,
+      backgroundColor: colors.surface + "CC",
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.surfaceAlt,
+      overflow: "hidden",
+    },
+    eventImageContainer: {
+      width: "100%",
+      height: 120,
+      position: "relative",
+    },
+    eventImage: {
+      width: "100%",
+      height: "100%",
+    },
+    placeholderImage: {
+      backgroundColor: colors.surfaceAlt,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    seatsBadge: {
+      position: "absolute",
+      top: 8,
+      right: 8,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+      backgroundColor: colors.primary + "E6",
+      borderRadius: 10,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+    },
+    seatsBadgeText: {
+      fontSize: 10,
+      fontWeight: "700",
+      color: colors.textPrimary,
+    },
+    eventInfo: {
+      padding: 12,
+    },
+    eventName: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: colors.textPrimary,
+      marginBottom: 8,
+      lineHeight: 18,
+    },
+    eventMetaRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      marginBottom: 4,
+    },
+    eventDate: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      flex: 1,
+    },
+    eventLocation: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      flex: 1,
+    },
+  });
 }

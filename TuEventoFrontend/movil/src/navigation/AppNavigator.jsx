@@ -15,6 +15,8 @@ import TermsScreen          from "../screens/TermsScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ResetPasswordScreen  from "../screens/ResetPasswordScreen";
 import HomeScreen           from "../screens/HomeScreen";
+import EventsHomeScreen     from "../screens/EventsHomeScreen";
+import EventListScreen      from "../screens/EventListScreen";
 import ProfileScreen        from "../screens/ProfileScreen";
 import SettingsScreen             from "../screens/SettingsScreen";
 import ThemeCustomizeScreen       from "../screens/ThemeCustomizeScreen";
@@ -97,12 +99,11 @@ function CustomTabBar({ state, descriptors, navigation }) {
     }}>
       {state.routes.map((route, index) => {
         const isFocused = state.index === index;
-        const isQR = route.name === "QR";
 
         const iconName = (() => {
-          if (route.name === "Eventos") return isFocused ? "home"    : "home-outline";
-          if (route.name === "QR")      return isFocused ? "qr-code" : "qr-code-outline";
-          if (route.name === "Perfil")  return isFocused ? "person"  : "person-outline";
+          if (route.name === "Inicio")   return isFocused ? "home"     : "home-outline";
+          if (route.name === "Eventos")  return isFocused ? "calendar" : "calendar-outline";
+          if (route.name === "Perfil")   return isFocused ? "person"   : "person-outline";
           return "ellipse-outline";
         })();
 
@@ -111,7 +112,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
           if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
         };
 
-        if (isQR) {
+        if (route.name === "Eventos") {
           return (
             <View key={route.key} style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
               <TouchableOpacity
@@ -170,9 +171,9 @@ function MainTabs() {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tab.Screen name="Eventos" component={HomeScreen} />
-      <Tab.Screen name="QR"      component={HomeScreen} />
-      <Tab.Screen name="Perfil"  component={ProfileScreen} />
+      <Tab.Screen name="Inicio"   component={HomeScreen} />
+      <Tab.Screen name="Eventos"  component={EventsHomeScreen} />
+      <Tab.Screen name="Perfil"   component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
