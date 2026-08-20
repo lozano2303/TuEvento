@@ -46,6 +46,7 @@ export default function HomeScreen() {
   // Eventos próximos
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(true);
+  const [processedEvents, setProcessedEvents] = useState([]);
 
   useEffect(() => {
     const loadAvatar = async () => {
@@ -86,9 +87,19 @@ export default function HomeScreen() {
           .slice(0, 4);
         
         setUpcomingEvents(upcoming);
+
+        // Procesar URLs de imágenes (reemplazar localhost por MinIO host)
+        const processed = upcoming.map((event) => ({
+          ...event,
+          coverUrl: event.coverUrl
+            ? event.coverUrl.replace("localhost", process.env.EXPO_PUBLIC_MINIO_HOST ?? "localhost")
+            : null,
+        }));
+        setProcessedEvents(processed);
       } catch (err) {
         console.error("[HomeScreen] Error loading upcoming events:", err);
         setUpcomingEvents([]);
+        setProcessedEvents([]);
       } finally {
         setEventsLoading(false);
       }
@@ -297,7 +308,7 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* ── Próximos eventos ── */}
-        {!eventsLoading && upcomingEvents.length > 0 && (
+        {!eventsLoading && processedEvents.length > 0 && (
           <Animated.View style={[{ marginTop: 28 }, animStyle(eventsAnim)]}>
             <Text style={styles.sectionTitle}>
               Próximos eventos
@@ -308,7 +319,7 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.eventsCarousel}
             >
-              {upcomingEvents.map((event) => (
+              {processedEvents.map((event) => (
                 <TouchableOpacity
                   key={event.eventId}
                   activeOpacity={0.75}
