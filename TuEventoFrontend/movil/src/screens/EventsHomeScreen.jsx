@@ -33,6 +33,7 @@ export default function EventsHomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [processedEvents, setProcessedEvents] = useState([]);
 
   const loadEvents = async (isRefresh = false) => {
     try {
@@ -41,9 +42,19 @@ export default function EventsHomeScreen() {
       
       const data = await getPublishedEvents();
       setEvents(data || []);
+
+      // Procesar URLs de imágenes (reemplazar localhost por MinIO host)
+      const processed = (data || []).map((event) => ({
+        ...event,
+        coverUrl: event.coverUrl
+          ? event.coverUrl.replace("localhost", process.env.EXPO_PUBLIC_MINIO_HOST ?? "localhost")
+          : null,
+      }));
+      setProcessedEvents(processed);
     } catch (err) {
       console.error("[EventsHomeScreen] Error loading events:", err);
       setError(err.message || "Error al cargar eventos");
+      setProcessedEvents([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -264,7 +275,7 @@ export default function EventsHomeScreen() {
 
       {/* Lista de eventos */}
       <FlatList
-        data={events}
+        data={processedEvents}
         renderItem={renderEventCard}
         keyExtractor={(item) => item.eventId.toString()}
         contentContainerStyle={styles.listContent}

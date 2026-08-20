@@ -16,7 +16,6 @@ import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ResetPasswordScreen  from "../screens/ResetPasswordScreen";
 import HomeScreen           from "../screens/HomeScreen";
 import EventsHomeScreen     from "../screens/EventsHomeScreen";
-import EventListScreen      from "../screens/EventListScreen";
 import ProfileScreen        from "../screens/ProfileScreen";
 import SettingsScreen             from "../screens/SettingsScreen";
 import ThemeCustomizeScreen       from "../screens/ThemeCustomizeScreen";
