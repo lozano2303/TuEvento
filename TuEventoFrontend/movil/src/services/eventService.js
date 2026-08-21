@@ -75,10 +75,38 @@ export const getPublishedEventsByCategory = async (categoryId) => {
 };
 
 /**
- * Obtiene el detalle completo de un evento por su ID.
+ * Obtiene los eventos públicos en un rango de fechas.
+ * 
+ * @param {string} from - Fecha inicio (formato ISO: YYYY-MM-DD)
+ * @param {string} to - Fecha fin (formato ISO: YYYY-MM-DD)
+ * @returns {Promise<Array>} Array de EventSummaryResponse
+ */
+export const getPublishedEventsByDateRange = async (from, to) => {
+  const token = await AsyncStorage.getItem("accessToken");
+  
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(
+    `${BASE_URL}/events/public/date-range?from=${from}&to=${to}`,
+    { headers }
+  );
+  
+  if (!response.ok) {
+    throw new Error(`Error fetching events by date range: ${response.status}`);
+  }
+  
+  const json = await response.json();
+  return json.data;
+};
+
+/**
+ * Obtiene el detalle completo de un evento.
  * 
  * @param {number} eventId - ID del evento
- * @returns {Promise<Object>} EventResponse
+ * @returns {Promise<Object>} EventResponse (detalle completo del evento)
  */
 export const getEventDetail = async (eventId) => {
   const token = await AsyncStorage.getItem("accessToken");
@@ -95,11 +123,11 @@ export const getEventDetail = async (eventId) => {
   }
   
   const json = await response.json();
-  return json.data; // EventResponse
+  return json.data;
 };
 
 /**
- * Obtiene las imágenes/medios de un evento.
+ * Obtiene las imágenes/media de un evento.
  * 
  * @param {number} eventId - ID del evento
  * @returns {Promise<Array>} Array de EventMediaResponse
@@ -119,5 +147,33 @@ export const getEventMedia = async (eventId) => {
   }
   
   const json = await response.json();
-  return json.data; // Array de EventMediaResponse
+  return json.data;
+};
+
+/**
+ * Obtiene el layout visual de un evento.
+ * 
+ * @param {number} eventId - ID del evento
+ * @returns {Promise<Object>} EventLayoutResponse { eventLayoutId, eventId, layoutData: string }
+ */
+export const getEventLayout = async (eventId) => {
+  const token = await AsyncStorage.getItem("accessToken");
+  
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${BASE_URL}/events/${eventId}/layout`, { headers });
+  
+  if (!response.ok) {
+    if (response.status === 404) {
+      // El evento no tiene layout guardado todavía
+      return null;
+    }
+    throw new Error(`Error fetching event layout: ${response.status}`);
+  }
+  
+  const json = await response.json();
+  return json.data; // { eventLayoutId, eventId, layoutData: string (JSON) }
 };
