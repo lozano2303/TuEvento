@@ -14,7 +14,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTheme } from "../context/ThemeContext";
-import { getEventDetail, getEventMedia } from "../services/eventService";
+import { getEventDetail, getEventMedia, getEventLayout } from "../services/eventService";
+import SeatMapCanvas from "../components/SeatMapCanvas";
 
 const { width } = Dimensions.get("window");
 
@@ -33,8 +34,10 @@ export default function EventDetailScreen() {
 
   const [event, setEvent] = useState(null);
   const [media, setMedia] = useState([]);
+  const [layout, setLayout] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     const loadEventDetail = async () => {
@@ -57,6 +60,13 @@ export default function EventDetailScreen() {
             : null,
         }));
         setMedia(processedMedia);
+
+        // Cargar layout del evento (puede ser null si no existe)
+        const layoutData = await getEventLayout(eventId);
+        if (layoutData && layoutData.layoutData) {
+          const parsedLayout = JSON.parse(layoutData.layoutData);
+          setLayout(parsedLayout);
+        }
       } catch (err) {
         console.error("[EventDetailScreen] Error loading event:", err);
         setError(err.message || "Error al cargar el evento");
@@ -297,6 +307,28 @@ export default function EventDetailScreen() {
             </View>
           )}
 
+          {/* Mapa de sillas */}
+          {layout && layout.elements && layout.elements.length > 0 && (
+            <View style={styles.seatMapSection}>
+              <Text style={styles.sectionTitle}>Mapa de Asientos</Text>
+              <View
+                style={styles.seatMapContainer}
+                onLayout={(e) => {
+                  const { width, height } = e.nativeEvent.layout;
+                  setCanvasSize({ width, height });
+                }}
+              >
+                {canvasSize.width > 0 && canvasSize.height > 0 && (
+                  <SeatMapCanvas
+                    layoutData={layout}
+                    containerWidth={canvasSize.width}
+                    containerHeight={canvasSize.height}
+                  />
+                )}
+              </View>
+            </View>
+          )}
+
           {/* Nota: Selección de sillas se implementará en paso posterior */}
           <View style={styles.noticeSection}>
             <Ionicons name="information-circle-outline" size={20} color={colors.accent} />
@@ -467,6 +499,16 @@ function createStyles(colors) {
       backgroundColor: colors.surfaceAlt,
       alignItems: "center",
       justifyContent: "center",
+    },
+    seatMapSection: {
+      marginBottom: 24,
+    },
+    seatMapContainer: {
+      width: "100%",
+      height: 400,
+      borderRadius: 12,
+      overflow: "hidden",
+      backgroundColor: colors.surfaceAlt,
     },
     noticeSection: {
       flexDirection: "row",
