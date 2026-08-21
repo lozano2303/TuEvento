@@ -75,13 +75,12 @@ export const getPublishedEventsByCategory = async (categoryId) => {
 };
 
 /**
- * Obtiene los eventos públicos en un rango de fechas.
+ * Obtiene el detalle completo de un evento por su ID.
  * 
- * @param {string} from - Fecha inicio (formato ISO: YYYY-MM-DD)
- * @param {string} to - Fecha fin (formato ISO: YYYY-MM-DD)
- * @returns {Promise<Array>} Array de EventSummaryResponse
+ * @param {number} eventId - ID del evento
+ * @returns {Promise<Object>} EventResponse
  */
-export const getPublishedEventsByDateRange = async (from, to) => {
+export const getEventDetail = async (eventId) => {
   const token = await AsyncStorage.getItem("accessToken");
   
   const headers = {};
@@ -89,15 +88,36 @@ export const getPublishedEventsByDateRange = async (from, to) => {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(
-    `${BASE_URL}/events/public/date-range?from=${from}&to=${to}`,
-    { headers }
-  );
+  const response = await fetch(`${BASE_URL}/events/${eventId}`, { headers });
   
   if (!response.ok) {
-    throw new Error(`Error fetching events by date range: ${response.status}`);
+    throw new Error(`Error fetching event detail: ${response.status}`);
   }
   
   const json = await response.json();
-  return json.data;
+  return json.data; // EventResponse
+};
+
+/**
+ * Obtiene las imágenes/medios de un evento.
+ * 
+ * @param {number} eventId - ID del evento
+ * @returns {Promise<Array>} Array de EventMediaResponse
+ */
+export const getEventMedia = async (eventId) => {
+  const token = await AsyncStorage.getItem("accessToken");
+  
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${BASE_URL}/events/${eventId}/media`, { headers });
+  
+  if (!response.ok) {
+    throw new Error(`Error fetching event media: ${response.status}`);
+  }
+  
+  const json = await response.json();
+  return json.data; // Array de EventMediaResponse
 };

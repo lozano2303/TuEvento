@@ -16,6 +16,7 @@ import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ResetPasswordScreen  from "../screens/ResetPasswordScreen";
 import HomeScreen           from "../screens/HomeScreen";
 import EventsHomeScreen     from "../screens/EventsHomeScreen";
+import EventDetailScreen    from "../screens/EventDetailScreen";
 import ProfileScreen        from "../screens/ProfileScreen";
 import SettingsScreen             from "../screens/SettingsScreen";
 import ThemeCustomizeScreen       from "../screens/ThemeCustomizeScreen";
@@ -205,6 +206,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Settings"       component={SettingsScreen} />
         <Stack.Screen name="ThemeCustomize" component={ThemeCustomizeScreen} />
         <Stack.Screen name="EditProfile"    component={EditProfileScreen} />
+        <Stack.Screen name="EventDetail"    component={EventDetailScreen} />
         <Stack.Screen name="OrganizerRequests"     component={OrganizerRequestsScreen} />
         <Stack.Screen name="OrganizerRequestDetail" component={OrganizerRequestDetailScreen} />
         <Stack.Screen
