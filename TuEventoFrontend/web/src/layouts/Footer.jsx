@@ -23,7 +23,7 @@ export default function Footer() {
           <div className="w-16 h-px bg-surfaceAlt" />
 
           {/* Copyright */}
-          <p className="text-gray-600 text-xs">
+          <p className="text-textMuted text-xs">
             © 2026 Tu Evento · Todos los derechos reservados
           </p>
 

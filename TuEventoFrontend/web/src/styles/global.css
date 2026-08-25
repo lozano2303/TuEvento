@@ -1,26 +1,1067 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
+/* ── Tailwind v4 theme tokens ────────────────────────────────────────────────
+   Valores iniciales = tema PRINCIPAL.
+   ThemeContext los sobreescribe en :root vía JS (applyPaletteToDOM),
+   de modo que todo cambio de tema se aplica sin recargar la página.
+   ─────────────────────────────────────────────────────────────────────────── */
 @theme {
-  --color-background: #1E0A3C;
-  --color-surface: #2D1B4E;
-  --color-surfaceAlt: #3D2B5E;
-  --color-primary: #7C3AED;
-  --color-primaryDark: #6D28D9;
-  --color-accent: #A78BFA;
-  --color-textPrimary: #FFFFFF;
+  --color-background:    #1E0A3C;
+  --color-surface:       #2D1B4E;
+  --color-surfaceAlt:    #3D2B5E;
+  --color-primary:       #7C3AED;
+  --color-primaryDark:   #6D28D9;
+  --color-accent:        #A78BFA;
+  --color-textPrimary:   #FFFFFF;
   --color-textSecondary: #9CA3AF;
-  --color-textMuted: #6B7280;
-  --color-error: #EF4444;
-  --color-success: #059669;
+  --color-textMuted:     #6B7280;
+  --color-error:         #EF4444;
+  --color-errorBg:       #EF444422;
+  --color-success:       #059669;
+  --color-successBg:     #05966922;
 }
 
-body, #root {
+/* ── Transición suave al cambiar de tema ─────────────────────────────────────
+   Solo propiedades de color/fondo para no interferir con animaciones de
+   interacción (hover, focus, transforms, etc.).
+   ─────────────────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  transition:
+    background-color 300ms ease,
+    border-color     300ms ease,
+    color            200ms ease,
+    fill             200ms ease,
+    stroke           200ms ease,
+    box-shadow       200ms ease;
+}
+
+/* Excluir inputs para no ralentizar el tipeo */
+input,
+textarea,
+select,
+[data-no-theme-transition] {
+  transition:
+    background-color 300ms ease,
+    border-color     200ms ease,
+    box-shadow       200ms ease;
+}
+
+/* ── Base ────────────────────────────────────────────────────────────────────*/
+body,
+#root {
   background-color: var(--color-background);
   color: var(--color-textPrimary);
   min-height: 100vh;
 }
 
-input[type="password"]::-ms-reveal {
-  display: none;
+/* ── Scrollbar temática (Webkit) ─────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-surface); }
+::-webkit-scrollbar-thumb { background: var(--color-surfaceAlt); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+
+/* ── Fix: ocultar el ojo nativo en inputs de tipo password (IE/Edge) ──────── */
+input[type="password"]::-ms-reveal { display: none; }
+
+/* ── Clases de utilidad temáticas ────────────────────────────────────────────
+   Usadas en los modales y tarjetas que antes tenían bg-white / bg-gray-*.
+   Permiten que el tema se aplique sin llamar a useTheme en cada componente.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Tarjeta de modal principal — base compartida por TODOS los modales.
+   Incluye animación de entrada y sombra de elevación con color del tema.
+   Los modales de estado (éxito/error) añaden adicionalmente .modal-state-card
+   para el header con degradado. */
+.theme-modal-card {
+  background-color: var(--color-surface);
+  color: var(--color-textPrimary);
+  border: 1px solid var(--color-surfaceAlt);
+  animation: modalIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-shadow:
+    0 20px 60px color-mix(in srgb, var(--color-primary) 30%, transparent),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
+
+/* Elevación para modales con estilos propios (inline styles, AdminPanel, HelpModal, APK).
+   Misma animación y sombra sin imponer background. */
+.modal-elevated {
+  animation: modalIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-shadow:
+    0 20px 60px color-mix(in srgb, var(--color-primary) 30%, transparent),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Cabecera con degradado diagonal — para modales de estado (éxito/error/info).
+   Usa --color-onPrimary (calculado en applyPaletteToDOM) para texto legible
+   sobre primary en los 8 temas. Incluye círculos decorativos y overflow hidden
+   para contenerlos. */
+.modal-header-gradient {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primaryDark) 100%);
+  color: var(--color-onPrimary, #ffffff);
+}
+.modal-header-gradient::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+.modal-header-gradient::after {
+  content: '';
+  position: absolute;
+  bottom: -30px; left: -30px;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  pointer-events: none;
+}
+.modal-header-gradient-sub {
+  color: color-mix(in srgb, var(--color-onPrimary, #ffffff) 78%, transparent);
+}
+
+/* Círculo sólido para ícono de estado — fondo blanco con halo extra */
+.modal-icon-ring {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3), 0 0 0 4px rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  width: 60px; height: 60px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Botón CTA de modal — degradado accent→primary, esquinas 12px, hover mejorado */
+.modal-btn-cta {
+  width: 100%;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-primary));
+  color: var(--color-textPrimary);
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 40%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.modal-btn-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  filter: brightness(1.08);
+}
+.modal-btn-cta:active {
+  transform: translateY(0);
+}
+
+/* ── Aliases de compatibilidad (modal de bienvenida en login.jsx) ────────────
+   welcome-modal-* → apuntan a las clases genéricas de arriba.
+   NO eliminar: el modal de bienvenida los usa directamente en el JSX. */
+.welcome-modal-card       { /* heredado de theme-modal-card */ }
+.welcome-modal-header     {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primaryDark) 100%);
+  color: var(--color-onPrimary, #ffffff);
+}
+/* Círculos decorativos via pseudo-elementos */
+.welcome-modal-header::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+.welcome-modal-header::after {
+  content: '';
+  position: absolute;
+  bottom: -30px; left: -30px;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  pointer-events: none;
+}
+.welcome-modal-header-sub { color: color-mix(in srgb, var(--color-onPrimary, #ffffff) 78%, transparent); }
+.welcome-modal-check-ring {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.3), 0 0 0 4px rgba(255,255,255,0.15);
+  border-radius: 9999px;
+  width: 60px; height: 60px;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.welcome-modal-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-primary));
+  color: var(--color-textPrimary);
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 40%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.welcome-modal-btn:hover  { transform: translateY(-1px); box-shadow: 0 8px 22px color-mix(in srgb, var(--color-primary) 55%, transparent); filter: brightness(1.08); }
+.welcome-modal-btn:active { transform: translateY(0); }
+
+/* Cabecera del modal con degradado del tema (usado en Términos, header simple) */
+.theme-modal-header {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primaryDark) 100%);
+  color: var(--color-onPrimary, #ffffff);
+}
+
+/* Cuerpo secundario del modal (antes bg-gray-50) */
+.theme-modal-body {
+  background-color: var(--color-surfaceAlt);
+  color: var(--color-textSecondary);
+}
+
+/* Pie del modal */
+.theme-modal-footer {
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-surfaceAlt);
+}
+
+/* Botón primario del modal — alias de modal-btn-cta para compatibilidad */
+.theme-modal-btn-primary {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-primary));
+  color: var(--color-textPrimary);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 40%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.theme-modal-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  filter: brightness(1.08);
+}
+.theme-modal-btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Tarjeta de info dentro del modal (antes bg-gray-50 rounded) */
+.theme-info-card {
+  background-color: var(--color-surfaceAlt);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+/* Texto de label en modales (antes text-gray-700) */
+.theme-label {
+  color: var(--color-textSecondary);
+}
+
+/* Texto auxiliar en modales (antes text-gray-500) */
+.theme-hint {
+  color: var(--color-textMuted);
+}
+
+/* Columna ilustración de páginas auth (antes bg-gradient-to-br from-purple-600...) */
+.theme-auth-hero {
+  background: linear-gradient(
+    135deg,
+    var(--color-primaryDark) 0%,
+    var(--color-primary)     50%,
+    var(--color-primaryDark) 100%
+  );
+}
+
+/* Overlay de fondo para modales (antes bg-black/50 o bg-black bg-opacity-60) */
+.theme-overlay {
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+/* Badge de ítem de menú (profile, wallet, admin) */
+.theme-menu-item-icon {
+  background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+.theme-menu-item-icon-error {
+  background-color: color-mix(in srgb, var(--color-error) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
+}
+.theme-menu-item-icon-info {
+  background-color: color-mix(in srgb, #60a5fa 15%, transparent);
+  border: 1px solid color-mix(in srgb, #60a5fa 35%, transparent);
+}
+
+/* Divisor de menú */
+.theme-menu-divider {
+  border-top: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
+}
+.theme-menu-divider-error {
+  border-top: 1px solid color-mix(in srgb, var(--color-error) 15%, transparent);
+}
+
+/* Hover de ítem de menú */
+.theme-menu-item:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+.theme-menu-item-wallet:hover {
+  background-color: color-mix(in srgb, #60a5fa 10%, transparent);
+}
+.theme-menu-item-admin:hover {
+  background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
+}
+
+/* Dropdown del Navbar */
+.theme-dropdown {
+  background-color: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+/* EventCard */
+.theme-event-card {
+  background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  border: 0.5px solid color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+.theme-event-card-placeholder {
+  background-color: color-mix(in srgb, var(--color-primaryDark) 25%, transparent);
+}
+.theme-event-card-footer {
+  border-top: 0.5px solid color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+/* ProfilePage — hero section */
+.theme-hero-section {
+  background: color-mix(in srgb, var(--color-surface) 50%, transparent);
+  backdrop-filter: blur(25px);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+  box-shadow:
+    0 0 30px color-mix(in srgb, var(--color-primary) 20%, transparent),
+    inset 0 0 20px rgba(255, 255, 255, 0.05);
+}
+.theme-profile-section {
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+/* ── ThemeCustomizePanel ─────────────────────────────────────────────────────
+   Clases específicas del panel de personalización de temas.
+   Agrupadas aquí para no hardcodear valores en el JSX.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Panel lateral — fondo y borde izquierdo */
+.tcp-panel {
+  background-color: var(--color-background);
+  border-left: 1px solid color-mix(in srgb, var(--color-primary) 25%, var(--color-surfaceAlt));
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Cabecera del panel */
+.tcp-header {
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-surfaceAlt);
+}
+
+/* Wrapper del input[type=color] nativo — lo convierte en un botón redondo
+   consistente con los demás inputs del proyecto. */
+.tcp-color-swatch-btn {
+  position: relative;
+  width: 3rem;       /* 48 px */
+  height: 3rem;
+  border-radius: 0.75rem;
+  border: 2px solid var(--color-surfaceAlt);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  cursor: pointer;
+}
+.tcp-color-swatch-btn:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 30%, transparent);
+  transform: scale(1.05);
+}
+.tcp-color-swatch-btn input[type="color"] {
+  position: absolute;
+  inset: -4px;          /* más grande que el contenedor para cubrir el padding nativo */
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  opacity: 0;           /* invisible — el fondo del wrapper muestra el color */
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+/* El fondo del swatch se setea vía inline style en el wrapper */
+
+/* Badge "Custom" — más destacado, alineado con la tipografía del token */
+.tcp-badge-custom {
+  font-size: 0.625rem;   /* 10px */
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+/* Fila de propiedad — token row */
+.tcp-token-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;           /* 12px */
+  padding: 0.625rem 0.875rem;  /* 10px 14px */
+  border-radius: 0.875rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-surfaceAlt);
+  text-align: left;
+  transition: background-color 150ms ease, border-color 150ms ease;
+  cursor: pointer;
+}
+.tcp-token-row:hover {
+  background-color: var(--color-surfaceAlt);
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+/* Editor inline de color */
+.tcp-editor {
+  border-radius: 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+  background-color: var(--color-surface);
+  padding: 1rem;
+}
+
+/* Grupo de propiedades — label de sección */
+.tcp-group-label {
+  font-size: 0.6875rem;  /* 11px */
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-textMuted);
+  padding: 0 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Log entry — fila de historial */
+.tcp-log-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-surfaceAlt) 70%, transparent);
+}
+.tcp-log-entry:last-child {
+  border-bottom: none;
+}
+.tcp-log-icon {
+  width: 1.75rem;   /* 28px */
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.tcp-log-icon--update {
+  background-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+.tcp-log-icon--reset {
+  background-color: var(--color-surfaceAlt);
+  border: 1px solid color-mix(in srgb, var(--color-textMuted) 25%, transparent);
+}
+
+/* Color dot de historial */
+.tcp-log-dot {
+  width: 0.75rem;   /* 12px */
+  height: 0.75rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.18);
+  flex-shrink: 0;
+}
+
+/* Botón "Personalizar colores" en ProfilePage */
+.tcp-customize-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+  background-color: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  color: var(--color-accent);
+  font-size: 0.8125rem;   /* 13px */
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: background-color 150ms ease, border-color 150ms ease,
+              box-shadow 150ms ease, transform 150ms ease;
+}
+.tcp-customize-btn:hover {
+  background-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 65%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  transform: translateY(-1px);
+}
+.tcp-customize-btn:active {
+  transform: translateY(0);
+}
+
+/* ── Semantic-fixed utility classes ─────────────────────────────────────────
+   Estos colores son SEMÁNTICOS (estado del sistema) e INTENCIONALMENTE fijos:
+   no cambian con el tema porque su significado es universal (rojo = error,
+   verde = éxito, amarillo = advertencia). SÍ usan tokens del tema cuando
+   el token ya es semántico (--color-error, --color-success).
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Badges de estado (PENDING / APPROVED / REJECTED / DRAFT) ───────────── */
+.badge-warning {
+  background-color: rgba(234, 179, 8, 0.15);
+  color: #ca8a04;
+  border: 1px solid rgba(234, 179, 8, 0.35);
+}
+/* En temas oscuros el amarillo oscuro no se lee — usar tono más claro */
+.badge-warning-text { color: #eab308; }
+
+.badge-success-fixed {
+  background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+  color: var(--color-success);
+  border: 1px solid color-mix(in srgb, var(--color-success) 30%, transparent);
+}
+.badge-error-fixed {
+  background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
+  color: var(--color-error);
+  border: 1px solid color-mix(in srgb, var(--color-error) 30%, transparent);
+}
+
+/* ── Role badges ─────────────────────────────────────────────────────────── */
+/* Admin — siempre rojo semántico, legible en cualquier tema */
+.badge-role-admin {
+  background-color: color-mix(in srgb, var(--color-error) 90%, #000);
+  color: #fff;
+}
+/* Organizer — usa el color primario del tema activo */
+.badge-role-org {
+  background-color: var(--color-primary);
+  color: var(--color-textPrimary);
+}
+/* User — neutro */
+.badge-role-user {
+  background-color: var(--color-surfaceAlt);
+  color: var(--color-textSecondary);
+}
+
+/* ── Barras de fortaleza de contraseña ───────────────────────────────────── */
+/* Los colores de las barras son semánticos y fijos (rojo/amarillo/azul/verde) */
+.strength-bar-1 { background-color: #ef4444; }   /* rojo   */
+.strength-bar-2 { background-color: #eab308; }   /* amarillo */
+.strength-bar-3 { background-color: #3b82f6; }   /* azul   */
+.strength-bar-4 { background-color: #22c55e; }   /* verde  */
+.strength-text-1 { color: #ef4444; }
+.strength-text-2 { color: #eab308; }
+.strength-text-3 { color: #3b82f6; }
+.strength-text-4 { color: #22c55e; }
+
+/* ── Mensajes de error / éxito en formularios ───────────────────────────── */
+.form-error   { color: var(--color-error); }
+.form-success { color: var(--color-success); }
+
+/* ── Botón Google OAuth — blanco fijo para que el logo sea reconocible ───── */
+.btn-oauth-google {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #ffffff;
+  color: #1f2937;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+  cursor: pointer;
+}
+.btn-oauth-google:hover {
+  background-color: #f3f4f6;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* ── Botón Facebook OAuth — azul de marca fijo ───────────────────────────── */
+.btn-oauth-facebook {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: #1877f2;
+  color: #ffffff;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.20);
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+  cursor: pointer;
+}
+.btn-oauth-facebook:hover {
+  background-color: #166fe5;
+}
+
+/* ── Toggle knob (interruptor on/off) — blanco fijo para contraste ───────── */
+.toggle-knob {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: transform 200ms ease;
+  flex-shrink: 0;
+}
+
+/* ── Botón primario del formulario (login/registro) ─────────────────────── */
+.btn-form-primary {
+  width: 100%;
+  background: linear-gradient(to right, var(--color-primary), var(--color-primaryDark));
+  color: var(--color-textPrimary);
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  transition: filter 200ms ease, opacity 200ms ease;
+  border: none;
+  cursor: pointer;
+}
+.btn-form-primary:hover  { filter: brightness(1.1); }
+.btn-form-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Input focus ring — tema primario ────────────────────────────────────── */
+.input-theme-focus {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-surfaceAlt);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: var(--color-textPrimary);
+  width: 100%;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.input-theme-focus::placeholder { color: var(--color-textMuted); }
+.input-theme-focus:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+.input-theme-focus.has-error {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-error) 25%, transparent);
+}
+
+/* ── Modal de bienvenida post-login ─────────────────────────────────────────
+   Mejoras visuales: animación de entrada, degradado en header,
+   ícono de check sólido, sombra de elevación y botón con degradado.
+   Todo usa CSS vars del tema activo — funciona en los 8 temas.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+/* ── Contrast warning block in ThemeCustomizePanel ─────────────────────────── */
+.tcp-contrast-warning {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(251, 191, 36, 0.30);  /* amber-400/30 */
+  background-color: rgba(251, 191, 36, 0.08);  /* amber-400/8  */
+  padding: 0.75rem;
+}
+
+/* ── Landing Page — Hero section ────────────────────────────────────────────
+   Sistema visual alineado con el WelcomeModal (welcome-modal-header / modal-btn-cta).
+   Usa --color-onPrimary (blanco o negro calculado dinámicamente según la luminancia
+   del primary activo) para garantizar contraste WCAG AA en todos los temas.
+   Los círculos decorativos y la lógica de profundidad son idénticos a .modal-header-gradient.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Fondo del Hero — gradiente diagonal primary → primaryDark (= welcome-modal-header) */
+.hero-section-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primaryDark) 100%);
+}
+
+/* Capa de profundidad — overlay sutil que añade contraste entre el fondo y el contenido,
+   igual que la profundidad que dan los pseudo-elementos del welcome-modal-header */
+.hero-section-depth {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.18) 0%,
+    rgba(0, 0, 0, 0.08) 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+/* Círculo decorativo superior-derecha — espejo del ::before de welcome-modal-header */
+.hero-section-circle-tr {
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+/* Círculo decorativo inferior-izquierda — espejo del ::after de welcome-modal-header */
+.hero-section-circle-bl {
+  position: absolute;
+  bottom: -60px;
+  left: -60px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+/* Círculo decorativo extra — centro-izquierda, da más profundidad en pantallas grandes */
+.hero-section-circle-ml {
+  position: absolute;
+  top: 50%;
+  left: -40px;
+  transform: translateY(-50%);
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.03);
+  filter: blur(24px);
+  pointer-events: none;
+}
+
+/* Título H1 del Hero — usa onPrimary para máximo contraste sobre el gradiente */
+.hero-section-title {
+  color: var(--color-onPrimary, #ffffff);
+}
+
+/* Span de acento ("Bienvenido de vuelta." / "ideal.") — onPrimary puro (100%).
+   Este span es parte del h1 (text-4xl md:text-6xl bold) → umbral WCAG AA Large ≥ 3.0:1.
+   onPrimary puro garantiza el mayor contraste posible sobre el gradiente primary→primaryDark
+   en todos los temas del sistema.
+   Historial de ajustes: text-accent → onPrimary 90% → onPrimary 95% → onPrimary 100%
+   (90% y 95% fallaban en Pastel/Naturaleza/Océano/Atardecer por la dilución sobre el fondo coloreado). */
+.hero-section-accent-text {
+  color: var(--color-onPrimary, #ffffff);
+}
+
+/* Párrafo descriptivo — onPrimary al 78% (mismo ratio que .welcome-modal-header-sub) */
+.hero-section-subtitle {
+  color: color-mix(in srgb, var(--color-onPrimary, #ffffff) 78%, transparent);
+}
+
+/* Botón CTA "Comenzar ahora" — gradiente primaryDark→primary con color onPrimary.
+   Usa primaryDark→primary (no accent→primary) porque accent puede tener luminancia
+   intermedia donde ni blanco ni negro contrastan bien en todos los temas
+   (ej. Principal accent=#A78BFA: blanco=2.72:1, negro=7.72:1 — pero onPrimary=blanco).
+   primaryDark→primary siempre tiene la misma dirección que onPrimary, garantizando
+   contraste ≥ 4.5:1 en los 8 temas del sistema.
+   color: onPrimary (no textPrimary) — calculado dinámicamente para contrastar con primary. */
+.hero-section-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--color-primaryDark), var(--color-primary));
+  color: var(--color-onPrimary, #ffffff);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 40%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.hero-section-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  filter: brightness(1.08);
+}
+.hero-section-btn:active {
+  transform: translateY(0);
+}
+
+/* ── BaseModal — sistema de modal reutilizable ───────────────────────────────
+   Extraído del WelcomeModal (welcome-modal-*) como sistema genérico.
+   Funciona con los 8 temas via CSS vars; usa --color-onPrimary para texto
+   sobre el header-gradiente (garantizado por ThemeContext.applyPaletteToDOM).
+
+   Variantes de ícono por `variant`:
+     success  → color semántico verde fijo (significado universal)
+     warning  → color semántico ámbar fijo
+     danger   → color semántico rojo fijo (usa --color-error del tema)
+     info     → color accent del tema
+     neutral  → color textSecondary del tema
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Overlay — cubre 100% del viewport. backdrop-filter blur(20px) + opacidad 0.92
+   eliminan completamente la legibilidad del contenido de fondo, igual que en móvil.
+   z-index 9999 queda por encima de cualquier elemento fixed de la app.
+   Inline styles en BaseModal.jsx duplican estos valores para el primer render del portal. */
+.bm-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  /* Sin overflow: hidden — el glow de .bm-card debe poder expandirse
+     más allá del borde del modal sin ser recortado */
+}
+
+/* Card contenedora — glow radial morado en capas con radios crecientes y
+   opacidad decreciente, igual al efecto "resplandor en degradado" de la referencia móvil. */
+.bm-card {
+  position: relative;
+  width: 100%;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-surfaceAlt);
+  border-radius: 1.5rem;
+  overflow: hidden;              /* contiene el gradiente del header — no afecta box-shadow */
+  animation: modalIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-shadow:
+    0 0  80px rgba(168, 85, 247, 0.55),  /* núcleo del glow — radio menor, más intenso */
+    0 0 140px rgba(168, 85, 247, 0.30),  /* capa media */
+    0 0 200px rgba(168, 85, 247, 0.15),  /* halo exterior difuminado */
+    0 24px 64px color-mix(in srgb, var(--color-primary) 40%, transparent), /* sombra de elevación */
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Header con gradiente — copia exacta de .modal-header-gradient */
+.bm-header {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primaryDark) 100%);
+  color: var(--color-onPrimary, #ffffff);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+/* Círculo decorativo superior-derecha (::before del modal de referencia) */
+.bm-header::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 160px; height: 160px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+/* Círculo decorativo inferior-izquierda (::after del modal de referencia) */
+.bm-header::after {
+  content: '';
+  position: absolute;
+  bottom: -30px; left: -30px;
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+
+/* Ícono de estado — anillo blanco sólido (= .modal-icon-ring / .welcome-modal-check-ring) */
+.bm-icon-ring {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.30), 0 0 0 4px rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  width: 68px; height: 68px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Colores semánticos del ícono según variant — fijos porque son semánticos */
+.bm-icon-success { color: #16a34a; }   /* verde éxito — fijo, universal */
+.bm-icon-warning { color: #d97706; }   /* ámbar advertencia — fijo */
+.bm-icon-danger  { color: var(--color-error); }
+.bm-icon-info    { color: var(--color-accent); }
+.bm-icon-neutral { color: var(--color-textSecondary); }
+
+/* Título del header */
+.bm-title {
+  font-size: 1.25rem;    /* 20px */
+  font-weight: 700;
+  color: var(--color-onPrimary, #ffffff);
+  position: relative;
+  z-index: 1;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+}
+
+/* Subtítulo del header — 78% de onPrimary, igual que .modal-header-gradient-sub */
+.bm-subtitle {
+  font-size: 0.875rem;
+  color: color-mix(in srgb, var(--color-onPrimary, #ffffff) 78%, transparent);
+  position: relative;
+  z-index: 1;
+  line-height: 1.4;
+}
+
+/* Body — fondo oscuro base (más oscuro que el header-gradiente) */
+.bm-body {
+  padding: 1.5rem;
+  background-color: var(--color-surface);
+}
+
+/* Info card dentro del body — igual que .theme-info-card */
+.bm-info-card {
+  background-color: color-mix(in srgb, var(--color-surfaceAlt) 70%, rgba(0,0,0,0.20));
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Footer de botones */
+.bm-footer {
+  padding: 0 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Botón primario — gradiente primaryDark→primary con onPrimary (WCAG validado) */
+.bm-btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, var(--color-primaryDark), var(--color-primary));
+  color: var(--color-onPrimary, #ffffff);
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 40%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.bm-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--color-primary) 55%, transparent);
+  filter: brightness(1.08);
+}
+.bm-btn-primary:active  { transform: translateY(0); }
+.bm-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
+
+/* Botón secundario — superficie con borde sutil */
+.bm-btn-secondary {
+  width: 100%;
+  background: transparent;
+  color: var(--color-textSecondary);
+  font-weight: 500;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-surfaceAlt);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.bm-btn-secondary:hover {
+  background-color: var(--color-surfaceAlt);
+  color: var(--color-textPrimary);
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+.bm-btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Separador sutil dentro del body */
+.bm-divider {
+  height: 1px;
+  background-color: color-mix(in srgb, var(--color-surfaceAlt) 60%, transparent);
+  margin: 1rem 0;
+}
+
+/* Texto de label en el body */
+.bm-label { color: var(--color-textSecondary); font-size: 0.875rem; font-weight: 500; }
+.bm-hint  { color: var(--color-textMuted);     font-size: 0.75rem; }
+.bm-accent-text { color: var(--color-accent);  font-size: 0.875rem; font-weight: 600; }
+
+/* Variante: modal de términos/contenido largo — header sin ícono, más compacto */
+.bm-header--compact {
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.bm-header--compact .bm-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Botón cerrar (✕) del header compacto */
+.bm-close-btn {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: color-mix(in srgb, var(--color-onPrimary, #ffffff) 70%, transparent);
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  flex-shrink: 0;
+}
+.bm-close-btn:hover {
+  color: var(--color-onPrimary, #ffffff);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Body scrollable para modales de contenido largo (Términos) */
+.bm-body--scroll {
+  overflow-y: auto;
+  max-height: 60vh;
+}
+.bm-body--scroll::-webkit-scrollbar       { width: 4px; }
+.bm-body--scroll::-webkit-scrollbar-track { background: var(--color-surface); }
+.bm-body--scroll::-webkit-scrollbar-thumb { background: var(--color-surfaceAlt); border-radius: 2px; }

@@ -12,7 +12,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -39,8 +39,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9010:9000"
+      - "9011:9001"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -128,7 +128,7 @@ services:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
       # URL pública embebida en presigned URLs — debe ser alcanzable desde el browser
-      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-http://localhost:9000}
+      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-http://localhost:9010}
 
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
@@ -202,6 +202,22 @@ services:
       - postgres
     networks:
       - tuevento-network
+
+  # ── Frontend (React + Vite + nginx) ────────────────────────────────────────
+  frontend:
+    build:
+      context: ./TuEventoFrontend/web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8080/api
+    container_name: tuevento-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    networks:
+      - tuevento-network
+    depends_on:
+      - backend
 
 # ── Redes ──────────────────────────────────────────────────────────────────────
 networks:
