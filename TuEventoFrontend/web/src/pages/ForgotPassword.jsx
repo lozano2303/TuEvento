@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { forgotPassword, resetPassword } from "../services/Login.js";
-import { Eye, EyeOff, CheckCircle, Lock, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, CheckCircle, Lock, ArrowRight, PartyPopper, Sparkles } from "lucide-react";
+import BaseModal from "../components/common/BaseModal.jsx";
 
 export default function ForgotPassword({ onBackToLogin }) {
   const [step, setStep] = useState('email'); // 'email' or 'reset'
@@ -25,8 +26,8 @@ export default function ForgotPassword({ onBackToLogin }) {
   };
 
   const strengthLabel = ['', 'Muy débil', 'Débil', 'Buena', 'Fuerte'];
-  const strengthColor = ['', 'text-red-400', 'text-yellow-400', 'text-blue-400', 'text-green-400'];
-  const barColors = ['', 'bg-red-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500'];
+  const strengthColor = ['', 'strength-text-1', 'strength-text-2', 'strength-text-3', 'strength-text-4'];
+  const barColors = ['', 'strength-bar-1', 'strength-bar-2', 'strength-bar-3', 'strength-bar-4'];
 
   const handlePasswordChange = (value) => {
     setNewPassword(value);
@@ -115,7 +116,7 @@ export default function ForgotPassword({ onBackToLogin }) {
   if (step === 'reset') {
     return (
       <div className="min-h-screen flex">
-        <div className="w-1/2 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-8">
+        <div className="theme-auth-hero w-1/2 flex items-center justify-center p-8">
           <div className="text-center space-y-6 max-w-sm">
             <img
               src="/src/assets/images/fondologin.png"
@@ -138,11 +139,11 @@ export default function ForgotPassword({ onBackToLogin }) {
                   type="text"
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
-                  className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                  className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all text-sm"
                   placeholder="Código de recuperación"
                   required
                 />
-                {fieldErrors.token && <p className="text-red-500 text-xs mt-1">{fieldErrors.token}</p>}
+                {fieldErrors.token && <p className="form-error text-xs mt-1">{fieldErrors.token}</p>}
               </div>
 
               <div>
@@ -151,7 +152,7 @@ export default function ForgotPassword({ onBackToLogin }) {
                     type={showPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => handlePasswordChange(e.target.value)}
-                    className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                    className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all text-sm"
                     placeholder="Nueva contraseña"
                     required
                   />
@@ -163,7 +164,7 @@ export default function ForgotPassword({ onBackToLogin }) {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                {fieldErrors.newPassword && <p className="text-red-500 text-xs mt-1">{fieldErrors.newPassword}</p>}
+                {fieldErrors.newPassword && <p className="form-error text-xs mt-1">{fieldErrors.newPassword}</p>}
                 
                 {newPassword.length > 0 && (
                   <div className="mt-2 space-y-1">
@@ -191,7 +192,7 @@ export default function ForgotPassword({ onBackToLogin }) {
                         
                         if (missing.length > 0) {
                           return (
-                            <p className="text-xs text-red-400 flex items-center">
+                            <p className="text-xs form-error flex items-center">
                               <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>
                               Debe contener {missing.join(", ")}
                             </p>
@@ -209,7 +210,7 @@ export default function ForgotPassword({ onBackToLogin }) {
                   type={showPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                  className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all text-sm"
                   placeholder="Confirmar nueva contraseña"
                   required
                 />
@@ -220,10 +221,10 @@ export default function ForgotPassword({ onBackToLogin }) {
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-                {fieldErrors.confirmPassword && <p className="text-red-500 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
+                {fieldErrors.confirmPassword && <p className="form-error text-xs mt-1">{fieldErrors.confirmPassword}</p>}
               </div>
 
-              {error && <p className="text-red-500 text-sm">{error}</p>}
+              {error && <p className="form-error text-sm">{error}</p>}
 
               <button
                 type="submit"
@@ -246,55 +247,55 @@ export default function ForgotPassword({ onBackToLogin }) {
           </div>
         </div>
 
-        {/* Notificación de contraseña restablecida exitosamente */}
-        {showSuccessNotification && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-              {/* Header con gradiente morado */}
-              <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-center">
-                <div className="flex justify-center mb-4">
-                  <div className="bg-white rounded-full p-3">
-                    <CheckCircle className="w-8 h-8 text-purple-500" />
-                  </div>
+        {/* ── BaseModal: contraseña restablecida ──────────────────── */}
+        <BaseModal
+          isOpen={showSuccessNotification}
+          onClose={() => {}}
+          hideOverlayClose
+          variant="success"
+          icon={<CheckCircle className="w-8 h-8" />}
+          title="¡Contraseña Restablecida!"
+          subtitle="Tu contraseña ha sido actualizada exitosamente"
+          decorIcons={
+            <>
+              <PartyPopper aria-hidden="true" className="absolute top-3 left-3 w-5 h-5 -rotate-12" style={{ color: 'rgba(255,255,255,0.5)' }} />
+              <Sparkles    aria-hidden="true" className="absolute top-3 right-3 w-[18px] h-[18px]"  style={{ color: 'rgba(253,224,71,0.75)' }} />
+              <PartyPopper aria-hidden="true" className="absolute bottom-3 right-4 w-4 h-4 rotate-12" style={{ color: 'rgba(255,255,255,0.35)' }} />
+            </>
+          }
+          actions={[
+            {
+              label: 'Ir al Login',
+              icon: <ArrowRight className="w-4 h-4" />,
+              variant: 'primary',
+              onClick: handleContinueToLogin,
+            },
+          ]}
+        >
+          <div className="space-y-3 text-center">
+            <div className="bm-info-card">
+              <div className="flex items-center justify-center mb-2">
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Lock className="w-5 h-5 text-accent" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">¡Bienvenido de Vuelta!</h3>
-                <p className="text-purple-100 text-sm">Has iniciado sesión exitosamente</p>
               </div>
-
-              {/* Contenido */}
-              <div className="p-6 text-center">
-                <div className="mb-6">
-                  <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                    <Lock className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                    <p className="text-gray-700 text-sm font-medium mb-1">Nueva contraseña configurada</p>
-                    <p className="text-gray-500 text-xs">Tu cuenta está ahora más segura</p>
-                  </div>
-
-                  <div className="text-gray-600 text-sm">
-                    <p className="mb-2">🔐 <span className="font-medium">Contraseña actualizada correctamente</span></p>
-                    <p className="text-xs text-gray-500">Ya puedes iniciar sesión con tu nueva contraseña</p>
-                  </div>
-                </div>
-
-                {/* Botón para continuar */}
-                <button
-                  onClick={handleContinueToLogin}
-                  className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 text-sm flex items-center justify-center space-x-2"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  <span>Ir al Login</span>
-                </button>
-              </div>
+              <p className="bm-label font-medium mb-1">Nueva contraseña configurada</p>
+              <p className="bm-hint">Tu cuenta está ahora más segura</p>
             </div>
+            <div className="bm-divider" />
+            <p className="text-sm text-textSecondary">
+              🔐 <span className="font-medium text-textPrimary">Contraseña actualizada correctamente</span>
+            </p>
+            <p className="bm-hint">Ya puedes iniciar sesión con tu nueva contraseña</p>
           </div>
-        )}
+        </BaseModal>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex">
-      <div className="w-1/2 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-8">
+      <div className="theme-auth-hero w-1/2 flex items-center justify-center p-8">
         <div className="text-center space-y-6 max-w-sm">
           <img
             src="/src/assets/images/fondologin.png"
@@ -317,13 +318,13 @@ export default function ForgotPassword({ onBackToLogin }) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all text-sm"
                 placeholder="Correo electrónico"
                 required
               />
             </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p className="form-error text-sm">{error}</p>}
 
             <button
               type="submit"

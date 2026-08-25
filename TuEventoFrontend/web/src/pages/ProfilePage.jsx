@@ -3,7 +3,8 @@ import Footer from '../layouts/Footer';
 import { useTheme } from '../context/ThemeContext';
 import { getThemes, activateTheme } from '../services/themeService';
 import { getProfileByUserId, getProfilePictureUrl, updateProfile, uploadProfilePicture } from '../services/ProfileService';
-import { AlertCircle, Camera, CheckCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Camera, CheckCircle, Loader2, Palette } from 'lucide-react';
+import ThemeCustomizePanel from '../components/theme/ThemeCustomizePanel';
 
 const THEME_PREVIEWS = {
   DARK:       { background: "#1E0A3C", primary: "#7C3AED", accent: "#A78BFA" },
@@ -16,9 +17,10 @@ const MAX_AVATAR_SIZE_MB = 2;
 const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const ProfilePage = () => {
-  const { refreshPalette, activeThemeId } = useTheme();
+  const { refreshPalette, activeThemeId, applyPalette } = useTheme();
   const [selectedLanguage, setSelectedLanguage] = useState('es');
   const [loading, setLoading] = useState(false);
+  const [customizePanelOpen, setCustomizePanelOpen] = useState(false);
   const [themes, setThemes] = useState([]);
   const [loadingTheme, setLoadingTheme] = useState(false);
   const [profileId, setProfileId] = useState(null);
@@ -221,10 +223,10 @@ const ProfilePage = () => {
 
       {/* Hero Section */}
       <div className="w-full h-80 relative overflow-hidden bg-background">
-        <div className="absolute inset-0 z-0" style={{ background: 'radial-gradient(circle at 30% 20%, #4c1d95 0%, transparent 60%), radial-gradient(circle at 70% 30%, #1e3a8a 0%, transparent 60%), radial-gradient(circle at 50% 0%, #7c3aed 0%, transparent 40%)' }}></div>
-        <div className="absolute top-10 left-0 w-[150%] h-px bg-gradient-to-r from-transparent via-[rgba(124,23,211,0.3)] to-transparent -rotate-45"></div>
-        <div className="absolute top-40 left-0 w-[150%] h-px bg-gradient-to-r from-transparent via-[rgba(0,212,255,0.3)] to-transparent -rotate-45"></div>
-        <div className="absolute top-60 left-0 w-[150%] h-px bg-gradient-to-r from-transparent via-[rgba(124,23,211,0.3)] to-transparent -rotate-45"></div>
+        <div className="absolute inset-0 z-0" style={{ background: 'radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--color-primaryDark) 80%, #000) 0%, transparent 60%), radial-gradient(circle at 70% 30%, color-mix(in srgb, var(--color-primary) 40%, #000) 0%, transparent 60%), radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-primary) 60%, transparent) 0%, transparent 40%)' }}></div>
+        <div className="absolute top-10 left-0 w-[150%] h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent -rotate-45"></div>
+        <div className="absolute top-40 left-0 w-[150%] h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent -rotate-45"></div>
+        <div className="absolute top-60 left-0 w-[150%] h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent -rotate-45"></div>
         <div className="absolute inset-0 z-10 opacity-40" style={{ backgroundImage: 'linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
         <div className="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
         <div className="absolute bottom-0 left-0 w-full h-24 bg-background blur-xl scale-y-150 origin-bottom opacity-90"></div>
@@ -234,16 +236,16 @@ const ProfilePage = () => {
       <main className="max-w-[1100px] mx-auto px-6 -mt-70 pb-20 relative z-10">
 
         {/* Premium Header Card */}
-        <div className="relative rounded-2xl p-8 mb-8" style={{ background: 'rgba(26, 17, 33, 0.5)', backdropFilter: 'blur(25px)', border: '1px solid rgba(124, 23, 211, 0.45)', boxShadow: '0 0 30px rgba(124, 23, 211, 0.2), inset 0 0 20px rgba(255,255,255,0.05)' }}>
-          <div className="absolute inset-0 z-0 rounded-2xl" style={{ background: 'radial-gradient(at 0% 0%, hsla(268,77%,35%,1) 0%, transparent 50%), radial-gradient(at 100% 0%, hsla(195,100%,45%,0.3) 0%, transparent 50%), radial-gradient(at 50% 100%, hsla(262,80%,20%,1) 0%, transparent 50%)', opacity: 0.8 }}></div>
+        <div className="theme-hero-section relative rounded-2xl p-8 mb-8">
+          <div className="absolute inset-0 z-0 rounded-2xl" style={{ background: 'radial-gradient(at 0% 0%, color-mix(in srgb, var(--color-primaryDark) 80%, #000) 0%, transparent 50%), radial-gradient(at 100% 0%, color-mix(in srgb, var(--color-accent) 30%, transparent) 0%, transparent 50%), radial-gradient(at 50% 100%, color-mix(in srgb, var(--color-primary) 50%, #000) 0%, transparent 50%)', opacity: 0.8 }}></div>
           <div className="absolute inset-0 z-0 rounded-2xl" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")', opacity: 0.04 }}></div>
           <div className="flex flex-col md:flex-row items-center md:items-end gap-8 relative z-10">
             <div className="relative flex flex-col items-center">
-              <div className="absolute -inset-4 rounded-full blur-3xl" style={{ background: 'rgba(124, 23, 211, 0.2)' }}></div>
-              <div className="absolute -inset-1 rounded-2xl blur-md opacity-60" style={{ background: 'linear-gradient(to top right, #7c17d3, #60a5fa, #a855f7)' }}></div>
+              <div className="absolute -inset-4 rounded-full blur-3xl" style={{ background: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}></div>
+              <div className="absolute -inset-1 rounded-2xl blur-md opacity-60" style={{ background: 'linear-gradient(to top right, var(--color-primary), var(--color-accent), var(--color-primaryDark))' }}></div>
               {/* Avatar container — fixed 128×128, no overflow */}
               <div className="relative w-32 h-32 flex-shrink-0">
-                <div className="w-32 h-32 rounded-xl bg-gradient-to-br from-[#7c17d3] to-[#5a189a] flex items-center justify-center text-5xl font-bold text-textPrimary border-2 border-white/30 shadow-2xl overflow-hidden" style={{ boxShadow: '0 0 50px rgba(124, 23, 211, 0.6), 0 0 20px rgba(0, 212, 255, 0.4)' }}>
+                <div className="w-32 h-32 rounded-xl bg-gradient-to-br from-primary to-primaryDark flex items-center justify-center text-5xl font-bold text-textPrimary border-2 border-white/30 shadow-2xl overflow-hidden" style={{ boxShadow: '0 0 50px color-mix(in srgb, var(--color-primary) 60%, transparent), 0 0 20px color-mix(in srgb, var(--color-accent) 40%, transparent)' }}>
                   {avatarLoading ? (
                     <Loader2 className="w-12 h-12 animate-spin text-textPrimary" />
                   ) : (avatarUrl || previewUrl) ? (
@@ -261,7 +263,7 @@ const ProfilePage = () => {
                     />
                   )}
                   {uploadingAvatar && (
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
+                    <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
                       <Loader2 className="w-10 h-10 animate-spin text-white" />
                     </div>
                   )}
@@ -300,7 +302,7 @@ const ProfilePage = () => {
               {avatarMessage && (
                 <div className={`mt-4 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold border ${
                   avatarMessage.type === 'success'
-                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                    ? 'badge-success-fixed'
                     : 'bg-error/10 text-error border-error/20'
                 }`}>
                   {avatarMessage.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
@@ -318,7 +320,7 @@ const ProfilePage = () => {
           <div className="lg:col-span-2 space-y-8">
 
             {/* Información Personal */}
-            <section className="rounded-2xl p-8" style={{ background: 'rgba(26, 17, 33, 0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(124, 23, 211, 0.2)' }}>
+            <section className="theme-profile-section rounded-2xl p-8">
               <h3 className="text-xl font-bold text-textPrimary mb-6 flex items-center gap-2">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--color-primary)">
                   <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
@@ -348,7 +350,7 @@ const ProfilePage = () => {
             </section>
 
             {/* Seguridad */}
-            <section className="rounded-2xl p-8" style={{ background: 'rgba(26, 17, 33, 0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(124, 23, 211, 0.2)' }}>
+            <section className="theme-profile-section rounded-2xl p-8">
               <h3 className="text-xl font-bold text-textPrimary mb-6 flex items-center gap-2">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--color-primary)">
                   <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
@@ -366,7 +368,7 @@ const ProfilePage = () => {
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="px-4 py-2 rounded-lg bg-error text-textPrimary text-sm font-bold hover:bg-red-700 transition-all"
+                    className="px-4 py-2 rounded-lg bg-error text-textPrimary text-sm font-bold hover:bg-error/80 transition-all"
                   >
                     Cerrar Sesión
                   </button>
@@ -379,7 +381,7 @@ const ProfilePage = () => {
           <div className="space-y-8">
 
             {/* Idioma */}
-            <section className="rounded-2xl p-6" style={{ background: 'rgba(26, 17, 33, 0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(124, 23, 211, 0.2)' }}>
+            <section className="theme-profile-section rounded-2xl p-6">
               <h3 className="text-lg font-bold text-textPrimary mb-4">Idioma</h3>
               <div className="space-y-3">
                 {languages.map((lang) => (
@@ -408,7 +410,7 @@ const ProfilePage = () => {
             </section>
 
             {/* Tema Visual — conectado al backend */}
-            <section className="rounded-2xl p-6" style={{ background: 'rgba(26, 17, 33, 0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(124, 23, 211, 0.2)' }}>
+            <section className="theme-profile-section rounded-2xl p-6">
               <h3 className="text-lg font-bold text-textPrimary mb-4">Tema Visual</h3>
               <div className="space-y-3">
                 {themes.length === 0 && (
@@ -420,40 +422,54 @@ const ProfilePage = () => {
                   const preview = THEME_PREVIEWS[theme.name] || THEME_PREVIEWS.DARK;
                   const isActive = activeThemeId === theme.id;
                   const isActivating = loadingTheme;
+                  // PRINCIPAL is not customisable — mirrors mobile guard
+                  const isCustomisable = isActive && theme.name !== 'PRINCIPAL';
 
                   return (
-                    <button
-                      key={theme.id}
-                      onClick={() => handleThemeChange(theme.id)}
-                      disabled={isActivating}
-                      className={`relative rounded-xl overflow-hidden border-2 p-4 w-full transition-all text-left ${
-                        isActive
-                          ? 'border-primary bg-primary/10'
-                          : 'border-surfaceAlt hover:border-primary/40'
-                      } ${isActivating ? 'opacity-60 cursor-not-allowed' : ''}`}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <span className={`text-sm font-bold ${isActive ? 'text-textPrimary' : 'text-textSecondary'}`}>
-                          {theme.name}
-                        </span>
-                        {isActive && (
-                          <span className="text-xs font-bold text-primary bg-primary/20 border border-primary/40 px-2 py-0.5 rounded-full">
-                            ACTIVO
+                    <div key={theme.id} className="space-y-1.5">
+                      <button
+                        onClick={() => handleThemeChange(theme.id)}
+                        disabled={isActivating}
+                        className={`relative rounded-xl overflow-hidden border-2 p-4 w-full transition-all text-left ${
+                          isActive
+                            ? 'border-primary bg-primary/10'
+                            : 'border-surfaceAlt hover:border-primary/40'
+                        } ${isActivating ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <span className={`text-sm font-bold ${isActive ? 'text-textPrimary' : 'text-textSecondary'}`}>
+                            {theme.name}
                           </span>
+                          {isActive && (
+                            <span className="text-xs font-bold text-primary bg-primary/20 border border-primary/40 px-2 py-0.5 rounded-full">
+                              ACTIVO
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Preview de 3 círculos de color */}
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full border border-white/20" style={{ background: preview.background }} />
+                          <div className="w-6 h-6 rounded-full border border-white/20" style={{ background: preview.primary }} />
+                          <div className="w-6 h-6 rounded-full border border-white/20" style={{ background: preview.accent }} />
+                        </div>
+
+                        {isActive && (
+                          <div className="absolute inset-0 pointer-events-none rounded-xl" style={{ boxShadow: 'inset 0 0 20px color-mix(in srgb, var(--color-primary) 20%, transparent)' }}></div>
                         )}
-                      </div>
+                      </button>
 
-                      {/* Preview de 3 círculos de color */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full border border-white/20" style={{ background: preview.background }} />
-                        <div className="w-6 h-6 rounded-full border border-white/20" style={{ background: preview.primary }} />
-                        <div className="w-6 h-6 rounded-full border border-white/20" style={{ background: preview.accent }} />
-                      </div>
-
-                      {isActive && (
-                        <div className="absolute inset-0 pointer-events-none rounded-xl" style={{ boxShadow: 'inset 0 0 20px rgba(124,23,211,0.2)' }}></div>
+                      {/* Personalizar button — only on the active non-PRINCIPAL theme */}
+                      {isCustomisable && (
+                        <button
+                          onClick={() => setCustomizePanelOpen(true)}
+                          className="tcp-customize-btn"
+                        >
+                          <Palette className="w-3.5 h-3.5 flex-shrink-0" />
+                          Personalizar colores
+                        </button>
                       )}
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -462,6 +478,17 @@ const ProfilePage = () => {
         </div>
       </main>
       <Footer />
+
+      {/* Theme customise panel — slide-in drawer */}
+      {customizePanelOpen && (() => {
+        const activeTheme = themes.find(t => t.id === activeThemeId);
+        return (
+          <ThemeCustomizePanel
+            themeName={activeTheme?.name ?? 'DARK'}
+            onClose={() => setCustomizePanelOpen(false)}
+          />
+        );
+      })()}
     </div>
   );
 };

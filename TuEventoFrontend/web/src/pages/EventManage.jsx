@@ -378,7 +378,7 @@ export default function EventManage() {
                         {/* Gestionar imágenes */}
                         <button
                           onClick={() => openMedia(event)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-yellow-400 hover:bg-yellow-400/10 transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-accent hover:bg-accent/10 transition-colors"
                           title="Gestionar imágenes del evento"
                         >
                           <ImagePlus className="w-3.5 h-3.5" />
@@ -427,7 +427,7 @@ export default function EventManage() {
             <button
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
-              className="px-4 py-2 rounded-xl text-sm font-medium bg-error text-white hover:bg-red-700 transition-colors disabled:opacity-60"
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-error text-white hover:bg-error/80 transition-colors disabled:opacity-60"
             >
               {isDeleting ? 'Eliminando…' : 'Sí, eliminar'}
             </button>

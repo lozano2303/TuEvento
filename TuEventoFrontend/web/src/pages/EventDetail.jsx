@@ -32,16 +32,22 @@ export default function EventDetail() {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}>
-        <p className="text-sm" style={{ color: 'rgba(196,181,253,0.6)' }}>Cargando evento…</p>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface) 50%, var(--color-background) 100%)' }}
+      >
+        <p className="text-sm text-textMuted">Cargando evento…</p>
       </div>
     );
   }
 
   if (error || !event) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}>
-        <p className="text-sm text-red-400">{error ?? 'Evento no encontrado'}</p>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4"
+        style={{ background: 'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface) 50%, var(--color-background) 100%)' }}
+      >
+        <p className="text-sm text-error">{error ?? 'Evento no encontrado'}</p>
         <BackButton fallback="/events" label="Volver a eventos" />
       </div>
     );
@@ -49,8 +55,8 @@ export default function EventDetail() {
 
   return (
     <div
-      className="min-h-screen text-white"
-      style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}
+      className="min-h-screen text-textPrimary"
+      style={{ background: 'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface) 50%, var(--color-background) 100%)' }}
     >
       <div className="max-w-5xl mx-auto px-4 py-8">
 
@@ -67,7 +73,7 @@ export default function EventDetail() {
             {/* Imagen principal */}
             <div
               className="relative rounded-2xl overflow-hidden"
-              style={{ border: '0.5px solid rgba(167,139,250,0.2)', aspectRatio: '16/9' }}
+              style={{ border: '0.5px solid color-mix(in srgb, var(--color-accent) 25%, transparent)', aspectRatio: '16/9' }}
             >
               {media.length > 0 ? (
                 <>
@@ -94,16 +100,22 @@ export default function EventDetail() {
                       >
                         <ChevronRight className="w-4 h-4 text-white" />
                       </button>
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,0,0,0.5)' }}>
+                      <div
+                        className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] px-2 py-0.5 rounded-full text-textPrimary"
+                        style={{ background: 'rgba(0,0,0,0.5)' }}
+                      >
                         {activeImage + 1} / {media.length}
                       </div>
                     </>
                   )}
                 </>
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-2" style={{ background: 'rgba(109,40,217,0.15)' }}>
-                  <ImageOff className="w-8 h-8" style={{ color: 'rgba(196,181,253,0.3)' }} />
-                  <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>
+                <div
+                  className="w-full h-full flex flex-col items-center justify-center gap-2"
+                  style={{ background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)' }}
+                >
+                  <ImageOff className="w-8 h-8 text-textMuted opacity-40" />
+                  <span className="text-xs text-textMuted opacity-50">
                     Este evento aún no tiene imágenes
                   </span>
                 </div>
@@ -120,7 +132,7 @@ export default function EventDetail() {
                     className="shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all"
                     style={{
                       border: i === activeImage
-                        ? '2px solid rgba(167,139,250,0.8)'
+                        ? '2px solid var(--color-accent)'
                         : '2px solid transparent',
                       opacity: i === activeImage ? 1 : 0.6,
                     }}
@@ -135,11 +147,11 @@ export default function EventDetail() {
           {/* ── Info del evento ────────────────────────────────────────────── */}
           <div className="flex flex-col gap-5">
             <div>
-              <h1 className="text-2xl font-bold" style={{ color: '#e9d5ff' }}>
+              <h1 className="text-2xl font-bold text-textPrimary">
                 {event.eventName}
               </h1>
               {event.description && (
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: 'rgba(196,181,253,0.75)' }}>
+                <p className="mt-2 text-sm leading-relaxed text-textSecondary">
                   {event.description}
                 </p>
               )}
@@ -148,8 +160,8 @@ export default function EventDetail() {
             <div className="space-y-3">
               {/* Fechas */}
               {event.startDate && (
-                <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(233,213,255,0.8)' }}>
-                  <Calendar className="w-4 h-4 shrink-0" style={{ color: 'rgba(167,139,250,0.7)' }} />
+                <div className="flex items-center gap-2 text-sm text-textSecondary">
+                  <Calendar className="w-4 h-4 shrink-0 text-accent opacity-70" />
                   <span>
                     {event.startDate}
                     {event.finishDate && event.finishDate !== event.startDate && ` → ${event.finishDate}`}
@@ -159,16 +171,16 @@ export default function EventDetail() {
 
               {/* Sede */}
               {event.siteName && (
-                <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(233,213,255,0.8)' }}>
-                  <MapPin className="w-4 h-4 shrink-0" style={{ color: 'rgba(167,139,250,0.7)' }} />
+                <div className="flex items-center gap-2 text-sm text-textSecondary">
+                  <MapPin className="w-4 h-4 shrink-0 text-accent opacity-70" />
                   <span>{event.siteName}</span>
                 </div>
               )}
 
               {/* Sillas */}
               {event.availableSeats > 0 && (
-                <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(233,213,255,0.8)' }}>
-                  <Users className="w-4 h-4 shrink-0" style={{ color: 'rgba(167,139,250,0.7)' }} />
+                <div className="flex items-center gap-2 text-sm text-textSecondary">
+                  <Users className="w-4 h-4 shrink-0 text-accent opacity-70" />
                   <span>{event.availableSeats.toLocaleString()} sillas disponibles</span>
                 </div>
               )}
@@ -178,11 +190,19 @@ export default function EventDetail() {
             <div>
               <span
                 className="inline-block text-xs font-semibold px-3 py-1 rounded-full"
-                style={{
-                  background: event.status === 'PUBLISHED' ? 'rgba(22,163,74,0.2)' : 'rgba(107,114,128,0.2)',
-                  color:      event.status === 'PUBLISHED' ? '#4ade80' : 'rgba(196,181,253,0.5)',
-                  border:     `1px solid ${event.status === 'PUBLISHED' ? 'rgba(74,222,128,0.3)' : 'rgba(107,114,128,0.3)'}`,
-                }}
+                style={
+                  event.status === 'PUBLISHED'
+                    ? {
+                        background: 'color-mix(in srgb, var(--color-success) 20%, transparent)',
+                        color:      'var(--color-success)',
+                        border:     '1px solid color-mix(in srgb, var(--color-success) 35%, transparent)',
+                      }
+                    : {
+                        background: 'color-mix(in srgb, var(--color-textMuted) 20%, transparent)',
+                        color:      'var(--color-textMuted)',
+                        border:     '1px solid color-mix(in srgb, var(--color-textMuted) 30%, transparent)',
+                      }
+                }
               >
                 {event.status === 'PUBLISHED' ? 'Publicado' : event.status}
               </span>
