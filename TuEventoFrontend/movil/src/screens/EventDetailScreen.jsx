@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -38,6 +38,15 @@ export default function EventDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const [selectedSection, setSelectedSection] = useState(null);
+
+  const handleSectionTap = useCallback((sectionId) => {
+    setSelectedSection(sectionId);
+  }, []);
+
+  const handleBackToOverview = useCallback(() => {
+    setSelectedSection(null);
+  }, []);
 
   useEffect(() => {
     const loadEventDetail = async () => {
@@ -323,19 +332,25 @@ export default function EventDetailScreen() {
                     layoutData={layout}
                     containerWidth={canvasSize.width}
                     containerHeight={canvasSize.height}
+                    selectedSection={selectedSection}
+                    onSectionTap={handleSectionTap}
+                    onBackToOverview={handleBackToOverview}
+                    colors={colors}
                   />
                 )}
               </View>
             </View>
           )}
 
-          {/* Nota: Selección de sillas se implementará en paso posterior */}
-          <View style={styles.noticeSection}>
-            <Ionicons name="information-circle-outline" size={20} color={colors.accent} />
-            <Text style={styles.noticeText}>
-              La selección de asientos estará disponible próximamente
-            </Text>
-          </View>
+          {/* Instrucción de uso del mapa */}
+          {layout && layout.elements && layout.elements.length > 0 && (
+            <View style={styles.noticeSection}>
+              <Ionicons name="hand-left-outline" size={20} color={colors.accent} />
+              <Text style={styles.noticeText}>
+                Toca una sección para acercarla. Usa dos dedos para hacer zoom y arrastra para moverte. Toca "← Ver todas" para volver.
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
