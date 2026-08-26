@@ -1,17 +1,21 @@
-import { useState } from 'react';
-import { AlertTriangle, Eye, EyeOff, Loader2, ShieldOff } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  AlertTriangle, Eye, EyeOff, Loader2,
+  PowerOff, ShieldCheck, HeadphonesIcon, X,
+  CheckCircle2,
+} from 'lucide-react';
 import { deactivateAccount } from '../../services/ProfileService';
 import { performLogout } from '../../services/httpClient';
-import BaseModal from './BaseModal';
 
 /**
- * DeactivateAccountModal
+ * DeactivateAccountModal — premium redesign
  *
- * Two-step confirmation modal built on top of BaseModal for visual consistency.
- *   Step 1 — Explain consequences and ask for explicit confirmation.
- *   Step 2 — Require password verification before executing.
+ * Two-step flow:
+ *   Step 1 — Explain consequences + CTA to proceed
+ *   Step 2 — Password confirmation
  *
- * On success: calls performLogout() and redirects to /login.
+ * Logic/callbacks preserved exactly. Only the visual layer changes.
  */
 export default function DeactivateAccountModal({ isOpen, onClose }) {
   const [step, setStep]                 = useState(1);
@@ -19,7 +23,9 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState('');
+  const cardRef                         = useRef(null);
 
+  /* ── Reset on close ────────────────────────────────────────────────────── */
   const handleClose = () => {
     setStep(1);
     setPassword('');
@@ -29,6 +35,22 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
     onClose();
   };
 
+  /* ── Escape key + scroll lock ──────────────────────────────────────────── */
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => { if (e.key === 'Escape' && !loading) handleClose(); };
+    window.addEventListener('keydown', onKey);
+    setTimeout(() => cardRef.current?.focus(), 50);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, loading]);
+
+  /* ── Deactivation submit ───────────────────────────────────────────────── */
   const handleDeactivate = async (e) => {
     e.preventDefault();
     if (!password.trim()) { setError('Ingresa tu contraseña para continuar.'); return; }
@@ -44,121 +66,307 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
     }
   };
 
-  // ── Step 1 actions ──────────────────────────────────────────────────────────
-  const step1Actions = [
-    {
-      label: 'Cancelar',
-      variant: 'secondary',
-      onClick: handleClose,
-    },
-    {
-      label: 'Sí, continuar',
-      variant: 'primary',
-      onClick: () => { setStep(2); setError(''); },
-    },
-  ];
+  if (!isOpen) return null;
 
-  // ── Step 2 actions ──────────────────────────────────────────────────────────
-  const step2Actions = [
-    {
-      label: 'Volver',
-      variant: 'secondary',
-      disabled: loading,
-      onClick: () => { setStep(1); setError(''); setPassword(''); },
-    },
-    {
-      label: loading ? 'Desactivando...' : 'Confirmar desactivación',
-      variant: 'primary',
-      disabled: loading || !password.trim(),
-      loading,
-      loadingLabel: 'Desactivando...',
-      // The form submit is handled separately; this button triggers it via form id
-      onClick: () => document.getElementById('deactivate-form')?.requestSubmit(),
-    },
-  ];
-
-  return (
-    <BaseModal
-      isOpen={isOpen}
-      onClose={handleClose}
-      variant="danger"
-      icon={<ShieldOff className="w-7 h-7" />}
-      title="Desactivar Cuenta"
-      subtitle={step === 1 ? 'Esta acción cerrará tu sesión de inmediato' : 'Confirma tu identidad para continuar'}
-      actions={step === 1 ? step1Actions : step2Actions}
-      maxWidth="max-w-[440px]"
+  const modal = (
+    /* ── Overlay ── */
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
+      style={{
+        background: 'rgba(10,4,20,0.80)',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget && !loading) handleClose(); }}
+      role="presentation"
     >
-      {/* ── Step 1: consequences ── */}
-      {step === 1 && (
-        <div className="space-y-4">
-          <div className="flex gap-3 p-4 rounded-xl bg-error/8 border border-error/20">
-            <AlertTriangle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
-            <div className="space-y-2">
-              <p className="text-sm font-semibold text-error">¿Estás seguro?</p>
-              <ul className="text-sm text-textSecondary space-y-1.5">
-                <li className="flex items-start gap-2">
-                  <span className="text-error leading-5">•</span>
-                  Tu sesión cerrará inmediatamente.
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-error leading-5">•</span>
-                  No podrás iniciar sesión hasta contactar soporte.
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-error leading-5">•</span>
-                  Tus datos se conservan, no se elimina nada permanentemente.
-                </li>
-              </ul>
+      {/* ── Card ── */}
+      <div
+        ref={cardRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dac-title"
+        tabIndex={-1}
+        className="relative w-full outline-none"
+        style={{
+          maxWidth: '480px',
+          background: 'linear-gradient(145deg, rgba(30,10,60,0.92) 0%, rgba(20,6,42,0.96) 100%)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          border: '1px solid rgba(139,92,246,0.25)',
+          borderRadius: '22px',
+          boxShadow: '0 0 0 1px rgba(139,92,246,0.08), 0 32px 64px rgba(0,0,0,0.55), 0 0 80px rgba(109,40,217,0.12)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ── Top glow bar ── */}
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
+          style={{
+            width: '60%',
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent, rgba(167,139,250,0.6), transparent)',
+            borderRadius: '50%',
+          }}
+        />
+
+        {/* ── Close button ── */}
+        <button
+          type="button"
+          onClick={handleClose}
+          disabled={loading}
+          aria-label="Cerrar"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40"
+          style={{
+            background: 'rgba(139,92,246,0.08)',
+            border: '1px solid rgba(139,92,246,0.15)',
+            color: 'rgba(196,181,253,0.7)',
+          }}
+          onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(139,92,246,0.18)'; }}
+          onMouseOut={(e)  => { e.currentTarget.style.background = 'rgba(139,92,246,0.08)'; }}
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* ── Inner content ── */}
+        <div className="px-6 pt-8 pb-6 sm:px-8 sm:pt-9 sm:pb-7">
+
+          {/* Icon */}
+          <div className="flex justify-center mb-5">
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, rgba(109,40,217,0.35) 0%, rgba(147,51,234,0.25) 100%)',
+                border: '1px solid rgba(139,92,246,0.30)',
+                boxShadow: '0 0 24px rgba(109,40,217,0.30), inset 0 1px 0 rgba(255,255,255,0.06)',
+              }}
+            >
+              <PowerOff className="w-7 h-7" style={{ color: '#c4b5fd' }} />
             </div>
           </div>
-          <p className="text-sm text-textMuted">
-            Para reactivar tu cuenta deberás contactar al equipo de soporte de Tu Evento.
+
+          {/* Title */}
+          <h2
+            id="dac-title"
+            className="text-center text-xl sm:text-2xl font-bold mb-2"
+            style={{ color: '#f5f3ff', letterSpacing: '-0.01em' }}
+          >
+            ¿Desactivar tu cuenta?
+          </h2>
+
+          {/* Subtitle */}
+          <p
+            className="text-center text-sm leading-relaxed mb-6"
+            style={{ color: 'rgba(196,181,253,0.75)' }}
+          >
+            {step === 1
+              ? 'Esta acción cerrará tu sesión de inmediato y desactivará tu cuenta temporalmente.'
+              : 'Ingresa tu contraseña para confirmar la desactivación de tu cuenta.'}
           </p>
-        </div>
-      )}
 
-      {/* ── Step 2: password ── */}
-      {step === 2 && (
-        <form id="deactivate-form" onSubmit={handleDeactivate} className="space-y-4">
-          <p className="text-sm text-textSecondary leading-relaxed">
-            Ingresa tu contraseña actual para confirmar la desactivación.
-          </p>
+          {/* ── STEP 1 ── */}
+          {step === 1 && (
+            <div className="space-y-3">
 
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(''); }}
-              placeholder="Contraseña actual"
-              autoFocus
-              disabled={loading}
-              className="w-full rounded-xl px-4 py-3 pr-11 text-sm text-textPrimary transition-all"
-              style={{
-                background: 'var(--color-background)',
-                border: `1px solid ${error ? 'var(--color-error)' : 'color-mix(in srgb, var(--color-surfaceAlt) 80%, transparent)'}`,
-                outline: 'none',
-              }}
-              onFocus={(e)  => { if (!error) e.target.style.borderColor = 'var(--color-primary)'; }}
-              onBlur={(e)   => { if (!error) e.target.style.borderColor = 'color-mix(in srgb, var(--color-surfaceAlt) 80%, transparent)'; }}
-            />
-            <button
-              type="button"
-              tabIndex={-1}
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted hover:text-textSecondary transition-colors"
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
+              {/* Consequences card */}
+              <div
+                className="rounded-xl p-4"
+                style={{
+                  background: 'rgba(109,40,217,0.12)',
+                  border: '1px solid rgba(139,92,246,0.20)',
+                }}
+              >
+                <p
+                  className="text-xs font-semibold uppercase tracking-widest mb-3"
+                  style={{ color: 'rgba(167,139,250,0.80)' }}
+                >
+                  Ten en cuenta que:
+                </p>
+                <ul className="space-y-2.5">
+                  {[
+                    'Tu sesión cerrará inmediatamente.',
+                    'No podrás iniciar sesión hasta contactar soporte.',
+                    'Tus datos se conservan, no se elimina nada permanentemente.',
+                  ].map((text) => (
+                    <li key={text} className="flex items-start gap-2.5">
+                      <div
+                        className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                        style={{
+                          background: 'rgba(139,92,246,0.20)',
+                          border: '1px solid rgba(139,92,246,0.35)',
+                        }}
+                      >
+                        <div
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ background: '#a78bfa' }}
+                        />
+                      </div>
+                      <span className="text-sm leading-5" style={{ color: 'rgba(221,214,254,0.85)' }}>
+                        {text}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-          {error && (
-            <p className="text-xs text-error flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-              {error}
-            </p>
+              {/* Support note */}
+              <div
+                className="flex items-start gap-3 rounded-xl p-3.5"
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                }}
+              >
+                <HeadphonesIcon
+                  className="w-4 h-4 flex-shrink-0 mt-0.5"
+                  style={{ color: 'rgba(167,139,250,0.60)' }}
+                />
+                <p className="text-xs leading-relaxed" style={{ color: 'rgba(196,181,253,0.60)' }}>
+                  Para reactivar tu cuenta deberás contactar al equipo de soporte de Tu Evento.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all"
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.10)',
+                    color: 'rgba(196,181,253,0.80)',
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
+                  onMouseOut={(e)  => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setStep(2); setError(''); }}
+                  className="flex-1 py-3 rounded-xl text-sm font-bold transition-all"
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 60%, #a21caf 100%)',
+                    color: '#ffffff',
+                    boxShadow: '0 4px 20px rgba(109,40,217,0.40)',
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.filter = 'brightness(1.10)'; }}
+                  onMouseOut={(e)  => { e.currentTarget.style.filter = 'none'; }}
+                >
+                  Sí, desactivar cuenta
+                </button>
+              </div>
+
+              {/* Security note */}
+              <p className="text-center text-xs pt-1" style={{ color: 'rgba(167,139,250,0.45)' }}>
+                <ShieldCheck className="w-3 h-3 inline mr-1 -mt-px" />
+                Tu información está segura con nosotros.
+              </p>
+            </div>
           )}
-        </form>
-      )}
-    </BaseModal>
+
+          {/* ── STEP 2 ── */}
+          {step === 2 && (
+            <form id="deactivate-form" onSubmit={handleDeactivate} className="space-y-4">
+
+              {/* Password input */}
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                  placeholder="Contraseña actual"
+                  autoFocus
+                  disabled={loading}
+                  className="w-full rounded-xl px-4 py-3 pr-11 text-sm transition-all"
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${error ? 'rgba(248,113,113,0.60)' : 'rgba(139,92,246,0.25)'}`,
+                    color: '#f5f3ff',
+                    outline: 'none',
+                  }}
+                  onFocus={(e) => {
+                    if (!error) e.target.style.borderColor = 'rgba(139,92,246,0.60)';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(109,40,217,0.15)';
+                  }}
+                  onBlur={(e) => {
+                    if (!error) e.target.style.borderColor = 'rgba(139,92,246,0.25)';
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                  style={{ color: 'rgba(167,139,250,0.55)' }}
+                  onMouseOver={(e) => { e.currentTarget.style.color = 'rgba(196,181,253,0.90)'; }}
+                  onMouseOut={(e)  => { e.currentTarget.style.color = 'rgba(167,139,250,0.55)'; }}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* Inline error */}
+              {error && (
+                <p className="text-xs flex items-center gap-1.5" style={{ color: '#f87171' }}>
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                  {error}
+                </p>
+              )}
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => { setStep(1); setError(''); setPassword(''); }}
+                  disabled={loading}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.10)',
+                    color: 'rgba(196,181,253,0.80)',
+                  }}
+                  onMouseOver={(e) => { if (!loading) e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
+                  onMouseOut={(e)  => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                >
+                  Volver
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading || !password.trim()}
+                  className="flex-1 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 60%, #a21caf 100%)',
+                    color: '#ffffff',
+                    boxShadow: loading || !password.trim() ? 'none' : '0 4px 20px rgba(109,40,217,0.40)',
+                  }}
+                  onMouseOver={(e) => { if (!loading && password.trim()) e.currentTarget.style.filter = 'brightness(1.10)'; }}
+                  onMouseOut={(e)  => { e.currentTarget.style.filter = 'none'; }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Desactivando...
+                    </>
+                  ) : (
+                    'Confirmar desactivación'
+                  )}
+                </button>
+              </div>
+
+              {/* Security note */}
+              <p className="text-center text-xs pt-1" style={{ color: 'rgba(167,139,250,0.45)' }}>
+                <ShieldCheck className="w-3 h-3 inline mr-1 -mt-px" />
+                Tu información está segura con nosotros.
+              </p>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
   );
+
+  return createPortal(modal, document.body);
 }
