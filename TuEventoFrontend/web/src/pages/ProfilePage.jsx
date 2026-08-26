@@ -7,6 +7,7 @@ import { performLogout } from '../services/httpClient';
 import { AlertCircle, Camera, CheckCircle, Info, Loader2, Palette } from 'lucide-react';
 import Tooltip from '../components/common/Tooltip';
 import ThemeCustomizePanel from '../components/theme/ThemeCustomizePanel';
+import DeactivateAccountModal from '../components/common/DeactivateAccountModal';
 
 const THEME_PREVIEWS = {
   DARK:       { background: "#1E0A3C", primary: "#7C3AED", accent: "#A78BFA" },
@@ -23,6 +24,7 @@ const ProfilePage = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('es');
   const [loading, setLoading] = useState(false);
   const [customizePanelOpen, setCustomizePanelOpen] = useState(false);
+  const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
   const [themes, setThemes] = useState([]);
   const [loadingTheme, setLoadingTheme] = useState(false);
   const [profileId, setProfileId] = useState(null);
@@ -381,7 +383,9 @@ const ProfilePage = () => {
                   <p className="text-sm text-textMuted">Una vez que desactives tu cuenta, no podrás revertir esta acción.</p>
                 </div>
                 <div className="flex gap-3">
-                  <button className="px-4 py-2 rounded-lg border border-error/50 text-error text-sm font-bold hover:bg-error hover:text-textPrimary transition-all">
+                  <button
+                    onClick={() => setDeactivateModalOpen(true)}
+                    className="px-4 py-2 rounded-lg border border-error/50 text-error text-sm font-bold hover:bg-error hover:text-textPrimary transition-all">
                     Desactivar Cuenta
                   </button>
                   <button
@@ -507,6 +511,12 @@ const ProfilePage = () => {
           />
         );
       })()}
+
+      {/* Deactivate account modal */}
+      <DeactivateAccountModal
+        isOpen={deactivateModalOpen}
+        onClose={() => setDeactivateModalOpen(false)}
+      />
     </div>
   );
 };
