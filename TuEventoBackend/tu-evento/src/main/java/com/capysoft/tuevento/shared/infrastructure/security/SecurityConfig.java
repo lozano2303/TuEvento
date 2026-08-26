@@ -25,6 +25,7 @@ import org.springframework.core.Ordered;
 
 import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -93,6 +94,25 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        // 401 — sin autenticación válida (token ausente, inválido o expirado)
+                        // El interceptor del frontend escucha este código para disparar el refresh.
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json; charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"success\":false,\"message\":\"Authentication required\",\"data\":null}");
+                        })
+                        // 403 — autenticado pero sin el rol/autoridad requerida.
+                        // El frontend NO debe disparar refresh en este caso — es un problema de permisos,
+                        // no de sesión expirada.
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json; charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"success\":false,\"message\":\"Access denied\",\"data\":null}");
+                        })
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
@@ -123,6 +143,33 @@ public class SecurityConfig {
                                 "/api/v1/themes/my-active/log").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.PUT,
                                 "/api/v1/events/*/layout").authenticated()
+                        // ── Verbos no-GET en rutas cubiertas por PUBLIC_GET_ENDPOINTS ──────────────
+                        // Estos matchers son necesarios porque PUBLIC_GET_ENDPOINTS solo registra GET.
+                        // Sin estas reglas explícitas, los verbos restantes caerían en anyRequest()
+                        // y @PreAuthorize podría bloquearse antes de llegar al use case (403 de Spring,
+                        // no el error de negocio del use case).
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE,
+                                "/api/v1/events/**").hasAuthority("ORGANIZER")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT,
+                                "/api/v1/events/**").hasAuthority("ORGANIZER")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH,
+                                "/api/v1/events/**").hasAuthority("ORGANIZER")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/v1/events/*/media").hasAuthority("ORGANIZER")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/v1/events/*/ratings").hasAuthority("USER")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/v1/event-sections").hasAnyAuthority("ORGANIZER", "ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT,
+                                "/api/v1/event-sections/**").hasAnyAuthority("ORGANIZER", "ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE,
+                                "/api/v1/event-sections/**").hasAnyAuthority("ORGANIZER", "ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/v1/seats").hasAnyAuthority("ORGANIZER", "ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH,
+                                "/api/v1/seats/**").hasAnyAuthority("ORGANIZER", "ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE,
+                                "/api/v1/seats/**").hasAnyAuthority("ORGANIZER", "ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)

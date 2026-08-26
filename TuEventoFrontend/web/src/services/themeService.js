@@ -1,3 +1,5 @@
+import { httpRequest } from './httpClient.js';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 // ── GET /themes  — public, no auth needed ─────────────────────────────────────
@@ -10,10 +12,9 @@ export const getThemes = async () => {
 
 // ── POST /themes/activate/:themeId ────────────────────────────────────────────
 export const activateTheme = async (themeId) => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`${API_URL}/themes/activate/${themeId}`, {
+  const response = await httpRequest(`${API_URL}/themes/activate/${themeId}`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json' },
   });
   if (!response.ok) throw new Error('Error activating theme');
   return await response.json();
@@ -21,10 +22,8 @@ export const activateTheme = async (themeId) => {
 
 // ── GET /themes/my-active  — returns { themeId, themeName, userThemeId, palette } ─
 export const getActivePalette = async () => {
-  const token = localStorage.getItem('token');
-  if (!token) return null;
-  const response = await fetch(`${API_URL}/themes/my-active`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const response = await httpRequest(`${API_URL}/themes/my-active`, {
+    headers: { 'Content-Type': 'application/json' },
   });
   if (!response.ok) throw new Error(`Error fetching theme: ${response.status}`);
   const json = await response.json();
@@ -35,13 +34,9 @@ export const getActivePalette = async () => {
 // Returns the full resolved palette after applying the override.
 // value must be a valid hex colour (#RGB, #RRGGBB, #RRGGBBAA) or rgb/rgba().
 export const customizeTheme = async (property, value) => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`${API_URL}/themes/my-active/customize`, {
+  const response = await httpRequest(`${API_URL}/themes/my-active/customize`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ property, value }),
   });
   if (!response.ok) throw new Error(`Error customizing theme: ${response.status}`);
@@ -51,10 +46,8 @@ export const customizeTheme = async (property, value) => {
 
 // ── DELETE /themes/my-active/customize/:property  — reset one token to base ───
 export const resetCustomization = async (property) => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`${API_URL}/themes/my-active/customize/${property}`, {
+  const response = await httpRequest(`${API_URL}/themes/my-active/customize/${property}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) throw new Error(`Error resetting customization: ${response.status}`);
   const json = await response.json();
@@ -63,11 +56,7 @@ export const resetCustomization = async (property) => {
 
 // ── GET /themes/my-active/log  — returns ThemeLogResponse[] ──────────────────
 export const getCustomizationLog = async () => {
-  const token = localStorage.getItem('token');
-  if (!token) return [];
-  const response = await fetch(`${API_URL}/themes/my-active/log`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await httpRequest(`${API_URL}/themes/my-active/log`);
   if (!response.ok) throw new Error(`Error fetching log: ${response.status}`);
   const json = await response.json();
   return json.data;

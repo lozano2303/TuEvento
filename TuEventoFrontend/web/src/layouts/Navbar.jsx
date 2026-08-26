@@ -1,4 +1,4 @@
-import { Calendar, User, LogOut, Key, Plus, Wallet, Menu, X } from "lucide-react";
+import { Calendar, User, Plus, Wallet, Menu, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ChangePassword from "../pages/ChangePassword.jsx";
@@ -46,18 +46,6 @@ export default function Navbar() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userID');
-    localStorage.removeItem('role');
-    localStorage.removeItem('pendingActivationUserID');
-    localStorage.removeItem('adminLoggedIn');
-    setUserData(null);
-    setIsModalOpen(false);
-    setIsMobileMenuOpen(false);
-    window.location.reload();
-  };
 
   const handleNavClick = (path) => {
     setIsMobileMenuOpen(false);
@@ -200,6 +188,7 @@ const displayName = (() => {
                         <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-error)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                       </Link>
                     )}
+
                   </div>
                 )}
               </div>

@@ -3,7 +3,9 @@ import Footer from '../layouts/Footer';
 import { useTheme } from '../context/ThemeContext';
 import { getThemes, activateTheme } from '../services/themeService';
 import { getProfileByUserId, getProfilePictureUrl, updateProfile, uploadProfilePicture } from '../services/ProfileService';
-import { AlertCircle, Camera, CheckCircle, Loader2, Palette } from 'lucide-react';
+import { performLogout } from '../services/httpClient';
+import { AlertCircle, Camera, CheckCircle, Info, Loader2, Palette } from 'lucide-react';
+import Tooltip from '../components/common/Tooltip';
 import ThemeCustomizePanel from '../components/theme/ThemeCustomizePanel';
 
 const THEME_PREVIEWS = {
@@ -206,8 +208,8 @@ const ProfilePage = () => {
     }, 1000);
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
+  const handleLogout = async () => {
+    await performLogout();
     window.location.href = '/login';
   };
 
@@ -249,7 +251,6 @@ const ProfilePage = () => {
                   {avatarLoading ? (
                     <Loader2 className="w-12 h-12 animate-spin text-textPrimary" />
                   ) : (avatarUrl || previewUrl) ? (
-                    /* DEBUG — remove after confirming */ console.log('[Avatar] storedFileId=%s avatarUrl=%s previewUrl=%s', storedFileId, avatarUrl, previewUrl) ||
                     <img
                       src={previewUrl || avatarUrl}
                       alt="Foto de perfil"
@@ -277,6 +278,23 @@ const ProfilePage = () => {
                 >
                   <Camera className="w-5 h-5" />
                 </button>
+                {/* Ícono de info — independiente del botón de cámara para no disparar el file picker */}
+                <div className="absolute -bottom-2 -left-2 z-20">
+                  <Tooltip
+                    content={`Solo JPG, PNG o WEBP. Máx. ${MAX_AVATAR_SIZE_MB} MB. Sin contenido adulto, violencia o armas.`}
+                    position="right"
+                  >
+                    <button
+                      type="button"
+                      aria-label="Requisitos de imagen de perfil"
+                      className="w-7 h-7 rounded-full flex items-center justify-center border-2 border-background shadow-lg"
+                      style={{ background: 'var(--color-surfaceAlt)', color: 'var(--color-textMuted)' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Info className="w-3.5 h-3.5" />
+                    </button>
+                  </Tooltip>
+                </div>
               </div>
               <input
                 ref={avatarInputRef}
@@ -415,7 +433,7 @@ const ProfilePage = () => {
               <div className="space-y-3">
                 {themes.length === 0 && (
                   <p className="text-textMuted text-sm text-center py-4">
-                    {localStorage.getItem('token') ? 'Cargando temas...' : 'Inicia sesión para cambiar el tema'}
+                    Cargando temas...
                   </p>
                 )}
                 {themes.map((theme) => {

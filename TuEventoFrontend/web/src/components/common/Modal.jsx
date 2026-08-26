@@ -35,7 +35,7 @@ export default function Modal({
 }) {
   const panelRef = useRef(null);
 
-  // Cierre por Escape + bloqueo de scroll
+  // Efecto 1 — bloqueo de scroll + handler de Escape (depende de isOpen y onClose)
   useEffect(() => {
     if (!isOpen) return;
     const prev = document.body.style.overflow;
@@ -44,14 +44,20 @@ export default function Modal({
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
 
-    // Focus al panel para que Escape sea capturado
-    panelRef.current?.focus();
-
     return () => {
       window.removeEventListener('keydown', handler);
       document.body.style.overflow = prev;
     };
   }, [isOpen, onClose]);
+
+  // Efecto 2 — focus al panel solo cuando el modal se abre (no en cada render)
+  // Separado del efecto de Escape para que onClose no reinicie el focus en cada tecla.
+  useEffect(() => {
+    if (!isOpen) return;
+    // Pequeño timeout para que el DOM esté pintado antes de hacer focus
+    const t = setTimeout(() => panelRef.current?.focus(), 0);
+    return () => clearTimeout(t);
+  }, [isOpen]); // ← solo cuando isOpen cambia, NO cuando cambia onClose
 
   if (!isOpen) return null;
 

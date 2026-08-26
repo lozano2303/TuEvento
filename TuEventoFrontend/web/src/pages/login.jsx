@@ -3,6 +3,7 @@ import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight, PartyPopper, Sparkles
 import { loginUser, registerUser, resendActivationCode } from "../services/Login.js";
 import { getProfileByUserId } from "../services/ProfileService.js";
 import { useTheme } from "../context/ThemeContext";
+import { performLogout } from "../services/httpClient.js";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 import BaseModal from "../components/common/BaseModal.jsx";
@@ -64,9 +65,8 @@ export default function Login() {
     }
   }, []);
 
-  const clearAuth = () => {
-    ['token', 'userID', 'alias', 'userEmail', 'fullName', 'pendingActivationUserID', 'adminLoggedIn']
-      .forEach(k => localStorage.removeItem(k));
+  const clearAuth = async () => {
+    await performLogout();
   };
 
   // ─── Calcular fortaleza de contraseña ────────────────────────────────────
@@ -153,7 +153,11 @@ export default function Login() {
     setView('verification');
   };
   const handleContinueToHome = () => { setShowLoginSuccessNotification(false); window.location.href = '/'; };
-  const handleLogout = () => { clearAuth(); setUserData(null); setView('login'); };
+  const handleLogout = async () => { 
+    await clearAuth(); 
+    setUserData(null); 
+    setView('login'); 
+  };
 
   const handleResendActivation = async () => {
     if (!formData.email || !formData.email.trim()) {
@@ -161,13 +165,8 @@ export default function Login() {
       return;
     }
     try {
-      const result = await resendActivationCode(formData.email);
-      if (result.success) {
-        setError("Se ha enviado un nuevo código de activación a tu correo.");
-        setShowActivateAccount(true);
-      } else {
-        setError(result.message || "Error al reenviar código de activación");
-      }
+      await resendActivationCode(formData.email);
+      setView('verification'); // redirigir directo a CodeVerification con código ya reenviado
     } catch (err) {
       const errorMsg = err.message || "Error de conexión al reenviar código de activación";
       // Traducir mensajes del backend
@@ -201,6 +200,7 @@ export default function Login() {
         const result = await loginUser(formData.email, formData.password);
         if (result.success) {
           localStorage.setItem('token', result.data.token);
+          localStorage.setItem('refreshToken', result.data.refreshToken ?? '');
           localStorage.setItem('userID', result.data.userID);
           localStorage.setItem('alias', result.data.alias);
           localStorage.setItem('userEmail', formData.email);
@@ -235,8 +235,9 @@ export default function Login() {
         } else {
           const msg = result.message || "";
           if (['no activada', 'not activated', 'activar', 'revisa tu correo'].some(s => msg.toLowerCase().includes(s))) {
-            setShowActivateAccount(true);
-            setError("Tu cuenta no está activada. Activa tu cuenta para continuar.");
+            // Redirigir automáticamente a verificación y reenviar el código
+            try { await resendActivationCode(formData.email); } catch (_) {}
+            setView('verification');
           } else setError(msg || "Error en login");
         }
       } else {
@@ -323,6 +324,21 @@ export default function Login() {
 
           {/* Título */}
           <div className="text-center mb-8">
+            <div className="mb-4">
+              <button
+                type="button"
+                onClick={() => window.location.href = '/'}
+                className="inline-flex items-center gap-1.5 text-sm transition-colors"
+                style={{ color: 'var(--color-textMuted)' }}
+                onMouseOver={e => e.currentTarget.style.color = 'var(--color-textPrimary)'}
+                onMouseOut={e => e.currentTarget.style.color = 'var(--color-textMuted)'}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 12H5M12 5l-7 7 7 7"/>
+                </svg>
+                Volver al inicio
+              </button>
+            </div>
             <h1 className="text-3xl font-bold text-textPrimary">
               {view === 'login' ? "Iniciar Sesión" : "Registrarse"}
             </h1>
