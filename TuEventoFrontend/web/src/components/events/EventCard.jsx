@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
  *   event  — EventSummaryResponse: { eventId, eventName, status, coverUrl, ... }
  *   userId — number | null — userId del usuario logueado (para badge de borrador)
  *
- * coverUrl viene embebida en el objeto event desde el backend (no N+1).
+ * Todos los colores usan CSS custom properties del tema activo.
  */
 export default function EventCard({ event, userId }) {
   const navigate = useNavigate();
@@ -15,11 +15,7 @@ export default function EventCard({ event, userId }) {
 
   return (
     <div
-      className="relative rounded-xl overflow-hidden cursor-pointer"
-      style={{
-        background: 'rgba(88, 28, 135, 0.2)',
-        border: '0.5px solid rgba(167, 139, 250, 0.2)',
-      }}
+      className="theme-event-card relative rounded-xl overflow-hidden cursor-pointer"
       onClick={() => navigate(`/events/${event.eventId}`)}
     >
       {/* Imagen */}
@@ -30,11 +26,8 @@ export default function EventCard({ event, userId }) {
           className="w-full h-48 object-cover"
         />
       ) : (
-        <div
-          className="w-full h-48 flex items-center justify-center"
-          style={{ background: 'rgba(109, 40, 217, 0.25)' }}
-        >
-          <span className="text-sm" style={{ color: 'rgba(196,181,253,0.4)' }}>
+        <div className="theme-event-card-placeholder w-full h-48 flex items-center justify-center">
+          <span className="text-sm text-textMuted opacity-60">
             Sin imagen
           </span>
         </div>
@@ -42,29 +35,20 @@ export default function EventCard({ event, userId }) {
 
       {/* Badge borrador — solo visible al propio organizador */}
       {userId === event.userId && event.status === 'DRAFT' && (
-        <div className="absolute top-2 left-2 bg-yellow-500 text-black px-2 py-1 text-xs font-bold rounded">
+        <div className="absolute top-2 left-2 badge-warning px-2 py-1 text-xs font-bold rounded-lg">
           Borrador
         </div>
       )}
 
       {/* Footer */}
-      <div
-        className="p-4 flex items-center justify-between"
-        style={{ borderTop: '0.5px solid rgba(167, 139, 250, 0.15)' }}
-      >
-        <span
-          className="text-sm truncate mr-3"
-          style={{ color: 'rgba(233, 213, 255, 0.8)' }}
-        >
+      <div className="theme-event-card-footer p-4 flex items-center justify-between">
+        <span className="text-sm text-textSecondary truncate mr-3 opacity-90">
           {event.eventName}
         </span>
         <button
-          className="shrink-0 text-sm px-4 py-1.5 rounded-lg font-medium transition-all hover:brightness-110"
-          style={{
-            background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 100%)',
-            color: '#fff',
-            boxShadow: '0 0 10px rgba(124, 58, 237, 0.35)',
-          }}
+          className="shrink-0 text-sm px-4 py-1.5 rounded-lg font-medium transition-all
+                     bg-primary hover:bg-primaryDark text-textPrimary
+                     shadow-[0_0_10px_color-mix(in_srgb,var(--color-primary)_35%,transparent)]"
           onClick={(e) => { e.stopPropagation(); navigate(`/events/${event.eventId}`); }}
         >
           Ver detalles
