@@ -177,3 +177,27 @@ export const getEventLayout = async (eventId) => {
   const json = await response.json();
   return json.data; // { eventLayoutId, eventId, layoutData: string (JSON) }
 };
+
+/**
+ * Obtiene las secciones de un evento con sus precios.
+ * 
+ * @param {number} eventId - ID del evento
+ * @returns {Promise<Array>} Array de EventSectionResponse
+ */
+export const getEventSections = async (eventId) => {
+  const token = await AsyncStorage.getItem("accessToken");
+  
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${BASE_URL}/event-sections/event/${eventId}`, { headers });
+  
+  if (!response.ok) {
+    throw new Error(`Error fetching event sections: ${response.status}`);
+  }
+  
+  const json = await response.json();
+  return json.data;
+};
