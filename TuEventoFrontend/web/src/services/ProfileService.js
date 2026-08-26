@@ -82,3 +82,14 @@ export const getProfilePictureUrl = async (storedFileId) => {
   if (!response.ok) throw new Error(data?.message || 'Error al obtener foto de perfil');
   return data?.data?.publicUrl;
 };
+
+export const deactivateAccount = async (password) => {
+  const response = await httpRequest(`${API_URL}/users/me`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data?.message || 'Error al desactivar la cuenta');
+  return data;
+};
