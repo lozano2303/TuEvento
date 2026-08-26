@@ -1,12 +1,13 @@
-import { useState } from "react";
-import { View, StyleSheet } from "react-native";
-import { Canvas, Path, Circle, Text, rect, Skia, useFont } from "@shopify/react-native-skia";
+import { useState, useRef } from "react";
+import { View, StyleSheet, TouchableWithoutFeedback } from "react-native";
+import { Canvas, Path, Circle, Text, rect, Skia } from "@shopify/react-native-skia";
 import {
   migrateElement,
   distributeSeats,
   computeTotalAABB,
   flattenPolygonForFill,
 } from "../utils/layoutUtils";
+import { findSeatAt } from "../utils/seatHitTesting";
 
 /**
  * Canvas de Skia que renderiza el mapa de sillas de un evento.
@@ -17,12 +18,24 @@ import {
  * - containerHeight: alto del contenedor (del onLayout)
  * - focusedSectionId: ID de la sección enfocada (null = vista general)
  * - sections: Array de EventSectionResponse con datos del backend (nombre, precio)
+ * - seats: objeto { [seatId]: SeatResponse } con estado de todas las sillas
+ * - onSeatPress: callback (seatId) => void para manejar taps en sillas
+ * - currentUserId: ID del usuario actual (para colorear "mis reservas")
  * 
- * Por ahora: SOLO dibujo estático, sin interacción.
- * - Vista general: secciones visibles, sillas NO visibles
- * - Vista filtrada: solo sección seleccionada, sillas visibles pero NO clickeables
+ * Por ahora: SOLO dibujo estático + tap en sillas (sin pan/zoom).
+ * - Vista general: secciones visibles, sillas NO visibles, sin interacción
+ * - Vista filtrada: solo sección seleccionada, sillas visibles y clickeables
  */
-export default function SeatMapCanvas({ layoutData, containerWidth, containerHeight, focusedSectionId = null, sections = [] }) {
+export default function SeatMapCanvas({ 
+  layoutData, 
+  containerWidth, 
+  containerHeight, 
+  focusedSectionId = null, 
+  sections = [],
+  seats = {},
+  onSeatPress,
+  currentUserId = null,
+}) {
   if (!layoutData || !layoutData.elements || layoutData.elements.length === 0) {
     return null;
   }
@@ -58,9 +71,50 @@ export default function SeatMapCanvas({ layoutData, containerWidth, containerHei
   // Determinar si estamos en vista general o filtrada
   const inOverviewMode = focusedSectionId === null;
 
+  // Handler para detectar tap en sillas (solo en modo filtrado)
+  const handlePress = (event) => {
+    console.log('[SeatMapCanvas] Press event received');
+    
+    if (inOverviewMode || !onSeatPress) {
+      console.log('[SeatMapCanvas] Press ignored - inOverviewMode:', inOverviewMode, 'onSeatPress:', !!onSeatPress);
+      return;
+    }
+
+    // Obtener posición del tap relativa al canvas
+    const { locationX, locationY } = event.nativeEvent;
+    console.log('[SeatMapCanvas] Press at:', locationX, locationY);
+
+    // Buscar en cada elemento visible si se tocó una silla
+    for (const element of visibleElements) {
+      const seatPositions = distributeSeats(element);
+      const seatsArray = Object.values(seats).filter(
+        (s) => s.eventSectionId === element.backendSectionId
+      );
+
+      const clickedSeat = findSeatAt(
+        locationX, 
+        locationY, 
+        seatPositions, 
+        seatsArray, 
+        element, 
+        scale, 
+        offsetX, 
+        offsetY
+      );
+
+      if (clickedSeat) {
+        console.log('[SeatMapCanvas] Seat clicked:', clickedSeat.seatId, clickedSeat.code);
+        onSeatPress(clickedSeat.seatId);
+        break;
+      }
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Canvas style={{ width: containerWidth, height: containerHeight }}>
+      <TouchableWithoutFeedback onPress={handlePress}>
+        <View style={{ width: containerWidth, height: containerHeight }}>
+          <Canvas style={{ width: containerWidth, height: containerHeight }}>
         {visibleElements.map((element) => (
           <SectionRenderer
             key={element.id}
@@ -70,11 +124,40 @@ export default function SeatMapCanvas({ layoutData, containerWidth, containerHei
             offsetY={offsetY}
             inOverviewMode={inOverviewMode}
             sections={sections}
+            seats={seats}
+            currentUserId={currentUserId}
           />
         ))}
       </Canvas>
+        </View>
+      </TouchableWithoutFeedback>
     </View>
   );
+}
+
+/**
+ * Determina el color de una silla según su estado y propietario.
+ * 
+ * @param {Object} seat - SeatResponse con status, reservedBy, etc.
+ * @param {number | null} currentUserId - ID del usuario actual
+ * @returns {string} Color hexadecimal para la silla
+ */
+function getSeatColor(seat, currentUserId) {
+  if (!seat) return '#6B7280'; // Gris por defecto
+  
+  if (seat.status === 'AVAILABLE') return '#FFFFFF';  // Blanco - disponible
+  if (seat.status === 'SOLD') return '#EF4444';       // Rojo - vendida
+  if (seat.status === 'COURTESY') return '#8B5CF6';   // Morado - cortesía
+  
+  if (seat.status === 'RESERVED') {
+    if (seat.reservedBy === currentUserId) {
+      return '#10B981';  // Verde - reservada por mí
+    } else {
+      return '#F59E0B';  // Amarillo/naranja - reservada por otro
+    }
+  }
+  
+  return '#6B7280';  // Gris por defecto
 }
 
 /**
@@ -86,10 +169,10 @@ export default function SeatMapCanvas({ layoutData, containerWidth, containerHei
  * - Muestra nombre de la sección del backend
  * 
  * En modo filtrado (sección seleccionada):
- * - Sillas visibles pero NO clickeables
+ * - Sillas visibles y coloreadas según estado
  * - Muestra nombre y precio de la sección
  */
-function SectionRenderer({ element, scale, offsetX, offsetY, inOverviewMode, sections }) {
+function SectionRenderer({ element, scale, offsetX, offsetY, inOverviewMode, sections, seats, currentUserId }) {
   const shapeMode = element.shapeMode ?? "rect";
   const color = element.color ?? "#3B82F6";
   const label = element.label ?? "";
@@ -160,15 +243,25 @@ function SectionRenderer({ element, scale, offsetX, offsetY, inOverviewMode, sec
       <Path path={shapePath} color={strokeColor} style="stroke" strokeWidth={strokeWidth} />
 
       {/* Sillas - SOLO visibles en modo filtrado */}
-      {!inOverviewMode && seatPositions.map((seat, index) => (
-        <Circle
-          key={index}
-          cx={transformX(element.x + seat.x)}
-          cy={transformY(element.y + seat.y)}
-          r={seat.r * scale}
-          color="#FFFFFF"
-        />
-      ))}
+      {!inOverviewMode && seatPositions.map((pos, index) => {
+        // Mapear posiciones a sillas reales
+        const seatsArray = Object.values(seats).filter(
+          (s) => s.eventSectionId === element.backendSectionId
+        );
+        const seat = seatsArray[index];
+        
+        if (!seat) return null;
+        
+        return (
+          <Circle
+            key={seat.seatId}
+            cx={transformX(element.x + pos.x)}
+            cy={transformY(element.y + pos.y)}
+            r={pos.r * scale}
+            color={getSeatColor(seat, currentUserId)}
+          />
+        );
+      })}
 
       {/* Nombre de la sección */}
       <Text

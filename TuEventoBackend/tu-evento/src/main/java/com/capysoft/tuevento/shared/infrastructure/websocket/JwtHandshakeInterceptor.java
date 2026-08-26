@@ -58,13 +58,18 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                                    WebSocketHandler wsHandler,
                                    Map<String, Object> attributes) throws Exception {
         
+        log.info("WebSocket handshake attempt from: {}", request.getRemoteAddress());
+        log.debug("Request URI: {}", request.getURI());
+        
         String token = extractTokenFromQuery(request);
 
         if (token == null) {
-            log.warn("WebSocket handshake rejected: no token provided");
+            log.warn("WebSocket handshake rejected: no token provided (URI: {})", request.getURI());
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
+
+        log.debug("Token extracted, length: {}", token.length());
 
         if (!tokenGenerator.isTokenValid(token)) {
             log.warn("WebSocket handshake rejected: invalid or expired token");
@@ -76,7 +81,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         tokenGenerator.extractUserId(token).ifPresentOrElse(
             userId -> {
                 attributes.put(USER_ID_ATTRIBUTE, userId);
-                log.debug("WebSocket handshake accepted for userId={}", userId);
+                log.info("WebSocket handshake accepted for userId={}", userId);
             },
             () -> {
                 log.warn("WebSocket handshake rejected: token valid but no userId claim found");
@@ -85,7 +90,9 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         );
 
         // Solo aceptar si userId fue extraído correctamente
-        return attributes.containsKey(USER_ID_ATTRIBUTE);
+        boolean accepted = attributes.containsKey(USER_ID_ATTRIBUTE);
+        log.info("Handshake result: {}", accepted ? "ACCEPTED" : "REJECTED");
+        return accepted;
     }
 
     /**

@@ -12,7 +12,8 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  * Configuración base de WebSocket para comunicación en tiempo real.
  * 
  * Características:
- * - STOMP sobre SockJS (fallback para navegadores sin soporte nativo de WebSocket)
+ * - STOMP sobre SockJS (fallback automático para navegadores sin soporte nativo de WebSocket)
+ * - Compatible con web (Vite/React) y móvil (React Native/Expo)
  * - Autenticación JWT en el handshake (vía JwtHandshakeInterceptor)
  * - Broker simple in-memory (suficiente para MVP; puede escalarse a Redis/RabbitMQ)
  * 
@@ -20,6 +21,9 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
  * - Handshake: /ws (con SockJS: /ws/info, /ws/websocket, etc.)
  * - Subscripciones: /topic/** (ej: /topic/events/{eventId}/seats)
  * - Mensajes desde cliente: /app/** (ej: /app/seats/reserve)
+ * 
+ * NOTA DE SEGURIDAD: el JWT se pasa como query parameter en la URL del WebSocket
+ * porque los navegadores NO permiten headers custom en el handshake inicial.
  */
 @Configuration
 @EnableWebSocketMessageBroker
@@ -43,7 +47,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     /**
-     * Registra el endpoint de handshake de WebSocket.
+     * Registra el endpoint de handshake de WebSocket con SockJS.
      * 
      * - URL: /ws
      * - CORS: usa el mismo patrón de orígenes permitidos que el resto de la app
@@ -51,14 +55,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      *   sin soporte nativo de WebSocket
      * - Autenticación: JwtHandshakeInterceptor valida el token antes de establecer
      *   la conexión (vía query param ?token=...)
-     * 
-     * NOTA DE SEGURIDAD: el JWT se pasa como query parameter en la URL del WebSocket
-     * porque los navegadores NO permiten headers custom en el handshake inicial.
-     * Esto implica que el token queda en logs del servidor/proxy — es aceptable para
-     * este alcance MVP, pero para producción se puede considerar:
-     * - Usar un token efímero de corta duración solo para el handshake
-     * - Validar credenciales en el primer mensaje STOMP tras conectar
-     * - Configurar logs del servidor para no capturar query strings
+     * - Compatible con web y móvil usando @stomp/stompjs + sockjs-client
      */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {

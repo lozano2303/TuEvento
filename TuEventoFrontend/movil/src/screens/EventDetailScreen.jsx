@@ -9,12 +9,16 @@ import {
   StyleSheet,
   StatusBar,
   Dimensions,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 import { getEventDetail, getEventMedia, getEventLayout, getEventSections } from "../services/eventService";
+import * as seatService from "../services/seatService";
+import { connectSeatSocket, disconnectSeatSocket } from "../services/websocketService";
 import SeatMapCanvas from "../components/SeatMapCanvas";
 
 const { width } = Dimensions.get("window");
@@ -26,20 +30,30 @@ const { width } = Dimensions.get("window");
  */
 export default function EventDetailScreen() {
   const { colors } = useTheme();
+  const { user } = useAuth();
   const navigation = useNavigation();
   const route = useRoute();
   const styles = createStyles(colors);
 
   const { eventId } = route.params;
+  const currentUserId = user?.userId ?? null;
 
   const [event, setEvent] = useState(null);
   const [media, setMedia] = useState([]);
   const [layout, setLayout] = useState(null);
   const [sections, setSections] = useState([]);
   const [selectedSectionId, setSelectedSectionId] = useState(null);
+  const [seats, setSeats] = useState({});
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [reserving, setReserving] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+
+  // Carrito: sillas reservadas por el usuario actual
+  const cart = Object.values(seats).filter(
+    (s) => s.status === 'RESERVED' && s.reservedBy === currentUserId
+  );
 
   useEffect(() => {
     const loadEventDetail = async () => {
@@ -85,6 +99,174 @@ export default function EventDetailScreen() {
       loadEventDetail();
     }
   }, [eventId]);
+
+  // Cargar sillas al seleccionar una sección
+  useEffect(() => {
+    if (!selectedSectionId) {
+      setSeats({}); // Limpiar sillas si no hay sección seleccionada
+      return;
+    }
+
+    const loadSeats = async () => {
+      try {
+        const data = await seatService.getSeatsBySection(selectedSectionId);
+        const seatsMap = {};
+        data.forEach((s) => {
+          seatsMap[s.seatId] = s;
+        });
+        setSeats(seatsMap);
+      } catch (err) {
+        console.error("[EventDetailScreen] Error loading seats:", err);
+        Alert.alert("Error", "No se pudieron cargar las sillas");
+      }
+    };
+
+    loadSeats();
+  }, [selectedSectionId]);
+
+  // Conectar WebSocket al montar
+  useEffect(() => {
+    if (!event?.eventId) {
+      return;
+    }
+    
+    let wsClient = null;
+    let isCancelled = false;
+
+    const connectWS = async () => {
+      try {
+        const client = await connectSeatSocket(event.eventId, (evt) => {
+          setSeats((prev) => {
+            // Si la silla no está cargada, ignorar (es de otra sección)
+            if (!prev[evt.seatId]) {
+              return prev;
+            }
+            
+            return {
+              ...prev,
+              [evt.seatId]: {
+                ...prev[evt.seatId],
+                status: evt.newStatus,
+                reservedBy: evt.newStatus === 'RESERVED' ? evt.changedBy : null,
+                reservedUntil: evt.reservedUntil,
+              },
+            };
+          });
+        });
+
+        if (!isCancelled && client) {
+          wsClient = client;
+        } else if (client) {
+          // Si ya nos desmontamos, desconectar inmediatamente
+          disconnectSeatSocket(client);
+        }
+      } catch (err) {
+        console.warn('[EventDetailScreen] WebSocket connection failed:', err);
+      }
+    };
+
+    connectWS();
+
+    return () => {
+      isCancelled = true;
+      if (wsClient) {
+        disconnectSeatSocket(wsClient);
+        wsClient = null;
+      }
+    };
+  }, [event?.eventId]);
+
+  // Handler de reserva de silla (optimistic UI + rollback)
+  const handleReserveSeat = async (seatId) => {
+    if (!currentUserId) {
+      Alert.alert("Inicia sesión", "Debes iniciar sesión para reservar sillas");
+      return;
+    }
+
+    if (cart.length >= selectedQuantity) {
+      Alert.alert(
+        "Límite alcanzado",
+        `Ya seleccionaste ${selectedQuantity} silla(s). Cambia la cantidad si necesitas más.`
+      );
+      return;
+    }
+
+    const previous = seats[seatId];
+
+    // Actualización optimista
+    setSeats((prev) => ({
+      ...prev,
+      [seatId]: {
+        ...prev[seatId],
+        status: 'RESERVED',
+        reservedBy: currentUserId,
+        reservedUntil: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      },
+    }));
+    setReserving((prev) => new Set(prev).add(seatId));
+
+    try {
+      const result = await seatService.reserveSeat(seatId);
+      setSeats((prev) => ({ ...prev, [seatId]: result }));
+    } catch (err) {
+      // Rollback en caso de error
+      setSeats((prev) => ({ ...prev, [seatId]: previous }));
+      Alert.alert('No se pudo reservar la silla', err.message);
+    } finally {
+      setReserving((prev) => {
+        const next = new Set(prev);
+        next.delete(seatId);
+        return next;
+      });
+    }
+  };
+
+  // Handler de liberación de silla (optimistic UI + rollback)
+  const handleReleaseSeat = async (seatId) => {
+    const previous = seats[seatId];
+
+    // Actualización optimista
+    setSeats((prev) => ({
+      ...prev,
+      [seatId]: {
+        ...prev[seatId],
+        status: 'AVAILABLE',
+        reservedBy: null,
+        reservedUntil: null,
+      },
+    }));
+    setReserving((prev) => new Set(prev).add(seatId));
+
+    try {
+      const result = await seatService.releaseSeat(seatId);
+      setSeats((prev) => ({ ...prev, [seatId]: result }));
+    } catch (err) {
+      // Rollback en caso de error
+      setSeats((prev) => ({ ...prev, [seatId]: previous }));
+      Alert.alert('No se pudo liberar la reserva', err.message);
+    } finally {
+      setReserving((prev) => {
+        const next = new Set(prev);
+        next.delete(seatId);
+        return next;
+      });
+    }
+  };
+
+  // Handler de tap en silla
+  const onSeatPress = (seatId) => {
+    if (reserving.has(seatId)) return; // Evitar doble-tap mientras está en vuelo
+
+    const seat = seats[seatId];
+    if (!seat) return;
+
+    if (seat.status === 'AVAILABLE' && cart.length < selectedQuantity) {
+      handleReserveSeat(seatId);
+    } else if (seat.status === 'RESERVED' && seat.reservedBy === currentUserId) {
+      handleReleaseSeat(seatId);
+    }
+    // Resto de estados: no-op (silla no clickeable)
+  };
 
   const formatDate = (startDate, finishDate) => {
     if (!startDate) return "Fecha por confirmar";
@@ -318,6 +500,61 @@ export default function EventDetailScreen() {
             <View style={styles.seatMapSection}>
               <Text style={styles.sectionTitle}>Mapa de Asientos</Text>
               
+              {/* Selector de cantidad estilo cine */}
+              <View style={styles.quantitySelectorContainer}>
+                <Text style={styles.quantityLabel}>¿Cuántas sillas querés?</Text>
+                <View style={styles.quantityControls}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (selectedQuantity > 1 && selectedQuantity > cart.length) {
+                        setSelectedQuantity(selectedQuantity - 1);
+                      }
+                    }}
+                    disabled={selectedQuantity <= 1 || selectedQuantity <= cart.length}
+                    style={[
+                      styles.quantityButton,
+                      (selectedQuantity <= 1 || selectedQuantity <= cart.length) && styles.quantityButtonDisabled
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons 
+                      name="remove" 
+                      size={20} 
+                      color={
+                        (selectedQuantity <= 1 || selectedQuantity <= cart.length) 
+                          ? colors.textMuted 
+                          : colors.accent
+                      } 
+                    />
+                  </TouchableOpacity>
+                  
+                  <Text style={styles.quantityValue}>{selectedQuantity}</Text>
+                  
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (selectedQuantity < 10) {
+                        setSelectedQuantity(selectedQuantity + 1);
+                      }
+                    }}
+                    disabled={selectedQuantity >= 10}
+                    style={[
+                      styles.quantityButton,
+                      selectedQuantity >= 10 && styles.quantityButtonDisabled
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons 
+                      name="add" 
+                      size={20} 
+                      color={selectedQuantity >= 10 ? colors.textMuted : colors.accent} 
+                    />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.quantityInfo}>
+                  {cart.length} de {selectedQuantity} seleccionadas
+                </Text>
+              </View>
+
               {/* Menú de secciones */}
               {sections.length > 0 && (
                 <View style={styles.sectionsMenuContainer}>
@@ -384,6 +621,9 @@ export default function EventDetailScreen() {
                     containerHeight={canvasSize.height}
                     focusedSectionId={selectedSectionId}
                     sections={sections}
+                    seats={seats}
+                    onSeatPress={onSeatPress}
+                    currentUserId={currentUserId}
                   />
                 )}
               </View>
@@ -555,6 +795,52 @@ function createStyles(colors) {
     },
     seatMapSection: {
       marginBottom: 24,
+    },
+    quantitySelectorContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.primary + "20",
+    },
+    quantityLabel: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.textSecondary,
+    },
+    quantityControls: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    quantityButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.primary + "20",
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: colors.primary + "40",
+    },
+    quantityButtonDisabled: {
+      opacity: 0.3,
+    },
+    quantityValue: {
+      fontSize: 20,
+      fontWeight: "800",
+      color: colors.textPrimary,
+      minWidth: 30,
+      textAlign: "center",
+    },
+    quantityInfo: {
+      fontSize: 11,
+      color: colors.textMuted,
     },
     sectionsMenuContainer: {
       marginBottom: 16,
