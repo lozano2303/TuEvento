@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   AlertTriangle, Eye, EyeOff, Loader2,
-  PowerOff, ShieldCheck, HeadphonesIcon, X,
-  CheckCircle2,
+  ShieldCheck, X,
 } from 'lucide-react';
 import { deactivateAccount } from '../../services/ProfileService';
 import { performLogout } from '../../services/httpClient';
@@ -131,20 +130,6 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
         {/* ── Inner content ── */}
         <div className="px-6 pt-8 pb-6 sm:px-8 sm:pt-9 sm:pb-7">
 
-          {/* Icon */}
-          <div className="flex justify-center mb-5">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, rgba(109,40,217,0.35) 0%, rgba(147,51,234,0.25) 100%)',
-                border: '1px solid rgba(139,92,246,0.30)',
-                boxShadow: '0 0 24px rgba(109,40,217,0.30), inset 0 1px 0 rgba(255,255,255,0.06)',
-              }}
-            >
-              <PowerOff className="w-7 h-7" style={{ color: '#c4b5fd' }} />
-            </div>
-          </div>
-
           {/* Title */}
           <h2
             id="dac-title"
@@ -207,23 +192,6 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                     </li>
                   ))}
                 </ul>
-              </div>
-
-              {/* Support note */}
-              <div
-                className="flex items-start gap-3 rounded-xl p-3.5"
-                style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                }}
-              >
-                <HeadphonesIcon
-                  className="w-4 h-4 flex-shrink-0 mt-0.5"
-                  style={{ color: 'rgba(167,139,250,0.60)' }}
-                />
-                <p className="text-xs leading-relaxed" style={{ color: 'rgba(196,181,253,0.60)' }}>
-                  Para reactivar tu cuenta deberás contactar al equipo de soporte de Tu Evento.
-                </p>
               </div>
 
               {/* Actions */}
