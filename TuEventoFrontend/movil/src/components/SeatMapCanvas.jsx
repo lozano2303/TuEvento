@@ -15,10 +15,14 @@ import {
  * - layoutData: objeto con { canvasWidth, canvasHeight, elements }
  * - containerWidth: ancho del contenedor (del onLayout)
  * - containerHeight: alto del contenedor (del onLayout)
+ * - focusedSectionId: ID de la sección enfocada (null = vista general)
+ * - sections: Array de EventSectionResponse con datos del backend (nombre, precio)
  * 
- * Por ahora: SOLO dibujo estático, sin interacción ni animaciones.
+ * Por ahora: SOLO dibujo estático, sin interacción.
+ * - Vista general: secciones visibles, sillas NO visibles
+ * - Vista filtrada: solo sección seleccionada, sillas visibles pero NO clickeables
  */
-export default function SeatMapCanvas({ layoutData, containerWidth, containerHeight }) {
+export default function SeatMapCanvas({ layoutData, containerWidth, containerHeight, focusedSectionId = null, sections = [] }) {
   if (!layoutData || !layoutData.elements || layoutData.elements.length === 0) {
     return null;
   }
@@ -26,8 +30,13 @@ export default function SeatMapCanvas({ layoutData, containerWidth, containerHei
   // Migrar elementos (asegurar que polygonPoints estén en formato nuevo)
   const elements = layoutData.elements.map(migrateElement);
 
-  // Calcular AABB total para determinar zoom inicial
-  const totalAABB = computeTotalAABB(elements);
+  // Filtrar elementos si hay una sección enfocada
+  const visibleElements = focusedSectionId
+    ? elements.filter((el) => el.backendSectionId === focusedSectionId)
+    : elements;
+
+  // Calcular AABB total para determinar zoom inicial (de los elementos visibles)
+  const totalAABB = computeTotalAABB(visibleElements);
   const contentWidth = totalAABB.maxX - totalAABB.minX;
   const contentHeight = totalAABB.maxY - totalAABB.minY;
 
@@ -46,16 +55,21 @@ export default function SeatMapCanvas({ layoutData, containerWidth, containerHei
   const offsetX = (containerWidth - scaledWidth) / 2 - totalAABB.minX * scale;
   const offsetY = (containerHeight - scaledHeight) / 2 - totalAABB.minY * scale;
 
+  // Determinar si estamos en vista general o filtrada
+  const inOverviewMode = focusedSectionId === null;
+
   return (
     <View style={styles.container}>
       <Canvas style={{ width: containerWidth, height: containerHeight }}>
-        {elements.map((element) => (
+        {visibleElements.map((element) => (
           <SectionRenderer
             key={element.id}
             element={element}
             scale={scale}
             offsetX={offsetX}
             offsetY={offsetY}
+            inOverviewMode={inOverviewMode}
+            sections={sections}
           />
         ))}
       </Canvas>
@@ -65,11 +79,25 @@ export default function SeatMapCanvas({ layoutData, containerWidth, containerHei
 
 /**
  * Renderiza una sección individual (rect o polygon) con sus sillas.
+ * 
+ * En modo overview (vista general):
+ * - Secciones con mayor opacidad
+ * - Sillas NO visibles
+ * - Muestra nombre de la sección del backend
+ * 
+ * En modo filtrado (sección seleccionada):
+ * - Sillas visibles pero NO clickeables
+ * - Muestra nombre y precio de la sección
  */
-function SectionRenderer({ element, scale, offsetX, offsetY }) {
+function SectionRenderer({ element, scale, offsetX, offsetY, inOverviewMode, sections }) {
   const shapeMode = element.shapeMode ?? "rect";
   const color = element.color ?? "#3B82F6";
   const label = element.label ?? "";
+
+  // Buscar datos de la sección del backend
+  const sectionData = sections.find((s) => s.eventSectionId === element.backendSectionId);
+  const sectionName = sectionData?.sectionTypeName || label;
+  const sectionPrice = sectionData?.price ?? 0;
 
   // Transformar coordenadas al espacio del viewport
   const transformX = (x) => x * scale + offsetX;
@@ -113,9 +141,15 @@ function SectionRenderer({ element, scale, offsetX, offsetY }) {
     );
   }
 
-  // Color con alpha para el fondo de la sección
-  const fillColor = color + "40"; // 25% opacity
+  // Opacidad según modo
+  const fillOpacity = inOverviewMode ? "80" : "40"; // 50% vs 25%
+  const fillColor = color + fillOpacity;
   const strokeColor = color;
+  const strokeWidth = inOverviewMode ? 3 * scale : 2 * scale;
+
+  // Calcular centro para el texto
+  const centerX = transformX(element.x + element.width / 2);
+  const centerY = transformY(element.y + element.height / 2);
 
   return (
     <>
@@ -123,10 +157,10 @@ function SectionRenderer({ element, scale, offsetX, offsetY }) {
       <Path path={shapePath} color={fillColor} style="fill" />
       
       {/* Borde de la sección */}
-      <Path path={shapePath} color={strokeColor} style="stroke" strokeWidth={2 * scale} />
+      <Path path={shapePath} color={strokeColor} style="stroke" strokeWidth={strokeWidth} />
 
-      {/* Sillas */}
-      {seatPositions.map((seat, index) => (
+      {/* Sillas - SOLO visibles en modo filtrado */}
+      {!inOverviewMode && seatPositions.map((seat, index) => (
         <Circle
           key={index}
           cx={transformX(element.x + seat.x)}
@@ -136,14 +170,23 @@ function SectionRenderer({ element, scale, offsetX, offsetY }) {
         />
       ))}
 
-      {/* Label de la sección */}
-      {label && (
+      {/* Nombre de la sección */}
+      <Text
+        x={centerX}
+        y={centerY - (inOverviewMode ? 10 * scale : 15 * scale)}
+        text={sectionName}
+        color="#FFFFFF"
+        size={inOverviewMode ? 16 * scale : 14 * scale}
+      />
+
+      {/* Precio - SOLO en modo filtrado */}
+      {!inOverviewMode && (
         <Text
-          x={transformX(element.x + element.width / 2)}
-          y={transformY(element.y + 15)}
-          text={label}
-          color={strokeColor}
-          size={14 * scale}
+          x={centerX}
+          y={centerY + (5 * scale)}
+          text={`$${sectionPrice.toLocaleString()}`}
+          color="rgba(196,181,253,0.8)"
+          size={12 * scale}
         />
       )}
     </>

@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useTheme } from "../context/ThemeContext";
-import { getEventDetail, getEventMedia, getEventLayout } from "../services/eventService";
+import { getEventDetail, getEventMedia, getEventLayout, getEventSections } from "../services/eventService";
 import SeatMapCanvas from "../components/SeatMapCanvas";
 
 const { width } = Dimensions.get("window");
@@ -35,6 +35,8 @@ export default function EventDetailScreen() {
   const [event, setEvent] = useState(null);
   const [media, setMedia] = useState([]);
   const [layout, setLayout] = useState(null);
+  const [sections, setSections] = useState([]);
+  const [selectedSectionId, setSelectedSectionId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
@@ -67,6 +69,10 @@ export default function EventDetailScreen() {
           const parsedLayout = JSON.parse(layoutData.layoutData);
           setLayout(parsedLayout);
         }
+
+        // Cargar secciones del evento
+        const sectionsData = await getEventSections(eventId);
+        setSections(sectionsData || []);
       } catch (err) {
         console.error("[EventDetailScreen] Error loading event:", err);
         setError(err.message || "Error al cargar el evento");
@@ -311,6 +317,59 @@ export default function EventDetailScreen() {
           {layout && layout.elements && layout.elements.length > 0 && (
             <View style={styles.seatMapSection}>
               <Text style={styles.sectionTitle}>Mapa de Asientos</Text>
+              
+              {/* Menú de secciones */}
+              {sections.length > 0 && (
+                <View style={styles.sectionsMenuContainer}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.sectionsMenu}
+                  >
+                    {selectedSectionId && (
+                      <TouchableOpacity
+                        style={styles.sectionChipAll}
+                        onPress={() => setSelectedSectionId(null)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="apps-outline" size={16} color={colors.textPrimary} />
+                        <Text style={styles.sectionChipAllText}>Ver todo</Text>
+                      </TouchableOpacity>
+                    )}
+                    
+                    {sections.map((section) => {
+                      const isActive = selectedSectionId === section.eventSectionId;
+                      return (
+                        <TouchableOpacity
+                          key={section.eventSectionId}
+                          style={[
+                            styles.sectionChip,
+                            isActive && styles.sectionChipActive,
+                          ]}
+                          onPress={() => setSelectedSectionId(
+                            isActive ? null : section.eventSectionId
+                          )}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={[
+                            styles.sectionChipName,
+                            isActive && styles.sectionChipNameActive,
+                          ]}>
+                            {section.sectionTypeName}
+                          </Text>
+                          <Text style={[
+                            styles.sectionChipPrice,
+                            isActive && styles.sectionChipPriceActive,
+                          ]}>
+                            ${section.price.toLocaleString()}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+              
               <View
                 style={styles.seatMapContainer}
                 onLayout={(e) => {
@@ -323,19 +382,13 @@ export default function EventDetailScreen() {
                     layoutData={layout}
                     containerWidth={canvasSize.width}
                     containerHeight={canvasSize.height}
+                    focusedSectionId={selectedSectionId}
+                    sections={sections}
                   />
                 )}
               </View>
             </View>
           )}
-
-          {/* Nota: Selección de sillas se implementará en paso posterior */}
-          <View style={styles.noticeSection}>
-            <Ionicons name="information-circle-outline" size={20} color={colors.accent} />
-            <Text style={styles.noticeText}>
-              La selección de asientos estará disponible próximamente
-            </Text>
-          </View>
         </View>
       </ScrollView>
     </View>
@@ -503,28 +556,64 @@ function createStyles(colors) {
     seatMapSection: {
       marginBottom: 24,
     },
+    sectionsMenuContainer: {
+      marginBottom: 16,
+    },
+    sectionsMenu: {
+      paddingVertical: 4,
+      gap: 8,
+    },
+    sectionChipAll: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.primary + "40",
+    },
+    sectionChipAllText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.textPrimary,
+    },
+    sectionChip: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.primary + "30",
+      gap: 2,
+    },
+    sectionChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    sectionChipName: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.textPrimary,
+    },
+    sectionChipNameActive: {
+      color: colors.background,
+    },
+    sectionChipPrice: {
+      fontSize: 11,
+      fontWeight: "500",
+      color: colors.textSecondary,
+    },
+    sectionChipPriceActive: {
+      color: colors.background + "CC",
+    },
     seatMapContainer: {
       width: "100%",
       height: 400,
       borderRadius: 12,
       overflow: "hidden",
       backgroundColor: colors.surfaceAlt,
-    },
-    noticeSection: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      backgroundColor: colors.primary + "15",
-      borderRadius: 12,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: colors.primary + "30",
-    },
-    noticeText: {
-      flex: 1,
-      fontSize: 13,
-      color: colors.textSecondary,
-      lineHeight: 20,
     },
     loadingContainer: {
       flex: 1,
