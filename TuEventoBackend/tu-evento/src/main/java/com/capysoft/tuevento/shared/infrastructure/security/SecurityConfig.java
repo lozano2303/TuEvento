@@ -55,7 +55,7 @@ public class SecurityConfig {
             "/api-docs/**",
             "/v3/api-docs/**",
             "/actuator/**",
-            "/ws/**"  // WebSocket endpoint — autenticación manejada por JwtHandshakeInterceptor
+            "/ws/**"   // WebSocket endpoint con SockJS (web + móvil) — autenticación en JwtHandshakeInterceptor
     };
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {
