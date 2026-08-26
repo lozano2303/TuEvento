@@ -377,24 +377,13 @@ const ProfilePage = () => {
                 </svg>
                 Seguridad de la Cuenta
               </h3>
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 rounded-xl bg-error/5 border border-error/20">
-                <div>
-                  <p className="font-bold text-error">Zona de Peligro</p>
-                  <p className="text-sm text-textMuted">Una vez que desactives tu cuenta, no podrás revertir esta acción.</p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setDeactivateModalOpen(true)}
-                    className="px-4 py-2 rounded-lg border border-error/50 text-error text-sm font-bold hover:bg-error hover:text-textPrimary transition-all">
-                    Desactivar Cuenta
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 rounded-lg bg-error text-textPrimary text-sm font-bold hover:bg-error/80 transition-all"
-                  >
-                    Cerrar Sesión
-                  </button>
-                </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 rounded-lg bg-error text-textPrimary text-sm font-bold hover:bg-error/80 transition-all"
+                >
+                  Cerrar Sesión
+                </button>
               </div>
             </section>
           </div>
@@ -495,6 +484,31 @@ const ProfilePage = () => {
                   );
                 })}
               </div>
+            </section>
+
+            {/* Desactivar cuenta */}
+            <section className="theme-profile-section rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-textPrimary mb-1">Zona de Peligro</h3>
+              <p className="text-xs text-textMuted mb-4">
+                Una vez desactivada, no podrás acceder hasta contactar soporte.
+              </p>
+              <button
+                onClick={() => setDeactivateModalOpen(true)}
+                className="w-full py-2.5 rounded-xl text-sm font-bold transition-all"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-error) 10%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-error) 30%, transparent)',
+                  color: 'var(--color-error)',
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'color-mix(in srgb, var(--color-error) 18%, transparent)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'color-mix(in srgb, var(--color-error) 10%, transparent)';
+                }}
+              >
+                Desactivar Cuenta
+              </button>
             </section>
           </div>
         </div>
