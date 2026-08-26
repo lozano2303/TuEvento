@@ -51,13 +51,16 @@ export default function EventManage() {
   const [editError,        setEditError]        = useState(null);
 
   // Modal de gestión de imágenes
-  const [mediaTarget,      setMediaTarget]      = useState(null);   // event | null
-  const [mediaList,        setMediaList]        = useState([]);     // EventMediaResponse[]
+  const [mediaTarget,      setMediaTarget]      = useState(null);
+  const [mediaList,        setMediaList]        = useState([]);
   const [isLoadingMedia,   setIsLoadingMedia]   = useState(false);
-  const [mediaFiles,       setMediaFiles]       = useState([]);     // { file, preview }[]
+  const [mediaFiles,       setMediaFiles]       = useState([]);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const [mediaUploadError, setMediaUploadError] = useState(null);
   const mediaInputRef = useRef(null);
+
+  // Filtro de estado — frontend sobre datos ya cargados
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   // ── Carga inicial ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -243,6 +246,18 @@ export default function EventManage() {
   // ── Render ───────────────────────────────────────────────────────────────
   const btnBase = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors';
 
+  // Eventos filtrados por estado — frontend, sin llamada adicional al backend
+  const FILTER_OPTIONS = [
+    { value: 'ALL',       label: 'Todos' },
+    { value: 'DRAFT',     label: STATUS_BADGE.DRAFT.label },
+    { value: 'PUBLISHED', label: STATUS_BADGE.PUBLISHED.label },
+    { value: 'CANCELLED', label: STATUS_BADGE.CANCELLED.label },
+    { value: 'COMPLETED', label: STATUS_BADGE.COMPLETED.label },
+  ];
+  const visibleEvents = statusFilter === 'ALL'
+    ? events
+    : events.filter((e) => e.status === statusFilter);
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
 
@@ -294,6 +309,34 @@ export default function EventManage() {
         </div>
       )}
 
+      {/* Chips de filtro por estado */}
+      {!isLoading && !error && events.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {FILTER_OPTIONS.map(({ value, label }) => {
+            const isActive = statusFilter === value;
+            return (
+              <button
+                key={value}
+                onClick={() => setStatusFilter(value)}
+                className="px-3 py-1 rounded-full text-xs font-semibold transition-colors border"
+                style={{
+                  background:  isActive ? 'var(--color-primary)' : 'var(--color-surfaceAlt)',
+                  color:       isActive ? '#fff'                  : 'var(--color-textMuted)',
+                  borderColor: isActive ? 'var(--color-primary)'  : 'transparent',
+                }}
+              >
+                {label}
+                {value !== 'ALL' && (
+                  <span className="ml-1.5 opacity-70">
+                    ({events.filter((e) => e.status === value).length})
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Tabla */}
       {!isLoading && !error && events.length > 0 && (
         <div className="bg-surface border border-surfaceAlt rounded-2xl overflow-hidden">
@@ -308,7 +351,13 @@ export default function EventManage() {
               </tr>
             </thead>
             <tbody>
-              {events.map((event, idx) => {
+              {visibleEvents.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-sm text-textMuted">
+                    No hay eventos en estado "{FILTER_OPTIONS.find(o => o.value === statusFilter)?.label}".
+                  </td>
+                </tr>
+              ) : visibleEvents.map((event, idx) => {
                 const badge  = STATUS_BADGE[event.status] ?? STATUS_BADGE.DRAFT;
                 const busy   = statusBusy[event.eventId] ?? false;
                 return (

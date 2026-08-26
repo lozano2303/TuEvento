@@ -298,8 +298,8 @@ input[type="password"]::-ms-reveal { display: none; }
   border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
 }
 .theme-menu-item-icon-info {
-  background-color: color-mix(in srgb, #60a5fa 15%, transparent);
-  border: 1px solid color-mix(in srgb, #60a5fa 35%, transparent);
+  background-color: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
 }
 
 /* Divisor de menú */
@@ -315,7 +315,7 @@ input[type="password"]::-ms-reveal { display: none; }
   background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 .theme-menu-item-wallet:hover {
-  background-color: color-mix(in srgb, #60a5fa 10%, transparent);
+  background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
 }
 .theme-menu-item-admin:hover {
   background-color: color-mix(in srgb, var(--color-error) 10%, transparent);

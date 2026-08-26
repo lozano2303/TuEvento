@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { ThemeProvider } from './context/ThemeContext'
 import Login from './pages/login'
 import LadingPage from './pages/ladingPage'
@@ -58,15 +59,27 @@ function AppContent() {
             </ProtectedRoute>
           } />
           <Route path="/events/:eventId" element={<EventDetail />} />
-          <Route path="/organizer-petition-form" element={<OrganizerPetitionForm />} />
+          <Route path="/organizer-petition-form" element={
+            <ProtectedRoute>
+              <OrganizerPetitionForm />
+            </ProtectedRoute>
+          } />
           <Route path="/admin-panel" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminPanel />
             </ProtectedRoute>
           } />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
           <Route path="/verification" element={<CodeVerification />} />
-          <Route path="/events/:eventId/layout" element={<EventLayoutEditor />} />
+          <Route path="/events/:eventId/layout" element={
+            <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
+              <EventLayoutEditor />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
     </div>
@@ -74,6 +87,21 @@ function AppContent() {
 }
 
 function App() {
+  // Sincronización de logout entre pestañas
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      // El evento storage solo se dispara en OTRAS pestañas, no en la que hizo el cambio.
+      // Si el token fue removido (logout) en otra pestaña, redirigir a /login inmediatamente.
+      if (event.key === 'token' && event.newValue === null) {
+        // Logout detectado en otra pestaña — forzar redirección
+        window.location.href = '/login';
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   return (
     <BrowserRouter>
       <ThemeProvider>

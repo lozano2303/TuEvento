@@ -73,12 +73,14 @@ export default function LadingPage() {
                 Cada detalle cuenta y nuestro kit de asistencia lo hace realidad.
               </p>
               {/* Botón: gradiente accent→primary idéntico a welcome-modal-btn / modal-btn-cta */}
-              <button
-                className="hero-section-btn"
-                onClick={() => navigate('/login')}
-              >
-                Comenzar ahora
-              </button>
+              {!userData && (
+                <button
+                  className="hero-section-btn"
+                  onClick={() => navigate('/login')}
+                >
+                  Comenzar ahora
+                </button>
+              )}
             </div>
 
             {/* Imagen */}

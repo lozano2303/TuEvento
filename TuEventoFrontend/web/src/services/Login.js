@@ -1,5 +1,7 @@
 // Servicio de autenticación - conexión con el backend
 
+import { httpRequest } from './httpClient.js';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 // Función para iniciar sesión
@@ -68,11 +70,9 @@ export const registerUser = async (name, email, password) => {
 };
 export const changePassword = async (oldPassword, newPassword) => {
   try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/users/change-password`, {
+    const response = await httpRequest(`${API_URL}/users/change-password`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ oldPassword, newPassword }),

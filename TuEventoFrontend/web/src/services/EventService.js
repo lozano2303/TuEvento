@@ -1,60 +1,59 @@
+/**
+ * EventService — piloto de migración a httpClient.
+ *
+ * Los endpoints que requieren auth usan httpRequest() en vez de fetch() directo.
+ * httpRequest() maneja automáticamente el refresh del token y logout en caso de
+ * sesión expirada, sin que el componente tenga que hacer nada especial.
+ *
+ * Los endpoints públicos (sin auth) siguen usando fetch() directamente —
+ * no necesitan el wrapper.
+ */
+import { httpRequest } from './httpClient.js';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 /** Listado público de eventos publicados — GET /events/public, sin auth. */
 export const getAllEvents = async () => {
   const response = await fetch(`${API_URL}/events/public`);
   if (!response.ok) throw new Error('Error al obtener eventos');
-  return response.json(); // ApiResponse<List<EventSummaryResponse>>
+  return response.json();
 };
 
-/** Eventos de un usuario específico — GET /events/user/{userId}, auth requerida.
- *  Siempre se llama con el propio userId del usuario logueado, por lo que
- *  el token siempre está disponible. Devuelve también eventos en DRAFT. */
+/** Eventos de un usuario específico — GET /events/user/{userId}, auth requerida. */
 export const getEventsByUser = async (userId) => {
-  const token = localStorage.getItem('token');
-  const res = await fetch(`${API_URL}/events/user/${userId}`, {
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-  });
+  const res = await httpRequest(`${API_URL}/events/user/${userId}`);
   if (!res.ok) throw new Error('Error al obtener tus eventos');
-  return res.json(); // ApiResponse<List<EventSummaryResponse>>
+  return res.json();
 };
 
 /** Obtener evento por ID — GET /events/{eventId}, sin auth. */
 export const getEventById = async (eventId) => {
   const response = await fetch(`${API_URL}/events/${eventId}`);
   if (!response.ok) throw new Error('Error al obtener evento');
-  return response.json(); // ApiResponse<EventResponse>
+  return response.json();
 };
 
 /** Crear evento — POST /events, auth ORGANIZER. */
 export const createEvent = async (eventData) => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`${API_URL}/events`, {
+  const res = await httpRequest(`${API_URL}/events`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(eventData),
   });
-  if (!response.ok) throw new Error('Error al crear evento');
-  return response.json(); // ApiResponse<EventResponse>
+  if (!res.ok) throw new Error('Error al crear evento');
+  return res.json();
 };
 
 /** Actualizar evento — PUT /events/{eventId}, auth ORGANIZER. */
 export const updateEvent = async (eventId, eventData) => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`${API_URL}/events/${eventId}`, {
+  const res = await httpRequest(`${API_URL}/events/${eventId}`, {
     method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(eventData),
   });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Error al actualizar evento');
-  return data; // ApiResponse<EventResponse>
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Error al actualizar evento');
+  return data;
 };
 
 /**
@@ -62,26 +61,20 @@ export const updateEvent = async (eventId, eventData) => {
  * newStatus: 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED'
  */
 export const changeEventStatus = async (eventId, newStatus) => {
-  const token = localStorage.getItem('token');
-  const res = await fetch(`${API_URL}/events/${eventId}/status`, {
+  const res = await httpRequest(`${API_URL}/events/${eventId}/status`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ newStatus }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Error al cambiar el estado');
-  return data; // ApiResponse<EventStatusLogResponse>
+  return data;
 };
 
 /** Eliminar evento — DELETE /events/{eventId}, auth ORGANIZER. */
 export const deleteEvent = async (eventId) => {
-  const token = localStorage.getItem('token');
-  const res = await fetch(`${API_URL}/events/${eventId}`, {
+  const res = await httpRequest(`${API_URL}/events/${eventId}`, {
     method: 'DELETE',
-    headers: { 'Authorization': `Bearer ${token}` },
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
@@ -93,7 +86,6 @@ export const deleteEvent = async (eventId) => {
 /**
  * @deprecated — cancelEvent usaba PUT /events/{id}/cancel que no existe en el backend.
  * Usar changeEventStatus(eventId, 'CANCELLED') en su lugar.
- * Se mantiene temporalmente para no romper Events.jsx hasta que se migre.
  */
 export const cancelEvent = async (eventId) => {
   return changeEventStatus(eventId, 'CANCELLED');
