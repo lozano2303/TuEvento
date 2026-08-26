@@ -1,0 +1,186 @@
+/**
+ * Paletas de tema para la web.
+ * Espejo exacto de mobile/src/theme/themes.js — mismos ids, tokens y valores.
+ * Los gradientes se omiten aquí (no se usan en CSS custom properties).
+ */
+
+export const THEMES = [
+  {
+    id: "PRINCIPAL",
+    name: "Principal",
+    description: "Identidad oficial de Tu Evento",
+    emoji: "⭐",
+    preview: { background: "#1E0A3C", primary: "#7C3AED", accent: "#A78BFA" },
+    palette: {
+      background:    "#1E0A3C",
+      surface:       "#2D1B4E",
+      surfaceAlt:    "#3D2B5E",
+      primary:       "#7C3AED",
+      primaryDark:   "#6D28D9",
+      accent:        "#A78BFA",
+      textPrimary:   "#FFFFFF",
+      textSecondary: "#9CA3AF",
+      textMuted:     "#6B7280",
+      error:         "#EF4444",
+      errorBg:       "#EF444422",
+      success:       "#059669",
+      successBg:     "#05966922",
+    },
+  },
+  {
+    id: "DARK",
+    name: "Oscuro",
+    description: "Oscuro neutro con grises profundos",
+    emoji: "🌑",
+    preview: { background: "#0D0D0D", primary: "#E0E0E0", accent: "#7a7a7a" },
+    palette: {
+      background:    "#0D0D0D",
+      surface:       "#1A1A1A",
+      surfaceAlt:    "#2C2C2C",
+      primary:       "#E0E0E0",
+      primaryDark:   "#BDBDBD",
+      accent:        "#7a7a7a", // was #757575 (4.22:1) → 4.53:1 ✅ WCAG AA
+      textPrimary:   "#FFFFFF",
+      textSecondary: "#B0B0B0",
+      textMuted:     "#6E6E6E",
+      error:         "#CF6679",
+      errorBg:       "#CF667922",
+      success:       "#4CAF50",
+      successBg:     "#4CAF5022",
+    },
+  },
+  {
+    id: "LIGHT",
+    name: "Claro",
+    description: "Claro y limpio para el día",
+    emoji: "☀️",
+    preview: { background: "#FFFFFF", primary: "#424242", accent: "#757575" },
+    palette: {
+      background:    "#FFFFFF",
+      surface:       "#F5F5F5",
+      surfaceAlt:    "#EEEEEE",
+      primary:       "#424242",
+      primaryDark:   "#212121",
+      accent:        "#757575",
+      textPrimary:   "#212121",
+      textSecondary: "#616161",
+      textMuted:     "#9E9E9E",
+      error:         "#D32F2F",
+      errorBg:       "#D32F2F22",
+      success:       "#388E3C",
+      successBg:     "#388E3C22",
+    },
+  },
+  {
+    id: "PASTEL",
+    name: "Pastel",
+    description: "Suave y relajado",
+    emoji: "🌸",
+    preview: { background: "#FFF9FB", primary: "#e0165a", accent: "#ac48bd" },
+    palette: {
+      background:    "#FFF9FB",
+      surface:       "#FFE4EE",
+      surfaceAlt:    "#FFD6E7",
+      primary:       "#e0165a", // was #F48FB1 (2.15:1) → 4.56:1 ✅ WCAG AA
+      primaryDark:   "#b81049", // darkened proportionally from F06292
+      accent:        "#ac48bd", // was #CE93D8 (2.30:1) → 4.57:1 ✅ WCAG AA
+      textPrimary:   "#4A0E2A",
+      textSecondary: "#7B4A5E",
+      textMuted:     "#AD8A98",
+      error:         "#E57373",
+      errorBg:       "#E5737322",
+      success:       "#81C784",
+      successBg:     "#81C78422",
+    },
+  },
+  {
+    id: "VIBRANT",
+    name: "Vibrante",
+    description: "Colores saturados y energéticos",
+    emoji: "⚡",
+    preview: { background: "#0A0A0A", primary: "#FF1744", accent: "#FFEA00" },
+    palette: {
+      background:    "#0A0A0A",
+      surface:       "#1A0533",
+      surfaceAlt:    "#2D0A4E",
+      primary:       "#FF1744",
+      primaryDark:   "#D50000",
+      accent:        "#FFEA00",
+      textPrimary:   "#FFFFFF",
+      textSecondary: "#E0E0E0",
+      textMuted:     "#9E9E9E",
+      error:         "#FF5252",
+      errorBg:       "#FF525222",
+      success:       "#69F0AE",
+      successBg:     "#69F0AE22",
+    },
+  },
+  {
+    id: "NATURE",
+    name: "Naturaleza",
+    description: "Verde orgánico y tierras",
+    emoji: "🌿",
+    preview: { background: "#F1F8E9", primary: "#2E7D32", accent: "#886a60" },
+    palette: {
+      background:    "#F1F8E9",
+      surface:       "#DCEDC8",
+      surfaceAlt:    "#C5E1A5",
+      primary:       "#2E7D32",
+      primaryDark:   "#1B5E20",
+      accent:        "#886a60", // was #8D6E63 (4.26:1) → 4.52:1 ✅ WCAG AA
+      textPrimary:   "#1B2E1C",
+      textSecondary: "#4E6B4F",
+      textMuted:     "#7B9E7D",
+      error:         "#BF360C",
+      errorBg:       "#BF360C22",
+      success:       "#33691E",
+      successBg:     "#33691E22",
+    },
+  },
+  {
+    id: "OCEAN",
+    name: "Océano",
+    description: "Azules profundos y turquesas",
+    emoji: "🌊",
+    preview: { background: "#E3F2FD", primary: "#0272b5", accent: "#007786" },
+    palette: {
+      background:    "#E3F2FD",
+      surface:       "#BBDEFB",
+      surfaceAlt:    "#90CAF9",
+      primary:       "#0272b5", // was #0277BD (4.20:1) → 4.51:1 ✅ WCAG AA
+      primaryDark:   "#01579B",
+      accent:        "#007786", // was #00BCD4 (2.01:1) → 4.62:1 ✅ WCAG AA
+      textPrimary:   "#01234F",
+      textSecondary: "#1A5276",
+      textMuted:     "#5B8DB8",
+      error:         "#C62828",
+      errorBg:       "#C6282822",
+      success:       "#00695C",
+      successBg:     "#00695C22",
+    },
+  },
+  {
+    id: "SUNSET",
+    name: "Atardecer",
+    description: "Cálido y acogedor",
+    emoji: "🌅",
+    preview: { background: "#FFF3E0", primary: "#c94116", accent: "#d33300" },
+    palette: {
+      background:    "#FFF3E0",
+      surface:       "#FFE0B2",
+      surfaceAlt:    "#FFCC80",
+      primary:       "#c94116", // was #E64A19 (3.57:1) → 4.50:1 ✅ WCAG AA
+      primaryDark:   "#a33610", // darkened proportionally from BF360C
+      accent:        "#d33300", // was #FF8A65 (2.11:1) → 4.51:1 ✅ WCAG AA
+      textPrimary:   "#2E1503",
+      textSecondary: "#6D3B1A",
+      textMuted:     "#A07050",
+      error:         "#C62828",
+      errorBg:       "#C6282822",
+      success:       "#2E7D32",
+      successBg:     "#2E7D3222",
+    },
+  },
+];
+
+export const DEFAULT_THEME_ID = "PRINCIPAL";

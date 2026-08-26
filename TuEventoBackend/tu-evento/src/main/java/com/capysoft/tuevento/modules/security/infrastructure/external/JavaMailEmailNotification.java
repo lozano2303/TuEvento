@@ -3,12 +3,14 @@ package com.capysoft.tuevento.modules.security.infrastructure.external;
 import com.capysoft.tuevento.modules.security.application.port.out.EmailNotificationPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StreamUtils;
 
 import jakarta.mail.internet.MimeMessage;
+import java.nio.charset.StandardCharsets;
 
 @Component
 @RequiredArgsConstructor
@@ -22,30 +24,22 @@ public class JavaMailEmailNotification implements EmailNotificationPort {
     @Override
     public void sendActivationEmail(String toEmail, String alias, String activationCode) {
         try {
+            String htmlTemplate = StreamUtils.copyToString(
+                    new ClassPathResource("mail/account-activation.html").getInputStream(),
+                    StandardCharsets.UTF_8);
+
+            String htmlContent = htmlTemplate
+                    .replace("{{username}}", alias)
+                    .replace("{{activationCode}}", activationCode)
+                    .replace("{{expirationHours}}", "24");
+
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(from);
             helper.setTo(toEmail);
-            helper.setSubject("Tu Evento — Activate your account");
-            
-            String htmlContent = """
-                <html>
-                <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                        <h2 style="color: #6b21a8;">Hi %s,</h2>
-                        <p>Welcome to Tu Evento! Please use the following code to activate your account:</p>
-                        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                            <p style="font-size: 24px; font-weight: bold; color: #6b21a8; letter-spacing: 3px; text-align: center;">%s</p>
-                        </div>
-                        <p style="color: #666; font-size: 14px;">This code expires in 24 hours.</p>
-                        <p style="color: #666; font-size: 14px;">If you did not create an account, you can safely ignore this email.</p>
-                        <p style="color: #666; font-size: 14px; margin-top: 30px;">— The Tu Evento Team</p>
-                    </div>
-                </body>
-                </html>
-                """.formatted(alias, activationCode);
-            
+            helper.setSubject("Tu Evento \u2014 Activa tu cuenta");
             helper.setText(htmlContent, true);
+
             mailSender.send(message);
             System.out.println("=== ACTIVATION EMAIL SENT SUCCESSFULLY ===");
             System.out.println("To: " + toEmail);
@@ -62,23 +56,35 @@ public class JavaMailEmailNotification implements EmailNotificationPort {
 
     @Override
     public void sendPasswordRecoveryEmail(String toEmail, String alias, String recoveryCode) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(from);
-        message.setTo(toEmail);
-        message.setSubject("Tu Evento — Password recovery");
-        message.setText("""
-                Hi %s,
+        try {
+            String templatePath = "mail/password-reset.html";
+            String htmlTemplate = StreamUtils.copyToString(
+                    new ClassPathResource(templatePath).getInputStream(),
+                    StandardCharsets.UTF_8);
 
-                We received a request to reset your password. Use the following code:
+            String htmlContent = htmlTemplate
+                    .replace("{{username}}", alias)
+                    .replace("{{verificationCode}}", recoveryCode)
+                    .replace("{{expirationMinutes}}", "30");
 
-                    %s
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(toEmail);
+            helper.setSubject("Tu Evento \u2014 Recuperaci\u00f3n de contrase\u00f1a");
+            helper.setText(htmlContent, true);
 
-                This code expires in 30 minutes.
-
-                If you did not request a password reset, please ignore this email.
-
-                — The Tu Evento Team
-                """.formatted(alias, recoveryCode));
-        mailSender.send(message);
+            mailSender.send(message);
+            System.out.println("=== PASSWORD RECOVERY EMAIL SENT SUCCESSFULLY ===");
+            System.out.println("To: " + toEmail);
+            System.out.println("Alias: " + alias);
+            System.out.println("Recovery Code: " + recoveryCode);
+        } catch (Exception e) {
+            System.err.println("=== FAILED TO SEND PASSWORD RECOVERY EMAIL ===");
+            System.err.println("To: " + toEmail);
+            System.err.println("Error: " + e.getClass().getName() + ": " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to send password recovery email", e);
+        }
     }
 }

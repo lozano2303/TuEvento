@@ -1,7 +1,6 @@
-import { Calendar, User, LogOut, Plus, Wallet, Menu, X } from "lucide-react";
+import { Calendar, User, Plus, Wallet, Menu, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { performLogout } from "../services/httpClient.js";
 import ChangePassword from "../pages/ChangePassword.jsx";
 import { getEventsByUser } from "../services/EventService.js";
 
@@ -48,14 +47,6 @@ export default function Navbar() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleLogout = async () => {
-    await performLogout();
-    setUserData(null);
-    setIsModalOpen(false);
-    setIsMobileMenuOpen(false);
-    window.location.href = '/login';
-  };
-
   const handleNavClick = (path) => {
     setIsMobileMenuOpen(false);
     navigate(path);
@@ -74,12 +65,12 @@ export default function Navbar() {
     }
   }, [userData, isOrganizer]);
 
-  // Excepciones: badges de rol usan colores semánticos fijos, no del tema
+  // Badges de rol: Admin usa error semántico (fijo), Org sigue el tema primario, User neutro
   const roleBadge = isAdmin
-    ? { label: 'Admin', badgeClass: 'bg-red-500 text-white', roleText: 'Administrador' }
+    ? { label: 'Admin', badgeClass: 'badge-role-admin', roleText: 'Administrador' }
     : isOrganizer
-    ? { label: 'Org', badgeClass: 'bg-violet-500 text-white', roleText: 'Organizador' }
-    : { label: 'User', badgeClass: 'bg-surfaceAlt text-textSecondary', roleText: 'Usuario' };
+    ? { label: 'Org', badgeClass: 'badge-role-org', roleText: 'Organizador' }
+    : { label: 'User', badgeClass: 'badge-role-user', roleText: 'Usuario' };
 
 const displayName = (() => {
     const name = userData?.fullName || userData?.alias || '';
@@ -149,19 +140,14 @@ const displayName = (() => {
                 </button>
 
                 {isModalOpen && (
-                  <div className="user-modal absolute right-0 mt-2 w-[230px] border rounded-2xl shadow-2xl z-50 overflow-hidden"
-                    style={{ background: 'var(--color-surface)', borderColor: 'rgba(139,92,246,0.3)', boxShadow: '0 8px 32px rgba(109,40,217,0.3)' }}>
+                  <div className="theme-dropdown user-modal absolute right-0 mt-2 w-[230px] rounded-2xl shadow-2xl z-50 overflow-hidden">
 
                     <Link
                       to="/profile"
                       onClick={() => setIsModalOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3.5 transition-colors"
-                      style={{ borderBottom: '1px solid rgba(139,92,246,0.15)' }}
-                      onMouseOver={e => e.currentTarget.style.background = 'rgba(139,92,246,0.12)'}
-                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                      className="theme-menu-item flex items-center gap-3 px-4 py-3.5 transition-colors theme-menu-divider"
                     >
-                      <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.4)' }}>
+                      <div className="theme-menu-item-icon w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0">
                         <User className="w-[17px] h-[17px] text-accent" />
                       </div>
                       <div>
@@ -174,32 +160,25 @@ const displayName = (() => {
                     <Link
                       to="/wallet"
                       onClick={() => setIsModalOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3.5 transition-colors"
-                      onMouseOver={e => e.currentTarget.style.background = 'rgba(96,165,250,0.1)'}
-                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                      className="theme-menu-item-wallet flex items-center gap-3 px-4 py-3.5 transition-colors"
                     >
-                      <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.35)' }}>
-                        <Wallet className="w-[17px] h-[17px] text-blue-400" />
+                      <div className="theme-menu-item-icon-info w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0">
+                        <Wallet className="w-[17px] h-[17px] text-accent" />
                       </div>
                       <div>
                         <p className="text-[14px] font-semibold text-textPrimary leading-tight">Cartera</p>
                         <p className="text-[11px] text-textMuted leading-tight mt-0.5">Saldo y transacciones</p>
                       </div>
-                      <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="#3b82f6" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                      <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                     </Link>
 
                     {isAdmin && (
                       <Link
                         to="/admin-panel"
                         onClick={() => setIsModalOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3.5 transition-colors"
-                        style={{ borderTop: '1px solid rgba(239,68,68,0.15)' }}
-                        onMouseOver={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
-                        onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                        className="theme-menu-item-admin flex items-center gap-3 px-4 py-3.5 transition-colors theme-menu-divider-error"
                       >
-                        <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0"
-                          style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)' }}>
+                        <div className="theme-menu-item-icon-error w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0">
                           <Calendar className="w-[17px] h-[17px] text-error" />
                         </div>
                         <div>
@@ -210,23 +189,6 @@ const displayName = (() => {
                       </Link>
                     )}
 
-                    {/* Logout button */}
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center gap-3 px-4 py-3.5 transition-colors w-full text-left"
-                      style={{ borderTop: '1px solid rgba(239,68,68,0.15)' }}
-                      onMouseOver={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
-                      onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)' }}>
-                        <LogOut className="w-[17px] h-[17px] text-error" />
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-semibold text-error leading-tight">Cerrar Sesión</p>
-                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">Salir de tu cuenta</p>
-                      </div>
-                    </button>
                   </div>
                 )}
               </div>

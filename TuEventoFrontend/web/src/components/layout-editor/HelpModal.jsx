@@ -130,11 +130,11 @@ export default function HelpModal({ isOpen, onClose }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-hidden"
-      style={{ background: 'rgba(0,0,0,0.6)' }}
+      style={{ background: 'rgba(0,0,0,0.45)' }}
       onClick={onClose}
     >
       <div
-        className="relative w-full bg-surface border border-surfaceAlt rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        className="modal-elevated relative w-full bg-surface border border-surfaceAlt rounded-2xl flex flex-col overflow-hidden"
         style={{ maxWidth: '600px', maxHeight: '90vh' }}
         onClick={(e) => e.stopPropagation()}
       >
