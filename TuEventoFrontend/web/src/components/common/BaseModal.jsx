@@ -174,8 +174,10 @@ export default function BaseModal({
         {actions.length > 0 && (
           <div className="bm-footer">
             {actions.map((action, i) => {
-              const btnClass = (action.variant ?? (i === 0 ? 'primary' : 'secondary')) === 'primary'
-                ? 'bm-btn-primary'
+              const isPrimary = (action.variant ?? (i === 0 ? 'primary' : 'secondary')) === 'primary';
+              // Destructive modals (danger variant) use red button instead of primary gradient
+              const btnClass = isPrimary
+                ? (variant === 'danger' ? 'bm-btn-danger' : 'bm-btn-primary')
                 : 'bm-btn-secondary';
               return (
                 <button
