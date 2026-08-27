@@ -109,6 +109,13 @@ export default function EventDetail() {
     );
   }, [seats, currentUserId]);
 
+  // Hidratar el stepper con el número de sillas ya reservadas
+  useEffect(() => {
+    if (cart.length > 0 && cart.length > selectedQuantity) {
+      setSelectedQuantity(cart.length);
+    }
+  }, [cart.length, selectedQuantity]);
+
   const handleReserveSeat = useCallback(async (seatId) => {
     const token = localStorage.getItem('token');
     if (!token) {

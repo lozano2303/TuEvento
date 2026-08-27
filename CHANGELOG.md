@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed - Stepper Hydration: Restore Reserved Seat Count on View Re-entry
+- **EventDetail.jsx (web) + EventDetailScreen.jsx (móvil)**: hidratación del stepper con sillas ya reservadas
+  - **Bug**: al salir y volver a la vista de selección de sillas, el stepper/selector de cantidad siempre mostraba 1, aunque el usuario tuviera 2+ sillas ya reservadas (visibles en el mapa y carrito)
+  - **Causa**: `useState(1)` inicializa el stepper en 1 fijo, sin considerar sillas previamente reservadas
+  - **Solución**: `useEffect` que detecta cuando `cart.length > selectedQuantity` y actualiza el stepper
+    ```javascript
+    useEffect(() => {
+      if (cart.length > 0 && cart.length > selectedQuantity) {
+        setSelectedQuantity(cart.length);
+      }
+    }, [cart.length]);
+    ```
+  - **Flujo**:
+    1. Usuario entra a la vista → se cargan sillas del backend
+    2. `cart` (computed) filtra sillas con `reservedBy === currentUserId`
+    3. Si `cart.length > selectedQuantity` (ej. 3 > 1) → stepper sube a 3
+    4. Si el usuario no tiene sillas reservadas → stepper queda en 1 (comportamiento original)
+  - **Caso límite (expiración)**: 
+    - Usuario tenía 3 sillas, pero 1 expiró mientras no estaba en la vista
+    - Al entrar: backend retorna solo 2 con `reserved_until` vigente
+    - Stepper se hidrata con 2 (no con 3)
+  - **Consistencia con validación existente**: 
+    - El stepper ya bloqueaba decrementar por debajo de `cart.length`
+    - Ahora también **inicializa** en `cart.length` si es mayor a 1
+    - Evita estado inconsistente donde el botón - está bloqueado pero el número dice 1
+  - **Aplicado en ambas plataformas**: web y móvil con lógica idéntica
+
 ### Added - Cart with TTL Countdown on Mobile
 - **EventDetailScreen.jsx → CartItem component**: countdown de TTL para reservas de sillas
   - **Componente CartItem**: item individual del carrito con información de silla y countdown
