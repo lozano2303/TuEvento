@@ -159,6 +159,13 @@ export default function EventDetailScreen() {
     (s) => s.status === 'RESERVED' && s.reservedBy === currentUserId
   );
 
+  // Hidratar el stepper con el número de sillas ya reservadas
+  useEffect(() => {
+    if (cart.length > 0 && cart.length > selectedQuantity) {
+      setSelectedQuantity(cart.length);
+    }
+  }, [cart.length]);
+
   useEffect(() => {
     const loadEventDetail = async () => {
       try {
@@ -191,6 +198,23 @@ export default function EventDetailScreen() {
         // Cargar secciones del evento
         const sectionsData = await getEventSections(eventId);
         setSections(sectionsData || []);
+
+        // Cargar sillas de todas las secciones para detectar reservas existentes
+        // Esto permite hidratar el stepper correctamente al entrar a la vista
+        if (sectionsData && sectionsData.length > 0 && currentUserId) {
+          const allSeatsMap = {};
+          for (const section of sectionsData) {
+            try {
+              const sectionSeats = await seatService.getSeatsBySection(section.eventSectionId);
+              sectionSeats.forEach((seat) => {
+                allSeatsMap[seat.seatId] = seat;
+              });
+            } catch (err) {
+              console.warn(`[EventDetailScreen] Could not load seats for section ${section.eventSectionId}:`, err);
+            }
+          }
+          setSeats(allSeatsMap);
+        }
       } catch (err) {
         console.error("[EventDetailScreen] Error loading event:", err);
         setError(err.message || "Error al cargar el evento");
@@ -202,7 +226,7 @@ export default function EventDetailScreen() {
     if (eventId) {
       loadEventDetail();
     }
-  }, [eventId]);
+  }, [eventId, currentUserId]);
 
   // Cargar sillas al seleccionar una sección
   useEffect(() => {
