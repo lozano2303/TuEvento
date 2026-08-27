@@ -50,20 +50,20 @@ public class RequestOrganizerUseCase implements RequestOrganizerPort {
 
         // Verify user is not already an organizer
         if (ORGANIZER_ROLE_CODE.equals(user.getRole().getCode())) {
-            throw new BusinessException("ALREADY_ORGANIZER", "User is already an organizer");
+            throw new BusinessException("ALREADY_ORGANIZER", "Ya eres organizador");
         }
 
         organizerPetitionRepository.findPendingByUserId(user.getUserId())
                 .ifPresent(existing -> {
                     throw new BusinessException("PETITION_ALREADY_PENDING",
-                            "There is already a pending organizer petition for this user");
+                            "Ya tienes una solicitud de organizador pendiente");
                 });
 
         byte[] documentBytes;
         try {
             documentBytes = request.getDocument().getBytes();
         } catch (IOException e) {
-            throw new BusinessException("DOCUMENT_READ_ERROR", "Failed to read uploaded document");
+            throw new BusinessException("DOCUMENT_READ_ERROR", "No se pudo leer el documento adjunto");
         }
 
         UploadFileResponse fileResponse = uploadFilePort.upload(UploadFileRequest.builder()

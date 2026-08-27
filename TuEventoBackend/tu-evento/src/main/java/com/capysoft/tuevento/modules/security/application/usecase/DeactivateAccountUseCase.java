@@ -31,7 +31,7 @@ import java.util.List;
 public class DeactivateAccountUseCase implements DeactivateAccountPort {
 
     private static final String INACTIVE_STATUS_CODE = "INACTIVE";
-    private static final String DEACTIVATION_REASON  = "User requested account deactivation";
+    private static final String DEACTIVATION_REASON  = "El usuario solicitó la desactivación de su cuenta.";
 
     private final LoginCredentialsRepository loginCredentialsRepository;
     private final UserRepository             userRepository;
@@ -54,7 +54,7 @@ public class DeactivateAccountUseCase implements DeactivateAccountPort {
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
 
         if (!passwordEncoder.matches(request.getPassword(), credentials.getPasswordHash())) {
-            throw new BusinessException("INVALID_PASSWORD", "Password is incorrect");
+            throw new BusinessException("INVALID_PASSWORD", "Contraseña incorrecta. Verifica e intenta de nuevo.");
         }
 
         User user = credentials.getUser();
@@ -62,10 +62,10 @@ public class DeactivateAccountUseCase implements DeactivateAccountPort {
         // 3. Guard: cannot deactivate an already inactive or deleted account
         String currentStatus = user.getUserStatus().getCode();
         if (INACTIVE_STATUS_CODE.equals(currentStatus)) {
-            throw new BusinessException("ACCOUNT_ALREADY_INACTIVE", "Account is already inactive");
+            throw new BusinessException("ACCOUNT_ALREADY_INACTIVE", "La cuenta ya está inactiva");
         }
         if ("DELETED".equals(currentStatus)) {
-            throw new BusinessException("ACCOUNT_DELETED", "Account not found");
+            throw new BusinessException("ACCOUNT_DELETED", "Cuenta no encontrada");
         }
 
         // 4. Resolve the INACTIVE UserStatus entity

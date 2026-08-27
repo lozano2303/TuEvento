@@ -68,10 +68,10 @@ public class RegisterUserUseCase implements RegisterUserPort {
 
             if (existingCredentials.getUser().getActivated() == null || !existingCredentials.getUser().getActivated()) {
 
-                throw new BusinessException("EMAIL_NOT_ACTIVATED", "This email is already registered but not activated. If you want to activate your account, click on Resend activation email");
+                throw new BusinessException("EMAIL_NOT_ACTIVATED", "Este correo ya está registrado pero no activado. Si deseas activar tu cuenta, haz clic en Reenviar correo de activación");
             }
 
-            throw new BusinessException("EMAIL_ALREADY_EXISTS", "This email is already registered and activated. Please login with your credentials.");
+            throw new BusinessException("EMAIL_ALREADY_EXISTS", "Este correo ya está registrado y activado. Por favor inicia sesión.");
         }
 
         Role role = roleRepository.findByCode(DEFAULT_ROLE_CODE)
@@ -132,7 +132,7 @@ public class RegisterUserUseCase implements RegisterUserPort {
                 .orElseThrow(() -> new NotFoundException("EMAIL_NOT_FOUND", "Email not found"));
 
         if (existingCredentials.getUser().getActivated() != null && existingCredentials.getUser().getActivated()) {
-            throw new BusinessException("EMAIL_ALREADY_ACTIVATED", "This email is already activated. Please login with your credentials.");
+            throw new BusinessException("EMAIL_ALREADY_ACTIVATED", "Este correo ya está activado. Por favor inicia sesión.");
         }
 
         String code = codeGenerator.generateActivationCode();
