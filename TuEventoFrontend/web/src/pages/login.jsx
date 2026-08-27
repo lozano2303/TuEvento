@@ -261,9 +261,10 @@ export default function Login() {
       } else if (
         errorMsg.toLowerCase().includes("inactive") ||
         errorMsg.toLowerCase().includes("inactiva") ||
+        errorMsg.toLowerCase().includes("desactivada") ||
         errorMsg.toLowerCase().includes("account_inactive")
       ) {
-        setError("Tu cuenta está inactiva. Por favor contacta a soporte.");
+        setError("Tu cuenta ha sido desactivada. Solicita la reactivación para que nuestro equipo la revise.");
       } else if (
         errorMsg.toLowerCase().includes("blocked") ||
         errorMsg.toLowerCase().includes("bloqueada") ||

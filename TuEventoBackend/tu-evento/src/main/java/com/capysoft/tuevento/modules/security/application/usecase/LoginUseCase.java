@@ -73,7 +73,7 @@ public class LoginUseCase implements LoginPort {
         }
         if ("INACTIVE".equals(statusCode)) {
             throw new BusinessException("ACCOUNT_INACTIVE",
-                    "Tu cuenta está inactiva. Por favor contacta a soporte.");
+                    "Tu cuenta ha sido desactivada. Solicita la reactivación para que nuestro equipo la revise.");
         }
         if ("DELETED".equals(statusCode)) {
             throw new BusinessException("ACCOUNT_DELETED", "Cuenta no encontrada.");
