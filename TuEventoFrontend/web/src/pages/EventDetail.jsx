@@ -171,6 +171,24 @@ export default function EventDetail() {
     }
   }, []);
 
+  // Handler de expiración optimista de silla (solo cliente, sin llamada al backend)
+  // El scheduler del backend se encargará de liberar la silla en su próximo ciclo (cada 10s)
+  const handleSeatExpire = useCallback((seatId) => {
+    setSeats((prev) => {
+      if (!prev[seatId]) return prev;
+      
+      return {
+        ...prev,
+        [seatId]: {
+          ...prev[seatId],
+          status: 'AVAILABLE',
+          reservedBy: null,
+          reservedUntil: null,
+        },
+      };
+    });
+  }, []);
+
   const prev = () => setActiveImage((i) => (i - 1 + media.length) % media.length);
   const next = () => setActiveImage((i) => (i + 1) % media.length);
 
@@ -350,6 +368,7 @@ export default function EventDetail() {
             reserving={reserving}
             onReserveSeat={handleReserveSeat}
             onReleaseSeat={handleReleaseSeat}
+            onSeatExpire={handleSeatExpire}
             zoom={zoom}
             setZoom={setZoom}
           />
@@ -384,6 +403,7 @@ function SeatSelectorSection({
   reserving,
   onReserveSeat,
   onReleaseSeat,
+  onSeatExpire,
   zoom,
   setZoom,
 }) {
@@ -620,6 +640,7 @@ function SeatSelectorSection({
           cart={cart}
           sections={sections}
           onReleaseSeat={onReleaseSeat}
+          onSeatExpire={onSeatExpire}
           reserving={reserving}
         />
       </div>
@@ -915,7 +936,7 @@ function SeatCircle({
 /**
  * Panel lateral con el carrito de sillas reservadas.
  */
-function CartPanel({ cart, sections, onReleaseSeat, reserving }) {
+function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving }) {
   const totalPrice = cart.reduce((sum, seat) => {
     const section = sections.find((s) => s.eventSectionId === seat.eventSectionId);
     return sum + (section?.price ?? 0);
@@ -970,6 +991,7 @@ function CartPanel({ cart, sections, onReleaseSeat, reserving }) {
               seat={seat}
               section={section}
               onRelease={() => onReleaseSeat(seat.seatId)}
+              onExpire={onSeatExpire}
               isReleasing={reserving.has(seat.seatId)}
             />
           );
@@ -1001,7 +1023,7 @@ function CartPanel({ cart, sections, onReleaseSeat, reserving }) {
 /**
  * Item individual en el carrito con countdown.
  */
-function CartItem({ seat, section, onRelease, isReleasing }) {
+function CartItem({ seat, section, onRelease, onExpire, isReleasing }) {
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
@@ -1014,6 +1036,11 @@ function CartItem({ seat, section, onRelease, isReleasing }) {
 
       if (diffMs <= 0) {
         setTimeLeft('Expirado');
+        // Deselección optimista: liberar inmediatamente en el cliente
+        // sin esperar el evento de WebSocket del scheduler
+        if (onExpire) {
+          onExpire(seat.seatId);
+        }
         return;
       }
 
@@ -1026,7 +1053,7 @@ function CartItem({ seat, section, onRelease, isReleasing }) {
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [seat.reservedUntil]);
+  }, [seat.reservedUntil, seat.seatId, onExpire]);
 
   return (
     <div

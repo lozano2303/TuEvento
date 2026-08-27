@@ -72,11 +72,16 @@ public class SeatReservationExpirationScheduler {
     }
 
     /**
-     * Cron cada minuto — caso normal.
+     * Cron cada 10 segundos — optimizado para liberación casi instantánea.
+     * 
+     * Frecuencia aumentada de 60s a 10s para que el TTL se sienta instantáneo en el cliente.
+     * La query está optimizada con un índice compuesto en (status, reserved_until) para
+     * mantener el rendimiento a alta frecuencia.
+     * 
      * @Transactional aplica igual tanto al ser disparado por el cron como
      * desde onStartup(), ya que el proxy de Spring está activo en ambos casos.
      */
-    @Scheduled(cron = "0 * * * * *") // cada minuto
+    @Scheduled(cron = "*/10 * * * * *") // cada 10 segundos
     @Transactional
     public void releaseExpiredReservations() {
         List<Seat> expired = seatRepository.findAllByStatusAndReservedUntilBefore(
