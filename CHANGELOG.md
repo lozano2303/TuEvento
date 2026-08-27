@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed - Scheduler Frequency Increased + Optimistic Expiration (Backend + Web + Mobile)
+- **Backend**: frecuencia del scheduler de expiración aumentada de 60s a 10s
+  - **SeatReservationExpirationScheduler.java**: cron cambiado de `0 * * * * *` (cada minuto) a `*/10 * * * * *` (cada 10 segundos)
+  - **Motivo**: TTL de 10 minutos se sentía lento al expirar (demora de hasta 59s), ahora es casi instantáneo (máximo 10s de demora desde el backend)
+  - **Optimización de performance**: agregado índice compuesto en `(status, reserved_until)` para soportar consultas frecuentes sin impacto
+    - **062-add-seat-expiration-index.yaml**: `CREATE INDEX idx_seat_status_reserved_until ON seat(status, reserved_until)`
+    - Query del scheduler: `WHERE status='RESERVED' AND reserved_until < NOW()` ahora usa el índice
+    - Sin el índice, correr esto cada 10s causaría table scans costosos
+- **Frontend (web + móvil)**: deselección optimista al expirar countdown
+  - **CartItem (ambas plataformas)**: cuando `diffMs <= 0`, llama a `onExpire(seatId)` inmediatamente
+    - **Antes**: mostraba "Expirado" pero la silla permanecía en el carrito hasta que el scheduler la liberaba (hasta 59s de demora)
+    - **Ahora**: la silla desaparece del carrito y se deselecciona del mapa al instante cuando el countdown llega a 0
+  - **EventDetail.jsx (web) + EventDetailScreen.jsx (móvil)**: nuevo handler `handleSeatExpire`
+    - **Solo actualiza estado local** (no hace petición HTTP al backend)
+    - Cambia `status='AVAILABLE'`, `reservedBy=null`, `reservedUntil=null`
+    - El scheduler del backend confirma la liberación en su próximo ciclo (cada 10s)
+    - Si llega el evento de WebSocket después, no duplica ni rompe nada (la silla ya está liberada localmente)
+  - **UX mejorada**: la expiración se siente instantánea para el usuario
+    - Countdown llega a 0 → silla desaparece del carrito inmediatamente
+    - Mapa actualiza el color de la silla de verde/amarillo a blanco (disponible)
+    - Máximo 10s de demora para que otros usuarios vean la silla disponible (vs. 60s antes)
+
 ### Fixed - Stepper Hydration: Restore Reserved Seat Count on View Re-entry
 - **EventDetail.jsx (web) + EventDetailScreen.jsx (móvil)**: hidratación del stepper con sillas ya reservadas
   - **Bug**: al salir y volver a la vista de selección de sillas, el stepper/selector de cantidad siempre mostraba 1, aunque el usuario tuviera 2+ sillas ya reservadas (visibles en el mapa y carrito)

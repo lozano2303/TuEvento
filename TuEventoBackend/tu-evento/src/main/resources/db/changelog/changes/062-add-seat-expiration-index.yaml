@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 062-add-seat-expiration-index
+      author: capysoft
+      comment: "Add composite index on (status, reserved_until) to optimize the scheduler query that finds expired reservations. This supports running the scheduler every 5-10 seconds without performance impact."
+      changes:
+        - createIndex:
+            indexName: idx_seat_status_reserved_until
+            tableName: seat
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: reserved_until
+      rollback:
+        - dropIndex:
+            indexName: idx_seat_status_reserved_until
+            tableName: seat

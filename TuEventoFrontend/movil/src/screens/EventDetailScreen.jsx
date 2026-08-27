@@ -27,7 +27,7 @@ const { width } = Dimensions.get("window");
  * Item individual del carrito con countdown de TTL.
  * Muestra código de silla, sección, precio y tiempo restante de reserva.
  */
-function CartItem({ seat, section, onRelease, isReleasing, colors }) {
+function CartItem({ seat, section, onRelease, isReleasing, colors, onExpire }) {
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
@@ -40,6 +40,11 @@ function CartItem({ seat, section, onRelease, isReleasing, colors }) {
 
       if (diffMs <= 0) {
         setTimeLeft('Expirado');
+        // Deselección optimista: liberar inmediatamente en el cliente
+        // sin esperar el evento de WebSocket del scheduler
+        if (onExpire) {
+          onExpire(seat.seatId);
+        }
         return;
       }
 
@@ -52,7 +57,7 @@ function CartItem({ seat, section, onRelease, isReleasing, colors }) {
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [seat.reservedUntil]);
+  }, [seat.reservedUntil, seat.seatId, onExpire]);
 
   return (
     <View style={{
@@ -385,6 +390,24 @@ export default function EventDetailScreen() {
         return next;
       });
     }
+  };
+
+  // Handler de expiración optimista de silla (solo cliente, sin llamada al backend)
+  // El scheduler del backend se encargará de liberar la silla en su próximo ciclo (cada 10s)
+  const handleSeatExpire = (seatId) => {
+    setSeats((prev) => {
+      if (!prev[seatId]) return prev;
+      
+      return {
+        ...prev,
+        [seatId]: {
+          ...prev[seatId],
+          status: 'AVAILABLE',
+          reservedBy: null,
+          reservedUntil: null,
+        },
+      };
+    });
   };
 
   // Handler de tap en silla
@@ -786,6 +809,7 @@ export default function EventDetailScreen() {
                           seat={item}
                           section={section}
                           onRelease={() => handleReleaseSeat(item.seatId)}
+                          onExpire={handleSeatExpire}
                           isReleasing={reserving.has(item.seatId)}
                           colors={colors}
                         />
