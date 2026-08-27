@@ -214,7 +214,7 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
               {/* Security note */}
               <p
                 className="text-center text-xs pt-1"
-                style={{ color: 'color-mix(in srgb, var(--color-accent) 50%, transparent)' }}
+                style={{ color: 'color-mix(in srgb, var(--color-accent) 70%, transparent)' }}
               >
                 <ShieldCheck className="w-3 h-3 inline mr-1 -mt-px" />
                 Tu información está segura con nosotros.
@@ -302,7 +302,7 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
               {/* Security note */}
               <p
                 className="text-center text-xs pt-1"
-                style={{ color: 'color-mix(in srgb, var(--color-accent) 50%, transparent)' }}
+                style={{ color: 'color-mix(in srgb, var(--color-accent) 70%, transparent)' }}
               >
                 <ShieldCheck className="w-3 h-3 inline mr-1 -mt-px" />
                 Verificamos tu identidad antes de proceder.

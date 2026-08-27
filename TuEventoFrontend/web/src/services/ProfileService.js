@@ -88,6 +88,24 @@ export const getProfilePictureUrl = async (storedFileId) => {
   return data?.data?.publicUrl;
 };
 
+// Traduce los mensajes de error del backend (en inglés) a español para el
+// flujo de desactivación de cuenta. El backend lanza BusinessException con
+// mensajes en inglés porque el dominio no tiene i18n; la traducción la hace
+// esta capa de servicio, que es el punto natural de adaptación UI↔backend.
+const normalizeDeactivateError = (message) => {
+  const m = (message || '').toLowerCase();
+  if (m.includes('password is incorrect') || m.includes('invalid_password') || m.includes('wrong password')) {
+    return 'Contraseña incorrecta. Verifica e inténtalo de nuevo.';
+  }
+  if (m.includes('already inactive') || m.includes('account_already_inactive')) {
+    return 'Esta cuenta ya está desactivada.';
+  }
+  if (m.includes('account not found') || m.includes('account_deleted') || m.includes('user not found')) {
+    return 'No se encontró la cuenta. Contacta soporte.';
+  }
+  return message || 'No se pudo desactivar la cuenta. Intenta de nuevo.';
+};
+
 export const deactivateAccount = async (password) => {
   const response = await httpRequest(`${API_URL}/users/me`, {
     method: 'DELETE',
@@ -95,6 +113,6 @@ export const deactivateAccount = async (password) => {
     body: JSON.stringify({ password }),
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data?.message || 'Error al desactivar la cuenta');
+  if (!response.ok) throw new Error(normalizeDeactivateError(data?.message));
   return data;
 };
