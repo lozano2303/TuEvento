@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added - Toast Notification System for Seat Selection Flow (Web + Mobile)
+- **Sistema de alertas/toasts** para el flujo de selección de sillas
+  - **Comportamiento**: alertas temporales (5 segundos), una visible a la vez, reinicia temporizador si se dispara la misma alerta
+  - **11 casos cubiertos**:
+    1. **Límite del stepper alcanzado**: "Agregá una silla más para poder seleccionar" — al intentar reservar cuando `cart.length >= selectedQuantity`
+    2. **Límite máximo global**: "Solo podés seleccionar un máximo de 10 sillas en este ticket" — al intentar subir stepper por encima de 10
+    3. **Silla ya reservada por otro**: "Esta silla ya fue reservada por otra persona" — condición de carrera en reserva (400/409)
+    4. **Silla expirada**: "Tu reserva expiró y la silla se liberó" — cuando countdown llega a 0 (junto con deselección optimista)
+    5. **Sección sin sillas disponibles**: "Se agotaron las sillas disponibles en esta sección" — al seleccionar sección sin AVAILABLE
+    6. **WebSocket desconectado**: "Se perdió la conexión en tiempo real, reconectando..." — al detectar desconexión (con backoff exponencial)
+    7. **Error genérico al reservar/liberar**: "No se pudo reservar/liberar la silla, intentalo de nuevo" — cualquier error no cubierto por otros casos
+    8. **Bajar stepper por debajo de lo reservado**: "Liberá una silla primero para bajar la cantidad" — al intentar decrementar por debajo de `cart.length`
+    9. **Usuario anónimo intenta reservar**: "Iniciá sesión para reservar sillas" — al tocar silla sin token (web redirige a login después de 2s)
+    10. **Token expirado**: "Tu sesión expiró, iniciá sesión de nuevo" — cuando reserveSeat/releaseSeat retorna 401
+    11. **Evento ya no disponible**: "Este evento ya no acepta reservas" — al intentar reservar en evento COMPLETED/CANCELLED
+
+- **Implementación móvil**:
+  - **useToast.js (hook)**: gestión de estado de toasts con auto-hide y temporizador
+  - **Toast.jsx (componente)**: UI con animación de entrada/salida, iconos por tipo (success, warning, info, error)
+  - **EventDetailScreen.jsx**: integración en handlers de reserva/liberación/expiración, stepper, carga de sección, WebSocket
+  - Renderizado: `<Toast toast={toast} onHide={hideToast} />` al final del JSX
+
+- **Implementación web**:
+  - **useToast.js (hook)**: mismo comportamiento que móvil
+  - **Toast.jsx + Toast.css (componente)**: animación CSS con translateY, estilos por tipo
+  - **EventDetail.jsx**: integración en handlers + propagación de `showToast` a `SeatSelectorSection` y `SectionMenu`
+  - Renderizado: `<Toast toast={toast} onHide={hideToast} />` al final del JSX principal
+
+- **Tipos de alerta**: error (rojo), warning (naranja), info (azul), success (verde)
+- **UX mejorada**: feedback visual inmediato sin bloquear interacción (vs. `alert()` que bloqueaba)
+
 ### Changed - Scheduler Frequency Increased + Optimistic Expiration (Backend + Web + Mobile)
 - **Backend**: frecuencia del scheduler de expiración aumentada de 60s a 10s
   - **SeatReservationExpirationScheduler.java**: cron cambiado de `0 * * * * *` (cada minuto) a `*/10 * * * * *` (cada 10 segundos)

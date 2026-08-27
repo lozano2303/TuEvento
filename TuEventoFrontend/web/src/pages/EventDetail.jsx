@@ -11,10 +11,13 @@ import * as EventSectionService from '../services/EventSectionService';
 import { connectSeatSocket, disconnectSeatSocket } from '../services/websocketClient';
 import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
+import Toast from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 
 export default function EventDetail() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const { toast, showToast, hideToast } = useToast();
   
   const [event, setEvent] = useState(null);
   const [media, setMedia] = useState([]);
@@ -78,29 +81,57 @@ export default function EventDetail() {
   useEffect(() => {
     if (!eventId || isLoading) return;
 
-    const client = connectSeatSocket(parseInt(eventId), (event) => {
-      setSeats((prev) => {
-        const seat = prev[event.seatId];
-        if (!seat) return prev;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 3;
 
-        return {
-          ...prev,
-          [event.seatId]: {
-            ...seat,
-            status: event.newStatus,
-            reservedBy: event.newStatus === 'RESERVED' ? seat.reservedBy : null,
-            reservedUntil: event.reservedUntil,
-          },
-        };
-      });
-    });
+    const connectWS = () => {
+      try {
+        const client = connectSeatSocket(parseInt(eventId), (event) => {
+          setSeats((prev) => {
+            const seat = prev[event.seatId];
+            if (!seat) return prev;
 
-    wsClientRef.current = client;
+            return {
+              ...prev,
+              [event.seatId]: {
+                ...seat,
+                status: event.newStatus,
+                reservedBy: event.newStatus === 'RESERVED' ? seat.reservedBy : null,
+                reservedUntil: event.reservedUntil,
+              },
+            };
+          });
+        });
+
+        wsClientRef.current = client;
+        reconnectAttempts = 0; // Reset en conexión exitosa
+
+        // CASO 6: Detectar desconexión de WebSocket
+        if (client?.ws) {
+          client.ws.onclose = () => {
+            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+              showToast('ws-disconnected', 'Se perdió la conexión en tiempo real, reconectando...', 'warning');
+              reconnectAttempts++;
+              setTimeout(connectWS, 2000 * reconnectAttempts); // Backoff exponencial
+            }
+          };
+        }
+      } catch (err) {
+        console.warn('[EventDetail] WebSocket connection failed:', err);
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          showToast('ws-disconnected', 'Se perdió la conexión en tiempo real, reconectando...', 'warning');
+          reconnectAttempts++;
+          setTimeout(connectWS, 2000 * reconnectAttempts);
+        }
+      }
+    };
+
+    connectWS();
 
     return () => {
-      if (client) disconnectSeatSocket(client);
+      if (wsClientRef.current) disconnectSeatSocket(wsClientRef.current);
     };
-  }, [eventId, isLoading]);
+  }, [eventId, isLoading, showToast]);
 
   const cart = useMemo(() => {
     if (!currentUserId) return [];
@@ -117,14 +148,17 @@ export default function EventDetail() {
   }, [cart.length, selectedQuantity]);
 
   const handleReserveSeat = useCallback(async (seatId) => {
+    // CASO 9: Usuario anónimo intenta reservar
     const token = localStorage.getItem('token');
     if (!token) {
-      navigate('/login');
+      showToast('auth-required', 'Iniciá sesión para reservar sillas', 'warning');
+      setTimeout(() => navigate('/login'), 2000);
       return;
     }
 
-    if (cart.length >= selectedQuantity) {
-      alert(`Ya seleccionaste ${selectedQuantity} silla(s). Cambia la cantidad si necesitas más.`);
+    // CASO 11: Evento ya no disponible (COMPLETED/CANCELLED)
+    if (event.status === 'COMPLETED' || event.status === 'CANCELLED') {
+      showToast('event-unavailable', 'Este evento ya no acepta reservas', 'error');
       return;
     }
 
@@ -134,7 +168,21 @@ export default function EventDetail() {
       const result = await SeatService.reserveSeat(seatId);
       setSeats((prev) => ({ ...prev, [seatId]: result.data }));
     } catch (err) {
-      alert(err.message);
+      // CASO 10: Token expirado (401)
+      if (err.response?.status === 401 || err.message?.includes('401')) {
+        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
+        setTimeout(() => navigate('/login'), 2000);
+      }
+      // CASO 3: Silla ya reservada por otro (condición de carrera)
+      else if (err.message?.includes('SEAT_NOT_AVAILABLE') || err.message?.includes('no está disponible')) {
+        showToast('seat-taken', 'Esta silla ya fue reservada por otra persona', 'warning');
+      }
+      // CASO 7: Error genérico
+      else {
+        showToast('reserve-error', 'No se pudo reservar la silla, intentalo de nuevo', 'error');
+      }
+      
+      // Refrescar estado de la silla
       const seat = seats[seatId];
       if (seat) {
         try {
@@ -152,7 +200,7 @@ export default function EventDetail() {
         return next;
       });
     }
-  }, [seats, navigate, cart.length, selectedQuantity]);
+  }, [seats, navigate, event, showToast]);
 
   const handleReleaseSeat = useCallback(async (seatId) => {
     setReserving((prev) => new Set(prev).add(seatId));
@@ -161,7 +209,15 @@ export default function EventDetail() {
       const result = await SeatService.releaseSeat(seatId);
       setSeats((prev) => ({ ...prev, [seatId]: result.data }));
     } catch (err) {
-      alert(err.message);
+      // CASO 10: Token expirado (401)
+      if (err.response?.status === 401 || err.message?.includes('401')) {
+        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
+        setTimeout(() => navigate('/login'), 2000);
+      }
+      // CASO 7: Error genérico al liberar
+      else {
+        showToast('release-error', 'No se pudo liberar la silla, intentalo de nuevo', 'error');
+      }
     } finally {
       setReserving((prev) => {
         const next = new Set(prev);
@@ -169,11 +225,14 @@ export default function EventDetail() {
         return next;
       });
     }
-  }, []);
+  }, [showToast, navigate]);
 
   // Handler de expiración optimista de silla (solo cliente, sin llamada al backend)
   // El scheduler del backend se encargará de liberar la silla en su próximo ciclo (cada 10s)
   const handleSeatExpire = useCallback((seatId) => {
+    // CASO 4: Silla expirada
+    showToast('seat-expired', 'Tu reserva expiró y la silla se liberó', 'info');
+    
     setSeats((prev) => {
       if (!prev[seatId]) return prev;
       
@@ -187,7 +246,7 @@ export default function EventDetail() {
         },
       };
     });
-  }, []);
+  }, [showToast]);
 
   const prev = () => setActiveImage((i) => (i - 1 + media.length) % media.length);
   const next = () => setActiveImage((i) => (i + 1) % media.length);
@@ -371,9 +430,13 @@ export default function EventDetail() {
             onSeatExpire={handleSeatExpire}
             zoom={zoom}
             setZoom={setZoom}
+            showToast={showToast}
           />
         )}
       </div>
+      
+      {/* Toast de alertas */}
+      <Toast toast={toast} onHide={hideToast} />
     </div>
   );
 }
@@ -406,6 +469,7 @@ function SeatSelectorSection({
   onSeatExpire,
   zoom,
   setZoom,
+  showToast,
 }) {
   const maxQuantity = 10;
   const stageRef = useRef();
@@ -440,14 +504,23 @@ function SeatSelectorSection({
   }, []);
 
   const handleQuantityDecrease = () => {
-    // No permitir bajar por debajo de la cantidad de sillas ya reservadas
-    if (selectedQuantity > 1 && selectedQuantity > cart.length) {
+    // CASO 8: Bajar el stepper por debajo de lo reservado
+    if (selectedQuantity <= cart.length) {
+      showToast('stepper-below-cart', 'Liberá una silla primero para bajar la cantidad', 'warning');
+      return;
+    }
+    if (selectedQuantity > 1) {
       setSelectedQuantity(selectedQuantity - 1);
     }
   };
 
   const handleQuantityIncrease = () => {
-    if (selectedQuantity < maxQuantity) setSelectedQuantity(selectedQuantity + 1);
+    // CASO 2: Límite máximo global de sillas
+    if (selectedQuantity >= maxQuantity) {
+      showToast('max-seats', 'Solo podés seleccionar un máximo de 10 sillas en este ticket', 'warning');
+      return;
+    }
+    setSelectedQuantity(selectedQuantity + 1);
   };
 
   // ── Calcular encuadre (zoom + posición) para un conjunto de elementos ──
@@ -593,6 +666,8 @@ function SeatSelectorSection({
           layoutElements={layoutElements}
           selectedSectionFilter={selectedSectionFilter}
           setSelectedSectionFilter={setSelectedSectionFilter}
+          seats={seats}
+          showToast={showToast}
         />
 
         {/* Canvas con mapa de sillas - columna central (flexible, dominante) */}
@@ -628,6 +703,7 @@ function SeatSelectorSection({
                         setSelectedSectionFilter(section.backendSectionId);
                       }
                     }}
+                    showToast={showToast}
                   />
                 ))}
               </Layer>
@@ -652,7 +728,7 @@ function SeatSelectorSection({
  * Menú lateral de secciones con nombre, tipo y precio.
  * Click en una sección activa el filtro (solo esa sección es seleccionable).
  */
-function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelectedSectionFilter }) {
+function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelectedSectionFilter, seats, showToast }) {
   // Mapear eventSectionId de la sección backend con los elementos de layout
   const sectionsWithLayout = sections.filter((sec) =>
     layoutElements.some((el) => el.backendSectionId === sec.eventSectionId)
@@ -688,11 +764,20 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
         return (
           <button
             key={sec.eventSectionId}
-            onClick={() =>
-              setSelectedSectionFilter(
-                isActive ? null : sec.eventSectionId
-              )
-            }
+            onClick={() => {
+              // CASO 5: Detectar sección sin sillas disponibles
+              if (!isActive) {
+                const sectionSeats = Object.values(seats).filter(
+                  (seat) => seat.eventSectionId === sec.eventSectionId
+                );
+                const availableSeats = sectionSeats.filter((seat) => seat.status === 'AVAILABLE');
+                if (availableSeats.length === 0 && sectionSeats.length > 0) {
+                  showToast('section-no-seats', 'Se agotaron las sillas disponibles en esta sección', 'warning');
+                }
+              }
+              
+              setSelectedSectionFilter(isActive ? null : sec.eventSectionId);
+            }}
             className="w-full text-left p-3 rounded-lg transition-all"
             style={{
               background: isActive
@@ -738,6 +823,7 @@ function SectionRenderer({
   onReserveSeat,
   onReleaseSeat,
   onSectionClick,
+  showToast,
 }) {
   const shapeMode = section.shapeMode ?? 'rect';
   const workPoints = useMemo(() => {
@@ -862,6 +948,7 @@ function SectionRenderer({
             isSectionFiltered={false}
             onReserve={() => onReserveSeat(seat.seatId)}
             onRelease={() => onReleaseSeat(seat.seatId)}
+            showToast={showToast}
           />
         );
       })}
@@ -884,6 +971,7 @@ function SeatCircle({
   isSectionFiltered,
   onReserve,
   onRelease,
+  showToast,
 }) {
   const isMyReservation = seat.status === 'RESERVED' && seat.reservedBy === currentUserId;
   const isOtherReservation = seat.status === 'RESERVED' && seat.reservedBy !== currentUserId;
@@ -906,10 +994,10 @@ function SeatCircle({
     if (!isClickable || isReserving) return;
     if (isMyReservation) {
       onRelease();
-    } else {
-      // Validar cantidad antes de reservar
+    } else if (seat.status === 'AVAILABLE') {
+      // CASO 1: Validar cantidad antes de reservar
       if (cart.length >= selectedQuantity) {
-        // No hacer nada, el handler en el componente padre ya muestra el alert
+        showToast('stepper-limit', 'Agregá una silla más para poder seleccionar', 'warning');
         return;
       }
       onReserve();
