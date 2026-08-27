@@ -20,6 +20,8 @@ import { getEventDetail, getEventMedia, getEventLayout, getEventSections } from 
 import * as seatService from "../services/seatService";
 import { connectSeatSocket, disconnectSeatSocket } from "../services/websocketService";
 import SeatMapCanvas from "../components/SeatMapCanvas";
+import Toast from "../components/Toast";
+import { useToast } from "../hooks/useToast";
 
 const { width } = Dimensions.get("window");
 
@@ -143,6 +145,7 @@ export default function EventDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const styles = createStyles(colors);
+  const { toast, showToast, hideToast } = useToast();
 
   const { eventId } = route.params;
   const currentUserId = user?.userId ?? null;
