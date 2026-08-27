@@ -247,6 +247,12 @@ export default function EventDetailScreen() {
       try {
         const data = await seatService.getSeatsBySection(selectedSectionId);
         
+        // CASO 5: Detectar sección sin sillas disponibles
+        const availableSeats = data.filter(s => s.status === 'AVAILABLE');
+        if (availableSeats.length === 0) {
+          showToast('section-no-seats', 'Se agotaron las sillas disponibles en esta sección', 'warning');
+        }
+        
         setSeats((prev) => {
           // Combinar sillas nuevas con las ya reservadas de otras secciones
           const updated = { ...prev };
@@ -264,7 +270,7 @@ export default function EventDetailScreen() {
     };
 
     loadSeats();
-  }, [selectedSectionId]);
+  }, [selectedSectionId, showToast]);
 
   // Conectar WebSocket al montar
   useEffect(() => {
@@ -274,6 +280,8 @@ export default function EventDetailScreen() {
     
     let wsClient = null;
     let isCancelled = false;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 3;
 
     const connectWS = async () => {
       try {
@@ -298,12 +306,29 @@ export default function EventDetailScreen() {
 
         if (!isCancelled && client) {
           wsClient = client;
+          reconnectAttempts = 0; // Reset en conexión exitosa
+          
+          // CASO 6: Detectar desconexión de WebSocket
+          if (client.ws) {
+            client.ws.onclose = () => {
+              if (!isCancelled && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                showToast('ws-disconnected', 'Se perdió la conexión en tiempo real, reconectando...', 'warning');
+                reconnectAttempts++;
+                setTimeout(connectWS, 2000 * reconnectAttempts); // Backoff exponencial
+              }
+            };
+          }
         } else if (client) {
           // Si ya nos desmontamos, desconectar inmediatamente
           disconnectSeatSocket(client);
         }
       } catch (err) {
         console.warn('[EventDetailScreen] WebSocket connection failed:', err);
+        if (!isCancelled && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          showToast('ws-disconnected', 'Se perdió la conexión en tiempo real, reconectando...', 'warning');
+          reconnectAttempts++;
+          setTimeout(connectWS, 2000 * reconnectAttempts);
+        }
       }
     };
 
@@ -316,20 +341,19 @@ export default function EventDetailScreen() {
         wsClient = null;
       }
     };
-  }, [event?.eventId]);
+  }, [event?.eventId, showToast]);
 
   // Handler de reserva de silla (optimistic UI + rollback)
   const handleReserveSeat = async (seatId) => {
+    // CASO 9: Usuario anónimo intenta reservar
     if (!currentUserId) {
-      Alert.alert("Inicia sesión", "Debes iniciar sesión para reservar sillas");
+      showToast('auth-required', 'Iniciá sesión para reservar sillas', 'warning');
       return;
     }
 
-    if (cart.length >= selectedQuantity) {
-      Alert.alert(
-        "Límite alcanzado",
-        `Ya seleccionaste ${selectedQuantity} silla(s). Cambia la cantidad si necesitas más.`
-      );
+    // CASO 11: Evento ya no disponible (COMPLETED/CANCELLED)
+    if (event.status === 'COMPLETED' || event.status === 'CANCELLED') {
+      showToast('event-unavailable', 'Este evento ya no acepta reservas', 'error');
       return;
     }
 
@@ -353,7 +377,19 @@ export default function EventDetailScreen() {
     } catch (err) {
       // Rollback en caso de error
       setSeats((prev) => ({ ...prev, [seatId]: previous }));
-      Alert.alert('No se pudo reservar la silla', err.message);
+      
+      // CASO 10: Token expirado (401)
+      if (err.message?.includes('401') || err.message?.toLowerCase().includes('unauthorized')) {
+        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
+      }
+      // CASO 3: Silla ya reservada por otro (condición de carrera)
+      else if (err.message?.includes('SEAT_NOT_AVAILABLE') || err.message?.includes('no está disponible')) {
+        showToast('seat-taken', 'Esta silla ya fue reservada por otra persona', 'warning');
+      }
+      // CASO 7: Error genérico
+      else {
+        showToast('reserve-error', 'No se pudo reservar la silla, intentalo de nuevo', 'error');
+      }
     } finally {
       setReserving((prev) => {
         const next = new Set(prev);
@@ -385,7 +421,15 @@ export default function EventDetailScreen() {
     } catch (err) {
       // Rollback en caso de error
       setSeats((prev) => ({ ...prev, [seatId]: previous }));
-      Alert.alert('No se pudo liberar la reserva', err.message);
+      
+      // CASO 10: Token expirado (401)
+      if (err.message?.includes('401') || err.message?.toLowerCase().includes('unauthorized')) {
+        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
+      }
+      // CASO 7: Error genérico al liberar
+      else {
+        showToast('release-error', 'No se pudo liberar la silla, intentalo de nuevo', 'error');
+      }
     } finally {
       setReserving((prev) => {
         const next = new Set(prev);
@@ -398,6 +442,9 @@ export default function EventDetailScreen() {
   // Handler de expiración optimista de silla (solo cliente, sin llamada al backend)
   // El scheduler del backend se encargará de liberar la silla en su próximo ciclo (cada 10s)
   const handleSeatExpire = (seatId) => {
+    // CASO 4: Silla expirada
+    showToast('seat-expired', 'Tu reserva expiró y la silla se liberó', 'info');
+    
     setSeats((prev) => {
       if (!prev[seatId]) return prev;
       
@@ -420,7 +467,12 @@ export default function EventDetailScreen() {
     const seat = seats[seatId];
     if (!seat) return;
 
-    if (seat.status === 'AVAILABLE' && cart.length < selectedQuantity) {
+    if (seat.status === 'AVAILABLE') {
+      // CASO 1: Límite del stepper alcanzado
+      if (cart.length >= selectedQuantity) {
+        showToast('stepper-limit', 'Agregá una silla más para poder seleccionar', 'warning');
+        return;
+      }
       handleReserveSeat(seatId);
     } else if (seat.status === 'RESERVED' && seat.reservedBy === currentUserId) {
       handleReleaseSeat(seatId);
@@ -666,25 +718,26 @@ export default function EventDetailScreen() {
                 <View style={styles.quantityControls}>
                   <TouchableOpacity
                     onPress={() => {
-                      if (selectedQuantity > 1 && selectedQuantity > cart.length) {
+                      // CASO 8: Bajar el stepper por debajo de lo reservado
+                      if (selectedQuantity <= cart.length) {
+                        showToast('stepper-below-cart', 'Liberá una silla primero para bajar la cantidad', 'warning');
+                        return;
+                      }
+                      if (selectedQuantity > 1) {
                         setSelectedQuantity(selectedQuantity - 1);
                       }
                     }}
-                    disabled={selectedQuantity <= 1 || selectedQuantity <= cart.length}
+                    disabled={selectedQuantity <= 1}
                     style={[
                       styles.quantityButton,
-                      (selectedQuantity <= 1 || selectedQuantity <= cart.length) && styles.quantityButtonDisabled
+                      selectedQuantity <= 1 && styles.quantityButtonDisabled
                     ]}
                     activeOpacity={0.7}
                   >
                     <Ionicons 
                       name="remove" 
                       size={20} 
-                      color={
-                        (selectedQuantity <= 1 || selectedQuantity <= cart.length) 
-                          ? colors.textMuted 
-                          : colors.accent
-                      } 
+                      color={selectedQuantity <= 1 ? colors.textMuted : colors.accent} 
                     />
                   </TouchableOpacity>
                   
@@ -692,9 +745,12 @@ export default function EventDetailScreen() {
                   
                   <TouchableOpacity
                     onPress={() => {
-                      if (selectedQuantity < 10) {
-                        setSelectedQuantity(selectedQuantity + 1);
+                      // CASO 2: Límite máximo global de sillas
+                      if (selectedQuantity >= 10) {
+                        showToast('max-seats', 'Solo podés seleccionar un máximo de 10 sillas en este ticket', 'warning');
+                        return;
                       }
+                      setSelectedQuantity(selectedQuantity + 1);
                     }}
                     disabled={selectedQuantity >= 10}
                     style={[
@@ -825,6 +881,9 @@ export default function EventDetailScreen() {
           )}
         </View>
       </ScrollView>
+      
+      {/* Toast de alertas */}
+      <Toast toast={toast} onHide={hideToast} />
     </View>
   );
 }
