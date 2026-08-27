@@ -2,13 +2,18 @@ import { httpRequest } from './httpClient.js';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
-const CONTENT_POLICY_MESSAGE = 'No se permiten imágenes con contenido adulto, pornografía, hentai, violencia, armas, gore o contenido sexual.';
-
 const normalizeUploadError = (message) => {
   const normalized = message || '';
-  const policyKeywords = /contenido adulto|pornograf|porno|hentai|violencia|gore|armas|contenido sexual|pol.ticas de contenido|NSFW|VIOLENT/i;
 
-  if (policyKeywords.test(normalized)) return CONTENT_POLICY_MESSAGE;
+  // El backend envía "Tu imagen no cumple con nuestras políticas de contenido."
+  // para cualquier violación NSFW/gore (ImagePolicyViolationException).
+  // Cualquier variante que contenga "políticas de contenido" o palabras clave
+  // de contenido inapropiado se pasa tal cual al usuario — ya viene redactado
+  // de forma clara desde el backend. No lo sobreescribimos con un mensaje
+  // diferente para evitar inconsistencias.
+  const policyKeywords = /pol.ticas de contenido|contenido adulto|pornograf|porno|hentai|violencia|gore|armas|contenido sexual|NSFW|VIOLENT/i;
+
+  if (policyKeywords.test(normalized)) return normalized;
   return normalized || 'Error al subir foto de perfil';
 };
 

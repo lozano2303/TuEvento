@@ -193,8 +193,14 @@ const ProfilePage = () => {
       const newUrl = await getProfilePictureUrl(newStoredFileId);
       setStoredFileId(newStoredFileId);
       setAvatarUrl(newUrl || null);
+      // El preview ya cumplió su función — la URL permanente toma el control.
+      setPreviewUrl(null);
       setAvatarMessage({ type: 'success', text: 'Foto de perfil actualizada correctamente.' });
     } catch (err) {
+      // La imagen fue rechazada (NSFW, tamaño, red, etc.) — descartamos el
+      // preview de la imagen rechazada para que vuelva a mostrarse la foto
+      // anterior del usuario (avatarUrl). No tocamos avatarUrl ni storedFileId
+      // porque en BD no se guardó nada nuevo.
       setPreviewUrl(null);
       setAvatarMessage({ type: 'error', text: err.message || 'No se pudo actualizar la foto de perfil.' });
     } finally {
