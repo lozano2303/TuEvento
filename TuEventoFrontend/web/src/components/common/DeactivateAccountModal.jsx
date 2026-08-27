@@ -8,13 +8,14 @@ import { deactivateAccount } from '../../services/ProfileService';
 import { performLogout } from '../../services/httpClient';
 
 /**
- * DeactivateAccountModal — premium redesign
+ * DeactivateAccountModal — integrado al sistema de temas.
+ *
+ * Todos los colores usan var(--color-*) o las clases CSS del sistema
+ * (bm-*, theme-modal-*) para que el modal respete el tema activo del usuario.
  *
  * Two-step flow:
- *   Step 1 — Explain consequences + CTA to proceed
- *   Step 2 — Password confirmation
- *
- * Logic/callbacks preserved exactly. Only the visual layer changes.
+ *   Step 1 — Consecuencias + CTA para continuar
+ *   Step 2 — Confirmación de contraseña
  */
 export default function DeactivateAccountModal({ isOpen, onClose }) {
   const [step, setStep]                 = useState(1);
@@ -72,7 +73,7 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6"
       style={{
-        background: 'rgba(10,4,20,0.80)',
+        background: 'rgba(0,0,0,0.75)',
         backdropFilter: 'blur(18px)',
         WebkitBackdropFilter: 'blur(18px)',
       }}
@@ -86,25 +87,26 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
         aria-modal="true"
         aria-labelledby="dac-title"
         tabIndex={-1}
-        className="relative w-full outline-none"
+        className="relative w-full outline-none theme-modal-card modal-elevated"
         style={{
           maxWidth: '480px',
-          background: 'linear-gradient(145deg, rgba(30,10,60,0.92) 0%, rgba(20,6,42,0.96) 100%)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          border: '1px solid rgba(139,92,246,0.25)',
           borderRadius: '22px',
-          boxShadow: '0 0 0 1px rgba(139,92,246,0.08), 0 32px 64px rgba(0,0,0,0.55), 0 0 80px rgba(109,40,217,0.12)',
+          /* Glow del tema activo — usa primary del tema en lugar del morado fijo */
+          boxShadow: `
+            0 0 0 1px color-mix(in srgb, var(--color-primary) 15%, transparent),
+            0 32px 64px rgba(0,0,0,0.55),
+            0 0 80px color-mix(in srgb, var(--color-primary) 15%, transparent)
+          `,
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Top glow bar ── */}
+        {/* ── Top glow bar — usa color del tema ── */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
           style={{
             width: '60%',
             height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(167,139,250,0.6), transparent)',
+            background: 'linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-primary) 60%, transparent), transparent)',
             borderRadius: '50%',
           }}
         />
@@ -117,12 +119,12 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
           aria-label="Cerrar"
           className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-40"
           style={{
-            background: 'rgba(139,92,246,0.08)',
-            border: '1px solid rgba(139,92,246,0.15)',
-            color: 'rgba(196,181,253,0.7)',
+            background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)',
+            color: 'var(--color-textMuted)',
           }}
-          onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(139,92,246,0.18)'; }}
-          onMouseOut={(e)  => { e.currentTarget.style.background = 'rgba(139,92,246,0.08)'; }}
+          onMouseOver={(e) => { e.currentTarget.style.background = 'color-mix(in srgb, var(--color-primary) 20%, transparent)'; e.currentTarget.style.color = 'var(--color-textSecondary)'; }}
+          onMouseOut={(e)  => { e.currentTarget.style.background = 'color-mix(in srgb, var(--color-primary) 10%, transparent)'; e.currentTarget.style.color = 'var(--color-textMuted)'; }}
         >
           <X className="w-4 h-4" />
         </button>
@@ -133,17 +135,14 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
           {/* Title */}
           <h2
             id="dac-title"
-            className="text-center text-xl sm:text-2xl font-bold mb-2"
-            style={{ color: '#f5f3ff', letterSpacing: '-0.01em' }}
+            className="text-center text-xl sm:text-2xl font-bold mb-2 text-textPrimary"
+            style={{ letterSpacing: '-0.01em' }}
           >
             ¿Desactivar tu cuenta?
           </h2>
 
           {/* Subtitle */}
-          <p
-            className="text-center text-sm leading-relaxed mb-6"
-            style={{ color: 'rgba(196,181,253,0.75)' }}
-          >
+          <p className="text-center text-sm leading-relaxed mb-6 text-textMuted">
             {step === 1
               ? 'Esta acción cerrará tu sesión de inmediato y desactivará tu cuenta temporalmente.'
               : 'Ingresa tu contraseña para confirmar la desactivación de tu cuenta.'}
@@ -157,13 +156,13 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
               <div
                 className="rounded-xl p-4"
                 style={{
-                  background: 'rgba(109,40,217,0.12)',
-                  border: '1px solid rgba(139,92,246,0.20)',
+                  background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-primary) 22%, transparent)',
                 }}
               >
                 <p
                   className="text-xs font-semibold uppercase tracking-widest mb-3"
-                  style={{ color: 'rgba(167,139,250,0.80)' }}
+                  style={{ color: 'var(--color-accent)' }}
                 >
                   Ten en cuenta que:
                 </p>
@@ -177,16 +176,16 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                       <div
                         className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
                         style={{
-                          background: 'rgba(139,92,246,0.20)',
-                          border: '1px solid rgba(139,92,246,0.35)',
+                          background: 'color-mix(in srgb, var(--color-primary) 20%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--color-primary) 40%, transparent)',
                         }}
                       >
                         <div
                           className="w-1.5 h-1.5 rounded-full"
-                          style={{ background: '#a78bfa' }}
+                          style={{ background: 'var(--color-accent)' }}
                         />
                       </div>
-                      <span className="text-sm leading-5" style={{ color: 'rgba(221,214,254,0.85)' }}>
+                      <span className="text-sm leading-5 text-textSecondary">
                         {text}
                       </span>
                     </li>
@@ -199,35 +198,24 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all"
-                  style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.10)',
-                    color: 'rgba(196,181,253,0.80)',
-                  }}
-                  onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
-                  onMouseOut={(e)  => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all bm-btn-secondary"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
                   onClick={() => { setStep(2); setError(''); }}
-                  className="flex-1 py-3 rounded-xl text-sm font-bold transition-all"
-                  style={{
-                    background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 60%, #a21caf 100%)',
-                    color: '#ffffff',
-                    boxShadow: '0 4px 20px rgba(109,40,217,0.40)',
-                  }}
-                  onMouseOver={(e) => { e.currentTarget.style.filter = 'brightness(1.10)'; }}
-                  onMouseOut={(e)  => { e.currentTarget.style.filter = 'none'; }}
+                  className="flex-1 py-3 rounded-xl text-sm font-bold transition-all bm-btn-danger"
                 >
                   Sí, desactivar cuenta
                 </button>
               </div>
 
               {/* Security note */}
-              <p className="text-center text-xs pt-1" style={{ color: 'rgba(167,139,250,0.45)' }}>
+              <p
+                className="text-center text-xs pt-1"
+                style={{ color: 'color-mix(in srgb, var(--color-accent) 50%, transparent)' }}
+              >
                 <ShieldCheck className="w-3 h-3 inline mr-1 -mt-px" />
                 Tu información está segura con nosotros.
               </p>
@@ -247,19 +235,20 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                   placeholder="Contraseña actual"
                   autoFocus
                   disabled={loading}
-                  className="w-full rounded-xl px-4 py-3 pr-11 text-sm transition-all"
+                  className="w-full rounded-xl px-4 py-3 pr-11 text-sm transition-all text-textPrimary"
                   style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${error ? 'rgba(248,113,113,0.60)' : 'rgba(139,92,246,0.25)'}`,
-                    color: '#f5f3ff',
+                    background: 'color-mix(in srgb, var(--color-surfaceAlt) 60%, transparent)',
+                    border: `1px solid ${error
+                      ? 'color-mix(in srgb, var(--color-error) 60%, transparent)'
+                      : 'color-mix(in srgb, var(--color-primary) 30%, transparent)'}`,
                     outline: 'none',
                   }}
                   onFocus={(e) => {
-                    if (!error) e.target.style.borderColor = 'rgba(139,92,246,0.60)';
-                    e.target.style.boxShadow = '0 0 0 3px rgba(109,40,217,0.15)';
+                    if (!error) e.target.style.borderColor = 'color-mix(in srgb, var(--color-primary) 65%, transparent)';
+                    e.target.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent)';
                   }}
                   onBlur={(e) => {
-                    if (!error) e.target.style.borderColor = 'rgba(139,92,246,0.25)';
+                    if (!error) e.target.style.borderColor = 'color-mix(in srgb, var(--color-primary) 30%, transparent)';
                     e.target.style.boxShadow = 'none';
                   }}
                 />
@@ -268,9 +257,9 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                   tabIndex={-1}
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                  style={{ color: 'rgba(167,139,250,0.55)' }}
-                  onMouseOver={(e) => { e.currentTarget.style.color = 'rgba(196,181,253,0.90)'; }}
-                  onMouseOut={(e)  => { e.currentTarget.style.color = 'rgba(167,139,250,0.55)'; }}
+                  style={{ color: 'var(--color-textMuted)' }}
+                  onMouseOver={(e) => { e.currentTarget.style.color = 'var(--color-textSecondary)'; }}
+                  onMouseOut={(e)  => { e.currentTarget.style.color = 'var(--color-textMuted)'; }}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -278,7 +267,7 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
 
               {/* Inline error */}
               {error && (
-                <p className="text-xs flex items-center gap-1.5" style={{ color: '#f87171' }}>
+                <p className="text-xs flex items-center gap-1.5 text-error">
                   <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
                   {error}
                 </p>
@@ -290,28 +279,14 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
                   type="button"
                   onClick={() => { setStep(1); setError(''); setPassword(''); }}
                   disabled={loading}
-                  className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
-                  style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.10)',
-                    color: 'rgba(196,181,253,0.80)',
-                  }}
-                  onMouseOver={(e) => { if (!loading) e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; }}
-                  onMouseOut={(e)  => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 bm-btn-secondary"
                 >
                   Volver
                 </button>
                 <button
                   type="submit"
                   disabled={loading || !password.trim()}
-                  className="flex-1 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{
-                    background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 60%, #a21caf 100%)',
-                    color: '#ffffff',
-                    boxShadow: loading || !password.trim() ? 'none' : '0 4px 20px rgba(109,40,217,0.40)',
-                  }}
-                  onMouseOver={(e) => { if (!loading && password.trim()) e.currentTarget.style.filter = 'brightness(1.10)'; }}
-                  onMouseOut={(e)  => { e.currentTarget.style.filter = 'none'; }}
+                  className="flex-1 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bm-btn-danger"
                 >
                   {loading ? (
                     <>
@@ -325,9 +300,12 @@ export default function DeactivateAccountModal({ isOpen, onClose }) {
               </div>
 
               {/* Security note */}
-              <p className="text-center text-xs pt-1" style={{ color: 'rgba(167,139,250,0.45)' }}>
+              <p
+                className="text-center text-xs pt-1"
+                style={{ color: 'color-mix(in srgb, var(--color-accent) 50%, transparent)' }}
+              >
                 <ShieldCheck className="w-3 h-3 inline mr-1 -mt-px" />
-                Tu información está segura con nosotros.
+                Verificamos tu identidad antes de proceder.
               </p>
             </form>
           )}
