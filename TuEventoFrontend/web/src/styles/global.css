@@ -987,6 +987,28 @@ input[type="password"]::-ms-reveal { display: none; }
 .bm-btn-primary:active  { transform: translateY(0); }
 .bm-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
 
+/* Variante danger — rojo semántico para acciones destructivas (ej. desactivar cuenta) */
+.bm-btn-danger {
+  width: 100%;
+  background: var(--color-error);
+  color: #ffffff;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-error) 35%, transparent);
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.bm-btn-danger:hover    { filter: brightness(1.1); transform: translateY(-1px); }
+.bm-btn-danger:active   { transform: translateY(0); }
+.bm-btn-danger:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
+
 /* Botón secundario — superficie con borde sutil */
 .bm-btn-secondary {
   width: 100%;
