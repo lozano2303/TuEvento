@@ -54,7 +54,7 @@ public class LoginUseCase implements LoginPort {
         User user = credentials.getUser();
 
         if (!user.getActivated()) {
-            throw new BusinessException("ACCOUNT_NOT_ACTIVATED", "Tu cuenta aún no ha sido activada");
+            throw new BusinessException("ACCOUNT_NOT_ACTIVATED", "Account is not activated");
         }
 
         // Check lockout first — if expired, it auto-unblocks the user before status is evaluated
@@ -68,18 +68,20 @@ public class LoginUseCase implements LoginPort {
         // Verify user status for blocked/inactive/deleted accounts
         String statusCode = user.getUserStatus().getCode();
         if ("BLOCKED".equals(statusCode)) {
-            throw new BusinessException("ACCOUNT_BLOCKED", "Tu cuenta ha sido bloqueada. Por favor contacta a soporte");
+            throw new BusinessException("ACCOUNT_BLOCKED",
+                    "Tu cuenta ha sido bloqueada. Por favor contacta a soporte.");
         }
         if ("INACTIVE".equals(statusCode)) {
-            throw new BusinessException("ACCOUNT_INACTIVE", "Tu cuenta está inactiva. Por favor contacta a soporte");
+            throw new BusinessException("ACCOUNT_INACTIVE",
+                    "Tu cuenta está inactiva. Por favor contacta a soporte.");
         }
         if ("DELETED".equals(statusCode)) {
-            throw new BusinessException("ACCOUNT_DELETED", "Cuenta no encontrada");
+            throw new BusinessException("ACCOUNT_DELETED", "Cuenta no encontrada.");
         }
 
         if (!passwordEncoder.matches(request.getPassword(), credentials.getPasswordHash())) {
             handleFailedAttempt(user);
-            throw new BusinessException("INVALID_CREDENTIALS", "Correo o contraseña incorrectos");
+            throw new BusinessException("INVALID_CREDENTIALS", "Invalid email or password");
         }
 
         resetLockout(user);
@@ -121,7 +123,7 @@ public class LoginUseCase implements LoginPort {
             if (lockout.getLockedUntil() != null) {
                 if (lockout.getLockedUntil().isAfter(LocalDateTime.now())) {
                     throw new BusinessException("ACCOUNT_LOCKED",
-                            "Cuenta bloqueada temporalmente. Intenta de nuevo más tarde");
+                            "Cuenta bloqueada temporalmente. Por favor intenta de nuevo más tarde.");
                 }
                 // Lockout window expired — auto-unblock
                 accountLockoutService.deleteLockout(user.getUserId());
@@ -157,7 +159,7 @@ public class LoginUseCase implements LoginPort {
                     .lockedUntil(lockedUntil)
                     .occurredAt(now)
                     .build());
-            throw new BusinessException("ACCOUNT_LOCKED", "Cuenta bloqueada por demasiados intentos fallidos");
+            throw new BusinessException("ACCOUNT_LOCKED", "Cuenta bloqueada por demasiados intentos fallidos.");
         }
 
         accountLockoutService.saveLockout(lockout);

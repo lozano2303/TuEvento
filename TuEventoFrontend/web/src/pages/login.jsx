@@ -258,6 +258,18 @@ export default function Login() {
         setError("Este correo ya está registrado pero no activado. Si quieres activar tu cuenta, haz clic en Reenviar correo de activación");
       } else if (errorMsg === "Account is not activated") {
         setError("Cuenta no activada");
+      } else if (
+        errorMsg.toLowerCase().includes("inactive") ||
+        errorMsg.toLowerCase().includes("inactiva") ||
+        errorMsg.toLowerCase().includes("account_inactive")
+      ) {
+        setError("Tu cuenta está inactiva. Por favor contacta a soporte.");
+      } else if (
+        errorMsg.toLowerCase().includes("blocked") ||
+        errorMsg.toLowerCase().includes("bloqueada") ||
+        errorMsg.toLowerCase().includes("account_blocked")
+      ) {
+        setError("Tu cuenta ha sido bloqueada. Por favor contacta a soporte.");
       } else {
         setError(errorMsg);
       }
