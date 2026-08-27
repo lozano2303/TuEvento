@@ -36,7 +36,7 @@ public class ChangePasswordUseCase implements ChangePasswordPort {
     @Transactional
     public void change(ChangePasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new BusinessException("PASSWORD_MISMATCH", "Passwords do not match");
+            throw new BusinessException("PASSWORD_MISMATCH", "Las contraseñas no coinciden");
         }
 
         ValidationUtils.validateStrongPassword(request.getNewPassword());
@@ -47,7 +47,7 @@ public class ChangePasswordUseCase implements ChangePasswordPort {
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), credentials.getPasswordHash())) {
-            throw new BusinessException("INVALID_CURRENT_PASSWORD", "Current password is incorrect");
+            throw new BusinessException("INVALID_CURRENT_PASSWORD", "La contraseña actual es incorrecta");
         }
 
         List<PasswordHistory> recentHistory = passwordHistoryRepository
@@ -57,7 +57,7 @@ public class ChangePasswordUseCase implements ChangePasswordPort {
                 .anyMatch(h -> passwordEncoder.matches(request.getNewPassword(), h.getPasswordHash()));
         if (reused) {
             throw new BusinessException("PASSWORD_RECENTLY_USED",
-                    "New password was recently used. Please choose a different password");
+                    "Esta contraseña fue usada recientemente. Por favor elige una diferente");
         }
 
         passwordHistoryRepository.save(PasswordHistory.builder()

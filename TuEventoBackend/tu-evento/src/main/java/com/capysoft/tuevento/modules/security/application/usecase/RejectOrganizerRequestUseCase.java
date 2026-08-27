@@ -22,7 +22,7 @@ public class RejectOrganizerRequestUseCase implements RejectOrganizerRequestPort
                 .orElseThrow(() -> new NotFoundException("PETITION_NOT_FOUND", "Organizer petition not found"));
 
         if (!"PENDING".equals(petition.getStatus())) {
-            throw new BusinessException("PETITION_NOT_PENDING", "Only pending petitions can be rejected");
+            throw new BusinessException("PETITION_NOT_PENDING", "Solo se pueden rechazar solicitudes en estado pendiente");
         }
 
         petition.setStatus("REJECTED");
