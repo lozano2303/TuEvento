@@ -266,7 +266,7 @@ const ProfilePage = () => {
                     />
                   ) : (
                     <img
-                      src="/default-avatar.jpg"
+                      src="/default-avatar.png"
                       alt="Avatar por defecto"
                       className="w-full h-full object-cover"
                     />
