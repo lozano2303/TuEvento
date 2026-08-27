@@ -24,6 +24,110 @@ import SeatMapCanvas from "../components/SeatMapCanvas";
 const { width } = Dimensions.get("window");
 
 /**
+ * Item individual del carrito con countdown de TTL.
+ * Muestra código de silla, sección, precio y tiempo restante de reserva.
+ */
+function CartItem({ seat, section, onRelease, isReleasing, colors }) {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    if (!seat.reservedUntil) return;
+
+    const updateTimer = () => {
+      const now = new Date();
+      const until = new Date(seat.reservedUntil);
+      const diffMs = until - now;
+
+      if (diffMs <= 0) {
+        setTimeLeft('Expirado');
+        return;
+      }
+
+      const minutes = Math.floor(diffMs / 1000 / 60);
+      const seconds = Math.floor((diffMs / 1000) % 60);
+      setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [seat.reservedUntil]);
+
+  return (
+    <View style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 10,
+      marginBottom: 8,
+      backgroundColor: colors.primary + '10',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.primary + '20',
+    }}>
+      <View style={{ flex: 1 }}>
+        <Text style={{
+          fontSize: 13,
+          fontWeight: '700',
+          color: colors.textPrimary,
+          marginBottom: 2,
+        }}>
+          {seat.code}
+        </Text>
+        <Text style={{
+          fontSize: 11,
+          color: colors.textSecondary,
+          marginBottom: 4,
+        }}>
+          {section?.sectionTypeName ?? 'Sección'}
+        </Text>
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          }}>
+            <Ionicons name="time-outline" size={12} color={colors.textMuted} />
+            <Text style={{
+              fontSize: 11,
+              color: colors.textMuted,
+            }}>
+              {timeLeft}
+            </Text>
+          </View>
+          <Text style={{
+            fontSize: 12,
+            fontWeight: '700',
+            color: colors.primary,
+          }}>
+            ${section?.price?.toFixed(2) ?? '0.00'}
+          </Text>
+        </View>
+      </View>
+      <TouchableOpacity
+        onPress={onRelease}
+        disabled={isReleasing}
+        style={{
+          padding: 4,
+          opacity: isReleasing ? 0.5 : 1,
+        }}
+        activeOpacity={0.7}
+      >
+        <Ionicons 
+          name="close-circle" 
+          size={20} 
+          color={isReleasing ? colors.textMuted : colors.error} 
+        />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+/**
  * Pantalla de detalle de un evento.
  * Muestra información completa: imagen, nombre, descripción, fechas, ubicación.
  * Todavía NO incluye mapa de sillas ni selección - solo lectura.
@@ -103,18 +207,24 @@ export default function EventDetailScreen() {
   // Cargar sillas al seleccionar una sección
   useEffect(() => {
     if (!selectedSectionId) {
-      setSeats({}); // Limpiar sillas si no hay sección seleccionada
+      // No limpiar sillas - mantener las reservadas en memoria para el carrito
       return;
     }
 
     const loadSeats = async () => {
       try {
         const data = await seatService.getSeatsBySection(selectedSectionId);
-        const seatsMap = {};
-        data.forEach((s) => {
-          seatsMap[s.seatId] = s;
+        
+        setSeats((prev) => {
+          // Combinar sillas nuevas con las ya reservadas de otras secciones
+          const updated = { ...prev };
+          
+          data.forEach((s) => {
+            updated[s.seatId] = s;
+          });
+          
+          return updated;
         });
-        setSeats(seatsMap);
       } catch (err) {
         console.error("[EventDetailScreen] Error loading seats:", err);
         Alert.alert("Error", "No se pudieron cargar las sillas");
@@ -627,6 +737,39 @@ export default function EventDetailScreen() {
                   />
                 )}
               </View>
+
+              {/* Carrito de sillas seleccionadas */}
+              {cart.length > 0 && (
+                <View style={styles.cartContainer}>
+                  <View style={styles.cartHeader}>
+                    <View style={styles.cartHeaderLeft}>
+                      <Ionicons name="cart-outline" size={18} color={colors.primary} />
+                      <Text style={styles.cartTitle}>Tus Sillas</Text>
+                    </View>
+                    <Text style={styles.cartCount}>({cart.length})</Text>
+                  </View>
+                  <ScrollView 
+                    style={styles.cartList}
+                    nestedScrollEnabled={true}
+                  >
+                    {cart.map((item) => {
+                      const section = sections.find(
+                        (s) => s.eventSectionId === item.eventSectionId
+                      );
+                      return (
+                        <CartItem
+                          key={item.seatId}
+                          seat={item}
+                          section={section}
+                          onRelease={() => handleReleaseSeat(item.seatId)}
+                          isReleasing={reserving.has(item.seatId)}
+                          colors={colors}
+                        />
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -841,6 +984,37 @@ function createStyles(colors) {
     quantityInfo: {
       fontSize: 11,
       color: colors.textMuted,
+    },
+    cartContainer: {
+      marginBottom: 16,
+      padding: 12,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.primary + "20",
+    },
+    cartHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: 12,
+    },
+    cartHeaderLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    cartTitle: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: colors.textPrimary,
+    },
+    cartCount: {
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+    cartList: {
+      maxHeight: 200,
     },
     sectionsMenuContainer: {
       marginBottom: 16,

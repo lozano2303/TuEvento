@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added - Cart with TTL Countdown on Mobile
+- **EventDetailScreen.jsx → CartItem component**: countdown de TTL para reservas de sillas
+  - **Componente CartItem**: item individual del carrito con información de silla y countdown
+    - Código de silla (ej. "A1", "B2")
+    - Nombre de sección (ej. "VIP", "General")
+    - Precio formateado (ej. "$25.00")
+    - **Countdown en tiempo real**: formato `mm:ss` (ej. "9:47", "0:23")
+      - Calcula tiempo restante desde `reservedUntil` (ISO timestamp)
+      - Actualización cada 1 segundo con `setInterval`
+      - Muestra "Expirado" cuando `diffMs <= 0`
+    - Botón de liberar silla (ícono X rojo)
+      - Deshabilitado cuando `isReleasing` (optimistic UI)
+  - **UI del carrito**: panel colapsable con lista de sillas reservadas
+    - Header: ícono carrito + "Tus Sillas" + contador `({cart.length})`
+    - FlatList con `scrollEnabled={false}` (altura máxima 200px)
+    - Se muestra solo si `cart.length > 0`
+    - Ubicación: después del selector de cantidad, antes del menú de secciones
+  - **Manejo de expiración automática**: 
+    - Backend: `SeatReservationExpirationScheduler` corre cada minuto
+    - Emite `SeatStatusChangedEvent` con `changedBy=null` (liberación automática)
+    - WebSocket propaga evento a todos los clientes conectados
+    - Listener móvil actualiza estado: `status='AVAILABLE'`, `reservedBy=null`, `reservedUntil=null`
+    - Silla desaparece del carrito automáticamente (react a cambio de `cart` computed)
+  - **Estilos**: consistentes con diseño de EventDetailScreen
+    - `cartContainer`: fondo `colors.surface`, borde `colors.primary + "20"`
+    - `cartItem`: fondo `colors.primary + "10"`, padding 10px, border radius 8px
+    - `cartItemTimer`: ícono reloj + texto pequeño gris
+    - `cartItemRemove`: ícono `close-circle` rojo, opacidad 0.5 cuando disabled
+  - **Optimización**: un solo interval por item (no compartido entre items)
+    - Cleanup automático con `return () => clearInterval(interval)` en useEffect
+    - Dependencia: `[seat.reservedUntil]` → recrea interval solo si cambia el timestamp
+
 ### Fixed - Quantity Stepper Validation: Cannot Decrease Below Selected Seats
 - **EventDetail.jsx → SeatSelectorSection**: fix de validación del stepper de cantidad
   - **Bug**: el botón - permitía bajar la cantidad por debajo de las sillas ya seleccionadas/reservadas
