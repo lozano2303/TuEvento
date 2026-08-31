@@ -57,9 +57,8 @@ public class JavaMailEmailNotification implements EmailNotificationPort {
     @Override
     public void sendPasswordRecoveryEmail(String toEmail, String alias, String recoveryCode) {
         try {
-            String templatePath = "mail/password-reset.html";
             String htmlTemplate = StreamUtils.copyToString(
-                    new ClassPathResource(templatePath).getInputStream(),
+                    new ClassPathResource("mail/password-reset.html").getInputStream(),
                     StandardCharsets.UTF_8);
 
             String htmlContent = htmlTemplate
@@ -85,6 +84,34 @@ public class JavaMailEmailNotification implements EmailNotificationPort {
             System.err.println("Error: " + e.getClass().getName() + ": " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Failed to send password recovery email", e);
+        }
+    }
+
+    @Override
+    public void sendReactivationEmail(String toEmail, String alias, String reactivationToken) {
+        try {
+            String htmlTemplate = StreamUtils.copyToString(
+                    new ClassPathResource("mail/account-reactivation.html").getInputStream(),
+                    StandardCharsets.UTF_8);
+
+            String htmlContent = htmlTemplate
+                    .replace("{{username}}", alias)
+                    .replace("{{reactivationToken}}", reactivationToken)
+                    .replace("{{expirationMinutes}}", "30");
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(toEmail);
+            helper.setSubject("Tu Evento \u2014 Reactiva tu cuenta");
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("=== FAILED TO SEND REACTIVATION EMAIL ===");
+            System.err.println("To: " + toEmail);
+            System.err.println("Error: " + e.getClass().getName() + ": " + e.getMessage());
+            throw new RuntimeException("Failed to send reactivation email", e);
         }
     }
 }

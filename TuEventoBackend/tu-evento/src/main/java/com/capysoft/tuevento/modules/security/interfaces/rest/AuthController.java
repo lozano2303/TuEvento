@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.Map;
 
+import com.capysoft.tuevento.modules.security.application.dto.request.ConfirmReactivationRequest;
+import com.capysoft.tuevento.modules.security.application.dto.request.ReactivateAccountRequest;
 import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
 import com.capysoft.tuevento.modules.security.domain.repository.AccountActivationRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
@@ -35,6 +37,8 @@ public class AuthController {
     private final RecoverPasswordPort recoverPasswordPort;
     private final ResetPasswordPort   resetPasswordPort;
     private final OauthLoginPort      oauthLoginPort;
+    private final RequestReactivationPort requestReactivationPort;
+    private final ConfirmReactivationPort confirmReactivationPort;
     private final LoginCredentialsRepository loginCredentialsRepository;
     private final AccountActivationRepository accountActivationRepository;
 
@@ -136,6 +140,25 @@ public ResponseEntity<ApiResponse<Void>> resendActivation(
         @Valid @RequestBody ResendActivationRequest request) {
     registerUserPort.resendActivationCode(request.getEmail());
     return ResponseEntity.ok(ApiResponse.ok("Se ha enviado un nuevo código de activación a tu correo"));
+}
+
+@Operation(summary = "Request account reactivation — sends a one-time token to the registered email")
+@PostMapping("/reactivate-request")
+public ResponseEntity<ApiResponse<Void>> requestReactivation(
+        @Valid @RequestBody ReactivateAccountRequest request) {
+    requestReactivationPort.request(request);
+    // Always 200 regardless of whether the email exists or the account is INACTIVE
+    // to prevent user enumeration (same pattern as /recover-password).
+    return ResponseEntity.ok(ApiResponse.ok(
+            "Si el correo corresponde a una cuenta desactivada, recibirás un código de reactivación en los próximos minutos."));
+}
+
+@Operation(summary = "Confirm account reactivation with the one-time token received by email")
+@PostMapping("/reactivate-confirm")
+public ResponseEntity<ApiResponse<Void>> confirmReactivation(
+        @Valid @RequestBody ConfirmReactivationRequest request) {
+    confirmReactivationPort.confirm(request);
+    return ResponseEntity.ok(ApiResponse.ok("Tu cuenta ha sido reactivada exitosamente. Ya puedes iniciar sesión."));
 }
 
 @Operation(summary = "Get activation code for testing (dev only)")

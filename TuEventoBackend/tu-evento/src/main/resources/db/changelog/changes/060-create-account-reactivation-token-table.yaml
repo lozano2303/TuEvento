@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: 060-create-account-reactivation-token-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: account_reactivation_token
+            columns:
+              - column:
+                  name: reactivation_token_id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token
+                  type: VARCHAR(8)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_status
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+
+        - addForeignKeyConstraint:
+            baseTableName: account_reactivation_token
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_reactivation_token_user
