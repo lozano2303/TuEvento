@@ -218,6 +218,35 @@ export const resetPassword = async (code, newPassword, email) => {
   }
 };
 
+// ── Reactivación de cuenta ───────────────────────────────────────────────────
+
+// Solicita el envío de un código de reactivación al email del usuario.
+// Siempre responde con éxito (el backend no revela si el email existe).
+export const requestReactivation = async (email) => {
+  const response = await fetch(`${API_URL}/auth/reactivate-request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await response.json();
+  // El backend siempre devuelve 200 para no revelar si el email existe.
+  // Solo propagamos error en casos de red o validación (@NotBlank, @Email).
+  if (!response.ok) throw new Error(data?.message || 'Error al solicitar la reactivación');
+  return { success: true, message: data.message };
+};
+
+// Confirma la reactivación con el token de 8 caracteres recibido por email.
+export const confirmReactivation = async (token) => {
+  const response = await fetch(`${API_URL}/auth/reactivate-confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data?.message || 'Error al confirmar la reactivación');
+  return { success: true, message: data.message };
+};
+
 // Función para verificar si el correo ya existe
 export const checkEmailExists = async (email) => {
   try {

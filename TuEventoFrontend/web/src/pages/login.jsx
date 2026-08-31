@@ -7,6 +7,7 @@ import { performLogout } from "../services/httpClient.js";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 import BaseModal from "../components/common/BaseModal.jsx";
+import ReactivationModal from "../components/common/ReactivationModal.jsx";
 
 export default function Login() {
   const { refreshPalette } = useTheme();
@@ -22,6 +23,7 @@ export default function Login() {
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   const [showLoginSuccessNotification, setShowLoginSuccessNotification] = useState(false);
   const [showActivateAccount, setShowActivateAccount] = useState(false);
+  const [showReactivationModal, setShowReactivationModal] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [formData, setFormData] = useState({
     email: "", password: "", confirmPassword: "", name: "",
@@ -262,9 +264,11 @@ export default function Login() {
         errorMsg.toLowerCase().includes("inactive") ||
         errorMsg.toLowerCase().includes("inactiva") ||
         errorMsg.toLowerCase().includes("desactivada") ||
-        errorMsg.toLowerCase().includes("account_inactive")
+        errorMsg.toLowerCase().includes("account_inactive") ||
+        errorMsg.toLowerCase().includes("account_deactivated")
       ) {
-        setError("Tu cuenta ha sido desactivada. Solicita la reactivación para que nuestro equipo la revise.");
+        // Abre el modal de reactivación en lugar de mostrar solo texto
+        setShowReactivationModal(true);
       } else if (
         errorMsg.toLowerCase().includes("blocked") ||
         errorMsg.toLowerCase().includes("bloqueada") ||
@@ -752,6 +756,13 @@ export default function Login() {
           })()}!</p>
         </div>
       </BaseModal>
+
+      {/* ══════════════ MODAL REACTIVACIÓN ══════════════ */}
+      <ReactivationModal
+        isOpen={showReactivationModal}
+        onClose={() => setShowReactivationModal(false)}
+        email={formData.email}
+      />
 
     </div>
   );
