@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight, PartyPopper, Sparkles, FileText } from "lucide-react";
-import { loginUser, registerUser, resendActivationCode } from "../services/Login.js";
+import { loginUser, registerUser, resendActivationCode, googleLogin } from "../services/Login.js";
 import { getProfileByUserId } from "../services/ProfileService.js";
 import { useTheme } from "../context/ThemeContext";
 import { performLogout } from "../services/httpClient.js";
@@ -8,6 +8,9 @@ import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 import BaseModal from "../components/common/BaseModal.jsx";
 import ReactivationModal from "../components/common/ReactivationModal.jsx";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 export default function Login() {
   const { refreshPalette } = useTheme();
@@ -180,6 +183,49 @@ export default function Login() {
         setError(errorMsg);
       }
     }
+  };
+
+  const handleGoogleSuccess = async ({ credential }) => {
+    if (!credential) return;
+    setError('');
+    setLoading(true);
+    try {
+      const result = await googleLogin(credential);
+      localStorage.setItem('token',        result.data.token);
+      localStorage.setItem('refreshToken', result.data.refreshToken);
+      localStorage.setItem('userID',       result.data.userID);
+      localStorage.setItem('alias',        result.data.alias);
+      localStorage.setItem('role',         result.data.role);
+      localStorage.setItem('userEmail',    ''); // email no disponible en este punto
+
+      const [, profileResult] = await Promise.allSettled([
+        refreshPalette(),
+        getProfileByUserId(result.data.userID),
+      ]);
+
+      if (profileResult.status === 'fulfilled' && profileResult.value?.data?.fullName) {
+        localStorage.setItem('name', profileResult.value.data.fullName);
+        // email disponible tras cargar el perfil de credenciales
+        if (profileResult.value?.data?.email) {
+          localStorage.setItem('userEmail', profileResult.value.data.email);
+        }
+      } else {
+        localStorage.setItem('name', result.data.alias);
+      }
+
+      setUserData({ userId: result.data.userID, alias: result.data.alias, email: '' });
+      setShowLoginSuccessNotification(true);
+      setTimeout(() => { window.location.href = '/'; }, 1500);
+    } catch (err) {
+      setError(err.message || 'No se pudo iniciar sesión con Google. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    // User dismissed the popup or Google returned an error — no action needed
+    // unless the user explicitly triggered an error (not a cancel).
   };
 
   const handleSubmit = async (e) => {
@@ -554,20 +600,19 @@ export default function Login() {
 
             {/* Botones Google / Facebook */}
             <div className="flex justify-center gap-4">
-              <button
-                type="button"
-                onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/google'}
-                className="flex items-center gap-3 btn-oauth-google"
-                title="Iniciar con Google">
-                <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                  <path fill="none" d="M0 0h48v48H0z"/>
-                </svg>
-                <span className="text-sm font-medium leading-none">Google</span>
-              </button>
+              {/* ── Botón Google GSI (id_token) ── */}
+              <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  useOneTap={false}
+                  shape="rectangular"
+                  theme="outline"
+                  size="medium"
+                  text="signin_with"
+                  locale="es"
+                />
+              </GoogleOAuthProvider>
 
               <button
                 type="button"

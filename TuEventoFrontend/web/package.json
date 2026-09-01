@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-oauth/google": "^0.13.5",
     "konva": "^9.3.22",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.7.0",

@@ -17,7 +17,9 @@ import java.net.URI;
 import java.util.Map;
 
 import com.capysoft.tuevento.modules.security.application.dto.request.ConfirmReactivationRequest;
+import com.capysoft.tuevento.modules.security.application.dto.request.GoogleAuthRequest;
 import com.capysoft.tuevento.modules.security.application.dto.request.ReactivateAccountRequest;
+import com.capysoft.tuevento.modules.security.application.port.in.GoogleAuthPort;
 import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
 import com.capysoft.tuevento.modules.security.domain.repository.AccountActivationRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
@@ -37,6 +39,7 @@ public class AuthController {
     private final RecoverPasswordPort recoverPasswordPort;
     private final ResetPasswordPort   resetPasswordPort;
     private final OauthLoginPort      oauthLoginPort;
+    private final GoogleAuthPort      googleAuthPort;
     private final RequestReactivationPort requestReactivationPort;
     private final ConfirmReactivationPort confirmReactivationPort;
     private final LoginCredentialsRepository loginCredentialsRepository;
@@ -134,8 +137,16 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok("OAuth login successful", response));
     }
 
+        @Operation(summary = "Authenticate with a Google ID Token from Google Identity Services (GSI)")
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<LoginResponse>> googleAuth(
+            @Valid @RequestBody GoogleAuthRequest request) {
+        LoginResponse response = googleAuthPort.authenticate(request);
+        return ResponseEntity.ok(ApiResponse.ok("Login con Google exitoso", response));
+    }
+
     @Operation(summary = "Resend activation code to email")
-@PostMapping("/resend-activation")
+    @PostMapping("/resend-activation")
 public ResponseEntity<ApiResponse<Void>> resendActivation(
         @Valid @RequestBody ResendActivationRequest request) {
     registerUserPort.resendActivationCode(request.getEmail());

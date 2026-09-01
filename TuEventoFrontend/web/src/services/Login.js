@@ -218,6 +218,47 @@ export const resetPassword = async (code, newPassword, email) => {
   }
 };
 
+// ── Google Sign-In (GSI / id_token flow) ─────────────────────────────────────
+
+/**
+ * Sends the Google ID Token (credential) received from @react-oauth/google's
+ * GoogleLogin component to our backend for server-side verification.
+ * Returns the same shape as loginUser() so the caller can handle both
+ * flows identically.
+ */
+export const googleLogin = async (idToken) => {
+  const response = await fetch(`${API_URL}/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    // Translate known backend error codes
+    const msg = data?.message || '';
+    if (msg.includes('EMAIL_ALREADY_EXISTS_AS_LOCAL') || msg.includes('ya está registrado con contraseña')) {
+      throw new Error('Este correo ya tiene una cuenta con contraseña. Inicia sesión con tu correo y contraseña.');
+    }
+    if (msg.includes('GOOGLE_EMAIL_NOT_VERIFIED') || msg.includes('no tiene el correo verificado')) {
+      throw new Error('Tu cuenta de Google no tiene el correo verificado. Verifica tu dirección en Google e intenta de nuevo.');
+    }
+    throw new Error(msg || 'No se pudo iniciar sesión con Google. Intenta de nuevo.');
+  }
+
+  return {
+    success: true,
+    data: {
+      token:        data.data.accessToken,
+      refreshToken: data.data.refreshToken ?? '',
+      userID:       data.data.userId,
+      alias:        data.data.alias,
+      role:         data.data.role || 'USER',
+    },
+  };
+};
+
 // ── Reactivación de cuenta ───────────────────────────────────────────────────
 
 // Solicita el envío de un código de reactivación al email del usuario.

@@ -55,6 +55,8 @@ public class OauthLoginUseCase implements OauthLoginPort {
     /** Registry of provider-specific profile resolvers — extensible without modifying this class. */
     private final Map<String, Function<String, OauthProfile>> providerResolvers;
 
+    // ── Code-based OAuth flow (redirect / callback) ───────────────────────────
+
     @Override
     @Transactional
     public LoginResponse login(String provider, String code) {
@@ -62,11 +64,16 @@ public class OauthLoginUseCase implements OauthLoginPort {
         if (resolver == null) {
             throw new BusinessException("UNSUPPORTED_PROVIDER", "OAuth provider not supported");
         }
+        return loginWithProfile(provider, resolver.apply(code));
+    }
 
-        OauthProfile profile = resolver.apply(code);
+    // ── Profile-based flow (GSI id_token already verified server-side) ────────
 
+    @Override
+    @Transactional
+    public LoginResponse loginWithProfile(String provider, OauthProfile profile) {
         Optional<OauthAccount> existing = oauthAccountRepository
-                .findByProviderAndProviderUserId(provider, profile.getProviderUserId());
+                .findByProviderAndProviderUserId(provider.toLowerCase(), profile.getProviderUserId());
 
         User user;
         boolean isNewUser = false;
@@ -78,7 +85,8 @@ public class OauthLoginUseCase implements OauthLoginPort {
             if (profile.getEmail() != null && !profile.getEmail().isBlank()
                     && loginCredentialsRepository.existsByEmail(profile.getEmail())) {
                 throw new BusinessException("EMAIL_ALREADY_EXISTS_AS_LOCAL",
-                        "This email is already registered with a password. Please login with email and password");
+                        "Este correo ya está registrado con contraseña. "
+                      + "Inicia sesión con tu correo y contraseña.");
             }
 
             Role role = roleRepository.findByCode(DEFAULT_ROLE_CODE)
@@ -89,7 +97,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
             String alias = AliasGenerator.generateUnique(
                     profile.getEmail(), profile.getAlias(), userRepository::existsByAlias);
 
-            // Facebook with public_profile scope doesn't return email — use a synthetic one
+            // Facebook with public_profile scope may not return email — synthetic fallback
             String email = (profile.getEmail() != null && !profile.getEmail().isBlank())
                     ? profile.getEmail()
                     : profile.getProviderUserId() + "@" + provider.toLowerCase() + ".oauth";
@@ -103,7 +111,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
 
             oauthAccountRepository.save(OauthAccount.builder()
                     .user(user)
-                    .provider(provider)
+                    .provider(provider.toLowerCase())
                     .providerUserId(profile.getProviderUserId())
                     .email(email)
                     .linkedAt(LocalDateTime.now())
@@ -148,6 +156,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
                 .refreshToken(refreshToken)
                 .userId(user.getUserId())
                 .alias(user.getAlias())
+                .role(user.getRole().getCode())
                 .build();
     }
 }
