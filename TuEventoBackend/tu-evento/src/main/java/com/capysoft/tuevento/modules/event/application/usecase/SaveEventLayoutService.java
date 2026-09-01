@@ -2,6 +2,10 @@ package com.capysoft.tuevento.modules.event.application.usecase;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,11 +87,12 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
 
     /**
      * Parsea el layoutData JSON y regenera los registros de seat_block y seat
-     * para cada sección que tenga backendSectionId y seatLayout definido.
+     * para cada sección lógica (agrupando elementos por backendSectionId).
      * 
-     * Estrategia: por cada sección, borra las sillas existentes y las regenera
-     * desde cero según el seatLayout actual. Esto garantiza sincronización
-     * perfecta entre el layout visual y las sillas funcionales.
+     * Estrategia ACTUALIZADA: agrupa elementos por backendSectionId y trata
+     * cada grupo como una sección lógica única con numeración continua de sillas.
+     * Esto soporta sub-secciones visuales (ej: "General 1", "General 2") que
+     * comparten el mismo tipo y precio pero tienen numeración de sillas continua.
      * 
      * Corre en la misma transacción que guarda el EventLayout — si algo falla,
      * se revierten ambos cambios.
@@ -102,14 +107,15 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                 return;
             }
 
-            int sectionsProcessed = 0;
-            int seatsGenerated = 0;
-
-            for (JsonNode elementNode : elementsNode) {
+            // Paso 1: Agrupar elementos de sección por backendSectionId
+            Map<Integer, List<SectionElement>> sectionGroups = new HashMap<>();
+            
+            for (int i = 0; i < elementsNode.size(); i++) {
+                JsonNode elementNode = elementsNode.get(i);
                 String type = elementNode.has("type") ? elementNode.get("type").asText() : null;
                 
                 if (!"section".equals(type)) {
-                    continue; // Solo procesar elementos tipo 'section'
+                    continue;
                 }
 
                 JsonNode backendSectionIdNode = elementNode.get("backendSectionId");
@@ -117,19 +123,32 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
 
                 if (backendSectionIdNode == null || backendSectionIdNode.isNull() || 
                     seatLayoutNode == null || seatLayoutNode.isNull()) {
-                    continue; // Saltar secciones sin backendSectionId o sin seatLayout
+                    continue;
                 }
 
-                Integer eventSectionId = backendSectionIdNode.asInt();
+                Integer backendSectionId = backendSectionIdNode.asInt();
                 int targetSeats = seatLayoutNode.has("targetSeats") ? seatLayoutNode.get("targetSeats").asInt() : 0;
                 int rows = seatLayoutNode.has("rows") ? seatLayoutNode.get("rows").asInt() : 1;
                 int seatsPerRow = seatLayoutNode.has("seatsPerRow") ? seatLayoutNode.get("seatsPerRow").asInt() : 1;
 
                 if (targetSeats <= 0) {
-                    log.debug("[SaveEventLayout] Sección {} tiene targetSeats={}, saltando generación", 
-                            eventSectionId, targetSeats);
                     continue;
                 }
+
+                SectionElement element = new SectionElement(targetSeats, rows, seatsPerRow, i);
+                sectionGroups.computeIfAbsent(backendSectionId, k -> new ArrayList<>()).add(element);
+            }
+
+            // Paso 2: Procesar cada sección lógica (grupo)
+            int sectionsProcessed = 0;
+            int seatsGenerated = 0;
+
+            for (Map.Entry<Integer, List<SectionElement>> entry : sectionGroups.entrySet()) {
+                Integer eventSectionId = entry.getKey();
+                List<SectionElement> elements = entry.getValue();
+
+                // Ordenar elementos por su índice original para consistencia
+                elements.sort(Comparator.comparingInt(e -> e.originalIndex));
 
                 // Validación defensiva: verificar que ninguna silla existente esté reservada/vendida
                 List<Seat> existingSeats = seatRepository.findAllByEventSectionId(eventSectionId);
@@ -143,45 +162,45 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                             "Esto no debería ocurrir en estado DRAFT.");
                 }
 
-                // Borrar sillas existentes de esta sección
+                // Borrar sillas y seat_blocks existentes de esta sección
                 for (Seat seat : existingSeats) {
                     seatRepository.deleteById(seat.getSeatId());
                 }
 
-                // Borrar seat_blocks existentes de esta sección
                 List<SeatBlock> existingBlocks = seatBlockRepository.findAllByEventSectionId(eventSectionId);
                 for (SeatBlock block : existingBlocks) {
                     seatBlockRepository.deleteById(block.getSeatBlockId());
                 }
 
-                // Crear un nuevo seat_block para esta sección
+                // Calcular capacidad total de la sección lógica
+                int totalCapacity = elements.stream().mapToInt(e -> e.targetSeats).sum();
+
+                // Crear un único seat_block para toda la sección lógica
                 SeatBlock seatBlock = seatBlockRepository.save(SeatBlock.builder()
                         .eventSectionId(eventSectionId)
                         .name("Bloque Principal")
-                        .capacity(targetSeats)
+                        .capacity(totalCapacity)
                         .build());
 
-                // Generar las sillas
-                int generatedCount = generateSeatsForBlock(
+                // Generar sillas con numeración continua a través de todos los elementos
+                int generatedCount = generateContinuousSeatsForSection(
                         seatBlock.getSeatBlockId(), 
                         eventSectionId, 
-                        targetSeats, 
-                        rows, 
-                        seatsPerRow
+                        elements
                 );
 
                 sectionsProcessed++;
                 seatsGenerated += generatedCount;
                 
-                log.info("[SaveEventLayout] Sección {} regenerada: {} sillas en {} filas", 
-                        eventSectionId, generatedCount, rows);
+                log.info("[SaveEventLayout] Sección {} regenerada: {} sillas continuas en {} sub-elementos", 
+                        eventSectionId, generatedCount, elements.size());
             }
 
-            log.info("[SaveEventLayout] Regeneración completada: {} secciones procesadas, {} sillas generadas", 
+            log.info("[SaveEventLayout] Regeneración completada: {} secciones lógicas procesadas, {} sillas generadas", 
                     sectionsProcessed, seatsGenerated);
 
         } catch (BusinessException e) {
-            throw e; // Re-lanzar excepciones de negocio
+            throw e;
         } catch (Exception e) {
             log.error("[SaveEventLayout] Error al parsear layoutData y regenerar sillas", e);
             throw new BusinessException("LAYOUT_PARSING_ERROR",
@@ -190,7 +209,75 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
     }
 
     /**
+     * Clase auxiliar para representar un elemento de sección con su configuración de asientos.
+     */
+    private static class SectionElement {
+        public final int targetSeats;
+        public final int rows;
+        public final int seatsPerRow;
+        public final int originalIndex; // Para mantener orden determinístico
+
+        public SectionElement(int targetSeats, int rows, int seatsPerRow, int originalIndex) {
+            this.targetSeats = targetSeats;
+            this.rows = rows;
+            this.seatsPerRow = seatsPerRow;
+            this.originalIndex = originalIndex;
+        }
+    }
+
+    /**
+     * Genera sillas con numeración continua para una sección lógica compuesta
+     * por múltiples elementos visuales (sub-secciones).
+     * 
+     * La numeración de códigos (A1, A2, B1...) continúa a través de todos los
+     * elementos del grupo, sin reiniciarse entre sub-secciones.
+     */
+    private int generateContinuousSeatsForSection(Integer seatBlockId, Integer eventSectionId, 
+                                                  List<SectionElement> elements) {
+        int totalGenerated = 0;
+        int globalCurrentRow = 1;
+        int globalCurrentPosition = 1;
+        
+        // Calcular seatsPerRow máximo para mantener consistencia en la numeración
+        int maxSeatsPerRow = elements.stream().mapToInt(e -> e.seatsPerRow).max().orElse(1);
+
+        for (SectionElement element : elements) {
+            for (int i = 0; i < element.targetSeats; i++) {
+                // Usar numeración global continua
+                String rowLabel = getRowLabel(globalCurrentRow);
+                String code = rowLabel + globalCurrentPosition;
+
+                seatRepository.save(Seat.builder()
+                        .seatBlockId(seatBlockId)
+                        .eventSectionId(eventSectionId)
+                        .code(code)
+                        .row(globalCurrentRow)
+                        .position(globalCurrentPosition)
+                        .type(SeatType.REGULAR)
+                        .status(SeatStatus.AVAILABLE)
+                        .reservedBy(null)
+                        .reservedUntil(null)
+                        .build());
+
+                totalGenerated++;
+
+                // Avanzar numeración global usando el seatsPerRow máximo para consistencia
+                globalCurrentPosition++;
+                if (globalCurrentPosition > maxSeatsPerRow) {
+                    globalCurrentPosition = 1;
+                    globalCurrentRow++;
+                }
+            }
+        }
+
+        return totalGenerated;
+    }
+
+    /**
      * Genera los registros de seat individuales para un seat_block.
+     * 
+     * DEPRECADO: Mantener por compatibilidad, pero la nueva lógica usa
+     * generateContinuousSeatsForSection para soportar numeración continua.
      * 
      * Algoritmo:
      * - Distribuye targetSeats en 'rows' filas
