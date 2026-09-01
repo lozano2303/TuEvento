@@ -39,7 +39,7 @@ export default function Toast({ toast, onHide }) {
   const getIcon = () => {
     switch (toast.type) {
       case 'success': return 'checkmark-circle';
-      case 'warning': return 'warning';
+      case 'warning': return 'bulb'; // Ícono de bombilla para tip/sugerencia
       case 'info': return 'information-circle';
       default: return 'alert-circle';
     }
@@ -48,10 +48,27 @@ export default function Toast({ toast, onHide }) {
   const getColor = () => {
     switch (toast.type) {
       case 'success': return colors.success || '#10b981';
-      case 'warning': return colors.warning || '#f59e0b';
-      case 'info': return colors.info || '#3b82f6';
+      case 'warning': return colors.accent || '#A78BFA'; // Usar accent del theme en lugar de warning
+      case 'info': return colors.primary || '#7C3AED'; // Usar primary para info
       default: return colors.error || '#ef4444';
     }
+  };
+
+  const getBackgroundColor = () => {
+    if (toast.type === 'warning') {
+      // Warning como tip/sugerencia: fondo más suave usando accent
+      const accentColor = colors.accent || '#A78BFA';
+      return `${accentColor}20`; // 20% opacity para fondo suave
+    }
+    return colors.surface || '#1e1e2e';
+  };
+
+  const getTextColor = () => {
+    if (toast.type === 'warning') {
+      // Para tips/sugerencias, usar texto primario para mejor legibilidad
+      return colors.textPrimary || '#FFFFFF';
+    }
+    return colors.textPrimary || '#FFFFFF';
   };
 
   return (
@@ -60,13 +77,13 @@ export default function Toast({ toast, onHide }) {
         styles.container,
         {
           transform: [{ translateY }],
-          backgroundColor: colors.surface || '#1e1e2e',
+          backgroundColor: getBackgroundColor(),
           borderLeftColor: getColor(),
         },
       ]}
     >
       <Ionicons name={getIcon()} size={20} color={getColor()} />
-      <Text style={[styles.message, { color: colors.textPrimary }]}>
+      <Text style={[styles.message, { color: getTextColor() }]}>
         {toast.message}
       </Text>
     </Animated.View>
