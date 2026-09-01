@@ -35,6 +35,11 @@
   flex-shrink: 0;
 }
 
+/* Ícono especial para warning (tip/sugerencia) */
+.toast--warning .toast__icon {
+  background-color: rgba(0, 0, 0, 0.1); /* Sutil con el color del theme */
+}
+
 .toast__message {
   flex: 1;
   line-height: 1.4;

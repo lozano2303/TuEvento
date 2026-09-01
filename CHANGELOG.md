@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed - Warning Toasts Redesigned as Tips/Suggestions (Web + Mobile)
+- **Rediseño de alertas "warning" como tips/sugerencias**: cambio visual y semántico de los toasts de límites del stepper
+  - **Casos afectados**: límite del stepper alcanzado, máximo de 10 sillas, bajar stepper por debajo de lo reservado
+  - **Antes**: color naranja fijo (#f59e0b) con ícono de advertencia (⚠) → se percibía como error
+  - **Después**: color dinámico del theme + ícono de bombilla → se percibe como sugerencia útil
+- **Web - Implementación**:
+  - **Toast.jsx**: integrado con `useTheme()` y `ThemeContext`
+  - **Color dinámico**: `palette.accent` (en lugar de naranja fijo) + `palette.background` para texto de alto contraste  
+  - **Ícono**: `<Lightbulb>` de lucide-react en lugar de emoji "⚠"
+  - **Fondo del ícono**: `rgba(0,0,0,0.1)` para sutil contraste con el accent color
+- **Móvil - Implementación**:
+  - **Toast.jsx**: usa `colors.accent` del `ThemeContext` existente
+  - **Color dinámico**: `colors.accent` (#A78BFA por defecto) en lugar de `colors.warning` 
+  - **Ícono**: `bulb` de Ionicons en lugar de `warning`
+  - **Fondo suave**: `${colors.accent}20` (accent con 20% opacity) para apariencia menos intrusiva
+  - **Texto**: `colors.textPrimary` para mejor legibilidad sobre fondo suave
+- **Colores del theme respetados**: 
+  - **Default**: `colors.accent` (#A78BFA) - violeta suave que combina con la paleta morada
+  - **Dinámico**: se adapta automáticamente si el usuario tiene theme personalizado activo
+  - **Consistencia**: mismo token de color (`accent`) usado en ambas plataformas
+- **Comportamiento funcional sin cambios**: 5 segundos de duración, reemplazo + reinicio de temporizador si se repite
+- **UX mejorada**: tips se sienten como ayuda útil en lugar de errores/advertencias
+
+### Technical Details - Warning Toast Redesign  
+- **Semántica visual**: bombilla (💡) universalmente reconocida como "tip" vs advertencia (⚠)
+- **Color accessibility**: `palette.background` como color de texto sobre `palette.accent` garantiza contraste suficiente
+- **Theme integration**: ambos componentes usan sus respectivos ThemeContext para colores dinámicos
+- **Casos no afectados**: error (rojo), info (azul/primary), success (verde) mantienen colores y comportamiento original
+- **Icon libraries**: lucide-react (web) e Ionicons (móvil) ambos tienen íconos de bombilla apropiados
+
 ### Fixed - Critical: EventDetail.jsx Loading Crash (ReferenceError)
 - **Fix urgente**: página de detalle de evento no cargaba por `ReferenceError: currentSubSections is not defined`
   - **Problema**: `SectionRenderer` usaba `currentSubSections` en `useMemo` sin recibirlo como prop → crash al renderizar
