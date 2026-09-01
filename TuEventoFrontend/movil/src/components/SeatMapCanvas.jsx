@@ -30,7 +30,8 @@ export default function SeatMapCanvas({
   layoutData, 
   containerWidth, 
   containerHeight, 
-  focusedSectionId = null, 
+  focusedSectionId = null,
+  currentSubSectionIndex = 0,
   sections = [],
   seats = {},
   onSeatPress,
@@ -43,10 +44,44 @@ export default function SeatMapCanvas({
   // Migrar elementos (asegurar que polygonPoints estén en formato nuevo)
   const elements = layoutData.elements.map(migrateElement);
 
-  // Filtrar elementos si hay una sección enfocada
-  const visibleElements = focusedSectionId
-    ? elements.filter((el) => el.backendSectionId === focusedSectionId)
-    : elements;
+  // Agrupar elementos por backendSectionId
+  const groupedSections = {};
+  elements.forEach((el) => {
+    if (el.type === 'section' && el.backendSectionId) {
+      const key = el.backendSectionId;
+      if (!groupedSections[key]) groupedSections[key] = [];
+      groupedSections[key].push(el);
+    }
+  });
+
+  // Determinar elementos visibles según filtro y sub-sección
+  let visibleElements;
+  let orderedLayoutElements = []; // Para calcular offsets
+  
+  if (focusedSectionId) {
+    const subSections = groupedSections[focusedSectionId] || [];
+    
+    // CRÍTICO: ordenar por índice original (posición en elements array)
+    // para mantener consistencia con generateContinuousSeatsForSection
+    const elementIndexMap = {};
+    elements.forEach((el, idx) => {
+      elementIndexMap[el.id] = idx;
+    });
+    
+    subSections.sort((a, b) => elementIndexMap[a.id] - elementIndexMap[b.id]);
+    orderedLayoutElements = subSections;
+    
+    if (subSections.length > 1) {
+      // Si hay múltiples sub-secciones, mostrar solo la del índice actual
+      visibleElements = [subSections[currentSubSectionIndex]];
+    } else {
+      // Si solo hay una, mostrarla
+      visibleElements = subSections;
+    }
+  } else {
+    // Vista general: mostrar todos los elementos
+    visibleElements = elements.filter(el => el.type === 'section');
+  }
 
   // Calcular AABB total para determinar zoom inicial (de los elementos visibles)
   const totalAABB = computeTotalAABB(visibleElements);
@@ -87,15 +122,28 @@ export default function SeatMapCanvas({
     // Buscar en cada elemento visible si se tocó una silla
     for (const element of visibleElements) {
       const seatPositions = distributeSeats(element);
-      const seatsArray = Object.values(seats).filter(
-        (s) => s.eventSectionId === element.backendSectionId
-      );
+      
+      // ORDENAR sillas de esta sección por código para consistencia
+      const allSectionSeats = Object.values(seats)
+        .filter((s) => s.eventSectionId === element.backendSectionId)
+        .sort((a, b) => a.code.localeCompare(b.code));
+
+      // Calcular offset de este elemento
+      const elementOffset = calculateSeatOffset(element, orderedLayoutElements);
+
+      // Crear array de sillas para este elemento específico aplicando offset
+      const elementSeats = [];
+      for (let i = 0; i < seatPositions.length; i++) {
+        const seatIndex = elementOffset + i;
+        const seat = allSectionSeats[seatIndex];
+        if (seat) elementSeats.push(seat);
+      }
 
       const clickedSeat = findSeatAt(
         locationX, 
         locationY, 
         seatPositions, 
-        seatsArray, 
+        elementSeats, // Usar el array con offset aplicado
         element, 
         scale, 
         offsetX, 
@@ -126,6 +174,7 @@ export default function SeatMapCanvas({
             sections={sections}
             seats={seats}
             currentUserId={currentUserId}
+            orderedLayoutElements={orderedLayoutElements}
           />
         ))}
       </Canvas>
@@ -172,7 +221,7 @@ function getSeatColor(seat, currentUserId) {
  * - Sillas visibles y coloreadas según estado
  * - Muestra nombre y precio de la sección
  */
-function SectionRenderer({ element, scale, offsetX, offsetY, inOverviewMode, sections, seats, currentUserId }) {
+function SectionRenderer({ element, scale, offsetX, offsetY, inOverviewMode, sections, seats, currentUserId, orderedLayoutElements = [] }) {
   const shapeMode = element.shapeMode ?? "rect";
   const color = element.color ?? "#3B82F6";
   const label = element.label ?? "";
@@ -188,6 +237,14 @@ function SectionRenderer({ element, scale, offsetX, offsetY, inOverviewMode, sec
 
   // Calcular posiciones de sillas
   const seatPositions = distributeSeats(element);
+
+  // FILTRAR y ORDENAR sillas de esta sección por código para orden consistente
+  const allSectionSeats = Object.values(seats)
+    .filter((s) => s.eventSectionId === element.backendSectionId)
+    .sort((a, b) => a.code.localeCompare(b.code));
+
+  // Calcular offset de este elemento específico
+  const elementOffset = calculateSeatOffset(element, orderedLayoutElements);
 
   // Path para la forma (rect o polygon)
   const shapePath = Skia.Path.Make();
@@ -244,11 +301,9 @@ function SectionRenderer({ element, scale, offsetX, offsetY, inOverviewMode, sec
 
       {/* Sillas - SOLO visibles en modo filtrado */}
       {!inOverviewMode && seatPositions.map((pos, index) => {
-        // Mapear posiciones a sillas reales
-        const seatsArray = Object.values(seats).filter(
-          (s) => s.eventSectionId === element.backendSectionId
-        );
-        const seat = seatsArray[index];
+        // Aplicar offset: este elemento muestra sillas desde elementOffset
+        const seatIndex = elementOffset + index;
+        const seat = allSectionSeats[seatIndex];
         
         if (!seat) return null;
         
@@ -284,6 +339,29 @@ function SectionRenderer({ element, scale, offsetX, offsetY, inOverviewMode, sec
       )}
     </>
   );
+}
+
+/**
+ * Calcula el offset (índice de inicio) de un elemento específico dentro del array
+ * ordenado de sillas de toda la sección lógica.
+ * 
+ * CRÍTICO: debe usar el mismo orden que generateContinuousSeatsForSection()
+ * (por originalIndex en el backend).
+ */
+function calculateSeatOffset(currentElement, orderedLayoutElements) {
+  // Encontrar el índice de este elemento en el array ordenado
+  const elementIndex = orderedLayoutElements.findIndex(el => el.id === currentElement.id);
+  
+  if (elementIndex === -1) return 0;
+  
+  // Sumar targetSeats de todos los elementos anteriores
+  let offset = 0;
+  for (let i = 0; i < elementIndex; i++) {
+    const element = orderedLayoutElements[i];
+    offset += element.seatLayout?.targetSeats ?? 0;
+  }
+  
+  return offset;
 }
 
 const styles = StyleSheet.create({

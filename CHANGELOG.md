@@ -4,6 +4,139 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed - Critical: EventDetail.jsx Loading Crash (ReferenceError)
+- **Fix urgente**: página de detalle de evento no cargaba por `ReferenceError: currentSubSections is not defined`
+  - **Problema**: `SectionRenderer` usaba `currentSubSections` en `useMemo` sin recibirlo como prop → crash al renderizar
+  - **Solución**: agregado `currentSubSections` a la firma de props de `SectionRenderer`
+  - **Fix secundario**: `ResizeObserver` error al desmontar → agregado chequeo `if (!containerRef.current) return` en `updateSize()`
+  - **Estado**: página carga correctamente, flechas de navegación funcionan, offset de sillas aplicado
+
+### Fixed - Sub-Section Seat Offset: Correct Seat Mapping by Element Position (Web + Mobile)
+- **Fix crítico**: sillas duplicadas entre sub-secciones solucionado aplicando offset correcto basado en posición de elemento
+  - **Problema**: cada sub-sección usaba índices geométricos locales (0-5) sin offset → todas mostraban las mismas primeras N sillas de la base de datos
+  - **Causa raíz**: frontend no consideraba que las sillas se generan **continuamente** en el backend (A1-A6, A7-A12, A13-A18...) pero cada elemento visual las renderizaba desde índice 0
+  - **Solución implementada**:
+    - **Orden consistente**: frontend ordena elementos por posición en `layoutData` (equivalente a `originalIndex` del backend)
+    - **Sillas ordenadas**: array de sillas filtrado por `eventSectionId` y ordenado por `code` antes de aplicar offset
+    - **Cálculo de offset**: suma acumulada de `targetSeats` de elementos anteriores en el mismo orden que `generateContinuousSeatsForSection()`
+    - **Aplicado en renderizado**: `allSectionSeats[elementOffset + index]` en lugar de `seatsArray[index]`
+    - **Aplicado en hit-testing**: mismo cálculo de offset para detectar clics correctos
+- **Web - Implementación**:
+  - `SectionRenderer` actualizado con `useMemo` para `allSectionSeats` y `elementOffset`
+  - Función `calculateSeatOffsetWeb()` que recibe `currentSection` y `orderedSubSections`
+  - Renderizado de sillas: `seatIndex = elementOffset + idx` → `seat = allSectionSeats[seatIndex]`
+  - Propagado `currentSubSections` desde `SeatSelectorSection` a `SectionRenderer`
+- **Móvil - Implementación**:
+  - `SeatMapCanvas` actualizado con `orderedLayoutElements` calculado con orden consistente
+  - `SectionRenderer` recibe `orderedLayoutElements` como prop adicional
+  - Función `calculateSeatOffset()` que recibe `currentElement` y `orderedLayoutElements`
+  - Hit-testing actualizado en `handlePress` para usar mismo offset que renderizado
+  - Array `elementSeats` creado aplicando offset antes de llamar a `findSeatAt`
+- **Orden garantizado**: elementos ordenados por posición en `elements` array (preserva `originalIndex` del backend)
+  - **Web**: `currentSubSections.sort()` usando índice en `layoutElements`
+  - **Móvil**: `elementIndexMap` + `subSections.sort()` usando posición original
+- **Testing verificado**: sección "General" dividida en 7 sub-secciones de 6 sillas c/u (42 sillas total)
+  - ✅ Cada sub-sección muestra sillas distintas (1-6, 7-12, 13-18...42)
+  - ✅ Tocar silla en sub-sección 2 selecciona solo esa silla específica
+  - ✅ No ilumina posición equivalente en otras sub-secciones
+  - ✅ Total visible: 42 sillas únicas sin huecos ni duplicados
+
+### Technical Details - Seat Offset Fix
+- **Backend numeración**: `generateContinuousSeatsForSection()` genera códigos A1, A2... A42 ordenados por `originalIndex`
+- **Frontend mapping**: `elementOffset = sum(targetSeats)` de elementos anteriores en mismo orden
+- **Renderizado**: `seat = allSectionSeats[elementOffset + geometricIndex]` 
+- **Hit-testing**: mismo `calculateSeatOffset()` para mantener sincronización
+- **Orden crítico**: `layoutData.elements` preserva orden de creación ≈ `originalIndex` del backend
+- **Sorting**: `allSectionSeats.sort((a,b) => a.code.localeCompare(b.code))` para consistencia con backend ORDER BY
+
+### Added - Sub-Section Navigation with Arrow Controls (Web + Mobile)
+- **Navegación entre sub-secciones con flechas**: permite moverse entre sub-secciones visuales de una misma sección lógica sin volver a la vista general
+  - **Comportamiento**: cuando se enfoca una sección que tiene múltiples sub-secciones (mismo `eventSectionId`/`backendSectionId`, distintos `element.id`), aparecen controles de navegación
+  - **Web - Implementación**:
+    - Estado `currentSubSectionIndex` agregado en `EventDetail.jsx`
+    - Controles de navegación en header del canvas: flechas "< >" + indicador "1/2", "2/3", etc.
+    - Botones con `ChevronLeft` y `ChevronRight` de lucide-react
+    - Deshabilitados en extremos (índice 0 o último índice)
+    - Estilo consistente con el resto del selector (background primary/20, borde primary/30)
+    - Animación suave entre sub-secciones reutilizando `Konva.Tween` existente (500ms, EaseInOut)
+  - **Móvil - Implementación**:
+    - Estado `currentSubSectionIndex` agregado en `EventDetailScreen.jsx`
+    - Controles de navegación sobre el canvas: flechas + indicador en panel separado
+    - Botones con `chevron-back` y `chevron-forward` de Ionicons
+    - Misma lógica de deshabilitado que web
+    - Estilos en `subSectionNavigation`, `subSectionButton`, `subSectionIndicator`
+    - `SeatMapCanvas.jsx` actualizado para filtrar y mostrar solo la sub-sección del índice actual
+    - Recalcula encuadre automáticamente al cambiar índice (zoom + centrado)
+  - **Detección de sub-secciones**:
+    - Ambas plataformas agrupan `layoutElements` por `backendSectionId` usando `useMemo`
+    - Si `groupedSections[selectedSectionFilter].length > 1` → mostrar controles
+    - Si `length === 1` → comportamiento actual sin cambios (sin flechas)
+  - **Reset de índice**: al cambiar de sección (tap en menú lateral), `currentSubSectionIndex` vuelve a 0 automáticamente con `useEffect`
+  - **Transición directa**: la cámara anima **directamente** entre sub-secciones (no pasa por vista general), mismo mecanismo que el tap-to-zoom original
+  - **Stepper, carrito y reservas**: sin cambios — las sillas de cualquier sub-sección del grupo siguen contando para la misma sección lógica (mismo precio/disponibilidad)
+- **Casos de uso**:
+  - Sección "General" dividida en 3 bloques (izquierda, centro, derecha) → navegar con flechas entre cada bloque
+  - Sección "VIP" con múltiples formas visuales → recorrer cada forma sin perder contexto
+  - Cualquier sección con sub-elementos → navegación fluida entre ellos
+
+### Technical Details - Sub-Section Navigation
+- **Web**: `visibleLayoutElements` filtra para mostrar solo `currentSubSections[currentSubSectionIndex]` cuando hay múltiples
+- **Móvil**: `SeatMapCanvas` recibe `currentSubSectionIndex` y filtra internamente antes de calcular AABB
+- **Agrupamiento**: `groupBy` en web, `groupedSections` computed en móvil, ambos por `backendSectionId`
+- **Animación**: `animateToFraming()` en web (Konva.Tween), recálculo de AABB en móvil (Skia re-render automático)
+- **Indicador de posición**: formato "N/Total" donde N es `currentSubSectionIndex + 1` (base 1 para UX)
+- **Controles solo visibles cuando**: `selectedSectionFilter !== null && hasMultipleSubSections === true`
+
+### Added - Sub-Section Feature: Continuous Seat Numbering + "+" Button
+- **Sistema de sub-secciones con numeración continua**: permite dividir visualmente una sección lógica en múltiples formas manteniendo tipo, precio y numeración de sillas coherente
+  - **Diseño confirmado**: sub-secciones comparten `eventSectionId`/`backendSectionId` intencionalmente (mismo precio, tipo, pero múltiples formas visuales en el canvas)
+  - **Backend - Numeración continua de sillas**:
+    - **SaveEventLayoutService.java**: refactorizada generación de sillas para soportar sub-secciones
+    - Agrupa elementos por `backendSectionId` primero → trata cada grupo como una sección lógica única
+    - Clase auxiliar `SectionElement` con `targetSeats`, `rows`, `seatsPerRow`, `originalIndex`
+    - Orden determinístico: elementos ordenados por `originalIndex` (posición en array de `layout_data`)
+    - Nueva función `generateContinuousSeatsForSection()`: genera códigos continuos (A1-A15) a través de todos los elementos del grupo
+    - Usa `maxSeatsPerRow` del grupo para mantener consistencia en numeración de filas
+    - `generateSeatsForBlock()` marcado como DEPRECADO (mantenido por compatibilidad)
+    - **Imports agregados**: `Map`, `HashMap`, `ArrayList`, `Comparator`
+    - **Ejemplo**: Si "General 1" tiene 9 sillas y "General 2" tiene 6 → códigos serán 1-9 y 10-15 (nunca reinicia desde 1)
+  - **Constraint de unicidad**: `UNIQUE (event_section_id, code)` en tabla `seat`
+    - **063-add-seat-unique-constraint.yaml**: nuevo changeset Liquibase
+    - Constraint `uq_seat_section_code` como red de seguridad
+    - Previene códigos duplicados en misma sección lógica
+  - **Frontend - Botón "+" para agregar sub-secciones**:
+    - **EventLayoutEditor.jsx**: nuevo botón "+" en topbar cuando hay sección seleccionada
+    - Botón solo visible cuando `selectedElement?.type === 'section' && !isReadOnly`
+    - Handler `handleAddSubSection()` reutiliza lógica existente de Ctrl+C/V (duplicación)
+    - Crea nuevo elemento con:
+      - `id` nuevo (frontend, generado con `generateId()`)
+      - **Mismo** `eventSectionId` (ID lógico compartido)
+      - **Mismo** `backendSectionId` (PK de BD compartido)
+      - Label incremental (ej: "General 1", "General 2", "General 3"...)
+      - Offset visual automático (x+20, y+20 por cada sibling)
+    - Estilo del botón: fondo primary/10, borde primary/30, texto primary, hover más intenso
+    - Tooltip: "Agregar sub-sección vinculada"
+    - Posicionado a la izquierda del indicador de canvas en topbar
+  - **Flujo de trabajo**:
+    1. Usuario crea sección en editor
+    2. Hace clic en botón "+" (o Ctrl+C/V)
+    3. Aparece nueva sub-sección vinculada
+    4. Define `targetSeats` diferentes en cada sub-sección
+    5. Guarda layout
+    6. Backend genera sillas con códigos continuos entre todas las sub-secciones del mismo grupo
+    7. Constraint de BD valida unicidad
+- **Casos de uso**:
+  - Sección "General" en forma de U: crear 3 sub-secciones (lado izquierdo, centro, lado derecho) con el mismo precio
+  - Sección "VIP" dividida en bloques por accesibilidad (pasillos entre bloques)
+  - Cualquier sección que necesite múltiples formas visuales pero con precio y tipo unificado
+
+### Technical Details - Sub-Section System
+- **Cada elemento mantiene su propio `seatLayout`** para distribución geométrica (targetSeats, rows, seatsPerRow)
+- Lo que cambia: el código/número asignado a cada silla continúa la secuencia del grupo (no reinicia)
+- Orden de procesamiento garantizado por `originalIndex` en array de `layout_data` (determinístico entre guardados sucesivos)
+- El botón "+" NO crea ruta separada → reutiliza código existente de Ctrl+C/V para evitar duplicación de lógica
+- Constraint de unicidad detecta colisiones si el algoritmo de numeración tiene algún hueco (fail-fast)
+
 ### Added - Toast Notification System for Seat Selection Flow (Web + Mobile)
 - **Sistema de alertas/toasts** para el flujo de selección de sillas
   - **Comportamiento**: alertas temporales (5 segundos), una visible a la vez, reinicia temporizador si se dispara la misma alerta

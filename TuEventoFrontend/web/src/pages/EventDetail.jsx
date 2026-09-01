@@ -31,6 +31,7 @@ export default function EventDetail() {
   const [seats, setSeats] = useState({}); // { seatId: SeatResponse }
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [selectedSectionFilter, setSelectedSectionFilter] = useState(null);
+  const [currentSubSectionIndex, setCurrentSubSectionIndex] = useState(0);
   const [reserving, setReserving] = useState(new Set());
   const [currentUserId, setCurrentUserId] = useState(null);
   const [zoom, setZoom] = useState(0.5);
@@ -424,6 +425,8 @@ export default function EventDetail() {
             setSelectedQuantity={setSelectedQuantity}
             selectedSectionFilter={selectedSectionFilter}
             setSelectedSectionFilter={setSelectedSectionFilter}
+            currentSubSectionIndex={currentSubSectionIndex}
+            setCurrentSubSectionIndex={setCurrentSubSectionIndex}
             reserving={reserving}
             onReserveSeat={handleReserveSeat}
             onReleaseSeat={handleReleaseSeat}
@@ -463,6 +466,8 @@ function SeatSelectorSection({
   setSelectedQuantity,
   selectedSectionFilter,
   setSelectedSectionFilter,
+  currentSubSectionIndex,
+  setCurrentSubSectionIndex,
   reserving,
   onReserveSeat,
   onReleaseSeat,
@@ -478,11 +483,36 @@ function SeatSelectorSection({
 
   const ZOOM_MARGIN = 80; // Margen alrededor del contenido
 
+  // ── Agrupar elementos de layout por backendSectionId ──
+  const groupedSections = useMemo(() => {
+    const groups = {};
+    layoutElements.forEach((el) => {
+      const key = el.backendSectionId;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(el);
+    });
+    return groups;
+  }, [layoutElements]);
+
+  // ── Sub-secciones de la sección actualmente filtrada ──
+  const currentSubSections = useMemo(() => {
+    if (!selectedSectionFilter) return [];
+    return groupedSections[selectedSectionFilter] || [];
+  }, [selectedSectionFilter, groupedSections]);
+
+  const hasMultipleSubSections = currentSubSections.length > 1;
+
+  // ── Reset de índice al cambiar de sección ──
+  useEffect(() => {
+    setCurrentSubSectionIndex(0);
+  }, [selectedSectionFilter, setCurrentSubSectionIndex]);
+
   // ── Observar cambios de tamaño del contenedor ──
   useEffect(() => {
     if (!containerRef.current) return;
 
     const updateSize = () => {
+      if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       setContainerSize({ width: rect.width, height: rect.height });
     };
@@ -574,7 +604,7 @@ function SeatSelectorSection({
     setZoom(framing.scale);
   }, [setZoom]);
 
-  // ── Efecto: animar a vista general o sección seleccionada ──
+  // ── Efecto: animar a vista general o sub-sección seleccionada ──
   useEffect(() => {
     if (!stageRef.current || layoutElements.length === 0) return;
 
@@ -583,21 +613,34 @@ function SeatSelectorSection({
       const framing = calculateFraming(layoutElements, containerSize.width, containerSize.height);
       animateToFraming(framing);
     } else {
-      // Vista de sección: solo la sección seleccionada
-      const selectedElement = layoutElements.find(
-        (el) => el.backendSectionId === selectedSectionFilter
-      );
-      if (selectedElement) {
-        const framing = calculateFraming([selectedElement], containerSize.width, containerSize.height);
+      // Vista de sub-sección: solo la sub-sección actual del índice
+      const currentSubSection = currentSubSections[currentSubSectionIndex];
+      if (currentSubSection) {
+        const framing = calculateFraming([currentSubSection], containerSize.width, containerSize.height);
         animateToFraming(framing);
       }
     }
-  }, [selectedSectionFilter, layoutElements, containerSize, calculateFraming, animateToFraming]);
+  }, [selectedSectionFilter, currentSubSectionIndex, layoutElements, containerSize, currentSubSections, calculateFraming, animateToFraming]);
 
-  // Filtrar layoutElements si hay un filtro de sección activo
-  const visibleLayoutElements = selectedSectionFilter
+  // Filtrar layoutElements: mostrar solo la sub-sección actual cuando hay filtro
+  const visibleLayoutElements = selectedSectionFilter && hasMultipleSubSections
+    ? [currentSubSections[currentSubSectionIndex]]
+    : selectedSectionFilter
     ? layoutElements.filter((el) => el.backendSectionId === selectedSectionFilter)
     : layoutElements;
+
+  // Handlers para navegación entre sub-secciones
+  const handlePrevSubSection = () => {
+    if (currentSubSectionIndex > 0) {
+      setCurrentSubSectionIndex(currentSubSectionIndex - 1);
+    }
+  };
+
+  const handleNextSubSection = () => {
+    if (currentSubSectionIndex < currentSubSections.length - 1) {
+      setCurrentSubSectionIndex(currentSubSectionIndex + 1);
+    }
+  };
 
   return (
     <div
@@ -676,6 +719,38 @@ function SeatSelectorSection({
             <span className="text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
               Mapa de Sillas
             </span>
+            {/* Controles de navegación entre sub-secciones */}
+            {selectedSectionFilter && hasMultipleSubSections && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePrevSubSection}
+                  disabled={currentSubSectionIndex === 0}
+                  className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'rgba(167,139,250,0.2)',
+                    border: '1px solid rgba(167,139,250,0.3)',
+                  }}
+                  aria-label="Sub-sección anterior"
+                >
+                  <ChevronLeft className="w-4 h-4" style={{ color: '#c4b5fd' }} />
+                </button>
+                <span className="text-xs font-semibold px-2" style={{ color: '#e9d5ff' }}>
+                  {currentSubSectionIndex + 1}/{currentSubSections.length}
+                </span>
+                <button
+                  onClick={handleNextSubSection}
+                  disabled={currentSubSectionIndex === currentSubSections.length - 1}
+                  className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'rgba(167,139,250,0.2)',
+                    border: '1px solid rgba(167,139,250,0.3)',
+                  }}
+                  aria-label="Sub-sección siguiente"
+                >
+                  <ChevronRight className="w-4 h-4" style={{ color: '#c4b5fd' }} />
+                </button>
+              </div>
+            )}
           </div>
           <div ref={containerRef} style={{ height: '600px', overflow: 'hidden' }}>
             <Stage
@@ -704,6 +779,8 @@ function SeatSelectorSection({
                       }
                     }}
                     showToast={showToast}
+                    hasMultipleSubSections={hasMultipleSubSections}
+                    currentSubSections={currentSubSections}
                   />
                 ))}
               </Layer>
@@ -824,6 +901,8 @@ function SectionRenderer({
   onReleaseSeat,
   onSectionClick,
   showToast,
+  hasMultipleSubSections,
+  currentSubSections,
 }) {
   const shapeMode = section.shapeMode ?? 'rect';
   const workPoints = useMemo(() => {
@@ -844,10 +923,17 @@ function SectionRenderer({
     return { x: section.width / 2, y: section.height / 2 };
   }, [shapeMode, workPoints, section.width, section.height]);
 
-  // Mapear posiciones a sillas reales
-  const seatList = Object.values(seats).filter(
-    (s) => s.eventSectionId === section.backendSectionId
-  );
+  // FILTRAR y ORDENAR sillas de esta sección por código para consistencia
+  const allSectionSeats = useMemo(() => {
+    return Object.values(seats)
+      .filter((s) => s.eventSectionId === section.backendSectionId)
+      .sort((a, b) => a.code.localeCompare(b.code));
+  }, [seats, section.backendSectionId]);
+
+  // Calcular offset de este elemento específico
+  const elementOffset = useMemo(() => {
+    return calculateSeatOffsetWeb(section, currentSubSections);
+  }, [section, currentSubSections]);
 
   // Encontrar el precio de esta sección
   const sectionData = sections.find((s) => s.eventSectionId === section.backendSectionId);
@@ -933,7 +1019,10 @@ function SectionRenderer({
 
       {/* Sillas individuales - solo visibles y clickeables cuando hay filtro activo */}
       {!inOverviewMode && seatPositions.map((pos, idx) => {
-        const seat = seatList[idx];
+        // Aplicar offset: este elemento muestra sillas desde elementOffset
+        const seatIndex = elementOffset + idx;
+        const seat = allSectionSeats[seatIndex];
+        
         if (!seat) return null;
 
         return (
@@ -1181,4 +1270,31 @@ function CartItem({ seat, section, onRelease, onExpire, isReleasing }) {
       </button>
     </div>
   );
+}
+
+/**
+ * Calcula el offset (índice de inicio) de un elemento específico dentro del array
+ * ordenado de sillas de toda la sección lógica (versión web).
+ * 
+ * CRÍTICO: debe usar el mismo orden que generateContinuousSeatsForSection()
+ * (por originalIndex en el backend).
+ */
+function calculateSeatOffsetWeb(currentSection, orderedSubSections) {
+  if (!orderedSubSections || orderedSubSections.length <= 1) {
+    return 0; // Si no hay múltiples sub-secciones, no hay offset
+  }
+  
+  // Encontrar el índice de este elemento en el array ordenado
+  const elementIndex = orderedSubSections.findIndex(el => el.id === currentSection.id);
+  
+  if (elementIndex === -1) return 0;
+  
+  // Sumar targetSeats de todos los elementos anteriores
+  let offset = 0;
+  for (let i = 0; i < elementIndex; i++) {
+    const element = orderedSubSections[i];
+    offset += element.seatLayout?.targetSeats ?? 0;
+  }
+  
+  return offset;
 }

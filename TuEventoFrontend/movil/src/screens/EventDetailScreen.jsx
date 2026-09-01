@@ -155,6 +155,7 @@ export default function EventDetailScreen() {
   const [layout, setLayout] = useState(null);
   const [sections, setSections] = useState([]);
   const [selectedSectionId, setSelectedSectionId] = useState(null);
+  const [currentSubSectionIndex, setCurrentSubSectionIndex] = useState(0);
   const [seats, setSeats] = useState({});
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [reserving, setReserving] = useState(new Set());
@@ -166,6 +167,30 @@ export default function EventDetailScreen() {
   const cart = Object.values(seats).filter(
     (s) => s.status === 'RESERVED' && s.reservedBy === currentUserId
   );
+
+  // Agrupar elementos de layout por backendSectionId
+  const groupedSections = (() => {
+    if (!layout || !layout.elements) return {};
+    
+    const groups = {};
+    layout.elements.forEach((el) => {
+      if (el.type === 'section' && el.backendSectionId) {
+        const key = el.backendSectionId;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(el);
+      }
+    });
+    return groups;
+  })();
+
+  // Sub-secciones de la sección actualmente seleccionada
+  const currentSubSections = selectedSectionId ? (groupedSections[selectedSectionId] || []) : [];
+  const hasMultipleSubSections = currentSubSections.length > 1;
+
+  // Reset de índice al cambiar de sección
+  useEffect(() => {
+    setCurrentSubSectionIndex(0);
+  }, [selectedSectionId]);
 
   // Hidratar el stepper con el número de sillas ya reservadas
   useEffect(() => {
@@ -823,6 +848,55 @@ export default function EventDetailScreen() {
                 </View>
               )}
               
+              {/* Controles de navegación entre sub-secciones */}
+              {selectedSectionId && hasMultipleSubSections && (
+                <View style={styles.subSectionNavigation}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (currentSubSectionIndex > 0) {
+                        setCurrentSubSectionIndex(currentSubSectionIndex - 1);
+                      }
+                    }}
+                    disabled={currentSubSectionIndex === 0}
+                    style={[
+                      styles.subSectionButton,
+                      currentSubSectionIndex === 0 && styles.subSectionButtonDisabled
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons 
+                      name="chevron-back" 
+                      size={20} 
+                      color={currentSubSectionIndex === 0 ? colors.textMuted : colors.accent} 
+                    />
+                  </TouchableOpacity>
+                  
+                  <Text style={styles.subSectionIndicator}>
+                    {currentSubSectionIndex + 1}/{currentSubSections.length}
+                  </Text>
+                  
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (currentSubSectionIndex < currentSubSections.length - 1) {
+                        setCurrentSubSectionIndex(currentSubSectionIndex + 1);
+                      }
+                    }}
+                    disabled={currentSubSectionIndex === currentSubSections.length - 1}
+                    style={[
+                      styles.subSectionButton,
+                      currentSubSectionIndex === currentSubSections.length - 1 && styles.subSectionButtonDisabled
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons 
+                      name="chevron-forward" 
+                      size={20} 
+                      color={currentSubSectionIndex === currentSubSections.length - 1 ? colors.textMuted : colors.accent} 
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
+              
               <View
                 style={styles.seatMapContainer}
                 onLayout={(e) => {
@@ -836,6 +910,7 @@ export default function EventDetailScreen() {
                     containerWidth={canvasSize.width}
                     containerHeight={canvasSize.height}
                     focusedSectionId={selectedSectionId}
+                    currentSubSectionIndex={currentSubSectionIndex}
                     sections={sections}
                     seats={seats}
                     onSeatPress={onSeatPress}
@@ -1184,6 +1259,38 @@ function createStyles(colors) {
       borderRadius: 12,
       overflow: "hidden",
       backgroundColor: colors.surfaceAlt,
+    },
+    subSectionNavigation: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 12,
+      paddingVertical: 12,
+      marginBottom: 8,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.primary + "20",
+    },
+    subSectionButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.primary + "20",
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: colors.primary + "40",
+    },
+    subSectionButtonDisabled: {
+      opacity: 0.3,
+    },
+    subSectionIndicator: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: colors.textPrimary,
+      minWidth: 50,
+      textAlign: "center",
     },
     loadingContainer: {
       flex: 1,
