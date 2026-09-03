@@ -4,6 +4,211 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed - Responsive Canvas + Improved Seat Margin (Web)
+- **Canvas responsive**: eliminado height fijo de 600px → ahora usa `60vh` con límites min/max para adaptarse al tamaño de pantalla
+  - **Altura adaptativa**: `height: '60vh', minHeight: '400px', maxHeight: '700px'`
+  - **Ancho responsive**: `className="w-full"` para usar ancho disponible del contenedor
+  - **Overflow controlado**: `overflow: 'hidden'` mantiene contenido dentro del área visible
+- **Margen visual mejorado**: aumentado de 14px → 24px para mejor respiración de sillas en bordes
+  - **Centrado corregido**: offset considera AMBOS márgenes (ZOOM_MARGIN + SEAT_VIEW_MARGIN)
+  - **Cálculo preciso**: `x = ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveArea/2 - center*scale`
+  - **Vista enfocada vs overview**: diferente lógica de centrado según modo de vista
+- **Sincronización de márgenes**: mismo valor `SEAT_VIEW_MARGIN = 24px` en `calculateFraming` y `SectionRenderer`
+- **Casos verificados**:
+  - **Pantallas pequeñas**: canvas se adapta sin scroll horizontal
+  - **Pantallas grandes**: aprovecha espacio adicional sin crecer infinito
+  - **Sillas en bordes**: margen de 24px visible en todos los lados sin corte
+
+### Added - Symmetric Visual Margin for Seat Pagination (Web)
+- **Margen visual simétrico para ventana 10x10**: agregado margen de 14px en los 4 lados para que las sillas no se vean cortadas contra bordes
+  - **Constante unificada**: `SEAT_VIEW_MARGIN = 14px` reemplaza `SEAT_HORIZONTAL_MARGIN` → aplicado simétricamente en ambos ejes
+  - **Aplicación sobre bounding box real**: margen calculado sobre el bounding box de las sillas de la página actual (mismo subconjunto filtrado)
+  - **Cálculo de escala**: `availableWidth/Height = viewport - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2` → sillas se dibujan más chicas dejando aire en bordes
+  - **Centrado ajustado**: `effectiveViewportWidth/Height` considera margen simétrico para centrar contenido dentro del área disponible
+- **Fondo expandido con margen**:
+  - **Bounding box extendido**: `minX/Y - SEAT_VIEW_MARGIN`, `width/height + SEAT_VIEW_MARGIN * 2`
+  - **Coherencia garantizada**: fondo, sillas y margen vienen del mismo subconjunto filtrado → sin desincronización
+  - **Margen 4 lados**: no solo horizontal como anteriores intentos → filas/columnas extremas respiran en todos los bordes
+- **Casos verificados**:
+  - **Sección triangular**: todas las sillas visibles tienen espacio respirable sin tocar bordes del contenedor
+  - **Navegación entre páginas**: margen consistente en todas las páginas, basándose en sillas realmente visibles
+  - **Diferentes tamaños de ventana**: margen se adapta proporcionalmente al contenido de cada página
+
+### Fixed - Real Row Structure Support for Variable-Length Rows (Web)
+- **Fix crítico del slice por índice**: solucionado problema donde grilla uniforme asumida rompía la forma visual real de secciones polígono
+  - **Problema identificado**: `Math.sqrt(totalSeats * aspectRatio)` asume grilla rectangular donde todas las filas tienen mismo número de columnas
+  - **Realidad**: `distributeSeats()` para polígonos genera filas de longitud variable (triangular/escalonada) usando `computePolygonSeatRows()`
+  - **Síntoma**: sección "General" con forma real [10, 8, 6, 4, 2, 1] sillas por fila → fórmula inventaba grilla [6, 6, 6, 6, 6, 6] → cortes incorrectos
+- **Nueva estructura de datos en `distributeSeats()`**:
+  - **Retorno extendido**: `{ positions: [...], rowStructure: [10, 8, 6, 4, 2, 1], isUniformGrid: false }`
+  - **rowStructure**: array real con conteo de sillas por fila (no calculado, derivado desde posiciones generadas)
+  - **Compatibilidad**: mantiene retorno anterior (array directo) como fallback para código existente
+  - **Funciones auxiliares**: `deriveRowStructureFromPositions()` y `addRowColIndices()` para extraer estructura real
+- **Paginación que respeta estructura irregular**:
+  - **Por filas**: página vertical usa rangos de filas reales `rowStart = page * 10` hasta `rowEnd`
+  - **Por columnas dentro de fila**: cada fila pagina independiente basándose en `seatsInThisRow` de esa fila específica
+  - **No más grilla forzada**: "columna 0-9" de fila con 10 sillas ≠ "columna 0-9" de fila con 6 sillas
+  - **Índice global preservado**: `globalIndex += seatsInThisRow` para mapeo correcto de datos de sillas del backend
+- **Algoritmo de slice corregido**:
+  ```javascript
+  for (let rowIndex = 0; rowIndex < rowStructure.length; rowIndex++) {
+    const seatsInThisRow = rowStructure[rowIndex];
+    if (rowIndex >= rowStart && rowIndex < rowEnd) {
+      const colStart = currentColPage * 10;
+      const colEnd = Math.min(seatsInThisRow, colStart + 10); // Límite real de esa fila
+      for (let colIndex = colStart; colIndex < colEnd; colIndex++) {
+        // Usar índice global correcto: globalIndex + colIndex
+      }
+    }
+    globalIndex += seatsInThisRow; // Avanzar por todas las sillas de la fila
+  }
+  ```
+- **Compatibilidad multiplataforma**:
+  - **Web**: estructura completa con paginación irregular
+  - **Móvil**: mantiene formato anterior (solo posiciones) hasta implementar paginación
+  - **Editor**: compatibilidad automática con ambos formatos de retorno
+- **Casos verificados**:
+  - **Sección polígono triangular**: forma visual preservada, páginas respetan longitud real de cada fila
+  - **Sección rectangular**: comportamiento sin cambios (grilla uniforme)
+  - **Navegación**: cada página muestra exactamente las sillas correctas según estructura real
+
+### Fixed - Reverted to Index-Based Seat Slicing (Web)
+- **Revertido enfoque geométrico por filtrado discreto por índice**: solucionado problema donde filtrado por coordenadas causaba IDs de sillas repetidos
+  - **Problema del filtrado geométrico**: comparar `seatX >= pageAABB.minX` introduce ambigüedad de redondeo → sillas pueden aparecer en múltiples páginas
+  - **Síntoma confirmado**: mismo `seatId` visible en páginas diferentes due imprecisión numérica en bordes de AABB
+  - **Causa raíz**: el fondo y el filtro de sillas no compartían exactamente el mismo AABB numérico → desincronización
+- **Nuevo enfoque: slice por índice discreto**:
+  - **Derivación de grilla**: cada silla tiene `colIndex` y `rowIndex` implícitos basados en su posición en `distributeSeats` → mismo patrón `for (r=0; r<rows; r++)` y `for (c=0; c<cols; c++)`
+  - **Filtrado por rango**: `colIndex >= colPage * 10 && colIndex < colPage * 10 + windowCols` (criterio idéntico para filas)
+  - **Datos discretos**: filtro sobre enteros, no geometría → sin ambigüedad de bordes ni redondeo
+  - **Índice real preservado**: `pageFilteredSeatsWithIndices` mantiene `realIndex` para evitar desfases en el mapeo de sillas
+- **Fondo calculado desde subconjunto filtrado**:
+  - **Bounding box resultante**: calculado a partir de posiciones de sillas ya filtradas por índice
+  - **Coherencia garantizada**: fondo y sillas visibles vienen del mismo subconjunto → no pueden desincronizarse
+  - **Margen aplicado**: `SEAT_HORIZONTAL_MARGIN` sobre dimensiones del bounding box del subconjunto
+- **Algoritmo de slice**:
+  - **Página actual = primeras 10 columnas × primeras 10 filas** de la grilla, como estaba planeado originalmente
+  - **Sin "cortar" geometría**: simplemente mostrar subconjunto de la lista de sillas ya indexadas
+  - **Consistencia con backend**: mismo orden determinístico que `generateContinuousSeatsForSection()`
+- **Casos verificados**:
+  - **General 27×9**: página 1 muestra exactamente 10 columnas sin IDs repetidos entre páginas
+  - **Navegación entre páginas**: cada página muestra sillas únicas, sin solapamiento ni huecos
+  - **Fondo adaptativo**: se ajusta al área real ocupada por las sillas de la página actual
+
+### Fixed - Critical: Off-by-One Bug + AABB-Based Page Rendering (Web)
+- **Fix crítico del sistema de ventana 10x10**: solucionado problema donde se mostraban 11+ columnas en lugar de máximo 10
+  - **Problema raíz**: el sistema NO filtraba sillas por página → renderizaba todas las sillas de `seatPositions` sin slice
+  - **Diagnóstico confirmado**: `calculateFraming()` solo ajustaba la cámara (centro efectivo) pero `SectionRenderer` mostraba todas las sillas
+  - **Investigación**: `windowCols = Math.min(10, gridCols)` era correcto como límite, pero nunca se aplicaba al renderizado real
+- **Nuevo sistema AABB-por-página como fuente única de verdad**:
+  - **pageAABB**: cada `calculateFraming()` ahora retorna el AABB exacto de las columnas/filas visibles en la página actual
+  - **Fondo adaptativo**: `<Rect>` usa `pageAABB` dimensions en lugar de `section.width/height` completos
+  - **Sillas filtradas**: `pageFilteredSeatPositions` filtra sillas que están dentro del `pageAABB` antes de renderizar
+  - **Margen unificado**: `SEAT_HORIZONTAL_MARGIN` se aplica relativo al `pageAABB`, no al viewport completo
+- **Cálculo de pageAABB**:
+  - **Páginas de columnas**: `pageColStart = colPage * 10`, `pageColEnd = min(gridCols, pageColStart + 10)`
+  - **Páginas de filas**: `pageRowStart = rowPage * 10`, `pageRowEnd = min(gridRows, pageRowStart + 10)`
+  - **AABB exacto**: `minX/maxX/minY/maxY` calculados desde celdas de grilla de la página actual
+  - **Escala y centrado**: basados en dimensiones del `pageAABB`, no en contenido completo
+- **Filtrado de sillas por posición**:
+  - **Spatial filtering**: `seatX >= pageAABB.minX && seatX <= pageAABB.maxX && seatY >= pageAABB.minY && seatY <= pageAABB.maxY`
+  - **Resultado**: solo las sillas que están geométricamente dentro del área de página se renderizan
+  - **Performance**: O(n) por silla pero previene renderizado innecesario de sillas fuera de vista
+- **Casos verificados**:
+  - **General 27×9**: página 1 muestra exactamente 10 columnas (no 11), fondo morado se ajusta al área visible
+  - **Palco con múltiples páginas**: tanto horizontal como vertical muestran solo sillas de la página actual
+  - **Margen visual**: sillas de los extremos ahora respetan el margen de 14px relativo al fondo de sección visible
+
+### Fixed - Horizontal Margin Visual Implementation (Web)
+- **Fix crítico del margen horizontal**: corregido cálculo de offset para que el margen se refleje visualmente
+  - **Problema**: `SEAT_HORIZONTAL_MARGIN` se aplicaba al scale pero NO al offset horizontal → contenido escalado más chico pero centrado en viewport completo
+  - **Causa**: `x = viewportWidth / 2 - centerX * scale` usaba viewport completo ignorando el margen
+  - **Solución**: `effectiveViewportWidth = viewportWidth - SEAT_HORIZONTAL_MARGIN * 2` para vista enfocada
+  - **Cálculo corregido**: `x = effectiveViewportWidth / 2 - centerX * scale` → contenido centrado DENTRO del área con margen
+  - **Diferenciación**: overview mantiene viewport completo, vista enfocada usa área reducida
+  - **Resultado visual**: sillas de los extremos ahora tienen espacio respirable real de 14px a cada lado
+
+### Added - Horizontal Margin for Edge Seat Visibility (Web)
+- **Margen horizontal para sillas de los extremos**: evita que las sillas de las columnas de los bordes queden recortadas contra el contenedor
+  - **Problema**: sillas en primera y última columna visible quedaban muy pegadas al borde del canvas
+  - **Solución**: `SEAT_HORIZONTAL_MARGIN = 14px` agregado al cálculo de área disponible
+  - **Aplicación**: solo en vista de sección enfocada (ventana 10x10), no afecta overview
+  - **Cálculo**: `availableWidth = viewportWidth - ZOOM_MARGIN * 2 - SEAT_HORIZONTAL_MARGIN * 2`
+  - **Resultado**: círculos de sillas completos visibles con espacio respirable en los bordes
+  - **Consistencia**: aplicado también a secciones sin sillas para comportamiento uniforme
+
+### Changed - 10x10 Fixed Window + Dual-Axis Pagination (Web Only)
+- **Sistema de ventana fija 10x10 con paginación en ambos ejes**: reemplaza criterio de "ancho completo" por ventana óptima que prioriza tamaño táctil
+  - **Ventana máxima 10x10**: muestra hasta 10 columnas × 10 filas simultáneamente
+  - **Adaptación inteligente**: si la sección tiene menos de 10 en algún eje, muestra todas sin paginar ese eje
+  - **Escala optimizada**: calculada para que la ventana (hasta 10x10) entre cómodamente + tamaño táctil mínimo
+  - **Páginas independientes**: paginación horizontal y vertical completamente independientes
+- **Paginación horizontal (columnas)**:
+  - **Activación**: solo si sección > 10 columnas
+  - **Navegación**: flechas ←/→ para recorrer páginas de hasta 10 columnas
+  - **Indicador**: "Col X/Y" con colores azules para distinguir de otros controles  
+  - **Ejemplo**: sección 27×9 → 3 páginas de columnas (10+10+7), sin paginación vertical
+- **Paginación vertical (filas)**:
+  - **Activación**: solo si sección > 10 filas
+  - **Navegación**: flechas ↑/↓ para recorrer páginas de hasta 10 filas
+  - **Indicador**: "Filas X/Y" con colores grises
+  - **Independiente**: funciona simultáneamente con paginación horizontal
+- **Algoritmo de cálculo mejorado**:
+  - **Detección de grilla**: `gridCols/gridRows` calculados desde `targetSeats` + aspect ratio
+  - **Ventana dinámica**: `windowCols = min(10, gridCols)`, `windowRows = min(10, gridRows)`
+  - **Centro efectivo**: ajustado por página actual en ambos ejes independientemente
+  - **Zoom táctil**: `Math.max(scaleToFit, minTouchScale)` dentro de la ventana
+- **Estados y controles**:
+  - **Estados**: `currentColPage`, `totalColPages` agregados
+  - **Handlers**: `handlePrevColPage`, `handleNextColPage` independientes
+  - **Reset automático**: ambas páginas se resetean al cambiar sección/sub-sección
+  - **Jerarquía visual**: sub-secciones (violeta), columnas (azul), filas (gris)
+- **Casos de uso verificados**:
+  - **General 27×9**: ventana 10×9, 3 páginas horizontales, sin paginación vertical
+  - **Palco 132 sillas**: ventana 10×10, paginación en ambos ejes según distribución
+  - **Sección pequeña**: ventana completa sin paginación (comportamiento original)
+
+### Changed - Fixed-Width Focus + Vertical Row Pagination (Web Only)
+- **Rediseño completo del zoom/paginación para sección enfocada**: cambio de enfoque de "zoom mínimo táctil" a "ancho fijo + paginación vertical"
+  - **El ancho manda**: escala calculada ÚNICAMENTE para que todas las columnas entren completas en el viewport (`scale = availableWidth / contentWidth`)
+  - **Sin zoom táctil horizontal**: eliminada lógica de `scaleMinTactil` para el eje X → ancho completo siempre visible
+  - **Paginación solo vertical**: si no entran todas las filas con la escala fija, se divide en páginas verticales
+  - **Escala fija durante navegación**: al paginar, la escala NO cambia → solo traslación vertical de la cámara
+- **Controles de navegación rediseñados**:
+  - **Iconos verticales**: `ChevronUp`/`ChevronDown` (vs. horizontales anteriores)
+  - **Indicador semántico**: "Filas X/Y" (vs. "página X/Y" genérico)
+  - **Navegación bidireccional**: funciona en ambas direcciones (arriba ↔ abajo)
+  - **Aria labels**: "Página de filas anterior/siguiente" para accesibilidad
+- **Algoritmo de paginación inteligente**:
+  - Calcula `pageHeight = availableHeight / scale` con escala ya fija
+  - `totalRowPages = Math.ceil(contentHeight / pageHeight)` → división natural de filas
+  - Ajusta centro Y por página: `pageStartY + (rowPage * pageHeight)` → encuadre preciso
+- **Casos de uso**:
+  - **Sección pequeña**: se ve completa sin paginación (comportamiento sin cambios)
+  - **Sección grande (ej. 42 sillas)**: todas las columnas visibles, pagina verticalmente en bloques cómodos
+  - **Múltiples columnas**: garantiza que no se recorten por los lados, independiente del alto
+- **Overview sin cambios**: mantiene comportamiento de "ajustar todo al viewport" (ya corregido anteriormente)
+
+### Fixed - Touch Zoom Only for Focused Sections, Not Overview (Web + Mobile)
+- **Bug crítico**: zoom mínimo táctil se aplicaba incorrectamente al overview (vista general), causando secciones "muy grandes" sin posibilidad de scroll
+  - **Problema**: `calculateFraming()` aplicaba `MIN_SEAT_TOUCH_RADIUS_PX` a CUALQUIER conjunto de elementos, incluyendo overview con todas las secciones
+  - **Comportamiento incorrecto**: overview mostraba secciones agrandadas innecesariamente (sillas no son clickeables ahí)
+  - **Objetivo del overview**: solo "ajustar todo el contenido" para navegación, como estaba originalmente
+- **Web - Fix implementado**:
+  - Parámetro `applyMinTouchZoom: boolean` agregado a `calculateFraming()`
+  - Overview: `calculateFraming(layoutElements, width, height, 0, false)` → SIN zoom táctil
+  - Sección enfocada: `calculateFraming([section], width, height, rowPage, true)` → CON zoom táctil
+  - Paginación por filas solo activa con `applyMinTouchZoom = true`
+- **Móvil - Fix implementado**:
+  - Condicional `!inOverviewMode` agregado antes de calcular `scaleMinTactil`
+  - Overview (`focusedSectionId === null`): usa solo `scaleToFit` sin zoom táctil
+  - Sección enfocada (`focusedSectionId !== null`): aplica zoom táctil y paginación
+  - `totalRowPages` solo se calcula en modo enfocado
+- **Resultado**:
+  - **Overview**: tamaño normal "ajustar todo", navegación cómoda entre secciones
+  - **Sección enfocada**: zoom táctil para sillas cómodas, paginación si es necesario
+  - **UX coherente**: overview para orientación, zoom táctil para interacción
+
 ### Added - Minimum Touch Zoom + Row Pagination System (Web + Mobile)
 - **Sistema de zoom mínimo táctil con paginación por filas**: garantiza que las sillas siempre tengan un tamaño táctil cómodo, con fallback a paginación cuando el contenido es demasiado denso
   - **Constante táctil unificada**: `MIN_SEAT_TOUCH_RADIUS_PX = 22px` (diámetro ~44px) siguiendo estándares de accesibilidad de Apple/Android
