@@ -4,6 +4,53 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added - Minimum Touch Zoom + Row Pagination System (Web + Mobile)
+- **Sistema de zoom mínimo táctil con paginación por filas**: garantiza que las sillas siempre tengan un tamaño táctil cómodo, con fallback a paginación cuando el contenido es demasiado denso
+  - **Constante táctil unificada**: `MIN_SEAT_TOUCH_RADIUS_PX = 22px` (diámetro ~44px) siguiendo estándares de accesibilidad de Apple/Android
+  - **Algoritmo de zoom inteligente**: calcula tanto el scale "ajustar todo" como el scale "táctil mínimo", usa el MAYOR de ambos
+  - **Paginación automática**: si el zoom mínimo táctil hace que el contenido no entre en viewport, divide las filas en páginas navegables
+  - **Controles de navegación**: flechas "< >" con indicador "página X/Y" (estilo diferente a sub-secciones para distinguir visualmente)
+- **Web - Implementación**:
+  - `calculateFraming()` extendido con parámetro `rowPage` y retorna `{ scale, x, y, totalRowPages }`
+  - Scale mínimo táctil: `MIN_SEAT_TOUCH_RADIUS_PX / minSeatRadius` del grupo de elementos
+  - Scale final: `Math.max(scaleToFit, scaleMinTactil)` → prioriza tocabilidad sobre vista completa
+  - Paginación: si `scaledHeight > availableHeight` → divide en páginas de `availableHeight / scale`
+  - Estado `currentRowPage` y `totalRowPages` con handlers `handlePrevRowPage` / `handleNextRowPage`
+  - Controles UI con iconos grises (vs. violetas de sub-secciones) para diferenciar jerárquicamente
+  - Reset automático de `currentRowPage` al cambiar sección o sub-sección
+- **Móvil - Implementación**:
+  - `SeatMapCanvas.jsx` actualizado con lógica idéntica de zoom táctil
+  - Callback `onRowPagesChange` para comunicar `totalRowPages` de vuelta al padre
+  - Controles de paginación con `chevron-up`/`chevron-down` (vs. horizontales de sub-secciones)
+  - Estilos `rowPaginationNavigation`, `rowPageButton`, `rowPageIndicator` con colores más sutiles
+  - Offset Y ajustado por página: centra la vista en el rango de filas de la página actual
+- **Casos de uso**: 
+  - Sección "General" con 42+ sillas → zoom se ajusta para sillas tocables, pagina si no entran todas
+  - Sección pequeña → usa zoom generoso sin paginar innecesariamente  
+  - Multiple sub-secciones densas → cada sub-sección puede tener su propia paginación independiente
+
+### Fixed - Zoom System Audit: Division by Zero + Platform Unification
+- **Validaciones defensivas contra división por 0**: agregadas en `calculateFraming()` (web) y cálculo de zoom en `SeatMapCanvas.jsx` (móvil)
+  - **Web**: valida `viewportWidth/Height > 0` y `contentWidth/Height > 0` antes de calcular scale
+  - **Móvil**: valida `containerWidth/Height > 0` y `contentWidth/Height > 0`, retorna `null` si inválido
+  - **Ambos**: valida `isFinite(scale) && scale > 0` → fallback `scale = 1` si NaN/Infinity
+- **Unificación de comportamiento entre plataformas**: removido tope arbitrario de `Math.min(scale, 1)` en móvil
+  - **Antes**: móvil solo permitía zoom-out (máximo 1x), web permitía zoom-in (hasta 2x)
+  - **Después**: ambas plataformas usan el mismo algoritmo sin topes fijos → límite real definido por zoom táctil mínimo
+- **Robustez mejorada**: sistema ahora maneja casos límite sin crashes
+  - Elementos con `width/height = 0` → fallback seguro
+  - Viewport no montado → fallback seguro  
+  - Arrays vacíos → fallback seguro
+- **Consistencia visual**: mismo comportamiento de encuadre entre web y móvil
+
+### Technical Details - Touch Zoom System
+- **Táctil mínimo conservador**: usa el `seatRadius` más pequeño del grupo para garantizar que TODAS las sillas sean tocables
+- **Prioridad de UX**: `Math.max(scaleToFit, scaleMinTactil)` → prefiere sillas tocables sobre vista completa
+- **Paginación inteligente**: solo activa si `scaledHeight > availableHeight` + hay secciones con sillas
+- **Jerarquía visual**: sub-secciones (violeta) vs paginación (gris) para claridad de navegación
+- **Performance**: cálculos de AABB y scale son O(n) donde n = número de elementos, escalable
+- **Memoria**: estado de paginación se resetea automáticamente al navegar, no acumula
+
 ### Changed - Warning Toasts Redesigned as Tips/Suggestions (Web + Mobile)
 - **Rediseño de alertas "warning" como tips/sugerencias**: cambio visual y semántico de los toasts de límites del stepper
   - **Casos afectados**: límite del stepper alcanzado, máximo de 10 sillas, bajar stepper por debajo de lo reservado
