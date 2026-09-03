@@ -32,10 +32,12 @@ export default function SeatMapCanvas({
   containerHeight, 
   focusedSectionId = null,
   currentSubSectionIndex = 0,
+  currentRowPage = 0,
   sections = [],
   seats = {},
   onSeatPress,
   currentUserId = null,
+  onRowPagesChange,
 }) {
   if (!layoutData || !layoutData.elements || layoutData.elements.length === 0) {
     return null;
@@ -88,20 +90,75 @@ export default function SeatMapCanvas({
   const contentWidth = totalAABB.maxX - totalAABB.minX;
   const contentHeight = totalAABB.maxY - totalAABB.minY;
 
+  // Fix auditoría: validar dimensiones del contenedor
+  if (!containerWidth || !containerHeight || containerWidth <= 0 || containerHeight <= 0) {
+    return null; // No renderizar si no hay dimensiones válidas
+  }
+
+  // Fix auditoría: validar dimensiones del contenido
+  if (!contentWidth || !contentHeight || contentWidth <= 0 || contentHeight <= 0) {
+    return null; // No renderizar si el contenido no tiene dimensiones
+  }
+
   // Calcular zoom para que todo el contenido quepa con un pequeño padding
   const PADDING = 40;
+  const MIN_SEAT_TOUCH_RADIUS_PX = 22; // Tamaño táctil mínimo deseado en píxeles
   const availWidth = containerWidth - PADDING * 2;
   const availHeight = containerHeight - PADDING * 2;
 
   const scaleX = availWidth / contentWidth;
   const scaleY = availHeight / contentHeight;
-  const scale = Math.min(scaleX, scaleY, 1); // No hacer zoom-in, solo zoom-out
+  let scaleToFit = Math.min(scaleX, scaleY);
 
-  // Calcular offset para centrar el contenido
+  // Calcular zoom mínimo táctil si hay secciones con sillas
+  let scaleMinTactil = 1;
+  const sectionsWithSeats = visibleElements.filter(el => el.type === 'section' && el.seatLayout);
+  
+  if (sectionsWithSeats.length > 0) {
+    // Encontrar el seatRadius más pequeño del grupo (ser conservador)
+    const minSeatRadius = Math.min(...sectionsWithSeats.map(el => el.seatLayout.seatRadius || 7));
+    scaleMinTactil = MIN_SEAT_TOUCH_RADIUS_PX / minSeatRadius;
+  }
+
+  // El scale final es el mayor entre ajustar todo y táctil mínimo
+  let scale = Math.max(scaleToFit, scaleMinTactil);
+
+  // Validar que el scale no sea NaN o Infinity
+  if (!isFinite(scale) || scale <= 0) {
+    scale = 1;
+  }
+
+  // Verificar si necesitamos paginación por filas
   const scaledWidth = contentWidth * scale;
   const scaledHeight = contentHeight * scale;
-  const offsetX = (containerWidth - scaledWidth) / 2 - totalAABB.minX * scale;
-  const offsetY = (containerHeight - scaledHeight) / 2 - totalAABB.minY * scale;
+  
+  // Calcular total de páginas de filas
+  let totalRowPages = 1;
+  if (scaledHeight > availHeight && sectionsWithSeats.length > 0) {
+    const pageHeight = availHeight / scale;
+    totalRowPages = Math.ceil(contentHeight / pageHeight);
+  }
+
+  // Notificar cambio en totalRowPages al padre
+  if (onRowPagesChange && typeof onRowPagesChange === 'function') {
+    onRowPagesChange(totalRowPages);
+  }
+  
+  let effectiveContentCenterY = (totalAABB.minY + totalAABB.maxY) / 2;
+  
+  if (scaledHeight > availHeight && sectionsWithSeats.length > 0 && currentRowPage > 0) {
+    // Aplicar paginación por filas - ajustar el centro Y para la página actual
+    const pageHeight = availHeight / scale;
+    const pageStartY = totalAABB.minY + (currentRowPage * pageHeight);
+    const pageEndY = Math.min(totalAABB.maxY, pageStartY + pageHeight);
+    effectiveContentCenterY = (pageStartY + pageEndY) / 2;
+  }
+
+  // Calcular offset para centrar el contenido
+  const effectiveScaledWidth = contentWidth * scale;
+  const effectiveScaledHeight = Math.min(scaledHeight, availHeight);
+  const offsetX = (containerWidth - effectiveScaledWidth) / 2 - totalAABB.minX * scale;
+  const offsetY = (containerHeight - effectiveScaledHeight) / 2 - effectiveContentCenterY * scale;
 
   // Determinar si estamos en vista general o filtrada
   const inOverviewMode = focusedSectionId === null;

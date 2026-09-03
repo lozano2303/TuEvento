@@ -156,6 +156,10 @@ export default function EventDetailScreen() {
   const [sections, setSections] = useState([]);
   const [selectedSectionId, setSelectedSectionId] = useState(null);
   const [currentSubSectionIndex, setCurrentSubSectionIndex] = useState(0);
+  const [currentRowPage, setCurrentRowPage] = useState(0); // Nuevo: paginación por filas
+  const [totalRowPages, setTotalRowPages] = useState(1); // Nuevo: total de páginas
+
+  const MIN_SEAT_TOUCH_RADIUS_PX = 22; // Tamaño táctil mínimo deseado en píxeles
   const [seats, setSeats] = useState({});
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [reserving, setReserving] = useState(new Set());
@@ -190,6 +194,7 @@ export default function EventDetailScreen() {
   // Reset de índice al cambiar de sección
   useEffect(() => {
     setCurrentSubSectionIndex(0);
+    setCurrentRowPage(0);
   }, [selectedSectionId]);
 
   // Hidratar el stepper con el número de sillas ya reservadas
@@ -855,6 +860,7 @@ export default function EventDetailScreen() {
                     onPress={() => {
                       if (currentSubSectionIndex > 0) {
                         setCurrentSubSectionIndex(currentSubSectionIndex - 1);
+                        setCurrentRowPage(0); // Reset page al cambiar sub-sección
                       }
                     }}
                     disabled={currentSubSectionIndex === 0}
@@ -879,6 +885,7 @@ export default function EventDetailScreen() {
                     onPress={() => {
                       if (currentSubSectionIndex < currentSubSections.length - 1) {
                         setCurrentSubSectionIndex(currentSubSectionIndex + 1);
+                        setCurrentRowPage(0); // Reset page al cambiar sub-sección
                       }
                     }}
                     disabled={currentSubSectionIndex === currentSubSections.length - 1}
@@ -892,6 +899,55 @@ export default function EventDetailScreen() {
                       name="chevron-forward" 
                       size={20} 
                       color={currentSubSectionIndex === currentSubSections.length - 1 ? colors.textMuted : colors.accent} 
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
+              
+              {/* Controles de paginación por filas */}
+              {selectedSectionId && totalRowPages > 1 && (
+                <View style={styles.rowPaginationNavigation}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (currentRowPage > 0) {
+                        setCurrentRowPage(currentRowPage - 1);
+                      }
+                    }}
+                    disabled={currentRowPage === 0}
+                    style={[
+                      styles.rowPageButton,
+                      currentRowPage === 0 && styles.rowPageButtonDisabled
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons 
+                      name="chevron-up" 
+                      size={20} 
+                      color={currentRowPage === 0 ? colors.textMuted : colors.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                  
+                  <Text style={styles.rowPageIndicator}>
+                    {currentRowPage + 1}/{totalRowPages}
+                  </Text>
+                  
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (currentRowPage < totalRowPages - 1) {
+                        setCurrentRowPage(currentRowPage + 1);
+                      }
+                    }}
+                    disabled={currentRowPage === totalRowPages - 1}
+                    style={[
+                      styles.rowPageButton,
+                      currentRowPage === totalRowPages - 1 && styles.rowPageButtonDisabled
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons 
+                      name="chevron-down" 
+                      size={20} 
+                      color={currentRowPage === totalRowPages - 1 ? colors.textMuted : colors.textSecondary} 
                     />
                   </TouchableOpacity>
                 </View>
@@ -911,10 +967,12 @@ export default function EventDetailScreen() {
                     containerHeight={canvasSize.height}
                     focusedSectionId={selectedSectionId}
                     currentSubSectionIndex={currentSubSectionIndex}
+                    currentRowPage={currentRowPage}
                     sections={sections}
                     seats={seats}
                     onSeatPress={onSeatPress}
                     currentUserId={currentUserId}
+                    onRowPagesChange={setTotalRowPages}
                   />
                 )}
               </View>
@@ -1290,6 +1348,38 @@ function createStyles(colors) {
       fontWeight: "700",
       color: colors.textPrimary,
       minWidth: 50,
+      textAlign: "center",
+    },
+    rowPaginationNavigation: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 12,
+      paddingVertical: 8,
+      marginBottom: 8,
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.textMuted + "30",
+    },
+    rowPageButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.textMuted + "20",
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
+      borderColor: colors.textMuted + "40",
+    },
+    rowPageButtonDisabled: {
+      opacity: 0.3,
+    },
+    rowPageIndicator: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.textSecondary,
+      minWidth: 40,
       textAlign: "center",
     },
     loadingContainer: {

@@ -480,8 +480,10 @@ function SeatSelectorSection({
   const stageRef = useRef();
   const containerRef = useRef();
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
+  const [currentRowPage, setCurrentRowPage] = useState(0); // Nuevo: paginación por filas
 
   const ZOOM_MARGIN = 80; // Margen alrededor del contenido
+  const MIN_SEAT_TOUCH_RADIUS_PX = 22; // Tamaño táctil mínimo deseado en píxeles
 
   // ── Agrupar elementos de layout por backendSectionId ──
   const groupedSections = useMemo(() => {
@@ -505,6 +507,7 @@ function SeatSelectorSection({
   // ── Reset de índice al cambiar de sección ──
   useEffect(() => {
     setCurrentSubSectionIndex(0);
+    setCurrentRowPage(0);
   }, [selectedSectionFilter, setCurrentSubSectionIndex]);
 
   // ── Observar cambios de tamaño del contenedor ──
@@ -554,9 +557,14 @@ function SeatSelectorSection({
   };
 
   // ── Calcular encuadre (zoom + posición) para un conjunto de elementos ──
-  const calculateFraming = useCallback((elements, viewportWidth, viewportHeight) => {
+  const calculateFraming = useCallback((elements, viewportWidth, viewportHeight, rowPage = 0) => {
     if (elements.length === 0) {
-      return { scale: 1, x: 0, y: 0 };
+      return { scale: 1, x: 0, y: 0, totalRowPages: 1 };
+    }
+
+    // Fix auditoría: validar dimensiones del viewport
+    if (!viewportWidth || !viewportHeight || viewportWidth <= 0 || viewportHeight <= 0) {
+      return { scale: 1, x: 0, y: 0, totalRowPages: 1 };
     }
 
     // Calcular AABB de los elementos
@@ -568,19 +576,62 @@ function SeatSelectorSection({
 
     const contentWidth = contentMaxX - contentMinX;
     const contentHeight = contentMaxY - contentMinY;
+
+    // Fix auditoría: validar dimensiones del contenido
+    if (!contentWidth || !contentHeight || contentWidth <= 0 || contentHeight <= 0) {
+      return { scale: 1, x: 0, y: 0, totalRowPages: 1 };
+    }
+
     const contentCenterX = (contentMinX + contentMaxX) / 2;
     const contentCenterY = (contentMinY + contentMaxY) / 2;
 
     // Calcular zoom necesario para que el contenido entre en viewport con margen
     const scaleX = (viewportWidth - ZOOM_MARGIN * 2) / contentWidth;
     const scaleY = (viewportHeight - ZOOM_MARGIN * 2) / contentHeight;
-    const scale = Math.min(scaleX, scaleY, 2); // Máximo 2x zoom
+    let scaleToFit = Math.min(scaleX, scaleY);
+
+    // Calcular zoom mínimo táctil si hay secciones con sillas
+    let scaleMinTactil = 1;
+    const sectionsWithSeats = elements.filter(el => el.type === 'section' && el.seatLayout);
+    
+    if (sectionsWithSeats.length > 0) {
+      // Encontrar el seatRadius más pequeño del grupo (ser conservador)
+      const minSeatRadius = Math.min(...sectionsWithSeats.map(el => el.seatLayout.seatRadius || 7));
+      scaleMinTactil = MIN_SEAT_TOUCH_RADIUS_PX / minSeatRadius;
+    }
+
+    // El scale final es el mayor entre ajustar todo y táctil mínimo
+    let scale = Math.max(scaleToFit, scaleMinTactil);
+
+    // Validar que el scale no sea NaN o Infinity
+    if (!isFinite(scale) || scale <= 0) {
+      scale = 1;
+    }
+
+    // Verificar si necesitamos paginación por filas
+    const scaledWidth = contentWidth * scale;
+    const scaledHeight = contentHeight * scale;
+    const availableHeight = viewportHeight - ZOOM_MARGIN * 2;
+    
+    let totalRowPages = 1;
+    let effectiveContentCenterY = contentCenterY;
+    
+    if (scaledHeight > availableHeight && sectionsWithSeats.length > 0) {
+      // Activar paginación por filas
+      const pageHeight = availableHeight / scale;
+      totalRowPages = Math.ceil(contentHeight / pageHeight);
+      
+      // Ajustar el centro Y para la página actual
+      const pageStartY = contentMinY + (rowPage * pageHeight);
+      const pageEndY = Math.min(contentMaxY, pageStartY + pageHeight);
+      effectiveContentCenterY = (pageStartY + pageEndY) / 2;
+    }
 
     // Calcular offset para centrar el contenido en el viewport
     const x = viewportWidth / 2 - contentCenterX * scale;
-    const y = viewportHeight / 2 - contentCenterY * scale;
+    const y = viewportHeight / 2 - effectiveContentCenterY * scale;
 
-    return { scale, x, y };
+    return { scale, x, y, totalRowPages };
   }, []);
 
   // ── Animar transición del Stage hacia un nuevo encuadre ──
@@ -605,22 +656,27 @@ function SeatSelectorSection({
   }, [setZoom]);
 
   // ── Efecto: animar a vista general o sub-sección seleccionada ──
+  const [totalRowPages, setTotalRowPages] = useState(1);
+  
   useEffect(() => {
     if (!stageRef.current || layoutElements.length === 0) return;
 
     if (selectedSectionFilter === null) {
       // Vista general: todas las secciones
       const framing = calculateFraming(layoutElements, containerSize.width, containerSize.height);
+      setTotalRowPages(framing.totalRowPages);
+      setCurrentRowPage(0); // Reset page al cambiar vista
       animateToFraming(framing);
     } else {
       // Vista de sub-sección: solo la sub-sección actual del índice
       const currentSubSection = currentSubSections[currentSubSectionIndex];
       if (currentSubSection) {
-        const framing = calculateFraming([currentSubSection], containerSize.width, containerSize.height);
+        const framing = calculateFraming([currentSubSection], containerSize.width, containerSize.height, currentRowPage);
+        setTotalRowPages(framing.totalRowPages);
         animateToFraming(framing);
       }
     }
-  }, [selectedSectionFilter, currentSubSectionIndex, layoutElements, containerSize, currentSubSections, calculateFraming, animateToFraming]);
+  }, [selectedSectionFilter, currentSubSectionIndex, currentRowPage, layoutElements, containerSize, currentSubSections, calculateFraming, animateToFraming]);
 
   // Filtrar layoutElements: mostrar solo la sub-sección actual cuando hay filtro
   const visibleLayoutElements = selectedSectionFilter && hasMultipleSubSections
@@ -633,12 +689,27 @@ function SeatSelectorSection({
   const handlePrevSubSection = () => {
     if (currentSubSectionIndex > 0) {
       setCurrentSubSectionIndex(currentSubSectionIndex - 1);
+      setCurrentRowPage(0); // Reset page al cambiar sub-sección
     }
   };
 
   const handleNextSubSection = () => {
     if (currentSubSectionIndex < currentSubSections.length - 1) {
       setCurrentSubSectionIndex(currentSubSectionIndex + 1);
+      setCurrentRowPage(0); // Reset page al cambiar sub-sección
+    }
+  };
+
+  // Handlers para navegación entre páginas de filas
+  const handlePrevRowPage = () => {
+    if (currentRowPage > 0) {
+      setCurrentRowPage(currentRowPage - 1);
+    }
+  };
+
+  const handleNextRowPage = () => {
+    if (currentRowPage < totalRowPages - 1) {
+      setCurrentRowPage(currentRowPage + 1);
     }
   };
 
@@ -748,6 +819,38 @@ function SeatSelectorSection({
                   aria-label="Sub-sección siguiente"
                 >
                   <ChevronRight className="w-4 h-4" style={{ color: '#c4b5fd' }} />
+                </button>
+              </div>
+            )}
+            {/* Controles de paginación por filas */}
+            {selectedSectionFilter && totalRowPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePrevRowPage}
+                  disabled={currentRowPage === 0}
+                  className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'rgba(75,85,99,0.2)',
+                    border: '1px solid rgba(75,85,99,0.3)',
+                  }}
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft className="w-4 h-4" style={{ color: '#9ca3af' }} />
+                </button>
+                <span className="text-xs font-semibold px-2" style={{ color: '#d1d5db' }}>
+                  {currentRowPage + 1}/{totalRowPages}
+                </span>
+                <button
+                  onClick={handleNextRowPage}
+                  disabled={currentRowPage === totalRowPages - 1}
+                  className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'rgba(75,85,99,0.2)',
+                    border: '1px solid rgba(75,85,99,0.3)',
+                  }}
+                  aria-label="Página siguiente"
+                >
+                  <ChevronRight className="w-4 h-4" style={{ color: '#9ca3af' }} />
                 </button>
               </div>
             )}
