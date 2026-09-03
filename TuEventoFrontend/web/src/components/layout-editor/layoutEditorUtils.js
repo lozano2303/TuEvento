@@ -191,8 +191,20 @@ export const distributeSeats = (element) => {
   if (shapeMode === 'polygon' && element.polygonPoints) {
     // Generar todas las posiciones posibles y tomar las primeras targetSeats.
     // computePolygonSeatRows ya calcula las filas desde el espacio real del polígono.
-    const all = computePolygonSeatRows(element.polygonPoints, { seatRadius, gap });
-    return all.slice(0, targetSeats);
+    const allPositions = computePolygonSeatRows(element.polygonPoints, { seatRadius, gap });
+    const limitedPositions = allPositions.slice(0, targetSeats);
+    
+    // Derivar estructura de filas reales desde las posiciones generadas
+    const rowStructure = deriveRowStructureFromPositions(limitedPositions, seatRadius * 2 + gap);
+    
+    // Agregar metadatos de fila y columna a cada posición
+    const positionsWithIndices = addRowColIndices(limitedPositions, rowStructure);
+    
+    return {
+      positions: positionsWithIndices,
+      rowStructure: rowStructure, // [seatsInRow0, seatsInRow1, seatsInRow2, ...]
+      isUniformGrid: false
+    };
   }
 
   // Rect: derivar rows/cols óptimos para targetSeats dadas las dimensiones
@@ -226,12 +238,105 @@ export const distributeSeats = (element) => {
         x: PADDING + c * cellW + cellW / 2,
         y: PADDING + LABEL_H / 2 + r * cellH + cellH / 2,
         r: Math.max(2, Math.min(seatRadius, (Math.min(cellW, cellH) - gap) / 2)),
+        rowIndex: r,
+        colIndex: c
       });
       count++;
     }
   }
-  return positions;
+  
+  // Para rectángulos, estructura uniforme
+  const rowStructure = Array(rows).fill(cols);
+  // Ajustar la última fila si no está completa
+  const seatsInLastRow = actual - (rows - 1) * cols;
+  if (seatsInLastRow < cols && rows > 0) {
+    rowStructure[rows - 1] = seatsInLastRow;
+  }
+  
+  return {
+    positions: positions,
+    rowStructure: rowStructure,
+    isUniformGrid: true
+  };
 };
+
+/**
+ * Deriva la estructura de filas reales desde las posiciones generadas por computePolygonSeatRows.
+ * Agrupa sillas por fila basándose en coordenadas Y similares.
+ */
+function deriveRowStructureFromPositions(positions, cellHeight) {
+  if (positions.length === 0) return [];
+  
+  // Agrupar por Y (fila) con tolerancia para redondeo
+  const tolerance = cellHeight * 0.1;
+  const rows = [];
+  
+  positions.forEach((pos, index) => {
+    let foundRow = rows.find(row => Math.abs(row.y - pos.y) <= tolerance);
+    if (!foundRow) {
+      foundRow = { y: pos.y, seats: [] };
+      rows.push(foundRow);
+    }
+    foundRow.seats.push({ ...pos, originalIndex: index });
+  });
+  
+  // Ordenar filas por Y (de arriba hacia abajo)
+  rows.sort((a, b) => a.y - b.y);
+  
+  // Ordenar sillas dentro de cada fila por X (de izquierda a derecha)
+  rows.forEach(row => {
+    row.seats.sort((a, b) => a.x - b.x);
+  });
+  
+  // Retornar array con el conteo de sillas por fila
+  return rows.map(row => row.seats.length);
+}
+
+/**
+ * Agrega índices rowIndex y colIndex a cada posición basándose en la estructura real de filas.
+ */
+function addRowColIndices(positions, rowStructure) {
+  if (positions.length === 0) return positions;
+  
+  // Crear mapa temporal por coordenadas Y
+  const tolerance = (positions[0].r || 7) * 2 + 4; // cellHeight aproximado
+  const rowGroups = [];
+  
+  positions.forEach((pos, index) => {
+    let foundRow = rowGroups.find(row => Math.abs(row.y - pos.y) <= tolerance * 0.1);
+    if (!foundRow) {
+      foundRow = { y: pos.y, seats: [] };
+      rowGroups.push(foundRow);
+    }
+    foundRow.seats.push({ ...pos, originalIndex: index });
+  });
+  
+  // Ordenar filas por Y y sillas por X
+  rowGroups.sort((a, b) => a.y - b.y);
+  rowGroups.forEach(row => {
+    row.seats.sort((a, b) => a.x - b.x);
+  });
+  
+  // Asignar índices
+  const result = [];
+  let globalIndex = 0;
+  
+  rowGroups.forEach((row, rowIndex) => {
+    row.seats.forEach((seat, colIndex) => {
+      result.push({
+        ...seat,
+        rowIndex: rowIndex,
+        colIndex: colIndex
+      });
+      globalIndex++;
+    });
+  });
+  
+  // Reordenar según originalIndex para mantener orden original
+  result.sort((a, b) => a.originalIndex - b.originalIndex);
+  
+  return result;
+}
 
 // ── Intersección para rubber-band selection ───────────────────────────────────
 export const rectsIntersect = (a, b) => {

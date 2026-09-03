@@ -237,8 +237,12 @@ export const distributeSeats = (element) => {
   if (shapeMode === 'polygon' && element.polygonPoints) {
     const sl = normalizeSeatLayout(element.seatLayout);
     if (!sl) return [];
-    const all = computePolygonSeatRows(element.polygonPoints, sl);
-    return all.slice(0, sl.targetSeats);
+    const allPositions = computePolygonSeatRows(element.polygonPoints, sl);
+    const limitedPositions = allPositions.slice(0, sl.targetSeats);
+    
+    // Para compatibilidad, retornar solo las posiciones (manteniendo formato anterior)
+    // TODO: implementar estructura completa de filas si se necesita paginación en móvil
+    return limitedPositions;
   }
 
   return distributeSeatsRect(element);

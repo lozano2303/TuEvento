@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus } from 'lucide-react';
 import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
 import Konva from 'konva';
 import { getEventById } from '../services/EventService';
@@ -480,10 +480,12 @@ function SeatSelectorSection({
   const stageRef = useRef();
   const containerRef = useRef();
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
-  const [currentRowPage, setCurrentRowPage] = useState(0); // Nuevo: paginación por filas
+  const [currentRowPage, setCurrentRowPage] = useState(0); // Paginación vertical
+  const [currentColPage, setCurrentColPage] = useState(0); // Nuevo: paginación horizontal
 
-  const ZOOM_MARGIN = 80; // Margen alrededor del contenido
-  const MIN_SEAT_TOUCH_RADIUS_PX = 22; // Tamaño táctil mínimo deseado en píxeles
+  const ZOOM_MARGIN = 60; // Reducido de 80 → 60px para ganar espacio
+  const SEAT_VIEW_MARGIN = 20; // Reducido de 24 → 20px, manteniendo respiración visual
+  const MIN_SEAT_TOUCH_RADIUS_PX = 16; // Reducido de 22 → 16px para sillas más pequeñas en web
 
   // ── Agrupar elementos de layout por backendSectionId ──
   const groupedSections = useMemo(() => {
@@ -508,6 +510,7 @@ function SeatSelectorSection({
   useEffect(() => {
     setCurrentSubSectionIndex(0);
     setCurrentRowPage(0);
+    setCurrentColPage(0);
   }, [selectedSectionFilter, setCurrentSubSectionIndex]);
 
   // ── Observar cambios de tamaño del contenedor ──
@@ -557,14 +560,14 @@ function SeatSelectorSection({
   };
 
   // ── Calcular encuadre (zoom + posición) para un conjunto de elementos ──
-  const calculateFraming = useCallback((elements, viewportWidth, viewportHeight, rowPage = 0) => {
+  const calculateFraming = useCallback((elements, viewportWidth, viewportHeight, rowPage = 0, colPage = 0, applyWindowedView = true) => {
     if (elements.length === 0) {
-      return { scale: 1, x: 0, y: 0, totalRowPages: 1 };
+      return { scale: 1, x: 0, y: 0, totalRowPages: 1, totalColPages: 1 };
     }
 
     // Fix auditoría: validar dimensiones del viewport
     if (!viewportWidth || !viewportHeight || viewportWidth <= 0 || viewportHeight <= 0) {
-      return { scale: 1, x: 0, y: 0, totalRowPages: 1 };
+      return { scale: 1, x: 0, y: 0, totalRowPages: 1, totalColPages: 1 };
     }
 
     // Calcular AABB de los elementos
@@ -579,59 +582,156 @@ function SeatSelectorSection({
 
     // Fix auditoría: validar dimensiones del contenido
     if (!contentWidth || !contentHeight || contentWidth <= 0 || contentHeight <= 0) {
-      return { scale: 1, x: 0, y: 0, totalRowPages: 1 };
+      return { scale: 1, x: 0, y: 0, totalRowPages: 1, totalColPages: 1 };
     }
 
     const contentCenterX = (contentMinX + contentMaxX) / 2;
     const contentCenterY = (contentMinY + contentMaxY) / 2;
 
-    // Calcular zoom necesario para que el contenido entre en viewport con margen
-    const scaleX = (viewportWidth - ZOOM_MARGIN * 2) / contentWidth;
-    const scaleY = (viewportHeight - ZOOM_MARGIN * 2) / contentHeight;
-    let scaleToFit = Math.min(scaleX, scaleY);
-
-    // Calcular zoom mínimo táctil si hay secciones con sillas
-    let scaleMinTactil = 1;
-    const sectionsWithSeats = elements.filter(el => el.type === 'section' && el.seatLayout);
-    
-    if (sectionsWithSeats.length > 0) {
-      // Encontrar el seatRadius más pequeño del grupo (ser conservador)
-      const minSeatRadius = Math.min(...sectionsWithSeats.map(el => el.seatLayout.seatRadius || 7));
-      scaleMinTactil = MIN_SEAT_TOUCH_RADIUS_PX / minSeatRadius;
-    }
-
-    // El scale final es el mayor entre ajustar todo y táctil mínimo
-    let scale = Math.max(scaleToFit, scaleMinTactil);
-
-    // Validar que el scale no sea NaN o Infinity
-    if (!isFinite(scale) || scale <= 0) {
-      scale = 1;
-    }
-
-    // Verificar si necesitamos paginación por filas
-    const scaledWidth = contentWidth * scale;
-    const scaledHeight = contentHeight * scale;
-    const availableHeight = viewportHeight - ZOOM_MARGIN * 2;
-    
-    let totalRowPages = 1;
+    let scale, totalRowPages = 1, totalColPages = 1;
+    let effectiveContentCenterX = contentCenterX;
     let effectiveContentCenterY = contentCenterY;
-    
-    if (scaledHeight > availableHeight && sectionsWithSeats.length > 0) {
-      // Activar paginación por filas
-      const pageHeight = availableHeight / scale;
-      totalRowPages = Math.ceil(contentHeight / pageHeight);
+
+    if (applyWindowedView) {
+      // NUEVO COMPORTAMIENTO: ventana fija máxima 10x10
+      const sectionsWithSeats = elements.filter(el => el.type === 'section' && el.seatLayout);
       
-      // Ajustar el centro Y para la página actual
-      const pageStartY = contentMinY + (rowPage * pageHeight);
-      const pageEndY = Math.min(contentMaxY, pageStartY + pageHeight);
-      effectiveContentCenterY = (pageStartY + pageEndY) / 2;
+      if (sectionsWithSeats.length > 0) {
+        // Obtener información de la grilla de sillas de la primera sección con sillas
+        const sectionWithSeats = sectionsWithSeats[0];
+        const seatLayout = sectionWithSeats.seatLayout;
+        
+        // Usar distributeSeats para obtener la distribución real
+        const seatLayoutResult = distributeSeats(sectionWithSeats);
+        const seatData = Array.isArray(seatLayoutResult) ? 
+          { positions: seatLayoutResult, rowStructure: [], isUniformGrid: true } : 
+          seatLayoutResult;
+        const totalSeats = seatData.positions.length;
+        
+        if (totalSeats === 0) {
+          // No hay sillas, usar comportamiento de ajuste completo
+          const availableWidth = viewportWidth - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+          const availableHeight = viewportHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+          const scaleX = availableWidth / contentWidth;
+          const scaleY = availableHeight / contentHeight;
+          scale = Math.min(scaleX, scaleY);
+        } else {
+          // Calcular grilla desde la estructura real, no con fórmulas
+          const { rowStructure, isUniformGrid } = seatData;
+          
+          let gridCols, gridRows;
+          
+          if (isUniformGrid && rowStructure.length > 0) {
+            // Rectángulo: usar estructura uniforme
+            gridRows = rowStructure.length;
+            gridCols = Math.max(...rowStructure);
+          } else if (rowStructure.length > 0) {
+            // Polígono: usar estructura variable
+            gridRows = rowStructure.length;
+            gridCols = Math.max(...rowStructure); // Máximo de columnas en cualquier fila
+          } else {
+            // Fallback: usar fórmula original si no hay estructura
+            const aspectRatio = contentWidth / contentHeight;
+            gridCols = Math.max(1, Math.round(Math.sqrt(totalSeats * aspectRatio)));
+            gridRows = Math.max(1, Math.ceil(totalSeats / gridCols));
+            
+            if (gridCols * gridRows < totalSeats) {
+              gridCols = Math.ceil(totalSeats / gridRows);
+            }
+          }
+          
+          // Determinar ventana visible y páginas necesarias
+          const windowCols = Math.min(10, gridCols);
+          const windowRows = Math.min(10, gridRows);
+          
+          // Calcular páginas necesarias basándose en la estructura real
+          if (rowStructure.length > 0) {
+            // Usar estructura real para calcular páginas
+            totalRowPages = Math.ceil(gridRows / 10);
+            // Para columnas, usar el máximo de columnas en cualquier fila
+            totalColPages = Math.ceil(gridCols / 10);
+          } else {
+            // Fallback usando cálculo tradicional
+            totalColPages = Math.ceil(gridCols / 10);
+            totalRowPages = Math.ceil(gridRows / 10);
+          }
+          
+          // Calcular dimensiones de la ventana en unidades del layout
+          const cellWidth = contentWidth / gridCols;
+          const cellHeight = contentHeight / gridRows;
+          const windowWidth = windowCols * cellWidth;
+          const windowHeight = windowRows * cellHeight;
+          
+          // Calcular escala aplicando margen simétrico en ambos ejes
+          const availableWidth = viewportWidth - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+          const availableHeight = viewportHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+          const scaleX = availableWidth / windowWidth;
+          const scaleY = availableHeight / windowHeight;
+          scale = Math.min(scaleX, scaleY);
+          
+          // Aplicar zoom mínimo táctil dentro de la ventana
+          const seatRadius = seatLayout.seatRadius || 7;
+          const minTouchScale = MIN_SEAT_TOUCH_RADIUS_PX / seatRadius;
+          scale = Math.max(scale, minTouchScale);
+          
+          // Calcular centro efectivo basado en las páginas actuales
+          if (totalColPages > 1) {
+            const pageColStart = colPage * 10;
+            const pageColEnd = Math.min(gridCols, pageColStart + 10);
+            const pageCenterCol = (pageColStart + pageColEnd) / 2;
+            effectiveContentCenterX = contentMinX + (pageCenterCol * cellWidth);
+          }
+          
+          if (totalRowPages > 1) {
+            const pageRowStart = rowPage * 10;
+            const pageRowEnd = Math.min(gridRows, pageRowStart + 10);
+            const pageCenterRow = (pageRowStart + pageRowEnd) / 2;
+            effectiveContentCenterY = contentMinY + (pageCenterRow * cellHeight);
+          }
+        }
+        
+        // Validar que el scale no sea NaN o Infinity
+        if (!isFinite(scale) || scale <= 0) {
+          scale = 1;
+        }
+      } else {
+        // Sección sin sillas: comportamiento de ajuste completo
+        const availableWidth = viewportWidth - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+        const availableHeight = viewportHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+        const scaleX = availableWidth / contentWidth;
+        const scaleY = availableHeight / contentHeight;
+        scale = Math.min(scaleX, scaleY);
+        
+        if (!isFinite(scale) || scale <= 0) {
+          scale = 1;
+        }
+      }
+    } else {
+      // Overview: comportamiento original (ajustar todo al viewport)
+      const scaleX = (viewportWidth - ZOOM_MARGIN * 2) / contentWidth;
+      const scaleY = (viewportHeight - ZOOM_MARGIN * 2) / contentHeight;
+      scale = Math.min(scaleX, scaleY);
+      
+      // Validar que el scale no sea NaN o Infinity
+      if (!isFinite(scale) || scale <= 0) {
+        scale = 1;
+      }
     }
 
     // Calcular offset para centrar el contenido en el viewport
-    const x = viewportWidth / 2 - contentCenterX * scale;
-    const y = viewportHeight / 2 - effectiveContentCenterY * scale;
-
-    return { scale, x, y, totalRowPages };
+    // Para vista enfocada, centrar en el área disponible después de restar AMBOS márgenes
+    if (applyWindowedView) {
+      const effectiveViewportWidth = viewportWidth - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+      const effectiveViewportHeight = viewportHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+      const x = ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveViewportWidth / 2 - effectiveContentCenterX * scale;
+      const y = ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveViewportHeight / 2 - effectiveContentCenterY * scale;
+      return { scale, x, y, totalRowPages, totalColPages };
+    } else {
+      // Overview: usar viewport completo
+      const x = viewportWidth / 2 - effectiveContentCenterX * scale;
+      const y = viewportHeight / 2 - effectiveContentCenterY * scale;
+      return { scale, x, y, totalRowPages, totalColPages };
+    }
   }, []);
 
   // ── Animar transición del Stage hacia un nuevo encuadre ──
@@ -657,26 +757,30 @@ function SeatSelectorSection({
 
   // ── Efecto: animar a vista general o sub-sección seleccionada ──
   const [totalRowPages, setTotalRowPages] = useState(1);
+  const [totalColPages, setTotalColPages] = useState(1); // Nuevo: total de páginas de columnas
   
   useEffect(() => {
     if (!stageRef.current || layoutElements.length === 0) return;
 
     if (selectedSectionFilter === null) {
-      // Vista general: todas las secciones
-      const framing = calculateFraming(layoutElements, containerSize.width, containerSize.height);
+      // Vista general: todas las secciones (SIN vista de ventana)
+      const framing = calculateFraming(layoutElements, containerSize.width, containerSize.height, 0, 0, false);
       setTotalRowPages(framing.totalRowPages);
-      setCurrentRowPage(0); // Reset page al cambiar vista
+      setTotalColPages(framing.totalColPages);
+      setCurrentRowPage(0); // Reset pages al cambiar vista
+      setCurrentColPage(0);
       animateToFraming(framing);
     } else {
-      // Vista de sub-sección: solo la sub-sección actual del índice
+      // Vista de sub-sección: solo la sub-sección actual del índice (CON vista de ventana)
       const currentSubSection = currentSubSections[currentSubSectionIndex];
       if (currentSubSection) {
-        const framing = calculateFraming([currentSubSection], containerSize.width, containerSize.height, currentRowPage);
+        const framing = calculateFraming([currentSubSection], containerSize.width, containerSize.height, currentRowPage, currentColPage, true);
         setTotalRowPages(framing.totalRowPages);
+        setTotalColPages(framing.totalColPages);
         animateToFraming(framing);
       }
     }
-  }, [selectedSectionFilter, currentSubSectionIndex, currentRowPage, layoutElements, containerSize, currentSubSections, calculateFraming, animateToFraming]);
+  }, [selectedSectionFilter, currentSubSectionIndex, currentRowPage, currentColPage, layoutElements, containerSize, currentSubSections, calculateFraming, animateToFraming]);
 
   // Filtrar layoutElements: mostrar solo la sub-sección actual cuando hay filtro
   const visibleLayoutElements = selectedSectionFilter && hasMultipleSubSections
@@ -689,14 +793,16 @@ function SeatSelectorSection({
   const handlePrevSubSection = () => {
     if (currentSubSectionIndex > 0) {
       setCurrentSubSectionIndex(currentSubSectionIndex - 1);
-      setCurrentRowPage(0); // Reset page al cambiar sub-sección
+      setCurrentRowPage(0); // Reset pages al cambiar sub-sección
+      setCurrentColPage(0);
     }
   };
 
   const handleNextSubSection = () => {
     if (currentSubSectionIndex < currentSubSections.length - 1) {
       setCurrentSubSectionIndex(currentSubSectionIndex + 1);
-      setCurrentRowPage(0); // Reset page al cambiar sub-sección
+      setCurrentRowPage(0); // Reset pages al cambiar sub-sección
+      setCurrentColPage(0);
     }
   };
 
@@ -710,6 +816,19 @@ function SeatSelectorSection({
   const handleNextRowPage = () => {
     if (currentRowPage < totalRowPages - 1) {
       setCurrentRowPage(currentRowPage + 1);
+    }
+  };
+
+  // Handlers para navegación entre páginas de columnas
+  const handlePrevColPage = () => {
+    if (currentColPage > 0) {
+      setCurrentColPage(currentColPage - 1);
+    }
+  };
+
+  const handleNextColPage = () => {
+    if (currentColPage < totalColPages - 1) {
+      setCurrentColPage(currentColPage + 1);
     }
   };
 
@@ -822,7 +941,41 @@ function SeatSelectorSection({
                 </button>
               </div>
             )}
-            {/* Controles de paginación por filas */}
+            
+            {/* Controles de paginación horizontal (columnas) */}
+            {selectedSectionFilter && totalColPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePrevColPage}
+                  disabled={currentColPage === 0}
+                  className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'rgba(59,130,246,0.2)',
+                    border: '1px solid rgba(59,130,246,0.3)',
+                  }}
+                  aria-label="Columnas anteriores"
+                >
+                  <ChevronLeft className="w-4 h-4" style={{ color: '#93c5fd' }} />
+                </button>
+                <span className="text-xs font-semibold px-2" style={{ color: '#dbeafe' }}>
+                  Col {currentColPage + 1}/{totalColPages}
+                </span>
+                <button
+                  onClick={handleNextColPage}
+                  disabled={currentColPage === totalColPages - 1}
+                  className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'rgba(59,130,246,0.2)',
+                    border: '1px solid rgba(59,130,246,0.3)',
+                  }}
+                  aria-label="Columnas siguientes"
+                >
+                  <ChevronRight className="w-4 h-4" style={{ color: '#93c5fd' }} />
+                </button>
+              </div>
+            )}
+            
+            {/* Controles de paginación vertical (filas) */}
             {selectedSectionFilter && totalRowPages > 1 && (
               <div className="flex items-center gap-2">
                 <button
@@ -833,12 +986,12 @@ function SeatSelectorSection({
                     background: 'rgba(75,85,99,0.2)',
                     border: '1px solid rgba(75,85,99,0.3)',
                   }}
-                  aria-label="Página anterior"
+                  aria-label="Filas anteriores"
                 >
-                  <ChevronLeft className="w-4 h-4" style={{ color: '#9ca3af' }} />
+                  <ChevronUp className="w-4 h-4" style={{ color: '#9ca3af' }} />
                 </button>
                 <span className="text-xs font-semibold px-2" style={{ color: '#d1d5db' }}>
-                  {currentRowPage + 1}/{totalRowPages}
+                  Filas {currentRowPage + 1}/{totalRowPages}
                 </span>
                 <button
                   onClick={handleNextRowPage}
@@ -848,14 +1001,14 @@ function SeatSelectorSection({
                     background: 'rgba(75,85,99,0.2)',
                     border: '1px solid rgba(75,85,99,0.3)',
                   }}
-                  aria-label="Página siguiente"
+                  aria-label="Filas siguientes"
                 >
-                  <ChevronRight className="w-4 h-4" style={{ color: '#9ca3af' }} />
+                  <ChevronDown className="w-4 h-4" style={{ color: '#9ca3af' }} />
                 </button>
               </div>
             )}
           </div>
-          <div ref={containerRef} style={{ height: '600px', overflow: 'hidden' }}>
+          <div ref={containerRef} className="w-full" style={{ height: '65vh', minHeight: '450px', maxHeight: '750px', overflow: 'hidden' }}>
             <Stage
               ref={stageRef}
               width={containerSize.width}
@@ -884,6 +1037,8 @@ function SeatSelectorSection({
                     showToast={showToast}
                     hasMultipleSubSections={hasMultipleSubSections}
                     currentSubSections={currentSubSections}
+                    currentRowPage={currentRowPage}
+                    currentColPage={currentColPage}
                   />
                 ))}
               </Layer>
@@ -1006,6 +1161,8 @@ function SectionRenderer({
   showToast,
   hasMultipleSubSections,
   currentSubSections,
+  currentRowPage,
+  currentColPage,
 }) {
   const shapeMode = section.shapeMode ?? 'rect';
   const workPoints = useMemo(() => {
@@ -1015,9 +1172,125 @@ function SectionRenderer({
     return null;
   }, [shapeMode, section.polygonPoints]);
 
-  const seatPositions = useMemo(() => {
-    return distributeSeats(section);
+  const seatLayout = useMemo(() => {
+    const result = distributeSeats(section);
+    // Manejar tanto el formato anterior (array directo) como el nuevo (objeto con estructura)
+    if (Array.isArray(result)) {
+      // Formato anterior: array directo de posiciones
+      return {
+        positions: result,
+        rowStructure: [],
+        isUniformGrid: true
+      };
+    }
+    // Formato nuevo: objeto con estructura de filas
+    return result;
   }, [section]);
+
+  const seatPositions = seatLayout.positions;
+
+  // Derivar información de grilla desde seatLayout
+  const gridInfo = useMemo(() => {
+    if (seatPositions.length === 0 || selectedSectionFilter === null) {
+      return { totalRows: 0, totalCols: 0, maxColsInAnyRow: 0 };
+    }
+
+    const { rowStructure, isUniformGrid } = seatLayout;
+    
+    if (isUniformGrid && rowStructure.length > 0) {
+      // Rectángulo: estructura uniforme
+      const totalRows = rowStructure.length;
+      const totalCols = Math.max(...rowStructure);
+      return { totalRows, totalCols, maxColsInAnyRow: totalCols, rowStructure };
+    } else {
+      // Polígono: estructura variable
+      const totalRows = rowStructure.length;
+      const maxColsInAnyRow = Math.max(...rowStructure, 0);
+      return { totalRows, totalCols: maxColsInAnyRow, maxColsInAnyRow, rowStructure };
+    }
+  }, [seatLayout, selectedSectionFilter]);
+
+  // SLICE por índice discreto respetando estructura real de filas
+  const pageFilteredSeatsWithIndices = useMemo(() => {
+    if (selectedSectionFilter === null || gridInfo.totalRows === 0) {
+      // Vista general → mostrar todas las posiciones con sus índices
+      return seatPositions.map((pos, idx) => ({ pos, realIndex: idx }));
+    }
+
+    const { rowStructure } = gridInfo;
+
+    // Calcular qué filas entran en la página actual (paginación vertical)
+    const rowStart = currentRowPage * 10;
+    const rowEnd = Math.min(rowStructure.length, rowStart + 10);
+
+    const filteredSeats = [];
+    let globalIndex = 0;
+
+    // Iterar por filas reales
+    for (let rowIndex = 0; rowIndex < rowStructure.length; rowIndex++) {
+      const seatsInThisRow = rowStructure[rowIndex];
+      
+      // Si esta fila está en la página actual
+      if (rowIndex >= rowStart && rowIndex < rowEnd) {
+        // Calcular qué columnas de esta fila entran en la página actual (paginación horizontal)
+        const colStart = currentColPage * 10;
+        const colEnd = Math.min(seatsInThisRow, colStart + 10);
+        
+        // Agregar sillas de esta fila que están en el rango de columnas
+        for (let colIndex = colStart; colIndex < colEnd; colIndex++) {
+          const seatIndexInRow = globalIndex + colIndex;
+          if (seatIndexInRow < seatPositions.length) {
+            filteredSeats.push({
+              pos: seatPositions[seatIndexInRow],
+              realIndex: seatIndexInRow
+            });
+          }
+        }
+      }
+      
+      // Avanzar el índice global por todas las sillas de esta fila
+      globalIndex += seatsInThisRow;
+    }
+
+    return filteredSeats;
+  }, [seatPositions, gridInfo, selectedSectionFilter, currentColPage, currentRowPage]);
+
+  // Extraer solo las posiciones para el cálculo del bounding box
+  const pageFilteredSeatPositions = useMemo(() => {
+    return pageFilteredSeatsWithIndices.map(item => item.pos);
+  }, [pageFilteredSeatsWithIndices]);
+
+  // Calcular el fondo basado en las sillas filtradas (bounding box del subconjunto)
+  const backgroundRect = useMemo(() => {
+    if (selectedSectionFilter === null || pageFilteredSeatPositions.length === 0) {
+      // Vista general → usar dimensiones completas de la sección
+      return {
+        x: 0,
+        y: 0,
+        width: section.width,
+        height: section.height
+      };
+    }
+
+    // Vista enfocada → calcular bounding box de las sillas de la página actual
+    const positions = pageFilteredSeatPositions;
+    const seatRadius = positions[0]?.r || 7;
+    
+    const minX = Math.min(...positions.map(p => p.x)) - seatRadius;
+    const maxX = Math.max(...positions.map(p => p.x)) + seatRadius;
+    const minY = Math.min(...positions.map(p => p.y)) - seatRadius;
+    const maxY = Math.max(...positions.map(p => p.y)) + seatRadius;
+
+    // Expandir el bounding box con margen visual simétrico
+    const SEAT_VIEW_MARGIN = 24; // Debe coincidir con calculateFraming
+    
+    return {
+      x: minX - SEAT_VIEW_MARGIN,
+      y: minY - SEAT_VIEW_MARGIN,
+      width: (maxX - minX) + (SEAT_VIEW_MARGIN * 2),
+      height: (maxY - minY) + (SEAT_VIEW_MARGIN * 2)
+    };
+  }, [selectedSectionFilter, pageFilteredSeatPositions, section.width, section.height]);
 
   const labelCenter = useMemo(() => {
     if (shapeMode === 'polygon' && workPoints) {
@@ -1047,7 +1320,7 @@ function SectionRenderer({
 
   return (
     <Group x={section.x} y={section.y} rotation={section.rotation ?? 0}>
-      {/* Fondo de la sección */}
+      {/* Fondo de la sección - basado en bounding box de sillas filtradas */}
       {shapeMode === 'polygon' && workPoints ? (
         <Shape
           sceneFunc={(ctx, shape) => {
@@ -1083,8 +1356,10 @@ function SectionRenderer({
         />
       ) : (
         <Rect
-          width={section.width}
-          height={section.height}
+          x={backgroundRect.x}
+          y={backgroundRect.y}
+          width={backgroundRect.width}
+          height={backgroundRect.height}
           fill={section.color}
           opacity={inOverviewMode ? 0.5 : 0.3}
           cornerRadius={6}
@@ -1120,10 +1395,10 @@ function SectionRenderer({
         listening={false}
       />
 
-      {/* Sillas individuales - solo visibles y clickeables cuando hay filtro activo */}
-      {!inOverviewMode && seatPositions.map((pos, idx) => {
+      {/* Sillas individuales - solo las de la página actual */}
+      {!inOverviewMode && pageFilteredSeatsWithIndices.map(({ pos, realIndex }) => {
         // Aplicar offset: este elemento muestra sillas desde elementOffset
-        const seatIndex = elementOffset + idx;
+        const seatIndex = elementOffset + realIndex;
         const seat = allSectionSeats[seatIndex];
         
         if (!seat) return null;
@@ -1225,19 +1500,19 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving }) {
   if (cart.length === 0) {
     return (
       <div
-        className="w-72 shrink-0 rounded-xl p-4"
+        className="w-60 shrink-0 rounded-xl p-3"
         style={{
           background: 'rgba(0,0,0,0.2)',
           border: '1px solid rgba(167,139,250,0.15)',
         }}
       >
-        <div className="flex items-center gap-2 mb-4">
-          <ShoppingCart className="w-5 h-5" style={{ color: '#a78bfa' }} />
+        <div className="flex items-center gap-2 mb-3">
+          <ShoppingCart className="w-4 h-4" style={{ color: '#a78bfa' }} />
           <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
             Tu Carrito
           </h3>
         </div>
-        <p className="text-xs text-center py-8" style={{ color: 'rgba(196,181,253,0.5)' }}>
+        <p className="text-xs text-center py-6" style={{ color: 'rgba(196,181,253,0.5)' }}>
           No has seleccionado ninguna silla
         </p>
       </div>
@@ -1246,14 +1521,14 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving }) {
 
   return (
     <div
-      className="w-72 shrink-0 rounded-xl p-4 flex flex-col"
+      className="w-60 shrink-0 rounded-xl p-3 flex flex-col"
       style={{
         background: 'rgba(0,0,0,0.2)',
         border: '1px solid rgba(167,139,250,0.15)',
       }}
     >
-      <div className="flex items-center gap-2 mb-4">
-        <ShoppingCart className="w-5 h-5" style={{ color: '#a78bfa' }} />
+      <div className="flex items-center gap-2 mb-3">
+        <ShoppingCart className="w-4 h-4" style={{ color: '#a78bfa' }} />
         <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
           Tu Carrito
         </h3>
@@ -1262,7 +1537,7 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving }) {
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-2 max-h-96">
+      <div className="flex-1 overflow-y-auto space-y-2 max-h-80">
         {cart.map((seat) => {
           const section = sections.find((s) => s.eventSectionId === seat.eventSectionId);
           return (
@@ -1278,15 +1553,15 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving }) {
         })}
       </div>
 
-      <div className="mt-4 pt-4 space-y-3" style={{ borderTop: '1px solid rgba(167,139,250,0.15)' }}>
+      <div className="mt-3 pt-3 space-y-2" style={{ borderTop: '1px solid rgba(167,139,250,0.15)' }}>
         <div className="flex items-center justify-between text-sm">
           <span style={{ color: 'rgba(196,181,253,0.75)' }}>Total</span>
-          <span className="font-bold text-lg" style={{ color: '#a78bfa' }}>
+          <span className="font-bold text-base" style={{ color: '#a78bfa' }}>
             ${totalPrice.toFixed(2)}
           </span>
         </div>
         <button
-          className="w-full py-3 rounded-lg font-semibold transition-all"
+          className="w-full py-2 rounded-lg font-semibold transition-all text-sm"
           style={{
             background: 'linear-gradient(135deg, #6d28d9 0%, #a78bfa 100%)',
             color: '#ffffff',
@@ -1337,14 +1612,14 @@ function CartItem({ seat, section, onRelease, onExpire, isReleasing }) {
 
   return (
     <div
-      className="rounded-lg p-3 flex items-center gap-3"
+      className="rounded-lg p-2 flex items-center gap-2"
       style={{
         background: 'rgba(167,139,250,0.1)',
         border: '1px solid rgba(167,139,250,0.2)',
       }}
     >
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate" style={{ color: '#e9d5ff' }}>
+        <p className="font-semibold text-xs truncate" style={{ color: '#e9d5ff' }}>
           {seat.code}
         </p>
         <p className="text-xs truncate" style={{ color: 'rgba(196,181,253,0.6)' }}>
@@ -1363,13 +1638,13 @@ function CartItem({ seat, section, onRelease, onExpire, isReleasing }) {
       <button
         onClick={onRelease}
         disabled={isReleasing}
-        className="p-1 rounded transition-all disabled:opacity-50"
+        className="p-1 rounded transition-all disabled:opacity-50 shrink-0"
         style={{
           background: 'rgba(239,68,68,0.15)',
         }}
         title="Liberar silla"
       >
-        <X className="w-4 h-4" style={{ color: '#ef4444' }} />
+        <X className="w-3 h-3" style={{ color: '#ef4444' }} />
       </button>
     </div>
   );

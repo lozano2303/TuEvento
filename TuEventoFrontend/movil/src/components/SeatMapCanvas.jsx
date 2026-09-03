@@ -110,17 +110,19 @@ export default function SeatMapCanvas({
   const scaleY = availHeight / contentHeight;
   let scaleToFit = Math.min(scaleX, scaleY);
 
-  // Calcular zoom mínimo táctil si hay secciones con sillas
+  // Calcular zoom mínimo táctil SOLO si NO estamos en overview (sillas no son clickeables en overview)
   let scaleMinTactil = 1;
-  const sectionsWithSeats = visibleElements.filter(el => el.type === 'section' && el.seatLayout);
-  
-  if (sectionsWithSeats.length > 0) {
-    // Encontrar el seatRadius más pequeño del grupo (ser conservador)
-    const minSeatRadius = Math.min(...sectionsWithSeats.map(el => el.seatLayout.seatRadius || 7));
-    scaleMinTactil = MIN_SEAT_TOUCH_RADIUS_PX / minSeatRadius;
+  if (!inOverviewMode) {
+    const sectionsWithSeats = visibleElements.filter(el => el.type === 'section' && el.seatLayout);
+    
+    if (sectionsWithSeats.length > 0) {
+      // Encontrar el seatRadius más pequeño del grupo (ser conservador)
+      const minSeatRadius = Math.min(...sectionsWithSeats.map(el => el.seatLayout.seatRadius || 7));
+      scaleMinTactil = MIN_SEAT_TOUCH_RADIUS_PX / minSeatRadius;
+    }
   }
 
-  // El scale final es el mayor entre ajustar todo y táctil mínimo
+  // El scale final es el mayor entre ajustar todo y táctil mínimo (si aplica)
   let scale = Math.max(scaleToFit, scaleMinTactil);
 
   // Validar que el scale no sea NaN o Infinity
@@ -132,11 +134,15 @@ export default function SeatMapCanvas({
   const scaledWidth = contentWidth * scale;
   const scaledHeight = contentHeight * scale;
   
-  // Calcular total de páginas de filas
+  // Calcular total de páginas de filas (solo en modo enfocado, no en overview)
   let totalRowPages = 1;
-  if (scaledHeight > availHeight && sectionsWithSeats.length > 0) {
-    const pageHeight = availHeight / scale;
-    totalRowPages = Math.ceil(contentHeight / pageHeight);
+  if (!inOverviewMode && scaledHeight > availHeight) {
+    const sectionsWithSeats = visibleElements.filter(el => el.type === 'section' && el.seatLayout);
+    
+    if (sectionsWithSeats.length > 0) {
+      const pageHeight = availHeight / scale;
+      totalRowPages = Math.ceil(contentHeight / pageHeight);
+    }
   }
 
   // Notificar cambio en totalRowPages al padre
@@ -146,12 +152,16 @@ export default function SeatMapCanvas({
   
   let effectiveContentCenterY = (totalAABB.minY + totalAABB.maxY) / 2;
   
-  if (scaledHeight > availHeight && sectionsWithSeats.length > 0 && currentRowPage > 0) {
-    // Aplicar paginación por filas - ajustar el centro Y para la página actual
-    const pageHeight = availHeight / scale;
-    const pageStartY = totalAABB.minY + (currentRowPage * pageHeight);
-    const pageEndY = Math.min(totalAABB.maxY, pageStartY + pageHeight);
-    effectiveContentCenterY = (pageStartY + pageEndY) / 2;
+  if (!inOverviewMode && scaledHeight > availHeight && currentRowPage > 0) {
+    const sectionsWithSeats = visibleElements.filter(el => el.type === 'section' && el.seatLayout);
+    
+    if (sectionsWithSeats.length > 0) {
+      // Aplicar paginación por filas - ajustar el centro Y para la página actual
+      const pageHeight = availHeight / scale;
+      const pageStartY = totalAABB.minY + (currentRowPage * pageHeight);
+      const pageEndY = Math.min(totalAABB.maxY, pageStartY + pageHeight);
+      effectiveContentCenterY = (pageStartY + pageEndY) / 2;
+    }
   }
 
   // Calcular offset para centrar el contenido
@@ -178,7 +188,8 @@ export default function SeatMapCanvas({
 
     // Buscar en cada elemento visible si se tocó una silla
     for (const element of visibleElements) {
-      const seatPositions = distributeSeats(element);
+      const seatResult = distributeSeats(element);
+      const seatPositions = Array.isArray(seatResult) ? seatResult : seatResult.positions;
       
       // ORDENAR sillas de esta sección por código para consistencia
       const allSectionSeats = Object.values(seats)
@@ -293,7 +304,8 @@ function SectionRenderer({ element, scale, offsetX, offsetY, inOverviewMode, sec
   const transformY = (y) => y * scale + offsetY;
 
   // Calcular posiciones de sillas
-  const seatPositions = distributeSeats(element);
+  const seatResult = distributeSeats(element);
+  const seatPositions = Array.isArray(seatResult) ? seatResult : seatResult.positions;
 
   // FILTRAR y ORDENAR sillas de esta sección por código para orden consistente
   const allSectionSeats = Object.values(seats)
