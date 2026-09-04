@@ -56,6 +56,11 @@ public class NimbusGoogleIdTokenVerifier implements GoogleIdTokenVerifierPort {
 
             JWTClaimsSet claims = processor.process(idToken, null);
 
+            // Temporary diagnostic log — remove after confirming aud format in both flows
+            log.info("[GSI-DIAG] Raw aud claim: {} | issuer: {} | sub: {}",
+                    claims.getAudience(), claims.getIssuer(),
+                    claims.getSubject() != null ? claims.getSubject().substring(0, 6) + "..." : "null");
+
             // ── 2. Expiry ─────────────────────────────────────────────────────
             Date exp = claims.getExpirationTime();
             if (exp == null || exp.before(new Date())) {
