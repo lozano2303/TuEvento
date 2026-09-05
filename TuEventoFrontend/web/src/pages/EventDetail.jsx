@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus } from 'lucide-react';
 import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
@@ -36,6 +36,8 @@ export default function EventDetail() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [zoom, setZoom] = useState(0.5);
   const wsClientRef = useRef(null);
+  // P4: ref que siempre apunta al seats más reciente sin necesitar estar en deps de useCallback
+  const seatsRef = useRef({});
 
   useEffect(() => {
     const userId = localStorage.getItem('userID');
@@ -77,6 +79,11 @@ export default function EventDetail() {
       .catch((err) => setError(err.message))
       .finally(() => setIsLoading(false));
   }, [eventId]);
+
+  // P4: mantener seatsRef sincronizado con el estado seats
+  useEffect(() => {
+    seatsRef.current = seats;
+  }, [seats]);
 
   // WebSocket
   useEffect(() => {
@@ -184,7 +191,7 @@ export default function EventDetail() {
       }
       
       // Refrescar estado de la silla
-      const seat = seats[seatId];
+      const seat = seatsRef.current[seatId];
       if (seat) {
         try {
           const seatsRes = await SeatService.getSeatsBySection(seat.eventSectionId);
@@ -201,7 +208,7 @@ export default function EventDetail() {
         return next;
       });
     }
-  }, [seats, navigate, event, showToast]);
+  }, [navigate, event, showToast]);
 
   const handleReleaseSeat = useCallback(async (seatId) => {
     setReserving((prev) => new Set(prev).add(seatId));
@@ -497,6 +504,22 @@ function SeatSelectorSection({
     });
     return groups;
   }, [layoutElements]);
+
+  // P3: índice de sillas agrupadas y ordenadas por sectionId — calculado UNA sola vez.
+  // Cada SectionRenderer lee seatsBySection[id] en lugar de filtrar+ordenar 999 sillas por su cuenta.
+  const seatsBySection = useMemo(() => {
+    const map = {};
+    for (const seat of Object.values(seats)) {
+      const id = seat.eventSectionId;
+      if (!map[id]) map[id] = [];
+      map[id].push(seat);
+    }
+    // Ordenar cada grupo una sola vez
+    for (const id of Object.keys(map)) {
+      map[id].sort((a, b) => a.code.localeCompare(b.code));
+    }
+    return map;
+  }, [seats]);
 
   // ── Sub-secciones de la sección actualmente filtrada ──
   const currentSubSections = useMemo(() => {
@@ -1020,7 +1043,7 @@ function SeatSelectorSection({
                     key={section.id}
                     section={section}
                     sections={sections}
-                    seats={seats}
+                    seatsBySection={seatsBySection}
                     currentUserId={currentUserId}
                     reserving={reserving}
                     cart={cart}
@@ -1149,7 +1172,7 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
 function SectionRenderer({
   section,
   sections,
-  seats,
+  seatsBySection,
   currentUserId,
   reserving,
   cart,
@@ -1212,9 +1235,9 @@ function SectionRenderer({
 
   // SLICE por índice discreto respetando estructura real de filas
   const pageFilteredSeatsWithIndices = useMemo(() => {
+    // P1: en overview nunca dibujamos sillas individuales, devolver array vacío
     if (selectedSectionFilter === null || gridInfo.totalRows === 0) {
-      // Vista general → mostrar todas las posiciones con sus índices
-      return seatPositions.map((pos, idx) => ({ pos, realIndex: idx }));
+      return [];
     }
 
     const { rowStructure } = gridInfo;
@@ -1299,12 +1322,8 @@ function SectionRenderer({
     return { x: section.width / 2, y: section.height / 2 };
   }, [shapeMode, workPoints, section.width, section.height]);
 
-  // FILTRAR y ORDENAR sillas de esta sección por código para consistencia
-  const allSectionSeats = useMemo(() => {
-    return Object.values(seats)
-      .filter((s) => s.eventSectionId === section.backendSectionId)
-      .sort((a, b) => a.code.localeCompare(b.code));
-  }, [seats, section.backendSectionId]);
+  // P3: leer directamente del índice pre-calculado en lugar de filtrar+ordenar seats completo
+  const allSectionSeats = seatsBySection[section.backendSectionId] ?? [];
 
   // Calcular offset de este elemento específico
   const elementOffset = useMemo(() => {
@@ -1396,29 +1415,33 @@ function SectionRenderer({
       />
 
       {/* Sillas individuales - solo las de la página actual */}
-      {!inOverviewMode && pageFilteredSeatsWithIndices.map(({ pos, realIndex }) => {
-        // Aplicar offset: este elemento muestra sillas desde elementOffset
-        const seatIndex = elementOffset + realIndex;
-        const seat = allSectionSeats[seatIndex];
-        
-        if (!seat) return null;
+      {/* canSelectMore: booleano estable por render del padre — reemplaza pasar cart completo a SeatCircle */}
+      {!inOverviewMode && (() => {
+        const canSelectMore = cart.length < selectedQuantity;
+        return pageFilteredSeatsWithIndices.map(({ pos, realIndex }) => {
+          // Aplicar offset: este elemento muestra sillas desde elementOffset
+          const seatIndex = elementOffset + realIndex;
+          const seat = allSectionSeats[seatIndex];
 
-        return (
-          <SeatCircle
-            key={seat.seatId}
-            seat={seat}
-            position={pos}
-            currentUserId={currentUserId}
-            isReserving={reserving.has(seat.seatId)}
-            cart={cart}
-            selectedQuantity={selectedQuantity}
-            isSectionFiltered={false}
-            onReserve={() => onReserveSeat(seat.seatId)}
-            onRelease={() => onReleaseSeat(seat.seatId)}
-            showToast={showToast}
-          />
-        );
-      })}
+          if (!seat) return null;
+
+          return (
+            <SeatCircle
+              key={seat.seatId}
+              seatId={seat.seatId}
+              seat={seat}
+              position={pos}
+              currentUserId={currentUserId}
+              isReserving={reserving.has(seat.seatId)}
+              canSelectMore={canSelectMore}
+              isSectionFiltered={false}
+              onReserve={onReserveSeat}
+              onRelease={onReleaseSeat}
+              showToast={showToast}
+            />
+          );
+        });
+      })()}
     </Group>
   );
 }
@@ -1427,14 +1450,22 @@ function SectionRenderer({
  * Círculo individual de silla con lógica de color y click.
  * Si hay un filtro de sección activo y esta silla no pertenece a esa sección,
  * se muestra atenuada y no es clickeable.
+ *
+ * P2: React.memo con comparación custom — solo re-renderiza si cambian propiedades
+ * que afectan su apariencia o comportamiento (status, reservedBy, reservedUntil,
+ * isReserving, selectedQuantity, cart.length, position.x/y/r).
+ * Las referencias de onReserve/onRelease son estables gracias a P4+P5.
+ *
+ * P5: recibe seatId como prop y llama onReserve(seatId) internamente en lugar de
+ * recibir una lambda ya bindeada que se crearía nueva en cada render del padre.
  */
-function SeatCircle({
+const SeatCircle = React.memo(function SeatCircle({
+  seatId,
   seat,
   position,
   currentUserId,
   isReserving,
-  cart,
-  selectedQuantity,
+  canSelectMore,
   isSectionFiltered,
   onReserve,
   onRelease,
@@ -1442,17 +1473,15 @@ function SeatCircle({
 }) {
   const isMyReservation = seat.status === 'RESERVED' && seat.reservedBy === currentUserId;
   const isOtherReservation = seat.status === 'RESERVED' && seat.reservedBy !== currentUserId;
-
-  const getSeatColor = () => {
-    if (isSectionFiltered) return '#4B5563'; // gris oscuro cuando filtrado
-    if (isReserving) return '#9CA3AF'; // gris mientras procesa
-    if (seat.status === 'AVAILABLE') return '#10B981'; // verde
-    if (isMyReservation) return '#3B82F6'; // azul (mi reserva)
-    if (isOtherReservation) return '#FBBF24'; // amarillo (reservado por otro)
-    if (seat.status === 'SOLD') return '#6B7280'; // gris
-    if (seat.status === 'COURTESY') return '#8B5CF6'; // morado
-    return '#6B7280';
-  };
+  let fillColor;
+  if (isSectionFiltered)        fillColor = '#4B5563';
+  else if (isReserving)         fillColor = '#9CA3AF';
+  else if (seat.status === 'AVAILABLE')  fillColor = '#10B981';
+  else if (isMyReservation)     fillColor = '#3B82F6';
+  else if (isOtherReservation)  fillColor = '#FBBF24';
+  else if (seat.status === 'SOLD')      fillColor = '#6B7280';
+  else if (seat.status === 'COURTESY')  fillColor = '#8B5CF6';
+  else                          fillColor = '#6B7280';
 
   const isClickable =
     !isSectionFiltered && (seat.status === 'AVAILABLE' || isMyReservation);
@@ -1460,14 +1489,14 @@ function SeatCircle({
   const handleClick = () => {
     if (!isClickable || isReserving) return;
     if (isMyReservation) {
-      onRelease();
+      onRelease(seatId);
     } else if (seat.status === 'AVAILABLE') {
       // CASO 1: Validar cantidad antes de reservar
-      if (cart.length >= selectedQuantity) {
+      if (!canSelectMore) {
         showToast('stepper-limit', 'Agregá una silla más para poder seleccionar', 'warning');
         return;
       }
-      onReserve();
+      onReserve(seatId);
     }
   };
 
@@ -1476,7 +1505,7 @@ function SeatCircle({
       x={position.x}
       y={position.y}
       radius={position.r}
-      fill={getSeatColor()}
+      fill={fillColor}
       opacity={isSectionFiltered ? 0.3 : 0.9}
       stroke={isMyReservation ? '#ffffff' : 'rgba(255,255,255,0.3)'}
       strokeWidth={isMyReservation ? 2 : 1}
@@ -1486,7 +1515,23 @@ function SeatCircle({
       cursor={isClickable ? 'pointer' : 'default'}
     />
   );
-}
+}, (prev, next) => {
+  // Devolver true = NO re-renderizar (son iguales)
+  return (
+    prev.seat.status       === next.seat.status       &&
+    prev.seat.reservedBy   === next.seat.reservedBy   &&
+    prev.seat.reservedUntil === next.seat.reservedUntil &&
+    prev.isReserving       === next.isReserving        &&
+    prev.canSelectMore     === next.canSelectMore      &&
+    prev.isSectionFiltered === next.isSectionFiltered  &&
+    prev.position.x        === next.position.x         &&
+    prev.position.y        === next.position.y         &&
+    prev.position.r        === next.position.r         &&
+    prev.onReserve         === next.onReserve          &&
+    prev.onRelease         === next.onRelease          &&
+    prev.showToast         === next.showToast
+  );
+});
 
 /**
  * Panel lateral con el carrito de sillas reservadas.

@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Performance - Seat Rendering Optimizations for Large Sections 500+ (Web)
+- **P1 — Overview sin nodos Circle**: en vista general (`selectedSectionFilter === null`) se eliminó el renderizado de `Circle` por silla. El overview ya mostraba solo Rect/Shape + label por sección, así que las sillas individuales eran trabajo Konva completamente desperdiciado. `pageFilteredSeatsWithIndices` ahora devuelve `[]` en ese modo — cero nodos de silla creados al cargar el mapa.
+- **P3 — Índice `seatsBySection` centralizado**: `SeatSelectorSection` calcula un único `useMemo` que agrupa y ordena todas las sillas por `eventSectionId` (`seatsBySection`). Cada `SectionRenderer` recibe ese mapa como prop y hace un lookup O(1) en lugar de ejecutar su propio `Object.values(seats).filter().sort()` sobre las ~999 sillas completas. Con N secciones, esto reduce de `N × 999` iteraciones a una sola pasada por WebSocket update.
+- **P4 — `handleReserveSeat` con referencia estable**: agregado `seatsRef = useRef({})` sincronizado por `useEffect` con el estado `seats`. La lectura de la silla en el bloque de error (`seatsRef.current[seatId]`) ya no requiere que `seats` esté en las dependencias de `useCallback` → la función mantiene referencia estable entre updates de WebSocket.
+- **P5 — Handlers sin lambdas inline**: `SeatCircle` recibe `seatId` como prop explícita y funciones estables `onReserve`/`onRelease` que invoca como `onReserve(seatId)` internamente. El `.map` en `SectionRenderer` pasa las funciones del padre directamente (sin `() => onReserveSeat(seat.seatId)`), eliminando la creación de nuevas referencias en cada render.
+- **P2 — `SeatCircle` con `React.memo` y comparador custom**: el componente se memoiza comparando únicamente las props que afectan su apariencia y comportamiento: `seat.status`, `seat.reservedBy`, `seat.reservedUntil`, `isReserving`, `canSelectMore`, `isSectionFiltered`, `position.x/y/r`, `onReserve`, `onRelease`, `showToast`. Un update de WebSocket que cambia 1 silla de 100 visibles ahora re-renderiza solo ese 1 Circle, no los 100.
+- **P2-fix — Bug confirmado con instrumentación real (`cart` → `canSelectMore`)**: la instrumentación de diagnóstico (`console.count` por `seatId`, `[DIAG] Konva Circle count`) confirmó que el memo no aislaba los re-renders: reservar cualquier silla re-renderizaba las ~100 visibles al mismo tiempo. Causa raíz: `cart` (array completo) se pasaba como prop a cada `SeatCircle`; al reservar una silla `cart.length` cambiaba de N a N+1, lo que invalidaba el comparador para **todos** los nodos aunque 99 no hubiesen cambiado de estado. Fix: se reemplazó `cart` y `selectedQuantity` por un booleano derivado `canSelectMore = cart.length < selectedQuantity` calculado una sola vez antes del `.map` en `SectionRenderer`. El comparador ahora evalúa `prev.canSelectMore === next.canSelectMore` — un primitivo estable que solo cambia cuando el usuario cruza el umbral de capacidad. Efecto validado: reservar/liberar una silla re-renderiza únicamente esa silla, salvo cuando `canSelectMore` cambia de valor (correcto por diseño).
+- **P6 (bonus) — Eliminada función `getSeatColor()` redeclarada**: reemplazada por un bloque `if/else` directo que asigna `fillColor` sin crear un closure en cada render de `SeatCircle`.
+- **Impacto neto esperado**:
+  - Overview con evento de 999 sillas: 0 nodos Circle creados (antes: 999)
+  - Cada WebSocket update: 1 `SeatCircle` re-renderiza en lugar de hasta 100
+  - Cada WebSocket update: 1 pasada de filter+sort en lugar de N (una por sección)
+  - `handleReserveSeat`: referencia estable entre updates (antes se recreaba en cada cambio de `seats`)
+
 ### Fixed - Responsive Canvas + Improved Seat Margin (Web)
 - **Canvas responsive**: eliminado height fijo de 600px → ahora usa `60vh` con límites min/max para adaptarse al tamaño de pantalla
   - **Altura adaptativa**: `height: '60vh', minHeight: '400px', maxHeight: '700px'`
