@@ -22,6 +22,7 @@ import com.capysoft.tuevento.modules.security.domain.model.User;
 import com.capysoft.tuevento.modules.security.domain.model.UserStatus;
 import com.capysoft.tuevento.modules.security.domain.repository.AuthSessionRepository;
 import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
+import com.capysoft.tuevento.modules.security.domain.model.LoginCredentials;
 import com.capysoft.tuevento.modules.security.domain.repository.OauthAccountRepository;
 import com.capysoft.tuevento.modules.security.domain.repository.RefreshTokenRepository;
 import com.capysoft.tuevento.modules.security.domain.repository.RoleRepository;
@@ -81,13 +82,31 @@ public class OauthLoginUseCase implements OauthLoginPort {
         if (existing.isPresent()) {
             user = existing.get().getUser();
         } else {
-            // Prevent duplicate account if email already exists as a local account
-            if (profile.getEmail() != null && !profile.getEmail().isBlank()
-                    && loginCredentialsRepository.existsByEmail(profile.getEmail())) {
-                throw new BusinessException("EMAIL_ALREADY_EXISTS_AS_LOCAL",
-                        "Este correo ya está registrado con contraseña. "
-                      + "Inicia sesión con tu correo y contraseña.");
-            }
+            // If the email matches a local account, auto-link the OAuth provider
+            // instead of rejecting — email is guaranteed verified by the caller
+            // (GoogleIdTokenAuthUseCase rejects unverified emails before reaching here).
+            Optional<LoginCredentials> localCredentials =
+                    (profile.getEmail() != null && !profile.getEmail().isBlank())
+                            ? loginCredentialsRepository.findByEmail(profile.getEmail())
+                            : Optional.empty();
+
+            if (localCredentials.isPresent()) {
+                // Account exists locally — link the OAuth provider and return JWT.
+                // Idempotent: findByProviderAndProviderUserId already checked above,
+                // so this branch only runs when the oauth_account row does not yet exist.
+                user = localCredentials.get().getUser();
+                oauthAccountRepository.save(OauthAccount.builder()
+                        .user(user)
+                        .provider(provider.toLowerCase())
+                        .providerUserId(profile.getProviderUserId())
+                        .email(profile.getEmail())
+                        .linkedAt(LocalDateTime.now())
+                        .build());
+
+                // Fall through to token generation below — isNewUser stays false.
+
+            } else {
+            // No local account and no existing OAuth account → register new user.
 
             Role role = roleRepository.findByCode(DEFAULT_ROLE_CODE)
                     .orElseThrow(() -> new NotFoundException("ROLE_NOT_FOUND", "Default role not found"));
@@ -118,6 +137,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
                     .build());
 
             isNewUser = true;
+            } // end else (new user)
         }
 
         String accessToken  = tokenGenerator.generateAccessToken(
