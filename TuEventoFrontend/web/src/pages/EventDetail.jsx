@@ -585,12 +585,12 @@ function SeatSelectorSection({
   // ── Calcular encuadre (zoom + posición) para un conjunto de elementos ──
   const calculateFraming = useCallback((elements, viewportWidth, viewportHeight, rowPage = 0, colPage = 0, applyWindowedView = true) => {
     if (elements.length === 0) {
-      return { scale: 1, x: 0, y: 0, totalRowPages: 1, totalColPages: 1 };
+      return { scale: 1, x: 0, y: 0, totalRowPages: 1, totalColPages: 1, dynamicColPages: 1, dynamicRowPages: 1 };
     }
 
     // Fix auditoría: validar dimensiones del viewport
     if (!viewportWidth || !viewportHeight || viewportWidth <= 0 || viewportHeight <= 0) {
-      return { scale: 1, x: 0, y: 0, totalRowPages: 1, totalColPages: 1 };
+      return { scale: 1, x: 0, y: 0, totalRowPages: 1, totalColPages: 1, dynamicColPages: 1, dynamicRowPages: 1 };
     }
 
     // Calcular AABB de los elementos
@@ -605,13 +605,13 @@ function SeatSelectorSection({
 
     // Fix auditoría: validar dimensiones del contenido
     if (!contentWidth || !contentHeight || contentWidth <= 0 || contentHeight <= 0) {
-      return { scale: 1, x: 0, y: 0, totalRowPages: 1, totalColPages: 1 };
+      return { scale: 1, x: 0, y: 0, totalRowPages: 1, totalColPages: 1, dynamicColPages: 1, dynamicRowPages: 1 };
     }
 
     const contentCenterX = (contentMinX + contentMaxX) / 2;
     const contentCenterY = (contentMinY + contentMaxY) / 2;
 
-    let scale, totalRowPages = 1, totalColPages = 1;
+    let scale, totalRowPages = 1, totalColPages = 1, dynamicColPages = 1, dynamicRowPages = 1;
     let effectiveContentCenterX = contentCenterX;
     let effectiveContentCenterY = contentCenterY;
 
@@ -671,12 +671,42 @@ function SeatSelectorSection({
           if (rowStructure.length > 0) {
             // Usar estructura real para calcular páginas
             totalRowPages = Math.ceil(gridRows / 10);
-            // Para columnas, usar el máximo de columnas en cualquier fila
+            
+            // NUEVO: Calcular páginas de columnas dinámicamente basándose en las filas visibles
+            const rowStart = rowPage * 10;
+            const rowEnd = Math.min(gridRows, rowStart + 10);
+            
+            // Obtener el máximo de columnas entre las filas visibles en la página actual
+            const maxColsInVisibleRows = Math.max(1, ...rowStructure.slice(rowStart, rowEnd));
+            dynamicColPages = Math.ceil(maxColsInVisibleRows / 10);
+            
+            // NUEVO: Calcular páginas de filas dinámicamente basándose en las columnas visibles
+            const colStart = colPage * 10;
+            const colEnd = Math.min(gridCols, colStart + 10);
+            
+            // Contar cuántas filas tienen al menos una silla en el rango de columnas actual
+            let rowsWithSeatsInColRange = 0;
+            for (let rowIdx = 0; rowIdx < rowStructure.length; rowIdx++) {
+              const seatsInRow = rowStructure[rowIdx];
+              // Si esta fila tiene sillas que se intersectan con el rango de columnas actual
+              if (seatsInRow > colStart) {
+                rowsWithSeatsInColRange++;
+              }
+            }
+            const dynamicRowPages = Math.ceil(rowsWithSeatsInColRange / 10);
+            
+            // Para compatibilidad hacia atrás, mantener totalColPages como el global
             totalColPages = Math.ceil(gridCols / 10);
+            
+            // Retornar también dynamicRowPages
+            totalRowPages = dynamicRowPages;
           } else {
             // Fallback usando cálculo tradicional
             totalColPages = Math.ceil(gridCols / 10);
-            totalRowPages = Math.ceil(gridRows / 10);
+            const traditionalRowPages = Math.ceil(gridRows / 10);
+            totalRowPages = traditionalRowPages;
+            dynamicColPages = totalColPages;
+            dynamicRowPages = traditionalRowPages; // FIX: This was missing!
           }
           
           // Calcular dimensiones de la ventana en unidades del layout
@@ -698,9 +728,15 @@ function SeatSelectorSection({
           scale = Math.max(scale, minTouchScale);
           
           // Calcular centro efectivo basado en las páginas actuales
-          if (totalColPages > 1) {
+          // ACTUALIZADO: usar dynamicColPages para centrar correctamente
+          if (dynamicColPages > 1) {
+            // Calcular el rango de columnas válidas para las filas visibles
+            const rowStart = rowPage * 10;
+            const rowEnd = Math.min(gridRows, rowStart + 10);
+            const maxColsInVisibleRows = Math.max(1, ...rowStructure.slice(rowStart, rowEnd));
+            
             const pageColStart = colPage * 10;
-            const pageColEnd = Math.min(gridCols, pageColStart + 10);
+            const pageColEnd = Math.min(maxColsInVisibleRows, pageColStart + 10);
             const pageCenterCol = (pageColStart + pageColEnd) / 2;
             effectiveContentCenterX = contentMinX + (pageCenterCol * cellWidth);
           }
@@ -748,12 +784,12 @@ function SeatSelectorSection({
       const effectiveViewportHeight = viewportHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
       const x = ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveViewportWidth / 2 - effectiveContentCenterX * scale;
       const y = ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveViewportHeight / 2 - effectiveContentCenterY * scale;
-      return { scale, x, y, totalRowPages, totalColPages };
+      return { scale, x, y, totalRowPages, totalColPages, dynamicColPages, dynamicRowPages };
     } else {
       // Overview: usar viewport completo
       const x = viewportWidth / 2 - effectiveContentCenterX * scale;
       const y = viewportHeight / 2 - effectiveContentCenterY * scale;
-      return { scale, x, y, totalRowPages, totalColPages };
+      return { scale, x, y, totalRowPages, totalColPages, dynamicColPages, dynamicRowPages };
     }
   }, []);
 
@@ -780,7 +816,9 @@ function SeatSelectorSection({
 
   // ── Efecto: animar a vista general o sub-sección seleccionada ──
   const [totalRowPages, setTotalRowPages] = useState(1);
-  const [totalColPages, setTotalColPages] = useState(1); // Nuevo: total de páginas de columnas
+  const [totalColPages, setTotalColPages] = useState(1); // Mantener para compatibilidad
+  const [dynamicColPages, setDynamicColPages] = useState(1); // Páginas de columnas dinámicas por bloque de filas
+  const [dynamicRowPages, setDynamicRowPages] = useState(1); // NUEVO: Páginas de filas dinámicas por bloque de columnas
   
   useEffect(() => {
     if (!stageRef.current || layoutElements.length === 0) return;
@@ -790,6 +828,8 @@ function SeatSelectorSection({
       const framing = calculateFraming(layoutElements, containerSize.width, containerSize.height, 0, 0, false);
       setTotalRowPages(framing.totalRowPages);
       setTotalColPages(framing.totalColPages);
+      setDynamicColPages(framing.dynamicColPages);
+      setDynamicRowPages(framing.dynamicRowPages);
       setCurrentRowPage(0); // Reset pages al cambiar vista
       setCurrentColPage(0);
       animateToFraming(framing);
@@ -800,6 +840,8 @@ function SeatSelectorSection({
         const framing = calculateFraming([currentSubSection], containerSize.width, containerSize.height, currentRowPage, currentColPage, true);
         setTotalRowPages(framing.totalRowPages);
         setTotalColPages(framing.totalColPages);
+        setDynamicColPages(framing.dynamicColPages);
+        setDynamicRowPages(framing.dynamicRowPages);
         animateToFraming(framing);
       }
     }
@@ -829,31 +871,62 @@ function SeatSelectorSection({
     }
   };
 
-  // Handlers para navegación entre páginas de filas
+  // Handlers para navegación entre páginas de filas (ahora usa dynamicRowPages)
   const handlePrevRowPage = () => {
     if (currentRowPage > 0) {
-      setCurrentRowPage(currentRowPage - 1);
+      const newRowPage = currentRowPage - 1;
+      setCurrentRowPage(newRowPage);
+      
+      // Reset currentColPage si la página actual se vuelve inválida para el nuevo bloque de filas
+      // Esto se manejará en el próximo useEffect cuando se recalcule dynamicColPages
+      setCurrentColPage(0);
     }
   };
 
   const handleNextRowPage = () => {
-    if (currentRowPage < totalRowPages - 1) {
-      setCurrentRowPage(currentRowPage + 1);
+    if (currentRowPage < dynamicRowPages - 1) {
+      const newRowPage = currentRowPage + 1;
+      setCurrentRowPage(newRowPage);
+      
+      // Reset currentColPage si la página actual se vuelve inválida para el nuevo bloque de filas
+      setCurrentColPage(0);
     }
   };
 
-  // Handlers para navegación entre páginas de columnas
+  // Handlers para navegación entre páginas de columnas (ahora usa dynamicColPages)
   const handlePrevColPage = () => {
     if (currentColPage > 0) {
-      setCurrentColPage(currentColPage - 1);
+      const newColPage = currentColPage - 1;
+      setCurrentColPage(newColPage);
+      
+      // Reset currentRowPage si la página actual se vuelve inválida para el nuevo bloque de columnas
+      setCurrentRowPage(0);
     }
   };
 
   const handleNextColPage = () => {
-    if (currentColPage < totalColPages - 1) {
-      setCurrentColPage(currentColPage + 1);
+    if (currentColPage < dynamicColPages - 1) {
+      const newColPage = currentColPage + 1;
+      setCurrentColPage(newColPage);
+      
+      // Reset currentRowPage si la página actual se vuelve inválida para el nuevo bloque de columnas
+      setCurrentRowPage(0);
     }
   };
+
+  // Efecto para auto-resetear currentColPage cuando dynamicColPages cambia
+  useEffect(() => {
+    if (currentColPage >= dynamicColPages) {
+      setCurrentColPage(Math.max(0, dynamicColPages - 1));
+    }
+  }, [dynamicColPages, currentColPage]);
+
+  // NUEVO: Efecto para auto-resetear currentRowPage cuando dynamicRowPages cambia
+  useEffect(() => {
+    if (currentRowPage >= dynamicRowPages) {
+      setCurrentRowPage(Math.max(0, dynamicRowPages - 1));
+    }
+  }, [dynamicRowPages, currentRowPage]);
 
   return (
     <div
@@ -966,7 +1039,7 @@ function SeatSelectorSection({
             )}
             
             {/* Controles de paginación horizontal (columnas) */}
-            {selectedSectionFilter && totalColPages > 1 && (
+            {selectedSectionFilter && dynamicColPages > 1 && (
               <div className="flex items-center gap-2">
                 <button
                   onClick={handlePrevColPage}
@@ -981,11 +1054,11 @@ function SeatSelectorSection({
                   <ChevronLeft className="w-4 h-4" style={{ color: '#93c5fd' }} />
                 </button>
                 <span className="text-xs font-semibold px-2" style={{ color: '#dbeafe' }}>
-                  Col {currentColPage + 1}/{totalColPages}
+                  Col {currentColPage + 1}/{dynamicColPages}
                 </span>
                 <button
                   onClick={handleNextColPage}
-                  disabled={currentColPage === totalColPages - 1}
+                  disabled={currentColPage === dynamicColPages - 1}
                   className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
                     background: 'rgba(59,130,246,0.2)',
@@ -999,7 +1072,7 @@ function SeatSelectorSection({
             )}
             
             {/* Controles de paginación vertical (filas) */}
-            {selectedSectionFilter && totalRowPages > 1 && (
+            {selectedSectionFilter && dynamicRowPages > 1 && (
               <div className="flex items-center gap-2">
                 <button
                   onClick={handlePrevRowPage}
@@ -1014,11 +1087,11 @@ function SeatSelectorSection({
                   <ChevronUp className="w-4 h-4" style={{ color: '#9ca3af' }} />
                 </button>
                 <span className="text-xs font-semibold px-2" style={{ color: '#d1d5db' }}>
-                  Filas {currentRowPage + 1}/{totalRowPages}
+                  Filas {currentRowPage + 1}/{dynamicRowPages}
                 </span>
                 <button
                   onClick={handleNextRowPage}
-                  disabled={currentRowPage === totalRowPages - 1}
+                  disabled={currentRowPage === dynamicRowPages - 1}
                   className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
                     background: 'rgba(75,85,99,0.2)',
@@ -1215,7 +1288,7 @@ function SectionRenderer({
   // Derivar información de grilla desde seatLayout
   const gridInfo = useMemo(() => {
     if (seatPositions.length === 0 || selectedSectionFilter === null) {
-      return { totalRows: 0, totalCols: 0, maxColsInAnyRow: 0 };
+      return { totalRows: 0, totalCols: 0, maxColsInAnyRow: 0, maxColsInVisibleRows: 0, rowsWithSeatsInColRange: 0 };
     }
 
     const { rowStructure, isUniformGrid } = seatLayout;
@@ -1224,43 +1297,94 @@ function SectionRenderer({
       // Rectángulo: estructura uniforme
       const totalRows = rowStructure.length;
       const totalCols = Math.max(...rowStructure);
-      return { totalRows, totalCols, maxColsInAnyRow: totalCols, rowStructure };
+      
+      // Calcular máximo de columnas en filas visibles
+      const rowStart = currentRowPage * 10;
+      const rowEnd = Math.min(totalRows, rowStart + 10);
+      const visibleRowStructure = rowStructure.slice(rowStart, rowEnd);
+      const maxColsInVisibleRows = visibleRowStructure.length > 0 ? Math.max(...visibleRowStructure) : totalCols;
+      
+      // NUEVO: Calcular cuántas filas tienen sillas en el rango de columnas actual
+      const colStart = currentColPage * 10;
+      const colEnd = Math.min(totalCols, colStart + 10);
+      let rowsWithSeatsInColRange = 0;
+      for (let rowIdx = 0; rowIdx < rowStructure.length; rowIdx++) {
+        const seatsInRow = rowStructure[rowIdx];
+        if (seatsInRow > colStart) {
+          rowsWithSeatsInColRange++;
+        }
+      }
+      
+      return { totalRows, totalCols, maxColsInAnyRow: totalCols, maxColsInVisibleRows, rowsWithSeatsInColRange, rowStructure };
     } else {
       // Polígono: estructura variable
       const totalRows = rowStructure.length;
       const maxColsInAnyRow = Math.max(...rowStructure, 0);
-      return { totalRows, totalCols: maxColsInAnyRow, maxColsInAnyRow, rowStructure };
+      
+      // Calcular máximo de columnas en filas visibles para polígonos irregulares
+      const rowStart = currentRowPage * 10;
+      const rowEnd = Math.min(totalRows, rowStart + 10);
+      const visibleRowStructure = rowStructure.slice(rowStart, rowEnd);
+      const maxColsInVisibleRows = visibleRowStructure.length > 0 ? Math.max(...visibleRowStructure, 0) : maxColsInAnyRow;
+      
+      // NUEVO: Calcular cuántas filas tienen sillas en el rango de columnas actual (polígonos irregulares)
+      const colStart = currentColPage * 10;
+      const colEnd = Math.min(maxColsInAnyRow, colStart + 10);
+      let rowsWithSeatsInColRange = 0;
+      for (let rowIdx = 0; rowIdx < rowStructure.length; rowIdx++) {
+        const seatsInRow = rowStructure[rowIdx];
+        // Si esta fila tiene sillas que se intersectan con el rango de columnas actual
+        if (seatsInRow > colStart) {
+          rowsWithSeatsInColRange++;
+        }
+      }
+      
+      return { totalRows, totalCols: maxColsInAnyRow, maxColsInAnyRow, maxColsInVisibleRows, rowsWithSeatsInColRange, rowStructure };
     }
-  }, [seatLayout, selectedSectionFilter]);
+  }, [seatLayout, selectedSectionFilter, currentRowPage, currentColPage]);
 
-  // SLICE por índice discreto respetando estructura real de filas
+  // SLICE por índice discreto respetando estructura real de filas y columnas dinámicas
   const pageFilteredSeatsWithIndices = useMemo(() => {
     // P1: en overview nunca dibujamos sillas individuales, devolver array vacío
     if (selectedSectionFilter === null || gridInfo.totalRows === 0) {
       return [];
     }
 
-    const { rowStructure } = gridInfo;
+    const { rowStructure, maxColsInVisibleRows } = gridInfo;
 
-    // Calcular qué filas entran en la página actual (paginación vertical)
-    const rowStart = currentRowPage * 10;
-    const rowEnd = Math.min(rowStructure.length, rowStart + 10);
+    // NUEVO: Filtrar filas que tienen sillas en el rango de columnas actual
+    const colStart = currentColPage * 10;
+    const colEnd = Math.min(maxColsInVisibleRows, colStart + 10);
+    
+    // Identificar qué filas tienen al menos una silla en el rango de columnas actual
+    const validRowIndices = [];
+    for (let rowIdx = 0; rowIdx < rowStructure.length; rowIdx++) {
+      const seatsInRow = rowStructure[rowIdx];
+      if (seatsInRow > colStart) {
+        validRowIndices.push(rowIdx);
+      }
+    }
+    
+    // Aplicar paginación de filas sobre las filas válidas
+    const validRowStart = currentRowPage * 10;
+    const validRowEnd = Math.min(validRowIndices.length, validRowStart + 10);
+    const visibleValidRowIndices = validRowIndices.slice(validRowStart, validRowEnd);
 
     const filteredSeats = [];
     let globalIndex = 0;
 
-    // Iterar por filas reales
+    // Iterar por todas las filas para mantener el índice global correcto
     for (let rowIndex = 0; rowIndex < rowStructure.length; rowIndex++) {
       const seatsInThisRow = rowStructure[rowIndex];
       
-      // Si esta fila está en la página actual
-      if (rowIndex >= rowStart && rowIndex < rowEnd) {
-        // Calcular qué columnas de esta fila entran en la página actual (paginación horizontal)
-        const colStart = currentColPage * 10;
-        const colEnd = Math.min(seatsInThisRow, colStart + 10);
+      // Si esta fila está en el conjunto de filas válidas y visibles
+      if (visibleValidRowIndices.includes(rowIndex)) {
+        // Calcular qué columnas de esta fila están en el rango de columnas actual
+        const effectiveColsForPagination = Math.min(seatsInThisRow, maxColsInVisibleRows);
+        const colEnd = Math.min(effectiveColsForPagination, colStart + 10);
         
-        // Agregar sillas de esta fila que están en el rango de columnas
-        for (let colIndex = colStart; colIndex < colEnd; colIndex++) {
+        // Solo agregar sillas si están en el rango válido de columnas para esta fila específica
+        for (let colIndex = colStart; colIndex < colEnd && colIndex < seatsInThisRow; colIndex++) {
           const seatIndexInRow = globalIndex + colIndex;
           if (seatIndexInRow < seatPositions.length) {
             filteredSeats.push({
