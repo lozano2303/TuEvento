@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **Web - Sistema de Zoom/Paginación**: Fix crítico para controles de filas desaparecidos tras implementar dynamicRowPages
+  - **Bug**: Los controles de paginación de filas ("Filas X/Y" con flechas) desaparecían completamente en Palco tras el fix simétrico
+  - **Causa**: En el caso fallback (`else` branch del `calculateFraming`), faltaba asignar `dynamicRowPages`, quedando `undefined` 
+  - **Resultado**: La condición `selectedSectionFilter && dynamicRowPages > 1` siempre evaluaba `false` (undefined > 1 = false)
+  - **Fix**: Agregado `dynamicRowPages = traditionalRowPages;` en el caso fallback para mantener consistencia
+  - **Verificado**: Los controles de filas ahora aparecen correctamente en Palco y otras secciones
+
+- **Web - Sistema de Zoom/Paginación**: Límites dinámicos de paginación bidireccional para formas irregulares (completo)
+  - **Problema original**: En secciones polígono irregulares (ej. "L invertida"), la paginación usaba totales fijos globales, causando páginas vacías cuando el área real variaba según el bloque visible.
+  - **Fix columnas (previo)**: `dynamicColPages` calculado basándose en las filas visibles en `currentRowPage`
+  - **Fix filas (nuevo - simétrico)**: `dynamicRowPages` calculado basándose en las columnas visibles en `currentColPage`
+    - Implementado conteo de filas que tienen sillas en el rango de columnas actual: `rowsWithSeatsInColRange`
+    - Auto-reset de `currentRowPage` cuando se vuelve inválida al cambiar `currentColPage`
+    - UI de filas actualizada para mostrar `Filas X/dynamicRowPages` en lugar de `totalRowPages` fijo
+    - Filtrado de sillas mejorado: primero filtra filas válidas para el bloque de columnas, luego aplica paginación de filas
+  - **Casos resueltos**:
+    - Palco Col 1/4 + Filas 4/12: ya no muestra área vacía (se limita a filas con sillas en esas columnas)
+    - Palco Col 7/17 + Filas 3/11: flecha "bajar" se deshabilita correctamente cuando no hay más filas válidas
+  - **Resultado**: Sistema de paginación completamente dinámico y bidireccional - ambos ejes se limitan según el contenido real del bloque visible
+
 ### Performance - Seat Rendering Optimizations for Large Sections 500+ (Web)
 - **P1 — Overview sin nodos Circle**: en vista general (`selectedSectionFilter === null`) se eliminó el renderizado de `Circle` por silla. El overview ya mostraba solo Rect/Shape + label por sección, así que las sillas individuales eran trabajo Konva completamente desperdiciado. `pageFilteredSeatsWithIndices` ahora devuelve `[]` en ese modo — cero nodos de silla creados al cargar el mapa.
 - **P3 — Índice `seatsBySection` centralizado**: `SeatSelectorSection` calcula un único `useMemo` que agrupa y ordena todas las sillas por `eventSectionId` (`seatsBySection`). Cada `SectionRenderer` recibe ese mapa como prop y hace un lookup O(1) en lugar de ejecutar su propio `Object.values(seats).filter().sort()` sobre las ~999 sillas completas. Con N secciones, esto reduce de `N × 999` iteraciones a una sola pasada por WebSocket update.
