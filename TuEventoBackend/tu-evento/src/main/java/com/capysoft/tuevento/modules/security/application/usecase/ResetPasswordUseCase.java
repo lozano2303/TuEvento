@@ -36,7 +36,7 @@ public class ResetPasswordUseCase implements ResetPasswordPort {
     @Transactional
     public void reset(ResetPasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new BusinessException("PASSWORD_MISMATCH", "Las contraseñas no coinciden");
+            throw new BusinessException("PASSWORD_MISMATCH", "Passwords do not match");
         }
 
         ValidationUtils.validateStrongPassword(request.getNewPassword());
@@ -53,10 +53,10 @@ public class ResetPasswordUseCase implements ResetPasswordPort {
         }
 
         if (recovery.getCodeStatus()) {
-            throw new BusinessException("RECOVERY_CODE_USED", "El código de recuperación ya fue utilizado");
+            throw new BusinessException("RECOVERY_CODE_USED", "Recovery code has already been used");
         }
         if (recovery.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new BusinessException("RECOVERY_CODE_EXPIRED", "El código de recuperación ha expirado");
+            throw new BusinessException("RECOVERY_CODE_EXPIRED", "Recovery code has expired");
         }
 
         String newHash = passwordEncoder.encode(request.getNewPassword());
