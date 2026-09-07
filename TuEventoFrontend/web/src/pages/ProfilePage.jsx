@@ -36,8 +36,8 @@ const ProfilePage = () => {
   const [avatarMessage, setAvatarMessage] = useState(null);
   const avatarInputRef = useRef(null);
 
-  const userEmail = localStorage.getItem('userEmail') || 'francisco@tuevento.com';
-  const storedName = localStorage.getItem('name') || localStorage.getItem('fullName') || 'Francisco';
+  const userEmail = localStorage.getItem('userEmail') || '';
+  const storedName = localStorage.getItem('name') || localStorage.getItem('fullName') || '';
   const userRole = localStorage.getItem('role') || 'USER';
 
   const getDisplayName = (name) => {
@@ -63,7 +63,7 @@ const ProfilePage = () => {
   const roleLabel = userRole === 'ADMIN' ? 'Administrador' : userRole === 'ORGANIZER' ? 'Organizador' : 'Usuario';
 
   const [formData, setFormData] = useState({
-    nombreCompleto: storedName || 'Francisco Rodríguez',
+    nombreCompleto: storedName || '',
     telefono: '+34 600 000 000',
     fechaNacimiento: '',
     direccion: 'Calle Mayor, 1 Madrid'
