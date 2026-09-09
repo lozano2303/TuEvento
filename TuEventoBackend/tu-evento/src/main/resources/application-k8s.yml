@@ -66,3 +66,7 @@ app:
     from: ${MAIL_USERNAME}
   cors:
     allowed-origins: "http://localhost:3000"
+  profile:
+    # storedFileId of the system default avatar (set by ProfileDataInitializer on startup).
+    # Must match the actual ID in the stored_file table for the DEFAULT_AVATAR record.
+    default-avatar-stored-file-id: ${APP_PROFILE_DEFAULT_AVATAR_ID:1}

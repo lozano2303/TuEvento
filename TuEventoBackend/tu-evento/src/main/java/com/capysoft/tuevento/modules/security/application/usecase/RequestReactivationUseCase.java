@@ -41,7 +41,7 @@ public class RequestReactivationUseCase implements RequestReactivationPort {
         // Fail-silent: resolve credentials quietly — no exception propagated to caller
         var credentialsOpt = loginCredentialsRepository.findByEmail(request.getEmail());
         if (credentialsOpt.isEmpty()) {
-            log.debug("Reactivation requested for unknown email — silently ignored");
+            log.warn("Reactivation requested for unknown email — silently ignored");
             return;
         }
 
@@ -50,7 +50,7 @@ public class RequestReactivationUseCase implements RequestReactivationPort {
 
         // Only INACTIVE accounts are eligible for reactivation
         if (!INACTIVE_STATUS_CODE.equals(statusCode)) {
-            log.debug("Reactivation requested for account with status={} — silently ignored", statusCode);
+            log.warn("Reactivation requested for account with status={} — silently ignored", statusCode);
             return;
         }
 
