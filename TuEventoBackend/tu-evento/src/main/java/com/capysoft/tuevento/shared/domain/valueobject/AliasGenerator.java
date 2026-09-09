@@ -15,14 +15,26 @@ public final class AliasGenerator {
     /**
      * Genera un alias base a partir del email o, si es null, del nombre/alias provisto.
      *
-     * @param email email del usuario (puede ser null)
-     * @param fallbackName nombre a usar si el email es null
+     * Cuando el email está presente se extrae su parte local (antes del '@').
+     * Sin embargo, si además se provee un {@code fallbackName} (ej. el nombre de
+     * pantalla de Google como "John Doe"), se prefiere ese nombre limpio como base
+     * porque produce alias más legibles (ej. "johndoe") que el prefijo del email
+     * (ej. "johndoe2006" o "crislozanoshark2006").
+     *
+     * @param email        email del usuario (puede ser null)
+     * @param fallbackName nombre a usar preferentemente cuando no es null/vacío
      * @return alias base en minúsculas sin caracteres especiales
      */
     public static String generate(String email, String fallbackName) {
+        // Prefer the provider display name when available — it produces a more
+        // human-readable alias (e.g. "johndoe" from "John Doe") than the email
+        // prefix (e.g. "crislozanoshark2006" from "crislozanoshark2006@gmail.com").
+        if (fallbackName != null && !fallbackName.isBlank()) {
+            return fallbackName.toLowerCase().replaceAll("[^a-z0-9]", "");
+        }
         String base = (email != null && email.contains("@"))
                 ? email.split("@")[0]
-                : (fallbackName != null ? fallbackName : "user");
+                : "user";
         return base.toLowerCase().replaceAll("[^a-z0-9]", "");
     }
 

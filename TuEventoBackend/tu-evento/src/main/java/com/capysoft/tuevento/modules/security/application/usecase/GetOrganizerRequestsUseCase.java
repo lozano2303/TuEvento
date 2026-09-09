@@ -1,4 +1,4 @@
-    package com.capysoft.tuevento.modules.security.application.usecase;
+package com.capysoft.tuevento.modules.security.application.usecase;
 
 import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
 import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerRequestResponse;
@@ -18,9 +18,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GetOrganizerRequestsUseCase implements GetOrganizerRequestsPort {
 
-    /** storedFileId that represents the system default avatar — no presigned URL needed for it. */
-    private static final int DEFAULT_AVATAR_STORED_FILE_ID = 1;
-
     private final OrganizerPetitionRepository organizerPetitionRepository;
     private final LoginCredentialsJpaRepository loginCredentialsRepository;
     private final ProfileJpaRepository profileRepository;
@@ -37,7 +34,7 @@ public class GetOrganizerRequestsUseCase implements GetOrganizerRequestsPort {
                             .map(credentials -> credentials.getEmail())
                             .orElse(null);
 
-                    String fullName = null;
+                    String fullName       = null;
                     String profilePicture = null;
 
                     var profileOpt = profileRepository.findByUserId(userId);
@@ -46,14 +43,16 @@ public class GetOrganizerRequestsUseCase implements GetOrganizerRequestsPort {
                         fullName = profile.getFullName();
 
                         Integer avatarFileId = profile.getStoredFileId();
-                        // Only generate a presigned URL for custom avatars.
-                        // If the file id points to the default avatar (or is absent),
-                        // leave profilePicture null so the frontend shows the initial.
-                        if (avatarFileId != null && avatarFileId != DEFAULT_AVATAR_STORED_FILE_ID) {
+                        // Generate a presigned URL for every avatar — default or custom.
+                        // Every user is assigned an avatar when their profile is created
+                        // (ProfileDataInitializer ensures the default image is always present),
+                        // so avatarFileId should never be null in practice.
+                        // The null guard here is a safety net for edge cases only.
+                        if (avatarFileId != null) {
                             try {
                                 profilePicture = generatePublicUrlPort.generate(avatarFileId).getPublicUrl();
                             } catch (Exception ex) {
-                                // Orphaned or deleted file — degrade gracefully, show initial instead.
+                                // Orphaned or deleted file — degrade gracefully; frontend shows initial.
                                 log.warn("Could not generate presigned URL for storedFileId={} (userId={}): {}",
                                         avatarFileId, userId, ex.getMessage());
                             }
@@ -65,7 +64,7 @@ public class GetOrganizerRequestsUseCase implements GetOrganizerRequestsPort {
                             .userId(userId)
                             .fullName(fullName)
                             .email(email)
-                            .documentType("Cédula")
+                            .documentType(petition.getDocumentType())
                             .status(petition.getStatus())
                             .applicationDate(petition.getApplicationDate())
                             .storedFileId(petition.getStoredFileId())

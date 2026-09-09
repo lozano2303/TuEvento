@@ -9,6 +9,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.capysoft.tuevento.modules.profile.application.dto.request.CreateProfileRequest;
+import com.capysoft.tuevento.modules.profile.application.port.in.CreateProfilePort;
+import com.capysoft.tuevento.modules.profile.domain.model.Profile;
+import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
 import com.capysoft.tuevento.modules.security.application.dto.OauthProfile;
 import com.capysoft.tuevento.modules.security.application.dto.response.LoginResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.OauthLoginPort;
@@ -31,9 +35,12 @@ import com.capysoft.tuevento.modules.security.domain.repository.UserStatusReposi
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.domain.valueobject.AliasGenerator;
+import com.capysoft.tuevento.shared.domain.valueobject.ValidationUtils;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OauthLoginUseCase implements OauthLoginPort {
@@ -52,6 +59,8 @@ public class OauthLoginUseCase implements OauthLoginPort {
     private final LoginCredentialsRepository loginCredentialsRepository;
     private final TokenGeneratorPort         tokenGenerator;
     private final ApplicationEventPublisher  eventPublisher;
+    private final CreateProfilePort          createProfilePort;
+    private final ProfileRepository          profileRepository;
 
     /** Registry of provider-specific profile resolvers — extensible without modifying this class. */
     private final Map<String, Function<String, OauthProfile>> providerResolvers;
@@ -77,10 +86,35 @@ public class OauthLoginUseCase implements OauthLoginPort {
                 .findByProviderAndProviderUserId(provider.toLowerCase(), profile.getProviderUserId());
 
         User user;
-        boolean isNewUser = false;
+        boolean isNewUser         = false;
+        boolean isNeedsOnboarding = false;
+        Long    existingProfileId = null;   // populated when a profile row already exists
 
         if (existing.isPresent()) {
             user = existing.get().getUser();
+
+            // ── Check whether the stored fullName is still valid ──────────────
+            // Covers users that were created before the fix (their profile was
+            // auto-filled with the email prefix, e.g. "crislozanoshark2006").
+            // We only evaluate the profile that already exists; we never create
+            // one here — that stays exclusively in the new-user branch below.
+            Optional<Profile> existingProfile =
+                    profileRepository.findByUserId(user.getUserId());
+
+            if (existingProfile.isPresent()) {
+                existingProfileId = existingProfile.get().getProfileId();
+                if (!ValidationUtils.isValidFullName(existingProfile.get().getFullName())) {
+                    log.warn("Existing OAuth user {} has invalid fullName '{}' — triggering onboarding",
+                            user.getUserId(), existingProfile.get().getFullName());
+                    isNeedsOnboarding = true;
+                }
+            } else {
+                // Profile row is missing entirely (edge case: user was created
+                // before profile creation was added to the OAuth flow).
+                log.warn("Existing OAuth user {} has no profile row — triggering onboarding",
+                        user.getUserId());
+                isNeedsOnboarding = true;
+            }
         } else {
             // If the email matches a local account, auto-link the OAuth provider
             // instead of rejecting — email is guaranteed verified by the caller
@@ -136,6 +170,29 @@ public class OauthLoginUseCase implements OauthLoginPort {
                     .linkedAt(LocalDateTime.now())
                     .build());
 
+            // Create the user profile if Google returned a valid display name.
+            // If the name is missing or doesn't pass the two-word letter-only rule
+            // (e.g. email-prefix fallbacks like "crislozanoshark2006"), we skip
+            // profile creation and set needsOnboarding=true so the frontend can
+            // redirect the user to a profile-completion step.
+            if (ValidationUtils.isValidFullName(profile.getFullName())) {
+                try {
+                    var createdProfile = createProfilePort.create(CreateProfileRequest.builder()
+                            .userId(user.getUserId())
+                            .fullName(profile.getFullName().trim())
+                            .build());
+                    existingProfileId = createdProfile.getProfileId();
+                } catch (Exception ex) {
+                    // Log but do not fail login — the user can complete their profile later.
+                    log.warn("Could not create profile for new OAuth user {}: {}", user.getUserId(), ex.getMessage());
+                    isNeedsOnboarding = true;
+                }
+            } else {
+                log.info("Google name '{}' did not pass validation — user {} will be prompted for onboarding",
+                        profile.getFullName(), user.getUserId());
+                isNeedsOnboarding = true;
+            }
+
             isNewUser = true;
             } // end else (new user)
         }
@@ -177,6 +234,8 @@ public class OauthLoginUseCase implements OauthLoginPort {
                 .userId(user.getUserId())
                 .alias(user.getAlias())
                 .role(user.getRole().getCode())
+                .needsOnboarding(isNeedsOnboarding)
+                .profileId(existingProfileId)
                 .build();
     }
 }

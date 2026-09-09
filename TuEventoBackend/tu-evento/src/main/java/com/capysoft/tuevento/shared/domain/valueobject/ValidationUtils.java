@@ -35,4 +35,13 @@ public final class ValidationUtils {
             throw new BusinessException("INVALID_NAME", "Name must contain at least two words with letters only");
         }
     }
+
+    /**
+     * Returns true if the given fullName satisfies the FULL_NAME_PATTERN, false otherwise.
+     * Unlike {@link #validateFullName}, this never throws — use it for conditional checks
+     * (e.g. deciding whether an OAuth-sourced name is usable or requires onboarding).
+     */
+    public static boolean isValidFullName(String fullName) {
+        return fullName != null && FULL_NAME_PATTERN.matcher(fullName.trim()).matches();
+    }
 }
