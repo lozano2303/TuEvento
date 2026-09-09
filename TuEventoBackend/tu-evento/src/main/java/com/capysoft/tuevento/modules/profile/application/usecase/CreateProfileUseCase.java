@@ -16,6 +16,7 @@ import com.capysoft.tuevento.modules.profile.domain.model.Profile;
 import com.capysoft.tuevento.modules.profile.domain.model.ProfileLog;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileLogRepository;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
+import com.capysoft.tuevento.shared.domain.valueobject.ValidationUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,6 +37,12 @@ public class CreateProfileUseCase implements CreateProfilePort {
         if (profileRepository.existsByUserId(request.getUserId())) {
             throw new ProfileAlreadyExistsException(request.getUserId());
         }
+
+        // Validate fullName before persisting — makes this use case self-defending
+        // against direct REST API calls that bypass caller-level validation.
+        // Internal callers (OauthLoginUseCase, DataInitializer) already pre-validate,
+        // so this is a safety net, not a duplicate check.
+        ValidationUtils.validateFullName(request.getFullName());
 
         Profile profile = profileRepository.save(Profile.builder()
                 .userId(request.getUserId())

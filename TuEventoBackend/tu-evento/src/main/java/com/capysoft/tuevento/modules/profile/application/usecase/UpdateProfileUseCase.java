@@ -11,6 +11,7 @@ import com.capysoft.tuevento.modules.profile.domain.model.ProfileLog;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileLogRepository;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
+import com.capysoft.tuevento.shared.domain.valueobject.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,9 @@ public class UpdateProfileUseCase implements UpdateProfilePort {
                         "Profile not found with id: " + profileId));
 
         if (request.getFullName() != null) {
+            // Validate before persisting — guards both the onboarding flow and
+            // direct API calls that bypass the frontend validation.
+            ValidationUtils.validateFullName(request.getFullName());
             log(profile.getProfileId(), "FULL_NAME_CHANGED", profile.getFullName(), request.getFullName());
             profile.setFullName(request.getFullName());
         }

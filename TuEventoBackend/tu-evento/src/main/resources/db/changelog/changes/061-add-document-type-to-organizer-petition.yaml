@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 061-add-document-type-to-organizer-petition
+      author: capysoft
+      comment: >
+        Adds a document_type column to organizer_petition so the type of identity
+        document submitted by the user (e.g. Cédula, Pasaporte, Otro) is persisted
+        and can be shown in the admin panel instead of being hardcoded.
+        Nullable to avoid breaking existing rows; defaults to 'Cédula' for the
+        existing records that were created before this column existed.
+      changes:
+        - addColumn:
+            tableName: organizer_petition
+            columns:
+              - column:
+                  name: document_type
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: true
+        - sql:
+            sql: >
+              UPDATE organizer_petition
+              SET document_type = 'Cédula'
+              WHERE document_type IS NULL;

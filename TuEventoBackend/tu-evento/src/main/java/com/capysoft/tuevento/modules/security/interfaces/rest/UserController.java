@@ -46,9 +46,11 @@ public class UserController {
     @Operation(summary = "Submit a request to become an organizer")
     @PostMapping(value = "/organizer-request", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<RequestOrganizerResponse>> requestOrganizer(
-            @RequestParam("document") MultipartFile document) {
+            @RequestParam("document") MultipartFile document,
+            @RequestParam(value = "documentType", required = false) String documentType) {
         RequestOrganizerRequest request = RequestOrganizerRequest.builder()
                 .document(document)
+                .documentType(documentType)
                 .build();
         RequestOrganizerResponse response = requestOrganizerPort.request(request);
         return ResponseEntity.ok(ApiResponse.ok("Organizer request submitted successfully", response));

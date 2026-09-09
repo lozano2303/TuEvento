@@ -32,6 +32,9 @@ public class OrganizerPetitionEntity extends JpaAuditingEntity {
     @Column(name = "application_date", nullable = false)
     private LocalDateTime applicationDate;
 
+    @Column(name = "document_type", length = 50)
+    private String documentType;
+
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 }
