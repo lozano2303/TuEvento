@@ -693,7 +693,7 @@ function SeatSelectorSection({
                 rowsWithSeatsInColRange++;
               }
             }
-            const dynamicRowPages = Math.ceil(rowsWithSeatsInColRange / 10);
+            dynamicRowPages = Math.ceil(rowsWithSeatsInColRange / 10);  // Usar asignación en lugar de const
             
             // Para compatibilidad hacia atrás, mantener totalColPages como el global
             totalColPages = Math.ceil(gridCols / 10);
@@ -874,56 +874,42 @@ function SeatSelectorSection({
   // Handlers para navegación entre páginas de filas (ahora usa dynamicRowPages)
   const handlePrevRowPage = () => {
     if (currentRowPage > 0) {
-      const newRowPage = currentRowPage - 1;
-      setCurrentRowPage(newRowPage);
-      
-      // Reset currentColPage si la página actual se vuelve inválida para el nuevo bloque de filas
-      // Esto se manejará en el próximo useEffect cuando se recalcule dynamicColPages
-      setCurrentColPage(0);
+      setCurrentRowPage(currentRowPage - 1);
+      // No resetear columnas automáticamente - dejar que el useEffect lo maneje si es necesario
     }
   };
 
   const handleNextRowPage = () => {
     if (currentRowPage < dynamicRowPages - 1) {
-      const newRowPage = currentRowPage + 1;
-      setCurrentRowPage(newRowPage);
-      
-      // Reset currentColPage si la página actual se vuelve inválida para el nuevo bloque de filas
-      setCurrentColPage(0);
+      setCurrentRowPage(currentRowPage + 1);
+      // No resetear columnas automáticamente - dejar que el useEffect lo maneje si es necesario
     }
   };
 
   // Handlers para navegación entre páginas de columnas (ahora usa dynamicColPages)
   const handlePrevColPage = () => {
     if (currentColPage > 0) {
-      const newColPage = currentColPage - 1;
-      setCurrentColPage(newColPage);
-      
-      // Reset currentRowPage si la página actual se vuelve inválida para el nuevo bloque de columnas
-      setCurrentRowPage(0);
+      setCurrentColPage(currentColPage - 1);
+      // No resetear filas automáticamente - dejar que el useEffect lo maneje si es necesario
     }
   };
 
   const handleNextColPage = () => {
     if (currentColPage < dynamicColPages - 1) {
-      const newColPage = currentColPage + 1;
-      setCurrentColPage(newColPage);
-      
-      // Reset currentRowPage si la página actual se vuelve inválida para el nuevo bloque de columnas
-      setCurrentRowPage(0);
+      setCurrentColPage(currentColPage + 1);
+      // No resetear filas automáticamente - dejar que el useEffect lo maneje si es necesario
     }
   };
 
-  // Efecto para auto-resetear currentColPage cuando dynamicColPages cambia
+  // Auto-reset inteligente: solo resetear cuando la página actual se vuelve inválida
   useEffect(() => {
-    if (currentColPage >= dynamicColPages) {
+    if (currentColPage >= dynamicColPages && dynamicColPages > 0) {
       setCurrentColPage(Math.max(0, dynamicColPages - 1));
     }
   }, [dynamicColPages, currentColPage]);
 
-  // NUEVO: Efecto para auto-resetear currentRowPage cuando dynamicRowPages cambia
   useEffect(() => {
-    if (currentRowPage >= dynamicRowPages) {
+    if (currentRowPage >= dynamicRowPages && dynamicRowPages > 0) {
       setCurrentRowPage(Math.max(0, dynamicRowPages - 1));
     }
   }, [dynamicRowPages, currentRowPage]);
