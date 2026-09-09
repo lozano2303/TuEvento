@@ -247,7 +247,25 @@ export default function Login() {
       localStorage.setItem('alias',        result.data.alias);
       localStorage.setItem('role',         result.data.role);
       localStorage.setItem('userEmail',    googleEmail);
+      // profileId is returned when a profile row already exists but has an
+      // invalid name (existing user onboarding).  Store it so CompleteProfile
+      // knows to call PUT instead of POST.  Remove any stale value first.
+      localStorage.removeItem('profileId');
+      if (result.data.profileId != null) {
+        localStorage.setItem('profileId', result.data.profileId);
+      }
 
+      // needsOnboarding is true when the backend could not create a profile
+      // because Google did not return a valid display name, or when the stored
+      // name fails validation (pre-fix existing users like "crislozanoshark2006").
+      // Redirect immediately — do NOT fetch the profile or overwrite localStorage.name
+      // with the invalid name before the user has a chance to correct it.
+      if (result.data.needsOnboarding) {
+        window.location.href = '/complete-profile';
+        return;
+      }
+
+      // Only fetch the profile and store the name when onboarding is NOT needed.
       const [, profileResult] = await Promise.allSettled([
         refreshPalette(),
         getProfileByUserId(result.data.userID),

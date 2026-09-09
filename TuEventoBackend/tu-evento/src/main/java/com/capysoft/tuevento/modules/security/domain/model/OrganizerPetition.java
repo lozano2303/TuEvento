@@ -15,5 +15,6 @@ public class OrganizerPetition {
     private User user;
     private Integer storedFileId;
     private LocalDateTime applicationDate;
+    private String documentType;
     private String status;
 }

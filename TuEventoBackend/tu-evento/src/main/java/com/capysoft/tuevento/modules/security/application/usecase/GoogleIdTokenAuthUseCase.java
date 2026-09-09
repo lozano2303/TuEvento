@@ -45,14 +45,16 @@ public class GoogleIdTokenAuthUseCase implements GoogleAuthPort {
                   + "Verifica tu dirección de correo en Google e intenta de nuevo.");
         }
 
-        log.debug("Google ID Token verified — sub={} email={}", claims.sub(), claims.email());
+        log.info("Google ID Token verified — sub={} email={}", claims.sub(), claims.email());
 
         // 3. Build an OauthProfile from the verified claims and delegate.
         //    providerUserId = Google subject (sub) — stable, unique per user per app.
-        //    alias          = Google display name (used for auto-generated alias on first login).
+        //    fullName       = Google composite display name (e.g. "John Doe") — stored in Profile.
+        //    alias          = same value, used as fallback base for alias generation when email is absent.
         OauthProfile profile = OauthProfile.builder()
                 .providerUserId(claims.sub())
                 .email(claims.email())
+                .fullName(claims.name())
                 .alias(claims.name())
                 .build();
 

@@ -13,4 +13,7 @@ public class RequestOrganizerRequest {
 
     @NotNull
     private MultipartFile document;
+
+    /** Type of identity document submitted by the user. */
+    private String documentType;
 }

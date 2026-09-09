@@ -21,14 +21,17 @@ export const loginUser = async (email, password) => {
       throw new Error(data.message || 'Error al iniciar sesión');
     }
 
+    // Spread the full backend response, then rename the two fields that differ
+    // between the API contract and the frontend's internal naming convention.
+    // This way any new field added to LoginResponse in the backend is automatically
+    // forwarded here without needing a manual update to this mapping.
     return {
       success: true,
       data: {
-        token: data.data.accessToken,
-        refreshToken: data.data.refreshToken,
-        userID: data.data.userId,
-        alias: data.data.alias,
-        role: data.data.role || 'USER',
+        ...data.data,                         // forward all backend fields as-is
+        token:  data.data.accessToken,        // rename: accessToken  → token
+        userID: data.data.userId,             // rename: userId (camelCase) → userID (uppercase)
+        role:   data.data.role || 'USER',     // default role when absent
       },
     };
     } catch (error) {
@@ -247,14 +250,15 @@ export const googleLogin = async (idToken) => {
     throw new Error(msg || 'No se pudo iniciar sesión con Google. Intenta de nuevo.');
   }
 
+  // Same spread-then-rename pattern as loginUser() — new backend fields are
+  // forwarded automatically without needing to update this mapping.
   return {
     success: true,
     data: {
-      token:        data.data.accessToken,
-      refreshToken: data.data.refreshToken ?? '',
-      userID:       data.data.userId,
-      alias:        data.data.alias,
-      role:         data.data.role || 'USER',
+      ...data.data,                   // forward all backend fields as-is (needsOnboarding, profileId, etc.)
+      token:  data.data.accessToken,  // rename: accessToken → token
+      userID: data.data.userId,       // rename: userId → userID
+      role:   data.data.role || 'USER',
     },
   };
 };
