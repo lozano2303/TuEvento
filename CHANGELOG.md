@@ -5,12 +5,19 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- **Web - Sistema de Zoom/Paginación**: Auto-reset inteligente para navegación entre bloques (no resetear si sigue siendo válido)
+  - **Problema**: Al cambiar de página de columnas, la página de filas se reseteaba a 0 incondicionalmente, incluso cuando seguía siendo perfectamente válida para el nuevo bloque de columnas
+  - **Comportamiento anterior**: Navegar Col 1→2 siempre reseteaba de "Filas 3/11" a "Filas 1/X" automáticamente
+  - **Comportamiento nuevo**: La página actual del eje perpendicular se mantiene si sigue siendo válida, solo se resetea cuando `currentPage >= newDynamicPages`
+  - **Implementación**: Removidos resets incondicionales de handlers, implementados useEffects inteligentes que comparan `currentRowPage >= dynamicRowPages` y `currentColPage >= dynamicColPages`
+  - **Resultado**: Navegación más fluida - el eje Y se mantiene constante al navegar en X, y viceversa
+  
 - **Web - Sistema de Zoom/Paginación**: Fix crítico para controles de filas desaparecidos tras implementar dynamicRowPages
   - **Bug**: Los controles de paginación de filas ("Filas X/Y" con flechas) desaparecían completamente en Palco tras el fix simétrico
-  - **Causa**: En el caso fallback (`else` branch del `calculateFraming`), faltaba asignar `dynamicRowPages`, quedando `undefined` 
-  - **Resultado**: La condición `selectedSectionFilter && dynamicRowPages > 1` siempre evaluaba `false` (undefined > 1 = false)
-  - **Fix**: Agregado `dynamicRowPages = traditionalRowPages;` en el caso fallback para mantener consistencia
-  - **Verificado**: Los controles de filas ahora aparecen correctamente en Palco y otras secciones
+  - **Causa raíz**: Variable shadowing - `let dynamicRowPages = 1` (scope exterior) + `const dynamicRowPages = Math.ceil(...)` (scope local) 
+  - **Resultado**: Al salir del bloque, volvía a la variable exterior que seguía siendo `1`, causando `dynamicRowPages > 1 = false`
+  - **Fix**: Cambio de declaración (`const`) a asignación (`=`) para modificar correctamente la variable del scope exterior
+  - **Verificado**: Los controles de filas ahora aparecen correctamente en Palco (109 filas → 11 páginas) y otras secciones
 
 - **Web - Sistema de Zoom/Paginación**: Límites dinámicos de paginación bidireccional para formas irregulares (completo)
   - **Problema original**: En secciones polígono irregulares (ej. "L invertida"), la paginación usaba totales fijos globales, causando páginas vacías cuando el área real variaba según el bloque visible.
