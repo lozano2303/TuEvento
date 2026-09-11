@@ -54,6 +54,11 @@ public class EventRepositoryImpl implements EventRepository {
     }
 
     @Override
+    public List<Event> findAll() {
+        return jpaRepository.findAll().stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public List<Event> findAllPublished() {
         return jpaRepository.findByStatusAndIsPublic(EventStatus.PUBLISHED, true)
                 .stream().map(mapper::toDomain).toList();
