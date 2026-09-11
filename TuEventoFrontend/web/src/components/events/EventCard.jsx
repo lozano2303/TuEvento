@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import EventImagePlaceholder from '../common/EventImagePlaceholder';
 
 /**
  * EventCard — tarjeta de evento para el listado público /events.
@@ -26,10 +27,8 @@ export default function EventCard({ event, userId }) {
           className="w-full h-48 object-cover"
         />
       ) : (
-        <div className="theme-event-card-placeholder w-full h-48 flex items-center justify-center">
-          <span className="text-sm text-textMuted opacity-60">
-            Sin imagen
-          </span>
+        <div className="w-full h-48">
+          <EventImagePlaceholder size="md" themed />
         </div>
       )}
 

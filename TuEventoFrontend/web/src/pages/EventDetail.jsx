@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Calendar, MapPin, Users, ImageOff } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, MapPin, Users } from 'lucide-react';
 import { getEventById } from '../services/EventService';
 import { getEventMedia } from '../services/EventMediaService';
 import BackButton from '../components/common/BackButton';
+import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
 
 export default function EventDetail() {
   const { eventId } = useParams();
@@ -110,15 +111,7 @@ export default function EventDetail() {
                   )}
                 </>
               ) : (
-                <div
-                  className="w-full h-full flex flex-col items-center justify-center gap-2"
-                  style={{ background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)' }}
-                >
-                  <ImageOff className="w-8 h-8 text-textMuted opacity-40" />
-                  <span className="text-xs text-textMuted opacity-50">
-                    Este evento aún no tiene imágenes
-                  </span>
-                </div>
+                <EventImagePlaceholder size="lg" themed />
               )}
             </div>
 
