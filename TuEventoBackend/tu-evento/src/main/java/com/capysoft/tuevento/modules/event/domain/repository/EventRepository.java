@@ -17,6 +17,9 @@ public interface EventRepository {
     boolean existsByEventNameAndStartDateAndSiteId(String eventName, LocalDate startDate, Long siteId);
     void delete(Long eventId);
 
+    /** Returns all events regardless of status or visibility — for admin use. */
+    List<Event> findAll();
+
     /** Returns all events with status=PUBLISHED and is_public=true. */
     List<Event> findAllPublished();
 

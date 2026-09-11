@@ -16,6 +16,7 @@ import EventManage from './pages/EventManage';
 import EventDetail from './pages/EventDetail';
 import ReactivateAccountPage from './pages/ReactivateAccountPage';
 import CompleteProfile from './pages/CompleteProfile';
+import AdminEventManagement from './pages/AdminEventManagement';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -38,7 +39,11 @@ function ProtectedRoute({ children, requiredRoles }) {
 function AppContent() {
   const location = useLocation();
   // Rutas sin navbar — incluye el editor con ruta dinámica /events/:id/layout
-  const showNavbar = !['/login', '/verification', '/events/create', '/reactivate-account', '/complete-profile'].includes(location.pathname)
+  const showNavbar = ![
+    '/login', '/verification', '/events/create',
+    '/reactivate-account', '/complete-profile',
+    '/admin-panel', '/admin-events',
+  ].includes(location.pathname)
     && !location.pathname.match(/^\/events\/[^/]+\/layout$/);
 
   return (
@@ -69,6 +74,11 @@ function AppContent() {
           <Route path="/admin-panel" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminPanel />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-events" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminEventManagement />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={
