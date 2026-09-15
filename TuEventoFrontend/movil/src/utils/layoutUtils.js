@@ -387,3 +387,67 @@ export function computeTotalAABB(elements) {
 
   return { minX, minY, maxX, maxY };
 }
+
+/**
+ * Filtra las sillas de la página actual según rowStructure, currentRowPage y currentColPage.
+ * Portado de filterSeatsByPage en web/src/pages/EventDetail.jsx — misma lógica exacta.
+ *
+ * @param {Array<{x,y,r,...}>} seatPositions - Array completo de posiciones (retorno de distributeSeats)
+ * @param {Object} gridInfo - { totalRows, rowStructure, maxColsInVisibleRows }
+ * @param {number} currentColPage - Página actual de columnas (0-indexed)
+ * @param {number} currentRowPage - Página actual de filas (0-indexed)
+ * @param {boolean} isOverview - Si true, retorna [] (overview no dibuja sillas individuales)
+ * @returns {Array<{pos, realIndex}>} Sillas de la página actual con su índice global real
+ */
+export function filterSeatsByPage(seatPositions, gridInfo, currentColPage, currentRowPage, isOverview = false) {
+  // En overview nunca dibujamos sillas individuales
+  if (isOverview || !gridInfo || gridInfo.totalRows === 0 || !seatPositions) {
+    return [];
+  }
+
+  const { rowStructure, maxColsInVisibleRows } = gridInfo;
+
+  const colStart = currentColPage * 10;
+
+  // Identificar qué filas tienen al menos una silla en el rango de columnas actual
+  const validRowIndices = [];
+  for (let rowIdx = 0; rowIdx < rowStructure.length; rowIdx++) {
+    const seatsInRow = rowStructure[rowIdx];
+    if (seatsInRow > colStart) {
+      validRowIndices.push(rowIdx);
+    }
+  }
+
+  // Aplicar paginación de filas sobre las filas válidas
+  const validRowStart = currentRowPage * 10;
+  const validRowEnd = Math.min(validRowIndices.length, validRowStart + 10);
+  const visibleValidRowIndices = validRowIndices.slice(validRowStart, validRowEnd);
+
+  const filteredSeats = [];
+  let globalIndex = 0;
+
+  // Iterar por todas las filas para mantener el índice global correcto
+  for (let rowIndex = 0; rowIndex < rowStructure.length; rowIndex++) {
+    const seatsInThisRow = rowStructure[rowIndex];
+
+    if (visibleValidRowIndices.includes(rowIndex)) {
+      const effectiveColsForPagination = Math.min(seatsInThisRow, maxColsInVisibleRows);
+      const colEnd = Math.min(effectiveColsForPagination, colStart + 10);
+
+      for (let colIndex = colStart; colIndex < colEnd && colIndex < seatsInThisRow; colIndex++) {
+        const seatIndexInRow = globalIndex + colIndex;
+        if (seatIndexInRow < seatPositions.length) {
+          filteredSeats.push({
+            pos: seatPositions[seatIndexInRow],
+            realIndex: seatIndexInRow,
+          });
+        }
+      }
+    }
+
+    // Avanzar el índice global por todas las sillas de esta fila
+    globalIndex += seatsInThisRow;
+  }
+
+  return filteredSeats;
+}
