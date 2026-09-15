@@ -268,10 +268,25 @@ function addRowColIndices(positions, rowStructure) {
  * Distribuye sillas en una sección rectangular.
  */
 export const distributeSeatsRect = (element) => {
+  // 🔍 PERFORMANCE LOGGING para distributeSeatsRect
+  const rectStart = performance.now();
+  
   const sl = normalizeSeatLayout(element.seatLayout);
-  if (!sl) return [];
+  if (!sl) {
+    console.log(`❌ [distributeSeatsRect] Sin seatLayout: ${(performance.now() - rectStart).toFixed(2)}ms`);
+    return [];
+  }
 
   const { targetSeats, seatRadius, gap } = sl;
+  console.log(`📦 [distributeSeatsRect] Configuración`, {
+    targetSeats,
+    seatRadius,
+    gap,
+    elementSize: `${element.width}x${element.height}`
+  });
+  
+  // Cálculos iniciales
+  const calcStart = performance.now();
   const PADDING = 12;
   const LABEL_H = 20;
   const cellSize = seatRadius * 2 + gap;
@@ -282,16 +297,34 @@ export const distributeSeatsRect = (element) => {
   const maxRows = Math.max(1, Math.floor((availH + gap) / cellSize));
   const maxSeats = maxCols * maxRows;
   const actual = Math.min(targetSeats, maxSeats);
+  
+  console.log(`🧮 [distributeSeatsRect] Cálculos: ${(performance.now() - calcStart).toFixed(2)}ms`, {
+    availableSpace: `${availW.toFixed(1)}x${availH.toFixed(1)}`,
+    maxGrid: `${maxCols}x${maxRows}`,
+    maxSeats,
+    actualSeats: actual
+  });
 
-  if (actual <= 0) return [];
+  if (actual <= 0) {
+    console.log(`❌ [distributeSeatsRect] Sin sillas válidas: ${(performance.now() - rectStart).toFixed(2)}ms`);
+    return [];
+  }
 
+  // Optimización de aspecto
+  const aspectStart = performance.now();
   const aspectRatio = availW / Math.max(1, availH);
   let cols = Math.min(maxCols, Math.max(1, Math.round(Math.sqrt(actual * aspectRatio))));
   let rows = Math.min(maxRows, Math.ceil(actual / cols));
+  console.log(`📐 [distributeSeatsRect] Optimización aspecto: ${(performance.now() - aspectStart).toFixed(2)}ms`, {
+    aspectRatio: aspectRatio.toFixed(2),
+    initialGrid: `${cols}x${rows}`
+  });
 
   while (rows * cols > maxSeats && rows > 1) rows--;
   while (rows * cols > maxSeats && cols > 1) cols--;
 
+  // Generación de posiciones
+  const positionStart = performance.now();
   const cellW = availW / cols;
   const cellH = availH / rows;
   const positions = [];
@@ -310,6 +343,10 @@ export const distributeSeatsRect = (element) => {
       count++;
     }
   }
+  console.log(`🎯 [distributeSeatsRect] Posiciones generadas: ${(performance.now() - positionStart).toFixed(2)}ms`, {
+    finalGrid: `${cols}x${rows}`,
+    positionsCount: positions.length
+  });
 
   // Estructura uniforme: todas las filas tienen `cols` sillas salvo la última
   const rowStructure = Array(rows).fill(cols);
@@ -317,6 +354,12 @@ export const distributeSeatsRect = (element) => {
   if (seatsInLastRow < cols && rows > 0) {
     rowStructure[rows - 1] = seatsInLastRow;
   }
+  
+  console.log(`✅ [distributeSeatsRect] COMPLETADO: ${(performance.now() - rectStart).toFixed(2)}ms`, {
+    totalPositions: positions.length,
+    rowStructure: rowStructure.length,
+    isUniform: true
+  });
 
   return {
     positions,
@@ -329,19 +372,51 @@ export const distributeSeatsRect = (element) => {
  * Distribuye sillas en una sección (rect o polygon).
  */
 export const distributeSeats = (element) => {
+  // 🔍 PERFORMANCE LOGGING para distributeSeats
+  const distributeStart = performance.now();
   const shapeMode = element.shapeMode ?? 'rect';
+  const targetSeats = element.seatLayout?.targetSeats || 0;
+  
+  console.log(`🪑 [distributeSeats] Iniciando distribución`, {
+    elementId: element.id,
+    backendSectionId: element.backendSectionId,
+    shapeMode,
+    targetSeats,
+    dimensions: `${element.width}x${element.height}`
+  });
 
   if (shapeMode === 'polygon' && element.polygonPoints) {
+    const polygonStart = performance.now();
     const sl = normalizeSeatLayout(element.seatLayout);
-    if (!sl) return { positions: [], rowStructure: [], isUniformGrid: false };
+    if (!sl) {
+      console.log(`❌ [distributeSeats] Sin seatLayout válido: ${(performance.now() - distributeStart).toFixed(2)}ms`);
+      return { positions: [], rowStructure: [], isUniformGrid: false };
+    }
+    
+    console.log(`📐 [distributeSeats] Procesando polígono con ${element.polygonPoints.length} puntos`);
     const allPositions = computePolygonSeatRows(element.polygonPoints, sl);
     const limitedPositions = allPositions.slice(0, sl.targetSeats);
+    console.log(`🔷 [distributeSeats] Posiciones polígono calculadas: ${(performance.now() - polygonStart).toFixed(2)}ms`, {
+      totalCalculated: allPositions.length,
+      limited: limitedPositions.length
+    });
 
     // Derivar estructura de filas reales desde las posiciones generadas
+    const rowStructStart = performance.now();
     const rowStructure = deriveRowStructureFromPositions(limitedPositions, sl.seatRadius * 2 + sl.gap);
+    console.log(`📊 [distributeSeats] Estructura filas derivada: ${(performance.now() - rowStructStart).toFixed(2)}ms`, {
+      rows: rowStructure.length
+    });
 
     // Asignar rowIndex y colIndex a cada posición
+    const indicesStart = performance.now();
     const positionsWithIndices = addRowColIndices(limitedPositions, rowStructure);
+    console.log(`🔢 [distributeSeats] Índices asignados: ${(performance.now() - indicesStart).toFixed(2)}ms`);
+    
+    console.log(`✅ [distributeSeats] POLÍGONO completado: ${(performance.now() - distributeStart).toFixed(2)}ms`, {
+      finalPositions: positionsWithIndices.length,
+      rows: rowStructure.length
+    });
 
     return {
       positions: positionsWithIndices,
@@ -350,7 +425,14 @@ export const distributeSeats = (element) => {
     };
   }
 
-  return distributeSeatsRect(element);
+  // Procesar forma rectangular
+  console.log(`📦 [distributeSeats] Procesando rectángulo`);
+  const rectStart = performance.now();
+  const result = distributeSeatsRect(element);
+  console.log(`✅ [distributeSeats] RECTÁNGULO completado: ${(performance.now() - rectStart).toFixed(2)}ms`);
+  console.log(`🏁 [distributeSeats] TOTAL: ${(performance.now() - distributeStart).toFixed(2)}ms`);
+  
+  return result;
 };
 
 /**
@@ -391,9 +473,10 @@ export function computeTotalAABB(elements) {
 /**
  * Filtra las sillas de la página actual según rowStructure, currentRowPage y currentColPage.
  * Portado de filterSeatsByPage en web/src/pages/EventDetail.jsx — misma lógica exacta.
+ * 🚀 OPTIMIZADO con cache pero manteniendo consistencia con web (10x10).
  *
  * @param {Array<{x,y,r,...}>} seatPositions - Array completo de posiciones (retorno de distributeSeats)
- * @param {Object} gridInfo - { totalRows, rowStructure, maxColsInVisibleRows }
+ * @param {Object} gridInfo - { totalRows, rowStructure, maxColsInVisibleRows, rowPageSize?, colPageSize? }
  * @param {number} currentColPage - Página actual de columnas (0-indexed)
  * @param {number} currentRowPage - Página actual de filas (0-indexed)
  * @param {boolean} isOverview - Si true, retorna [] (overview no dibuja sillas individuales)
@@ -406,8 +489,12 @@ export function filterSeatsByPage(seatPositions, gridInfo, currentColPage, curre
   }
 
   const { rowStructure, maxColsInVisibleRows } = gridInfo;
+  
+  // 🚀 CONSISTENCIA WEB: Siempre 10x10 por defecto, como en la web
+  const rowPageSize = gridInfo.rowPageSize || 10; // Siempre 10 como en web
+  const colPageSize = gridInfo.colPageSize || 10; // Siempre 10 como en web
 
-  const colStart = currentColPage * 10;
+  const colStart = currentColPage * colPageSize;
 
   // Identificar qué filas tienen al menos una silla en el rango de columnas actual
   const validRowIndices = [];
@@ -418,9 +505,9 @@ export function filterSeatsByPage(seatPositions, gridInfo, currentColPage, curre
     }
   }
 
-  // Aplicar paginación de filas sobre las filas válidas
-  const validRowStart = currentRowPage * 10;
-  const validRowEnd = Math.min(validRowIndices.length, validRowStart + 10);
+  // Aplicar paginación de filas sobre las filas válidas (SIEMPRE 10x10)
+  const validRowStart = currentRowPage * rowPageSize;
+  const validRowEnd = Math.min(validRowIndices.length, validRowStart + rowPageSize);
   const visibleValidRowIndices = validRowIndices.slice(validRowStart, validRowEnd);
 
   const filteredSeats = [];
@@ -432,7 +519,7 @@ export function filterSeatsByPage(seatPositions, gridInfo, currentColPage, curre
 
     if (visibleValidRowIndices.includes(rowIndex)) {
       const effectiveColsForPagination = Math.min(seatsInThisRow, maxColsInVisibleRows);
-      const colEnd = Math.min(effectiveColsForPagination, colStart + 10);
+      const colEnd = Math.min(effectiveColsForPagination, colStart + colPageSize);
 
       for (let colIndex = colStart; colIndex < colEnd && colIndex < seatsInThisRow; colIndex++) {
         const seatIndexInRow = globalIndex + colIndex;

@@ -163,6 +163,7 @@ export default function EventDetailScreen() {
 
   const MIN_SEAT_TOUCH_RADIUS_PX = 22; // Tamaño táctil mínimo deseado en píxeles
   const [seats, setSeats] = useState({});
+  const [seatsBySection, setSeatsBySection] = useState({}); // 🚀 NUEVO: Índice optimizado por sección
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [reserving, setReserving] = useState(new Set());
   const [loading, setLoading] = useState(true);
@@ -193,14 +194,73 @@ export default function EventDetailScreen() {
   const currentSubSections = selectedSectionId ? (groupedSections[selectedSectionId] || []) : [];
   const hasMultipleSubSections = currentSubSections.length > 1;
 
+  // 🔍 PERFORMANCE: Handler optimizado para selección de sección
+  const handleSectionSelection = (sectionId) => {
+    const selectionStart = performance.now();
+    const currentlyActive = selectedSectionId === sectionId;
+    const newSectionId = currentlyActive ? null : sectionId;
+    
+    console.log(`🎯 [EventDetailScreen] Seleccionando sección: ${newSectionId || 'Vista general'}`, {
+      previousSection: selectedSectionId,
+      newSection: newSectionId,
+      wasActive: currentlyActive
+    });
+    
+    setSelectedSectionId(newSectionId);
+    
+    console.log(`✅ [EventDetailScreen] Sección seleccionada: ${(performance.now() - selectionStart).toFixed(2)}ms`);
+  };
+
   // Reset de índice al cambiar de sección
   useEffect(() => {
+    const resetStart = performance.now();
+    console.log(`🔄 [EventDetailScreen] Reseteando navegación para sección: ${selectedSectionId || 'Vista general'}`);
+    
     setCurrentSubSectionIndex(0);
     setCurrentRowPage(0);
     setCurrentColPage(0);
+    
+    console.log(`✅ [EventDetailScreen] Reset completado: ${(performance.now() - resetStart).toFixed(2)}ms`);
   }, [selectedSectionId]);
 
-  // Hidratar el stepper con el número de sillas ya reservadas
+  // 🚀 OPTIMIZACIÓN: Recalcular índice cuando cambian las sillas (SOLO CAMBIOS INCREMENTALES)
+  useEffect(() => {
+    const rebuildIndex = performance.now();
+    
+    // 🔥 OPTIMIZACIÓN CRÍTICA: Solo recalcular si hay cambios reales en el estado
+    const currentSeatIds = new Set(Object.keys(seats));
+    const previousSeatIds = new Set();
+    Object.values(seatsBySection).forEach(sectionSeats => {
+      sectionSeats.forEach(seat => previousSeatIds.add(seat.seatId.toString()));
+    });
+    
+    // Si no hay diferencias en los IDs, no recalcular (evita rebuild por cambios de estado)
+    const hasNewSeats = currentSeatIds.size !== previousSeatIds.size || 
+      [...currentSeatIds].some(id => !previousSeatIds.has(id));
+    
+    if (!hasNewSeats && Object.keys(seatsBySection).length > 0) {
+      console.log(`⚡ [EventDetailScreen] Índice skip - sin cambios: ${(performance.now() - rebuildIndex).toFixed(2)}ms`);
+      return;
+    }
+    
+    const newSeatsBySection = {};
+    
+    Object.values(seats).forEach((seat) => {
+      const sectionId = seat.eventSectionId;
+      if (!newSeatsBySection[sectionId]) {
+        newSeatsBySection[sectionId] = [];
+      }
+      newSeatsBySection[sectionId].push(seat);
+    });
+    
+    // Ordenar cada sección
+    Object.keys(newSeatsBySection).forEach((sectionId) => {
+      newSeatsBySection[sectionId].sort((a, b) => a.code.localeCompare(b.code));
+    });
+    
+    setSeatsBySection(newSeatsBySection);
+    console.log(`🔄 [EventDetailScreen] Índice actualizado: ${(performance.now() - rebuildIndex).toFixed(2)}ms`);
+  }, [seats]); // 🔥 CRÍTICO: Recalcular cuando cambia seats
   useEffect(() => {
     if (cart.length > 0 && cart.length > selectedQuantity) {
       setSelectedQuantity(cart.length);
@@ -210,14 +270,21 @@ export default function EventDetailScreen() {
   useEffect(() => {
     const loadEventDetail = async () => {
       try {
+        // 🔍 PERFORMANCE LOGGING - Inicio de carga
+        const loadStartTime = performance.now();
+        console.log(`🚀 [EventDetailScreen] Iniciando carga de evento ${eventId}`);
+        
         setLoading(true);
         setError(null);
 
-        // Cargar detalles del evento
+        // 🔍 TIMING: Cargar detalles del evento
+        const eventDetailStart = performance.now();
         const eventData = await getEventDetail(eventId);
+        console.log(`📋 [EventDetailScreen] Detalles evento: ${(performance.now() - eventDetailStart).toFixed(2)}ms`);
         setEvent(eventData);
 
-        // Cargar imágenes del evento
+        // 🔍 TIMING: Cargar imágenes del evento
+        const mediaStart = performance.now();
         const mediaData = await getEventMedia(eventId);
         
         // Procesar URLs de imágenes (reemplazar localhost por MinIO host)
@@ -227,35 +294,76 @@ export default function EventDetailScreen() {
             ? item.imgUrl.replace("localhost", process.env.EXPO_PUBLIC_MINIO_HOST ?? "localhost")
             : null,
         }));
+        console.log(`🖼️ [EventDetailScreen] Media procesado: ${(performance.now() - mediaStart).toFixed(2)}ms`, {
+          mediaCount: processedMedia.length
+        });
         setMedia(processedMedia);
 
-        // Cargar layout del evento (puede ser null si no existe)
+        // 🔍 TIMING: Cargar layout del evento (puede ser null si no existe)
+        const layoutStart = performance.now();
         const layoutData = await getEventLayout(eventId);
         if (layoutData && layoutData.layoutData) {
           const parsedLayout = JSON.parse(layoutData.layoutData);
+          console.log(`📐 [EventDetailScreen] Layout parseado: ${(performance.now() - layoutStart).toFixed(2)}ms`, {
+            elementos: parsedLayout.elements?.length || 0,
+            canvasSize: `${parsedLayout.canvasWidth}x${parsedLayout.canvasHeight}`
+          });
           setLayout(parsedLayout);
+        } else {
+          console.log(`❌ [EventDetailScreen] Sin layout: ${(performance.now() - layoutStart).toFixed(2)}ms`);
         }
 
-        // Cargar secciones del evento
+        // 🔍 TIMING: Cargar secciones del evento
+        const sectionsStart = performance.now();
         const sectionsData = await getEventSections(eventId);
+        console.log(`🏛️ [EventDetailScreen] Secciones cargadas: ${(performance.now() - sectionsStart).toFixed(2)}ms`, {
+          sectionCount: sectionsData?.length || 0
+        });
         setSections(sectionsData || []);
 
+        // 🔍 TIMING: Cargar sillas de todas las secciones (PUEDE SER MUY COSTOSO)
+        const seatsStart = performance.now();
         // Cargar sillas de todas las secciones para detectar reservas existentes
         // Esto permite hidratar el stepper correctamente al entrar a la vista
         if (sectionsData && sectionsData.length > 0 && currentUserId) {
+          console.log(`🪑 [EventDetailScreen] Iniciando carga de sillas para ${sectionsData.length} secciones...`);
           const allSeatsMap = {};
+          const allSeatsBySection = {}; // 🚀 NUEVO: Índice por sección
+          let totalSeatsLoaded = 0;
+          
           for (const section of sectionsData) {
             try {
+              const sectionSeatsStart = performance.now();
               const sectionSeats = await seatService.getSeatsBySection(section.eventSectionId);
+              console.log(`💺 [EventDetailScreen] Sillas sección ${section.eventSectionId}: ${(performance.now() - sectionSeatsStart).toFixed(2)}ms`, {
+                seatCount: sectionSeats.length,
+                sectionName: section.sectionTypeName
+              });
+              
               sectionSeats.forEach((seat) => {
                 allSeatsMap[seat.seatId] = seat;
               });
+              totalSeatsLoaded += sectionSeats.length;
+              
+              // 🚀 OPTIMIZACIÓN: Crear índice por sección pre-ordenado
+              const sortedSectionSeats = sectionSeats.sort((a, b) => a.code.localeCompare(b.code));
+              if (!allSeatsBySection[section.eventSectionId]) {
+                allSeatsBySection[section.eventSectionId] = [];
+              }
+              allSeatsBySection[section.eventSectionId] = sortedSectionSeats;
             } catch (err) {
-              console.warn(`[EventDetailScreen] Could not load seats for section ${section.eventSectionId}:`, err);
+              console.error(`❌ [EventDetailScreen] Error cargando sillas sección ${section.eventSectionId}:`, err);
             }
           }
+          console.log(`🪑 [EventDetailScreen] TOTAL sillas cargadas: ${(performance.now() - seatsStart).toFixed(2)}ms`, {
+            totalSeats: totalSeatsLoaded,
+            sections: sectionsData.length
+          });
           setSeats(allSeatsMap);
+          setSeatsBySection(allSeatsBySection); // 🚀 Guardar índice optimizado
         }
+
+        console.log(`✅ [EventDetailScreen] Carga completa: ${(performance.now() - loadStartTime).toFixed(2)}ms`);
       } catch (err) {
         console.error("[EventDetailScreen] Error loading event:", err);
         setError(err.message || "Error al cargar el evento");
@@ -378,19 +486,24 @@ export default function EventDetailScreen() {
 
   // Handler de reserva de silla (optimistic UI + rollback)
   const handleReserveSeat = async (seatId) => {
+    console.log(`🚀 [EventDetailScreen] handleReserveSeat iniciado para silla ${seatId}`);
+    
     // CASO 9: Usuario anónimo intenta reservar
     if (!currentUserId) {
+      console.log(`❌ [EventDetailScreen] Usuario no autenticado`);
       showToast('auth-required', 'Iniciá sesión para reservar sillas', 'warning');
       return;
     }
 
     // CASO 11: Evento ya no disponible (COMPLETED/CANCELLED)
     if (event.status === 'COMPLETED' || event.status === 'CANCELLED') {
+      console.log(`❌ [EventDetailScreen] Evento no disponible - status: ${event.status}`);
       showToast('event-unavailable', 'Este evento ya no acepta reservas', 'error');
       return;
     }
 
     const previous = seats[seatId];
+    console.log(`📝 [EventDetailScreen] Estado anterior de silla ${seatId}:`, previous);
 
     // Actualización optimista
     setSeats((prev) => ({
@@ -403,11 +516,15 @@ export default function EventDetailScreen() {
       },
     }));
     setReserving((prev) => new Set(prev).add(seatId));
+    console.log(`⚡ [EventDetailScreen] Actualización optimista aplicada para silla ${seatId}`);
 
     try {
+      console.log(`🌐 [EventDetailScreen] Llamando API para reservar silla ${seatId}`);
       const result = await seatService.reserveSeat(seatId);
+      console.log(`✅ [EventDetailScreen] Reserva exitosa para silla ${seatId}:`, result);
       setSeats((prev) => ({ ...prev, [seatId]: result }));
     } catch (err) {
+      console.log(`❌ [EventDetailScreen] Error reservando silla ${seatId}:`, err);
       // Rollback en caso de error
       setSeats((prev) => ({ ...prev, [seatId]: previous }));
       
@@ -424,6 +541,7 @@ export default function EventDetailScreen() {
         showToast('reserve-error', 'No se pudo reservar la silla, intentalo de nuevo', 'error');
       }
     } finally {
+      console.log(`🔄 [EventDetailScreen] Limpiando estado reserving para silla ${seatId}`);
       setReserving((prev) => {
         const next = new Set(prev);
         next.delete(seatId);
@@ -495,20 +613,41 @@ export default function EventDetailScreen() {
 
   // Handler de tap en silla
   const onSeatPress = (seatId) => {
-    if (reserving.has(seatId)) return; // Evitar doble-tap mientras está en vuelo
+    console.log(`🎯 [EventDetailScreen] onSeatPress llamado con seatId: ${seatId}`);
+    
+    if (reserving.has(seatId)) {
+      console.log(`⏳ [EventDetailScreen] Silla ${seatId} ya está en proceso de reserva`);
+      return; // Evitar doble-tap mientras está en vuelo
+    }
 
     const seat = seats[seatId];
-    if (!seat) return;
+    if (!seat) {
+      console.log(`❌ [EventDetailScreen] Silla ${seatId} no encontrada en estado`);
+      return;
+    }
+    
+    console.log(`💺 [EventDetailScreen] Procesando silla ${seatId}:`, {
+      status: seat.status,
+      reservedBy: seat.reservedBy,
+      currentUserId,
+      cartLength: cart.length,
+      selectedQuantity
+    });
 
     if (seat.status === 'AVAILABLE') {
       // CASO 1: Límite del stepper alcanzado
       if (cart.length >= selectedQuantity) {
+        console.log(`⚠️ [EventDetailScreen] Límite del stepper alcanzado: ${cart.length} >= ${selectedQuantity}`);
         showToast('stepper-limit', 'Agregá una silla más para poder seleccionar', 'warning');
         return;
       }
+      console.log(`✅ [EventDetailScreen] Reservando silla ${seatId}`);
       handleReserveSeat(seatId);
     } else if (seat.status === 'RESERVED' && seat.reservedBy === currentUserId) {
+      console.log(`🔄 [EventDetailScreen] Liberando silla ${seatId}`);
       handleReleaseSeat(seatId);
+    } else {
+      console.log(`🚫 [EventDetailScreen] Silla ${seatId} no es clickeable - status: ${seat.status}, reservedBy: ${seat.reservedBy}`);
     }
     // Resto de estados: no-op (silla no clickeable)
   };
@@ -815,7 +954,7 @@ export default function EventDetailScreen() {
                     {selectedSectionId && (
                       <TouchableOpacity
                         style={styles.sectionChipAll}
-                        onPress={() => setSelectedSectionId(null)}
+                        onPress={() => handleSectionSelection(null)}
                         activeOpacity={0.7}
                       >
                         <Ionicons name="apps-outline" size={16} color={colors.textPrimary} />
@@ -832,9 +971,7 @@ export default function EventDetailScreen() {
                             styles.sectionChip,
                             isActive && styles.sectionChipActive,
                           ]}
-                          onPress={() => setSelectedSectionId(
-                            isActive ? null : section.eventSectionId
-                          )}
+                          onPress={() => handleSectionSelection(section.eventSectionId)}
                           activeOpacity={0.7}
                         >
                           <Text style={[
@@ -1009,6 +1146,7 @@ export default function EventDetailScreen() {
                     currentColPage={currentColPage}
                     sections={sections}
                     seats={seats}
+                    seatsBySection={seatsBySection} // 🚀 NUEVO: Pasar índice optimizado
                     onSeatPress={onSeatPress}
                     currentUserId={currentUserId}
                     reserving={reserving}
