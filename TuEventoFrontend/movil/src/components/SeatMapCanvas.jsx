@@ -1,4 +1,4 @@
-﻿import { useEffect } from "react";
+﻿import React, { useEffect } from "react";
 import { View, StyleSheet, TouchableWithoutFeedback } from "react-native";
 import { Canvas, Path, Circle, Text, rect, Skia } from "@shopify/react-native-skia";
 import {
@@ -25,6 +25,7 @@ import { findSeatAt } from "../utils/seatHitTesting";
  * - seats: objeto { [seatId]: SeatResponse }
  * - onSeatPress: callback (seatId) => void
  * - currentUserId: ID del usuario actual
+ * - reserving: Set de seatIds que están en proceso de reserva
  * - onRowPagesChange: callback (total) => void
  * - onColPagesChange: callback (total) => void
  */
@@ -40,6 +41,7 @@ export default function SeatMapCanvas({
   seats = {},
   onSeatPress,
   currentUserId = null,
+  reserving = new Set(),
   onRowPagesChange,
   onColPagesChange,
 }) {
@@ -87,8 +89,26 @@ export default function SeatMapCanvas({
   if (!containerWidth || !containerHeight || containerWidth <= 0 || containerHeight <= 0) return null;
   if (!contentWidth  || !contentHeight  || contentWidth  <= 0 || contentHeight  <= 0) return null;
 
-  // Espacio disponible con padding
-  const PADDING     = 20;
+  // Espacio disponible con padding - márgenes adaptativos para pantallas pequeñas
+  const ZOOM_MARGIN_BASE = 60;       // Margen base (igual que web)
+  const SEAT_VIEW_MARGIN_BASE = 24;  // Margen base para vista de sillas (igual que web: 24px)
+  
+  // 🔧 NUEVO: Reducir márgenes en pantallas pequeñas para ganar espacio
+  const minScreenDimension = Math.min(containerWidth, containerHeight);
+  let ZOOM_MARGIN = ZOOM_MARGIN_BASE;
+  let SEAT_VIEW_MARGIN = SEAT_VIEW_MARGIN_BASE;
+  
+  if (minScreenDimension < 400) {
+    // Pantalla muy pequeña: reducir márgenes al 50%
+    ZOOM_MARGIN *= 0.5;
+    SEAT_VIEW_MARGIN *= 0.5;
+  } else if (minScreenDimension < 500) {
+    // Pantalla pequeña: reducir márgenes al 70%
+    ZOOM_MARGIN *= 0.7;
+    SEAT_VIEW_MARGIN *= 0.7;
+  }
+  
+  const PADDING = ZOOM_MARGIN;  // Usar ZOOM_MARGIN como padding principal
   const availWidth  = containerWidth  - PADDING * 2;
   const availHeight = containerHeight - PADDING * 2;
 
@@ -138,34 +158,55 @@ export default function SeatMapCanvas({
           // Bounding box real de las sillas visibles en coordenadas locales al elemento
           const positions = pageSeats.map((s) => s.pos);
           const seatR     = positions[0].r || seatLayout.seatRadius || 7;
-          const localMinX = Math.min(...positions.map((p) => p.x)) - seatR;
-          const localMaxX = Math.max(...positions.map((p) => p.x)) + seatR;
-          const localMinY = Math.min(...positions.map((p) => p.y)) - seatR;
-          const localMaxY = Math.max(...positions.map((p) => p.y)) + seatR;
+          
+          // 🔧 CRÍTICO: Calcular bounding box real desde las posiciones filtradas (como en web)
+          // Incluir el radio completo de cada silla para evitar cortes
+          const localMinX = Math.min(...positions.map((p) => p.x - p.r)) - SEAT_VIEW_MARGIN;
+          const localMaxX = Math.max(...positions.map((p) => p.x + p.r)) + SEAT_VIEW_MARGIN;
+          const localMinY = Math.min(...positions.map((p) => p.y - p.r)) - SEAT_VIEW_MARGIN;
+          const localMaxY = Math.max(...positions.map((p) => p.y + p.r)) + SEAT_VIEW_MARGIN;
 
-          // Convertir a coordenadas globales
+          // Convertir a coordenadas globales (igual que en web)
           const globalMinX = localMinX + el.x;
           const globalMaxX = localMaxX + el.x;
           const globalMinY = localMinY + el.y;
           const globalMaxY = localMaxY + el.y;
 
-          const windowWidth  = (globalMaxX - globalMinX) + PADDING * 2;
-          const windowHeight = (globalMaxY - globalMinY) + PADDING * 2;
+          // Usar dimensiones reales de las sillas filtradas (igual que web)
+          const windowWidth  = (globalMaxX - globalMinX);
+          const windowHeight = (globalMaxY - globalMinY);
 
+          // Aplicar SEAT_VIEW_MARGIN para respiración visual como en web (24px)
+          const availableWidth = containerWidth - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+          const availableHeight = containerHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+          
           // Scale para que la ventana quepa en el viewport
-          scale = Math.min(availWidth / windowWidth, availHeight / windowHeight);
+          scale = Math.min(availableWidth / windowWidth, availableHeight / windowHeight);
 
-          // Aplicar minimo tactil (16px como en web)
-          const minTouchScale = 16 / (seatLayout.seatRadius || 7);
-          scale = Math.max(scale, minTouchScale);
+          // Aplicar mínimo táctil igual que en web (16px), PERO con límite dinámico para pantallas pequeñas
+          const MIN_SEAT_TOUCH_RADIUS_PX = 16; // Mismo valor que la web
+          const minTouchScale = MIN_SEAT_TOUCH_RADIUS_PX / (seatLayout.seatRadius || 7);
+          
+          // 🔧 NUEVO: Limitar el zoom táctil si causa cortes en pantallas pequeñas
+          // Calcular el scale máximo que permite que el contenido entre sin cortes
+          const maxScaleForViewport = Math.min(
+            (containerWidth - ZOOM_MARGIN * 2) / windowWidth,
+            (containerHeight - ZOOM_MARGIN * 2) / windowHeight
+          );
+          
+          // Usar el menor entre zoom táctil y lo que cabe en pantalla
+          scale = Math.max(scale, Math.min(minTouchScale, maxScaleForViewport));
 
           if (!isFinite(scale) || scale <= 0) scale = 1;
 
-          // Centrar sobre el bounding box real de la pagina
+          // 🔧 CRÍTICO: Centrar sobre el bounding box real de la página (igual que web)
+          // Usar efectiveViewport con AMBOS márgenes como en web
+          const effectiveViewportWidth = containerWidth - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+          const effectiveViewportHeight = containerHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
           const centerX = (globalMinX + globalMaxX) / 2;
           const centerY = (globalMinY + globalMaxY) / 2;
-          effectiveOffsetX = containerWidth  / 2 - centerX * scale;
-          effectiveOffsetY = containerHeight / 2 - centerY * scale;
+          effectiveOffsetX = ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveViewportWidth / 2 - centerX * scale;
+          effectiveOffsetY = ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveViewportHeight / 2 - centerY * scale;
         } else {
           // Sin sillas filtradas: fit clasico
           scale = Math.min(availWidth / contentWidth, availHeight / contentHeight);
@@ -174,10 +215,11 @@ export default function SeatMapCanvas({
           effectiveOffsetY = (containerHeight - contentHeight * scale) / 2 - totalAABB.minY * scale;
         }
       } else {
-        // Sin rowStructure: fit con minimo tactil
+        // Sin rowStructure: fit con mínimo táctil igual que web
+        const MIN_SEAT_TOUCH_RADIUS_PX = 16;
         scale = Math.max(
           Math.min(availWidth / contentWidth, availHeight / contentHeight),
-          16 / (seatLayout.seatRadius || 7)
+          MIN_SEAT_TOUCH_RADIUS_PX / (seatLayout.seatRadius || 7)
         );
         if (!isFinite(scale) || scale <= 0) scale = 1;
         effectiveOffsetX = (containerWidth  - contentWidth  * scale) / 2 - totalAABB.minX * scale;
@@ -242,9 +284,12 @@ export default function SeatMapCanvas({
                 sections={sections}
                 seats={seats}
                 currentUserId={currentUserId}
+                reserving={reserving}
                 orderedLayoutElements={orderedLayoutElements}
                 currentRowPage={currentRowPage}
                 currentColPage={currentColPage}
+                containerWidth={containerWidth}
+                containerHeight={containerHeight}
               />
             ))}
           </Canvas>
@@ -255,17 +300,27 @@ export default function SeatMapCanvas({
 }
 
 // ---------------------------------------------------------------------------
-// Color de silla segun estado
+// Color de silla según estado - usando exactamente los mismos colores que la web
 // ---------------------------------------------------------------------------
-function getSeatColor(seat, currentUserId) {
+function getSeatColor(seat, currentUserId, isSectionFiltered = false, isReserving = false) {
   if (!seat) return "#6B7280";
-  if (seat.status === "AVAILABLE") return "#FFFFFF";
-  if (seat.status === "SOLD")      return "#EF4444";
-  if (seat.status === "COURTESY")  return "#8B5CF6";
-  if (seat.status === "RESERVED") {
-    return seat.reservedBy === currentUserId ? "#10B981" : "#F59E0B";
-  }
-  return "#6B7280";
+  
+  // Si la sección está filtrada (no es la seleccionada), usar color gris
+  if (isSectionFiltered) return "#4B5563";
+  
+  // Si está en proceso de reserva, usar color gris claro como en web
+  if (isReserving) return "#9CA3AF";
+  
+  const isMyReservation = seat.status === "RESERVED" && seat.reservedBy === currentUserId;
+  const isOtherReservation = seat.status === "RESERVED" && seat.reservedBy !== currentUserId;
+  
+  if (seat.status === "AVAILABLE") return "#10B981";      // Verde para disponibles
+  if (isMyReservation) return "#3B82F6";                  // Azul para mis reservas  
+  if (isOtherReservation) return "#FBBF24";               // Amarillo para reservas de otros
+  if (seat.status === "SOLD") return "#6B7280";           // Gris para vendidas
+  if (seat.status === "COURTESY") return "#8B5CF6";       // Púrpura para cortesías
+  
+  return "#6B7280"; // Gris por defecto
 }
 
 // ---------------------------------------------------------------------------
@@ -280,10 +335,22 @@ function SectionRenderer({
   sections,
   seats,
   currentUserId,
+  reserving = new Set(),
   orderedLayoutElements = [],
   currentRowPage = 0,
   currentColPage = 0,
+  containerWidth = 400,
+  containerHeight = 600,
 }) {
+  // 🔧 Calcular márgenes adaptativos localmente (igual que en el componente principal)
+  const minScreenDimension = Math.min(containerWidth, containerHeight);
+  let SEAT_VIEW_MARGIN = 24; // Margen base
+  
+  if (minScreenDimension < 400) {
+    SEAT_VIEW_MARGIN *= 0.5; // Pantalla muy pequeña: 50%
+  } else if (minScreenDimension < 500) {
+    SEAT_VIEW_MARGIN *= 0.7; // Pantalla pequeña: 70%
+  }
   const shapeMode   = element.shapeMode ?? "rect";
   const color       = element.color     ?? "#3B82F6";
   const label       = element.label     ?? "";
@@ -314,6 +381,31 @@ function SectionRenderer({
     seatPositions, gridInfo, currentColPage, currentRowPage, inOverviewMode
   );
 
+  // 🔧 NUEVO: Calcular background rect basado en sillas filtradas (igual que web)
+  const backgroundRect = (() => {
+    if (inOverviewMode || pageFilteredSeats.length === 0) {
+      // Vista general → usar dimensiones completas de la sección
+      return { x: 0, y: 0, width: element.width, height: element.height };
+    }
+
+    // Vista enfocada → calcular bounding box de las sillas de la página actual
+    const positions = pageFilteredSeats.map(item => item.pos);
+    const seatRadius = positions[0]?.r || 7;
+    
+    const minX = Math.min(...positions.map(p => p.x)) - seatRadius;
+    const maxX = Math.max(...positions.map(p => p.x)) + seatRadius;
+    const minY = Math.min(...positions.map(p => p.y)) - seatRadius;
+    const maxY = Math.max(...positions.map(p => p.y)) + seatRadius;
+
+    // Expandir el bounding box con margen visual simétrico (usar margen dinámico)
+    return {
+      x: minX - SEAT_VIEW_MARGIN,
+      y: minY - SEAT_VIEW_MARGIN,
+      width: (maxX - minX) + (SEAT_VIEW_MARGIN * 2),
+      height: (maxY - minY) + (SEAT_VIEW_MARGIN * 2)
+    };
+  })();
+
   // Sillas de esta seccion ordenadas por codigo
   const allSectionSeats = Object.values(seats)
     .filter((s) => s.eventSectionId === element.backendSectionId)
@@ -321,7 +413,7 @@ function SectionRenderer({
 
   const elementOffset = calculateSeatOffset(element, orderedLayoutElements);
 
-  // Path de la forma
+  // Path de la forma - usar backgroundRect para vista enfocada
   const shapePath = Skia.Path.Make();
   if (shapeMode === "polygon" && element.polygonPoints) {
     const flatPoints = flattenPolygonForFill(element.polygonPoints);
@@ -333,15 +425,27 @@ function SectionRenderer({
       shapePath.close();
     }
   } else {
-    shapePath.addRect(rect(transformX(element.x), transformY(element.y), element.width * scale, element.height * scale));
+    // Para rectángulos, usar backgroundRect calculado
+    shapePath.addRect(rect(
+      transformX(element.x + backgroundRect.x), 
+      transformY(element.y + backgroundRect.y), 
+      backgroundRect.width * scale, 
+      backgroundRect.height * scale
+    ));
   }
 
   const fillOpacity  = inOverviewMode ? "80" : "40";
   const fillColor    = color + fillOpacity;
   const strokeColor  = color;
   const strokeWidth  = inOverviewMode ? 3 * scale : 2 * scale;
-  const centerX      = transformX(element.x + element.width  / 2);
-  const centerY      = transformY(element.y + element.height / 2);
+  
+  // Centro del texto basado en backgroundRect para vista enfocada
+  const centerX = inOverviewMode 
+    ? transformX(element.x + element.width / 2)
+    : transformX(element.x + backgroundRect.x + backgroundRect.width / 2);
+  const centerY = inOverviewMode
+    ? transformY(element.y + element.height / 2)
+    : transformY(element.y + backgroundRect.y + backgroundRect.height / 2);
 
   return (
     <>
@@ -352,14 +456,50 @@ function SectionRenderer({
       {!inOverviewMode && pageFilteredSeats.map(({ pos, realIndex }) => {
         const seat = allSectionSeats[elementOffset + realIndex];
         if (!seat) return null;
+        
+        const isMyReservation = seat.status === "RESERVED" && seat.reservedBy === currentUserId;
+        const isReserving = reserving.has(seat.seatId);
+        const seatColor = getSeatColor(seat, currentUserId, false, isReserving);
+        const seatX = transformX(element.x + pos.x);
+        const seatY = transformY(element.y + pos.y);
+        
+        // 🔧 NUEVO: Reducir dinámicamente el radio si las sillas se ven cortadas
+        let seatRadius = pos.r * scale;
+        
+        // Si estamos en una pantalla pequeña, reducir el radio para evitar cortes
+        // Usar la misma lógica que para los márgenes
+        if (minScreenDimension < 400) {
+          // Pantalla muy pequeña: reducir radio al 75%
+          seatRadius *= 0.75;
+        } else if (minScreenDimension < 500) {
+          // Pantalla pequeña: reducir radio al 85%
+          seatRadius *= 0.85;
+        }
+        
+        // Mínimo absoluto para que siga siendo táctil
+        seatRadius = Math.max(seatRadius, 8);
+        
         return (
-          <Circle
-            key={seat.seatId}
-            cx={transformX(element.x + pos.x)}
-            cy={transformY(element.y + pos.y)}
-            r={pos.r * scale}
-            color={getSeatColor(seat, currentUserId)}
-          />
+          <React.Fragment key={seat.seatId}>
+            {/* Círculo principal de la silla */}
+            <Circle
+              cx={seatX}
+              cy={seatY}
+              r={seatRadius}
+              color={seatColor}
+            />
+            {/* Borde blanco para mis reservas como en la web */}
+            {isMyReservation && (
+              <Circle
+                cx={seatX}
+                cy={seatY}
+                r={seatRadius}
+                style="stroke"
+                color="#FFFFFF"
+                strokeWidth={Math.max(1, 2 * scale * 0.8)} // Reducir grosor del borde también
+              />
+            )}
+          </React.Fragment>
         );
       })}
 

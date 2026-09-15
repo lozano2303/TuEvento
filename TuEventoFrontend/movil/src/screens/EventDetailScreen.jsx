@@ -1011,6 +1011,7 @@ export default function EventDetailScreen() {
                     seats={seats}
                     onSeatPress={onSeatPress}
                     currentUserId={currentUserId}
+                    reserving={reserving}
                     onRowPagesChange={setTotalRowPages}
                     onColPagesChange={setTotalColPages}
                   />
