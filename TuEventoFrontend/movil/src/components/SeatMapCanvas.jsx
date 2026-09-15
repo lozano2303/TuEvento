@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { View, StyleSheet, TouchableWithoutFeedback } from "react-native";
 import { Canvas, Path, Circle, Text, rect, Skia } from "@shopify/react-native-skia";
 import {
@@ -39,6 +39,8 @@ export default function SeatMapCanvas({
   currentUserId = null,
   onRowPagesChange,
 }) {
+  const inOverviewMode = focusedSectionId === null;
+
   if (!layoutData || !layoutData.elements || layoutData.elements.length === 0) {
     return null;
   }
@@ -123,7 +125,7 @@ export default function SeatMapCanvas({
   }
 
   // El scale final es el mayor entre ajustar todo y táctil mínimo (si aplica)
-  let scale = Math.max(scaleToFit, scaleMinTactil);
+  let scale = inOverviewMode ? scaleToFit : Math.max(scaleToFit, scaleMinTactil);
 
   // Validar que el scale no sea NaN o Infinity
   if (!isFinite(scale) || scale <= 0) {
@@ -145,10 +147,10 @@ export default function SeatMapCanvas({
     }
   }
 
-  // Notificar cambio en totalRowPages al padre
-  if (onRowPagesChange && typeof onRowPagesChange === 'function') {
-    onRowPagesChange(totalRowPages);
-  }
+  // totalRowPages se notifica al padre via useEffect (ver mas abajo)
+
+
+
   
   let effectiveContentCenterY = (totalAABB.minY + totalAABB.maxY) / 2;
   
@@ -164,14 +166,9 @@ export default function SeatMapCanvas({
     }
   }
 
-  // Calcular offset para centrar el contenido
-  const effectiveScaledWidth = contentWidth * scale;
-  const effectiveScaledHeight = Math.min(scaledHeight, availHeight);
-  const offsetX = (containerWidth - effectiveScaledWidth) / 2 - totalAABB.minX * scale;
-  const offsetY = (containerHeight - effectiveScaledHeight) / 2 - effectiveContentCenterY * scale;
-
-  // Determinar si estamos en vista general o filtrada
-  const inOverviewMode = focusedSectionId === null;
+  // Calcular offset para centrar el contenido en el viewport
+  const offsetX = (containerWidth - contentWidth * scale) / 2 - totalAABB.minX * scale;
+  const offsetY = (containerHeight - contentHeight * scale) / 2 - totalAABB.minY * scale;
 
   // Handler para detectar tap en sillas (solo en modo filtrado)
   const handlePress = (event) => {
@@ -225,6 +222,13 @@ export default function SeatMapCanvas({
       }
     }
   };
+
+  // Notificar al padre los cambios en totalRowPages (fuera del render)
+  useEffect(() => {
+    if (onRowPagesChange && typeof onRowPagesChange === "function") {
+      onRowPagesChange(totalRowPages);
+    }
+  }, [totalRowPages, onRowPagesChange]);
 
   return (
     <View style={styles.container}>

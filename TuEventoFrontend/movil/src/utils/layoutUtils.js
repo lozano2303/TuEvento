@@ -182,6 +182,89 @@ export const computePolygonSeatRows = (polygonPoints, seatLayout) => {
 };
 
 /**
+ * Agrupa posiciones por coordenada Y para derivar la estructura de filas.
+ * Portado de layoutEditorUtils.js (web) — misma lógica, misma tolerancia.
+ *
+ * @param {Array<{x: number, y: number, r: number}>} positions
+ * @param {number} cellHeight - altura de celda (seatRadius * 2 + gap)
+ * @returns {number[]} Array con el conteo de sillas por fila, de arriba a abajo
+ */
+function deriveRowStructureFromPositions(positions, cellHeight) {
+  if (positions.length === 0) return [];
+
+  // Agrupar por Y con tolerancia del 10% de la altura de celda
+  const tolerance = cellHeight * 0.1;
+  const rows = [];
+
+  positions.forEach((pos, index) => {
+    let foundRow = rows.find(row => Math.abs(row.y - pos.y) <= tolerance);
+    if (!foundRow) {
+      foundRow = { y: pos.y, seats: [] };
+      rows.push(foundRow);
+    }
+    foundRow.seats.push({ ...pos, originalIndex: index });
+  });
+
+  // Ordenar filas por Y (de arriba hacia abajo)
+  rows.sort((a, b) => a.y - b.y);
+
+  // Ordenar sillas dentro de cada fila por X (de izquierda a derecha)
+  rows.forEach(row => {
+    row.seats.sort((a, b) => a.x - b.x);
+  });
+
+  return rows.map(row => row.seats.length);
+}
+
+/**
+ * Asigna rowIndex y colIndex a cada posición según su fila y columna real.
+ * Portado de layoutEditorUtils.js (web) — misma lógica.
+ *
+ * @param {Array<{x: number, y: number, r: number}>} positions
+ * @param {number[]} rowStructure - resultado de deriveRowStructureFromPositions
+ * @returns {Array<{x, y, r, rowIndex, colIndex}>}
+ */
+function addRowColIndices(positions, rowStructure) {
+  if (positions.length === 0) return positions;
+
+  const tolerance = (positions[0].r || 7) * 2 + 4; // cellHeight aproximado
+  const rowGroups = [];
+
+  positions.forEach((pos, index) => {
+    let foundRow = rowGroups.find(row => Math.abs(row.y - pos.y) <= tolerance * 0.1);
+    if (!foundRow) {
+      foundRow = { y: pos.y, seats: [] };
+      rowGroups.push(foundRow);
+    }
+    foundRow.seats.push({ ...pos, originalIndex: index });
+  });
+
+  // Ordenar filas por Y y sillas por X
+  rowGroups.sort((a, b) => a.y - b.y);
+  rowGroups.forEach(row => {
+    row.seats.sort((a, b) => a.x - b.x);
+  });
+
+  // Asignar índices
+  const result = [];
+
+  rowGroups.forEach((row, rowIndex) => {
+    row.seats.forEach((seat, colIndex) => {
+      result.push({
+        ...seat,
+        rowIndex,
+        colIndex,
+      });
+    });
+  });
+
+  // Reordenar según originalIndex para mantener orden original
+  result.sort((a, b) => a.originalIndex - b.originalIndex);
+
+  return result;
+}
+
+/**
  * Distribuye sillas en una sección rectangular.
  */
 export const distributeSeatsRect = (element) => {
@@ -221,11 +304,25 @@ export const distributeSeatsRect = (element) => {
         x: PADDING + c * cellW + cellW / 2,
         y: PADDING + LABEL_H / 2 + r * cellH + cellH / 2,
         r: Math.max(2, Math.min(seatRadius, (Math.min(cellW, cellH) - gap) / 2)),
+        rowIndex: r,
+        colIndex: c,
       });
       count++;
     }
   }
-  return positions;
+
+  // Estructura uniforme: todas las filas tienen `cols` sillas salvo la última
+  const rowStructure = Array(rows).fill(cols);
+  const seatsInLastRow = actual - (rows - 1) * cols;
+  if (seatsInLastRow < cols && rows > 0) {
+    rowStructure[rows - 1] = seatsInLastRow;
+  }
+
+  return {
+    positions,
+    rowStructure,
+    isUniformGrid: true,
+  };
 };
 
 /**
@@ -236,13 +333,21 @@ export const distributeSeats = (element) => {
 
   if (shapeMode === 'polygon' && element.polygonPoints) {
     const sl = normalizeSeatLayout(element.seatLayout);
-    if (!sl) return [];
+    if (!sl) return { positions: [], rowStructure: [], isUniformGrid: false };
     const allPositions = computePolygonSeatRows(element.polygonPoints, sl);
     const limitedPositions = allPositions.slice(0, sl.targetSeats);
-    
-    // Para compatibilidad, retornar solo las posiciones (manteniendo formato anterior)
-    // TODO: implementar estructura completa de filas si se necesita paginación en móvil
-    return limitedPositions;
+
+    // Derivar estructura de filas reales desde las posiciones generadas
+    const rowStructure = deriveRowStructureFromPositions(limitedPositions, sl.seatRadius * 2 + sl.gap);
+
+    // Asignar rowIndex y colIndex a cada posición
+    const positionsWithIndices = addRowColIndices(limitedPositions, rowStructure);
+
+    return {
+      positions: positionsWithIndices,
+      rowStructure,
+      isUniformGrid: false,
+    };
   }
 
   return distributeSeatsRect(element);
