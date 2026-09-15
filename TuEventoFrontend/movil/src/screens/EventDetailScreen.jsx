@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -158,6 +158,8 @@ export default function EventDetailScreen() {
   const [currentSubSectionIndex, setCurrentSubSectionIndex] = useState(0);
   const [currentRowPage, setCurrentRowPage] = useState(0); // Nuevo: paginación por filas
   const [totalRowPages, setTotalRowPages] = useState(1); // Nuevo: total de páginas
+  const [currentColPage, setCurrentColPage] = useState(0); // Paginacion horizontal
+  const [totalColPages, setTotalColPages] = useState(1);   // Total paginas de columnas
 
   const MIN_SEAT_TOUCH_RADIUS_PX = 22; // Tamaño táctil mínimo deseado en píxeles
   const [seats, setSeats] = useState({});
@@ -195,6 +197,7 @@ export default function EventDetailScreen() {
   useEffect(() => {
     setCurrentSubSectionIndex(0);
     setCurrentRowPage(0);
+    setCurrentColPage(0);
   }, [selectedSectionId]);
 
   // Hidratar el stepper con el número de sillas ya reservadas
@@ -861,6 +864,7 @@ export default function EventDetailScreen() {
                       if (currentSubSectionIndex > 0) {
                         setCurrentSubSectionIndex(currentSubSectionIndex - 1);
                         setCurrentRowPage(0); // Reset page al cambiar sub-sección
+                        setCurrentColPage(0);
                       }
                     }}
                     disabled={currentSubSectionIndex === 0}
@@ -886,6 +890,7 @@ export default function EventDetailScreen() {
                       if (currentSubSectionIndex < currentSubSections.length - 1) {
                         setCurrentSubSectionIndex(currentSubSectionIndex + 1);
                         setCurrentRowPage(0); // Reset page al cambiar sub-sección
+                        setCurrentColPage(0);
                       }
                     }}
                     disabled={currentSubSectionIndex === currentSubSections.length - 1}
@@ -905,6 +910,39 @@ export default function EventDetailScreen() {
               )}
               
               {/* Controles de paginación por filas */}
+              {/* Controles de paginacion horizontal (columnas) */}
+              {selectedSectionId && totalColPages > 1 && (
+                <View style={styles.rowPaginationNavigation}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (currentColPage > 0) {
+                        setCurrentColPage(currentColPage - 1);
+                      }
+                    }}
+                    disabled={currentColPage === 0}
+                    style={[styles.rowPageButton, currentColPage === 0 && styles.rowPageButtonDisabled]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="chevron-back" size={20} color={currentColPage === 0 ? colors.textMuted : colors.textSecondary} />
+                  </TouchableOpacity>
+                  <Text style={styles.rowPageIndicator}>
+                    Col {currentColPage + 1}/{totalColPages}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (currentColPage < totalColPages - 1) {
+                        setCurrentColPage(currentColPage + 1);
+                      }
+                    }}
+                    disabled={currentColPage === totalColPages - 1}
+                    style={[styles.rowPageButton, currentColPage === totalColPages - 1 && styles.rowPageButtonDisabled]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="chevron-forward" size={20} color={currentColPage === totalColPages - 1 ? colors.textMuted : colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+              )}
+
               {selectedSectionId && totalRowPages > 1 && (
                 <View style={styles.rowPaginationNavigation}>
                   <TouchableOpacity
@@ -968,11 +1006,13 @@ export default function EventDetailScreen() {
                     focusedSectionId={selectedSectionId}
                     currentSubSectionIndex={currentSubSectionIndex}
                     currentRowPage={currentRowPage}
+                    currentColPage={currentColPage}
                     sections={sections}
                     seats={seats}
                     onSeatPress={onSeatPress}
                     currentUserId={currentUserId}
                     onRowPagesChange={setTotalRowPages}
+                    onColPagesChange={setTotalColPages}
                   />
                 )}
               </View>
