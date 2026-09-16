@@ -302,14 +302,11 @@ export default function SeatMapCanvas({
 // ---------------------------------------------------------------------------
 // Color de silla según estado - usando exactamente los mismos colores que la web
 // ---------------------------------------------------------------------------
-function getSeatColor(seat, currentUserId, isSectionFiltered = false, isReserving = false) {
+function getSeatColor(seat, currentUserId, isSectionFiltered = false) {
   if (!seat) return "#6B7280";
   
   // Si la sección está filtrada (no es la seleccionada), usar color gris
   if (isSectionFiltered) return "#4B5563";
-  
-  // Si está en proceso de reserva, usar color gris claro como en web
-  if (isReserving) return "#9CA3AF";
   
   const isMyReservation = seat.status === "RESERVED" && seat.reservedBy === currentUserId;
   const isOtherReservation = seat.status === "RESERVED" && seat.reservedBy !== currentUserId;
@@ -458,8 +455,7 @@ function SectionRenderer({
         if (!seat) return null;
         
         const isMyReservation = seat.status === "RESERVED" && seat.reservedBy === currentUserId;
-        const isReserving = reserving.has(seat.seatId);
-        const seatColor = getSeatColor(seat, currentUserId, false, isReserving);
+        const seatColor = getSeatColor(seat, currentUserId, false);
         const seatX = transformX(element.x + pos.x);
         const seatY = transformY(element.y + pos.y);
         
