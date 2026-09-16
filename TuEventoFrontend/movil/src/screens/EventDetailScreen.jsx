@@ -402,7 +402,6 @@ export default function EventDetailScreen() {
         reservedUntil: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
       },
     }));
-    setReserving((prev) => new Set(prev).add(seatId));
 
     try {
       const result = await seatService.reserveSeat(seatId);
@@ -423,12 +422,6 @@ export default function EventDetailScreen() {
       else {
         showToast('reserve-error', 'No se pudo reservar la silla, intentalo de nuevo', 'error');
       }
-    } finally {
-      setReserving((prev) => {
-        const next = new Set(prev);
-        next.delete(seatId);
-        return next;
-      });
     }
   };
 
@@ -446,7 +439,6 @@ export default function EventDetailScreen() {
         reservedUntil: null,
       },
     }));
-    setReserving((prev) => new Set(prev).add(seatId));
 
     try {
       const result = await seatService.releaseSeat(seatId);
@@ -463,12 +455,6 @@ export default function EventDetailScreen() {
       else {
         showToast('release-error', 'No se pudo liberar la silla, intentalo de nuevo', 'error');
       }
-    } finally {
-      setReserving((prev) => {
-        const next = new Set(prev);
-        next.delete(seatId);
-        return next;
-      });
     }
   };
 
@@ -495,8 +481,6 @@ export default function EventDetailScreen() {
 
   // Handler de tap en silla
   const onSeatPress = (seatId) => {
-    if (reserving.has(seatId)) return; // Evitar doble-tap mientras está en vuelo
-
     const seat = seats[seatId];
     if (!seat) return;
 
