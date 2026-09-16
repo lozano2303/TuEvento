@@ -161,8 +161,8 @@ export default function EditorToolbar({
 
       {/* Modal JSON */}
       {showJson && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-surface border border-surfaceAlt rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+        <div className="fixed inset-0 bg-black/45 z-50 flex items-center justify-center p-4">
+          <div className="modal-elevated bg-surface border border-surfaceAlt rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-surfaceAlt">
               <h3 className="text-sm font-bold text-textPrimary">Layout JSON</h3>
               <button

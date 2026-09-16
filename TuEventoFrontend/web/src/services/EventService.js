@@ -90,3 +90,38 @@ export const deleteEvent = async (eventId) => {
 export const cancelEvent = async (eventId) => {
   return changeEventStatus(eventId, 'CANCELLED');
 };
+
+// ── Admin-only endpoints ──────────────────────────────────────────────────────
+
+/**
+ * Lista todos los eventos para el panel de administración.
+ * GET /admin/events          → todos los estados
+ * GET /admin/events?status=X → filtrado por estado (DRAFT|PUBLISHED|CANCELLED|COMPLETED)
+ * Requiere rol ADMIN.
+ */
+export const getAdminEvents = async (status = null) => {
+  const url = status
+    ? `${API_URL}/admin/events?status=${status}`
+    : `${API_URL}/admin/events`;
+  const res = await httpRequest(url);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Error al obtener eventos');
+  return data;
+};
+
+/**
+ * Cambia el estado de cualquier evento como administrador — bypasea el check de propiedad.
+ * PATCH /admin/events/{eventId}/status
+ * newStatus: 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED'
+ * Requiere rol ADMIN.
+ */
+export const adminChangeEventStatus = async (eventId, newStatus) => {
+  const res = await httpRequest(`${API_URL}/admin/events/${eventId}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ newStatus }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Error al cambiar el estado del evento');
+  return data;
+};

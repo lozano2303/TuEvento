@@ -68,13 +68,15 @@ public class LoginUseCase implements LoginPort {
         // Verify user status for blocked/inactive/deleted accounts
         String statusCode = user.getUserStatus().getCode();
         if ("BLOCKED".equals(statusCode)) {
-            throw new BusinessException("ACCOUNT_BLOCKED", "Your account has been blocked. Please contact support");
+            throw new BusinessException("ACCOUNT_BLOCKED",
+                    "Tu cuenta ha sido bloqueada. Por favor contacta a soporte.");
         }
         if ("INACTIVE".equals(statusCode)) {
-            throw new BusinessException("ACCOUNT_INACTIVE", "Your account is inactive");
+            throw new BusinessException("ACCOUNT_DEACTIVATED",
+                    "Tu cuenta ha sido desactivada. Solicita la reactivación para que nuestro equipo la revise.");
         }
         if ("DELETED".equals(statusCode)) {
-            throw new BusinessException("ACCOUNT_DELETED", "Account not found");
+            throw new BusinessException("ACCOUNT_DELETED", "Cuenta no encontrada.");
         }
 
         if (!passwordEncoder.matches(request.getPassword(), credentials.getPasswordHash())) {
@@ -121,7 +123,7 @@ public class LoginUseCase implements LoginPort {
             if (lockout.getLockedUntil() != null) {
                 if (lockout.getLockedUntil().isAfter(LocalDateTime.now())) {
                     throw new BusinessException("ACCOUNT_LOCKED",
-                            "Account is temporarily locked. Please try again later");
+                            "Cuenta bloqueada temporalmente. Por favor intenta de nuevo más tarde.");
                 }
                 // Lockout window expired — auto-unblock
                 accountLockoutService.deleteLockout(user.getUserId());
@@ -157,7 +159,7 @@ public class LoginUseCase implements LoginPort {
                     .lockedUntil(lockedUntil)
                     .occurredAt(now)
                     .build());
-            throw new BusinessException("ACCOUNT_LOCKED", "Account locked due to too many failed attempts");
+            throw new BusinessException("ACCOUNT_LOCKED", "Cuenta bloqueada por demasiados intentos fallidos.");
         }
 
         accountLockoutService.saveLockout(lockout);
