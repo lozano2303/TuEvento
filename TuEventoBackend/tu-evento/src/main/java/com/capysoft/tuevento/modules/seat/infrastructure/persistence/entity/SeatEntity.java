@@ -41,4 +41,10 @@ public class SeatEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private SeatStatus status;
+
+    @Column(name = "reserved_by")
+    private Integer reservedBy;
+
+    @Column(name = "reserved_until")
+    private java.time.LocalDateTime reservedUntil;
 }
