@@ -21,6 +21,11 @@ spring:
           starttls:
             enable: true
 
+minio:
+  # Public-facing URL embedded in presigned URLs sent to the browser.
+  # Must differ from app.storage.endpoint when MinIO runs inside Docker.
+  public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
+
 app:
   jwt:
     secret: ${JWT_SECRET}
@@ -33,11 +38,6 @@ app:
     secret-key: ${MINIO_ROOT_PASSWORD}
     region: us-east-1
     bucket-default: tuevento
-
-minio:
-  # Public-facing URL embedded in presigned URLs sent to the browser.
-  # Must differ from app.storage.endpoint when MinIO runs inside Docker.
-  public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
   oauth:
     google:
       client-id: ${GOOGLE_CLIENT_ID}
@@ -61,6 +61,13 @@ minio:
     from: ${MAIL_USERNAME}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}
+  profile:
+    # storedFileId of the system default avatar (assigned to every new profile).
+    # Must match the value that ProfileDataInitializer uploads on first run.
+    # Set to the actual ID via environment variable in each deployment environment.
+    default-avatar-stored-file-id: ${APP_PROFILE_DEFAULT_AVATAR_ID:1}
 
 moderation:
   nsfw:

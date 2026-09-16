@@ -81,7 +81,7 @@ export default function AdminPanel() {
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard' },
     { icon: CreditCard,      label: 'Control Financiero' },
-    { icon: Calendar,        label: 'Eventos' },
+    { icon: Calendar,        label: 'Eventos',    href: '/admin-events' },
     { icon: BarChart2,       label: 'Reportes' },
     { icon: RefreshCcw,      label: 'Reembolsos' },
     { icon: Users,           label: 'Solicitudes', active: true },
@@ -194,7 +194,7 @@ export default function AdminPanel() {
           {navItems.map((item, idx) => (
             <a
               key={idx}
-              href="#"
+              href={item.href || '#'}
               className={`flex items-center gap-2.5 px-3 py-2.5 rounded-full text-sm font-medium transition-colors
                 ${item.active
                   ? 'bg-[#7f13ec] text-white'

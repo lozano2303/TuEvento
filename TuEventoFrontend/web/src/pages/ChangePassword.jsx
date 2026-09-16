@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { changePassword } from "../services/Login.js";
-import { Eye, EyeOff, CheckCircle, Lock, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, CheckCircle, Lock } from "lucide-react";
+import { PartyPopper, Sparkles } from "lucide-react";
+import BaseModal from "../components/common/BaseModal.jsx";
 
 export default function ChangePassword({ onClose }) {
   const [formData, setFormData] = useState({
@@ -92,8 +94,10 @@ export default function ChangePassword({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="bg-surface rounded-lg p-6 w-full max-w-md">
+    /* Overlay del formulario — mismo backdrop estándar que .theme-overlay
+       (rgba 0,0,0,0.45) para mantener consistencia con el resto de modales. */
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/45">
+      <div className="theme-modal-card rounded-lg p-6 w-full max-w-md">
         <h2 className="text-xl font-bold text-textPrimary mb-4">Cambiar Contraseña</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -103,11 +107,11 @@ export default function ChangePassword({ onClose }) {
               name="oldPassword"
               value={formData.oldPassword}
               onChange={handleInputChange}
-              className="w-full bg-surfaceAlt border border-gray-600 rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+              className="w-full bg-surfaceAlt border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm"
               placeholder="Contraseña actual"
               required
             />
-            {fieldErrors.oldPassword && <p className="text-red-500 text-xs mt-1">{fieldErrors.oldPassword}</p>}
+            {fieldErrors.oldPassword && <p className="text-error text-xs mt-1">{fieldErrors.oldPassword}</p>}
           </div>
 
           <div className="relative">
@@ -116,18 +120,18 @@ export default function ChangePassword({ onClose }) {
               name="newPassword"
               value={formData.newPassword}
               onChange={handleInputChange}
-              className="w-full bg-surfaceAlt border border-gray-600 rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+              className="w-full bg-surfaceAlt border border-surfaceAlt rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm"
               placeholder="Nueva contraseña"
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-textMuted hover:text-textSecondary"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
-            {fieldErrors.newPassword && <p className="text-red-500 text-xs mt-1">{fieldErrors.newPassword}</p>}
+            {fieldErrors.newPassword && <p className="text-error text-xs mt-1">{fieldErrors.newPassword}</p>}
           </div>
 
           <div className="relative">
@@ -136,27 +140,27 @@ export default function ChangePassword({ onClose }) {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
-              className="w-full bg-surfaceAlt border border-gray-600 rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+              className="w-full bg-surfaceAlt border border-surfaceAlt rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm"
               placeholder="Confirmar nueva contraseña"
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-textMuted hover:text-textSecondary"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
-            {fieldErrors.confirmPassword && <p className="text-red-500 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
+            {fieldErrors.confirmPassword && <p className="text-error text-xs mt-1">{fieldErrors.confirmPassword}</p>}
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-error text-sm">{error}</p>}
 
           <div className="flex space-x-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-surfaceAlt hover:bg-surfaceAlt text-textPrimary py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 bg-surfaceAlt hover:brightness-110 text-textPrimary py-2 px-4 rounded-lg transition-all"
             >
               Cancelar
             </button>
@@ -171,48 +175,48 @@ export default function ChangePassword({ onClose }) {
         </form>
       </div>
 
-      {/* Notificación de cambio de contraseña exitoso */}
-      {showSuccessNotification && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden transform animate-pulse">
-            {/* Header con gradiente */}
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-center">
-              <div className="flex justify-center mb-4">
-                <div className="bg-white rounded-full p-3">
-                  <CheckCircle className="w-8 h-8 text-purple-500" />
-                </div>
+      {/* ── BaseModal: contraseña actualizada ───────────────────────── */}
+      <BaseModal
+        isOpen={showSuccessNotification}
+        onClose={() => {}}
+        hideOverlayClose
+        variant="success"
+        icon={<Lock className="w-8 h-8" />}
+        title="¡Contraseña Actualizada!"
+        subtitle="Tu contraseña ha sido cambiada exitosamente"
+        decorIcons={
+          <>
+            <PartyPopper aria-hidden="true" className="absolute top-3 left-3 w-5 h-5 -rotate-12" style={{ color: 'rgba(255,255,255,0.5)' }} />
+            <Sparkles    aria-hidden="true" className="absolute top-3 right-3 w-[18px] h-[18px]"  style={{ color: 'rgba(253,224,71,0.75)' }} />
+            <PartyPopper aria-hidden="true" className="absolute bottom-3 right-4 w-4 h-4 rotate-12" style={{ color: 'rgba(255,255,255,0.35)' }} />
+          </>
+        }
+        actions={[
+          {
+            label: 'Entendido',
+            icon: <CheckCircle className="w-4 h-4" />,
+            variant: 'primary',
+            onClick: handleContinueAndClose,
+          },
+        ]}
+      >
+        <div className="space-y-3 text-center">
+          <div className="bm-info-card">
+            <div className="flex items-center justify-center mb-2">
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Lock className="w-5 h-5 text-accent" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">¡Contraseña Actualizada!</h3>
-              <p className="text-blue-100 text-sm">Tu contraseña ha sido cambiada exitosamente</p>
             </div>
-
-            {/* Contenido */}
-            <div className="p-6 text-center">
-              <div className="mb-6">
-                <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <Lock className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                  <p className="text-gray-700 text-sm font-medium mb-1">Seguridad mejorada</p>
-                  <p className="text-gray-500 text-xs">Tu cuenta ahora está más protegida</p>
-                </div>
-                
-                <div className="text-gray-600 text-sm">
-                  <p className="mb-2">🔐 <span className="font-medium">Nueva contraseña configurada</span></p>
-                  <p className="text-xs text-gray-500">Recuerda usar esta nueva contraseña en futuros inicios de sesión</p>
-                </div>
-              </div>
-
-              {/* Botón para continuar */}
-              <button
-                onClick={handleContinueAndClose}
-                className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 text-sm flex items-center justify-center space-x-2"
-              >
-                <CheckCircle className="w-4 h-4" />
-                <span>Entendido</span>
-              </button>
-            </div>
+            <p className="bm-label font-medium mb-1">Seguridad mejorada</p>
+            <p className="bm-hint">Tu cuenta ahora está más protegida</p>
           </div>
+          <div className="bm-divider" />
+          <p className="text-sm text-textSecondary">
+            🔐 <span className="font-medium text-textPrimary">Nueva contraseña configurada</span>
+          </p>
+          <p className="bm-hint">Recuerda usar esta nueva contraseña en futuros inicios de sesión</p>
         </div>
-      )}
+      </BaseModal>
     </div>
   );
 }

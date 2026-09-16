@@ -13,6 +13,7 @@ import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } f
 import BackButton from '../components/common/BackButton';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
 
 export default function EventDetail() {
   const { eventId } = useParams();

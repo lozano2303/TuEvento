@@ -1,11 +1,60 @@
 import React, { useState, useEffect } from "react";
-import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight } from "lucide-react";
-import { loginUser, registerUser, resendActivationCode } from "../services/Login.js";
+import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight, PartyPopper, Sparkles, FileText } from "lucide-react";
+import { loginUser, registerUser, resendActivationCode, googleLogin } from "../services/Login.js";
 import { getProfileByUserId } from "../services/ProfileService.js";
 import { useTheme } from "../context/ThemeContext";
 import { performLogout } from "../services/httpClient.js";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
+import BaseModal from "../components/common/BaseModal.jsx";
+import ReactivationModal from "../components/common/ReactivationModal.jsx";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
+/**
+ * GoogleButton — botón visualmente idéntico al de Facebook.
+ *
+ * Técnica overlay: el botón visual (con logo + "Google") está debajo.
+ * Encima, con opacity-0 y posicionado absolute, vive el GoogleLogin real
+ * de @react-oauth/google — ese es el que dispara el flujo OAuth auténtico.
+ * El div wrapper tiene cursor-pointer; el overlay captura el clic y lo pasa
+ * al GoogleLogin. pointer-events-none en la capa visual evita conflictos.
+ *
+ * El width del GoogleLogin se fija en 120px para que su botón interno ocupe
+ * exactamente el contenedor del overlay sin desbordarse.
+ */
+function GoogleButton({ onSuccess, onError }) {
+  return (
+    <div className="relative" style={{ display: 'inline-flex' }}>
+      {/* ── Capa visual — el usuario ve esto ── */}
+      <div className="flex items-center gap-3 btn-oauth-google pointer-events-none select-none">
+        <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          <path fill="none" d="M0 0h48v48H0z"/>
+        </svg>
+        <span className="text-sm font-medium leading-none">Google</span>
+      </div>
+
+      {/* ── Overlay invisible — dispara el flujo OAuth real ── */}
+      <div
+        className="absolute inset-0 overflow-hidden"
+        style={{ opacity: 0 }}
+        aria-hidden="true"
+      >
+        <GoogleLogin
+          onSuccess={onSuccess}
+          onError={onError}
+          useOneTap={false}
+          width="200"
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function Login() {
   const { refreshPalette } = useTheme();
@@ -21,6 +70,7 @@ export default function Login() {
   const [showSuccessNotification, setShowSuccessNotification] = useState(false);
   const [showLoginSuccessNotification, setShowLoginSuccessNotification] = useState(false);
   const [showActivateAccount, setShowActivateAccount] = useState(false);
+  const [showReactivationModal, setShowReactivationModal] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [formData, setFormData] = useState({
     email: "", password: "", confirmPassword: "", name: "",
@@ -79,13 +129,13 @@ export default function Login() {
   };
 
   const strengthLabel = ['', 'Muy débil', 'Débil', 'Buena', 'Fuerte'];
-  const strengthColor = ['', 'text-red-400', 'text-yellow-400', 'text-blue-400', 'text-green-400'];
+  const strengthColor = ['', 'strength-text-1', 'strength-text-2', 'strength-text-3', 'strength-text-4'];
   const barColors = [
     '',
-    'bg-red-500',
-    'bg-yellow-500',
-    'bg-blue-500',
-    'bg-green-500',
+    'strength-bar-1',
+    'strength-bar-2',
+    'strength-bar-3',
+    'strength-bar-4',
   ];
 
   // ─── Handlers ────────────────────────────────────────────────────────────
@@ -179,6 +229,69 @@ export default function Login() {
     }
   };
 
+  const handleGoogleSuccess = async ({ credential }) => {
+    if (!credential) return;
+    setError('');
+    setLoading(true);
+    try {
+      // Decode the id_token payload (base64url, no signature needed here —
+      // server-side verification already happened in the backend).
+      const [, payloadB64] = credential.split('.');
+      const payload = JSON.parse(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/')));
+      const googleEmail = payload.email || '';
+
+      const result = await googleLogin(credential);
+      localStorage.setItem('token',        result.data.token);
+      localStorage.setItem('refreshToken', result.data.refreshToken);
+      localStorage.setItem('userID',       result.data.userID);
+      localStorage.setItem('alias',        result.data.alias);
+      localStorage.setItem('role',         result.data.role);
+      localStorage.setItem('userEmail',    googleEmail);
+      // profileId is returned when a profile row already exists but has an
+      // invalid name (existing user onboarding).  Store it so CompleteProfile
+      // knows to call PUT instead of POST.  Remove any stale value first.
+      localStorage.removeItem('profileId');
+      if (result.data.profileId != null) {
+        localStorage.setItem('profileId', result.data.profileId);
+      }
+
+      // needsOnboarding is true when the backend could not create a profile
+      // because Google did not return a valid display name, or when the stored
+      // name fails validation (pre-fix existing users like "crislozanoshark2006").
+      // Redirect immediately — do NOT fetch the profile or overwrite localStorage.name
+      // with the invalid name before the user has a chance to correct it.
+      if (result.data.needsOnboarding) {
+        window.location.href = '/complete-profile';
+        return;
+      }
+
+      // Only fetch the profile and store the name when onboarding is NOT needed.
+      const [, profileResult] = await Promise.allSettled([
+        refreshPalette(),
+        getProfileByUserId(result.data.userID),
+      ]);
+
+      if (profileResult.status === 'fulfilled' && profileResult.value?.data?.fullName) {
+        localStorage.setItem('name', profileResult.value.data.fullName);
+      } else {
+        localStorage.setItem('name', result.data.alias);
+      }
+
+      setUserData({ userId: result.data.userID, alias: result.data.alias, email: googleEmail });
+      setShowLoginSuccessNotification(true);
+      setTimeout(() => { window.location.href = '/'; }, 1500);
+    } catch (err) {
+      setError(err.message || 'No se pudo iniciar sesión con Google. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    // User dismissed the popup or Google returned an error — no action needed
+    // unless the user explicitly triggered an error (not a cancel).
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(""); setFieldErrors({}); setLoading(true);
@@ -204,25 +317,28 @@ export default function Login() {
           localStorage.setItem('alias', result.data.alias);
           localStorage.setItem('userEmail', formData.email);
           localStorage.setItem('role', result.data.role || 'USER');
-          refreshPalette(); // carga la paleta del usuario recién autenticado
-          
-          // Carga la paleta del usuario recién autenticado
-          refreshPalette();
 
-          // Obtener el perfil del usuario para conseguir el fullName (como en el móvil)
+          // Carga la paleta del usuario recién autenticado y la del perfil en paralelo.
+          // refreshPalette() se AGUARDA para que las CSS vars estén aplicadas ANTES
+          // de mostrar el modal de bienvenida — evita la race condition donde el
+          // modal se renderizaba con la paleta anterior (tema rosa/blanco incorrecto).
+          const [, profileResult] = await Promise.allSettled([
+            refreshPalette(),
+            getProfileByUserId(result.data.userID),
+          ]);
+
+          // Obtener fullName del perfil (como en el móvil)
           let fullName = result.data.alias; // fallback al alias
-          try {
-            const profileResult = await getProfileByUserId(result.data.userID);
-            if (profileResult.success && profileResult.data.fullName) {
-              fullName = profileResult.data.fullName;
-              localStorage.setItem('name', fullName);
+          if (profileResult.status === 'fulfilled' && profileResult.value?.success && profileResult.value?.data?.fullName) {
+            fullName = profileResult.value.data.fullName;
+            localStorage.setItem('name', fullName);
+          } else {
+            if (profileResult.status === 'rejected') {
+              console.error('Error al obtener perfil:', profileResult.reason);
             }
-          } catch (error) {
-            console.error('Error al obtener perfil:', error);
-            // Si falla, usar el alias como nombre
             localStorage.setItem('name', result.data.alias);
           }
-          
+
           setUserData({ userId: result.data.userID, alias: result.data.alias, fullName: fullName, email: formData.email });
           setShowLoginSuccessNotification(true);
           setTimeout(() => {
@@ -254,6 +370,21 @@ export default function Login() {
         setError("Este correo ya está registrado pero no activado. Si quieres activar tu cuenta, haz clic en Reenviar correo de activación");
       } else if (errorMsg === "Account is not activated") {
         setError("Cuenta no activada");
+      } else if (
+        errorMsg.toLowerCase().includes("inactive") ||
+        errorMsg.toLowerCase().includes("inactiva") ||
+        errorMsg.toLowerCase().includes("desactivada") ||
+        errorMsg.toLowerCase().includes("account_inactive") ||
+        errorMsg.toLowerCase().includes("account_deactivated")
+      ) {
+        // Abre el modal de reactivación en lugar de mostrar solo texto
+        setShowReactivationModal(true);
+      } else if (
+        errorMsg.toLowerCase().includes("blocked") ||
+        errorMsg.toLowerCase().includes("bloqueada") ||
+        errorMsg.toLowerCase().includes("account_blocked")
+      ) {
+        setError("Tu cuenta ha sido bloqueada. Por favor contacta a soporte.");
       } else {
         setError(errorMsg);
       }
@@ -271,7 +402,7 @@ export default function Login() {
   if (view === 'profile' && userData)
     return (
       <div className="min-h-screen flex">
-        <div className="w-full bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-8">
+        <div className="theme-auth-hero w-full flex items-center justify-center p-8">
           <img
             src="/src/assets/images/fondologin.png"
             alt="Ilustración escritorio"
@@ -297,7 +428,7 @@ export default function Login() {
                 </div>
               ))}
             </div>
-            <button onClick={handleLogout} className="w-full bg-error hover:bg-red-700 text-textPrimary font-semibold py-3 rounded-lg transition-all text-sm">
+            <button onClick={handleLogout} className="w-full bg-error hover:bg-error/80 text-textPrimary font-semibold py-3 rounded-lg transition-all text-sm">
               Cerrar Sesión
             </button>
           </div>
@@ -310,7 +441,7 @@ export default function Login() {
     <div className="min-h-screen flex items-stretch">
 
       {/* Columna izquierda */}
-      <div className="w-full bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-8">
+      <div className="theme-auth-hero w-full flex items-center justify-center p-8">
         <img src="/src/assets/images/fondologin.png" alt="Ilustración escritorio" className="w-full max-w-xs drop-shadow-2xl" />
       </div>
 
@@ -353,20 +484,20 @@ export default function Login() {
                     type="text" name="name" value={formData.name}
                     onChange={handleInputChange}
                     placeholder="Nombre completo"
-                    className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
                     required
                   />
                 </div>
-                {fieldErrors.name && <p className="text-red-400 text-xs mt-1">{fieldErrors.name}</p>}
+                {fieldErrors.name && <p className="form-error text-xs mt-1">{fieldErrors.name}</p>}
                 {formData.name && !fieldErrors.name && (
                   <div className="mt-1 space-y-0.5">
                     {formData.name.trim().split(/\s+/).length < 2 && (
-                      <p className="text-xs text-red-400 flex items-center">
+                      <p className="text-xs form-error flex items-center">
                         <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Nombre y apellido
                       </p>
                     )}
                     {!formData.name.trim().split(/\s+/).every(w => w.length >= 3) && (
-                      <p className="text-xs text-red-400 flex items-center">
+                      <p className="text-xs form-error flex items-center">
                         <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Mínimo 3 caracteres por palabra
                       </p>
                     )}
@@ -383,15 +514,15 @@ export default function Login() {
                   type="email" name="email" value={formData.email}
                   onChange={handleInputChange}
                   placeholder="Correo electrónico"
-                  className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
                   required
                 />
               </div>
-              {fieldErrors.email && <p className="text-red-400 text-xs mt-1">{fieldErrors.email}</p>}
+              {fieldErrors.email && <p className="form-error text-xs mt-1">{fieldErrors.email}</p>}
               {formData.email && !fieldErrors.email && view !== 'login' && (
                 <div className="mt-1 space-y-0.5">
                   {!formData.email.trim().toLowerCase().endsWith('@gmail.com') && (
-                    <p className="text-xs text-red-400 flex items-center">
+                    <p className="text-xs form-error flex items-center">
                       <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Debe ser @gmail.com
                     </p>
                   )}
@@ -410,7 +541,7 @@ export default function Login() {
                   onChange={handleInputChange}
                   placeholder="Contraseña"
                   autoComplete="new-password"
-                  className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                  className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
                   required
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
@@ -418,7 +549,7 @@ export default function Login() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {fieldErrors.password && <p className="text-red-400 text-xs mt-1">{fieldErrors.password}</p>}
+              {fieldErrors.password && <p className="form-error text-xs mt-1">{fieldErrors.password}</p>}
 
               {/* ── Requisitos de contraseña — SOLO en registro ── */}
               {view !== 'login' && formData.password.length > 0 && (
@@ -447,7 +578,7 @@ export default function Login() {
                       
                       if (missing.length > 0) {
                         return (
-                          <p className="text-xs text-red-400 flex items-center">
+                          <p className="text-xs form-error flex items-center">
                             <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>
                             Debe contener {missing.join(", ")}
                           </p>
@@ -464,7 +595,7 @@ export default function Login() {
             {view !== 'login' && (
               <div>
                 <div className="relative">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                   <input
@@ -472,15 +603,15 @@ export default function Login() {
                     onChange={handleInputChange}
                     placeholder="Confirmar contraseña"
                     autoComplete="new-password"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-10 pr-12 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                     required
                   />
                   <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300">
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted hover:text-textSecondary">
                     {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                {fieldErrors.confirmPassword && <p className="text-red-400 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
+                {fieldErrors.confirmPassword && <p className="form-error text-xs mt-1">{fieldErrors.confirmPassword}</p>}
                 {formData.confirmPassword && !fieldErrors.confirmPassword && formData.confirmPassword !== formData.password && (
                   <p className="text-xs mt-1 text-red-400 flex items-center">
                     <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Las contraseñas no coinciden
@@ -490,13 +621,13 @@ export default function Login() {
             )}
 
             {error && (
-              <p className="text-red-400 text-sm">{error}</p>
+              <p className="form-error text-sm">{error}</p>
             )}
 
             {/* Botón principal */}
             <button
               type="submit" disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-all duration-300 text-sm tracking-widest"
+              className="w-full bg-gradient-to-r from-primary to-primaryDark hover:from-primaryDark hover:to-primaryDark disabled:opacity-50 disabled:cursor-not-allowed text-textPrimary font-semibold py-3 rounded-lg transition-all duration-300 text-sm tracking-widest"
             >
               {loading ? "Cargando..." : (view === 'login' ? "INICIAR SESIÓN" : "REGISTRARSE")}
             </button>
@@ -504,9 +635,9 @@ export default function Login() {
             {/* ¿No has activado tu cuenta? — solo registro */}
             {view !== 'login' && (
               <div className="text-center">
-                <p className="text-gray-500 text-xs">
+                <p className="text-textMuted text-xs">
                   ¿No has activado tu cuenta?{" "}
-                  <button type="button" onClick={handleResendActivation} className="text-purple-400 hover:text-purple-300 font-medium">
+                  <button type="button" onClick={handleResendActivation} className="text-accent hover:text-primary font-medium transition-colors">
                     Reenviar correo de activación
                   </button>
                 </p>
@@ -516,9 +647,9 @@ export default function Login() {
             {/* ¿Olvidaste tu contraseña? — solo login */}
             {view === 'login' && (
               <div className="text-center">
-                <p className="text-gray-500 text-xs">
+                <p className="text-textMuted text-xs">
                   ¿No recuerdas tu contraseña?{" "}
-                  <button type="button" onClick={() => setView('forgot')} className="text-purple-400 hover:text-purple-300 font-medium">
+                  <button type="button" onClick={() => setView('forgot')} className="text-accent hover:text-primary font-medium transition-colors">
                     Recupérala
                   </button>
                 </p>
@@ -527,31 +658,21 @@ export default function Login() {
 
             {/* Separador redes sociales */}
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-gray-700" />
-              <div className="flex-1 h-px bg-gray-700" />
+              <div className="flex-1 h-px bg-surfaceAlt" />
+              <div className="flex-1 h-px bg-surfaceAlt" />
             </div>
 
             {/* Botones Google / Facebook */}
             <div className="flex justify-center gap-4">
-              <button
-                type="button"
-                onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/google'}
-                className="flex items-center gap-3 bg-white hover:bg-gray-100 text-gray-800 px-5 py-2.5 rounded-lg transition-colors duration-200 shadow-sm"
-                title="Iniciar con Google">
-                <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                  <path fill="none" d="M0 0h48v48H0z"/>
-                </svg>
-                <span className="text-sm font-medium leading-none">Google</span>
-              </button>
+              {/* ── Botón Google GSI — mismo tamaño y estructura que Facebook ── */}
+              <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                <GoogleButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
+              </GoogleOAuthProvider>
 
               <button
                 type="button"
                 onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/facebook'}
-                className="flex items-center gap-3 bg-[#1877F2] hover:bg-[#166FE5] text-white px-5 py-2.5 rounded-lg transition-colors duration-200 shadow-sm"
+                className="flex items-center gap-3 btn-oauth-facebook"
                 title="Iniciar con Facebook"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -563,20 +684,20 @@ export default function Login() {
 
             {/* ¿Tienes cuenta? + Términos */}
             <div className="text-center space-y-2 pt-1">
-              <p className="text-gray-500 text-xs">
+              <p className="text-textMuted text-xs">
                 {view === 'login' ? "¿No tienes una cuenta aún?" : "¿Ya tienes una cuenta?"}
                 {" "}
                 <button type="button"
                   onClick={() => { setView(view === 'login' ? 'register' : 'login'); setError(""); setFieldErrors({}); setPasswordStrength(0); }}
-                  className="text-purple-400 hover:text-purple-300 font-medium"
+                  className="text-accent hover:text-primary font-medium transition-colors"
                 >
                   {view === 'login' ? "Haz clic aquí" : "Inicia sesión"}
                 </button>
               </p>
-              <p className="text-gray-600 text-xs">
+              <p className="text-textMuted text-xs opacity-70">
                 {view === 'login' ? "Al iniciar sesión, aceptas nuestros" : "Al registrarte, aceptas nuestros"}{" "}
                 <button type="button" onClick={() => setShowTermsModal(true)}
-                  className="text-purple-400 hover:text-purple-300 underline">
+                  className="text-accent hover:text-primary underline transition-colors">
                   Términos y condiciones
                 </button>
               </p>
@@ -587,146 +708,161 @@ export default function Login() {
       </div>
 
       {/* ══════════════ MODAL TÉRMINOS ══════════════ */}
-      {showTermsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-500 to-purple-700 p-5 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white">Términos y Condiciones de Uso</h3>
-              <button onClick={() => setShowTermsModal(false)} className="text-white hover:text-purple-200 text-xl font-bold leading-none">✕</button>
-            </div>
-            <div className="p-6 max-h-[500px] overflow-y-auto text-sm text-gray-700 space-y-4">
-              <p><strong>Última actualización:</strong> 2/10/2025</p>
-              <h4 className="font-semibold">1. Aceptación de los términos</h4>
-              <p>Al acceder, registrarse o utilizar la aplicación "Tu Evento" (en su versión web o Android), desarrollada por CapySoft, el usuario acepta expresamente los presentes Términos y Condiciones.</p>
-              <h4 className="font-semibold">2. Definiciones</h4>
-              <ul className="list-disc pl-6 space-y-1">
-                <li><strong>Aplicación / Plataforma:</strong> "Tu Evento" en su versión web y móvil.</li>
-                <li><strong>Usuario:</strong> Persona que accede y utiliza la aplicación.</li>
-                <li><strong>Organizador:</strong> Usuario autorizado para crear y publicar eventos.</li>
-                <li><strong>Asistente:</strong> Usuario que reserva o participa en eventos.</li>
-                <li><strong>Administrador:</strong> Usuario con permisos especiales de gestión.</li>
-              </ul>
-              <h4 className="font-semibold">3. Uso de la plataforma</h4>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>Requiere conexión estable a Internet.</li>
-                <li>Los usuarios deben registrarse con datos verídicos.</li>
-                <li>El sistema no gestiona pagos en línea.</li>
-              </ul>
-              <h4 className="font-semibold">4. Registro y cuentas</h4>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>Cuenta con correo válido y contraseña segura.</li>
-                <li>Posible registro mediante Google/Facebook (OAuth).</li>
-                <li>El usuario es responsable de sus credenciales.</li>
-              </ul>
-              <h4 className="font-semibold">5. Reservas y tickets</h4>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>Reserva en estado pendiente hasta validación de pago.</li>
-                <li>Se genera un código QR único e intransferible al confirmar.</li>
-                <li>La falsificación de QR implica denegación de acceso.</li>
-              </ul>
-              <h4 className="font-semibold">6. Responsabilidades del usuario</h4>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>Uso correcto y lícito de la plataforma.</li>
-                <li>No difundir información falsa u ofensiva.</li>
-                <li>No vulnerar la seguridad del sistema.</li>
-              </ul>
-              <h4 className="font-semibold">7. Limitación de responsabilidades</h4>
-              <p>CapySoft no se hace responsable de fallas de conexión, información falsa de terceros ni cancelaciones ajenas al control de la plataforma.</p>
-              <h4 className="font-semibold">8. Seguridad y privacidad</h4>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>Autenticación de dos pasos en registro normal.</li>
-                <li>En OAuth, la seguridad depende del proveedor externo.</li>
-              </ul>
-              <h4 className="font-semibold">9. Propiedad intelectual</h4>
-              <p>Prohibida la reproducción o modificación sin autorización expresa.</p>
-              <h4 className="font-semibold">10. Modificaciones</h4>
-              <p>CapySoft puede modificar estos Términos en cualquier momento.</p>
-              <h4 className="font-semibold">11. Legislación aplicable</h4>
-              <p>Regidos por las leyes vigentes en Colombia.</p>
-            </div>
-            <div className="flex justify-end p-4 bg-gray-50">
-              <button onClick={() => setShowTermsModal(false)}
-                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors">
-                Entendido
-              </button>
-            </div>
-          </div>
+      <BaseModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        compact
+        title="Términos y Condiciones de Uso"
+        maxWidth="max-w-2xl"
+        scrollableBody
+        actions={[
+          {
+            label: 'Entendido',
+            icon: <FileText className="w-4 h-4" />,
+            variant: 'primary',
+            onClick: () => setShowTermsModal(false),
+          },
+        ]}
+      >
+        <div className="text-sm text-textSecondary space-y-4">
+          <p className="bm-hint"><strong className="text-textPrimary">Última actualización:</strong> 2/10/2025</p>
+          <h4 className="font-semibold text-textPrimary">1. Aceptación de los términos</h4>
+          <p>Al acceder, registrarse o utilizar la aplicación "Tu Evento" (en su versión web o Android), desarrollada por CapySoft, el usuario acepta expresamente los presentes Términos y Condiciones.</p>
+          <h4 className="font-semibold text-textPrimary">2. Definiciones</h4>
+          <ul className="list-disc pl-6 space-y-1">
+            <li><strong>Aplicación / Plataforma:</strong> "Tu Evento" en su versión web y móvil.</li>
+            <li><strong>Usuario:</strong> Persona que accede y utiliza la aplicación.</li>
+            <li><strong>Organizador:</strong> Usuario autorizado para crear y publicar eventos.</li>
+            <li><strong>Asistente:</strong> Usuario que reserva o participa en eventos.</li>
+            <li><strong>Administrador:</strong> Usuario con permisos especiales de gestión.</li>
+          </ul>
+          <h4 className="font-semibold text-textPrimary">3. Uso de la plataforma</h4>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>Requiere conexión estable a Internet.</li>
+            <li>Los usuarios deben registrarse con datos verídicos.</li>
+            <li>El sistema no gestiona pagos en línea.</li>
+          </ul>
+          <h4 className="font-semibold text-textPrimary">4. Registro y cuentas</h4>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>Cuenta con correo válido y contraseña segura.</li>
+            <li>Posible registro mediante Google/Facebook (OAuth).</li>
+            <li>El usuario es responsable de sus credenciales.</li>
+          </ul>
+          <h4 className="font-semibold text-textPrimary">5. Reservas y tickets</h4>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>Reserva en estado pendiente hasta validación de pago.</li>
+            <li>Se genera un código QR único e intransferible al confirmar.</li>
+            <li>La falsificación de QR implica denegación de acceso.</li>
+          </ul>
+          <h4 className="font-semibold text-textPrimary">6. Responsabilidades del usuario</h4>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>Uso correcto y lícito de la plataforma.</li>
+            <li>No difundir información falsa u ofensiva.</li>
+            <li>No vulnerar la seguridad del sistema.</li>
+          </ul>
+          <h4 className="font-semibold text-textPrimary">7. Limitación de responsabilidades</h4>
+          <p>CapySoft no se hace responsable de fallas de conexión, información falsa de terceros ni cancelaciones ajenas al control de la plataforma.</p>
+          <h4 className="font-semibold text-textPrimary">8. Seguridad y privacidad</h4>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>Autenticación de dos pasos en registro normal.</li>
+            <li>En OAuth, la seguridad depende del proveedor externo.</li>
+          </ul>
+          <h4 className="font-semibold">9. Propiedad intelectual</h4>
+          <p>Prohibida la reproducción o modificación sin autorización expresa.</p>
+          <h4 className="font-semibold">10. Modificaciones</h4>
+          <p>CapySoft puede modificar estos Términos en cualquier momento.</p>
+          <h4 className="font-semibold">11. Legislación aplicable</h4>
+          <p>Regidos por las leyes vigentes en Colombia.</p>
         </div>
-      )}
+      </BaseModal>
 
       {/* ══════════════ NOTIFICACIÓN REGISTRO EXITOSO ══════════════ */}
-      {showSuccessNotification && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-500 to-purple-700 p-6 text-center">
-              <div className="flex justify-center mb-4">
-                <div className="bg-white rounded-full p-3"><CheckCircle className="w-8 h-8 text-purple-500" /></div>
-              </div>
-              <h3 className="text-xl font-bold text-white mb-1">¡Registro Exitoso!</h3>
-              <p className="text-purple-100 text-sm">Tu cuenta ha sido creada correctamente</p>
-            </div>
-            <div className="p-6 text-center space-y-4">
-              <div className="bg-gray-50 rounded-xl p-4">
-                <Mail className="w-6 h-6 text-gray-500 mx-auto mb-2" />
-                <p className="text-gray-700 text-sm font-medium">Revisa tu bandeja de entrada</p>
-                <p className="text-gray-400 text-xs mt-1">Te enviamos un código de activación a</p>
-                <p className="text-purple-600 text-sm font-semibold mt-1">{formData.email}</p>
-                <p className="text-gray-400 text-xs mt-2">¿No lo encuentras? Revisa tu carpeta de spam</p>
-              </div>
-              <button onClick={handleContinueToVerification}
-                className="w-full bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-semibold py-3 rounded-lg transition-all text-sm flex items-center justify-center gap-2">
-                <CheckCircle className="w-4 h-4" /> Continuar a Verificación
-              </button>
+      <BaseModal
+        isOpen={showSuccessNotification}
+        onClose={() => {}}
+        hideOverlayClose
+        variant="success"
+        icon={<CheckCircle className="w-8 h-8" />}
+        title="¡Registro Exitoso!"
+        subtitle="Tu cuenta ha sido creada correctamente"
+        decorIcons={
+          <>
+            <PartyPopper aria-hidden="true" className="absolute top-3 left-3 w-5 h-5 -rotate-12" style={{ color: 'rgba(255,255,255,0.5)' }} />
+            <Sparkles    aria-hidden="true" className="absolute top-3 right-3 w-[18px] h-[18px]" style={{ color: 'rgba(253,224,71,0.75)' }} />
+            <PartyPopper aria-hidden="true" className="absolute bottom-3 right-4 w-4 h-4 rotate-12"  style={{ color: 'rgba(255,255,255,0.35)' }} />
+          </>
+        }
+        actions={[
+          {
+            label: 'Continuar a Verificación',
+            icon: <CheckCircle className="w-4 h-4" />,
+            variant: 'primary',
+            onClick: handleContinueToVerification,
+          },
+        ]}
+      >
+        <div className="bm-info-card text-center">
+          <div className="flex items-center justify-center mb-2">
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Mail className="w-5 h-5 text-accent" />
             </div>
           </div>
+          <p className="bm-label font-medium">Revisa tu bandeja de entrada</p>
+          <p className="bm-hint mt-1">Te enviamos un código de activación a</p>
+          <p className="bm-accent-text mt-1">{formData.email}</p>
+          <p className="bm-hint mt-2">¿No lo encuentras? Revisa tu carpeta de spam</p>
         </div>
-      )}
+      </BaseModal>
 
       {/* ══════════════ NOTIFICACIÓN LOGIN EXITOSO ══════════════ */}
-      {showLoginSuccessNotification && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-            <div className="bg-gradient-to-r from-purple-500 to-purple-700 p-6 text-center">
-              <div className="flex justify-center mb-4">
-                <div className="bg-white rounded-full p-3"><CheckCircle className="w-8 h-8 text-purple-500" /></div>
-              </div>
-              <h3 className="text-xl font-bold text-white mb-1">¡Bienvenido de Vuelta!</h3>
-              <p className="text-purple-100 text-sm">Has iniciado sesión exitosamente</p>
-            </div>
-            <div className="p-6 text-center space-y-4">
-              <div className="bg-gray-50 rounded-xl p-4">
-                <User className="w-6 h-6 text-purple-500 mx-auto mb-2" />
-                <p className="text-gray-700 text-sm font-medium">Sesión iniciada</p>
-                <p className="text-gray-400 text-xs mt-1">Accede a todas las funcionalidades de TuEvento</p>
-                <p className="text-purple-600 text-sm font-semibold mt-2">👋 ¡Hola, {(() => {
-                      if (!userData?.fullName) return userData?.alias || formData.email;
-                      
-                      const name = userData.fullName;
-                      const parts = name.split(' ').filter(part => part.trim().length > 0);
-                      
-                      if (parts.length === 0) return userData?.alias || formData.email;
-                      if (parts.length === 1) return parts[0];
-                      
-                      const firstName = parts[0];
-                      const lastName = parts[1];
-                      
-                      // Si el nombre es corto (≤3 caracteres), mostrar nombre completo
-                      if (firstName.length <= 3) {
-                        return `${firstName} ${lastName}`;
-                      }
-                      
-                      // Si el nombre es largo (>3 caracteres), mostrar solo el nombre
-                      return firstName;
-                    })()}!</p>
-              </div>
-              <button onClick={handleContinueToHome}
-                className="w-full bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white font-semibold py-3 rounded-lg transition-all text-sm flex items-center justify-center gap-2">
-                <ArrowRight className="w-4 h-4" /> Ir a Inicio
-              </button>
+      <BaseModal
+        isOpen={showLoginSuccessNotification}
+        onClose={() => {}}
+        hideOverlayClose
+        variant="success"
+        icon={<CheckCircle className="w-8 h-8" />}
+        title="¡Bienvenido de Vuelta!"
+        subtitle="Has iniciado sesión exitosamente"
+        decorIcons={
+          <>
+            <PartyPopper aria-hidden="true" className="absolute top-3 left-3 w-5 h-5 -rotate-12" style={{ color: 'rgba(255,255,255,0.5)' }} />
+            <Sparkles    aria-hidden="true" className="absolute top-3 right-3 w-[18px] h-[18px]" style={{ color: 'rgba(253,224,71,0.75)' }} />
+            <PartyPopper aria-hidden="true" className="absolute bottom-3 right-4 w-4 h-4 rotate-12"  style={{ color: 'rgba(255,255,255,0.35)' }} />
+          </>
+        }
+        actions={[
+          {
+            label: 'Ir a Inicio',
+            icon: <ArrowRight className="w-4 h-4" />,
+            variant: 'primary',
+            onClick: handleContinueToHome,
+          },
+        ]}
+      >
+        <div className="bm-info-card text-center">
+          <div className="flex items-center justify-center mb-2">
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <User className="w-5 h-5 text-accent" />
             </div>
           </div>
+          <p className="bm-label font-medium">Sesión iniciada</p>
+          <p className="bm-hint mt-1">Accede a todas las funcionalidades de TuEvento</p>
+          <p className="bm-accent-text mt-2">👋 ¡Hola, {(() => {
+            if (!userData?.fullName) return userData?.alias || formData.email;
+            const parts = userData.fullName.split(' ').filter(p => p.trim().length > 0);
+            if (parts.length === 0) return userData?.alias || formData.email;
+            if (parts.length === 1) return parts[0];
+            return parts[0].length <= 3 ? `${parts[0]} ${parts[1]}` : parts[0];
+          })()}!</p>
         </div>
-      )}
+      </BaseModal>
+
+      {/* ══════════════ MODAL REACTIVACIÓN ══════════════ */}
+      <ReactivationModal
+        isOpen={showReactivationModal}
+        onClose={() => setShowReactivationModal(false)}
+        email={formData.email}
+      />
 
     </div>
   );

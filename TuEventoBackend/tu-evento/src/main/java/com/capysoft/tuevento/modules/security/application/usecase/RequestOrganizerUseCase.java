@@ -80,6 +80,7 @@ public class RequestOrganizerUseCase implements RequestOrganizerPort {
                 .user(user)
                 .storedFileId(fileResponse.getStoredFileId())
                 .applicationDate(now)
+                .documentType(request.getDocumentType())
                 .status(PENDING_STATUS)
                 .build());
 

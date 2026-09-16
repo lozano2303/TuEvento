@@ -9,6 +9,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.capysoft.tuevento.modules.profile.application.dto.request.CreateProfileRequest;
+import com.capysoft.tuevento.modules.profile.application.port.in.CreateProfilePort;
+import com.capysoft.tuevento.modules.profile.domain.model.Profile;
+import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
 import com.capysoft.tuevento.modules.security.application.dto.OauthProfile;
 import com.capysoft.tuevento.modules.security.application.dto.response.LoginResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.OauthLoginPort;
@@ -22,6 +26,7 @@ import com.capysoft.tuevento.modules.security.domain.model.User;
 import com.capysoft.tuevento.modules.security.domain.model.UserStatus;
 import com.capysoft.tuevento.modules.security.domain.repository.AuthSessionRepository;
 import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
+import com.capysoft.tuevento.modules.security.domain.model.LoginCredentials;
 import com.capysoft.tuevento.modules.security.domain.repository.OauthAccountRepository;
 import com.capysoft.tuevento.modules.security.domain.repository.RefreshTokenRepository;
 import com.capysoft.tuevento.modules.security.domain.repository.RoleRepository;
@@ -30,9 +35,12 @@ import com.capysoft.tuevento.modules.security.domain.repository.UserStatusReposi
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.domain.valueobject.AliasGenerator;
+import com.capysoft.tuevento.shared.domain.valueobject.ValidationUtils;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OauthLoginUseCase implements OauthLoginPort {
@@ -51,9 +59,13 @@ public class OauthLoginUseCase implements OauthLoginPort {
     private final LoginCredentialsRepository loginCredentialsRepository;
     private final TokenGeneratorPort         tokenGenerator;
     private final ApplicationEventPublisher  eventPublisher;
+    private final CreateProfilePort          createProfilePort;
+    private final ProfileRepository          profileRepository;
 
     /** Registry of provider-specific profile resolvers — extensible without modifying this class. */
     private final Map<String, Function<String, OauthProfile>> providerResolvers;
+
+    // ── Code-based OAuth flow (redirect / callback) ───────────────────────────
 
     @Override
     @Transactional
@@ -62,24 +74,73 @@ public class OauthLoginUseCase implements OauthLoginPort {
         if (resolver == null) {
             throw new BusinessException("UNSUPPORTED_PROVIDER", "OAuth provider not supported");
         }
+        return loginWithProfile(provider, resolver.apply(code));
+    }
 
-        OauthProfile profile = resolver.apply(code);
+    // ── Profile-based flow (GSI id_token already verified server-side) ────────
 
+    @Override
+    @Transactional
+    public LoginResponse loginWithProfile(String provider, OauthProfile profile) {
         Optional<OauthAccount> existing = oauthAccountRepository
-                .findByProviderAndProviderUserId(provider, profile.getProviderUserId());
+                .findByProviderAndProviderUserId(provider.toLowerCase(), profile.getProviderUserId());
 
         User user;
-        boolean isNewUser = false;
+        boolean isNewUser         = false;
+        boolean isNeedsOnboarding = false;
+        Long    existingProfileId = null;   // populated when a profile row already exists
 
         if (existing.isPresent()) {
             user = existing.get().getUser();
-        } else {
-            // Prevent duplicate account if email already exists as a local account
-            if (profile.getEmail() != null && !profile.getEmail().isBlank()
-                    && loginCredentialsRepository.existsByEmail(profile.getEmail())) {
-                throw new BusinessException("EMAIL_ALREADY_EXISTS_AS_LOCAL",
-                        "This email is already registered with a password. Please login with email and password");
+
+            // ── Check whether the stored fullName is still valid ──────────────
+            // Covers users that were created before the fix (their profile was
+            // auto-filled with the email prefix, e.g. "crislozanoshark2006").
+            // We only evaluate the profile that already exists; we never create
+            // one here — that stays exclusively in the new-user branch below.
+            Optional<Profile> existingProfile =
+                    profileRepository.findByUserId(user.getUserId());
+
+            if (existingProfile.isPresent()) {
+                existingProfileId = existingProfile.get().getProfileId();
+                if (!ValidationUtils.isValidFullName(existingProfile.get().getFullName())) {
+                    log.warn("Existing OAuth user {} has invalid fullName '{}' — triggering onboarding",
+                            user.getUserId(), existingProfile.get().getFullName());
+                    isNeedsOnboarding = true;
+                }
+            } else {
+                // Profile row is missing entirely (edge case: user was created
+                // before profile creation was added to the OAuth flow).
+                log.warn("Existing OAuth user {} has no profile row — triggering onboarding",
+                        user.getUserId());
+                isNeedsOnboarding = true;
             }
+        } else {
+            // If the email matches a local account, auto-link the OAuth provider
+            // instead of rejecting — email is guaranteed verified by the caller
+            // (GoogleIdTokenAuthUseCase rejects unverified emails before reaching here).
+            Optional<LoginCredentials> localCredentials =
+                    (profile.getEmail() != null && !profile.getEmail().isBlank())
+                            ? loginCredentialsRepository.findByEmail(profile.getEmail())
+                            : Optional.empty();
+
+            if (localCredentials.isPresent()) {
+                // Account exists locally — link the OAuth provider and return JWT.
+                // Idempotent: findByProviderAndProviderUserId already checked above,
+                // so this branch only runs when the oauth_account row does not yet exist.
+                user = localCredentials.get().getUser();
+                oauthAccountRepository.save(OauthAccount.builder()
+                        .user(user)
+                        .provider(provider.toLowerCase())
+                        .providerUserId(profile.getProviderUserId())
+                        .email(profile.getEmail())
+                        .linkedAt(LocalDateTime.now())
+                        .build());
+
+                // Fall through to token generation below — isNewUser stays false.
+
+            } else {
+            // No local account and no existing OAuth account → register new user.
 
             Role role = roleRepository.findByCode(DEFAULT_ROLE_CODE)
                     .orElseThrow(() -> new NotFoundException("ROLE_NOT_FOUND", "Default role not found"));
@@ -89,7 +150,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
             String alias = AliasGenerator.generateUnique(
                     profile.getEmail(), profile.getAlias(), userRepository::existsByAlias);
 
-            // Facebook with public_profile scope doesn't return email — use a synthetic one
+            // Facebook with public_profile scope may not return email — synthetic fallback
             String email = (profile.getEmail() != null && !profile.getEmail().isBlank())
                     ? profile.getEmail()
                     : profile.getProviderUserId() + "@" + provider.toLowerCase() + ".oauth";
@@ -103,13 +164,37 @@ public class OauthLoginUseCase implements OauthLoginPort {
 
             oauthAccountRepository.save(OauthAccount.builder()
                     .user(user)
-                    .provider(provider)
+                    .provider(provider.toLowerCase())
                     .providerUserId(profile.getProviderUserId())
                     .email(email)
                     .linkedAt(LocalDateTime.now())
                     .build());
 
+            // Create the user profile if Google returned a valid display name.
+            // If the name is missing or doesn't pass the two-word letter-only rule
+            // (e.g. email-prefix fallbacks like "crislozanoshark2006"), we skip
+            // profile creation and set needsOnboarding=true so the frontend can
+            // redirect the user to a profile-completion step.
+            if (ValidationUtils.isValidFullName(profile.getFullName())) {
+                try {
+                    var createdProfile = createProfilePort.create(CreateProfileRequest.builder()
+                            .userId(user.getUserId())
+                            .fullName(profile.getFullName().trim())
+                            .build());
+                    existingProfileId = createdProfile.getProfileId();
+                } catch (Exception ex) {
+                    // Log but do not fail login — the user can complete their profile later.
+                    log.warn("Could not create profile for new OAuth user {}: {}", user.getUserId(), ex.getMessage());
+                    isNeedsOnboarding = true;
+                }
+            } else {
+                log.info("Google name '{}' did not pass validation — user {} will be prompted for onboarding",
+                        profile.getFullName(), user.getUserId());
+                isNeedsOnboarding = true;
+            }
+
             isNewUser = true;
+            } // end else (new user)
         }
 
         String accessToken  = tokenGenerator.generateAccessToken(
@@ -148,6 +233,9 @@ public class OauthLoginUseCase implements OauthLoginPort {
                 .refreshToken(refreshToken)
                 .userId(user.getUserId())
                 .alias(user.getAlias())
+                .role(user.getRole().getCode())
+                .needsOnboarding(isNeedsOnboarding)
+                .profileId(existingProfileId)
                 .build();
     }
 }

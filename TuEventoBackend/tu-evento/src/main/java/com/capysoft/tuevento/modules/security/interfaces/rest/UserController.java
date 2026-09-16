@@ -21,10 +21,11 @@ import java.util.List;
 @Tag(name = "Users", description = "Protected endpoints for authenticated users")
 public class UserController {
 
-    private final ChangePasswordPort   changePasswordPort;
-    private final LinkOauthAccountPort linkOauthAccountPort;
-    private final RequestOrganizerPort requestOrganizerPort;
+    private final ChangePasswordPort    changePasswordPort;
+    private final LinkOauthAccountPort  linkOauthAccountPort;
+    private final RequestOrganizerPort  requestOrganizerPort;
     private final GetPetitionStatusPort getPetitionStatusPort;
+    private final DeactivateAccountPort deactivateAccountPort;
 
     @Operation(summary = "Change password for the authenticated user")
     @PostMapping("/change-password")
@@ -45,9 +46,11 @@ public class UserController {
     @Operation(summary = "Submit a request to become an organizer")
     @PostMapping(value = "/organizer-request", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<RequestOrganizerResponse>> requestOrganizer(
-            @RequestParam("document") MultipartFile document) {
+            @RequestParam("document") MultipartFile document,
+            @RequestParam(value = "documentType", required = false) String documentType) {
         RequestOrganizerRequest request = RequestOrganizerRequest.builder()
                 .document(document)
+                .documentType(documentType)
                 .build();
         RequestOrganizerResponse response = requestOrganizerPort.request(request);
         return ResponseEntity.ok(ApiResponse.ok("Organizer request submitted successfully", response));
@@ -61,5 +64,13 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(ApiResponse.ok("Petition status retrieved", response));
+    }
+
+    @Operation(summary = "Deactivate the authenticated user's account")
+    @DeleteMapping("/me")
+    public ResponseEntity<ApiResponse<Void>> deactivateAccount(
+            @Valid @RequestBody DeactivateAccountRequest request) {
+        deactivateAccountPort.deactivate(request);
+        return ResponseEntity.ok(ApiResponse.ok("Account deactivated successfully"));
     }
 }

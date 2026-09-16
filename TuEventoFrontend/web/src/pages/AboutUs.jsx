@@ -5,10 +5,8 @@ import Footer from '../layouts/Footer';
 
 export default function AboutUs() {
   const [currentMember, setCurrentMember] = useState(0);
-  
+
   const teamMembers = [
-
-
     {
       id: 1,
       name: "Cristofer David Lozano Contreras",
@@ -35,94 +33,99 @@ export default function AboutUs() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentMember((prev) => (prev + 1) % teamMembers.length);
-    }, 4000); // Cambia cada 4 segundos
-
+    }, 4000);
     return () => clearInterval(interval);
   }, [teamMembers.length]);
 
-  const nextMember = () => {
-    setCurrentMember((prev) => (prev + 1) % teamMembers.length);
-  };
-
-  const prevMember = () => {
-    setCurrentMember((prev) => (prev - 1 + teamMembers.length) % teamMembers.length);
-  };
+  const nextMember = () => setCurrentMember((prev) => (prev + 1) % teamMembers.length);
+  const prevMember = () => setCurrentMember((prev) => (prev - 1 + teamMembers.length) % teamMembers.length);
 
   const member = teamMembers[currentMember];
+
   return (
     <div className="min-h-screen bg-background text-textPrimary">
+
       {/* Hero Section */}
       <section className="relative overflow-hidden py-0">
-        {/* Fondo con partículas animadas */}
-        <div className="absolute inset-0 bg-purple-700">
+        {/* Fondo con color primario del tema */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primaryDark) 100%)' }}
+        >
           <div className="absolute inset-0 opacity-20">
-            <div className="absolute top-20 left-20 w-2 h-2 bg-yellow-300 rounded-full animate-pulse"></div>
-            <div className="absolute top-40 right-32 w-3 h-3 bg-pink-300 rounded-full animate-bounce"></div>
-            <div className="absolute bottom-32 left-1/4 w-1 h-1 bg-blue-300 rounded-full animate-ping"></div>
-            <div className="absolute top-60 left-3/4 w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
+            <div className="absolute top-20 left-20 w-2 h-2 bg-accent rounded-full animate-pulse" />
+            <div className="absolute top-40 right-32 w-3 h-3 bg-accent rounded-full animate-bounce" />
+            <div className="absolute bottom-32 left-1/4 w-1 h-1 bg-textPrimary rounded-full animate-ping" />
+            <div className="absolute top-60 left-3/4 w-2 h-2 bg-accent rounded-full animate-pulse" />
           </div>
-          {/* Gradiente superpuesto */}
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-700/80 via-purple-800/60 to-purple-900/40"></div>
+          <div
+            className="absolute inset-0"
+            style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 80%, transparent), color-mix(in srgb, var(--color-primaryDark) 60%, transparent), color-mix(in srgb, var(--color-background) 40%, transparent))' }}
+          />
         </div>
 
         <div className="relative max-w-6xl mx-auto px-4 py-17">
           <div className="text-center space-y-8">
-            <div className="inline-flex items-center px-6 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 mb-6">
-              <Sparkles className="w-5 h-5 text-yellow-300 mr-2" />
-              <span className="text-sm font-medium">Plataforma de Eventos Innovadora</span>
+            <div
+              className="inline-flex items-center px-6 py-2 rounded-full border mb-6"
+              style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', borderColor: 'rgba(255,255,255,0.2)' }}
+            >
+              <Sparkles className="w-5 h-5 text-accent mr-2" />
+              <span className="text-sm font-medium text-textPrimary">Plataforma de Eventos Innovadora</span>
             </div>
-            
-            <h1 className="text-5xl md:text-7xl font-bold leading-tight">
-              Sobre <span className="text-yellow-300 drop-shadow-lg">Nosotros</span>
+
+            <h1 className="text-5xl md:text-7xl font-bold leading-tight text-textPrimary">
+              Sobre <span className="text-accent drop-shadow-lg">Nosotros</span>
             </h1>
-            
-            <p className="text-xl text-purple-100 max-w-4xl mx-auto leading-relaxed">
-              En <span className="font-semibold text-yellow-300">"Tu Evento"</span> transformamos ideas en experiencias inolvidables. Somos una plataforma especializada en la
-              <span className="font-medium text-white"> maquetación virtual de espacios</span> para eventos, permitiendo a organizadores planificar visualmente la disposición
+
+            <p className="text-xl max-w-4xl mx-auto leading-relaxed" style={{ color: 'color-mix(in srgb, var(--color-textPrimary) 85%, transparent)' }}>
+              En <span className="font-semibold text-accent">"Tu Evento"</span> transformamos ideas en experiencias inolvidables. Somos una plataforma especializada en la
+              <span className="font-medium text-textPrimary"> maquetación virtual de espacios</span> para eventos, permitiendo a organizadores planificar visualmente la disposición
               de sus lugares: mesas, escenarios, pistas de baile, áreas VIP y más.
             </p>
-            
+
             <div className="flex flex-wrap justify-center gap-4 mt-8">
-              <div className="flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                <Zap className="w-5 h-5 text-yellow-300 mr-2" />
-                <span className="text-sm">Visualización 2D</span>
-              </div>
-              <div className="flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                <Target className="w-5 h-5 text-green-300 mr-2" />
-                <span className="text-sm">Planificación Precisa</span>
-              </div>
-              <div className="flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                <Heart className="w-5 h-5 text-pink-300 mr-2" />
-                <span className="text-sm">Experiencias Únicas</span>
-              </div>
+              {[
+                { icon: Zap,    text: 'Visualización 2D',     color: 'text-accent' },
+                { icon: Target, text: 'Planificación Precisa', color: 'text-success' },
+                { icon: Heart,  text: 'Experiencias Únicas',  color: 'text-error'  },
+              ].map(({ icon: Icon, text, color }) => (
+                <div
+                  key={text}
+                  className="flex items-center px-4 py-2 rounded-lg border"
+                  style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', borderColor: 'rgba(255,255,255,0.2)' }}
+                >
+                  <Icon className={`w-5 h-5 ${color} mr-2`} />
+                  <span className="text-sm text-textPrimary">{text}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Onda decorativa mejorada */}
+        {/* Onda decorativa */}
         <div className="relative w-full overflow-hidden mt-16">
           <svg viewBox="0 0 1200 120" className="w-full h-32 fill-background" preserveAspectRatio="none">
-            <path d="M0,60 Q150,20 300,60 T600,60 Q750,100 900,60 T1200,60 L1200,120 L0,120 Z"></path>
+            <path d="M0,60 Q150,20 300,60 T600,60 Q750,100 900,60 T1200,60 L1200,120 L0,120 Z" />
           </svg>
         </div>
       </section>
 
       {/* Nuestra Historia */}
       <section className="py-24 bg-background relative overflow-hidden">
-        {/* Elementos decorativos de fondo */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-20 left-10 w-32 h-32 bg-primary rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-10 w-40 h-40 bg-blue-500 rounded-full blur-3xl"></div>
+        <div className="absolute inset-0 opacity-5 pointer-events-none">
+          <div className="absolute top-20 left-10 w-32 h-32 bg-primary rounded-full blur-3xl" />
+          <div className="absolute bottom-20 right-10 w-40 h-40 bg-accent rounded-full blur-3xl" />
         </div>
-        
+
         <div className="max-w-6xl mx-auto px-4 relative z-10">
           <div className="text-center mb-20">
-            <div className="inline-flex items-center px-6 py-3 bg-primary/20 backdrop-blur-sm rounded-full border border-primary/30 mb-8">
+            <div className="inline-flex items-center px-6 py-3 rounded-full border mb-8 bg-primary/20 border-primary/30">
               <Calendar className="w-5 h-5 text-accent mr-2" />
               <span className="text-sm font-medium text-accent">Nuestra Trayectoria</span>
             </div>
-            
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-textPrimary to-textSecondary bg-clip-text text-transparent">
+
+            <h2 className="text-4xl md:text-5xl font-bold mb-8 text-textPrimary">
               Nuestra Historia
             </h2>
             <p className="text-textSecondary text-xl max-w-4xl mx-auto leading-relaxed">
@@ -134,7 +137,10 @@ export default function AboutUs() {
 
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="space-y-8">
-              <div className="bg-gradient-to-br from-surface/50 to-background/50 backdrop-blur-sm p-8 rounded-2xl border border-surfaceAlt/50 hover:border-primary/30 transition-all duration-300">
+              <div
+                className="p-8 rounded-2xl hover:border-primary/30 transition-all duration-300"
+                style={{ background: 'color-mix(in srgb, var(--color-surface) 50%, transparent)', backdropFilter: 'blur(8px)', border: '1px solid color-mix(in srgb, var(--color-surfaceAlt) 50%, transparent)' }}
+              >
                 <h3 className="text-3xl font-bold mb-4 text-textPrimary">Nuestra Visión</h3>
                 <p className="text-textSecondary leading-relaxed mb-6">
                   Ser la plataforma líder en gestión de eventos, facilitando conexiones significativas
@@ -151,7 +157,10 @@ export default function AboutUs() {
             </div>
 
             <div className="space-y-8">
-              <div className="bg-gradient-to-br from-surface/50 to-background/50 backdrop-blur-sm p-8 rounded-2xl border border-surfaceAlt/50 hover:border-red-500/30 transition-all duration-300">
+              <div
+                className="p-8 rounded-2xl transition-all duration-300"
+                style={{ background: 'color-mix(in srgb, var(--color-surface) 50%, transparent)', backdropFilter: 'blur(8px)', border: '1px solid color-mix(in srgb, var(--color-surfaceAlt) 50%, transparent)' }}
+              >
                 <h3 className="text-3xl font-bold mb-4 text-textPrimary">Nuestra Misión</h3>
                 <p className="text-textSecondary leading-relaxed mb-6">
                   Proporcionar herramientas intuitivas y poderosas que permitan a organizadores
@@ -159,10 +168,10 @@ export default function AboutUs() {
                   sus vidas, todo mientras mantenemos los más altos estándares de calidad y seguridad.
                 </p>
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-red-600/20 rounded-full flex items-center justify-center">
-                    <Heart className="w-6 h-6 text-red-400" />
+                  <div className="w-12 h-12 bg-error/20 rounded-full flex items-center justify-center">
+                    <Heart className="w-6 h-6 text-error" />
                   </div>
-                  <span className="text-lg font-semibold text-red-200">Pasión por Eventos</span>
+                  <span className="text-lg font-semibold text-error">Pasión por Eventos</span>
                 </div>
               </div>
             </div>
@@ -172,97 +181,82 @@ export default function AboutUs() {
 
       {/* Nuestros Valores */}
       <section className="py-24 bg-surface relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary rounded-full blur-3xl"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-blue-500 rounded-full blur-3xl"></div>
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-accent rounded-full blur-3xl" />
         </div>
-        
+
         <div className="max-w-6xl mx-auto px-4 relative z-10">
           <div className="text-center mb-20">
-            <div className="inline-flex items-center px-6 py-3 bg-primary/20 backdrop-blur-sm rounded-full border border-primary/30 mb-8">
+            <div className="inline-flex items-center px-6 py-3 rounded-full border mb-8 bg-primary/20 border-primary/30">
               <Award className="w-5 h-5 text-accent mr-2" />
               <span className="text-sm font-medium text-accent">Lo que nos define</span>
             </div>
-            
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-textPrimary to-textSecondary bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold mb-8 text-textPrimary">
               Nuestros Valores
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="group text-center space-y-6 p-8 bg-gradient-to-br from-surfaceAlt/30 to-surface/30 backdrop-blur-sm rounded-2xl border border-surfaceAlt/30 hover:border-primary/50 transition-all duration-300 hover:transform hover:scale-105">
-              <div className="w-20 h-20 bg-gradient-to-br from-primary to-primaryDark rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <Award className="w-10 h-10 text-textPrimary" />
+            {[
+              { icon: Award,       title: 'Excelencia',   text: 'Nos comprometemos con la más alta calidad en todo lo que hacemos, desde el desarrollo de software hasta el soporte al cliente.',        hoverBorder: 'hover:border-primary/50',  gradient: 'from-primary to-primaryDark' },
+              { icon: Users,       title: 'Colaboración', text: 'Creemos en el poder del trabajo en equipo y la colaboración para lograr objetivos comunes y crear valor para todos.',                   hoverBorder: 'hover:border-accent/50',   gradient: 'from-accent to-primary'     },
+              { icon: CheckCircle, title: 'Integridad',   text: 'Operamos con honestidad, transparencia y ética en todas nuestras interacciones y decisiones.',                                          hoverBorder: 'hover:border-success/50',  gradient: 'from-success to-primaryDark' },
+            ].map(({ icon: Icon, title, text, hoverBorder, gradient }) => (
+              <div
+                key={title}
+                className={`group text-center space-y-6 p-8 rounded-2xl backdrop-blur-sm transition-all duration-300 hover:scale-105 ${hoverBorder}`}
+                style={{ background: 'color-mix(in srgb, var(--color-surfaceAlt) 30%, transparent)', border: '1px solid color-mix(in srgb, var(--color-surfaceAlt) 30%, transparent)' }}
+              >
+                <div className={`w-20 h-20 bg-gradient-to-br ${gradient} rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                  <Icon className="w-10 h-10 text-textPrimary" />
+                </div>
+                <h3 className="text-2xl font-bold text-textPrimary">{title}</h3>
+                <p className="text-textSecondary leading-relaxed">{text}</p>
               </div>
-              <h3 className="text-2xl font-bold text-textPrimary">Excelencia</h3>
-              <p className="text-textSecondary leading-relaxed">
-                Nos comprometemos con la más alta calidad en todo lo que hacemos,
-                desde el desarrollo de software hasta el soporte al cliente.
-              </p>
-            </div>
-
-            <div className="group text-center space-y-6 p-8 bg-gradient-to-br from-surfaceAlt/30 to-surface/30 backdrop-blur-sm rounded-2xl border border-surfaceAlt/30 hover:border-blue-500/50 transition-all duration-300 hover:transform hover:scale-105">
-              <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <Users className="w-10 h-10 text-textPrimary" />
-              </div>
-              <h3 className="text-2xl font-bold text-textPrimary">Colaboración</h3>
-              <p className="text-textSecondary leading-relaxed">
-                Creemos en el poder del trabajo en equipo y la colaboración
-                para lograr objetivos comunes y crear valor para todos.
-              </p>
-            </div>
-
-            <div className="group text-center space-y-6 p-8 bg-gradient-to-br from-surfaceAlt/30 to-surface/30 backdrop-blur-sm rounded-2xl border border-surfaceAlt/30 hover:border-green-500/50 transition-all duration-300 hover:transform hover:scale-105">
-              <div className="w-20 h-20 bg-gradient-to-br from-green-600 to-green-700 rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                <CheckCircle className="w-10 h-10 text-textPrimary" />
-              </div>
-              <h3 className="text-2xl font-bold text-textPrimary">Integridad</h3>
-              <p className="text-textSecondary leading-relaxed">
-                Operamos con honestidad, transparencia y ética en todas
-                nuestras interacciones y decisiones.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-     
       {/* Organiza tus eventos */}
-      <section className="py-20 bg-gradient-to-r from-purple-900 to-purple-800 relative overflow-hidden">
-        {/* Elementos decorativos de fondo */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-24 h-24 bg-yellow-300 rounded-full blur-2xl"></div>
+      <section
+        className="py-20 relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, var(--color-primaryDark) 0%, var(--color-primary) 100%)' }}
+      >
+        <div className="absolute inset-0 opacity-20 pointer-events-none">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-textPrimary rounded-full blur-3xl" />
+          <div className="absolute bottom-10 right-10 w-24 h-24 bg-accent rounded-full blur-2xl" />
         </div>
-        
+
         <div className="max-w-6xl mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Ilustración */}
             <div className="relative">
-              <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-sm p-8 rounded-3xl border border-purple-400/30">
-                {/* Representación de la ilustración de planificación */}
-                <div className="relative h-80 bg-gradient-to-br from-purple-500/30 to-pink-500/30 rounded-2xl overflow-hidden">
-                  {/* Elementos decorativos que representan la planificación */}
-                  <div className="absolute top-8 left-8 w-16 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-6 h-6 text-white" />
+              <div
+                className="p-8 rounded-3xl"
+                style={{ background: 'color-mix(in srgb, var(--color-primary) 20%, transparent)', backdropFilter: 'blur(8px)', border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)' }}
+              >
+                <div
+                  className="relative h-80 rounded-2xl overflow-hidden"
+                  style={{ background: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}
+                >
+                  <div className="absolute top-8 left-8 w-16 h-12 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.2)' }}>
+                    <Calendar className="w-6 h-6 text-textPrimary" />
                   </div>
-                  <div className="absolute top-8 right-8 w-12 h-12 bg-yellow-300/80 rounded-full flex items-center justify-center">
-                    <Clock className="w-6 h-6 text-purple-800" />
+                  <div className="absolute top-8 right-8 w-12 h-12 rounded-full flex items-center justify-center bg-accent/80">
+                    <Clock className="w-6 h-6 text-background" />
                   </div>
-                  <div className="absolute bottom-8 left-8 w-20 h-16 bg-white/20 rounded-lg"></div>
-                  <div className="absolute bottom-8 right-8 w-14 h-14 bg-pink-300/80 rounded-full"></div>
-                  
-                  {/* Figura central representando una persona planificando */}
+                  <div className="absolute bottom-8 left-8 w-20 h-16 rounded-lg" style={{ background: 'rgba(255,255,255,0.2)' }} />
+                  <div className="absolute bottom-8 right-8 w-14 h-14 bg-primary/80 rounded-full" />
                   <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2">
-                    <div className="w-16 h-16 bg-white/30 rounded-full flex items-center justify-center">
-                      <Users className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.3)' }}>
+                      <Users className="w-8 h-8 text-textPrimary" />
                     </div>
                   </div>
-                  
-                  {/* Partículas decorativas */}
-                  <div className="absolute top-20 left-1/4 w-2 h-2 bg-yellow-300 rounded-full animate-pulse"></div>
-                  <div className="absolute top-32 right-1/4 w-3 h-3 bg-pink-300 rounded-full animate-bounce"></div>
-                  <div className="absolute bottom-32 left-1/3 w-1 h-1 bg-white rounded-full animate-ping"></div>
+                  <div className="absolute top-20 left-1/4 w-2 h-2 bg-accent rounded-full animate-pulse" />
+                  <div className="absolute top-32 right-1/4 w-3 h-3 bg-textPrimary/60 rounded-full animate-bounce" />
+                  <div className="absolute bottom-32 left-1/3 w-1 h-1 bg-textPrimary rounded-full animate-ping" />
                 </div>
               </div>
             </div>
@@ -270,66 +264,55 @@ export default function AboutUs() {
             {/* Contenido de texto */}
             <div className="space-y-8">
               <div>
-                <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+                <h2 className="text-4xl md:text-5xl font-bold mb-6 text-textPrimary">
                   Organiza tus eventos
                 </h2>
-                <p className="text-xl text-purple-100 leading-relaxed mb-8">
-                  Organiza tus eventos en minutos, no en horas. Con nuestras herramientas virtuales, 
+                <p className="text-xl leading-relaxed mb-8" style={{ color: 'color-mix(in srgb, var(--color-textPrimary) 85%, transparent)' }}>
+                  Organiza tus eventos en minutos, no en horas. Con nuestras herramientas virtuales,
                   simplifica la planificación y enfócate en lo importante.
                 </p>
               </div>
 
-              {/* Características destacadas */}
               <div className="space-y-4">
-                <div className="flex items-center space-x-4 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                  <div className="w-10 h-10 bg-yellow-300 rounded-full flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-purple-800" />
+                {[
+                  { icon: Clock,  title: 'Ahorra tiempo',          desc: 'Planifica en minutos con nuestras herramientas intuitivas',  accentBg: 'bg-accent/80',   accentText: 'text-background' },
+                  { icon: Zap,    title: 'Herramientas virtuales',  desc: 'Maquetación 2D y visualización en tiempo real',              accentBg: 'bg-primary/80',  accentText: 'text-textPrimary' },
+                  { icon: Target, title: 'Enfoque en lo importante', desc: 'Dedica más tiempo a crear experiencias memorables',          accentBg: 'bg-success/80',  accentText: 'text-textPrimary' },
+                ].map(({ icon: Icon, title, desc, accentBg, accentText }) => (
+                  <div
+                    key={title}
+                    className="flex items-center space-x-4 p-4 rounded-lg border"
+                    style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', borderColor: 'rgba(255,255,255,0.2)' }}
+                  >
+                    <div className={`w-10 h-10 ${accentBg} rounded-full flex items-center justify-center flex-shrink-0`}>
+                      <Icon className={`w-5 h-5 ${accentText}`} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-textPrimary">{title}</h3>
+                      <p className="text-sm" style={{ color: 'color-mix(in srgb, var(--color-textPrimary) 70%, transparent)' }}>{desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-white">Ahorra tiempo</h3>
-                    <p className="text-purple-200 text-sm">Planifica en minutos con nuestras herramientas intuitivas</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-4 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                  <div className="w-10 h-10 bg-pink-300 rounded-full flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-purple-800" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white">Herramientas virtuales</h3>
-                    <p className="text-purple-200 text-sm">Maquetación 2D y visualización en tiempo real</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-4 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                  <div className="w-10 h-10 bg-green-300 rounded-full flex items-center justify-center">
-                    <Target className="w-5 h-5 text-purple-800" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-white">Enfoque en lo importante</h3>
-                    <p className="text-purple-200 text-sm">Dedica más tiempo a crear experiencias memorables</p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </section>
 
+      {/* Nuestro Equipo */}
       <section className="py-24 bg-background relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-20 right-20 w-56 h-56 bg-success rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 left-20 w-40 h-40 bg-pink-500 rounded-full blur-3xl"></div>
+        <div className="absolute inset-0 opacity-5 pointer-events-none">
+          <div className="absolute top-20 right-20 w-56 h-56 bg-success rounded-full blur-3xl" />
+          <div className="absolute bottom-20 left-20 w-40 h-40 bg-accent rounded-full blur-3xl" />
         </div>
-        
+
         <div className="max-w-6xl mx-auto px-4 relative z-10">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center px-6 py-3 bg-primary/20 backdrop-blur-sm rounded-full border border-primary/30 mb-8">
+            <div className="inline-flex items-center px-6 py-3 rounded-full border mb-8 bg-primary/20 border-primary/30">
               <Users className="w-5 h-5 text-accent mr-2" />
               <span className="text-sm font-medium text-accent">Conoce al equipo</span>
             </div>
-            
-            <h2 className="text-4xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-textPrimary to-textSecondary bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold mb-8 text-textPrimary">
               Nuestro Equipo
             </h2>
             <p className="text-textSecondary text-xl max-w-3xl mx-auto leading-relaxed">
@@ -338,7 +321,10 @@ export default function AboutUs() {
           </div>
 
           {/* Carrusel del equipo */}
-          <div className="relative bg-gradient-to-br from-surface/40 to-background/40 backdrop-blur-sm rounded-3xl border border-surfaceAlt/30 p-8 md:p-12">
+          <div
+            className="relative rounded-3xl p-8 md:p-12"
+            style={{ background: 'color-mix(in srgb, var(--color-surface) 40%, transparent)', backdropFilter: 'blur(8px)', border: '1px solid color-mix(in srgb, var(--color-surfaceAlt) 30%, transparent)' }}
+          >
             <div className="grid md:grid-cols-2 gap-12 items-center min-h-[400px]">
               {/* Foto del miembro */}
               <div className="relative">
@@ -348,90 +334,85 @@ export default function AboutUs() {
                       <img src="/src/assets/images/francisco.jpg" alt={member.name} className="w-full h-full object-cover" />
                     ) : member.id === 2 ? (
                       <img src="/src/assets/images/keiner.png" alt={member.name} className="w-full h-full object-cover" />
-                    ) : member.id === 3 ? (
-                      <img src="/src/assets/images/cristofer.jpg" alt={member.name} className="w-full h-full object-cover" />
-                    ) : member.id === 4 ? (
-                      <img src="/src/assets/images/angel.jpg" alt={member.name} className="w-full h-full object-cover" />
-                    ) : member.id === 5 ? (
-                      <img src="/src/assets/images/jhampier.jpg" alt={member.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-white font-bold text-6xl">
+                      <div className="w-full h-full flex items-center justify-center text-textPrimary font-bold text-6xl">
                         {member.initials}
                       </div>
                     )}
                   </div>
-                  {/* Elementos decorativos alrededor de la foto */}
-                  <div className="absolute -top-4 -left-4 w-8 h-8 bg-yellow-400 rounded-full animate-pulse"></div>
-                  <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-pink-400 rounded-full animate-bounce"></div>
-                  <div className="absolute top-8 -right-2 w-4 h-4 bg-blue-400 rounded-full animate-ping"></div>
+                  <div className="absolute -top-4 -left-4 w-8 h-8 bg-accent rounded-full animate-pulse" />
+                  <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-primary rounded-full animate-bounce" />
+                  <div className="absolute top-8 -right-2 w-4 h-4 bg-success rounded-full animate-ping" />
                 </div>
               </div>
 
               {/* Información del miembro */}
               <div className="space-y-6 text-center md:text-left">
                 <div>
-                  <h3 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                  <h3 className="text-3xl md:text-4xl font-bold text-textPrimary mb-2">
                     {member.name}
                   </h3>
-                  <p className="text-xl text-purple-300 font-semibold mb-4">
+                  <p className="text-xl text-accent font-semibold mb-4">
                     {member.role}
                   </p>
-                  <p className="text-gray-300 text-lg leading-relaxed">
+                  <p className="text-textSecondary text-lg leading-relaxed">
                     {member.description}
                   </p>
                 </div>
 
-                {/* Información de contacto */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-center md:justify-start space-x-3 p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
-                    <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
-                    <span className="text-gray-300">{member.email}</span>
-                  </div>
-                  <div className="flex items-center justify-center md:justify-start space-x-3 p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
-                    <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                    <span className="text-gray-300">{member.phone}</span>
-                  </div>
+                  {[
+                    { color: 'bg-accent', value: member.email },
+                    { color: 'bg-success', value: member.phone },
+                  ].map(({ color, value }) => (
+                    <div
+                      key={value}
+                      className="flex items-center justify-center md:justify-start space-x-3 p-3 rounded-lg border"
+                      style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
+                    >
+                      <div className={`w-3 h-3 ${color} rounded-full`} />
+                      <span className="text-textSecondary">{value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
             {/* Controles de navegación */}
             <div className="flex items-center justify-between mt-8">
-              {/* Botón anterior */}
-              <button 
+              <button
                 onClick={prevMember}
-                className="w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+                style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}
               >
-                <ChevronLeft className="w-6 h-6 text-white" />
+                <ChevronLeft className="w-6 h-6 text-textPrimary" />
               </button>
 
-              {/* Indicadores */}
               <div className="flex space-x-3">
                 {teamMembers.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentMember(index)}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      index === currentMember
-                        ? 'bg-purple-400 scale-125'
-                        : 'bg-white/30 hover:bg-white/50'
-                    }`}
+                    className="w-3 h-3 rounded-full transition-all duration-300"
+                    style={{
+                      background: index === currentMember ? 'var(--color-accent)' : 'rgba(255,255,255,0.3)',
+                      transform: index === currentMember ? 'scale(1.25)' : 'scale(1)',
+                    }}
                   />
                 ))}
               </div>
 
-              {/* Botón siguiente */}
-              <button 
+              <button
                 onClick={nextMember}
-                className="w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
+                style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}
               >
-                <ChevronRight className="w-6 h-6 text-white" />
+                <ChevronRight className="w-6 h-6 text-textPrimary" />
               </button>
             </div>
 
-            {/* Contador del miembro actual */}
             <div className="text-center mt-6">
-              <span className="text-gray-400 text-sm">
+              <span className="text-textMuted text-sm">
                 {currentMember + 1} de {teamMembers.length}
               </span>
             </div>

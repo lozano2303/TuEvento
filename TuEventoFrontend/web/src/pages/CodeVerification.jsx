@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Mail, ArrowRight, RefreshCw } from "lucide-react";
+import { CheckCircle, Mail, ArrowRight, RefreshCw, PartyPopper, Sparkles } from "lucide-react";
 import { verifyActivationCode, resendActivationCode, resendActivationCodeByEmail } from "../services/Login.js";
 
 export default function CodeVerification({ userID: propUserID, userEmail: propUserEmail, onVerificationSuccess, onBackToLogin }) {
@@ -54,16 +54,16 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
   if (noUserID) {
     return (
       <div className="min-h-screen flex">
-        {/* Columna izquierda - Ilustración con gradiente púrpura */}
-        <div className="w-1/2 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-8">
-          <div className="text-center space-y-6 max-w-sm">
-            <Mail className="w-16 h-16 text-white mx-auto" />
-            <div className="text-white">
-              <h2 className="text-2xl font-bold mb-2">Reenviar Código</h2>
-              <p className="text-sm opacity-90">Ingresa tu email para recibir un nuevo código de activación.</p>
-            </div>
+      {/* Columna izquierda - Ilustración con gradiente púrpura */}
+      <div className="theme-auth-hero w-1/2 flex items-center justify-center p-8">
+        <div className="text-center space-y-6 max-w-sm">
+          <Mail className="w-16 h-16 text-textPrimary mx-auto" />
+          <div className="text-textPrimary">
+            <h2 className="text-2xl font-bold mb-2">Reenviar Código</h2>
+            <p className="text-sm opacity-90">Ingresa tu email para recibir un nuevo código de activación.</p>
           </div>
         </div>
+      </div>
 
         <div className="w-1/2 bg-background flex items-center justify-center p-8">
           <div className="w-full max-w-sm space-y-6">
@@ -94,13 +94,13 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                   type="email"
                   value={activationEmail}
                   onChange={(e) => setActivationEmail(e.target.value)}
-                  className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                  className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all text-sm"
                   placeholder="Correo electrónico"
                   required
                 />
               </div>
 
-              {resendMessage && <p className="text-accent text-sm">{resendMessage}</p>}
+              {resendMessage && <p className="form-success text-sm">{resendMessage}</p>}
 
               <button
                 type="submit"
@@ -204,7 +204,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
   return (
     <div className="min-h-screen flex">
       {/* Columna izquierda - Ilustración con gradiente púrpura */}
-      <div className="w-1/2 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 flex items-center justify-center p-8">
+      <div className="theme-auth-hero w-1/2 flex items-center justify-center p-8">
         <div className="text-center space-y-6 max-w-sm">
           <img
             src="/src/assets/images/fondologin.png"
@@ -227,15 +227,15 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm"
+                className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all text-sm"
                 placeholder="Código de activación"
                 required
               />
             </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p className="form-error text-sm">{error}</p>}
 
-            {resendMessage && <p className="text-green-500 text-sm">{resendMessage}</p>}
+            {resendMessage && <p className="form-success text-sm">{resendMessage}</p>}
 
             <button
               type="submit"
@@ -276,39 +276,37 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
 
       {/* Notificación de activación exitosa */}
       {showSuccessNotification && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-            {/* Header con gradiente */}
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-center">
-              <div className="flex justify-center mb-4">
-                <div className="bg-white rounded-full p-3">
-                  <CheckCircle className="w-8 h-8 text-purple-500" />
+        <div className="theme-overlay fixed inset-0 flex items-center justify-center z-50 p-4">
+          <div className="theme-modal-card rounded-2xl max-w-md w-full mx-4 overflow-hidden">
+            <div className="modal-header-gradient p-6 text-center">
+              <PartyPopper aria-hidden="true" className="absolute top-3 left-3 w-5 h-5 -rotate-12" style={{ color: 'rgba(255,255,255,0.5)' }} />
+              <Sparkles aria-hidden="true" className="absolute top-3 right-3 w-[18px] h-[18px]" style={{ color: 'rgba(253,224,71,0.75)' }} />
+              <PartyPopper aria-hidden="true" className="absolute bottom-3 right-4 w-4 h-4 rotate-12" style={{ color: 'rgba(255,255,255,0.35)' }} />
+              <div className="flex justify-center mb-4 relative z-10">
+                <div className="modal-icon-ring">
+                  <CheckCircle className="w-8 h-8" style={{ color: '#16a34a' }} />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">¡Cuenta Activada!</h3>
-              <p className="text-purple-100 text-sm">Tu cuenta ha sido verificada exitosamente</p>
+              <h3 className="text-xl font-bold mb-2 relative z-10" style={{ color: 'var(--color-onPrimary, #ffffff)' }}>¡Cuenta Activada!</h3>
+              <p className="modal-header-gradient-sub text-sm relative z-10">Tu cuenta ha sido verificada exitosamente</p>
             </div>
-
-            {/* Contenido */}
             <div className="p-6 text-center">
               <div className="mb-6">
-                <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <CheckCircle className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                  <p className="text-gray-700 text-sm font-medium mb-1">Verificación completada</p>
-                  <p className="text-gray-500 text-xs">Ya puedes acceder a todas las funcionalidades</p>
+                <div className="theme-info-card mb-4" style={{ background: 'rgba(0,0,0,0.15)' }}>
+                  <div className="flex items-center justify-center mb-2">
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <CheckCircle className="w-5 h-5 text-success" />
+                    </div>
+                  </div>
+                  <p className="theme-label text-sm font-medium mb-1">Verificación completada</p>
+                  <p className="theme-hint text-xs">Ya puedes acceder a todas las funcionalidades</p>
                 </div>
-                
-                <div className="text-gray-600 text-sm">
-                  <p className="mb-2">🎉 <span className="font-medium">¡Bienvenido a TuEvento!</span></p>
-                  <p className="text-xs text-gray-500">Ahora puedes iniciar sesión con tu cuenta</p>
+                <div className="text-textSecondary text-sm">
+                  <p className="mb-2">🎉 <span className="font-medium text-textPrimary">¡Bienvenido a TuEvento!</span></p>
+                  <p className="theme-hint text-xs">Ahora puedes iniciar sesión con tu cuenta</p>
                 </div>
               </div>
-
-              {/* Botón para continuar */}
-              <button
-                onClick={handleContinueToLogin}
-                className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 text-sm flex items-center justify-center space-x-2"
-              >
+              <button onClick={handleContinueToLogin} className="modal-btn-cta">
                 <ArrowRight className="w-4 h-4" />
                 <span>Continuar al Login</span>
               </button>
