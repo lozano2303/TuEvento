@@ -22,7 +22,8 @@ import { findSeatAt } from "../utils/seatHitTesting";
  * - currentRowPage: pagina actual de filas (0-indexed)
  * - currentColPage: pagina actual de columnas (0-indexed)
  * - sections: Array de EventSectionResponse con datos del backend
- * - seats: objeto { [seatId]: SeatResponse }
+ * - seats: objeto { [seatId]: SeatResponse } (compatibilidad)
+ * - seatStore: SeatDataStore para renderizado optimizado con DOD
  * - onSeatPress: callback (seatId) => void
  * - currentUserId: ID del usuario actual
  * - reserving: Set de seatIds que están en proceso de reserva
@@ -39,6 +40,7 @@ export default function SeatMapCanvas({
   currentColPage = 0,
   sections = [],
   seats = {},
+  seatStore = null,
   onSeatPress,
   currentUserId = null,
   reserving = new Set(),
@@ -283,6 +285,7 @@ export default function SeatMapCanvas({
                 inOverviewMode={inOverviewMode}
                 sections={sections}
                 seats={seats}
+                seatStore={seatStore}
                 currentUserId={currentUserId}
                 reserving={reserving}
                 orderedLayoutElements={orderedLayoutElements}
@@ -331,6 +334,7 @@ function SectionRenderer({
   inOverviewMode,
   sections,
   seats,
+  seatStore = null,
   currentUserId,
   reserving = new Set(),
   orderedLayoutElements = [],
@@ -449,55 +453,127 @@ function SectionRenderer({
       <Path path={shapePath} color={fillColor}   style="fill" />
       <Path path={shapePath} color={strokeColor} style="stroke" strokeWidth={strokeWidth} />
 
-      {/* Sillas: solo las de la pagina actual (ventana 10x10) */}
-      {!inOverviewMode && pageFilteredSeats.map(({ pos, realIndex }) => {
-        const seat = allSectionSeats[elementOffset + realIndex];
-        if (!seat) return null;
-        
-        const isMyReservation = seat.status === "RESERVED" && seat.reservedBy === currentUserId;
-        const seatColor = getSeatColor(seat, currentUserId, false);
-        const seatX = transformX(element.x + pos.x);
-        const seatY = transformY(element.y + pos.y);
-        
-        // 🔧 NUEVO: Reducir dinámicamente el radio si las sillas se ven cortadas
-        let seatRadius = pos.r * scale;
-        
-        // Si estamos en una pantalla pequeña, reducir el radio para evitar cortes
-        // Usar la misma lógica que para los márgenes
-        if (minScreenDimension < 400) {
-          // Pantalla muy pequeña: reducir radio al 75%
-          seatRadius *= 0.75;
-        } else if (minScreenDimension < 500) {
-          // Pantalla pequeña: reducir radio al 85%
-          seatRadius *= 0.85;
+      {/* Sillas: renderizado optimizado con DOD o fallback a objetos */}
+      {!inOverviewMode && (() => {
+        // 🚀 DOD: Renderizado ultra-optimizado para 100k+ sillas
+        if (seatStore && seatStore.count > 0) {
+          const seatsByColor = new Map(); // color hex -> [{x, y, r, seatId}]
+          const myReservationSeats = [];
+          
+          pageFilteredSeats.forEach(({ pos, realIndex }) => {
+            const seat = allSectionSeats[elementOffset + realIndex];
+            if (!seat) return;
+            
+            const seatId = seat.seatId;
+            const idx = seatStore.seatIdToIndex.get(seatId);
+            if (idx === undefined) return;
+            
+            // Leer datos directamente de los TypedArrays
+            const colorInt = seatStore.colors[idx];
+            const colorHex = '#' + colorInt.toString(16).padStart(6, '0').toUpperCase();
+            
+            const seatX = transformX(element.x + pos.x);
+            const seatY = transformY(element.y + pos.y);
+            
+            // Radio adaptativo
+            let seatRadius = pos.r * scale;
+            if (minScreenDimension < 400) {
+              seatRadius *= 0.75;
+            } else if (minScreenDimension < 500) {
+              seatRadius *= 0.85;
+            }
+            seatRadius = Math.max(seatRadius, 8);
+            
+            // Agrupar por color
+            if (!seatsByColor.has(colorHex)) {
+              seatsByColor.set(colorHex, []);
+            }
+            seatsByColor.get(colorHex).push({ x: seatX, y: seatY, r: seatRadius, seatId });
+            
+            // Track mis reservas para borde blanco
+            if (seatStore.statuses[idx] === 1 && seatStore.reservedBy[idx] === currentUserId) {
+              myReservationSeats.push({ x: seatX, y: seatY, r: seatRadius });
+            }
+          });
+          
+          return (
+            <React.Fragment>
+              {/* Renderizar por lotes de color */}
+              {Array.from(seatsByColor.entries()).map(([color, seats]) => {
+                const path = Skia.Path.Make();
+                seats.forEach(({ x, y, r }) => {
+                  path.addCircle(x, y, r);
+                });
+                return (
+                  <Path
+                    key={color}
+                    path={path}
+                    color={color}
+                    style="fill"
+                  />
+                );
+              })}
+              
+              {/* Bordes blancos para mis reservas */}
+              {myReservationSeats.length > 0 && (() => {
+                const borderPath = Skia.Path.Make();
+                myReservationSeats.forEach(({ x, y, r }) => {
+                  borderPath.addCircle(x, y, r);
+                });
+                return (
+                  <Path
+                    key="my-reservations-border"
+                    path={borderPath}
+                    color="#FFFFFF"
+                    style="stroke"
+                    strokeWidth={Math.max(1, 2 * scale * 0.8)}
+                  />
+                );
+              })()}
+            </React.Fragment>
+          );
         }
         
-        // Mínimo absoluto para que siga siendo táctil
-        seatRadius = Math.max(seatRadius, 8);
-        
-        return (
-          <React.Fragment key={seat.seatId}>
-            {/* Círculo principal de la silla */}
-            <Circle
-              cx={seatX}
-              cy={seatY}
-              r={seatRadius}
-              color={seatColor}
-            />
-            {/* Borde blanco para mis reservas como en la web */}
-            {isMyReservation && (
+        // Fallback: Renderizado tradicional con objetos
+        return pageFilteredSeats.map(({ pos, realIndex }) => {
+          const seat = allSectionSeats[elementOffset + realIndex];
+          if (!seat) return null;
+          
+          const isMyReservation = seat.status === "RESERVED" && seat.reservedBy === currentUserId;
+          const seatColor = getSeatColor(seat, currentUserId, false);
+          const seatX = transformX(element.x + pos.x);
+          const seatY = transformY(element.y + pos.y);
+          
+          let seatRadius = pos.r * scale;
+          if (minScreenDimension < 400) {
+            seatRadius *= 0.75;
+          } else if (minScreenDimension < 500) {
+            seatRadius *= 0.85;
+          }
+          seatRadius = Math.max(seatRadius, 8);
+          
+          return (
+            <React.Fragment key={seat.seatId}>
               <Circle
                 cx={seatX}
                 cy={seatY}
                 r={seatRadius}
-                style="stroke"
-                color="#FFFFFF"
-                strokeWidth={Math.max(1, 2 * scale * 0.8)} // Reducir grosor del borde también
+                color={seatColor}
               />
-            )}
-          </React.Fragment>
-        );
-      })}
+              {isMyReservation && (
+                <Circle
+                  cx={seatX}
+                  cy={seatY}
+                  r={seatRadius}
+                  style="stroke"
+                  color="#FFFFFF"
+                  strokeWidth={Math.max(1, 2 * scale * 0.8)}
+                />
+              )}
+            </React.Fragment>
+          );
+        });
+      })()}
 
       <Text
         x={centerX}
