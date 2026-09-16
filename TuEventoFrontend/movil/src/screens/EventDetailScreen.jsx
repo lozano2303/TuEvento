@@ -22,6 +22,7 @@ import { connectSeatSocket, disconnectSeatSocket } from "../services/websocketSe
 import SeatMapCanvas from "../components/SeatMapCanvas";
 import Toast from "../components/Toast";
 import { useToast } from "../hooks/useToast";
+import { useSeatStore } from "../hooks/useSeatStore";
 
 const { width } = Dimensions.get("window");
 
@@ -162,17 +163,17 @@ export default function EventDetailScreen() {
   const [totalColPages, setTotalColPages] = useState(1);   // Total paginas de columnas
 
   const MIN_SEAT_TOUCH_RADIUS_PX = 22; // Tamaño táctil mínimo deseado en píxeles
-  const [seats, setSeats] = useState({});
+  
+  // 🚀 DOD: Usar SeatDataStore para 100k+ sillas
+  const { store: seatStore, seats, cart, loadSeats, updateSeat, getSeat } = useSeatStore(currentUserId);
+  
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [reserving, setReserving] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
-  // Carrito: sillas reservadas por el usuario actual
-  const cart = Object.values(seats).filter(
-    (s) => s.status === 'RESERVED' && s.reservedBy === currentUserId
-  );
+  // Carrito ya viene del hook useSeatStore
 
   // Agrupar elementos de layout por backendSectionId
   const groupedSections = (() => {
@@ -243,18 +244,17 @@ export default function EventDetailScreen() {
         // Cargar sillas de todas las secciones para detectar reservas existentes
         // Esto permite hidratar el stepper correctamente al entrar a la vista
         if (sectionsData && sectionsData.length > 0 && currentUserId) {
-          const allSeatsMap = {};
+          const allSeatsArray = [];
           for (const section of sectionsData) {
             try {
               const sectionSeats = await seatService.getSeatsBySection(section.eventSectionId);
-              sectionSeats.forEach((seat) => {
-                allSeatsMap[seat.seatId] = seat;
-              });
+              allSeatsArray.push(...sectionSeats);
             } catch (err) {
               console.warn(`[EventDetailScreen] Could not load seats for section ${section.eventSectionId}:`, err);
             }
           }
-          setSeats(allSeatsMap);
+          // 🚀 DOD: Cargar todas las sillas en el store
+          loadSeats(allSeatsArray);
         }
       } catch (err) {
         console.error("[EventDetailScreen] Error loading event:", err);
@@ -276,7 +276,7 @@ export default function EventDetailScreen() {
       return;
     }
 
-    const loadSeats = async () => {
+    const loadSeatsForSection = async () => {
       try {
         const data = await seatService.getSeatsBySection(selectedSectionId);
         
@@ -286,15 +286,12 @@ export default function EventDetailScreen() {
           showToast('section-no-seats', 'Se agotaron las sillas disponibles en esta sección', 'warning');
         }
         
-        setSeats((prev) => {
-          // Combinar sillas nuevas con las ya reservadas de otras secciones
-          const updated = { ...prev };
-          
-          data.forEach((s) => {
-            updated[s.seatId] = s;
-          });
-          
-          return updated;
+        // 🚀 DOD: Cargar sillas adicionales de la sección al store
+        data.forEach(seat => {
+          const existing = getSeat(seat.seatId);
+          if (!existing) {
+            updateSeat(seat.seatId, seat);
+          }
         });
       } catch (err) {
         console.error("[EventDetailScreen] Error loading seats:", err);
@@ -302,7 +299,7 @@ export default function EventDetailScreen() {
       }
     };
 
-    loadSeats();
+    loadSeatsForSection();
   }, [selectedSectionId, showToast]);
 
   // Conectar WebSocket al montar
@@ -319,21 +316,11 @@ export default function EventDetailScreen() {
     const connectWS = async () => {
       try {
         const client = await connectSeatSocket(event.eventId, (evt) => {
-          setSeats((prev) => {
-            // Si la silla no está cargada, ignorar (es de otra sección)
-            if (!prev[evt.seatId]) {
-              return prev;
-            }
-            
-            return {
-              ...prev,
-              [evt.seatId]: {
-                ...prev[evt.seatId],
-                status: evt.newStatus,
-                reservedBy: evt.newStatus === 'RESERVED' ? evt.changedBy : null,
-                reservedUntil: evt.reservedUntil,
-              },
-            };
+          // 🚀 DOD: Actualizar silla en el store
+          updateSeat(evt.seatId, {
+            status: evt.newStatus,
+            reservedBy: evt.newStatus === 'RESERVED' ? evt.changedBy : null,
+            reservedUntil: evt.reservedUntil,
           });
         });
 
@@ -390,25 +377,23 @@ export default function EventDetailScreen() {
       return;
     }
 
-    const previous = seats[seatId];
+    const previous = getSeat(seatId);
 
-    // Actualización optimista
-    setSeats((prev) => ({
-      ...prev,
-      [seatId]: {
-        ...prev[seatId],
-        status: 'RESERVED',
-        reservedBy: currentUserId,
-        reservedUntil: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-      },
-    }));
+    // Actualización optimista usando el store
+    updateSeat(seatId, {
+      status: 'RESERVED',
+      reservedBy: currentUserId,
+      reservedUntil: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    });
 
     try {
       const result = await seatService.reserveSeat(seatId);
-      setSeats((prev) => ({ ...prev, [seatId]: result }));
+      updateSeat(seatId, result);
     } catch (err) {
       // Rollback en caso de error
-      setSeats((prev) => ({ ...prev, [seatId]: previous }));
+      if (previous) {
+        updateSeat(seatId, previous);
+      }
       
       // CASO 10: Token expirado (401)
       if (err.message?.includes('401') || err.message?.toLowerCase().includes('unauthorized')) {
@@ -427,25 +412,23 @@ export default function EventDetailScreen() {
 
   // Handler de liberación de silla (optimistic UI + rollback)
   const handleReleaseSeat = async (seatId) => {
-    const previous = seats[seatId];
+    const previous = getSeat(seatId);
 
-    // Actualización optimista
-    setSeats((prev) => ({
-      ...prev,
-      [seatId]: {
-        ...prev[seatId],
-        status: 'AVAILABLE',
-        reservedBy: null,
-        reservedUntil: null,
-      },
-    }));
+    // Actualización optimista usando el store
+    updateSeat(seatId, {
+      status: 'AVAILABLE',
+      reservedBy: null,
+      reservedUntil: null,
+    });
 
     try {
       const result = await seatService.releaseSeat(seatId);
-      setSeats((prev) => ({ ...prev, [seatId]: result }));
+      updateSeat(seatId, result);
     } catch (err) {
       // Rollback en caso de error
-      setSeats((prev) => ({ ...prev, [seatId]: previous }));
+      if (previous) {
+        updateSeat(seatId, previous);
+      }
       
       // CASO 10: Token expirado (401)
       if (err.message?.includes('401') || err.message?.toLowerCase().includes('unauthorized')) {
@@ -464,18 +447,10 @@ export default function EventDetailScreen() {
     // CASO 4: Silla expirada
     showToast('seat-expired', 'Tu reserva expiró y la silla se liberó', 'info');
     
-    setSeats((prev) => {
-      if (!prev[seatId]) return prev;
-      
-      return {
-        ...prev,
-        [seatId]: {
-          ...prev[seatId],
-          status: 'AVAILABLE',
-          reservedBy: null,
-          reservedUntil: null,
-        },
-      };
+    updateSeat(seatId, {
+      status: 'AVAILABLE',
+      reservedBy: null,
+      reservedUntil: null,
     });
   };
 
@@ -993,6 +968,7 @@ export default function EventDetailScreen() {
                     currentColPage={currentColPage}
                     sections={sections}
                     seats={seats}
+                    seatStore={seatStore}
                     onSeatPress={onSeatPress}
                     currentUserId={currentUserId}
                     reserving={reserving}
