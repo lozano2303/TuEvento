@@ -364,6 +364,28 @@ export default function EventLayoutEditor() {
   }, [eventId, isReadOnly, isOverCapacity, elements, canvasSize]);
 
   const selectedElement   = selectedIds.length === 1 ? elements.find((el) => el.id === selectedIds[0]) ?? null : null;
+
+  const handleAddSubSection = useCallback(() => {
+    if (!selectedElement || selectedElement.type !== 'section') return;
+    
+    // Reutilizar la lógica existente de Ctrl+V (duplicación)
+    const siblings = elements.filter((x) => x.eventSectionId === selectedElement.eventSectionId);
+    const baseLabel = selectedElement.label.replace(/ \d+$/, '');
+    const newEl = {
+      ...selectedElement, 
+      id: generateId(),
+      eventSectionId: selectedElement.eventSectionId,  // Mantener mismo ID lógico
+      backendSectionId: selectedElement.backendSectionId, // Mantener mismo backend ID
+      label: `${baseLabel} ${siblings.length + 1}`,
+      x: selectedElement.x + siblings.length * 20,
+      y: selectedElement.y + siblings.length * 20,
+    };
+    
+    setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), elements]);
+    setFuture([]);
+    setElements((prev) => [...prev, newEl]);
+    setSelectedIds([newEl.id]);
+  }, [selectedElement, elements]);
   const isEditingVertices = editingPolygonId !== null;
 
   return (
@@ -387,7 +409,17 @@ export default function EventLayoutEditor() {
             Solo lectura — el evento está {eventStatus}
           </span>
         )}
-        <span className="ml-auto text-[10px] text-textMuted">
+        {selectedElement?.type === 'section' && !isReadOnly && (
+          <button
+            onClick={handleAddSubSection}
+            className="ml-auto text-[10px] font-semibold px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 hover:border-primary/50 transition-colors flex items-center gap-1.5"
+            title="Agregar sub-sección vinculada"
+          >
+            <span className="text-sm">+</span>
+            <span>Agregar sub-sección</span>
+          </button>
+        )}
+        <span className={`text-[10px] text-textMuted ${selectedElement?.type === 'section' && !isReadOnly ? '' : 'ml-auto'}`}>
           Canvas {canvasSize.width}×{canvasSize.height}
           {selectedIds.length > 1 && ` · ${selectedIds.length} seleccionados`}
         </span>

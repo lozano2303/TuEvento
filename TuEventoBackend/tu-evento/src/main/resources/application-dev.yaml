@@ -26,6 +26,8 @@ spring:
 logging:
   level:
     com.capysoft: DEBUG
+    org.springframework.web.socket: DEBUG
+    org.springframework.messaging: DEBUG
 
 springdoc:
   api-docs:
@@ -42,7 +44,7 @@ app:
   mail:
     from: ${MAIL_USERNAME}
   cors:
-    allowed-origins: "http://localhost:3000,http://localhost:5173"
+    allowed-origins: "http://localhost:3000,http://localhost:5173,http://10.3.232.220:3000,http://10.3.232.220:5173"
 
   oauth:
     google:
