@@ -17,6 +17,7 @@ import EventDetail from './pages/EventDetail';
 import ReactivateAccountPage from './pages/ReactivateAccountPage';
 import CompleteProfile from './pages/CompleteProfile';
 import AdminEventManagement from './pages/AdminEventManagement';
+import WalletPage from './pages/WalletPage';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -96,6 +97,11 @@ function AppContent() {
           <Route path="/events/:eventId/layout" element={
             <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
               <EventLayoutEditor />
+            </ProtectedRoute>
+          } />
+          <Route path="/wallet" element={
+            <ProtectedRoute>
+              <WalletPage />
             </ProtectedRoute>
           } />
         </Routes>
