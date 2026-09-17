@@ -758,10 +758,10 @@ export default function EventDetailScreen() {
                     />
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.quantityInfo}>
-                  {cart.length} de {selectedQuantity} seleccionadas
-                </Text>
               </View>
+              <Text style={styles.quantityInfo}>
+                {cart.length} de {selectedQuantity} seleccionadas
+              </Text>
 
               {/* Menú de secciones */}
               {sections.length > 0 && (
@@ -1228,6 +1228,9 @@ function createStyles(colors) {
     quantityInfo: {
       fontSize: 11,
       color: colors.textMuted,
+      textAlign: "center",
+      marginTop: 6,
+      marginBottom: 4,
     },
     cartContainer: {
       marginBottom: 16,
