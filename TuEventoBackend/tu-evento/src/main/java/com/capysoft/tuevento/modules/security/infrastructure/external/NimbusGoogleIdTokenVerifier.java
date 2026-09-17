@@ -33,7 +33,7 @@ public class NimbusGoogleIdTokenVerifier implements GoogleIdTokenVerifierPort {
 
     private static final String GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs";
 
-    @Value("${app.google.client-id}")
+    @Value("${app.oauth.google.client-id}")
     private String expectedClientId;
 
     @Override

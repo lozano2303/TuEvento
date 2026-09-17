@@ -20,17 +20,14 @@ export function findSeatAt(tapX, tapY, seatPositions, seats, element, scale, off
     
     if (!seat) continue;
     
-    // Transformar posición de la silla al espacio de pantalla
     const seatScreenX = (element.x + pos.x) * scale + offsetX;
     const seatScreenY = (element.y + pos.y) * scale + offsetY;
     const seatRadius = pos.r * scale;
     
-    // Calcular distancia del tap al centro de la silla
     const dx = tapX - seatScreenX;
     const dy = tapY - seatScreenY;
     const distance = Math.sqrt(dx * dx + dy * dy);
     
-    // Si está dentro del radio + tolerancia
     if (distance <= seatRadius + TOLERANCE) {
       return seat;
     }
