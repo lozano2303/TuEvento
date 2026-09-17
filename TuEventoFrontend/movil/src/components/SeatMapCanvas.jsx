@@ -1,6 +1,7 @@
 ﻿import React, { useEffect } from "react";
-import { View, StyleSheet, TouchableWithoutFeedback } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Canvas, Path, Circle, Text, rect, Skia } from "@shopify/react-native-skia";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import {
   migrateElement,
   distributeSeats,
@@ -248,31 +249,34 @@ export default function SeatMapCanvas({
     if (typeof onColPagesChange === "function") onColPagesChange(totalColPages);
   }, [totalColPages, onColPagesChange]);
 
-  // Handler de tap en sillas
-  const handlePress = (event) => {
-    if (inOverviewMode || !onSeatPress) return;
-    const { locationX, locationY } = event.nativeEvent;
+  // Handler de tap en sillas — usa Gesture.Tap() para compatibilidad con iOS + Skia
+  const tapGesture = Gesture.Tap()
+    .runOnJS(true)
+    .onEnd((event) => {
+      if (inOverviewMode || !onSeatPress) return;
+      const tapX = event.x;
+      const tapY = event.y;
 
-    for (const element of visibleElements) {
-      const seatResult  = distributeSeats(element);
-      const seatPositions = Array.isArray(seatResult) ? seatResult : seatResult.positions;
-      const allSectionSeats = Object.values(seats)
-        .filter((s) => s.eventSectionId === element.backendSectionId)
-        .sort((a, b) => a.code.localeCompare(b.code));
-      const elementOffset = calculateSeatOffset(element, orderedLayoutElements);
-      const elementSeats  = seatPositions.map((_, i) => allSectionSeats[elementOffset + i]).filter(Boolean);
+      for (const element of visibleElements) {
+        const seatResult    = distributeSeats(element);
+        const seatPositions = Array.isArray(seatResult) ? seatResult : seatResult.positions;
+        const allSectionSeats = Object.values(seats)
+          .filter((s) => s.eventSectionId === element.backendSectionId)
+          .sort((a, b) => a.code.localeCompare(b.code));
+        const elementOffset = calculateSeatOffset(element, orderedLayoutElements);
+        const elementSeats  = seatPositions.map((_, i) => allSectionSeats[elementOffset + i]).filter(Boolean);
 
-      const clickedSeat = findSeatAt(locationX, locationY, seatPositions, elementSeats, element, scale, offsetX, offsetY);
-      if (clickedSeat) {
-        onSeatPress(clickedSeat.seatId);
-        break;
+        const clickedSeat = findSeatAt(tapX, tapY, seatPositions, elementSeats, element, scale, offsetX, offsetY);
+        if (clickedSeat) {
+          onSeatPress(clickedSeat.seatId);
+          break;
+        }
       }
-    }
-  };
+    });
 
   return (
     <View style={styles.container}>
-      <TouchableWithoutFeedback onPress={handlePress}>
+      <GestureDetector gesture={tapGesture}>
         <View style={{ width: containerWidth, height: containerHeight }}>
           <Canvas style={{ width: containerWidth, height: containerHeight }}>
             {visibleElements.map((element) => (
@@ -297,7 +301,7 @@ export default function SeatMapCanvas({
             ))}
           </Canvas>
         </View>
-      </TouchableWithoutFeedback>
+      </GestureDetector>
     </View>
   );
 }
