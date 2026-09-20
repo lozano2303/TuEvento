@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.*;
@@ -27,7 +28,6 @@ import java.util.Base64;
  */
 @Component
 @ConditionalOnProperty(name = "payment.gateway", havingValue = "fake")
-@RequiredArgsConstructor
 public class FakePaymentGatewayAdapter implements PaymentGatewayPort {
     
     private static final Logger log = LoggerFactory.getLogger(FakePaymentGatewayAdapter.class);
@@ -40,6 +40,13 @@ public class FakePaymentGatewayAdapter implements PaymentGatewayPort {
     
     @Value("${payment.webhook.secret}")
     private String webhookSecret;
+    
+    public FakePaymentGatewayAdapter(
+            @Qualifier("paymentRestTemplate") RestTemplate restTemplate,
+            ObjectMapper objectMapper) {
+        this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
+    }
     
     @Override
     public GatewayPayment createPayment(CreatePaymentCommand command) {

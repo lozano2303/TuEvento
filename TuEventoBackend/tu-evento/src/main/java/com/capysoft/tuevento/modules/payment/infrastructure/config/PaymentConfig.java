@@ -13,8 +13,8 @@ import java.time.Duration;
 @Configuration
 public class PaymentConfig {
     
-    @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+    @Bean(name = "paymentRestTemplate")
+    public RestTemplate paymentRestTemplate(RestTemplateBuilder builder) {
         return builder
             .setConnectTimeout(Duration.ofSeconds(10))
             .setReadTimeout(Duration.ofSeconds(30))
