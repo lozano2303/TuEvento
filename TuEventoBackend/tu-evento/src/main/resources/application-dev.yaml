@@ -90,3 +90,10 @@ moderation:
     api-secret: ${SIGHTENGINE_API_SECRET}
     models: ${SIGHTENGINE_MODELS:gore}
     threshold: ${SIGHTENGINE_THRESHOLD:0.6}
+
+payment:
+  gateway: ${PAYMENT_GATEWAY:fake}
+  fake-gateway:
+    url: ${FAKE_GATEWAY_URL:http://localhost:4001}
+  webhook:
+    secret: ${WEBHOOK_SECRET:default-secret-change-in-production}

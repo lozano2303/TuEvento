@@ -1,0 +1,50 @@
+databaseChangeLog:
+  - changeSet:
+      id: 070-create-payment-log-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: payment_log
+            columns:
+              - column:
+                  name: payment_log_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: payment_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: old_status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: new_status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: changed_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: VARCHAR(500)
+        - addForeignKeyConstraint:
+            baseTableName: payment_log
+            baseColumnNames: payment_id
+            referencedTableName: payment
+            referencedColumnNames: payment_id
+            constraintName: fk_payment_log_payment
+        - createIndex:
+            tableName: payment_log
+            indexName: idx_payment_log_payment_id
+            columns:
+              - column:
+                  name: payment_id
