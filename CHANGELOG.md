@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Ticket Module (Backend)**: Módulo completo de gestión de órdenes y tickets siguiendo arquitectura DDD + Hexagonal
+  - **Dominio puro**: Order (aggregate root) con máquina de estados (DRAFT→PAYMENT_PENDING→PAID→USED, PAID→REFUNDED, transiciones validadas), Ticket (aggregate root) con estados (PENDING, PROCESSING, PAID, REFUNDED, USED, CANCELLED), Money (value object), SeatTicket (precio snapshot congelado), TicketCheckin, TicketLog (auditoría inmutable)
+  - **Repositorios de dominio**: OrderRepository, TicketRepository, SeatTicketRepository, TicketCheckinRepository, TicketLogRepository con implementaciones JPA en infraestructura
+  - **Use cases**: CreateOrderWithTicketsUseCase (valida reservas temporales, crea Order DRAFT + Tickets PENDING, congela precios en SeatTicket), GetOrderUseCase, GetOrderTicketsUseCase, CancelOrderUseCase (libera sillas), GetTicketUseCase, GetUserTicketsUseCase, CheckinTicketUseCase (valida PAID, crea TicketCheckin, transiciona a USED)
+  - **Puertos de entrada (payment module)**: ConfirmOrderPaymentUseCase (transiciona Order/Tickets a PAID, genera logs), FailOrderPaymentUseCase (cancela orden, libera sillas, logs de fallo)
+  - **Endpoints REST**: POST /api/v1/orders (crear orden), GET /api/v1/orders/{id}, POST /api/v1/orders/{id}/cancel, GET /api/v1/tickets/{id}, GET /api/v1/tickets/user/{userId}, POST /api/v1/tickets/{id}/checkin (rol staff)
+  - **Liquibase changesets**: order, ticket, seat_ticket, ticket_checkin, ticket_log (064-068) con constraints, FKs, audit columns, indices
+  - **Generación**: Ticket code único (TKT-XXXXXXXX), QR code string (sin imagen, frontend renderiza), expiration date calculada
+  - **Integración seats**: Valida reservas temporales del módulo seat (WS STOMP), confirma asignación definitiva al crear orden, libera en cancelación/fallo pago
+  - **NO implementado**: PaymentGatewayPort, llamadas al fake-payment-gateway, generación de imágenes QR (solo string) - queda para feature/payment-module
+
 - **Fake Payment Gateway**: Microservicio Spring Boot independiente para simular pasarela de pago en desarrollo local
   - **Arquitectura**: DDD + Hexagonal con dominio puro, repositorios abstractos, y adaptadores de infraestructura
   - **Máquina de estados**: PENDING → PROCESSING → APPROVED|DECLINED|FAILED, PENDING → CANCELLED (validada en dominio)
