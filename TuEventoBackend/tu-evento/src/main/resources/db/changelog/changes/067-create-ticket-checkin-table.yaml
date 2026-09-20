@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 067-create-ticket-checkin-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: ticket_checkin
+            columns:
+              - column:
+                  name: checkin_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: ticket_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: checkin_time
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: validated_by
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: ticket_checkin
+            baseColumnNames: ticket_id
+            referencedTableName: ticket
+            referencedColumnNames: ticket_id
+            constraintName: fk_ticket_checkin_ticket
+        - addForeignKeyConstraint:
+            baseTableName: ticket_checkin
+            baseColumnNames: validated_by
+            referencedTableName: user
+            referencedColumnNames: user_id
+            constraintName: fk_ticket_checkin_validator
