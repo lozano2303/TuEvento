@@ -1,0 +1,35 @@
+server:
+  port: ${FAKE_GATEWAY_PORT:4001}
+
+spring:
+  application:
+    name: fake-payment-gateway
+  
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:fake_gateway_db}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+
+webhook:
+  callback-url: ${PAYMENT_CALLBACK_URL:http://localhost:8080/api/v1/webhooks/payment}
+  secret: ${WEBHOOK_SECRET:default-secret-change-in-production}
+
+logging:
+  level:
+    com.capysoft.fakepaymentgateway: ${LOG_LEVEL:INFO}
+    org.springframework.web: ${LOG_LEVEL:INFO}
