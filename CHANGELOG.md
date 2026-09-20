@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Fake Payment Gateway**: Microservicio Spring Boot independiente para simular pasarela de pago en desarrollo local
+  - **Arquitectura**: DDD + Hexagonal con dominio puro, repositorios abstractos, y adaptadores de infraestructura
+  - **Máquina de estados**: PENDING → PROCESSING → APPROVED|DECLINED|FAILED, PENDING → CANCELLED (validada en dominio)
+  - **Webhook system**: POST con firma HMAC-SHA256, idempotencia por eventId estable, 3 reintentos con backoff exponencial (2s, 10s, 30s)
+  - **Base de datos**: PostgreSQL independiente (fake_gateway_db), entidades JPA para pagos y logs de webhook
+  - **Endpoints públicos**: POST /public/payments (crear), GET /public/payments/{id} (consultar)
+  - **Endpoints admin**: POST /admin/payments/{id}/approve|decline|fail|cancel (simular transiciones)
+  - **Docker**: Servicio fake-payment-gateway + postgres-fake-gateway en docker-compose.yml (puerto 4001)
+  - **Configuración**: Variables de entorno para PAYMENT_CALLBACK_URL y WEBHOOK_SECRET
+
 ### Fixed
 - **Web - Sistema de Zoom/Paginación**: Auto-reset inteligente para navegación entre bloques (no resetear si sigue siendo válido)
   - **Problema**: Al cambiar de página de columnas, la página de filas se reseteaba a 0 incondicionalmente, incluso cuando seguía siendo perfectamente válida para el nuevo bloque de columnas
