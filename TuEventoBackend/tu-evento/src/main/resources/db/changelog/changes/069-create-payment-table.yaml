@@ -1,0 +1,82 @@
+databaseChangeLog:
+  - changeSet:
+      id: 069-create-payment-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: payment
+            columns:
+              - column:
+                  name: payment_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: gateway
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: gateway_transaction_id
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  defaultValue: "PENDING"
+              - column:
+                  name: amount
+                  type: DECIMAL(19, 4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  constraints:
+                    nullable: false
+                  defaultValue: "COP"
+              - column:
+                  name: payment_method
+                  type: VARCHAR(20)
+              - column:
+                  name: processed_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+              - column:
+                  name: updated_by
+                  type: VARCHAR(100)
+        - addForeignKeyConstraint:
+            baseTableName: payment
+            baseColumnNames: order_id
+            referencedTableName: order
+            referencedColumnNames: order_id
+            constraintName: fk_payment_order
+        - sql:
+            sql: "ALTER TABLE payment ADD CONSTRAINT chk_payment_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'ERROR', 'REFUNDED'));"
+        - sql:
+            sql: "ALTER TABLE payment ADD CONSTRAINT chk_payment_gateway CHECK (gateway IN ('FAKE', 'WOMPI'));"
+        - sql:
+            sql: "ALTER TABLE payment ADD CONSTRAINT chk_payment_method CHECK (payment_method IN ('CARD', 'PSE', 'NEQUI', 'CASH', 'QR'));"
