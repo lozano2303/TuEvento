@@ -18,6 +18,21 @@ services:
     networks:
       - tuevento-network
 
+  postgres-fake-gateway:
+    image: postgres:17-alpine
+    container_name: fake-gateway-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fake_gateway_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_fake_gateway_data:/var/lib/postgresql/data
+    networks:
+      - tuevento-network
+
   redis:
     image: redis:7-alpine
     container_name: tuevento-redis
@@ -98,6 +113,30 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    networks:
+      - tuevento-network
+
+  # ── Fake Payment Gateway ────────────────────────────────────────────────────
+  fake-payment-gateway:
+    build:
+      context: ./fake-payment-gateway
+      dockerfile: Dockerfile
+    container_name: fake-payment-gateway
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+    environment:
+      - FAKE_GATEWAY_PORT=4001
+      - POSTGRES_HOST=postgres-fake-gateway
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=fake_gateway_db
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - PAYMENT_CALLBACK_URL=http://backend:8080/api/v1/webhooks/payment
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - LOG_LEVEL=INFO
+    depends_on:
+      - postgres-fake-gateway
     networks:
       - tuevento-network
 
@@ -227,6 +266,7 @@ networks:
 # ── Volúmenes ──────────────────────────────────────────────────────────────────
 volumes:
   postgres_data:
+  postgres_fake_gateway_data:
   minio_data:
   redis_data:
   jenkins_data:
