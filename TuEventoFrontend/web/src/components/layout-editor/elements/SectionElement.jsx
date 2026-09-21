@@ -153,10 +153,18 @@ export default function SectionElement({
   }, [isSelected, isEditingVertices, workPoints]); // workPoints → re-evalúa al curvar/mover handles
 
   const seatPositions = useMemo(() => {
+    let result;
     if ((element.shapeMode ?? 'rect') === 'polygon' && workPoints) {
-      return distributeSeats({ ...element, polygonPoints: workPoints });
+      result = distributeSeats({ ...element, polygonPoints: workPoints });
+    } else {
+      result = distributeSeats(element);
     }
-    return distributeSeats(element);
+    
+    // Manejar tanto formato anterior como nuevo
+    if (Array.isArray(result)) {
+      return result; // Formato anterior
+    }
+    return result.positions; // Formato nuevo
   // distributeSeats depende de element.seatLayout y la geometría — workPoints captura la geometría
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [element.seatLayout, element.shapeMode, element.width, element.height, workPoints]);

@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: 066-create-seat-ticket-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: seat_ticket
+            columns:
+              - column:
+                  name: seat_ticket_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: seat_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ticket_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price
+                  type: DECIMAL(19, 4)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: seat_ticket
+            baseColumnNames: seat_id
+            referencedTableName: seat
+            referencedColumnNames: seat_id
+            constraintName: fk_seat_ticket_seat
+        - addForeignKeyConstraint:
+            baseTableName: seat_ticket
+            baseColumnNames: ticket_id
+            referencedTableName: ticket
+            referencedColumnNames: ticket_id
+            constraintName: fk_seat_ticket_ticket
+        - addUniqueConstraint:
+            tableName: seat_ticket
+            columnNames: seat_id, ticket_id
+            constraintName: uk_seat_ticket_seat_ticket

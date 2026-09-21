@@ -12,7 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@react-oauth/google": "^0.13.5",
+    "@react-oauth/google": "0.13.5",
+    "@stomp/stompjs": "^7.3.0",
     "konva": "^9.3.22",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.7.0",
@@ -20,13 +21,13 @@
     "react-dom": "^18.2.0",
     "react-konva": "^18.2.10",
     "react-leaflet": "^4.2.1",
-    "react-router-dom": "^6.20.0"
+    "react-router-dom": "^6.20.0",
+    "sockjs-client": "^1.6.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.27",
-    "playwright-chromium": "^1.62.1",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
     "vite": "^5.0.0"

@@ -14,4 +14,6 @@ public class Seat {
     private Integer position;
     private SeatType type;
     private SeatStatus status;
+    private Integer reservedBy;
+    private java.time.LocalDateTime reservedUntil;
 }
