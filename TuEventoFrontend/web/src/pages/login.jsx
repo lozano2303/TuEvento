@@ -11,6 +11,7 @@ import ReactivationModal from "../components/common/ReactivationModal.jsx";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 /**
  * GoogleButton — botón visualmente idéntico al de Facebook.
@@ -85,19 +86,58 @@ export default function Login() {
     const oauth = urlParams.get('oauth');
 
     if (oauth === 'true' && token && userID && role) {
-      localStorage.setItem('token', token);
-      localStorage.setItem('userID', userID);
-      localStorage.setItem('role', role);
+      // Validate the CSRF state param produced by handleFacebookLogin.
+      // Google GSI does not come through this redirect path, so the check only
+      // fires when a stored state exists in sessionStorage.
+      const storedState = sessionStorage.getItem('oauth_state');
+      const returnedState = urlParams.get('state');
+      if (storedState && returnedState !== storedState) {
+        console.error('OAuth state mismatch — possible CSRF attack, aborting login');
+        sessionStorage.removeItem('oauth_state');
+        return;
+      }
+      sessionStorage.removeItem('oauth_state');
+
+      // Store all fields the backend includes in the redirect — mirrors what
+      // handleGoogleSuccess does so both OAuth paths leave localStorage in the
+      // same shape.
+      localStorage.setItem('token',        token);
+      localStorage.setItem('userID',       userID);
+      localStorage.setItem('role',         role);
+
+      const alias        = urlParams.get('alias')        || '';
+      const refreshToken = urlParams.get('refreshToken') || '';
+      const profileId    = urlParams.get('profileId');
+      const needsOnboarding = urlParams.get('needsOnboarding') === 'true';
+
+      if (alias)        localStorage.setItem('alias',        alias);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+
+      // Remove any stale profileId before conditionally setting the new one
+      localStorage.removeItem('profileId');
+      if (profileId)    localStorage.setItem('profileId',    profileId);
+
+      // Redirect to onboarding when the provider did not return a valid name
+      // (same behaviour as handleGoogleSuccess for the GSI flow).
+      if (needsOnboarding) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        window.location.href = '/complete-profile';
+        return;
+      }
+
       (async () => {
         try {
           const profileResult = await getProfileByUserId(userID);
-          if (profileResult.success && profileResult.data.fullName) {
+          if (profileResult.success && profileResult.data?.fullName) {
             localStorage.setItem('name', profileResult.data.fullName);
+          } else {
+            localStorage.setItem('name', alias);
           }
-        } catch (error) {
-          console.error('Error al obtener perfil OAuth:', error);
+        } catch {
+          localStorage.setItem('name', alias);
         }
       })();
+
       window.history.replaceState({}, document.title, window.location.pathname);
       window.location.href = '/';
       return;
@@ -290,6 +330,34 @@ export default function Login() {
   const handleGoogleError = () => {
     // User dismissed the popup or Google returned an error — no action needed
     // unless the user explicitly triggered an error (not a cancel).
+  };
+
+  // ─── Facebook OAuth redirect flow ────────────────────────────────────────
+  // Facebook does not support reliable popup flows the way Google GSI does,
+  // so we use a server-side redirect: the backend redirects to Facebook, Facebook
+  // redirects back to the backend callback, and the backend then redirects to
+  // /login?token=...&userID=...&role=...&oauth=true.
+  // The useEffect at the top of this component already handles that callback URL
+  // (same shape used by the original redirect-based OAuth flow).
+  const handleFacebookLogin = () => {
+    // Generate a random CSRF state token and persist it in sessionStorage.
+    // The backend encodes it inside the composite state that travels through
+    // Facebook and returns it in the final redirect, so we can verify it here.
+    const state = crypto.randomUUID();
+    sessionStorage.setItem('oauth_state', state);
+
+    // Pass the current page as the frontend_redirect_uri so the backend knows
+    // where to send the browser after a successful OAuth callback.
+    // Using window.location.origin + '/login' makes this work regardless of
+    // whether the app is running on localhost:5173 or a production domain,
+    // as long as the URL is on the server-side whitelist.
+    const frontendRedirectUri = `${window.location.origin}/login`;
+
+    const params = new URLSearchParams({
+      state,
+      frontend_redirect_uri: frontendRedirectUri,
+    });
+    window.location.href = `${API_URL}/auth/oauth/facebook?${params.toString()}`;
   };
 
   const handleSubmit = async (e) => {
@@ -671,7 +739,7 @@ export default function Login() {
 
               <button
                 type="button"
-                onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/facebook'}
+                onClick={handleFacebookLogin}
                 className="flex items-center gap-3 btn-oauth-facebook"
                 title="Iniciar con Facebook"
               >

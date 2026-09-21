@@ -8,6 +8,7 @@ import { AlertCircle, Camera, CheckCircle, Info, Loader2, Palette } from 'lucide
 import Tooltip from '../components/common/Tooltip';
 import ThemeCustomizePanel from '../components/theme/ThemeCustomizePanel';
 import DeactivateAccountModal from '../components/common/DeactivateAccountModal';
+import { isBioClean } from '../utils/bioValidation';
 
 const THEME_PREVIEWS = {
   DARK:       { background: "#1E0A3C", primary: "#7C3AED", accent: "#A78BFA" },
@@ -64,10 +65,19 @@ const ProfilePage = () => {
 
   const [formData, setFormData] = useState({
     nombreCompleto: storedName || '',
-    telefono: '+34 600 000 000',
-    fechaNacimiento: '',
-    direccion: 'Calle Mayor, 1 Madrid'
+    bio: '',
   });
+  const [saveMessage,   setSaveMessage]   = useState(null); // { type: 'success'|'error', text }
+  const [nameChangedAt, setNameChangedAt] = useState(null); // ISO string | null
+  const [bioError,      setBioError]      = useState(null); // string | null
+
+  // Calcula si el usuario puede cambiar su nombre ahora mismo.
+  // canChangeName = true cuando nameChangedAt es null O ya pasaron 14 días.
+  const NAME_COOLDOWN_DAYS = 14;
+  const nextNameChangeDate = nameChangedAt
+    ? new Date(new Date(nameChangedAt).getTime() + NAME_COOLDOWN_DAYS * 24 * 60 * 60 * 1000)
+    : null;
+  const canChangeName = !nextNameChangeDate || new Date() >= nextNameChangeDate;
 
   // Cargar temas del backend al montar
   useEffect(() => {
@@ -95,6 +105,14 @@ const ProfilePage = () => {
         if (profile.fullName) {
           localStorage.setItem('name', profile.fullName);
         }
+
+        // Precargar campos editables del formulario con los datos reales del backend
+        setFormData({
+          nombreCompleto: profile.fullName || '',
+          bio:            profile.bio      || '',
+        });
+        // Guardar la fecha del último cambio de nombre para calcular el cooldown
+        setNameChangedAt(profile.nameChangedAt ?? null);
 
         if (profile.storedFileId) {
           try {
@@ -209,11 +227,44 @@ const ProfilePage = () => {
   };
 
   const handleSave = async () => {
+    if (!profileId) {
+      setSaveMessage({ type: 'error', text: 'No se encontró tu perfil. Recarga la página.' });
+      return;
+    }
     setLoading(true);
-    setTimeout(() => {
+    setSaveMessage(null);
+    setBioError(null);
+    // Validación client-side de bio antes de enviar (feedback inmediato)
+    if (formData.bio.trim() && !isBioClean(formData.bio)) {
+      setBioError('La biografía contiene lenguaje inapropiado.');
       setLoading(false);
-      alert('Cambios guardados correctamente');
-    }, 1000);
+      return;
+    }
+    try {
+      await updateProfile(profileId, {
+        fullName: formData.nombreCompleto.trim() || undefined,
+        bio:      formData.bio.trim()            || undefined,
+      });
+      // Actualizar localStorage para que el nombre se refleje en navbar inmediatamente
+      if (formData.nombreCompleto.trim()) {
+        localStorage.setItem('name', formData.nombreCompleto.trim());
+      }
+      // Si el nombre cambió, refrescar la fecha de cooldown para bloquear el input
+      if (formData.nombreCompleto.trim()) {
+        setNameChangedAt(new Date().toISOString());
+      }
+      setSaveMessage({ type: 'success', text: 'Cambios guardados correctamente.' });
+    } catch (err) {
+      // Separar el error de lenguaje inapropiado del banner general
+      if (err.message?.includes('lenguaje inapropiado') ||
+          err.message?.includes('BIO_INAPPROPRIATE_LANGUAGE')) {
+        setBioError('La biografía contiene lenguaje inapropiado.');
+      } else {
+        setSaveMessage({ type: 'error', text: err.message || 'No se pudieron guardar los cambios.' });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -353,25 +404,118 @@ const ProfilePage = () => {
                 </svg>
                 Información Personal
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[
-                  { label: 'Nombre Completo', name: 'nombreCompleto', type: 'text' },
-                  { label: 'Teléfono', name: 'telefono', type: 'tel', placeholder: '+34 600 000 000' },
-                  { label: 'Fecha de Nacimiento', name: 'fechaNacimiento', type: 'date' },
-                  { label: 'Dirección', name: 'direccion', type: 'text', placeholder: 'Calle Mayor, 1 Madrid' },
-                ].map(field => (
-                  <div key={field.name}>
-                    <label className="text-sm font-medium text-textMuted block mb-2">{field.label}</label>
-                    <input
-                      className="w-full rounded-xl px-4 py-3 text-textPrimary bg-background/50 border border-surfaceAlt focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                      type={field.type}
-                      name={field.name}
-                      value={formData[field.name]}
-                      onChange={handleInputChange}
-                      placeholder={field.placeholder}
-                    />
+              <div className="space-y-5">
+
+                {/* Nombre Completo */}
+                <div>
+                  <label className="text-sm font-medium text-textMuted block mb-2">
+                    Nombre Completo
+                  </label>
+                  <input
+                    className={`w-full rounded-xl px-4 py-3 text-textPrimary border
+                      focus:outline-none transition-all
+                      ${canChangeName
+                        ? 'bg-background/50 border-surfaceAlt focus:border-primary focus:ring-1 focus:ring-primary'
+                        : 'bg-background/20 border-surfaceAlt opacity-60 cursor-not-allowed'
+                      }`}
+                    type="text"
+                    name="nombreCompleto"
+                    value={formData.nombreCompleto}
+                    onChange={(e) => {
+                      // Filtrar en tiempo real: solo letras Unicode y espacios
+                      const filtered = e.target.value.replace(/[^\p{L}\s]/gu, '');
+                      setFormData(prev => ({ ...prev, nombreCompleto: filtered }));
+                    }}
+                    placeholder="Tu nombre completo"
+                    maxLength={30}
+                    disabled={!canChangeName}
+                    readOnly={!canChangeName}
+                  />
+                  {/* Contador de caracteres */}
+                  <p className="text-xs text-textMuted mt-1 text-right">
+                    {formData.nombreCompleto.length} / 30
+                  </p>
+                  {/* Mensaje de cooldown */}
+                  {!canChangeName && nextNameChangeDate && (
+                    <p className="mt-1.5 text-xs flex items-center gap-1.5"
+                      style={{ color: 'var(--color-textMuted)' }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      Podrás cambiar tu nombre de nuevo el{' '}
+                      <strong>
+                        {nextNameChangeDate.toLocaleDateString('es-CO', {
+                          day: '2-digit', month: 'long', year: 'numeric',
+                        })}
+                      </strong>
+                    </p>
+                  )}
+                </div>
+
+                {/* Bio */}
+                <div>
+                  <label className="text-sm font-medium text-textMuted block mb-2">
+                    Biografía
+                  </label>
+                  <textarea
+                    className={`w-full rounded-xl px-4 py-3 text-textPrimary bg-background/50 border
+                      focus:outline-none focus:ring-1 transition-all resize-none
+                      ${bioError
+                        ? 'border-error focus:border-error focus:ring-error/30'
+                        : 'border-surfaceAlt focus:border-primary focus:ring-primary'
+                      }`}
+                    name="bio"
+                    value={formData.bio}
+                    onChange={(e) => {
+                      setBioError(null);   // limpiar error al volver a escribir
+                      handleInputChange(e);
+                    }}
+                    placeholder="Cuéntanos algo sobre ti..."
+                    rows={3}
+                    maxLength={255}
+                  />
+                  <div className="flex items-start justify-between mt-1 gap-2">
+                    {bioError
+                      ? <p className="text-xs text-error flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          {bioError}
+                        </p>
+                      : <span />
+                    }
+                    <p className="text-xs text-textMuted flex-shrink-0">
+                      {formData.bio.length} / 255
+                    </p>
                   </div>
-                ))}
+                </div>
+
+                {/* Mensaje de resultado (éxito o error) */}
+                {saveMessage && (
+                  <div className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold border ${
+                    saveMessage.type === 'success'
+                      ? 'badge-success-fixed'
+                      : 'bg-error/10 text-error border-error/20'
+                  }`}>
+                    {saveMessage.type === 'success'
+                      ? <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                      : <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    }
+                    {saveMessage.text}
+                  </div>
+                )}
+
+                {/* Botón guardar */}
+                <button
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="px-6 py-2.5 rounded-xl bg-primary text-textPrimary text-sm font-bold
+                    hover:bg-primaryDark transition-all disabled:opacity-50 disabled:cursor-not-allowed
+                    flex items-center gap-2"
+                >
+                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {loading ? 'Guardando…' : 'Guardar cambios'}
+                </button>
               </div>
             </section>
 

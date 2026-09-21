@@ -6,6 +6,7 @@ import {
   UserCircle, Tag, MapPin, Ticket, ZoomIn, Rocket, Clock, Check,
 } from 'lucide-react';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
+import ConfirmModal from '../components/common/ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import { performLogout } from '../services/httpClient';
 import { getAdminEvents, adminChangeEventStatus, getEventById } from '../services/EventService';
@@ -89,6 +90,9 @@ export default function AdminEventManagement() {
   // Modal de confirmación de cancelación
   const [pendingCancel,  setPendingCancel]  = useState(null);   // { eventId, eventName } | null
   const [cancelFromModal, setCancelFromModal] = useState(false); // si se disparó desde el modal de detalle
+
+  // Modal de confirmación genérico (para PUBLISHED, COMPLETED — no-destructivos)
+  const [pendingConfirm, setPendingConfirm] = useState(null);   // { eventId, newStatus, eventName } | null
 
   const navigate = useNavigate();
 
@@ -201,12 +205,11 @@ export default function AdminEventManagement() {
     }
 
     const labels = { PUBLISHED: 'publicar', COMPLETED: 'finalizar' };
-    const confirmed = window.confirm(
-      `¿${(labels[newStatus] || newStatus).charAt(0).toUpperCase() + (labels[newStatus] || newStatus).slice(1)} el evento "${eventName}"?`
-    );
-    if (!confirmed) return;
-
-    await executeStatusChange(eventId, newStatus);
+    // Abre el ConfirmModal estilizado en lugar de window.confirm
+    setPendingConfirm({ eventId, newStatus, eventName,
+      label: (labels[newStatus] || newStatus).charAt(0).toUpperCase()
+             + (labels[newStatus] || newStatus).slice(1),
+    });
   };
 
   const executeStatusChange = async (eventId, newStatus) => {
@@ -216,6 +219,7 @@ export default function AdminEventManagement() {
       await adminChangeEventStatus(eventId, newStatus);
       closeModal();
       setPendingCancel(null);
+      setPendingConfirm(null);
       setCancelFromModal(false);
       await fetchEvents();
     } catch (err) {
@@ -869,6 +873,32 @@ export default function AdminEventManagement() {
           )}
         </div>
       )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          Modal de confirmación genérico (Publicar / Finalizar)
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <ConfirmModal
+        isOpen={!!pendingConfirm}
+        title={`¿${pendingConfirm?.label ?? ''} este evento?`}
+        message={
+          <>
+            Estás por{' '}
+            <span className="text-white font-semibold">
+              {pendingConfirm?.label?.toLowerCase() ?? ''}
+            </span>{' '}
+            el evento{' '}
+            <span className="text-white font-semibold">"{pendingConfirm?.eventName}"</span>.
+            {pendingConfirm?.newStatus === 'PUBLISHED' &&
+              ' Una vez publicado será visible para todos los usuarios.'}
+          </>
+        }
+        confirmLabel={pendingConfirm?.label ?? 'Confirmar'}
+        cancelLabel="No, volver"
+        confirmStyle={pendingConfirm?.newStatus === 'COMPLETED' ? 'warning' : 'primary'}
+        loading={actionLoading}
+        onConfirm={() => executeStatusChange(pendingConfirm.eventId, pendingConfirm.newStatus)}
+        onCancel={() => setPendingConfirm(null)}
+      />
 
       {/* ═══════════════════════════════════════════════════════════════════════
           Modal de confirmación de cancelación
