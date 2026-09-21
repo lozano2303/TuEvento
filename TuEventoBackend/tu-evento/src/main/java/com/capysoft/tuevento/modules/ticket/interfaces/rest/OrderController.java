@@ -7,12 +7,13 @@ import com.capysoft.tuevento.modules.ticket.application.usecase.CancelOrderUseCa
 import com.capysoft.tuevento.modules.ticket.application.usecase.CreateOrderWithTicketsUseCaseImpl;
 import com.capysoft.tuevento.modules.ticket.application.usecase.GetOrderTicketsUseCaseImpl;
 import com.capysoft.tuevento.modules.ticket.application.usecase.GetOrderUseCaseImpl;
+import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,9 +37,9 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
             @Valid @RequestBody CreateOrderRequest request,
-            Authentication authentication) {
+            @AuthenticationPrincipal SecurityUser securityUser) {
         
-        Long userId = Long.parseLong(authentication.getName());
+        Long userId = securityUser.getUserId().longValue();
         OrderResponse response = createOrderWithTicketsUseCase.execute(request, userId);
         
         return ResponseEntity
