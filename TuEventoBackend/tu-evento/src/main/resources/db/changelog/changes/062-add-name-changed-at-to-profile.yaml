@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 062-add-name-changed-at-to-profile
+      author: capysoft
+      comment: >
+        Adds name_changed_at (nullable TIMESTAMP) to the profile table to enforce
+        a 14-day cooldown between full-name changes.
+        NULL means the user has never changed their name (no restriction applies).
+        When a name change is accepted the column is set to the current timestamp.
+      changes:
+        - addColumn:
+            tableName: profile
+            columns:
+              - column:
+                  name: name_changed_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: true

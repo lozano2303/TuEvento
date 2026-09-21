@@ -11,6 +11,7 @@ public interface ProfileMapper {
 
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "nameChangedAt", source = "nameChangedAt")
     Profile toDomain(ProfileEntity entity);
 
     ProfileEntity toEntity(Profile domain);

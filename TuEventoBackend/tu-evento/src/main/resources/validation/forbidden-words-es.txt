@@ -1,0 +1,52 @@
+# Palabras prohibidas en biografías de perfil — español
+# Una palabra por línea. Líneas en blanco y con # son ignoradas.
+# IMPORTANTE: las palabras aquí deben estar ya en forma normalizada
+# (sin tildes, k→c, z→s, w→v, y→i, sin letras repetidas consecutivas).
+# La validación aplica esa normalización al texto del usuario antes de comparar.
+# La comparación es PALABRA COMPLETA — "tontería" NO cae si "tonto" está en la lista.
+
+tonto
+tonta
+bobo
+boba
+estupido
+estupida
+idiota
+imbecil
+pendejo
+pendeja
+malparido
+malparida
+gonorrea
+hijueputa
+hijuepuerca
+hdp
+marica
+maricon
+gilipola
+gilipolas
+subnormal
+retrasado
+retrasada
+mongolo
+mogolico
+mogolica
+mentecato
+mentecata
+cretino
+cretina
+baboso
+babosa
+bruto
+bruta
+animal
+bestia
+# ── Abreviaturas ──────────────────────────────────────────────────────────────
+hp
+# ── Contenido sexual explícito ────────────────────────────────────────────────
+porno
+pornografia
+sexo
+puteria
+puton
+putona

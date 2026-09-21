@@ -129,11 +129,19 @@ public class OauthLoginUseCase implements OauthLoginPort {
                 // Idempotent: findByProviderAndProviderUserId already checked above,
                 // so this branch only runs when the oauth_account row does not yet exist.
                 user = localCredentials.get().getUser();
+
+                // Apply the same synthetic email fallback used in the new-user branch:
+                // Facebook may not return an email when the user hasn't granted the
+                // permission, so we must not store null in the oauth_account.email column.
+                String linkedEmail = (profile.getEmail() != null && !profile.getEmail().isBlank())
+                        ? profile.getEmail()
+                        : profile.getProviderUserId() + "@" + provider.toLowerCase() + ".oauth";
+
                 oauthAccountRepository.save(OauthAccount.builder()
                         .user(user)
                         .provider(provider.toLowerCase())
                         .providerUserId(profile.getProviderUserId())
-                        .email(profile.getEmail())
+                        .email(linkedEmail)
                         .linkedAt(LocalDateTime.now())
                         .build());
 
@@ -188,8 +196,8 @@ public class OauthLoginUseCase implements OauthLoginPort {
                     isNeedsOnboarding = true;
                 }
             } else {
-                log.info("Google name '{}' did not pass validation — user {} will be prompted for onboarding",
-                        profile.getFullName(), user.getUserId());
+                log.info("OAuth provider '{}' returned name '{}' that did not pass validation — user {} will be prompted for onboarding",
+                        provider, profile.getFullName(), user.getUserId());
                 isNeedsOnboarding = true;
             }
 
