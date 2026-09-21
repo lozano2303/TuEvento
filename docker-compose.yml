@@ -46,7 +46,7 @@ services:
 
   # ── Object storage (MinIO) ──────────────────────────────────────────────────
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: tuevento-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -77,7 +77,7 @@ services:
   # Prefijos que quedan privados (no se tocan aquí):
   #   - organizer_document/*  — PDFs de solicitud de organizador (sensibles)
   minio-init:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: tuevento-minio-init
     depends_on:
       minio:
