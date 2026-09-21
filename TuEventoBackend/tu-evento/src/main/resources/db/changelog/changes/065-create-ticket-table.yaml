@@ -1,0 +1,97 @@
+databaseChangeLog:
+  - changeSet:
+      id: 065-create-ticket-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: ticket
+            columns:
+              - column:
+                  name: ticket_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: qr_code
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  defaultValue: "PENDING"
+              - column:
+                  name: expiration_date
+                  type: TIMESTAMP
+              - column:
+                  name: total_price
+                  type: DECIMAL(19, 4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  constraints:
+                    nullable: false
+                  defaultValue: "COP"
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+              - column:
+                  name: updated_by
+                  type: VARCHAR(100)
+        - addForeignKeyConstraint:
+            baseTableName: ticket
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_ticket_event
+        - addForeignKeyConstraint:
+            baseTableName: ticket
+            baseColumnNames: user_id
+            referencedTableName: user
+            referencedColumnNames: user_id
+            constraintName: fk_ticket_user
+        - addForeignKeyConstraint:
+            baseTableName: ticket
+            baseColumnNames: order_id
+            referencedTableName: order
+            referencedColumnNames: order_id
+            constraintName: fk_ticket_order
+        - sql:
+            sql: "ALTER TABLE ticket ADD CONSTRAINT chk_ticket_status CHECK (status IN ('PENDING', 'PROCESSING', 'PAID', 'REFUNDED', 'USED', 'CANCELLED'));"

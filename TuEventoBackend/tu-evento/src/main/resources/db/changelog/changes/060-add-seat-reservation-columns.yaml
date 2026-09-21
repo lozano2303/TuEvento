@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 060-add-seat-reservation-columns
+      author: capysoft
+      changes:
+        - addColumn:
+            tableName: seat
+            columns:
+              - column:
+                  name: reserved_by
+                  type: INTEGER
+                  constraints:
+                    nullable: true
+              - column:
+                  name: reserved_until
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: true
+        - addForeignKeyConstraint:
+            baseTableName: seat
+            baseColumnNames: reserved_by
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_seat_reserved_by
+            onDelete: SET NULL
+      rollback:
+        - dropForeignKeyConstraint:
+            baseTableName: seat
+            constraintName: fk_seat_reserved_by
+        - dropColumn:
+            tableName: seat
+            columnName: reserved_until
+        - dropColumn:
+            tableName: seat
+            columnName: reserved_by

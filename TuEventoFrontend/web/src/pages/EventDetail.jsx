@@ -1,31 +1,261 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Calendar, MapPin, Users } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus } from 'lucide-react';
+import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
+import Konva from 'konva';
 import { getEventById } from '../services/EventService';
 import { getEventMedia } from '../services/EventMediaService';
+import * as LayoutService from '../services/LayoutService';
+import * as SeatService from '../services/SeatService';
+import * as EventSectionService from '../services/EventSectionService';
+import { connectSeatSocket, disconnectSeatSocket } from '../services/websocketClient';
+import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
+import Toast from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
 
 export default function EventDetail() {
   const { eventId } = useParams();
-  const [event,       setEvent]       = useState(null);
-  const [media,       setMedia]       = useState([]);
+  const navigate = useNavigate();
+  const { toast, showToast, hideToast } = useToast();
+  
+  const [event, setEvent] = useState(null);
+  const [media, setMedia] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
-  const [isLoading,   setIsLoading]   = useState(true);
-  const [error,       setError]       = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Estado de selección de sillas
+  const [layoutElements, setLayoutElements] = useState([]);
+  const [sections, setSections] = useState([]); // EventSection[] con precio
+  const [seats, setSeats] = useState({}); // { seatId: SeatResponse }
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [selectedSectionFilter, setSelectedSectionFilter] = useState(null);
+  const [currentSubSectionIndex, setCurrentSubSectionIndex] = useState(0);
+  const [reserving, setReserving] = useState(new Set());
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [zoom, setZoom] = useState(0.5);
+  const wsClientRef = useRef(null);
+  // P4: ref que siempre apunta al seats más reciente sin necesitar estar en deps de useCallback
+  const seatsRef = useRef({});
 
   useEffect(() => {
+    const userId = localStorage.getItem('userID');
+    setCurrentUserId(userId ? parseInt(userId) : null);
+
     Promise.all([
       getEventById(eventId),
       getEventMedia(eventId),
+      LayoutService.getLayout(eventId),
+      EventSectionService.getByEvent(eventId),
     ])
-      .then(([eventRes, mediaRes]) => {
+      .then(async ([eventRes, mediaRes, layoutRes, sectionsRes]) => {
         setEvent(eventRes.data);
         setMedia(mediaRes.data ?? []);
+        setSections(sectionsRes.data ?? []);
+
+        if (layoutRes?.data?.layoutData) {
+          const parsed = JSON.parse(layoutRes.data.layoutData);
+          const sectionElements = (parsed.elements ?? []).filter(
+            (el) => el.type === 'section' && el.backendSectionId
+          );
+          setLayoutElements(sectionElements);
+
+          // Cargar sillas de todas las secciones
+          const seatMap = {};
+          for (const section of sectionElements) {
+            try {
+              const seatsRes = await SeatService.getSeatsBySection(section.backendSectionId);
+              for (const seat of seatsRes.data) {
+                seatMap[seat.seatId] = seat;
+              }
+            } catch (err) {
+              console.warn(`No se pudieron cargar sillas de sección ${section.backendSectionId}:`, err);
+            }
+          }
+          setSeats(seatMap);
+        }
       })
       .catch((err) => setError(err.message))
       .finally(() => setIsLoading(false));
   }, [eventId]);
+
+  // P4: mantener seatsRef sincronizado con el estado seats
+  useEffect(() => {
+    seatsRef.current = seats;
+  }, [seats]);
+
+  // WebSocket
+  useEffect(() => {
+    if (!eventId || isLoading) return;
+
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 3;
+
+    const connectWS = () => {
+      try {
+        const client = connectSeatSocket(parseInt(eventId), (event) => {
+          setSeats((prev) => {
+            const seat = prev[event.seatId];
+            if (!seat) return prev;
+
+            return {
+              ...prev,
+              [event.seatId]: {
+                ...seat,
+                status: event.newStatus,
+                reservedBy: event.newStatus === 'RESERVED' ? seat.reservedBy : null,
+                reservedUntil: event.reservedUntil,
+              },
+            };
+          });
+        });
+
+        wsClientRef.current = client;
+        reconnectAttempts = 0; // Reset en conexión exitosa
+
+        // CASO 6: Detectar desconexión de WebSocket
+        if (client?.ws) {
+          client.ws.onclose = () => {
+            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+              showToast('ws-disconnected', 'Se perdió la conexión en tiempo real, reconectando...', 'warning');
+              reconnectAttempts++;
+              setTimeout(connectWS, 2000 * reconnectAttempts); // Backoff exponencial
+            }
+          };
+        }
+      } catch (err) {
+        console.warn('[EventDetail] WebSocket connection failed:', err);
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          showToast('ws-disconnected', 'Se perdió la conexión en tiempo real, reconectando...', 'warning');
+          reconnectAttempts++;
+          setTimeout(connectWS, 2000 * reconnectAttempts);
+        }
+      }
+    };
+
+    connectWS();
+
+    return () => {
+      if (wsClientRef.current) disconnectSeatSocket(wsClientRef.current);
+    };
+  }, [eventId, isLoading, showToast]);
+
+  const cart = useMemo(() => {
+    if (!currentUserId) return [];
+    return Object.values(seats).filter(
+      (seat) => seat.status === 'RESERVED' && seat.reservedBy === currentUserId
+    );
+  }, [seats, currentUserId]);
+
+  // Hidratar el stepper con el número de sillas ya reservadas
+  useEffect(() => {
+    if (cart.length > 0 && cart.length > selectedQuantity) {
+      setSelectedQuantity(cart.length);
+    }
+  }, [cart.length, selectedQuantity]);
+
+  const handleReserveSeat = useCallback(async (seatId) => {
+    // CASO 9: Usuario anónimo intenta reservar
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showToast('auth-required', 'Iniciá sesión para reservar sillas', 'warning');
+      setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
+
+    // CASO 11: Evento ya no disponible (COMPLETED/CANCELLED)
+    if (event.status === 'COMPLETED' || event.status === 'CANCELLED') {
+      showToast('event-unavailable', 'Este evento ya no acepta reservas', 'error');
+      return;
+    }
+
+    setReserving((prev) => new Set(prev).add(seatId));
+
+    try {
+      const result = await SeatService.reserveSeat(seatId);
+      setSeats((prev) => ({ ...prev, [seatId]: result.data }));
+    } catch (err) {
+      // CASO 10: Token expirado (401)
+      if (err.response?.status === 401 || err.message?.includes('401')) {
+        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
+        setTimeout(() => navigate('/login'), 2000);
+      }
+      // CASO 3: Silla ya reservada por otro (condición de carrera)
+      else if (err.message?.includes('SEAT_NOT_AVAILABLE') || err.message?.includes('no está disponible')) {
+        showToast('seat-taken', 'Esta silla ya fue reservada por otra persona', 'warning');
+      }
+      // CASO 7: Error genérico
+      else {
+        showToast('reserve-error', 'No se pudo reservar la silla, intentalo de nuevo', 'error');
+      }
+      
+      // Refrescar estado de la silla
+      const seat = seatsRef.current[seatId];
+      if (seat) {
+        try {
+          const seatsRes = await SeatService.getSeatsBySection(seat.eventSectionId);
+          const updated = seatsRes.data.find((s) => s.seatId === seatId);
+          if (updated) setSeats((prev) => ({ ...prev, [seatId]: updated }));
+        } catch (refreshErr) {
+          console.error('Error al refrescar estado de silla:', refreshErr);
+        }
+      }
+    } finally {
+      setReserving((prev) => {
+        const next = new Set(prev);
+        next.delete(seatId);
+        return next;
+      });
+    }
+  }, [navigate, event, showToast]);
+
+  const handleReleaseSeat = useCallback(async (seatId) => {
+    setReserving((prev) => new Set(prev).add(seatId));
+
+    try {
+      const result = await SeatService.releaseSeat(seatId);
+      setSeats((prev) => ({ ...prev, [seatId]: result.data }));
+    } catch (err) {
+      // CASO 10: Token expirado (401)
+      if (err.response?.status === 401 || err.message?.includes('401')) {
+        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
+        setTimeout(() => navigate('/login'), 2000);
+      }
+      // CASO 7: Error genérico al liberar
+      else {
+        showToast('release-error', 'No se pudo liberar la silla, intentalo de nuevo', 'error');
+      }
+    } finally {
+      setReserving((prev) => {
+        const next = new Set(prev);
+        next.delete(seatId);
+        return next;
+      });
+    }
+  }, [showToast, navigate]);
+
+  // Handler de expiración optimista de silla (solo cliente, sin llamada al backend)
+  // El scheduler del backend se encargará de liberar la silla en su próximo ciclo (cada 10s)
+  const handleSeatExpire = useCallback((seatId) => {
+    // CASO 4: Silla expirada
+    showToast('seat-expired', 'Tu reserva expiró y la silla se liberó', 'info');
+    
+    setSeats((prev) => {
+      if (!prev[seatId]) return prev;
+      
+      return {
+        ...prev,
+        [seatId]: {
+          ...prev[seatId],
+          status: 'AVAILABLE',
+          reservedBy: null,
+          reservedUntil: null,
+        },
+      };
+    });
+  }, [showToast]);
 
   const prev = () => setActiveImage((i) => (i - 1 + media.length) % media.length);
   const next = () => setActiveImage((i) => (i + 1) % media.length);
@@ -33,22 +263,16 @@ export default function EventDetail() {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface) 50%, var(--color-background) 100%)' }}
-      >
-        <p className="text-sm text-textMuted">Cargando evento…</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}>
+        <p className="text-sm" style={{ color: 'rgba(196,181,253,0.6)' }}>Cargando evento…</p>
       </div>
     );
   }
 
   if (error || !event) {
     return (
-      <div
-        className="min-h-screen flex flex-col items-center justify-center gap-4"
-        style={{ background: 'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface) 50%, var(--color-background) 100%)' }}
-      >
-        <p className="text-sm text-error">{error ?? 'Evento no encontrado'}</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}>
+        <p className="text-sm text-red-400">{error ?? 'Evento no encontrado'}</p>
         <BackButton fallback="/events" label="Volver a eventos" />
       </div>
     );
@@ -56,17 +280,17 @@ export default function EventDetail() {
 
   return (
     <div
-      className="min-h-screen text-textPrimary"
-      style={{ background: 'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface) 50%, var(--color-background) 100%)' }}
+      className="min-h-screen text-white"
+      style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}
     >
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8">
 
         {/* Back */}
         <div className="mb-6">
           <BackButton fallback="/events" label="Volver a eventos" />
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-2 gap-8 mb-12">
 
           {/* ── Galería ────────────────────────────────────────────────────── */}
           <div className="flex flex-col gap-3">
@@ -74,7 +298,7 @@ export default function EventDetail() {
             {/* Imagen principal */}
             <div
               className="relative rounded-2xl overflow-hidden"
-              style={{ border: '0.5px solid color-mix(in srgb, var(--color-accent) 25%, transparent)', aspectRatio: '16/9' }}
+              style={{ border: '0.5px solid rgba(167,139,250,0.2)', aspectRatio: '16/9' }}
             >
               {media.length > 0 ? (
                 <>
@@ -101,17 +325,19 @@ export default function EventDetail() {
                       >
                         <ChevronRight className="w-4 h-4 text-white" />
                       </button>
-                      <div
-                        className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] px-2 py-0.5 rounded-full text-textPrimary"
-                        style={{ background: 'rgba(0,0,0,0.5)' }}
-                      >
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(0,0,0,0.5)' }}>
                         {activeImage + 1} / {media.length}
                       </div>
                     </>
                   )}
                 </>
               ) : (
-                <EventImagePlaceholder size="lg" themed />
+                <div className="w-full h-full flex flex-col items-center justify-center gap-2" style={{ background: 'rgba(109,40,217,0.15)' }}>
+                  <ImageOff className="w-8 h-8" style={{ color: 'rgba(196,181,253,0.3)' }} />
+                  <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>
+                    Este evento aún no tiene imágenes
+                  </span>
+                </div>
               )}
             </div>
 
@@ -125,7 +351,7 @@ export default function EventDetail() {
                     className="shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all"
                     style={{
                       border: i === activeImage
-                        ? '2px solid var(--color-accent)'
+                        ? '2px solid rgba(167,139,250,0.8)'
                         : '2px solid transparent',
                       opacity: i === activeImage ? 1 : 0.6,
                     }}
@@ -140,11 +366,11 @@ export default function EventDetail() {
           {/* ── Info del evento ────────────────────────────────────────────── */}
           <div className="flex flex-col gap-5">
             <div>
-              <h1 className="text-2xl font-bold text-textPrimary">
+              <h1 className="text-2xl font-bold" style={{ color: '#e9d5ff' }}>
                 {event.eventName}
               </h1>
               {event.description && (
-                <p className="mt-2 text-sm leading-relaxed text-textSecondary">
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: 'rgba(196,181,253,0.75)' }}>
                   {event.description}
                 </p>
               )}
@@ -153,8 +379,8 @@ export default function EventDetail() {
             <div className="space-y-3">
               {/* Fechas */}
               {event.startDate && (
-                <div className="flex items-center gap-2 text-sm text-textSecondary">
-                  <Calendar className="w-4 h-4 shrink-0 text-accent opacity-70" />
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(233,213,255,0.8)' }}>
+                  <Calendar className="w-4 h-4 shrink-0" style={{ color: 'rgba(167,139,250,0.7)' }} />
                   <span>
                     {event.startDate}
                     {event.finishDate && event.finishDate !== event.startDate && ` → ${event.finishDate}`}
@@ -164,16 +390,16 @@ export default function EventDetail() {
 
               {/* Sede */}
               {event.siteName && (
-                <div className="flex items-center gap-2 text-sm text-textSecondary">
-                  <MapPin className="w-4 h-4 shrink-0 text-accent opacity-70" />
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(233,213,255,0.8)' }}>
+                  <MapPin className="w-4 h-4 shrink-0" style={{ color: 'rgba(167,139,250,0.7)' }} />
                   <span>{event.siteName}</span>
                 </div>
               )}
 
               {/* Sillas */}
               {event.availableSeats > 0 && (
-                <div className="flex items-center gap-2 text-sm text-textSecondary">
-                  <Users className="w-4 h-4 shrink-0 text-accent opacity-70" />
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(233,213,255,0.8)' }}>
+                  <Users className="w-4 h-4 shrink-0" style={{ color: 'rgba(167,139,250,0.7)' }} />
                   <span>{event.availableSeats.toLocaleString()} sillas disponibles</span>
                 </div>
               )}
@@ -183,26 +409,1530 @@ export default function EventDetail() {
             <div>
               <span
                 className="inline-block text-xs font-semibold px-3 py-1 rounded-full"
-                style={
-                  event.status === 'PUBLISHED'
-                    ? {
-                        background: 'color-mix(in srgb, var(--color-success) 20%, transparent)',
-                        color:      'var(--color-success)',
-                        border:     '1px solid color-mix(in srgb, var(--color-success) 35%, transparent)',
-                      }
-                    : {
-                        background: 'color-mix(in srgb, var(--color-textMuted) 20%, transparent)',
-                        color:      'var(--color-textMuted)',
-                        border:     '1px solid color-mix(in srgb, var(--color-textMuted) 30%, transparent)',
-                      }
-                }
+                style={{
+                  background: event.status === 'PUBLISHED' ? 'rgba(22,163,74,0.2)' : 'rgba(107,114,128,0.2)',
+                  color:      event.status === 'PUBLISHED' ? '#4ade80' : 'rgba(196,181,253,0.5)',
+                  border:     `1px solid ${event.status === 'PUBLISHED' ? 'rgba(74,222,128,0.3)' : 'rgba(107,114,128,0.3)'}`,
+                }}
               >
                 {event.status === 'PUBLISHED' ? 'Publicado' : event.status}
               </span>
             </div>
           </div>
         </div>
+
+        {/* ── Selector de sillas ─────────────────────────────────────────── */}
+        {layoutElements.length > 0 && (
+          <SeatSelectorSection
+            layoutElements={layoutElements}
+            sections={sections}
+            seats={seats}
+            currentUserId={currentUserId}
+            cart={cart}
+            selectedQuantity={selectedQuantity}
+            setSelectedQuantity={setSelectedQuantity}
+            selectedSectionFilter={selectedSectionFilter}
+            setSelectedSectionFilter={setSelectedSectionFilter}
+            currentSubSectionIndex={currentSubSectionIndex}
+            setCurrentSubSectionIndex={setCurrentSubSectionIndex}
+            reserving={reserving}
+            onReserveSeat={handleReserveSeat}
+            onReleaseSeat={handleReleaseSeat}
+            onSeatExpire={handleSeatExpire}
+            zoom={zoom}
+            setZoom={setZoom}
+            showToast={showToast}
+          />
+        )}
+      </div>
+      
+      {/* Toast de alertas */}
+      <Toast toast={toast} onHide={hideToast} />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SEAT SELECTOR COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Sección integrada de selección de sillas dentro de EventDetail.
+ * Incluye:
+ * - Selector de cantidad estilo cine (stepper)
+ * - Menú lateral de secciones con precios
+ * - Canvas con mapa visual de sillas (Konva)
+ * - Carrito lateral con countdown
+ */
+function SeatSelectorSection({
+  layoutElements,
+  sections,
+  seats,
+  currentUserId,
+  cart,
+  selectedQuantity,
+  setSelectedQuantity,
+  selectedSectionFilter,
+  setSelectedSectionFilter,
+  currentSubSectionIndex,
+  setCurrentSubSectionIndex,
+  reserving,
+  onReserveSeat,
+  onReleaseSeat,
+  onSeatExpire,
+  zoom,
+  setZoom,
+  showToast,
+}) {
+  const maxQuantity = 10;
+  const stageRef = useRef();
+  const containerRef = useRef();
+  const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
+  const [currentRowPage, setCurrentRowPage] = useState(0); // Paginación vertical
+  const [currentColPage, setCurrentColPage] = useState(0); // Nuevo: paginación horizontal
+
+  const ZOOM_MARGIN = 60; // Reducido de 80 → 60px para ganar espacio
+  const SEAT_VIEW_MARGIN = 20; // Reducido de 24 → 20px, manteniendo respiración visual
+  const MIN_SEAT_TOUCH_RADIUS_PX = 16; // Reducido de 22 → 16px para sillas más pequeñas en web
+
+  // ── Agrupar elementos de layout por backendSectionId ──
+  const groupedSections = useMemo(() => {
+    const groups = {};
+    layoutElements.forEach((el) => {
+      const key = el.backendSectionId;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(el);
+    });
+    return groups;
+  }, [layoutElements]);
+
+  // P3: índice de sillas agrupadas y ordenadas por sectionId — calculado UNA sola vez.
+  // Cada SectionRenderer lee seatsBySection[id] en lugar de filtrar+ordenar 999 sillas por su cuenta.
+  const seatsBySection = useMemo(() => {
+    const map = {};
+    for (const seat of Object.values(seats)) {
+      const id = seat.eventSectionId;
+      if (!map[id]) map[id] = [];
+      map[id].push(seat);
+    }
+    // Ordenar cada grupo una sola vez
+    for (const id of Object.keys(map)) {
+      map[id].sort((a, b) => a.code.localeCompare(b.code));
+    }
+    return map;
+  }, [seats]);
+
+  // ── Sub-secciones de la sección actualmente filtrada ──
+  const currentSubSections = useMemo(() => {
+    if (!selectedSectionFilter) return [];
+    return groupedSections[selectedSectionFilter] || [];
+  }, [selectedSectionFilter, groupedSections]);
+
+  const hasMultipleSubSections = currentSubSections.length > 1;
+
+  // ── Reset de índice al cambiar de sección ──
+  useEffect(() => {
+    setCurrentSubSectionIndex(0);
+    setCurrentRowPage(0);
+    setCurrentColPage(0);
+  }, [selectedSectionFilter, setCurrentSubSectionIndex]);
+
+  // ── Observar cambios de tamaño del contenedor ──
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const updateSize = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      setContainerSize({ width: rect.width, height: rect.height });
+    };
+
+    // Actualizar al montar
+    updateSize();
+
+    // Observar cambios de tamaño
+    const resizeObserver = new ResizeObserver(updateSize);
+    resizeObserver.observe(containerRef.current);
+
+    // Escuchar resize de ventana como fallback
+    window.addEventListener('resize', updateSize);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
+  }, []);
+
+  const handleQuantityDecrease = () => {
+    // CASO 8: Bajar el stepper por debajo de lo reservado
+    if (selectedQuantity <= cart.length) {
+      showToast('stepper-below-cart', 'Liberá una silla primero para bajar la cantidad', 'warning');
+      return;
+    }
+    if (selectedQuantity > 1) {
+      setSelectedQuantity(selectedQuantity - 1);
+    }
+  };
+
+  const handleQuantityIncrease = () => {
+    // CASO 2: Límite máximo global de sillas
+    if (selectedQuantity >= maxQuantity) {
+      showToast('max-seats', 'Solo podés seleccionar un máximo de 10 sillas en este ticket', 'warning');
+      return;
+    }
+    setSelectedQuantity(selectedQuantity + 1);
+  };
+
+  // ── Calcular encuadre (zoom + posición) para un conjunto de elementos ──
+  const calculateFraming = useCallback((elements, viewportWidth, viewportHeight, rowPage = 0, colPage = 0, applyWindowedView = true, positions = null) => {
+    if (elements.length === 0) {
+      return { scale: 1, x: 0, y: 0, totalRowPages: 1, totalColPages: 1, dynamicColPages: 1, dynamicRowPages: 1 };
+    }
+
+    // Fix auditoría: validar dimensiones del viewport
+    if (!viewportWidth || !viewportHeight || viewportWidth <= 0 || viewportHeight <= 0) {
+      return { scale: 1, x: 0, y: 0, totalRowPages: 1, totalColPages: 1, dynamicColPages: 1, dynamicRowPages: 1 };
+    }
+
+    // Calcular AABB de los elementos
+    const aabbs = elements.map(getElementAABB);
+    const contentMinX = Math.min(...aabbs.map((b) => b.minX));
+    const contentMinY = Math.min(...aabbs.map((b) => b.minY));
+    const contentMaxX = Math.max(...aabbs.map((b) => b.maxX));
+    const contentMaxY = Math.max(...aabbs.map((b) => b.maxY));
+
+    const contentWidth = contentMaxX - contentMinX;
+    const contentHeight = contentMaxY - contentMinY;
+
+    // Fix auditoría: validar dimensiones del contenido
+    if (!contentWidth || !contentHeight || contentWidth <= 0 || contentHeight <= 0) {
+      return { scale: 1, x: 0, y: 0, totalRowPages: 1, totalColPages: 1, dynamicColPages: 1, dynamicRowPages: 1 };
+    }
+
+    const contentCenterX = (contentMinX + contentMaxX) / 2;
+    const contentCenterY = (contentMinY + contentMaxY) / 2;
+
+    let scale, totalRowPages = 1, totalColPages = 1, dynamicColPages = 1, dynamicRowPages = 1;
+    let effectiveContentCenterX = contentCenterX;
+    let effectiveContentCenterY = contentCenterY;
+
+    if (applyWindowedView) {
+      // NUEVO COMPORTAMIENTO: ventana fija máxima 10x10
+      const sectionsWithSeats = elements.filter(el => el.type === 'section' && el.seatLayout);
+      
+      if (sectionsWithSeats.length > 0) {
+        // Obtener información de la grilla de sillas de la primera sección con sillas
+        const sectionWithSeats = sectionsWithSeats[0];
+        const seatLayout = sectionWithSeats.seatLayout;
+        
+        // Usar distributeSeats para obtener la distribución real
+        const seatLayoutResult = distributeSeats(sectionWithSeats);
+        const seatData = Array.isArray(seatLayoutResult) ? 
+          { positions: seatLayoutResult, rowStructure: [], isUniformGrid: true } : 
+          seatLayoutResult;
+        const totalSeats = seatData.positions.length;
+        
+        if (totalSeats === 0) {
+          // No hay sillas, usar comportamiento de ajuste completo
+          const availableWidth = viewportWidth - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+          const availableHeight = viewportHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+          const scaleX = availableWidth / contentWidth;
+          const scaleY = availableHeight / contentHeight;
+          scale = Math.min(scaleX, scaleY);
+        } else {
+          // Calcular grilla desde la estructura real, no con fórmulas
+          const { rowStructure, isUniformGrid } = seatData;
+          
+          let gridCols, gridRows;
+          
+          if (isUniformGrid && rowStructure.length > 0) {
+            // Rectángulo: usar estructura uniforme
+            gridRows = rowStructure.length;
+            gridCols = Math.max(...rowStructure);
+          } else if (rowStructure.length > 0) {
+            // Polígono: usar estructura variable
+            gridRows = rowStructure.length;
+            gridCols = Math.max(...rowStructure); // Máximo de columnas en cualquier fila
+          } else {
+            // Fallback: usar fórmula original si no hay estructura
+            const aspectRatio = contentWidth / contentHeight;
+            gridCols = Math.max(1, Math.round(Math.sqrt(totalSeats * aspectRatio)));
+            gridRows = Math.max(1, Math.ceil(totalSeats / gridCols));
+            
+            if (gridCols * gridRows < totalSeats) {
+              gridCols = Math.ceil(totalSeats / gridRows);
+            }
+          }
+          
+          // Determinar ventana visible y páginas necesarias
+          const windowCols = Math.min(10, gridCols);
+          const windowRows = Math.min(10, gridRows);
+          
+          // Calcular páginas necesarias basándose en la estructura real
+          if (rowStructure.length > 0) {
+            // Usar estructura real para calcular páginas
+            totalRowPages = Math.ceil(gridRows / 10);
+            
+            // NUEVO: Calcular páginas de columnas dinámicamente basándose en las filas visibles
+            const rowStart = rowPage * 10;
+            const rowEnd = Math.min(gridRows, rowStart + 10);
+            
+            // Obtener el máximo de columnas entre las filas visibles en la página actual
+            const maxColsInVisibleRows = Math.max(1, ...rowStructure.slice(rowStart, rowEnd));
+            dynamicColPages = Math.ceil(maxColsInVisibleRows / 10);
+            
+            // NUEVO: Calcular páginas de filas dinámicamente basándose en las columnas visibles
+            const colStart = colPage * 10;
+            const colEnd = Math.min(gridCols, colStart + 10);
+            
+            // Contar cuántas filas tienen al menos una silla en el rango de columnas actual
+            let rowsWithSeatsInColRange = 0;
+            for (let rowIdx = 0; rowIdx < rowStructure.length; rowIdx++) {
+              const seatsInRow = rowStructure[rowIdx];
+              // Si esta fila tiene sillas que se intersectan con el rango de columnas actual
+              if (seatsInRow > colStart) {
+                rowsWithSeatsInColRange++;
+              }
+            }
+            dynamicRowPages = Math.ceil(rowsWithSeatsInColRange / 10);  // Usar asignación en lugar de const
+            
+            // Para compatibilidad hacia atrás, mantener totalColPages como el global
+            totalColPages = Math.ceil(gridCols / 10);
+            
+            // Retornar también dynamicRowPages
+            totalRowPages = dynamicRowPages;
+          } else {
+            // Fallback usando cálculo tradicional
+            totalColPages = Math.ceil(gridCols / 10);
+            const traditionalRowPages = Math.ceil(gridRows / 10);
+            totalRowPages = traditionalRowPages;
+            dynamicColPages = totalColPages;
+            dynamicRowPages = traditionalRowPages; // FIX: This was missing!
+          }
+          
+          // Calcular dimensiones de la ventana
+          let windowWidth, windowHeight;
+          // Declarar cellWidth/cellHeight para uso posterior en cálculo de centros
+          let cellWidth, cellHeight;
+          
+          // 🔧 NUEVO: usar bounding box real si positions están disponibles
+          if (positions && positions.length > 0) {
+            // Extraer solo las posiciones de sillas (sin metadatos)
+            const seatPositions = positions.map(item => item.pos || item);
+            
+            // Calcular bounding box real de las sillas filtradas de esta página (coordenadas LOCALES)
+            const localMinX = Math.min(...seatPositions.map(p => p.x - p.r));
+            const localMaxX = Math.max(...seatPositions.map(p => p.x + p.r));
+            const localMinY = Math.min(...seatPositions.map(p => p.y - p.r));
+            const localMaxY = Math.max(...seatPositions.map(p => p.y + p.r));
+            
+            // 🔧 CRÍTICO: convertir a coordenadas GLOBALES sumando offset del elemento
+            const element = sectionsWithSeats[0]; // elemento actual cuyas sillas estamos procesando
+            const realMinX = localMinX + element.x;
+            const realMaxX = localMaxX + element.x;
+            const realMinY = localMinY + element.y;
+            const realMaxY = localMaxY + element.y;
+            
+            // Usar dimensiones reales + mismo margen que backgroundRect para consistencia
+            windowWidth = (realMaxX - realMinX) + (SEAT_VIEW_MARGIN * 2);
+            windowHeight = (realMaxY - realMinY) + (SEAT_VIEW_MARGIN * 2);
+            
+            // 🔧 NUEVO: calcular centros también desde bounding box real para consistencia
+            const realCenterX = (realMinX + realMaxX) / 2;
+            const realCenterY = (realMinY + realMaxY) / 2;
+            
+            // Usar centros reales en lugar de fórmula genérica cuando hay positions
+            effectiveContentCenterX = realCenterX;
+            effectiveContentCenterY = realCenterY;
+            
+            // Calcular cellWidth/cellHeight para compatibilidad con código que los necesite
+            cellWidth = contentWidth / gridCols;
+            cellHeight = contentHeight / gridRows;
+          } else {
+            // Fallback: fórmula genérica como antes
+            cellWidth = contentWidth / gridCols;
+            cellHeight = contentHeight / gridRows;
+            windowWidth = windowCols * cellWidth;
+            windowHeight = windowRows * cellHeight;
+          }
+          
+          // Calcular escala aplicando margen simétrico en ambos ejes
+          const availableWidth = viewportWidth - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+          const availableHeight = viewportHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+          const scaleX = availableWidth / windowWidth;
+          const scaleY = availableHeight / windowHeight;
+          scale = Math.min(scaleX, scaleY);
+          
+          // Aplicar zoom mínimo táctil dentro de la ventana
+          const seatRadius = seatLayout.seatRadius || 7;
+          const minTouchScale = MIN_SEAT_TOUCH_RADIUS_PX / seatRadius;
+          scale = Math.max(scale, minTouchScale);
+          
+          // Calcular centro efectivo basado en las páginas actuales
+          // ACTUALIZADO: usar dynamicColPages para centrar correctamente
+          // NOTA: cuando hay positions, los centros ya se calcularon desde bounding box real arriba
+          if (!positions || positions.length === 0) {
+            if (dynamicColPages > 1) {
+              // Calcular el rango de columnas válidas para las filas visibles
+              const rowStart = rowPage * 10;
+              const rowEnd = Math.min(gridRows, rowStart + 10);
+              const maxColsInVisibleRows = Math.max(1, ...rowStructure.slice(rowStart, rowEnd));
+              
+              const pageColStart = colPage * 10;
+              const pageColEnd = Math.min(maxColsInVisibleRows, pageColStart + 10);
+              const pageCenterCol = (pageColStart + pageColEnd) / 2;
+              effectiveContentCenterX = contentMinX + (pageCenterCol * cellWidth);
+            }
+            
+            if (totalRowPages > 1) {
+              const pageRowStart = rowPage * 10;
+              const pageRowEnd = Math.min(gridRows, pageRowStart + 10);
+              const pageCenterRow = (pageRowStart + pageRowEnd) / 2;
+              effectiveContentCenterY = contentMinY + (pageCenterRow * cellHeight);
+            }
+          }
+        }
+        
+        // Validar que el scale no sea NaN o Infinity
+        if (!isFinite(scale) || scale <= 0) {
+          scale = 1;
+        }
+      } else {
+        // Sección sin sillas: comportamiento de ajuste completo
+        const availableWidth = viewportWidth - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+        const availableHeight = viewportHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+        const scaleX = availableWidth / contentWidth;
+        const scaleY = availableHeight / contentHeight;
+        scale = Math.min(scaleX, scaleY);
+        
+        if (!isFinite(scale) || scale <= 0) {
+          scale = 1;
+        }
+      }
+    } else {
+      // Overview: comportamiento original (ajustar todo al viewport)
+      const scaleX = (viewportWidth - ZOOM_MARGIN * 2) / contentWidth;
+      const scaleY = (viewportHeight - ZOOM_MARGIN * 2) / contentHeight;
+      scale = Math.min(scaleX, scaleY);
+      
+      // Validar que el scale no sea NaN o Infinity
+      if (!isFinite(scale) || scale <= 0) {
+        scale = 1;
+      }
+    }
+
+    // Calcular offset para centrar el contenido en el viewport
+    // Para vista enfocada, centrar en el área disponible después de restar AMBOS márgenes
+    if (applyWindowedView) {
+      const effectiveViewportWidth = viewportWidth - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+      const effectiveViewportHeight = viewportHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+      const x = ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveViewportWidth / 2 - effectiveContentCenterX * scale;
+      const y = ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveViewportHeight / 2 - effectiveContentCenterY * scale;
+      return { scale, x, y, totalRowPages, totalColPages, dynamicColPages, dynamicRowPages };
+    } else {
+      // Overview: usar viewport completo
+      const x = viewportWidth / 2 - effectiveContentCenterX * scale;
+      const y = viewportHeight / 2 - effectiveContentCenterY * scale;
+      return { scale, x, y, totalRowPages, totalColPages, dynamicColPages, dynamicRowPages };
+    }
+  }, []);
+
+  // ── Animar transición del Stage hacia un nuevo encuadre ──
+  const animateToFraming = useCallback((framing, duration = 500) => {
+    if (!stageRef.current) return;
+
+    const stage = stageRef.current;
+    const tween = new Konva.Tween({
+      node: stage,
+      duration: duration / 1000, // Konva usa segundos
+      scaleX: framing.scale,
+      scaleY: framing.scale,
+      x: framing.x,
+      y: framing.y,
+      easing: Konva.Easings.EaseInOut,
+    });
+
+    tween.play();
+
+    // Sincronizar el estado de zoom con el valor final de la animación
+    setZoom(framing.scale);
+  }, [setZoom]);
+
+  // ── Efecto: animar a vista general o sub-sección seleccionada ──
+  const [totalRowPages, setTotalRowPages] = useState(1);
+  const [totalColPages, setTotalColPages] = useState(1); // Mantener para compatibilidad
+  const [dynamicColPages, setDynamicColPages] = useState(1); // Páginas de columnas dinámicas por bloque de filas
+  const [dynamicRowPages, setDynamicRowPages] = useState(1); // NUEVO: Páginas de filas dinámicas por bloque de columnas
+  
+  useEffect(() => {
+    if (!stageRef.current || layoutElements.length === 0) return;
+
+    if (selectedSectionFilter === null) {
+      // Vista general: todas las secciones (SIN vista de ventana)
+      const framing = calculateFraming(layoutElements, containerSize.width, containerSize.height, 0, 0, false);
+      setTotalRowPages(framing.totalRowPages);
+      setTotalColPages(framing.totalColPages);
+      setDynamicColPages(framing.dynamicColPages);
+      setDynamicRowPages(framing.dynamicRowPages);
+      setCurrentRowPage(0); // Reset pages al cambiar vista
+      setCurrentColPage(0);
+      animateToFraming(framing);
+    } else {
+      // Vista de sub-sección: solo la sub-sección actual del índice (CON vista de ventana)
+      const currentSubSection = currentSubSections[currentSubSectionIndex];
+      if (currentSubSection) {
+        // 🔧 NUEVO: calcular posiciones reales antes de llamar calculateFraming
+        let filteredPositions = null;
+        
+        // Obtener seatLayout de la sub-sección actual para calcular posiciones filtradas
+        const seatResult = distributeSeats(currentSubSection);
+        const seatData = Array.isArray(seatResult) ? 
+          { positions: seatResult, rowStructure: [], isUniformGrid: true } : 
+          seatResult;
+        
+        if (seatData.positions && seatData.positions.length > 0 && seatData.rowStructure.length > 0) {
+          // Calcular maxColsInVisibleRows para el filtrado
+          const rowStart = currentRowPage * 10;
+          const rowEnd = Math.min(seatData.rowStructure.length, rowStart + 10);
+          const maxColsInVisibleRows = Math.max(1, ...seatData.rowStructure.slice(rowStart, rowEnd));
+          
+          const gridInfo = {
+            totalRows: seatData.rowStructure.length,
+            rowStructure: seatData.rowStructure,
+            maxColsInVisibleRows: maxColsInVisibleRows
+          };
+          
+          // Usar función pura para obtener posiciones filtradas
+          filteredPositions = filterSeatsByPage(
+            seatData.positions,
+            gridInfo,
+            currentColPage,
+            currentRowPage,
+            false // no es overview
+          );
+        }
+        
+        const framing = calculateFraming(
+          [currentSubSection], 
+          containerSize.width, 
+          containerSize.height, 
+          currentRowPage, 
+          currentColPage, 
+          true, 
+          filteredPositions // pasar posiciones reales
+        );
+        setTotalRowPages(framing.totalRowPages);
+        setTotalColPages(framing.totalColPages);
+        setDynamicColPages(framing.dynamicColPages);
+        setDynamicRowPages(framing.dynamicRowPages);
+        animateToFraming(framing);
+      }
+    }
+  }, [selectedSectionFilter, currentSubSectionIndex, currentRowPage, currentColPage, layoutElements, containerSize, currentSubSections, calculateFraming, animateToFraming]);
+
+  // Filtrar layoutElements: mostrar solo la sub-sección actual cuando hay filtro
+  const visibleLayoutElements = selectedSectionFilter && hasMultipleSubSections
+    ? [currentSubSections[currentSubSectionIndex]]
+    : selectedSectionFilter
+    ? layoutElements.filter((el) => el.backendSectionId === selectedSectionFilter)
+    : layoutElements;
+
+  // Handlers para navegación entre sub-secciones
+  const handlePrevSubSection = () => {
+    if (currentSubSectionIndex > 0) {
+      setCurrentSubSectionIndex(currentSubSectionIndex - 1);
+      setCurrentRowPage(0); // Reset pages al cambiar sub-sección
+      setCurrentColPage(0);
+    }
+  };
+
+  const handleNextSubSection = () => {
+    if (currentSubSectionIndex < currentSubSections.length - 1) {
+      setCurrentSubSectionIndex(currentSubSectionIndex + 1);
+      setCurrentRowPage(0); // Reset pages al cambiar sub-sección
+      setCurrentColPage(0);
+    }
+  };
+
+  // Handlers para navegación entre páginas de filas (ahora usa dynamicRowPages)
+  const handlePrevRowPage = () => {
+    if (currentRowPage > 0) {
+      setCurrentRowPage(currentRowPage - 1);
+      // No resetear columnas automáticamente - dejar que el useEffect lo maneje si es necesario
+    }
+  };
+
+  const handleNextRowPage = () => {
+    if (currentRowPage < dynamicRowPages - 1) {
+      setCurrentRowPage(currentRowPage + 1);
+      // No resetear columnas automáticamente - dejar que el useEffect lo maneje si es necesario
+    }
+  };
+
+  // Handlers para navegación entre páginas de columnas (ahora usa dynamicColPages)
+  const handlePrevColPage = () => {
+    if (currentColPage > 0) {
+      setCurrentColPage(currentColPage - 1);
+      // No resetear filas automáticamente - dejar que el useEffect lo maneje si es necesario
+    }
+  };
+
+  const handleNextColPage = () => {
+    if (currentColPage < dynamicColPages - 1) {
+      setCurrentColPage(currentColPage + 1);
+      // No resetear filas automáticamente - dejar que el useEffect lo maneje si es necesario
+    }
+  };
+
+  // Auto-reset inteligente: solo resetear cuando la página actual se vuelve inválida
+  useEffect(() => {
+    if (currentColPage >= dynamicColPages && dynamicColPages > 0) {
+      setCurrentColPage(Math.max(0, dynamicColPages - 1));
+    }
+  }, [dynamicColPages, currentColPage]);
+
+  useEffect(() => {
+    if (currentRowPage >= dynamicRowPages && dynamicRowPages > 0) {
+      setCurrentRowPage(Math.max(0, dynamicRowPages - 1));
+    }
+  }, [dynamicRowPages, currentRowPage]);
+
+  return (
+    <div
+      className="mt-12 rounded-2xl p-6"
+      style={{
+        border: '0.5px solid rgba(167,139,250,0.2)',
+        background: 'rgba(109,40,217,0.05)',
+      }}
+    >
+      <h2 className="text-xl font-bold mb-6" style={{ color: '#e9d5ff' }}>
+        Selecciona tus Sillas
+      </h2>
+
+      {/* Selector de cantidad estilo cine */}
+      <div className="flex items-center gap-6 mb-6">
+        <span className="text-sm" style={{ color: 'rgba(196,181,253,0.75)' }}>
+          ¿Cuántas sillas querés?
+        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleQuantityDecrease}
+            disabled={selectedQuantity <= 1 || selectedQuantity <= cart.length}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{
+              background: 'rgba(167,139,250,0.15)',
+              border: '1px solid rgba(167,139,250,0.3)',
+            }}
+            aria-label="Disminuir cantidad"
+            title={
+              selectedQuantity <= cart.length && cart.length > 0
+                ? `No puedes bajar de ${cart.length} (sillas ya seleccionadas)`
+                : undefined
+            }
+          >
+            <Minus className="w-4 h-4" style={{ color: '#c4b5fd' }} />
+          </button>
+          <span
+            className="text-lg font-bold w-12 text-center"
+            style={{ color: '#e9d5ff' }}
+          >
+            {selectedQuantity}
+          </span>
+          <button
+            onClick={handleQuantityIncrease}
+            disabled={selectedQuantity >= maxQuantity}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{
+              background: 'rgba(167,139,250,0.15)',
+              border: '1px solid rgba(167,139,250,0.3)',
+            }}
+            aria-label="Aumentar cantidad"
+          >
+            <Plus className="w-4 h-4" style={{ color: '#c4b5fd' }} />
+          </button>
+        </div>
+        <span className="text-xs ml-auto" style={{ color: 'rgba(196,181,253,0.5)' }}>
+          {cart.length} de {selectedQuantity} seleccionadas
+        </span>
+      </div>
+
+      {/* Layout: 3 columnas - menú de secciones + canvas + carrito */}
+      <div className="flex gap-4">
+        {/* Menú lateral de secciones - columna izquierda (angosta) */}
+        <SectionMenu
+          sections={sections}
+          layoutElements={layoutElements}
+          selectedSectionFilter={selectedSectionFilter}
+          setSelectedSectionFilter={setSelectedSectionFilter}
+          seats={seats}
+          showToast={showToast}
+        />
+
+        {/* Canvas con mapa de sillas - columna central (flexible, dominante) */}
+        <div className="flex-1 rounded-xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', minWidth: 0 }}>
+          <div className="flex items-center justify-between p-2 border-b" style={{ borderColor: 'rgba(167,139,250,0.15)' }}>
+            <span className="text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
+              Mapa de Sillas
+            </span>
+            {/* Controles de navegación entre sub-secciones */}
+            {selectedSectionFilter && hasMultipleSubSections && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePrevSubSection}
+                  disabled={currentSubSectionIndex === 0}
+                  className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'rgba(167,139,250,0.2)',
+                    border: '1px solid rgba(167,139,250,0.3)',
+                  }}
+                  aria-label="Sub-sección anterior"
+                >
+                  <ChevronLeft className="w-4 h-4" style={{ color: '#c4b5fd' }} />
+                </button>
+                <span className="text-xs font-semibold px-2" style={{ color: '#e9d5ff' }}>
+                  {currentSubSectionIndex + 1}/{currentSubSections.length}
+                </span>
+                <button
+                  onClick={handleNextSubSection}
+                  disabled={currentSubSectionIndex === currentSubSections.length - 1}
+                  className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'rgba(167,139,250,0.2)',
+                    border: '1px solid rgba(167,139,250,0.3)',
+                  }}
+                  aria-label="Sub-sección siguiente"
+                >
+                  <ChevronRight className="w-4 h-4" style={{ color: '#c4b5fd' }} />
+                </button>
+              </div>
+            )}
+            
+            {/* Controles de paginación horizontal (columnas) */}
+            {selectedSectionFilter && dynamicColPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePrevColPage}
+                  disabled={currentColPage === 0}
+                  className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'rgba(59,130,246,0.2)',
+                    border: '1px solid rgba(59,130,246,0.3)',
+                  }}
+                  aria-label="Columnas anteriores"
+                >
+                  <ChevronLeft className="w-4 h-4" style={{ color: '#93c5fd' }} />
+                </button>
+                <span className="text-xs font-semibold px-2" style={{ color: '#dbeafe' }}>
+                  Col {currentColPage + 1}/{dynamicColPages}
+                </span>
+                <button
+                  onClick={handleNextColPage}
+                  disabled={currentColPage === dynamicColPages - 1}
+                  className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'rgba(59,130,246,0.2)',
+                    border: '1px solid rgba(59,130,246,0.3)',
+                  }}
+                  aria-label="Columnas siguientes"
+                >
+                  <ChevronRight className="w-4 h-4" style={{ color: '#93c5fd' }} />
+                </button>
+              </div>
+            )}
+            
+            {/* Controles de paginación vertical (filas) */}
+            {selectedSectionFilter && dynamicRowPages > 1 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handlePrevRowPage}
+                  disabled={currentRowPage === 0}
+                  className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'rgba(75,85,99,0.2)',
+                    border: '1px solid rgba(75,85,99,0.3)',
+                  }}
+                  aria-label="Filas anteriores"
+                >
+                  <ChevronUp className="w-4 h-4" style={{ color: '#9ca3af' }} />
+                </button>
+                <span className="text-xs font-semibold px-2" style={{ color: '#d1d5db' }}>
+                  Filas {currentRowPage + 1}/{dynamicRowPages}
+                </span>
+                <button
+                  onClick={handleNextRowPage}
+                  disabled={currentRowPage === dynamicRowPages - 1}
+                  className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{
+                    background: 'rgba(75,85,99,0.2)',
+                    border: '1px solid rgba(75,85,99,0.3)',
+                  }}
+                  aria-label="Filas siguientes"
+                >
+                  <ChevronDown className="w-4 h-4" style={{ color: '#9ca3af' }} />
+                </button>
+              </div>
+            )}
+          </div>
+          <div ref={containerRef} className="w-full" style={{ height: '65vh', minHeight: '450px', maxHeight: '750px', overflow: 'hidden' }}>
+            <Stage
+              ref={stageRef}
+              width={containerSize.width}
+              height={containerSize.height}
+            >
+              <Layer>
+                {visibleLayoutElements.map((section) => (
+                  <SectionRenderer
+                    key={section.id}
+                    section={section}
+                    sections={sections}
+                    seatsBySection={seatsBySection}
+                    currentUserId={currentUserId}
+                    reserving={reserving}
+                    cart={cart}
+                    selectedQuantity={selectedQuantity}
+                    selectedSectionFilter={selectedSectionFilter}
+                    onReserveSeat={onReserveSeat}
+                    onReleaseSeat={onReleaseSeat}
+                    onSectionClick={() => {
+                      // Solo permitir selección de sección si estamos en vista general
+                      if (selectedSectionFilter === null) {
+                        setSelectedSectionFilter(section.backendSectionId);
+                      }
+                    }}
+                    showToast={showToast}
+                    hasMultipleSubSections={hasMultipleSubSections}
+                    currentSubSections={currentSubSections}
+                    currentRowPage={currentRowPage}
+                    currentColPage={currentColPage}
+                  />
+                ))}
+              </Layer>
+            </Stage>
+          </div>
+        </div>
+
+        {/* Carrito lateral - columna derecha (fija) */}
+        <CartPanel
+          cart={cart}
+          sections={sections}
+          onReleaseSeat={onReleaseSeat}
+          onSeatExpire={onSeatExpire}
+          reserving={reserving}
+        />
       </div>
     </div>
   );
+}
+
+/**
+ * Menú lateral de secciones con nombre, tipo y precio.
+ * Click en una sección activa el filtro (solo esa sección es seleccionable).
+ */
+function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelectedSectionFilter, seats, showToast }) {
+  // Mapear eventSectionId de la sección backend con los elementos de layout
+  const sectionsWithLayout = sections.filter((sec) =>
+    layoutElements.some((el) => el.backendSectionId === sec.eventSectionId)
+  );
+
+  return (
+    <div
+      className="w-56 shrink-0 rounded-xl p-4 space-y-2"
+      style={{
+        background: 'rgba(0,0,0,0.2)',
+        border: '1px solid rgba(167,139,250,0.15)',
+      }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
+          Secciones
+        </h3>
+        {selectedSectionFilter && (
+          <button
+            onClick={() => setSelectedSectionFilter(null)}
+            className="text-xs px-2 py-1 rounded transition-all"
+            style={{
+              background: 'rgba(167,139,250,0.2)',
+              color: '#c4b5fd',
+            }}
+          >
+            Ver todas
+          </button>
+        )}
+      </div>
+      {sectionsWithLayout.map((sec) => {
+        const isActive = selectedSectionFilter === sec.eventSectionId;
+        return (
+          <button
+            key={sec.eventSectionId}
+            onClick={() => {
+              // CASO 5: Detectar sección sin sillas disponibles
+              if (!isActive) {
+                const sectionSeats = Object.values(seats).filter(
+                  (seat) => seat.eventSectionId === sec.eventSectionId
+                );
+                const availableSeats = sectionSeats.filter((seat) => seat.status === 'AVAILABLE');
+                if (availableSeats.length === 0 && sectionSeats.length > 0) {
+                  showToast('section-no-seats', 'Se agotaron las sillas disponibles en esta sección', 'warning');
+                }
+              }
+              
+              setSelectedSectionFilter(isActive ? null : sec.eventSectionId);
+            }}
+            className="w-full text-left p-3 rounded-lg transition-all"
+            style={{
+              background: isActive
+                ? 'rgba(167,139,250,0.25)'
+                : 'rgba(167,139,250,0.08)',
+              border: `1px solid ${
+                isActive ? 'rgba(167,139,250,0.5)' : 'rgba(167,139,250,0.15)'
+              }`,
+            }}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold truncate" style={{ color: '#e9d5ff' }}>
+                  {sec.sectionTypeName}
+                </div>
+                <div className="text-xs mt-1" style={{ color: 'rgba(196,181,253,0.6)' }}>
+                  {sec.availableSeats}/{sec.capacity}
+                </div>
+              </div>
+              <div className="text-sm font-bold shrink-0" style={{ color: '#a78bfa' }}>
+                ${sec.price?.toFixed(2) ?? '0.00'}
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Renderiza una sección con sus sillas clickeables.
+ */
+function SectionRenderer({
+  section,
+  sections,
+  seatsBySection,
+  currentUserId,
+  reserving,
+  cart,
+  selectedQuantity,
+  selectedSectionFilter,
+  onReserveSeat,
+  onReleaseSeat,
+  onSectionClick,
+  showToast,
+  hasMultipleSubSections,
+  currentSubSections,
+  currentRowPage,
+  currentColPage,
+}) {
+  const shapeMode = section.shapeMode ?? 'rect';
+  const workPoints = useMemo(() => {
+    if (shapeMode === 'polygon' && section.polygonPoints) {
+      return migratePolygonPoints(section.polygonPoints);
+    }
+    return null;
+  }, [shapeMode, section.polygonPoints]);
+
+  const seatLayout = useMemo(() => {
+    const result = distributeSeats(section);
+    // Manejar tanto el formato anterior (array directo) como el nuevo (objeto con estructura)
+    if (Array.isArray(result)) {
+      // Formato anterior: array directo de posiciones
+      return {
+        positions: result,
+        rowStructure: [],
+        isUniformGrid: true
+      };
+    }
+    // Formato nuevo: objeto con estructura de filas
+    return result;
+  }, [section]);
+
+  const seatPositions = seatLayout.positions;
+
+  // Derivar información de grilla desde seatLayout
+  const gridInfo = useMemo(() => {
+    if (seatPositions.length === 0 || selectedSectionFilter === null) {
+      return { totalRows: 0, totalCols: 0, maxColsInAnyRow: 0, maxColsInVisibleRows: 0, rowsWithSeatsInColRange: 0 };
+    }
+
+    const { rowStructure, isUniformGrid } = seatLayout;
+    
+    if (isUniformGrid && rowStructure.length > 0) {
+      // Rectángulo: estructura uniforme
+      const totalRows = rowStructure.length;
+      const totalCols = Math.max(...rowStructure);
+      
+      // Calcular máximo de columnas en filas visibles
+      const rowStart = currentRowPage * 10;
+      const rowEnd = Math.min(totalRows, rowStart + 10);
+      const visibleRowStructure = rowStructure.slice(rowStart, rowEnd);
+      const maxColsInVisibleRows = visibleRowStructure.length > 0 ? Math.max(...visibleRowStructure) : totalCols;
+      
+      // NUEVO: Calcular cuántas filas tienen sillas en el rango de columnas actual
+      const colStart = currentColPage * 10;
+      const colEnd = Math.min(totalCols, colStart + 10);
+      let rowsWithSeatsInColRange = 0;
+      for (let rowIdx = 0; rowIdx < rowStructure.length; rowIdx++) {
+        const seatsInRow = rowStructure[rowIdx];
+        if (seatsInRow > colStart) {
+          rowsWithSeatsInColRange++;
+        }
+      }
+      
+      return { totalRows, totalCols, maxColsInAnyRow: totalCols, maxColsInVisibleRows, rowsWithSeatsInColRange, rowStructure };
+    } else {
+      // Polígono: estructura variable
+      const totalRows = rowStructure.length;
+      const maxColsInAnyRow = Math.max(...rowStructure, 0);
+      
+      // Calcular máximo de columnas en filas visibles para polígonos irregulares
+      const rowStart = currentRowPage * 10;
+      const rowEnd = Math.min(totalRows, rowStart + 10);
+      const visibleRowStructure = rowStructure.slice(rowStart, rowEnd);
+      const maxColsInVisibleRows = visibleRowStructure.length > 0 ? Math.max(...visibleRowStructure, 0) : maxColsInAnyRow;
+      
+      // NUEVO: Calcular cuántas filas tienen sillas en el rango de columnas actual (polígonos irregulares)
+      const colStart = currentColPage * 10;
+      const colEnd = Math.min(maxColsInAnyRow, colStart + 10);
+      let rowsWithSeatsInColRange = 0;
+      for (let rowIdx = 0; rowIdx < rowStructure.length; rowIdx++) {
+        const seatsInRow = rowStructure[rowIdx];
+        // Si esta fila tiene sillas que se intersectan con el rango de columnas actual
+        if (seatsInRow > colStart) {
+          rowsWithSeatsInColRange++;
+        }
+      }
+      
+      return { totalRows, totalCols: maxColsInAnyRow, maxColsInAnyRow, maxColsInVisibleRows, rowsWithSeatsInColRange, rowStructure };
+    }
+  }, [seatLayout, selectedSectionFilter, currentRowPage, currentColPage]);
+
+  // SLICE por índice discreto respetando estructura real de filas y columnas dinámicas
+  const pageFilteredSeatsWithIndices = useMemo(() => {
+    // Usar función pura compartida
+    return filterSeatsByPage(
+      seatPositions, 
+      gridInfo, 
+      currentColPage, 
+      currentRowPage, 
+      selectedSectionFilter === null
+    );
+  }, [seatPositions, gridInfo, selectedSectionFilter, currentColPage, currentRowPage]);
+
+  // Extraer solo las posiciones para el cálculo del bounding box
+  const pageFilteredSeatPositions = useMemo(() => {
+    return pageFilteredSeatsWithIndices.map(item => item.pos);
+  }, [pageFilteredSeatsWithIndices]);
+
+  // Calcular el fondo basado en las sillas filtradas (bounding box del subconjunto)
+  const backgroundRect = useMemo(() => {
+    if (selectedSectionFilter === null || pageFilteredSeatPositions.length === 0) {
+      // Vista general → usar dimensiones completas de la sección
+      return {
+        x: 0,
+        y: 0,
+        width: section.width,
+        height: section.height
+      };
+    }
+
+    // Vista enfocada → calcular bounding box de las sillas de la página actual
+    const positions = pageFilteredSeatPositions;
+    const seatRadius = positions[0]?.r || 7;
+    
+    const minX = Math.min(...positions.map(p => p.x)) - seatRadius;
+    const maxX = Math.max(...positions.map(p => p.x)) + seatRadius;
+    const minY = Math.min(...positions.map(p => p.y)) - seatRadius;
+    const maxY = Math.max(...positions.map(p => p.y)) + seatRadius;
+
+    // Expandir el bounding box con margen visual simétrico
+    const SEAT_VIEW_MARGIN = 24; // Debe coincidir con calculateFraming
+    
+    return {
+      x: minX - SEAT_VIEW_MARGIN,
+      y: minY - SEAT_VIEW_MARGIN,
+      width: (maxX - minX) + (SEAT_VIEW_MARGIN * 2),
+      height: (maxY - minY) + (SEAT_VIEW_MARGIN * 2)
+    };
+  }, [selectedSectionFilter, pageFilteredSeatPositions, section.width, section.height]);
+
+  const labelCenter = useMemo(() => {
+    if (shapeMode === 'polygon' && workPoints) {
+      return polyCentroid(workPoints);
+    }
+    return { x: section.width / 2, y: section.height / 2 };
+  }, [shapeMode, workPoints, section.width, section.height]);
+
+  // P3: leer directamente del índice pre-calculado en lugar de filtrar+ordenar seats completo
+  const allSectionSeats = seatsBySection[section.backendSectionId] ?? [];
+
+  // Calcular offset de este elemento específico
+  const elementOffset = useMemo(() => {
+    return calculateSeatOffsetWeb(section, currentSubSections);
+  }, [section, currentSubSections]);
+
+  // Encontrar el precio de esta sección
+  const sectionData = sections.find((s) => s.eventSectionId === section.backendSectionId);
+  const sectionPrice = sectionData?.price ?? 0;
+
+  // En vista general (sin filtro), las sillas no son clickeables, solo la sección
+  const inOverviewMode = selectedSectionFilter === null;
+
+  return (
+    <Group x={section.x} y={section.y} rotation={section.rotation ?? 0}>
+      {/* Fondo de la sección - basado en bounding box de sillas filtradas */}
+      {shapeMode === 'polygon' && workPoints ? (
+        <Shape
+          sceneFunc={(ctx, shape) => {
+            ctx.beginPath();
+            ctx.moveTo(workPoints[0].x, workPoints[0].y);
+            for (let i = 0; i < workPoints.length; i++) {
+              const curr = workPoints[i];
+              const next = workPoints[(i + 1) % workPoints.length];
+              if (curr.handleOut && next.handleIn) {
+                ctx.bezierCurveTo(
+                  curr.handleOut.x,
+                  curr.handleOut.y,
+                  next.handleIn.x,
+                  next.handleIn.y,
+                  next.x,
+                  next.y
+                );
+              } else {
+                ctx.lineTo(next.x, next.y);
+              }
+            }
+            ctx.closePath();
+            ctx.fillStrokeShape(shape);
+          }}
+          fill={section.color}
+          opacity={inOverviewMode ? 0.5 : 0.3}
+          stroke={inOverviewMode ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)'}
+          strokeWidth={inOverviewMode ? 2 : 1}
+          listening={inOverviewMode}
+          onClick={inOverviewMode ? onSectionClick : undefined}
+          onTap={inOverviewMode ? onSectionClick : undefined}
+          cursor={inOverviewMode ? 'pointer' : 'default'}
+        />
+      ) : (
+        <Rect
+          x={backgroundRect.x}
+          y={backgroundRect.y}
+          width={backgroundRect.width}
+          height={backgroundRect.height}
+          fill={section.color}
+          opacity={inOverviewMode ? 0.5 : 0.3}
+          cornerRadius={6}
+          stroke={inOverviewMode ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)'}
+          strokeWidth={inOverviewMode ? 2 : 1}
+          listening={inOverviewMode}
+          onClick={inOverviewMode ? onSectionClick : undefined}
+          onTap={inOverviewMode ? onSectionClick : undefined}
+          cursor={inOverviewMode ? 'pointer' : 'default'}
+        />
+      )}
+
+      {/* Label de la sección con precio */}
+      <Text
+        x={labelCenter.x}
+        y={labelCenter.y - 15}
+        text={section.label}
+        fontSize={14}
+        fontStyle="bold"
+        fill="#ffffff"
+        align="center"
+        offsetX={0}
+        listening={false}
+      />
+      <Text
+        x={labelCenter.x}
+        y={labelCenter.y + 2}
+        text={`$${sectionPrice.toFixed(2)}`}
+        fontSize={11}
+        fill="rgba(196,181,253,0.8)"
+        align="center"
+        offsetX={0}
+        listening={false}
+      />
+
+      {/* Sillas individuales - solo las de la página actual */}
+      {/* canSelectMore: booleano estable por render del padre — reemplaza pasar cart completo a SeatCircle */}
+      {!inOverviewMode && (() => {
+        const canSelectMore = cart.length < selectedQuantity;
+        return pageFilteredSeatsWithIndices.map(({ pos, realIndex }) => {
+          // Aplicar offset: este elemento muestra sillas desde elementOffset
+          const seatIndex = elementOffset + realIndex;
+          const seat = allSectionSeats[seatIndex];
+
+          if (!seat) return null;
+
+          return (
+            <SeatCircle
+              key={seat.seatId}
+              seatId={seat.seatId}
+              seat={seat}
+              position={pos}
+              currentUserId={currentUserId}
+              isReserving={reserving.has(seat.seatId)}
+              canSelectMore={canSelectMore}
+              isSectionFiltered={false}
+              onReserve={onReserveSeat}
+              onRelease={onReleaseSeat}
+              showToast={showToast}
+            />
+          );
+        });
+      })()}
+    </Group>
+  );
+}
+
+/**
+ * Círculo individual de silla con lógica de color y click.
+ * Si hay un filtro de sección activo y esta silla no pertenece a esa sección,
+ * se muestra atenuada y no es clickeable.
+ *
+ * P2: React.memo con comparación custom — solo re-renderiza si cambian propiedades
+ * que afectan su apariencia o comportamiento (status, reservedBy, reservedUntil,
+ * isReserving, selectedQuantity, cart.length, position.x/y/r).
+ * Las referencias de onReserve/onRelease son estables gracias a P4+P5.
+ *
+ * P5: recibe seatId como prop y llama onReserve(seatId) internamente en lugar de
+ * recibir una lambda ya bindeada que se crearía nueva en cada render del padre.
+ */
+const SeatCircle = React.memo(function SeatCircle({
+  seatId,
+  seat,
+  position,
+  currentUserId,
+  isReserving,
+  canSelectMore,
+  isSectionFiltered,
+  onReserve,
+  onRelease,
+  showToast,
+}) {
+  const isMyReservation = seat.status === 'RESERVED' && seat.reservedBy === currentUserId;
+  const isOtherReservation = seat.status === 'RESERVED' && seat.reservedBy !== currentUserId;
+  let fillColor;
+  if (isSectionFiltered)        fillColor = '#4B5563';
+  else if (isReserving)         fillColor = '#9CA3AF';
+  else if (seat.status === 'AVAILABLE')  fillColor = '#10B981';
+  else if (isMyReservation)     fillColor = '#3B82F6';
+  else if (isOtherReservation)  fillColor = '#FBBF24';
+  else if (seat.status === 'SOLD')      fillColor = '#6B7280';
+  else if (seat.status === 'COURTESY')  fillColor = '#8B5CF6';
+  else                          fillColor = '#6B7280';
+
+  const isClickable =
+    !isSectionFiltered && (seat.status === 'AVAILABLE' || isMyReservation);
+
+  const handleClick = () => {
+    if (!isClickable || isReserving) return;
+    if (isMyReservation) {
+      onRelease(seatId);
+    } else if (seat.status === 'AVAILABLE') {
+      // CASO 1: Validar cantidad antes de reservar
+      if (!canSelectMore) {
+        showToast('stepper-limit', 'Agregá una silla más para poder seleccionar', 'warning');
+        return;
+      }
+      onReserve(seatId);
+    }
+  };
+
+  return (
+    <Circle
+      x={position.x}
+      y={position.y}
+      radius={position.r}
+      fill={fillColor}
+      opacity={isSectionFiltered ? 0.3 : 0.9}
+      stroke={isMyReservation ? '#ffffff' : 'rgba(255,255,255,0.3)'}
+      strokeWidth={isMyReservation ? 2 : 1}
+      listening={isClickable && !isReserving}
+      onClick={handleClick}
+      onTap={handleClick}
+      cursor={isClickable ? 'pointer' : 'default'}
+    />
+  );
+}, (prev, next) => {
+  // Devolver true = NO re-renderizar (son iguales)
+  return (
+    prev.seat.status       === next.seat.status       &&
+    prev.seat.reservedBy   === next.seat.reservedBy   &&
+    prev.seat.reservedUntil === next.seat.reservedUntil &&
+    prev.isReserving       === next.isReserving        &&
+    prev.canSelectMore     === next.canSelectMore      &&
+    prev.isSectionFiltered === next.isSectionFiltered  &&
+    prev.position.x        === next.position.x         &&
+    prev.position.y        === next.position.y         &&
+    prev.position.r        === next.position.r         &&
+    prev.onReserve         === next.onReserve          &&
+    prev.onRelease         === next.onRelease          &&
+    prev.showToast         === next.showToast
+  );
+});
+
+/**
+ * Panel lateral con el carrito de sillas reservadas.
+ */
+function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving }) {
+  const totalPrice = cart.reduce((sum, seat) => {
+    const section = sections.find((s) => s.eventSectionId === seat.eventSectionId);
+    return sum + (section?.price ?? 0);
+  }, 0);
+
+  if (cart.length === 0) {
+    return (
+      <div
+        className="w-60 shrink-0 rounded-xl p-3"
+        style={{
+          background: 'rgba(0,0,0,0.2)',
+          border: '1px solid rgba(167,139,250,0.15)',
+        }}
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <ShoppingCart className="w-4 h-4" style={{ color: '#a78bfa' }} />
+          <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
+            Tu Carrito
+          </h3>
+        </div>
+        <p className="text-xs text-center py-6" style={{ color: 'rgba(196,181,253,0.5)' }}>
+          No has seleccionado ninguna silla
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="w-60 shrink-0 rounded-xl p-3 flex flex-col"
+      style={{
+        background: 'rgba(0,0,0,0.2)',
+        border: '1px solid rgba(167,139,250,0.15)',
+      }}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <ShoppingCart className="w-4 h-4" style={{ color: '#a78bfa' }} />
+        <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
+          Tu Carrito
+        </h3>
+        <span className="ml-auto text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
+          ({cart.length})
+        </span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto space-y-2 max-h-80">
+        {cart.map((seat) => {
+          const section = sections.find((s) => s.eventSectionId === seat.eventSectionId);
+          return (
+            <CartItem
+              key={seat.seatId}
+              seat={seat}
+              section={section}
+              onRelease={() => onReleaseSeat(seat.seatId)}
+              onExpire={onSeatExpire}
+              isReleasing={reserving.has(seat.seatId)}
+            />
+          );
+        })}
+      </div>
+
+      <div className="mt-3 pt-3 space-y-2" style={{ borderTop: '1px solid rgba(167,139,250,0.15)' }}>
+        <div className="flex items-center justify-between text-sm">
+          <span style={{ color: 'rgba(196,181,253,0.75)' }}>Total</span>
+          <span className="font-bold text-base" style={{ color: '#a78bfa' }}>
+            ${totalPrice.toFixed(2)}
+          </span>
+        </div>
+        <button
+          className="w-full py-2 rounded-lg font-semibold transition-all text-sm"
+          style={{
+            background: 'linear-gradient(135deg, #6d28d9 0%, #a78bfa 100%)',
+            color: '#ffffff',
+          }}
+          disabled={cart.length === 0}
+        >
+          Continuar al Pago
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Item individual en el carrito con countdown.
+ */
+function CartItem({ seat, section, onRelease, onExpire, isReleasing }) {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    if (!seat.reservedUntil) return;
+
+    const updateTimer = () => {
+      const now = new Date();
+      const until = new Date(seat.reservedUntil);
+      const diffMs = until - now;
+
+      if (diffMs <= 0) {
+        setTimeLeft('Expirado');
+        // Deselección optimista: liberar inmediatamente en el cliente
+        // sin esperar el evento de WebSocket del scheduler
+        if (onExpire) {
+          onExpire(seat.seatId);
+        }
+        return;
+      }
+
+      const minutes = Math.floor(diffMs / 1000 / 60);
+      const seconds = Math.floor((diffMs / 1000) % 60);
+      setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(interval);
+  }, [seat.reservedUntil, seat.seatId, onExpire]);
+
+  return (
+    <div
+      className="rounded-lg p-2 flex items-center gap-2"
+      style={{
+        background: 'rgba(167,139,250,0.1)',
+        border: '1px solid rgba(167,139,250,0.2)',
+      }}
+    >
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-xs truncate" style={{ color: '#e9d5ff' }}>
+          {seat.code}
+        </p>
+        <p className="text-xs truncate" style={{ color: 'rgba(196,181,253,0.6)' }}>
+          {section?.sectionTypeName ?? 'Sección'}
+        </p>
+        <div className="flex items-center justify-between mt-1">
+          <div className="flex items-center gap-1 text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
+            <Clock className="w-3 h-3" />
+            <span>{timeLeft}</span>
+          </div>
+          <span className="text-xs font-semibold" style={{ color: '#a78bfa' }}>
+            ${section?.price?.toFixed(2) ?? '0.00'}
+          </span>
+        </div>
+      </div>
+      <button
+        onClick={onRelease}
+        disabled={isReleasing}
+        className="p-1 rounded transition-all disabled:opacity-50 shrink-0"
+        style={{
+          background: 'rgba(239,68,68,0.15)',
+        }}
+        title="Liberar silla"
+      >
+        <X className="w-3 h-3" style={{ color: '#ef4444' }} />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Calcula el offset (índice de inicio) de un elemento específico dentro del array
+ * ordenado de sillas de toda la sección lógica (versión web).
+ * 
+ * CRÍTICO: debe usar el mismo orden que generateContinuousSeatsForSection()
+ * (por originalIndex en el backend).
+ */
+function calculateSeatOffsetWeb(currentSection, orderedSubSections) {
+  if (!orderedSubSections || orderedSubSections.length <= 1) {
+    return 0; // Si no hay múltiples sub-secciones, no hay offset
+  }
+  
+  // Encontrar el índice de este elemento en el array ordenado
+  const elementIndex = orderedSubSections.findIndex(el => el.id === currentSection.id);
+  
+  if (elementIndex === -1) return 0;
+  
+  // Sumar targetSeats de todos los elementos anteriores
+  let offset = 0;
+  for (let i = 0; i < elementIndex; i++) {
+    const element = orderedSubSections[i];
+    offset += element.seatLayout?.targetSeats ?? 0;
+  }
+  
+  return offset;
+}
+
+/**
+ * Función pura para filtrar sillas por página actual.
+ * Extrae la lógica de pageFilteredSeatsWithIndices para reutilización.
+ * 
+ * @param {Array} seatPositions - Array de posiciones de sillas
+ * @param {Object} gridInfo - Info de grilla con rowStructure y maxColsInVisibleRows  
+ * @param {number} currentColPage - Página actual de columnas (0-indexed)
+ * @param {number} currentRowPage - Página actual de filas (0-indexed)
+ * @param {boolean} isOverview - Si es true, retorna array vacío (overview no filtra sillas)
+ * @returns {Array} Array de {pos, realIndex} para las sillas de la página actual
+ */
+function filterSeatsByPage(seatPositions, gridInfo, currentColPage, currentRowPage, isOverview = false) {
+  // P1: en overview nunca dibujamos sillas individuales, devolver array vacío
+  if (isOverview || !gridInfo || gridInfo.totalRows === 0 || !seatPositions) {
+    return [];
+  }
+
+  const { rowStructure, maxColsInVisibleRows } = gridInfo;
+
+  // NUEVO: Filtrar filas que tienen sillas en el rango de columnas actual
+  const colStart = currentColPage * 10;
+  const colEnd = Math.min(maxColsInVisibleRows, colStart + 10);
+  
+  // Identificar qué filas tienen al menos una silla en el rango de columnas actual
+  const validRowIndices = [];
+  for (let rowIdx = 0; rowIdx < rowStructure.length; rowIdx++) {
+    const seatsInRow = rowStructure[rowIdx];
+    if (seatsInRow > colStart) {
+      validRowIndices.push(rowIdx);
+    }
+  }
+  
+  // Aplicar paginación de filas sobre las filas válidas
+  const validRowStart = currentRowPage * 10;
+  const validRowEnd = Math.min(validRowIndices.length, validRowStart + 10);
+  const visibleValidRowIndices = validRowIndices.slice(validRowStart, validRowEnd);
+
+  const filteredSeats = [];
+  let globalIndex = 0;
+
+  // Iterar por todas las filas para mantener el índice global correcto
+  for (let rowIndex = 0; rowIndex < rowStructure.length; rowIndex++) {
+    const seatsInThisRow = rowStructure[rowIndex];
+    
+    // Si esta fila está en el conjunto de filas válidas y visibles
+    if (visibleValidRowIndices.includes(rowIndex)) {
+      // Calcular qué columnas de esta fila están en el rango de columnas actual
+      const effectiveColsForPagination = Math.min(seatsInThisRow, maxColsInVisibleRows);
+      const colEnd = Math.min(effectiveColsForPagination, colStart + 10);
+      
+      // Solo agregar sillas si están en el rango válido de columnas para esta fila específica
+      for (let colIndex = colStart; colIndex < colEnd && colIndex < seatsInThisRow; colIndex++) {
+        const seatIndexInRow = globalIndex + colIndex;
+        if (seatIndexInRow < seatPositions.length) {
+          filteredSeats.push({
+            pos: seatPositions[seatIndexInRow],
+            realIndex: seatIndexInRow
+          });
+        }
+      }
+    }
+    
+    // Avanzar el índice global por todas las sillas de esta fila
+    globalIndex += seatsInThisRow;
+  }
+
+  return filteredSeats;
 }
