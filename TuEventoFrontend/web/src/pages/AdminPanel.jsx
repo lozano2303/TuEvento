@@ -3,6 +3,7 @@ import { Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, User
 import { approveOrganizerRequest, rejectOrganizerRequest } from '../services/OrganizerPetitionService';
 import { performLogout, httpRequest } from '../services/httpClient';
 import { useNavigate } from 'react-router-dom';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -17,6 +18,7 @@ export default function AdminPanel() {
   const [documentLoading, setDocumentLoading] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(null); // { type: 'approve'|'reject', req }
 
   const navigate = useNavigate();
 
@@ -134,39 +136,31 @@ export default function AdminPanel() {
 
   const handleApprove = async (req) => {
     if (!req || req.status !== 'PENDING') return;
-
-    const confirmed = window.confirm(
-      `¿Aprobar la solicitud de ${req.fullName || 'este usuario'}? El usuario recibirá el rol de Organizador al iniciar sesión nuevamente.`
-    );
-    if (!confirmed) return;
-
-    setActionLoading(true);
-    setError(null);
-    try {
-      await approveOrganizerRequest(req.organizerPetitionId);
-      closeDocumentModal();
-      await fetchRequests();
-    } catch (err) {
-      setError(err.message || 'Error al aprobar solicitud');
-    } finally {
-      setActionLoading(false);
-    }
+    setConfirmModal({ type: 'approve', req });
   };
 
   const handleReject = async (req) => {
     if (!req) return;
+    setConfirmModal({ type: 'reject', req });
+  };
 
-    const confirmed = window.confirm(`¿Rechazar la solicitud de ${req.fullName || 'este usuario'}? El usuario podrá enviar un nuevo documento.`);
-    if (!confirmed) return;
-
+  const executeConfirmedAction = async () => {
+    if (!confirmModal) return;
+    const { type, req } = confirmModal;
     setActionLoading(true);
     setError(null);
     try {
-      await rejectOrganizerRequest(req.organizerPetitionId);
+      if (type === 'approve') {
+        await approveOrganizerRequest(req.organizerPetitionId);
+      } else {
+        await rejectOrganizerRequest(req.organizerPetitionId);
+      }
+      setConfirmModal(null);
       closeDocumentModal();
       await fetchRequests();
     } catch (err) {
-      setError(err.message || 'Error al rechazar solicitud');
+      setError(err.message || `Error al ${type === 'approve' ? 'aprobar' : 'rechazar'} solicitud`);
+      setConfirmModal(null);
     } finally {
       setActionLoading(false);
     }
@@ -504,6 +498,27 @@ export default function AdminPanel() {
 
         </div>
       </main>
+
+      {/* ── Confirm Modal: Aprobar / Rechazar ─────────────────────────────── */}
+      <ConfirmModal
+        isOpen={!!confirmModal}
+        title={
+          confirmModal?.type === 'approve'
+            ? `¿Aprobar a ${confirmModal.req.fullName || 'este usuario'}?`
+            : `¿Rechazar a ${confirmModal?.req.fullName || 'este usuario'}?`
+        }
+        message={
+          confirmModal?.type === 'approve'
+            ? 'El usuario recibirá el rol de Organizador al iniciar sesión nuevamente.'
+            : 'El usuario podrá enviar un nuevo documento de solicitud.'
+        }
+        confirmLabel={confirmModal?.type === 'approve' ? 'Aprobar' : 'Rechazar'}
+        cancelLabel="Cancelar"
+        confirmStyle={confirmModal?.type === 'approve' ? 'primary' : 'danger'}
+        loading={actionLoading}
+        onConfirm={executeConfirmedAction}
+        onCancel={() => setConfirmModal(null)}
+      />
     </div>
   );
 }
