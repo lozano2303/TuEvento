@@ -50,9 +50,15 @@ public class AdminChangeEventStatusUseCase implements AdminChangeEventStatusPort
         validateTransition(event.getStatus(), request.getNewStatus());
 
         if (request.getNewStatus() == EventStatus.PUBLISHED) {
-            if (eventMediaRepository.countByEventId(eventId) == 0) {
-                throw new BusinessException("EVENT_PUBLISH_NO_MEDIA",
-                        "Event must have at least one image before publishing");
+            // Validar que tenga entre 3 y 9 imágenes (inclusive)
+            long mediaCount = eventMediaRepository.countByEventId(eventId);
+            if (mediaCount < 3) {
+                throw new BusinessException("EVENT_PUBLISH_MEDIA_COUNT_INVALID",
+                        "Event must have at least 3 images before publishing (currently has " + mediaCount + ")");
+            }
+            if (mediaCount > 9) {
+                throw new BusinessException("EVENT_PUBLISH_MEDIA_COUNT_INVALID",
+                        "Event must have at most 9 images before publishing (currently has " + mediaCount + ")");
             }
             List<EventSection> sections = eventSectionRepository.findAllByEventId(eventId.intValue());
             if (sections.isEmpty()) {
