@@ -321,7 +321,7 @@ function getSeatColor(seat, currentUserId, isSectionFiltered = false) {
   if (seat.status === "AVAILABLE") return "#10B981";      // Verde para disponibles
   if (isMyReservation) return "#3B82F6";                  // Azul para mis reservas  
   if (isOtherReservation) return "#FBBF24";               // Amarillo para reservas de otros
-  if (seat.status === "SOLD") return "#6B7280";           // Gris para vendidas
+  if (seat.status === "SOLD") return "#9CA3AF";           // Gris claro para vendidas/ocupadas
   if (seat.status === "COURTESY") return "#8B5CF6";       // Púrpura para cortesías
   
   return "#6B7280"; // Gris por defecto
