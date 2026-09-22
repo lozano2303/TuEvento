@@ -1,30 +1,42 @@
 databaseChangeLog:
   - changeSet:
-      id: 064-create-order-table
+      id: 069-create-payment-table
       author: capysoft
       changes:
         - createTable:
-            tableName: order
+            tableName: payment
             columns:
               - column:
-                  name: order_id
+                  name: payment_id
                   type: BIGINT
                   autoIncrement: true
                   constraints:
                     primaryKey: true
                     nullable: false
               - column:
-                  name: user_id
+                  name: order_id
                   type: BIGINT
                   constraints:
                     nullable: false
               - column:
-                  name: event_id
-                  type: BIGINT
+                  name: gateway
+                  type: VARCHAR(20)
                   constraints:
                     nullable: false
               - column:
-                  name: total_amount
+                  name: gateway_transaction_id
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  defaultValue: "PENDING"
+              - column:
+                  name: amount
                   type: DECIMAL(19, 4)
                   constraints:
                     nullable: false
@@ -35,11 +47,11 @@ databaseChangeLog:
                     nullable: false
                   defaultValue: "COP"
               - column:
-                  name: status
+                  name: payment_method
                   type: VARCHAR(20)
-                  constraints:
-                    nullable: false
-                  defaultValue: "DRAFT"
+              - column:
+                  name: processed_at
+                  type: TIMESTAMP
               - column:
                   name: created_at
                   type: TIMESTAMP
@@ -57,16 +69,14 @@ databaseChangeLog:
                   name: updated_by
                   type: VARCHAR(100)
         - addForeignKeyConstraint:
-            baseTableName: order
-            baseColumnNames: user_id
-            referencedTableName: app_user
-            referencedColumnNames: user_id
-            constraintName: fk_order_user
-        - addForeignKeyConstraint:
-            baseTableName: order
-            baseColumnNames: event_id
-            referencedTableName: event
-            referencedColumnNames: event_id
-            constraintName: fk_order_event
+            baseTableName: payment
+            baseColumnNames: order_id
+            referencedTableName: order
+            referencedColumnNames: order_id
+            constraintName: fk_payment_order
         - sql:
-            sql: "ALTER TABLE \"order\" ADD CONSTRAINT chk_order_status CHECK (status IN ('DRAFT', 'PAYMENT_PENDING', 'PAID', 'CANCELLED', 'REFUNDED', 'USED'));"
+            sql: "ALTER TABLE payment ADD CONSTRAINT chk_payment_status CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'ERROR', 'REFUNDED'));"
+        - sql:
+            sql: "ALTER TABLE payment ADD CONSTRAINT chk_payment_gateway CHECK (gateway IN ('FAKE', 'WOMPI'));"
+        - sql:
+            sql: "ALTER TABLE payment ADD CONSTRAINT chk_payment_method CHECK (payment_method IN ('CARD', 'PSE', 'NEQUI', 'CASH', 'QR'));"

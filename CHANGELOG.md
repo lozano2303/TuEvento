@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Payment Module (Backend)**: Módulo completo de gestión de pagos integrado con fake-payment-gateway y ticket module, siguiendo arquitectura DDD + Hexagonal
+  - **Dominio puro**: Payment (aggregate root) con estados (PENDING→APPROVED|REJECTED|ERROR, APPROVED→REFUNDED), PaymentGateway enum (FAKE, WOMPI - Wompi sin implementar), PaymentMethod enum (CARD, PSE, NEQUI, CASH, QR), PaymentLog (auditoría), TransactionWebhook (recepción de eventos con gatewayEventId UNIQUE para idempotencia), Refund (estructura sin use cases)
+  - **Repositorios de dominio**: PaymentRepository, PaymentLogRepository, TransactionWebhookRepository, RefundRepository con implementaciones JPA
+  - **Application layer**: CreatePaymentUseCaseImpl (transiciona Order a PAYMENT_PENDING vía InitiateOrderPaymentUseCase, crea pago en gateway, persiste Payment PENDING local), GetPaymentUseCaseImpl, ProcessWebhookUseCaseImpl (verifica firma HMAC-SHA256, idempotencia, actualiza Payment, llama a ConfirmOrderPaymentUseCase/FailOrderPaymentUseCase)
+  - **PaymentGatewayPort**: Contrato genérico (createPayment, getPayment, cancelPayment, processWebhook) - sin acoplamiento a proveedores específicos
+  - **FakePaymentGatewayAdapter**: Implementación con RestTemplate hacia fake-payment-gateway:4001, mapeo de DTOs genéricos a API del fake-gateway, verificación HMAC-SHA256 de webhooks, activado vía @ConditionalOnProperty(payment.gateway=fake)
+  - **REST endpoints**: POST /api/v1/payments (crear pago), GET /api/v1/payments/{id}, POST /api/v1/webhooks/payment (público, sin JWT, autenticación HMAC)
+  - **Liquibase changesets**: payment, payment_log, transaction_webhook (gateway_event_id UNIQUE), refund (069-072) con constraints, FKs, audit columns, índices
+  - **Configuración**: Variables PAYMENT_GATEWAY, FAKE_GATEWAY_URL, WEBHOOK_SECRET en .env y application-dev.yaml
+  - **SecurityConfig**: Endpoint /api/v1/webhooks/** agregado a PUBLIC_ENDPOINTS
+  - **Integración completa**: Flujo selección→orden DRAFT→pago PENDING→webhook→orden PAID/CANCELLED con liberación de sillas
+  - **InitiateOrderPaymentUseCase**: Agregado en módulo ticket para transición Order DRAFT→PAYMENT_PENDING con validación y auditoría
+
 - **Ticket Module (Backend)**: Módulo completo de gestión de órdenes y tickets siguiendo arquitectura DDD + Hexagonal
   - **Dominio puro**: Order (aggregate root) con máquina de estados (DRAFT→PAYMENT_PENDING→PAID→USED, PAID→REFUNDED, transiciones validadas), Ticket (aggregate root) con estados (PENDING, PROCESSING, PAID, REFUNDED, USED, CANCELLED), Money (value object), SeatTicket (precio snapshot congelado), TicketCheckin, TicketLog (auditoría inmutable)
   - **Repositorios de dominio**: OrderRepository, TicketRepository, SeatTicketRepository, TicketCheckinRepository, TicketLogRepository con implementaciones JPA en infraestructura

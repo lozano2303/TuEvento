@@ -1,16 +1,27 @@
 package com.capysoft.tuevento.modules.ticket.application.usecase;
 
-import com.capysoft.tuevento.modules.ticket.application.port.in.ConfirmOrderPaymentUseCase;
-import com.capysoft.tuevento.modules.ticket.domain.model.*;
-import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
-import com.capysoft.tuevento.modules.ticket.domain.repository.TicketLogRepository;
-import com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import com.capysoft.tuevento.modules.seat.application.dto.request.UpdateSeatStatusRequest;
+import com.capysoft.tuevento.modules.seat.application.port.in.SeatUseCase;
+import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
+import com.capysoft.tuevento.modules.ticket.application.port.in.ConfirmOrderPaymentUseCase;
+import com.capysoft.tuevento.modules.ticket.domain.model.Order;
+import com.capysoft.tuevento.modules.ticket.domain.model.OrderNotFoundException;
+import com.capysoft.tuevento.modules.ticket.domain.model.SeatTicket;
+import com.capysoft.tuevento.modules.ticket.domain.model.Ticket;
+import com.capysoft.tuevento.modules.ticket.domain.model.TicketLog;
+import com.capysoft.tuevento.modules.ticket.domain.model.TicketStatus;
+import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
+import com.capysoft.tuevento.modules.ticket.domain.repository.SeatTicketRepository;
+import com.capysoft.tuevento.modules.ticket.domain.repository.TicketLogRepository;
+import com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Implementación del puerto de entrada para confirmar pago de orden.
@@ -23,6 +34,8 @@ public class ConfirmOrderPaymentUseCaseImpl implements ConfirmOrderPaymentUseCas
     private final OrderRepository orderRepository;
     private final TicketRepository ticketRepository;
     private final TicketLogRepository ticketLogRepository;
+    private final SeatTicketRepository seatTicketRepository;
+    private final SeatUseCase seatUseCase;
     
     @Override
     @Transactional
@@ -54,7 +67,16 @@ public class ConfirmOrderPaymentUseCaseImpl implements ConfirmOrderPaymentUseCas
             ticketLogRepository.save(log);
         }
         
-        // Las sillas ya estaban reservadas desde CreateOrderWithTicketsUseCase
-        // Ahora quedan definitivamente asignadas (no se liberan)
+        // Marcar sillas como SOLD
+        for (Ticket ticket : tickets) {
+            List<SeatTicket> seatTickets = seatTicketRepository.findByTicketId(ticket.getTicketId());
+            for (SeatTicket seatTicket : seatTickets) {
+                UpdateSeatStatusRequest seatStatusRequest = UpdateSeatStatusRequest.builder()
+                    .newStatus(SeatStatus.SOLD)
+                    .reason("Payment confirmed: " + providerPaymentId)
+                    .build();
+                seatUseCase.updateSeatStatus(seatTicket.getSeatId(), seatStatusRequest, null);
+            }
+        }
     }
 }

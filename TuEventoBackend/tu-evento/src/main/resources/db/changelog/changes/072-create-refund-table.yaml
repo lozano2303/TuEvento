@@ -1,45 +1,40 @@
 databaseChangeLog:
   - changeSet:
-      id: 064-create-order-table
+      id: 072-create-refund-table
       author: capysoft
       changes:
         - createTable:
-            tableName: order
+            tableName: refund
             columns:
               - column:
-                  name: order_id
+                  name: refund_id
                   type: BIGINT
                   autoIncrement: true
                   constraints:
                     primaryKey: true
                     nullable: false
               - column:
-                  name: user_id
+                  name: payment_id
                   type: BIGINT
                   constraints:
                     nullable: false
-              - column:
-                  name: event_id
-                  type: BIGINT
-                  constraints:
-                    nullable: false
-              - column:
-                  name: total_amount
-                  type: DECIMAL(19, 4)
-                  constraints:
-                    nullable: false
-              - column:
-                  name: currency
-                  type: VARCHAR(3)
-                  constraints:
-                    nullable: false
-                  defaultValue: "COP"
               - column:
                   name: status
                   type: VARCHAR(20)
                   constraints:
                     nullable: false
-                  defaultValue: "DRAFT"
+                  defaultValue: "REQUESTED"
+              - column:
+                  name: reason
+                  type: VARCHAR(500)
+              - column:
+                  name: requested_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processed_at
+                  type: TIMESTAMP
               - column:
                   name: created_at
                   type: TIMESTAMP
@@ -57,16 +52,16 @@ databaseChangeLog:
                   name: updated_by
                   type: VARCHAR(100)
         - addForeignKeyConstraint:
-            baseTableName: order
-            baseColumnNames: user_id
-            referencedTableName: app_user
-            referencedColumnNames: user_id
-            constraintName: fk_order_user
-        - addForeignKeyConstraint:
-            baseTableName: order
-            baseColumnNames: event_id
-            referencedTableName: event
-            referencedColumnNames: event_id
-            constraintName: fk_order_event
+            baseTableName: refund
+            baseColumnNames: payment_id
+            referencedTableName: payment
+            referencedColumnNames: payment_id
+            constraintName: fk_refund_payment
         - sql:
-            sql: "ALTER TABLE \"order\" ADD CONSTRAINT chk_order_status CHECK (status IN ('DRAFT', 'PAYMENT_PENDING', 'PAID', 'CANCELLED', 'REFUNDED', 'USED'));"
+            sql: "ALTER TABLE refund ADD CONSTRAINT chk_refund_status CHECK (status IN ('REQUESTED', 'APPROVED', 'PROCESSED', 'FAILED'));"
+        - createIndex:
+            tableName: refund
+            indexName: idx_refund_payment_id
+            columns:
+              - column:
+                  name: payment_id
