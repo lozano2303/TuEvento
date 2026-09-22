@@ -1,5 +1,10 @@
 package com.capysoft.tuevento.modules.seat.application.usecase;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import com.capysoft.tuevento.modules.seat.application.dto.request.CreateSeatRequest;
 import com.capysoft.tuevento.modules.seat.application.dto.request.UpdateSeatStatusRequest;
 import com.capysoft.tuevento.modules.seat.application.dto.response.SeatLogResponse;
@@ -12,11 +17,8 @@ import com.capysoft.tuevento.modules.seat.domain.repository.SeatLogRepository;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -78,6 +80,16 @@ public class SeatService implements SeatUseCase {
                 .reason(request.getReason())
                 .build());
 
+        // Determinar si se deben limpiar los campos de reserva según el nuevo estado
+        // Regla: solo RESERVED mantiene reservedBy/reservedUntil; otros estados los limpian
+        Integer reservedBy = existing.getReservedBy();
+        LocalDateTime reservedUntil = existing.getReservedUntil();
+        
+        if (request.getNewStatus() != SeatStatus.RESERVED) {
+            reservedBy = null;
+            reservedUntil = null;
+        }
+
         Seat updated = Seat.builder()
                 .seatId(existing.getSeatId())
                 .seatBlockId(existing.getSeatBlockId())
@@ -87,8 +99,8 @@ public class SeatService implements SeatUseCase {
                 .position(existing.getPosition())
                 .type(existing.getType())
                 .status(request.getNewStatus())
-                .reservedBy(existing.getReservedBy())
-                .reservedUntil(existing.getReservedUntil())
+                .reservedBy(reservedBy)
+                .reservedUntil(reservedUntil)
                 .build();
 
         return toResponse(seatRepository.save(updated));

@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 073-fix-seat-log-status-constraints
+      author: capysoft
+      comment: "Corrige las constraints de seat_log para usar valores en MAYÚSCULAS que coincidan con EnumType.STRING"
+      changes:
+        # Eliminar constraints antiguas con valores en minúsculas
+        - sql:
+            sql: "ALTER TABLE seat_log DROP CONSTRAINT IF EXISTS chk_seat_log_old_status;"
+        - sql:
+            sql: "ALTER TABLE seat_log DROP CONSTRAINT IF EXISTS chk_seat_log_new_status;"
+        
+        # Migrar datos existentes de minúsculas a MAYÚSCULAS
+        - sql:
+            sql: |
+              UPDATE seat_log 
+              SET old_status = UPPER(old_status)
+              WHERE old_status IS NOT NULL;
+        - sql:
+            sql: |
+              UPDATE seat_log 
+              SET new_status = UPPER(new_status)
+              WHERE new_status IS NOT NULL;
+        
+        # Crear nuevas constraints con valores en MAYÚSCULAS (como los guarda JPA con EnumType.STRING)
+        - sql:
+            sql: "ALTER TABLE seat_log ADD CONSTRAINT chk_seat_log_old_status CHECK (old_status IN ('AVAILABLE', 'RESERVED', 'SOLD', 'COURTESY'));"
+        - sql:
+            sql: "ALTER TABLE seat_log ADD CONSTRAINT chk_seat_log_new_status CHECK (new_status IN ('AVAILABLE', 'RESERVED', 'SOLD', 'COURTESY'));"
