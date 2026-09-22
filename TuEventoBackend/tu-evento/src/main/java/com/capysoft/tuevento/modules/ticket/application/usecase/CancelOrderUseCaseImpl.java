@@ -1,20 +1,28 @@
 package com.capysoft.tuevento.modules.ticket.application.usecase;
 
-import com.capysoft.tuevento.modules.seat.domain.model.Seat;
-import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
-import com.capysoft.tuevento.modules.ticket.domain.model.*;
-import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
-import com.capysoft.tuevento.modules.ticket.domain.repository.SeatTicketRepository;
-import com.capysoft.tuevento.modules.ticket.domain.repository.TicketLogRepository;
-import com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import com.capysoft.tuevento.modules.seat.application.dto.request.UpdateSeatStatusRequest;
+import com.capysoft.tuevento.modules.seat.application.port.in.SeatUseCase;
+import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
+import com.capysoft.tuevento.modules.ticket.domain.model.Order;
+import com.capysoft.tuevento.modules.ticket.domain.model.OrderNotFoundException;
+import com.capysoft.tuevento.modules.ticket.domain.model.SeatTicket;
+import com.capysoft.tuevento.modules.ticket.domain.model.Ticket;
+import com.capysoft.tuevento.modules.ticket.domain.model.TicketLog;
+import com.capysoft.tuevento.modules.ticket.domain.model.TicketStatus;
+import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
+import com.capysoft.tuevento.modules.ticket.domain.repository.SeatTicketRepository;
+import com.capysoft.tuevento.modules.ticket.domain.repository.TicketLogRepository;
+import com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Use case para cancelar una orden.
@@ -27,8 +35,8 @@ public class CancelOrderUseCaseImpl {
     private final OrderRepository orderRepository;
     private final TicketRepository ticketRepository;
     private final SeatTicketRepository seatTicketRepository;
-    private final SeatRepository seatRepository;
     private final TicketLogRepository ticketLogRepository;
+    private final SeatUseCase seatUseCase;
     
     @Transactional
     public void execute(Long orderId) {
@@ -60,28 +68,23 @@ public class CancelOrderUseCaseImpl {
             ticketLogRepository.save(log);
         }
         
-        // Liberar las sillas
+        // Liberar las sillas marcándolas como AVAILABLE
         for (Ticket ticket : tickets) {
             List<SeatTicket> seatTickets = seatTicketRepository.findByTicketId(ticket.getTicketId());
             for (SeatTicket seatTicket : seatTickets) {
-                Seat seat = seatRepository.findById(seatTicket.getSeatId())
-                    .orElseThrow(() -> new IllegalStateException("Seat not found: " + seatTicket.getSeatId()));
-                
-                // Liberar silla (remover reserva)
-                Seat updatedSeat = Seat.builder()
-                    .seatId(seat.getSeatId())
-                    .seatBlockId(seat.getSeatBlockId())
-                    .eventSectionId(seat.getEventSectionId())
-                    .code(seat.getCode())
-                    .row(seat.getRow())
-                    .position(seat.getPosition())
-                    .type(seat.getType())
-                    .status(seat.getStatus())
-                    .reservedBy(null)
-                    .reservedUntil(null)
+                UpdateSeatStatusRequest seatStatusRequest = UpdateSeatStatusRequest.builder()
+                    .newStatus(SeatStatus.AVAILABLE)
+                    .reason("Order cancelled")
                     .build();
                 
-                seatRepository.save(updatedSeat);
+                Integer userId = null;
+                try {
+                    userId = Integer.parseInt(getCurrentUsername());
+                } catch (NumberFormatException e) {
+                    // changedBy será null si no es un userId válido
+                }
+                
+                seatUseCase.updateSeatStatus(seatTicket.getSeatId(), seatStatusRequest, userId);
             }
         }
     }

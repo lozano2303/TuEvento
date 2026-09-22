@@ -38,6 +38,6 @@ databaseChangeLog:
         - addForeignKeyConstraint:
             baseTableName: ticket_checkin
             baseColumnNames: validated_by
-            referencedTableName: user
+            referencedTableName: app_user
             referencedColumnNames: user_id
             constraintName: fk_ticket_checkin_validator

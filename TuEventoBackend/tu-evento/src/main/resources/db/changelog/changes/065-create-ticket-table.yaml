@@ -84,7 +84,7 @@ databaseChangeLog:
         - addForeignKeyConstraint:
             baseTableName: ticket
             baseColumnNames: user_id
-            referencedTableName: user
+            referencedTableName: app_user
             referencedColumnNames: user_id
             constraintName: fk_ticket_user
         - addForeignKeyConstraint:

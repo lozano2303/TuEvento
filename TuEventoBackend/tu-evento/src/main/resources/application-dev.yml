@@ -96,3 +96,10 @@ moderation:
     models: ${SIGHTENGINE_MODELS:gore,nudity,weapon}
     threshold: ${SIGHTENGINE_THRESHOLD:0.4}
     nudity-threshold: ${SIGHTENGINE_NUDITY_THRESHOLD:0.15}
+
+payment:
+  gateway: ${PAYMENT_GATEWAY:fake}
+  fake-gateway:
+    url: ${FAKE_GATEWAY_URL:http://localhost:4001}
+  webhook:
+    secret: ${WEBHOOK_SECRET:default-secret-change-in-production}

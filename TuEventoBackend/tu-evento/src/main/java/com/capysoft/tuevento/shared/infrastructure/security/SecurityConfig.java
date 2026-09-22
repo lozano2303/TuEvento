@@ -50,6 +50,7 @@ public class SecurityConfig {
             "/api/v1/geolocation/**",
             "/api/v1/profiles/*/",
             "/api/v1/profiles/user/**",
+            "/api/v1/webhooks/**",  // Webhook endpoints — autenticación por HMAC signature
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/api-docs/**",

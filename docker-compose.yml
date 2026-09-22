@@ -46,7 +46,7 @@ services:
 
   # ── Object storage (MinIO) ──────────────────────────────────────────────────
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: tuevento-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -77,7 +77,7 @@ services:
   # Prefijos que quedan privados (no se tocan aquí):
   #   - organizer_document/*  — PDFs de solicitud de organizador (sensibles)
   minio-init:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: tuevento-minio-init
     depends_on:
       minio:
@@ -116,7 +116,7 @@ services:
     networks:
       - tuevento-network
 
-  # ── Fake Payment Gateway ────────────────────────────────────────────────────
+   # ── Fake Payment Gateway ────────────────────────────────────────────────────
   fake-payment-gateway:
     build:
       context: ./fake-payment-gateway
@@ -132,13 +132,15 @@ services:
       - POSTGRES_DB=fake_gateway_db
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - PAYMENT_CALLBACK_URL=http://backend:8080/api/v1/webhooks/payment
+      - PAYMENT_CALLBACK_URL=http://host.docker.internal:8080/api/v1/webhooks/payment
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
       - LOG_LEVEL=INFO
     depends_on:
       - postgres-fake-gateway
     networks:
       - tuevento-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   # ── Backend (Spring Boot) ───────────────────────────────────────────────────
   backend:
