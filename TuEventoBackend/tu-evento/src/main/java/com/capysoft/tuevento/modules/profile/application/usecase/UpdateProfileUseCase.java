@@ -10,6 +10,7 @@ import com.capysoft.tuevento.modules.profile.domain.model.Profile;
 import com.capysoft.tuevento.modules.profile.domain.model.ProfileLog;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileLogRepository;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
+import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.domain.valueobject.ValidationUtils;
 import lombok.RequiredArgsConstructor;
@@ -18,15 +19,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Service
 @RequiredArgsConstructor
 public class UpdateProfileUseCase implements UpdateProfilePort {
 
-    private final ProfileRepository     profileRepository;
-    private final ProfileLogRepository  profileLogRepository;
-    private final CityRepository        cityRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private static final int    NAME_CHANGE_COOLDOWN_DAYS = 14;
+    private static final DateTimeFormatter DATE_FMT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private final ProfileRepository          profileRepository;
+    private final ProfileLogRepository       profileLogRepository;
+    private final CityRepository             cityRepository;
+    private final ApplicationEventPublisher  eventPublisher;
 
     @Override
     @Transactional
@@ -36,13 +42,20 @@ public class UpdateProfileUseCase implements UpdateProfilePort {
                         "Profile not found with id: " + profileId));
 
         if (request.getFullName() != null) {
-            // Validate before persisting — guards both the onboarding flow and
-            // direct API calls that bypass the frontend validation.
             ValidationUtils.validateFullName(request.getFullName());
-            log(profile.getProfileId(), "FULL_NAME_CHANGED", profile.getFullName(), request.getFullName());
-            profile.setFullName(request.getFullName());
+
+            boolean nameActuallyChanging = !request.getFullName().equals(profile.getFullName());
+            if (nameActuallyChanging) {
+                enforceNameChangeCooldown(profile);
+                log(profile.getProfileId(), "FULL_NAME_CHANGED",
+                        profile.getFullName(), request.getFullName());
+                profile.setFullName(request.getFullName());
+                profile.setNameChangedAt(LocalDateTime.now());
+            }
         }
+
         if (request.getBio() != null) {
+            ValidationUtils.validateBio(request.getBio());
             log(profile.getProfileId(), "BIO_CHANGED", profile.getBio(), request.getBio());
             profile.setBio(request.getBio());
         }
@@ -70,16 +83,42 @@ public class UpdateProfileUseCase implements UpdateProfilePort {
                 .occurredAt(LocalDateTime.now())
                 .build());
 
+        return toResponse(saved);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Throws {@link BusinessException} if the 14-day cooldown has not elapsed.
+     * Only called when the new fullName differs from the stored one.
+     * Null nameChangedAt means the user has never changed their name → allowed.
+     */
+    private void enforceNameChangeCooldown(Profile profile) {
+        if (profile.getNameChangedAt() == null) return;
+
+        LocalDateTime nextAllowed = profile.getNameChangedAt()
+                .plusDays(NAME_CHANGE_COOLDOWN_DAYS);
+
+        if (LocalDateTime.now().isBefore(nextAllowed)) {
+            throw new BusinessException(
+                    "NAME_CHANGE_TOO_SOON",
+                    "Podrás cambiar tu nombre de nuevo el "
+                            + nextAllowed.toLocalDate().format(DATE_FMT) + ".");
+        }
+    }
+
+    private ProfileResponse toResponse(Profile p) {
         return ProfileResponse.builder()
-                .profileId(saved.getProfileId())
-                .userId(saved.getUserId())
-                .cityId(saved.getCity() != null ? saved.getCity().getCityId() : null)
-                .cityName(saved.getCity() != null ? saved.getCity().getName() : null)
-                .departmentName(saved.getCity() != null && saved.getCity().getDepartment() != null
-                        ? saved.getCity().getDepartment().getName() : null)
-                .storedFileId(saved.getStoredFileId())
-                .fullName(saved.getFullName())
-                .bio(saved.getBio())
+                .profileId(p.getProfileId())
+                .userId(p.getUserId())
+                .cityId(p.getCity() != null ? p.getCity().getCityId() : null)
+                .cityName(p.getCity() != null ? p.getCity().getName() : null)
+                .departmentName(p.getCity() != null && p.getCity().getDepartment() != null
+                        ? p.getCity().getDepartment().getName() : null)
+                .storedFileId(p.getStoredFileId())
+                .fullName(p.getFullName())
+                .bio(p.getBio())
+                .nameChangedAt(p.getNameChangedAt())
                 .build();
     }
 

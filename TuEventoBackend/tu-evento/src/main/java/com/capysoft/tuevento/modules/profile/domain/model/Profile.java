@@ -18,6 +18,7 @@ public class Profile {
     private Integer storedFileId;
     private String fullName;
     private String bio;
+    private LocalDateTime nameChangedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

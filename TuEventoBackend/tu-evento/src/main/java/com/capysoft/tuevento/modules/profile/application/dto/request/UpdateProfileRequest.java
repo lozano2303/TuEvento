@@ -13,7 +13,7 @@ public class UpdateProfileRequest {
     private Integer cityId;
     private Integer storedFileId;
 
-    @Size(max = 100)
+    @Size(max = 30)
     private String fullName;
 
     @Size(max = 255)
