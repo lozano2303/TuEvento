@@ -18,6 +18,8 @@ import ReactivateAccountPage from './pages/ReactivateAccountPage';
 import CompleteProfile from './pages/CompleteProfile';
 import AdminEventManagement from './pages/AdminEventManagement';
 import WalletPage from './pages/WalletPage';
+import Checkout from './pages/Checkout';
+import PaymentPending from './pages/PaymentPending';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -44,8 +46,10 @@ function AppContent() {
     '/login', '/verification', '/events/create',
     '/reactivate-account', '/complete-profile',
     '/admin-panel', '/admin-events',
+    '/checkout',
   ].includes(location.pathname)
-    && !location.pathname.match(/^\/events\/[^/]+\/layout$/);
+    && !location.pathname.match(/^\/events\/[^/]+\/layout$/)
+    && !location.pathname.match(/^\/checkout/);
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,6 +106,16 @@ function AppContent() {
           <Route path="/wallet" element={
             <ProtectedRoute>
               <WalletPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/checkout" element={
+            <ProtectedRoute>
+              <Checkout />
+            </ProtectedRoute>
+          } />
+          <Route path="/checkout/pending/:paymentId" element={
+            <ProtectedRoute>
+              <PaymentPending />
             </ProtectedRoute>
           } />
         </Routes>
