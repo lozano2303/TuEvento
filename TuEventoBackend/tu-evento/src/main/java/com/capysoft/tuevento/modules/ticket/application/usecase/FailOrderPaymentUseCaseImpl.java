@@ -1,19 +1,27 @@
 package com.capysoft.tuevento.modules.ticket.application.usecase;
 
-import com.capysoft.tuevento.modules.seat.domain.model.Seat;
-import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.capysoft.tuevento.modules.seat.application.dto.request.UpdateSeatStatusRequest;
+import com.capysoft.tuevento.modules.seat.application.port.in.SeatUseCase;
+import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 import com.capysoft.tuevento.modules.ticket.application.port.in.FailOrderPaymentUseCase;
-import com.capysoft.tuevento.modules.ticket.domain.model.*;
+import com.capysoft.tuevento.modules.ticket.domain.model.Order;
+import com.capysoft.tuevento.modules.ticket.domain.model.OrderNotFoundException;
+import com.capysoft.tuevento.modules.ticket.domain.model.SeatTicket;
+import com.capysoft.tuevento.modules.ticket.domain.model.Ticket;
+import com.capysoft.tuevento.modules.ticket.domain.model.TicketLog;
+import com.capysoft.tuevento.modules.ticket.domain.model.TicketStatus;
 import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
 import com.capysoft.tuevento.modules.ticket.domain.repository.SeatTicketRepository;
 import com.capysoft.tuevento.modules.ticket.domain.repository.TicketLogRepository;
 import com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Implementación del puerto de entrada para marcar orden como pago fallido.
@@ -26,8 +34,8 @@ public class FailOrderPaymentUseCaseImpl implements FailOrderPaymentUseCase {
     private final OrderRepository orderRepository;
     private final TicketRepository ticketRepository;
     private final SeatTicketRepository seatTicketRepository;
-    private final SeatRepository seatRepository;
     private final TicketLogRepository ticketLogRepository;
+    private final SeatUseCase seatUseCase;
     
     @Override
     @Transactional
@@ -61,28 +69,15 @@ public class FailOrderPaymentUseCaseImpl implements FailOrderPaymentUseCase {
             ticketLogRepository.save(log);
         }
         
-        // Liberar las sillas
+        // Liberar las sillas marcándolas como AVAILABLE
         for (Ticket ticket : tickets) {
             List<SeatTicket> seatTickets = seatTicketRepository.findByTicketId(ticket.getTicketId());
             for (SeatTicket seatTicket : seatTickets) {
-                Seat seat = seatRepository.findById(seatTicket.getSeatId())
-                    .orElseThrow(() -> new IllegalStateException("Seat not found: " + seatTicket.getSeatId()));
-                
-                // Liberar silla
-                Seat updatedSeat = Seat.builder()
-                    .seatId(seat.getSeatId())
-                    .seatBlockId(seat.getSeatBlockId())
-                    .eventSectionId(seat.getEventSectionId())
-                    .code(seat.getCode())
-                    .row(seat.getRow())
-                    .position(seat.getPosition())
-                    .type(seat.getType())
-                    .status(seat.getStatus())
-                    .reservedBy(null)
-                    .reservedUntil(null)
+                UpdateSeatStatusRequest seatStatusRequest = UpdateSeatStatusRequest.builder()
+                    .newStatus(SeatStatus.AVAILABLE)
+                    .reason("Payment failed: " + reason)
                     .build();
-                
-                seatRepository.save(updatedSeat);
+                seatUseCase.updateSeatStatus(seatTicket.getSeatId(), seatStatusRequest, null);
             }
         }
     }

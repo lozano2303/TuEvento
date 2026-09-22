@@ -1,24 +1,41 @@
 package com.capysoft.tuevento.modules.ticket.application.usecase;
 
-import com.capysoft.tuevento.modules.seat.domain.model.Seat;
-import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
-import com.capysoft.tuevento.modules.ticket.application.dto.request.CreateOrderRequest;
-import com.capysoft.tuevento.modules.ticket.application.dto.response.OrderResponse;
-import com.capysoft.tuevento.modules.ticket.application.dto.response.TicketResponse;
-import com.capysoft.tuevento.modules.ticket.domain.model.*;
-import com.capysoft.tuevento.modules.ticket.domain.repository.*;
-import lombok.RequiredArgsConstructor;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import com.capysoft.tuevento.modules.seat.domain.model.Seat;
+import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
+import com.capysoft.tuevento.modules.section.domain.exception.EventSectionNotFoundException;
+import com.capysoft.tuevento.modules.section.domain.model.EventSection;
+import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
+import com.capysoft.tuevento.modules.ticket.application.dto.request.CreateOrderRequest;
+import com.capysoft.tuevento.modules.ticket.application.dto.response.OrderResponse;
+import com.capysoft.tuevento.modules.ticket.application.dto.response.TicketResponse;
+import com.capysoft.tuevento.modules.ticket.domain.model.Money;
+import com.capysoft.tuevento.modules.ticket.domain.model.Order;
+import com.capysoft.tuevento.modules.ticket.domain.model.OrderStatus;
+import com.capysoft.tuevento.modules.ticket.domain.model.SeatTicket;
+import com.capysoft.tuevento.modules.ticket.domain.model.Ticket;
+import com.capysoft.tuevento.modules.ticket.domain.model.TicketLog;
+import com.capysoft.tuevento.modules.ticket.domain.model.TicketStatus;
+import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
+import com.capysoft.tuevento.modules.ticket.domain.repository.SeatTicketRepository;
+import com.capysoft.tuevento.modules.ticket.domain.repository.TicketLogRepository;
+import com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Use case para crear una orden con tickets desde sillas reservadas.
@@ -32,6 +49,7 @@ public class CreateOrderWithTicketsUseCaseImpl {
     private final SeatTicketRepository seatTicketRepository;
     private final TicketLogRepository ticketLogRepository;
     private final SeatRepository seatRepository;
+    private final EventSectionRepository eventSectionRepository;
     
     @Transactional
     public OrderResponse execute(CreateOrderRequest request, Long userId) {
@@ -53,10 +71,24 @@ public class CreateOrderWithTicketsUseCaseImpl {
             seats.add(seat);
         }
         
-        // 2. Calcular precio total (obtener precio desde la configuración de sección/evento)
-        // Por ahora usamos un precio fijo de ejemplo, en producción debería obtenerse de la configuración
-        BigDecimal pricePerSeat = new BigDecimal("50000");
-        BigDecimal totalAmount = pricePerSeat.multiply(new BigDecimal(seats.size()));
+        // 2. Obtener precios reales desde EventSection (agrupando por sectionId para eficiencia)
+        Set<Integer> uniqueSectionIds = seats.stream()
+            .map(Seat::getEventSectionId)
+            .collect(Collectors.toSet());
+        
+        // Traer todas las secciones necesarias en una sola consulta por sección única
+        Map<Integer, BigDecimal> sectionPrices = new HashMap<>();
+        for (Integer sectionId : uniqueSectionIds) {
+            EventSection section = eventSectionRepository.findById(sectionId)
+                .orElseThrow(() -> new EventSectionNotFoundException(sectionId));
+            sectionPrices.put(sectionId, section.getPrice());
+        }
+        
+        // Calcular precio total sumando el precio real de cada silla según su sección
+        BigDecimal totalAmount = seats.stream()
+            .map(seat -> sectionPrices.get(seat.getEventSectionId()))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
         String currency = "COP";
         
         // 3. Crear Order en estado DRAFT
@@ -69,11 +101,14 @@ public class CreateOrderWithTicketsUseCaseImpl {
         
         Order savedOrder = orderRepository.save(order);
         
-        // 4. Crear un Ticket PENDING por cada seat
+        // 4. Crear un Ticket PENDING por cada seat con su precio real
         List<Ticket> tickets = new ArrayList<>();
         for (Seat seat : seats) {
             String ticketCode = generateTicketCode();
             String qrCode = generateQrCode(savedOrder.getOrderId(), ticketCode);
+            
+            // Obtener precio de la sección de esta silla (ya cacheado en memoria)
+            BigDecimal seatPrice = sectionPrices.get(seat.getEventSectionId());
             
             Ticket ticket = Ticket.builder()
                 .eventId(request.getEventId())
@@ -83,7 +118,7 @@ public class CreateOrderWithTicketsUseCaseImpl {
                 .qrCode(qrCode)
                 .status(TicketStatus.PENDING)
                 .expirationDate(calculateExpirationDate(request.getEventId()))
-                .totalPrice(new Money(pricePerSeat, currency))
+                .totalPrice(new Money(seatPrice, currency))
                 .build();
             
             tickets.add(ticket);
@@ -91,13 +126,15 @@ public class CreateOrderWithTicketsUseCaseImpl {
         
         List<Ticket> savedTickets = ticketRepository.saveAll(tickets);
         
-        // 5. Crear SeatTicket con price snapshot
+        // 5. Crear SeatTicket con price snapshot del precio real
         List<SeatTicket> seatTickets = new ArrayList<>();
         for (int i = 0; i < seats.size(); i++) {
+            BigDecimal seatPrice = sectionPrices.get(seats.get(i).getEventSectionId());
+            
             SeatTicket seatTicket = SeatTicket.builder()
                 .seatId(seats.get(i).getSeatId())
                 .ticketId(savedTickets.get(i).getTicketId())
-                .price(pricePerSeat)
+                .price(seatPrice)
                 .build();
             seatTickets.add(seatTicket);
         }
