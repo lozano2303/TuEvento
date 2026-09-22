@@ -267,7 +267,7 @@ export default function EventManage() {
 
     // Normalizar cada imagen a 1280×1280 en el browser antes de agregar al estado
     try {
-      const normalized = await Promise.all(valid.map(normalizeImage));
+      const normalized = await Promise.all(valid.map((f) => normalizeImage(f)));
       const selected = normalized.map((file) => ({
         file,
         preview: URL.createObjectURL(file),
