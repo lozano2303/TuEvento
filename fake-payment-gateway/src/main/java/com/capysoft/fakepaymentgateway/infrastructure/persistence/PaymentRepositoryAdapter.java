@@ -49,6 +49,14 @@ public class PaymentRepositoryAdapter implements PaymentRepository {
     public boolean existsByPaymentId(String paymentId) {
         return jpaRepository.existsByPaymentId(paymentId);
     }
+
+    @Override
+    public java.util.List<Payment> findAll() {
+        return jpaRepository.findAll()
+                .stream()
+                .map(this::toDomain)
+                .toList();
+    }
     
     private Payment toDomain(PaymentEntity entity) {
         Payment payment = new Payment();

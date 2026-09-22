@@ -1631,7 +1631,7 @@ const SeatCircle = React.memo(function SeatCircle({
   else if (seat.status === 'AVAILABLE')  fillColor = '#10B981';
   else if (isMyReservation)     fillColor = '#3B82F6';
   else if (isOtherReservation)  fillColor = '#FBBF24';
-  else if (seat.status === 'SOLD')      fillColor = '#6B7280';
+  else if (seat.status === 'SOLD')      fillColor = '#9CA3AF'; // Gris claro — vendida/ocupada
   else if (seat.status === 'COURTESY')  fillColor = '#8B5CF6';
   else                          fillColor = '#6B7280';
 

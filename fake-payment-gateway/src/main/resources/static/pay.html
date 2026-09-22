@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fake Payment Gateway</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f1a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #1a1a2e;
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 420px;
+      padding: 32px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+    }
+    .logo {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #6d28d9, #a78bfa);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .header-text h1 { font-size: 16px; font-weight: 700; color: #f1f5f9; }
+    .header-text p  { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+    }
+    .status-PENDING    { background: rgba(234,179,8,0.15);  color: #fbbf24; }
+    .status-PENDING .status-dot    { background: #fbbf24; animation: pulse 1.5s infinite; }
+    .status-PROCESSING { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .status-PROCESSING .status-dot { background: #60a5fa; animation: pulse 1.5s infinite; }
+    .status-APPROVED   { background: rgba(16,185,129,0.15); color: #34d399; }
+    .status-APPROVED .status-dot   { background: #34d399; }
+    .status-DECLINED   { background: rgba(239,68,68,0.15);  color: #f87171; }
+    .status-DECLINED .status-dot   { background: #f87171; }
+    .status-FAILED     { background: rgba(239,68,68,0.15);  color: #f87171; }
+    .status-FAILED .status-dot     { background: #f87171; }
+    .status-CANCELLED  { background: rgba(148,163,184,0.15); color: #94a3b8; }
+    .status-CANCELLED .status-dot  { background: #94a3b8; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* Payment info */
+    .info-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .info-label {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 500;
+    }
+    .info-value {
+      font-size: 13px;
+      color: #e2e8f0;
+      font-weight: 600;
+      text-align: right;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .amount-value {
+      font-size: 26px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(139, 92, 246, 0.12);
+      margin: 4px 0;
+    }
+
+    /* Buttons */
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .btn {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-approve  { background: linear-gradient(135deg, #059669, #34d399); color: #fff; }
+    .btn-decline  { background: linear-gradient(135deg, #dc2626, #f87171); color: #fff; }
+    .btn-fail     { background: linear-gradient(135deg, #b45309, #fbbf24); color: #fff; }
+    .btn-cancel   { background: rgba(148,163,184,0.12); color: #94a3b8; border: 1px solid rgba(148,163,184,0.2); }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+    }
+    .btn-row .btn { flex: 1; }
+
+    /* Terminal state */
+    .terminal-msg {
+      text-align: center;
+      padding: 20px;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 10px;
+      font-size: 13px;
+      color: #64748b;
+    }
+    .terminal-msg .icon { font-size: 28px; display: block; margin-bottom: 8px; }
+
+    /* Loading / error states */
+    .loading, .error-state {
+      text-align: center;
+      padding: 20px 0;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid rgba(139, 92, 246, 0.2);
+      border-top-color: #a78bfa;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-state p { color: #f87171; font-size: 13px; }
+
+    /* Feedback toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1e293b;
+      border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #e2e8f0;
+      transition: transform 0.3s ease;
+      white-space: nowrap;
+      z-index: 1000;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: rgba(52,211,153,0.4); color: #34d399; }
+    .toast.error   { border-color: rgba(248,113,113,0.4); color: #f87171; }
+
+    .payment-id-small {
+      font-size: 10px;
+      font-family: monospace;
+      color: #475569;
+      text-align: center;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <div class="logo">💳</div>
+    <div class="header-text">
+      <h1>Fake Payment Gateway</h1>
+      <p>Simulador de pagos — demo</p>
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p style="color:#64748b;font-size:13px;">Cargando información del pago…</p>
+    </div>
+  </div>
+
+  <p class="payment-id-small" id="payment-id-label"></p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── Config ───────────────────────────────────────────────────────────────
+  const GATEWAY_URL = 'http://localhost:4001';
+  const POLL_MS     = 3000;
+
+  // ─── Estado ───────────────────────────────────────────────────────────────
+  let paymentId    = null;
+  let currentData  = null;
+  let pollInterval = null;
+
+  // ─── Init ─────────────────────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    paymentId = params.get('id');
+
+    if (!paymentId) {
+      renderError('No se especificó un ID de pago. Abrí esta página con ?id=fake_xxx');
+      return;
+    }
+
+    document.getElementById('payment-id-label').textContent = paymentId;
+    loadPayment();
+  });
+
+  // ─── Fetch pago ───────────────────────────────────────────────────────────
+  async function loadPayment() {
+    try {
+      const res  = await fetch(`${GATEWAY_URL}/public/payments/${paymentId}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      currentData = await res.json();
+      render(currentData);
+
+      // Si es estado no terminal, iniciar polling para refrescar el badge
+      if (!isTerminal(currentData.status)) {
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    } catch (err) {
+      renderError(`No se pudo cargar el pago: ${err.message}`);
+    }
+  }
+
+  function startPolling() {
+    if (pollInterval) return;
+    pollInterval = setInterval(async () => {
+      try {
+        const res  = await fetch(`${GATEWAY_URL}/public/payments/${paymentId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        currentData = data;
+        render(data);
+        if (isTerminal(data.status)) stopPolling();
+      } catch { /* silencioso */ }
+    }, POLL_MS);
+  }
+
+  function stopPolling() {
+    if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+  }
+
+  // ─── Acciones ─────────────────────────────────────────────────────────────
+  async function doAction(action) {
+    disableButtons(true);
+    try {
+      const res = await fetch(`${GATEWAY_URL}/admin/payments/${paymentId}/${action}`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body || `HTTP ${res.status}`);
+      }
+      showToast(actionLabel(action) + ' exitoso', 'success');
+
+      // Notificar a la ventana padre el resultado de la acción
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: 'GATEWAY_ACTION', action }, '*');
+      }
+
+      // Recargar info después de la acción
+      await loadPayment();
+
+      // Cerrar el popup automáticamente en estados terminales
+      setTimeout(() => {
+        const terminalActions = ['approve', 'decline', 'fail', 'cancel'];
+        if (terminalActions.includes(action)) {
+          window.close();
+        }
+      }, 1500);
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+      disableButtons(false);
+    }
+  }
+
+  function actionLabel(a) {
+    return { approve: 'Aprobado', decline: 'Rechazado', fail: 'Fallido', cancel: 'Cancelado' }[a] ?? a;
+  }
+
+  function disableButtons(disabled) {
+    document.querySelectorAll('.btn').forEach(b => b.disabled = disabled);
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────────
+  function render(data) {
+    const terminal = isTerminal(data.status);
+    const content  = document.getElementById('content');
+
+    content.innerHTML = `
+      <div class="info-grid">
+        <div class="info-row">
+          <span class="info-label">Estado</span>
+          <span class="status-badge status-${data.status}">
+            <span class="status-dot"></span>${data.status}
+          </span>
+        </div>
+        <div class="divider"></div>
+        <div class="info-row">
+          <span class="info-label">Monto</span>
+          <span class="amount-value">${formatMoney(data.amount, data.currency)}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Método</span>
+          <span class="info-value">${data.paymentMethod ?? '—'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Referencia externa</span>
+          <span class="info-value" title="${data.externalReference}">${data.externalReference}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Creado</span>
+          <span class="info-value">${formatDate(data.createdAt)}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Actualizado</span>
+          <span class="info-value">${formatDate(data.updatedAt)}</span>
+        </div>
+      </div>
+
+      <div class="actions" id="actions">
+        ${terminal ? renderTerminal(data.status) : renderButtons()}
+      </div>
+    `;
+  }
+
+  function renderButtons() {
+    return `
+      <div class="btn-row">
+        <button class="btn btn-approve" onclick="doAction('approve')">✅ Aprobar</button>
+        <button class="btn btn-decline" onclick="doAction('decline')">❌ Rechazar</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-fail"   onclick="doAction('fail')">⚠️ Fallar</button>
+        <button class="btn btn-cancel" onclick="doAction('cancel')">🚫 Cancelar</button>
+      </div>
+    `;
+  }
+
+  function renderTerminal(status) {
+    const icons = { APPROVED: '✅', DECLINED: '❌', FAILED: '⚠️', CANCELLED: '🚫' };
+    const msgs  = {
+      APPROVED:  'Pago aprobado. El webhook fue enviado al backend.',
+      DECLINED:  'Pago rechazado. El webhook fue enviado al backend.',
+      FAILED:    'Pago fallido. El webhook fue enviado al backend.',
+      CANCELLED: 'Pago cancelado.',
+    };
+    return `
+      <div class="terminal-msg">
+        <span class="icon">${icons[status] ?? '⏹'}</span>
+        ${msgs[status] ?? 'Estado terminal — no se permiten más acciones.'}
+      </div>
+    `;
+  }
+
+  function renderError(msg) {
+    document.getElementById('content').innerHTML = `
+      <div class="error-state">
+        <p>⚠️ ${msg}</p>
+      </div>
+    `;
+  }
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+  function isTerminal(status) {
+    return ['APPROVED', 'DECLINED', 'FAILED', 'CANCELLED'].includes(status);
+  }
+
+  function formatMoney(amount, currency) {
+    if (!amount) return '—';
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: currency ?? 'COP',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString('es-CO', {
+      dateStyle: 'short', timeStyle: 'short',
+    });
+  }
+
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className   = 'toast show' + (type ? ' ' + type : '');
+    setTimeout(() => { t.className = 'toast'; }, 3500);
+  }
+</script>
+</body>
+</html>

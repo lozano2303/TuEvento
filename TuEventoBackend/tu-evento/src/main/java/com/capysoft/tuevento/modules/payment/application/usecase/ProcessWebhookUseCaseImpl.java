@@ -103,6 +103,18 @@ public class ProcessWebhookUseCaseImpl {
                         payment.getPaymentId(), payment.getOrderId());
                     break;
                     
+                case "CANCELLED":
+                    payment.markAsError();
+                    paymentRepository.save(payment);
+                    
+                    savePaymentLog(payment.getPaymentId(), oldStatus, PaymentStatus.ERROR, "Webhook: payment cancelled by user");
+                    
+                    // Cancelar orden en módulo ticket (libera sillas)
+                    failOrderPaymentUseCase.failOrderPayment(payment.getOrderId(), "Payment cancelled");
+                    log.info("Payment cancelled and order released: paymentId={}, orderId={}", 
+                        payment.getPaymentId(), payment.getOrderId());
+                    break;
+                    
                 default:
                     log.warn("Unhandled payment status from webhook: status={}, eventId={}", 
                         event.getStatus(), event.getEventId());

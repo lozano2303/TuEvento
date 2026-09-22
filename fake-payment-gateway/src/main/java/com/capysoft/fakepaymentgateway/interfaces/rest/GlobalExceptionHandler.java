@@ -57,6 +57,18 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
+        // No interceptar errores de recursos no encontrados — dejar que Spring Boot
+        // los maneje como 404 normales (para que los estáticos en /static/ funcionen)
+        String className = ex.getClass().getSimpleName();
+        if (className.contains("NoResourceFound") || className.contains("NoHandlerFound")) {
+            return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                    "error", "Not found",
+                    "message", ex.getMessage(),
+                    "timestamp", Instant.now()
+                ));
+        }
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(Map.of(

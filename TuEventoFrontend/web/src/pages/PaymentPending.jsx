@@ -1,22 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2, Ticket, AlertCircle, RefreshCcw } from 'lucide-react';
 import { getPayment } from '../services/PaymentService';
 import { getOrderTickets } from '../services/OrderService';
 
-const POLL_INTERVAL_MS = 3000;
+const POLL_INTERVAL_MS  = 3000;
+const GATEWAY_BASE_URL  = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:4001';
+const POPUP_OPTIONS     = 'width=480,height=640,left=200,top=80,resizable=no,scrollbars=yes';
 
 /**
  * Pantalla de espera de pago.
  *
- * Recibe:
- *   - paymentId por URL param (/checkout/pending/:paymentId)
- *   - state: { orderId, eventId, cartItems, eventTitle }
- *
- * Estados del pago:
- *   PENDING  → spinner + "Esperando confirmación"
- *   APPROVED → éxito + tickets
- *   REJECTED / FAILED → error + botón reintentar
+ * Flujo:
+ *   1. Al montar: hace GET /api/v1/payments/:paymentId para obtener gatewayTransactionId
+ *   2. En cuanto tiene el gatewayTransactionId: abre el popup del gateway automáticamente
+ *   3. El popup (pay.html) permite aprobar/rechazar/fallar/cancelar
+ *   4. El polling detecta el cambio de estado y actualiza la pantalla
+ *   5. Si el usuario cierra el popup manualmente, el polling sigue corriendo
  */
 export default function PaymentPending() {
   const { paymentId } = useParams();
@@ -25,19 +25,85 @@ export default function PaymentPending() {
 
   const { orderId, eventId, cartItems = [], eventTitle = 'Evento' } = location.state || {};
 
-  const [status, setStatus]   = useState('PENDING');
-  const [tickets, setTickets] = useState([]);
-  const [error, setError]     = useState(null);
-  const intervalRef           = useRef(null);
+  const [status, setStatus]       = useState('PENDING');
+  const [gatewayTxId, setGwTxId]  = useState(null);
+  const [tickets, setTickets]     = useState([]);
+  const [error, setError]         = useState(null);
+  const [cancelledByUser, setCancelledByUser] = useState(false); // CANCELLED vs ERROR técnico
+  const [popupOpen, setPopupOpen] = useState(false);
 
-  // Detener polling
-  const stopPolling = () => {
+  const intervalRef   = useRef(null);
+  const popupRef      = useRef(null);
+  const popupOpened   = useRef(false); // evitar abrir dos veces
+
+  // ── Detener polling ───────────────────────────────────────────────────────
+  const stopPolling = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-  };
+  }, []);
 
+  // ── Cargar tickets al aprobar ─────────────────────────────────────────────
+  const loadTickets = useCallback(async () => {
+    if (!orderId) return;
+    try {
+      const r = await getOrderTickets(orderId);
+      setTickets(r.data ?? []);
+    } catch { /* no bloquear la pantalla de éxito */ }
+  }, [orderId]);
+
+  // ── Abrir popup del gateway ───────────────────────────────────────────────
+  const openPopup = useCallback((txId) => {
+    if (popupOpened.current) return;
+    popupOpened.current = true;
+
+    const url   = `${GATEWAY_BASE_URL}/pay.html?id=${txId}`;
+    const popup = window.open(url, 'fake-gateway', POPUP_OPTIONS);
+    popupRef.current = popup;
+    setPopupOpen(true);
+
+    // Vigilar cierre del popup para hacer poll inmediato
+    const watchClose = setInterval(() => {
+      if (!popup || popup.closed) {
+        clearInterval(watchClose);
+        setPopupOpen(false);
+        // Poll inmediato al cerrar
+        getPayment(paymentId)
+          .then(r => {
+            const s = r.data.status;
+            setStatus(s);
+            if (s === 'APPROVED') { stopPolling(); loadTickets(); }
+            if (s === 'REJECTED' || s === 'ERROR') { stopPolling(); }
+          })
+          .catch(() => {});
+      }
+    }, 500);
+  }, [paymentId, stopPolling, loadTickets]);
+
+  // Escuchar mensajes del popup (postMessage desde pay.html)
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data?.type !== 'GATEWAY_ACTION') return;
+      const action = event.data.action;
+      if (action === 'cancel') {
+        setCancelledByUser(true);
+        // El backend tarda un momento en procesar el webhook — forzar poll en 2s
+        setTimeout(() => {
+          getPayment(paymentId)
+            .then(r => {
+              setStatus(r.data.status);
+              stopPolling();
+            })
+            .catch(() => {});
+        }, 2000);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [paymentId, stopPolling]);
+
+  // ── Polling principal al backend de Tu Evento ─────────────────────────────
   useEffect(() => {
     if (!paymentId) {
       navigate('/events', { replace: true });
@@ -46,49 +112,40 @@ export default function PaymentPending() {
 
     const poll = async () => {
       try {
-        const result = await getPayment(paymentId);
-        const currentStatus = result.data.status ?? result.data.paymentStatus;
+        const r    = await getPayment(paymentId);
+        const data = r.data;
 
-        setStatus(currentStatus);
+        // Abrir popup automáticamente en cuanto tengamos el gatewayTransactionId
+        if (data.gatewayTransactionId && !popupOpened.current) {
+          setGwTxId(data.gatewayTransactionId);
+          openPopup(data.gatewayTransactionId);
+        }
 
-        if (currentStatus === 'APPROVED') {
+        const s = data.status;
+        setStatus(s);
+
+        if (s === 'APPROVED') {
           stopPolling();
-          // Cargar tickets
-          if (orderId) {
-            try {
-              const ticketResult = await getOrderTickets(orderId);
-              setTickets(ticketResult.data ?? []);
-            } catch {
-              // No bloquear la pantalla de éxito si los tickets fallan
-            }
-          }
-        } else if (currentStatus === 'REJECTED' || currentStatus === 'ERROR') {
+          loadTickets();
+          if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+        } else if (s === 'REJECTED' || s === 'ERROR') {
           stopPolling();
+          if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
         }
       } catch (err) {
-        // Error de red — no cambiar estado, seguir intentando
         console.warn('[PaymentPending] poll error:', err.message);
       }
     };
 
-    // Primer poll inmediato
     poll();
-    // Polling cada 3 segundos
     intervalRef.current = setInterval(poll, POLL_INTERVAL_MS);
-
     return () => stopPolling();
-  }, [paymentId, orderId, navigate]);
+  }, [paymentId, navigate, stopPolling, loadTickets, openPopup]);
 
-  const handleRetry = () => {
-    navigate(`/events/${eventId}`, {
-      state: { restoreCart: true },
-    });
-  };
+  const handleRetry    = () => navigate(`/events/${eventId}`, { state: { restoreCart: true } });
+  const handleGoEvents = () => navigate('/events');
 
-  const handleGoToEvents = () => {
-    navigate('/events');
-  };
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4 pb-16"
@@ -96,7 +153,7 @@ export default function PaymentPending() {
     >
       <div className="w-full max-w-md">
 
-        {/* ── PENDING ────────────────────────────────────────────────────── */}
+        {/* ── PENDING ──────────────────────────────────────────────────── */}
         {status === 'PENDING' && (
           <div
             className="rounded-2xl p-10 flex flex-col items-center gap-6 text-center"
@@ -111,35 +168,47 @@ export default function PaymentPending() {
 
             <div>
               <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
-                Esperando confirmación
+                Procesando tu pago
               </h1>
               <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                Tu pago está siendo procesado. Esto puede tardar unos segundos.
+                {popupOpen
+                  ? 'Completá el pago en la ventana que se abrió.'
+                  : 'Abriendo la ventana de pago…'}
               </p>
             </div>
 
             <div
-              className="w-full rounded-lg p-4 text-left space-y-1"
+              className="w-full rounded-xl p-4 text-left space-y-2"
               style={{ background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.1)' }}
             >
-              <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                Evento: <span style={{ color: 'var(--color-textSecondary)' }}>{eventTitle}</span>
-              </p>
-              <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                Sillas: <span style={{ color: 'var(--color-textSecondary)' }}>{cartItems.length}</span>
-              </p>
-              <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                ID de pago: <span className="font-mono" style={{ color: 'var(--color-textSecondary)' }}>{paymentId}</span>
-              </p>
+              <div className="flex justify-between text-xs">
+                <span style={{ color: 'var(--color-textMuted)' }}>Evento</span>
+                <span style={{ color: 'var(--color-textSecondary)' }}>{eventTitle}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span style={{ color: 'var(--color-textMuted)' }}>Sillas</span>
+                <span style={{ color: 'var(--color-textSecondary)' }}>{cartItems.length}</span>
+              </div>
             </div>
 
+            {/* Si el popup fue cerrado manualmente, ofrecer reabrirlo */}
+            {!popupOpen && popupOpened.current && gatewayTxId && (
+              <button
+                onClick={() => { popupOpened.current = false; openPopup(gatewayTxId); }}
+                className="text-sm underline underline-offset-2 transition-opacity hover:opacity-70"
+                style={{ color: 'var(--color-accent)' }}
+              >
+                Volver a abrir la ventana de pago
+              </button>
+            )}
+
             <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-              No cierres esta ventana mientras se procesa el pago.
+              No cierres esta pestaña mientras se procesa el pago.
             </p>
           </div>
         )}
 
-        {/* ── APPROVED ───────────────────────────────────────────────────── */}
+        {/* ── APPROVED ─────────────────────────────────────────────────── */}
         {status === 'APPROVED' && (
           <div
             className="rounded-2xl p-8 flex flex-col items-center gap-6 text-center"
@@ -161,10 +230,10 @@ export default function PaymentPending() {
               </p>
             </div>
 
-            {/* Tickets */}
-            {tickets.length > 0 && (
+            {tickets.length > 0 ? (
               <div className="w-full space-y-2">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-left mb-3"
+                <h2
+                  className="text-xs font-semibold uppercase tracking-wider text-left mb-3"
                   style={{ color: 'var(--color-textMuted)' }}
                 >
                   Tus tickets
@@ -183,8 +252,8 @@ export default function PaymentPending() {
                       <p className="text-sm font-semibold" style={{ color: 'var(--color-textPrimary)' }}>
                         {ticket.code ?? `Ticket #${ticket.ticketId}`}
                       </p>
-                      <p className="text-xs font-mono" style={{ color: 'var(--color-textMuted)' }}>
-                        ${ticket.totalPrice?.toLocaleString('es-CO') ?? '0'} {ticket.currency ?? ''}
+                      <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
+                        {ticket.totalPrice?.toLocaleString('es-CO') ?? '0'} {ticket.currency ?? ''}
                       </p>
                     </div>
                     {ticket.qrCode && (
@@ -198,10 +267,7 @@ export default function PaymentPending() {
                   </div>
                 ))}
               </div>
-            )}
-
-            {/* Si no hay tickets todavía, mensaje genérico */}
-            {tickets.length === 0 && (
+            ) : (
               <div
                 className="w-full p-4 rounded-xl text-sm"
                 style={{ background: 'rgba(5,150,105,0.08)', color: 'var(--color-textSecondary)' }}
@@ -211,7 +277,7 @@ export default function PaymentPending() {
             )}
 
             <button
-              onClick={handleGoToEvents}
+              onClick={handleGoEvents}
               className="w-full py-3 rounded-xl font-semibold text-sm transition-all"
               style={{
                 background: 'linear-gradient(135deg, var(--color-primaryDark) 0%, var(--color-primary) 100%)',
@@ -223,7 +289,7 @@ export default function PaymentPending() {
           </div>
         )}
 
-        {/* ── REJECTED / FAILED ──────────────────────────────────────────── */}
+        {/* ── REJECTED / ERROR ─────────────────────────────────────────── */}
         {(status === 'REJECTED' || status === 'ERROR') && (
           <div
             className="rounded-2xl p-8 flex flex-col items-center gap-6 text-center"
@@ -238,14 +304,20 @@ export default function PaymentPending() {
 
             <div>
               <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
-                {status === 'REJECTED' ? 'Pago rechazado' : 'Error en el pago'}
+                {cancelledByUser
+                  ? 'Pago cancelado'
+                  : status === 'REJECTED'
+                  ? 'Pago rechazado'
+                  : 'Error en el pago'}
               </h1>
               <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                {status === 'REJECTED'
-                  ? 'El pago fue rechazado por el procesador. Verificá los datos e intentá de nuevo.'
-                  : 'Ocurrió un error al procesar el pago. Podés intentarlo nuevamente.'
-                }
-              </p>            </div>
+                {cancelledByUser
+                  ? 'Cancelaste la transacción. Podés volver a intentarlo cuando quieras.'
+                  : status === 'REJECTED'
+                  ? 'El pago fue rechazado. Podés volver a intentarlo.'
+                  : 'Ocurrió un error al procesar el pago. Podés intentarlo nuevamente.'}
+              </p>
+            </div>
 
             {error && (
               <div
@@ -271,7 +343,7 @@ export default function PaymentPending() {
               </button>
 
               <button
-                onClick={handleGoToEvents}
+                onClick={handleGoEvents}
                 className="w-full py-2 rounded-xl text-sm transition-opacity hover:opacity-70"
                 style={{ color: 'var(--color-textSecondary)' }}
               >
@@ -280,6 +352,7 @@ export default function PaymentPending() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
