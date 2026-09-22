@@ -19,8 +19,6 @@ export const normalizeImage = (file, maxWidth = 1280, maxHeight = 1280, quality 
     const url = URL.createObjectURL(file);
 
     img.onload = () => {
-      URL.revokeObjectURL(url);
-
       const { width, height } = img;
       const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
       const targetWidth  = Math.round(width  * ratio);
@@ -35,8 +33,11 @@ export const normalizeImage = (file, maxWidth = 1280, maxHeight = 1280, quality 
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
+      // Revocar aquí, no en onload — toBlob es async y revocar antes
+      // invalida el bitmap de origen en Chromium/Safari, causando blob null.
       canvas.toBlob(
         (blob) => {
+          URL.revokeObjectURL(url);
           if (!blob) return reject(new Error('No se pudo generar el blob'));
           resolve(new File([blob], file.name, { type: 'image/jpeg' }));
         },
