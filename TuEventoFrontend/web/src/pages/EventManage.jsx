@@ -7,6 +7,7 @@ import { getEventMedia, uploadEventMedia } from '../services/EventMediaService';
 import StatusDropdown from '../components/event-manage/StatusDropdown';
 import Modal from '../components/common/Modal';
 import { STATUS_BADGE, TRANSITION_INFO } from '../constants/eventStatus';
+import { normalizeImage } from '../utils/imageNormalize';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 // STATUS_BADGE y STATUS_LABEL se importan desde constants/eventStatus.js
@@ -208,13 +209,39 @@ export default function EventManage() {
     }
   };
 
-  const handleMediaFileSelect = (e) => {
-    const selected = Array.from(e.target.files ?? []).map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-    }));
-    setMediaFiles((prev) => [...prev, ...selected]);
+  const MAX_MEDIA_SIZE_MB = 10;
+  const MAX_MEDIA_SIZE_BYTES = MAX_MEDIA_SIZE_MB * 1024 * 1024;
+
+  const handleMediaFileSelect = async (e) => {
+    const files = Array.from(e.target.files ?? []);
     if (mediaInputRef.current) mediaInputRef.current.value = '';
+    if (files.length === 0) return;
+
+    // Validar tamaño antes de procesar
+    const oversized = files.filter((f) => f.size > MAX_MEDIA_SIZE_BYTES);
+    if (oversized.length > 0) {
+      const names = oversized.map((f) => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)} MB)`).join(', ');
+      setMediaUploadError(
+        `${oversized.length > 1 ? 'Las siguientes imágenes superan' : 'La imagen supera'} el límite de ${MAX_MEDIA_SIZE_MB} MB: ${names}`
+      );
+    }
+
+    const valid = files.filter((f) => f.size <= MAX_MEDIA_SIZE_BYTES);
+    if (valid.length === 0) return;
+
+    setMediaUploadError(null);
+
+    // Normalizar cada imagen a 1280×720 en el browser antes de agregar al estado
+    try {
+      const normalized = await Promise.all(valid.map(normalizeImage));
+      const selected = normalized.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      setMediaFiles((prev) => [...prev, ...selected]);
+    } catch (err) {
+      setMediaUploadError(err.message);
+    }
   };
 
   const handleMediaRemoveFile = (idx) => {
@@ -756,8 +783,8 @@ export default function EventManage() {
               </p>
               <div className="grid grid-cols-3 gap-2">
                 {mediaFiles.map(({ preview }, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden">
-                    <img src={preview} alt="" className="w-full h-full object-cover" />
+                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden" style={{ background: 'var(--color-surface)' }}>
+                    <img src={preview} alt="" className="w-full h-full object-contain" />
                     <button
                       onClick={() => handleMediaRemoveFile(idx)}
                       className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-error transition-colors"
