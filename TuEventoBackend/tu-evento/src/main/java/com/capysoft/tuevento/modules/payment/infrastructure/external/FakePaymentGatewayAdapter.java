@@ -1,26 +1,31 @@
 package com.capysoft.tuevento.modules.payment.infrastructure.external;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.HexFormat;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
+
 import com.capysoft.tuevento.modules.payment.application.dto.CreatePaymentCommand;
 import com.capysoft.tuevento.modules.payment.application.dto.GatewayPayment;
 import com.capysoft.tuevento.modules.payment.application.dto.GatewayPaymentEvent;
 import com.capysoft.tuevento.modules.payment.application.port.out.PaymentGatewayPort;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.*;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 
 /**
  * Adaptador para el fake-payment-gateway.
@@ -145,18 +150,17 @@ public class FakePaymentGatewayAdapter implements PaymentGatewayPort {
             throw new SecurityException("Invalid webhook signature");
         }
         
-        // 2. Parsear payload
+        // 2. Parsear payload (estructura plana del fake-gateway)
         try {
             JsonNode webhookData = objectMapper.readTree(payload);
-            JsonNode data = webhookData.get("data");
             
             return GatewayPaymentEvent.builder()
                 .eventId(webhookData.get("eventId").asText())
-                .eventType(webhookData.get("eventType").asText())
-                .paymentId(data.get("paymentId").asText())
-                .status(data.get("status").asText())
-                .amount(new BigDecimal(data.get("amount").asText()))
-                .currency(data.get("currency").asText())
+                .eventType(webhookData.get("event").asText())
+                .paymentId(webhookData.get("paymentId").asText())
+                .status(webhookData.get("status").asText())
+                .amount(new BigDecimal(webhookData.get("amount").asText()))
+                .currency(webhookData.get("currency").asText())
                 .timestamp(webhookData.get("timestamp").asText())
                 .build();
         } catch (Exception e) {
@@ -178,7 +182,7 @@ public class FakePaymentGatewayAdapter implements PaymentGatewayPort {
             mac.init(secretKeySpec);
             
             byte[] hash = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
-            String calculatedSignature = Base64.getEncoder().encodeToString(hash);
+            String calculatedSignature = HexFormat.of().formatHex(hash);
             
             return calculatedSignature.equals(receivedSignature);
         } catch (Exception e) {
