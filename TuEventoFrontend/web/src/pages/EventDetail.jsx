@@ -442,6 +442,8 @@ export default function EventDetail() {
             zoom={zoom}
             setZoom={setZoom}
             showToast={showToast}
+            eventId={eventId}
+            eventTitle={event?.title ?? event?.name ?? ''}
           />
         )}
       </div>
@@ -483,6 +485,8 @@ function SeatSelectorSection({
   zoom,
   setZoom,
   showToast,
+  eventId,
+  eventTitle,
 }) {
   const maxQuantity = 10;
   const stageRef = useRef();
@@ -1218,6 +1222,8 @@ function SeatSelectorSection({
           onReleaseSeat={onReleaseSeat}
           onSeatExpire={onSeatExpire}
           reserving={reserving}
+          eventId={eventId}
+          eventTitle={eventTitle}
         />
       </div>
     </div>
@@ -1682,11 +1688,33 @@ const SeatCircle = React.memo(function SeatCircle({
 /**
  * Panel lateral con el carrito de sillas reservadas.
  */
-function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving }) {
+function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eventId, eventTitle }) {
+  const navigate = useNavigate();
+
   const totalPrice = cart.reduce((sum, seat) => {
     const section = sections.find((s) => s.eventSectionId === seat.eventSectionId);
     return sum + (section?.price ?? 0);
   }, 0);
+
+  const handleCheckout = () => {
+    const cartItems = cart.map((seat) => {
+      const section = sections.find((s) => s.eventSectionId === seat.eventSectionId);
+      return {
+        seatId:      seat.seatId,
+        code:        seat.code,
+        sectionName: section?.sectionTypeName ?? 'Sección',
+        price:       section?.price ?? 0,
+      };
+    });
+    navigate('/checkout', {
+      state: {
+        eventId,
+        eventTitle,
+        seatIds:   cart.map((s) => s.seatId),
+        cartItems,
+      },
+    });
+  };
 
   if (cart.length === 0) {
     return (
@@ -1752,10 +1780,13 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving }) {
           </span>
         </div>
         <button
+          onClick={handleCheckout}
           className="w-full py-2 rounded-lg font-semibold transition-all text-sm"
           style={{
             background: 'linear-gradient(135deg, #6d28d9 0%, #a78bfa 100%)',
             color: '#ffffff',
+            opacity: cart.length === 0 ? 0.5 : 1,
+            cursor: cart.length === 0 ? 'not-allowed' : 'pointer',
           }}
           disabled={cart.length === 0}
         >
