@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 063-shrink-full-name-to-30
+      author: capysoft
+      comment: >
+        Reduces full_name column from VARCHAR(100) to VARCHAR(30).
+        Pre-checked: no existing row has a full_name longer than 30 characters
+        (longest is 21 chars as of this migration), so no data truncation occurs.
+      changes:
+        - modifyDataType:
+            tableName: profile
+            columnName: full_name
+            newDataType: VARCHAR(30)

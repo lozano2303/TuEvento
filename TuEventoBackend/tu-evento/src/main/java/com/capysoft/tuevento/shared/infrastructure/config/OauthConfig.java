@@ -1,6 +1,8 @@
 package com.capysoft.tuevento.shared.infrastructure.config;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -58,6 +60,19 @@ public class OauthConfig {
     @Value("${app.oauth.facebook.profile-uri}")
     private String facebookProfileUri;
 
+    // ── Frontend redirect whitelist ──────────────────────────────────────────
+
+    /**
+     * Comma-separated list of allowed frontend callback URLs.
+     * The backend validates the frontend_redirect_uri query param against this
+     * set before issuing the final 302 to the browser.  Any URL not on this
+     * list is rejected to prevent open-redirect attacks.
+     *
+     * Populated from app.oauth.allowed-frontend-redirect-uris in application-*.yaml.
+     */
+    @Value("${app.oauth.allowed-frontend-redirect-uris}")
+    private List<String> allowedFrontendRedirectUris;
+
     // ── Beans ────────────────────────────────────────────────────────────────
 
     /**
@@ -73,10 +88,26 @@ public class OauthConfig {
     }
 
     /**
-     * Authorization URLs per provider, used by AuthController to redirect the user.
+     * Whitelist of frontend redirect URIs allowed as the final destination
+     * after a successful OAuth callback.  AuthController validates the
+     * frontend_redirect_uri param against this set.
+     *
+     * Exposed as a bean so AuthController can inject it without coupling to OauthConfig.
+     */
+    @Bean
+    public Set<String> oauthAllowedFrontendRedirectUris() {
+        return Set.copyOf(allowedFrontendRedirectUris);
+    }
+
+    /**
+     * Base authorization URLs per provider — without state or frontend_redirect_uri.
+     * AuthController appends those params dynamically at request time so they can
+     * vary per call (different browsers/devices may send different redirect targets).
      */
     @Bean
     public Map<String, String> oauthAuthorizationUrls() {
+        // NOTE: state is NOT embedded here anymore — AuthController appends it
+        // dynamically when the user hits GET /oauth/{provider}.
         String googleUrl = googleAuthorizationUri
                 + "?client_id=" + googleClientId
                 + "&redirect_uri=" + googleRedirectUri
@@ -128,10 +159,12 @@ public class OauthConfig {
                     .retrieve()
                     .body(Map.class);
 
+            String googleName = (String) userInfo.get("name");
             return OauthProfile.builder()
                     .providerUserId((String) userInfo.get("sub"))
                     .email((String) userInfo.get("email"))
-                    .alias((String) userInfo.get("name"))
+                    .fullName(googleName)   // needed by OauthLoginUseCase to skip onboarding
+                    .alias(googleName)
                     .build();
         };
     }
@@ -175,10 +208,12 @@ public class OauthConfig {
                 Map<String, Object> userInfo = objectMapper.readValue(
                         profileRaw, new TypeReference<>() {});
 
+                String facebookName = (String) userInfo.get("name");
                 return OauthProfile.builder()
                         .providerUserId((String) userInfo.get("id"))
                         .email((String) userInfo.get("email"))
-                        .alias((String) userInfo.get("name"))
+                        .fullName(facebookName)   // needed by OauthLoginUseCase to skip onboarding
+                        .alias(facebookName)
                         .build();
 
             } catch (Exception e) {

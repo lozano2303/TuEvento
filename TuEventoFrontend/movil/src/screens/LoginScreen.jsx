@@ -53,7 +53,10 @@ export default function LoginScreen() {
   const handleOAuthLogin = async (provider) => {
     setOauthLoading(provider);
     try {
-      const code = provider === "google"
+      // oauthService now returns { code, state } instead of just the code string.
+      // The state was generated client-side and included in the authorization URL;
+      // the provider returns it unchanged so we can verify it server-side.
+      const { code } = provider === "google"
         ? await oauthService.loginWithGoogle()
         : await oauthService.loginWithFacebook();
       const result = await authService.oauthLogin(provider, code);
