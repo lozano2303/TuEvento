@@ -23,6 +23,8 @@ import ThemeCustomizeScreen       from "../screens/ThemeCustomizeScreen";
 import EditProfileScreen          from "../screens/EditProfileScreen";
 import OrganizerRequestsScreen    from "../screens/OrganizerRequestsScreen";
 import OrganizerRequestDetailScreen from "../screens/OrganizerRequestDetailScreen";
+import CheckoutScreen              from "../screens/CheckoutScreen";
+import PaymentPendingScreen        from "../screens/PaymentPendingScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -207,8 +209,10 @@ export default function AppNavigator() {
         <Stack.Screen name="ThemeCustomize" component={ThemeCustomizeScreen} />
         <Stack.Screen name="EditProfile"    component={EditProfileScreen} />
         <Stack.Screen name="EventDetail"    component={EventDetailScreen} />
-        <Stack.Screen name="OrganizerRequests"     component={OrganizerRequestsScreen} />
-        <Stack.Screen name="OrganizerRequestDetail" component={OrganizerRequestDetailScreen} />
+        <Stack.Screen name="OrganizerRequests"      component={OrganizerRequestsScreen} />
+        <Stack.Screen name="OrganizerRequestDetail"  component={OrganizerRequestDetailScreen} />
+        <Stack.Screen name="Checkout"                component={CheckoutScreen} />
+        <Stack.Screen name="PaymentPending"          component={PaymentPendingScreen} />
         <Stack.Screen
           name="Main"
           component={MainTabs}
