@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight, PartyPopper, Sparkles, FileText } from "lucide-react";
+import loginHero from "../assets/images/tu-evento-login-hero-left.png";
 import { loginUser, registerUser, resendActivationCode, googleLogin } from "../services/Login.js";
 import { getProfileByUserId } from "../services/ProfileService.js";
 import { useTheme } from "../context/ThemeContext";
@@ -470,11 +471,11 @@ export default function Login() {
   if (view === 'profile' && userData)
     return (
       <div className="min-h-screen flex">
-        <div className="theme-auth-hero w-full flex items-center justify-center p-8">
+        <div className="relative w-full overflow-hidden">
           <img
-            src="/src/assets/images/fondologin.png"
-            alt="Ilustración escritorio"
-            className="w-full max-w-xs drop-shadow-2xl hover:scale-105 transition-transform duration-500"
+            src={loginHero}
+            alt="Tu Evento — plataforma de eventos en vivo"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         </div>
         <div className="w-full bg-background flex items-center justify-center p-8">
@@ -508,9 +509,13 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-stretch">
 
-      {/* Columna izquierda */}
-      <div className="theme-auth-hero w-full flex items-center justify-center p-8">
-        <img src="/src/assets/images/fondologin.png" alt="Ilustración escritorio" className="w-full max-w-xs drop-shadow-2xl" />
+      {/* Columna izquierda — hero a pantalla completa */}
+      <div className="relative w-full overflow-hidden">
+        <img
+          src={loginHero}
+          alt="Tu Evento — plataforma de eventos en vivo"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
       </div>
 
       {/* Columna derecha */}
