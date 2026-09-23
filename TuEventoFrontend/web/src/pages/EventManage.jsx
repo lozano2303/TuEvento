@@ -7,6 +7,7 @@ import { getEventMedia, uploadEventMedia } from '../services/EventMediaService';
 import StatusDropdown from '../components/event-manage/StatusDropdown';
 import Modal from '../components/common/Modal';
 import { STATUS_BADGE, TRANSITION_INFO } from '../constants/eventStatus';
+import { normalizeImage } from '../utils/imageNormalize';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 // STATUS_BADGE y STATUS_LABEL se importan desde constants/eventStatus.js
@@ -103,8 +104,18 @@ export default function EventManage() {
         message = 'Este evento no tiene un layout guardado todavía. Ve a "Editar layout" y guarda al menos una sección antes de publicar.';
       } else if (message.includes('at least one section with seats') || message.includes('EVENT_SECTIONS_REQUIRED')) {
         message = 'Este evento no tiene ninguna sección con sillas configurada. Ve a "Editar layout", agrega al menos una sección y guarda antes de publicar.';
-      } else if (message.includes('at least one image') || message.includes('EVENT_PUBLISH_NO_MEDIA')) {
-        message = 'Este evento no tiene imágenes. Ve a "Gestionar imágenes" y sube al menos una foto antes de publicar.';
+      } else if (message.includes('EVENT_PUBLISH_MEDIA_COUNT_INVALID') || message.includes('at least 3 images') || message.includes('at most 9 images')) {
+        // El backend incluye el conteo actual en el mensaje: "currently has N"
+        const match = message.match(/currently has (\d+)/);
+        const count = match ? parseInt(match[1], 10) : null;
+        const isTooFew = message.includes('at least 3') || (count !== null && count < 3);
+        if (isTooFew) {
+          const detail = count !== null ? ` Actualmente tienes ${count}.` : '';
+          message = `Necesitas entre 3 y 9 imágenes para publicar tu evento.${detail} Ve a "Gestionar imágenes" y sube más fotos.`;
+        } else {
+          const detail = count !== null ? ` Actualmente tienes ${count}.` : '';
+          message = `El evento no puede tener más de 9 imágenes para publicarse.${detail} Elimina algunas desde "Gestionar imágenes".`;
+        }
       }
       setErrorModal({ title: 'No se pudo cambiar el estado', message });
     } finally {
@@ -208,13 +219,63 @@ export default function EventManage() {
     }
   };
 
-  const handleMediaFileSelect = (e) => {
-    const selected = Array.from(e.target.files ?? []).map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-    }));
-    setMediaFiles((prev) => [...prev, ...selected]);
+  const MAX_MEDIA_SIZE_MB = 10;
+  const MAX_MEDIA_SIZE_BYTES = MAX_MEDIA_SIZE_MB * 1024 * 1024;
+  const MAX_MEDIA_COUNT = 9;
+
+  const handleMediaFileSelect = async (e) => {
+    const files = Array.from(e.target.files ?? []);
     if (mediaInputRef.current) mediaInputRef.current.value = '';
+    if (files.length === 0) return;
+
+    // ── Guard: límite máximo de 9 imágenes por evento ────────────────────
+    // totalActual = imágenes ya en BD + las que ya están en cola pendiente de subir
+    const totalActual = mediaList.length + mediaFiles.length;
+    const remaining = MAX_MEDIA_COUNT - totalActual;
+
+    if (remaining <= 0) {
+      setMediaUploadError(
+        `Ya tienes ${totalActual} imagen${totalActual !== 1 ? 'es' : ''} — el máximo permitido es ${MAX_MEDIA_COUNT}. Elimina alguna antes de agregar más.`,
+      );
+      return;
+    }
+
+    // Si las nuevas seleccionadas superan el espacio disponible, recortamos y avisamos
+    const accepted = files.slice(0, remaining);
+    const rejected = files.length - accepted.length;
+
+    // Validar tamaño antes de procesar
+    const oversized = accepted.filter((f) => f.size > MAX_MEDIA_SIZE_BYTES);
+    if (oversized.length > 0) {
+      const names = oversized.map((f) => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)} MB)`).join(', ');
+      setMediaUploadError(
+        `${oversized.length > 1 ? 'Las siguientes imágenes superan' : 'La imagen supera'} el límite de ${MAX_MEDIA_SIZE_MB} MB: ${names}`,
+      );
+    }
+
+    const valid = accepted.filter((f) => f.size <= MAX_MEDIA_SIZE_BYTES);
+    if (valid.length === 0) return;
+
+    // Si se recortaron archivos por el límite de 9, informar cuántos se aceptaron
+    if (rejected > 0) {
+      setMediaUploadError(
+        `Ya tienes ${totalActual} imagen${totalActual !== 1 ? 'es' : ''}, puedes agregar máximo ${remaining} más. Se seleccionaron solo las primeras ${accepted.length}.`,
+      );
+    } else {
+      setMediaUploadError(null);
+    }
+
+    // Normalizar cada imagen a 1280×1280 en el browser antes de agregar al estado
+    try {
+      const normalized = await Promise.all(valid.map((f) => normalizeImage(f)));
+      const selected = normalized.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      setMediaFiles((prev) => [...prev, ...selected]);
+    } catch (err) {
+      setMediaUploadError(err.message);
+    }
   };
 
   const handleMediaRemoveFile = (idx) => {
@@ -756,8 +817,8 @@ export default function EventManage() {
               </p>
               <div className="grid grid-cols-3 gap-2">
                 {mediaFiles.map(({ preview }, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden">
-                    <img src={preview} alt="" className="w-full h-full object-cover" />
+                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden" style={{ background: 'var(--color-surface)' }}>
+                    <img src={preview} alt="" className="w-full h-full object-contain" />
                     <button
                       onClick={() => handleMediaRemoveFile(idx)}
                       className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-error transition-colors"
