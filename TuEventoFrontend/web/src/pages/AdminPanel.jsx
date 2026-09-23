@@ -179,10 +179,10 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#12091b] text-white font-sans">
+    <div className="min-h-screen flex bg-background text-textPrimary font-sans">
 
       {/* Sidebar */}
-      <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-[#12091b] border-r border-white/5 h-screen sticky top-0">
+      <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-background border-r border-surfaceAlt/30 h-screen sticky top-0">
 
         <nav className="flex flex-col gap-0.5">
           {navItems.map((item, idx) => (
@@ -191,8 +191,8 @@ export default function AdminPanel() {
               href={item.href || '#'}
               className={`flex items-center gap-2.5 px-3 py-2.5 rounded-full text-sm font-medium transition-colors
                 ${item.active
-                  ? 'bg-[#7f13ec] text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-primary text-textPrimary'
+                  : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt/50'
                 }`}
             >
               <item.icon className="w-4 h-4 flex-shrink-0" />
@@ -202,39 +202,39 @@ export default function AdminPanel() {
         </nav>
 
         {/* User Profile Card */}
-        <div className="pt-4 border-t border-white/5 relative user-menu-container flex-shrink-0">
+        <div className="pt-4 border-t border-surfaceAlt/40 relative user-menu-container flex-shrink-0">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-all group"
+            className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-surfaceAlt/40 transition-all group"
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7f13ec] to-[#5a189a] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primaryDark flex items-center justify-center text-textPrimary font-bold text-sm flex-shrink-0">
               {userData.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 text-left min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{userData.name}</p>
-              <p className="text-xs text-slate-400 truncate">{userData.role}</p>
+              <p className="text-sm font-semibold text-textPrimary truncate">{userData.name}</p>
+              <p className="text-xs text-textMuted truncate">{userData.role}</p>
             </div>
-            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-textMuted transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
           </button>
 
           {/* Dropdown Menu */}
           {showUserMenu && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 mx-2 bg-[#1a0d28] border border-white/10 rounded-xl overflow-hidden shadow-xl z-50 user-menu-container">
+            <div className="absolute bottom-full left-0 right-0 mb-2 mx-2 bg-surface border border-surfaceAlt rounded-xl overflow-hidden shadow-xl z-50 user-menu-container">
               <button
                 onClick={() => handleMenuClick('profile')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-textSecondary hover:bg-surfaceAlt/40 hover:text-textPrimary transition-colors"
               >
                 <User className="w-4 h-4" />
                 Perfil
               </button>
               <button
                 onClick={() => handleMenuClick('settings')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-textSecondary hover:bg-surfaceAlt/40 hover:text-textPrimary transition-colors"
               >
                 <Settings className="w-4 h-4" />
                 Configuración
               </button>
-              <div className="border-t border-white/5">
+              <div className="border-t border-surfaceAlt/40">
                 <button
                   onClick={() => handleMenuClick('logout')}
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
@@ -249,15 +249,15 @@ export default function AdminPanel() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-y-auto bg-[#16091f]">
+      <main className="flex-1 overflow-y-auto bg-background">
         <div className="p-8 max-w-6xl mx-auto w-full">
 
           {/* Page header */}
           <div className="mb-6">
-            <h1 className="text-2xl font-black uppercase tracking-wide text-white mb-1">
+            <h1 className="text-2xl font-black uppercase tracking-wide text-textPrimary mb-1">
               Solicitudes de Organizadores
             </h1>
-            <p className="text-slate-400 text-sm leading-relaxed max-w-xl">
+            <p className="text-textSecondary text-sm leading-relaxed max-w-xl">
               Revisa y gestiona las solicitudes enviadas por usuarios que desean crear eventos en la
               plataforma. Verifica su documentación antes de aprobar su acceso.
             </p>
@@ -271,8 +271,8 @@ export default function AdminPanel() {
                 onClick={() => setFilter(key)}
                 className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all
                   ${filter === key
-                    ? 'bg-[#7f13ec] text-white'
-                    : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                    ? 'bg-primary text-textPrimary'
+                    : 'bg-surfaceAlt/60 text-textSecondary hover:bg-surfaceAlt'
                   }`}
               >
                 {label}
@@ -281,24 +281,24 @@ export default function AdminPanel() {
           </div>
 
           {/* Table card */}
-          <div className="rounded-xl overflow-hidden border border-white/5 bg-[#1a0d28]">
+          <div className="rounded-xl overflow-hidden border border-surfaceAlt bg-surface">
             {error ? (
-              <div className="p-10 text-center text-red-400 text-sm">{error}</div>
+              <div className="p-10 text-center text-error text-sm">{error}</div>
             ) : loading ? (
-              <div className="p-10 text-center text-slate-500 text-sm">Cargando...</div>
+              <div className="p-10 text-center text-textMuted text-sm">Cargando...</div>
             ) : filteredRequests.length === 0 ? (
-              <div className="p-10 text-center text-slate-500 text-sm">
+              <div className="p-10 text-center text-textMuted text-sm">
                 No hay solicitudes para mostrar
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-white/5">
+                    <tr className="border-b border-surfaceAlt">
                       {['Usuario','Correo','Documento','Fecha','Estado','Acciones'].map((h, i) => (
                         <th
                           key={i}
-                          className={`px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-[#7f13ec]
+                          className={`px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-primary
                             ${i === 4 ? 'text-center' : i === 5 ? 'text-right' : ''}`}
                         >
                           {h}
@@ -312,29 +312,29 @@ export default function AdminPanel() {
                       return (
                         <tr
                           key={req.organizerPetitionId}
-                          className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors
+                          className={`border-b border-surfaceAlt hover:bg-surfaceAlt/20 transition-colors
                             ${idx % 2 !== 0 ? 'bg-white/[0.02]' : ''}`}
                         >
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
+                              <div className="w-9 h-9 rounded-full bg-surfaceAlt overflow-hidden flex-shrink-0">
                                 {req.profilePicture
                                   ? <img src={req.profilePicture} alt={req.fullName} className="w-full h-full object-cover" />
-                                  : <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-400">
+                                  : <div className="w-full h-full flex items-center justify-center text-xs font-bold text-textSecondary">
                                       {req.fullName?.charAt(0) || '?'}
                                     </div>
                                 }
                               </div>
-                              <span className="text-sm font-semibold text-white">{req.fullName}</span>
+                              <span className="text-sm font-semibold text-textPrimary">{req.fullName}</span>
                             </div>
                           </td>
-                          <td className="px-5 py-3.5 text-sm text-slate-400">{req.email}</td>
+                          <td className="px-5 py-3.5 text-sm text-textSecondary">{req.email}</td>
                           <td className="px-5 py-3.5">
-                            <span className="px-2.5 py-1 bg-slate-700/60 text-slate-300 rounded-full text-xs font-medium">
+                            <span className="px-2.5 py-1 bg-surfaceAlt text-textSecondary rounded-full text-xs font-medium">
                               {req.documentType || 'Cédula'}
                             </span>
                           </td>
-                          <td className="px-5 py-3.5 text-sm text-slate-400">
+                          <td className="px-5 py-3.5 text-sm text-textSecondary">
                             {req.applicationDate ? new Date(req.applicationDate).toLocaleDateString('es-CO') : '-'}
                           </td>
                           <td className="px-5 py-3.5 text-center">
@@ -345,7 +345,7 @@ export default function AdminPanel() {
                           <td className="px-5 py-3.5 text-right">
                             <button
                               onClick={() => handleViewDocument(req)}
-                              className="p-1.5 hover:bg-[#7f13ec]/20 rounded-full transition-colors text-[#7f13ec]"
+                              className="p-1.5 hover:bg-primary/20 rounded-full transition-colors text-primary"
                               title="Ver solicitud"
                             >
                               <Eye className="w-4 h-4" />
@@ -360,16 +360,16 @@ export default function AdminPanel() {
             )}
 
             {/* Pagination */}
-            <div className="px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/5">
-              <p className="text-xs text-slate-500">
+            <div className="px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-surfaceAlt">
+              <p className="text-xs text-textMuted">
                 Mostrando 1 a {filteredRequests.length} de {requests.length} solicitudes
               </p>
               <div className="flex items-center gap-1.5">
-                <button className="h-8 w-8 flex items-center justify-center rounded-full bg-white/5 text-slate-400 cursor-not-allowed text-sm">‹</button>
-                <button className="h-8 w-8 flex items-center justify-center rounded-full bg-[#7f13ec] text-white font-bold text-xs">1</button>
-                <button className="h-8 w-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-300 text-xs transition-colors">2</button>
-                <button className="h-8 w-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-300 text-xs transition-colors">3</button>
-                <button className="h-8 px-3 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-300 text-xs transition-colors">
+                <button className="h-8 w-8 flex items-center justify-center rounded-full bg-surfaceAlt/50 text-textMuted cursor-not-allowed text-sm">‹</button>
+                <button className="h-8 w-8 flex items-center justify-center rounded-full bg-primary text-textPrimary font-bold text-xs">1</button>
+                <button className="h-8 w-8 flex items-center justify-center rounded-full bg-surfaceAlt/50 hover:bg-surfaceAlt text-textSecondary text-xs transition-colors">2</button>
+                <button className="h-8 w-8 flex items-center justify-center rounded-full bg-surfaceAlt/50 hover:bg-surfaceAlt text-textSecondary text-xs transition-colors">3</button>
+                <button className="h-8 px-3 flex items-center justify-center rounded-full bg-surfaceAlt/50 hover:bg-surfaceAlt text-textSecondary text-xs transition-colors">
                   Siguiente ›
                 </button>
               </div>
@@ -379,25 +379,25 @@ export default function AdminPanel() {
           {/* Document Modal */}
           {showDocumentModal && selectedRequest && (
             <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-[#1a0d28] rounded-2xl border border-white/10 shadow-2xl shadow-black/60 max-w-lg w-full flex flex-col">
+              <div className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl shadow-black/60 max-w-lg w-full flex flex-col">
 
                 {/* Modal Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
+                <div className="flex items-center justify-between px-6 py-5 border-b border-surfaceAlt">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7f13ec] to-[#5a189a] flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primaryDark flex items-center justify-center text-textPrimary font-bold text-sm flex-shrink-0 overflow-hidden">
                       {selectedRequest.profilePicture
                         ? <img src={selectedRequest.profilePicture} alt={selectedRequest.fullName} className="w-full h-full object-cover" />
                         : selectedRequest.fullName?.charAt(0).toUpperCase() || '?'
                       }
                     </div>
                     <div>
-                      <h2 className="text-base font-bold text-white leading-tight">{selectedRequest.fullName}</h2>
-                      <p className="text-xs text-slate-400">{selectedRequest.email}</p>
+                      <h2 className="text-base font-bold text-textPrimary leading-tight">{selectedRequest.fullName}</h2>
+                      <p className="text-xs text-textSecondary">{selectedRequest.email}</p>
                     </div>
                   </div>
                   <button
                     onClick={closeDocumentModal}
-                    className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"
+                    className="p-1.5 hover:bg-surfaceAlt rounded-full transition-colors text-textMuted hover:text-textPrimary"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -405,20 +405,20 @@ export default function AdminPanel() {
 
                 {/* Info Grid */}
                 <div className="px-6 py-4 grid grid-cols-2 gap-3">
-                  <div className="bg-white/[0.04] rounded-xl p-3 border border-white/5">
-                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-1">Tipo de documento</p>
-                    <p className="text-sm font-semibold text-white">{selectedRequest.documentType || 'Cédula'}</p>
+                  <div className="bg-surfaceAlt/50 rounded-xl p-3 border border-surfaceAlt">
+                    <p className="text-[10px] uppercase tracking-widest text-textMuted font-semibold mb-1">Tipo de documento</p>
+                    <p className="text-sm font-semibold text-textPrimary">{selectedRequest.documentType || 'Cédula'}</p>
                   </div>
-                  <div className="bg-white/[0.04] rounded-xl p-3 border border-white/5">
-                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-1">Fecha de solicitud</p>
-                    <p className="text-sm font-semibold text-white">
+                  <div className="bg-surfaceAlt/50 rounded-xl p-3 border border-surfaceAlt">
+                    <p className="text-[10px] uppercase tracking-widest text-textMuted font-semibold mb-1">Fecha de solicitud</p>
+                    <p className="text-sm font-semibold text-textPrimary">
                       {selectedRequest.applicationDate
                         ? new Date(selectedRequest.applicationDate).toLocaleDateString('es-CO')
                         : '-'}
                     </p>
                   </div>
-                  <div className="bg-white/[0.04] rounded-xl p-3 border border-white/5 col-span-2">
-                    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-1">Estado actual</p>
+                  <div className="bg-surfaceAlt/50 rounded-xl p-3 border border-surfaceAlt col-span-2">
+                    <p className="text-[10px] uppercase tracking-widest text-textMuted font-semibold mb-1">Estado actual</p>
                     <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold text-white ${statusStyle(selectedRequest.status).bg}`}>
                       {statusStyle(selectedRequest.status).label}
                     </span>
@@ -432,19 +432,19 @@ export default function AdminPanel() {
                     disabled={!documentUrl || documentLoading}
                     className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl border transition-all group
                       ${documentUrl
-                        ? 'bg-[#7f13ec]/10 border-[#7f13ec]/30 hover:bg-[#7f13ec]/20 hover:border-[#7f13ec]/60 cursor-pointer'
-                        : 'bg-white/[0.03] border-white/5 cursor-not-allowed opacity-50'
+                        ? 'bg-primary/10 border-primary/30 hover:bg-primary/20 hover:border-primary/60 cursor-pointer'
+                        : 'bg-surfaceAlt/30 border-surfaceAlt cursor-not-allowed opacity-50'
                       }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0
-                        ${documentUrl ? 'bg-[#7f13ec]/20' : 'bg-white/5'}`}>
-                        <svg className={`w-4 h-4 ${documentUrl ? 'text-[#7f13ec]' : 'text-slate-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        ${documentUrl ? 'bg-primary/20' : 'bg-surfaceAlt/50'}`}>
+                        <svg className={`w-4 h-4 ${documentUrl ? 'text-primary' : 'text-textMuted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
                       <div className="text-left">
-                        <p className={`text-sm font-semibold ${documentUrl ? 'text-white' : 'text-slate-500'}`}>
+                        <p className={`text-sm font-semibold ${documentUrl ? 'text-textPrimary' : 'text-textMuted'}`}>
                           {documentLoading ? 'Cargando documento...' : documentUrl ? 'Ver documento adjunto' : 'Sin documento disponible'}
                         </p>
                         <p className="text-xs text-slate-500">
@@ -459,7 +459,7 @@ export default function AdminPanel() {
                       </svg>
                     )}
                     {!documentLoading && documentUrl && (
-                      <svg className="w-4 h-4 text-[#7f13ec] group-hover:translate-x-0.5 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="w-4 h-4 text-primary group-hover:translate-x-0.5 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
                     )}

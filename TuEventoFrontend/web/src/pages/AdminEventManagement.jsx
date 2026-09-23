@@ -3,7 +3,8 @@ import {
   Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw,
   Users, LogOut, User, Settings, ChevronDown, X, CheckCircle, XCircle,
   AlertTriangle, Globe, Lock, Loader2, ChevronLeft, ChevronRight,
-  UserCircle, Tag, MapPin, Ticket, ZoomIn, Rocket, Clock, Check,
+  UserCircle, Tag, MapPin, Ticket, ZoomIn, Clock, Check, Send,
+  FileText, Shield,
 } from 'lucide-react';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
 import ConfirmModal from '../components/common/ConfirmModal';
@@ -26,13 +27,36 @@ const fmtDateTime = (dt) =>
     hour: '2-digit', minute: '2-digit',
   }) : '—';
 
+// Extrae solo la hora de una fecha ISO o de un campo date (YYYY-MM-DD → sin hora → '—')
+const fmtTime = (d) => {
+  if (!d) return '—';
+  // Si incluye 'T' es ISO con hora; si no, es solo fecha → sin hora conocida
+  if (!d.includes('T')) return '—';
+  return new Date(d).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+};
+
 // ── Status helpers ─────────────────────────────────────────────────────────────
+// Estilo "outline" desaturado — fondo muy sutil + borde + texto, sin pill sólido.
+// Valores hardcodeados aquí porque este componente vive fuera del sistema de temas
+// (AdminPanel usa su propio fondo oscuro fijo #12091b/#1a0d28).
 const statusStyle = (status) => {
-  if (status === 'DRAFT')      return { bg: 'bg-slate-600',   label: 'Borrador'   };
-  if (status === 'PUBLISHED')  return { bg: 'bg-emerald-500', label: 'Activo'     };
-  if (status === 'CANCELLED')  return { bg: 'bg-rose-500',    label: 'Cancelado'  };
-  if (status === 'COMPLETED')  return { bg: 'bg-violet-600',  label: 'Finalizado' };
-  return { bg: 'bg-slate-700', label: status };
+  if (status === 'DRAFT')     return {
+    label: 'Borrador',
+    cls: 'bg-slate-500/10 text-slate-400 border border-slate-500/30',
+  };
+  if (status === 'PUBLISHED') return {
+    label: 'Activo',
+    cls: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
+  };
+  if (status === 'CANCELLED') return {
+    label: 'Cancelado',
+    cls: 'bg-rose-500/10 text-rose-400 border border-rose-500/30',
+  };
+  if (status === 'COMPLETED') return {
+    label: 'Finalizado',
+    cls: 'bg-primary/10 text-primary border border-primary/30',
+  };
+  return { label: status, cls: 'bg-slate-700/30 text-slate-500 border border-white/10' };
 };
 
 // Transiciones permitidas según las reglas de negocio del backend:
@@ -49,17 +73,31 @@ const allowedTransitions = (status) => {
   return [];
 };
 
-// ── Tarjeta de campo con ícono — patrón: caja ícono + label + valor ──────────
-const InfoCard = ({ icon: Icon, iconBg = 'from-[#7f13ec] to-[#5a189a]', label, children, wide = false }) => (
-  <div className={`flex items-start gap-3 bg-white/[0.04] rounded-xl p-3.5 border border-white/[0.06]
-      hover:border-white/10 transition-colors ${wide ? 'col-span-2' : ''}`}>
-    {/* Caja del ícono */}
-    <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${iconBg} flex items-center justify-center flex-shrink-0 shadow-lg`}>
-      <Icon className="w-4 h-4 text-white" />
+// ── Tarjeta de campo con ícono ────────────────────────────────────────────────
+// iconBg: clase bg-* con opacidad ~15-18% del color semántico — visible pero no sólido.
+// iconColor: clase text-* del color semántico.
+// wide: ocupa las 2 columnas del grid.
+const InfoCard = ({
+  icon: Icon,
+  iconColor = 'text-textMuted',
+  iconBg    = 'bg-violet-900/30',
+  label,
+  children,
+  wide = false,
+}) => (
+  <div className={`admin-info-card flex items-start gap-3 rounded-xl p-3.5 border border-white/[0.07]
+      hover:border-white/[0.14] ${wide ? 'col-span-2' : ''}`}
+    style={{ background: 'rgba(255,255,255,0.04)' }}
+  >
+    {/* Ícono — caja cuadrada con fondo de color bajo-saturado, claramente visible */}
+    <div className={`w-8 h-8 rounded-lg ${iconBg} flex items-center justify-center flex-shrink-0`}>
+      <Icon className={`w-[15px] h-[15px] ${iconColor}`} />
     </div>
     {/* Label + valor */}
     <div className="min-w-0 flex-1">
-      <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-0.5">{label}</p>
+      <p className="text-[10px] uppercase tracking-[0.10em] text-textMuted font-bold mb-1 leading-none">
+        {label}
+      </p>
       {children}
     </div>
   </div>
@@ -276,10 +314,10 @@ export default function AdminEventManagement() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex bg-[#12091b] text-white font-sans">
+    <div className="min-h-screen flex bg-background text-textPrimary font-sans">
 
       {/* ── Sidebar ── */}
-      <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-[#12091b] border-r border-white/5 h-screen sticky top-0">
+      <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-background border-r border-surfaceAlt/30 h-screen sticky top-0">
         <nav className="flex flex-col gap-0.5">
           {navItems.map((item, idx) => (
             <a
@@ -287,8 +325,8 @@ export default function AdminEventManagement() {
               href={item.href}
               className={`flex items-center gap-2.5 px-3 py-2.5 rounded-full text-sm font-medium transition-colors
                 ${item.active
-                  ? 'bg-[#7f13ec] text-white'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-primary text-textPrimary'
+                  : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt/50'
                 }`}
             >
               <item.icon className="w-4 h-4 flex-shrink-0" />
@@ -303,27 +341,27 @@ export default function AdminEventManagement() {
             onClick={() => setShowMenu(!showMenu)}
             className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-all group"
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7f13ec] to-[#5a189a] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primaryDark flex items-center justify-center text-textPrimary font-bold text-sm flex-shrink-0">
               {userData.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 text-left min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{userData.name}</p>
-              <p className="text-xs text-slate-400 truncate">{userData.role}</p>
+              <p className="text-sm font-semibold text-textPrimary truncate">{userData.name}</p>
+              <p className="text-xs text-textMuted truncate">{userData.role}</p>
             </div>
             <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${showMenu ? 'rotate-180' : ''}`} />
           </button>
 
           {showMenu && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 mx-2 bg-[#1a0d28] border border-white/10 rounded-xl overflow-hidden shadow-xl z-50 user-menu-container">
+            <div className="absolute bottom-full left-0 right-0 mb-2 mx-2 bg-surface border border-surfaceAlt rounded-xl overflow-hidden shadow-xl z-50 user-menu-container">
               <button onClick={() => handleMenuClick('profile')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors">
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-textSecondary hover:bg-surfaceAlt/40 hover:text-textPrimary transition-colors">
                 <User className="w-4 h-4" /> Perfil
               </button>
               <button onClick={() => handleMenuClick('settings')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors">
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-textSecondary hover:bg-surfaceAlt/40 hover:text-textPrimary transition-colors">
                 <Settings className="w-4 h-4" /> Configuración
               </button>
-              <div className="border-t border-white/5">
+              <div className="border-t border-surfaceAlt/40">
                 <button onClick={() => handleMenuClick('logout')}
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
                   <LogOut className="w-4 h-4" /> Cerrar sesión
@@ -335,15 +373,15 @@ export default function AdminEventManagement() {
       </aside>
 
       {/* ── Main content ── */}
-      <main className="flex-1 overflow-y-auto bg-[#16091f]">
+      <main className="flex-1 overflow-y-auto bg-background">
         <div className="p-8 max-w-6xl mx-auto w-full">
 
           {/* Page header */}
           <div className="mb-6">
-            <h1 className="text-2xl font-black uppercase tracking-wide text-white mb-1">
+            <h1 className="text-2xl font-black uppercase tracking-wide text-textPrimary mb-1">
               Gestión de Eventos
             </h1>
-            <p className="text-slate-400 text-sm leading-relaxed max-w-xl">
+            <p className="text-textSecondary text-sm leading-relaxed max-w-xl">
               Administra y supervisa todos los eventos publicados en la plataforma de manera
               eficiente y en tiempo real.
             </p>
@@ -357,8 +395,8 @@ export default function AdminEventManagement() {
                 onClick={() => setFilter(key)}
                 className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all
                   ${filter === key
-                    ? 'bg-[#7f13ec] text-white'
-                    : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                    ? 'bg-primary text-textPrimary'
+                    : 'bg-surfaceAlt/60 text-textMuted hover:bg-surfaceAlt'
                   }`}
               >
                 {label}
@@ -378,13 +416,13 @@ export default function AdminEventManagement() {
           )}
 
           {/* Table card */}
-          <div className="rounded-xl overflow-hidden border border-white/5 bg-[#1a0d28]">
+          <div className="rounded-xl overflow-hidden border border-surfaceAlt bg-surface">
             {loading ? (
-              <div className="p-10 text-center text-slate-500 text-sm flex items-center justify-center gap-2">
+              <div className="p-10 text-center text-textMuted text-sm flex items-center justify-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" /> Cargando eventos…
               </div>
             ) : events.length === 0 ? (
-              <div className="p-10 text-center text-slate-500 text-sm">
+              <div className="p-10 text-center text-textMuted text-sm">
                 No hay eventos para mostrar
               </div>
             ) : (
@@ -394,7 +432,7 @@ export default function AdminEventManagement() {
                     <tr className="border-b border-white/5">
                       {['Nombre del Evento', 'Organizador', 'Fechas', 'Categoría', 'Boletas', 'Estado', 'Acciones'].map((h, i) => (
                         <th key={i}
-                          className={`px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-[#7f13ec]
+                          className={`px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-primary
                             ${i === 5 ? 'text-center' : i === 6 ? 'text-right' : ''}`}
                         >
                           {h}
@@ -404,7 +442,6 @@ export default function AdminEventManagement() {
                   </thead>
                   <tbody>
                     {pageEvents.map((ev, idx) => {
-                      const { bg, label } = statusStyle(ev.status);
                       const transitions   = allowedTransitions(ev.status);
                       return (
                         <tr key={ev.eventId}
@@ -414,52 +451,52 @@ export default function AdminEventManagement() {
                           {/* Nombre + avatar del organizador */}
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-slate-700 overflow-hidden flex-shrink-0 border border-white/5">
+                              <div className="w-9 h-9 rounded-full bg-surfaceAlt overflow-hidden flex-shrink-0 border border-surfaceAlt">
                                 {ev.organizerProfilePicture
                                   ? <img src={ev.organizerProfilePicture} alt={ev.organizerName} className="w-full h-full object-cover" />
-                                  : <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-400">
+                                  : <div className="w-full h-full flex items-center justify-center text-xs font-bold text-textMuted">
                                       {ev.organizerName?.charAt(0)?.toUpperCase() || '?'}
                                     </div>
                                 }
                               </div>
                               <div className="min-w-0">
-                                <p className="text-sm font-semibold text-white truncate max-w-[180px]">{ev.eventName}</p>
-                                <p className="text-xs text-slate-500">#{ev.eventId}</p>
+                                <p className="text-sm font-semibold text-textPrimary truncate max-w-[180px]">{ev.eventName}</p>
+                                <p className="text-xs text-textMuted">#{ev.eventId}</p>
                               </div>
                             </div>
                           </td>
 
                           {/* Organizador */}
-                          <td className="px-5 py-3.5 text-sm text-slate-400">
-                            {ev.organizerName || <span className="text-slate-600">—</span>}
+                          <td className="px-5 py-3.5 text-sm text-textSecondary">
+                            {ev.organizerName || <span className="text-textMuted">—</span>}
                           </td>
 
                           {/* Fechas */}
-                          <td className="px-5 py-3.5 text-sm text-slate-400 whitespace-nowrap">
+                          <td className="px-5 py-3.5 text-sm text-textSecondary whitespace-nowrap">
                             {fmtDate(ev.startDate)}
-                            <span className="text-slate-600 mx-1">→</span>
+                            <span className="text-textMuted mx-1">→</span>
                             {fmtDate(ev.finishDate)}
                           </td>
 
                           {/* Categoría */}
                           <td className="px-5 py-3.5">
                             {ev.categoryName
-                              ? <span className="px-2.5 py-1 bg-slate-700/60 text-slate-300 rounded-full text-xs font-medium">
+                              ? <span className="px-2.5 py-1 bg-surfaceAlt text-textSecondary rounded-full text-xs font-medium">
                                   {ev.categoryName}
                                 </span>
-                              : <span className="text-slate-600 text-xs">—</span>
+                              : <span className="text-textMuted text-xs">—</span>
                             }
                           </td>
 
                           {/* Boletas */}
-                          <td className="px-5 py-3.5 text-sm text-slate-400 whitespace-nowrap">
+                          <td className="px-5 py-3.5 text-sm text-textSecondary whitespace-nowrap">
                             {ev.availableSeats.toLocaleString('es-CO')}
                           </td>
 
                           {/* Estado */}
                           <td className="px-5 py-3.5 text-center">
-                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold text-white ${bg}`}>
-                              {label}
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusStyle(ev.status).cls}`}>
+                              {statusStyle(ev.status).label}
                             </span>
                           </td>
 
@@ -469,7 +506,7 @@ export default function AdminEventManagement() {
                               {/* Ver detalle */}
                               <button
                                 onClick={() => openModal(ev)}
-                                className="p-1.5 hover:bg-[#7f13ec]/20 rounded-full transition-colors text-[#7f13ec]"
+                                className="p-1.5 hover:bg-primary/20 rounded-full transition-colors text-primary"
                                 title="Ver detalle"
                               >
                                 <Eye className="w-4 h-4" />
@@ -489,7 +526,7 @@ export default function AdminEventManagement() {
                                   className={`p-1.5 rounded-full transition-colors disabled:opacity-40
                                     ${value === 'PUBLISHED' ? 'hover:bg-emerald-500/20 text-emerald-400' : ''}
                                     ${value === 'CANCELLED' ? 'hover:bg-rose-500/20    text-rose-400'    : ''}
-                                    ${value === 'COMPLETED' ? 'hover:bg-violet-500/20  text-violet-400'  : ''}
+                                    ${value === 'COMPLETED' ? 'hover:bg-primary/20  text-primary'  : ''}
                                   `}
                                 >
                                   {value === 'PUBLISHED' && <CheckCircle className="w-4 h-4" />}
@@ -510,14 +547,14 @@ export default function AdminEventManagement() {
             {/* Paginación */}
             {!loading && events.length > 0 && (
               <div className="px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/5">
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-textMuted">
                   Mostrando {pageStart + 1} a {pageEnd} de {events.length} eventos
                 </p>
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="h-8 w-8 flex items-center justify-center rounded-full bg-white/5 text-slate-400 text-sm
+                    className="h-8 w-8 flex items-center justify-center rounded-full bg-surfaceAlt/50 text-textSecondary text-sm
                       hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
                   >
                     ‹
@@ -528,14 +565,14 @@ export default function AdminEventManagement() {
                     return (
                       <div key={n} className="flex items-center gap-1.5">
                         {prev && n - prev > 1 && (
-                          <span className="text-slate-600 text-xs px-1">…</span>
+                          <span className="text-textMuted text-xs px-1">…</span>
                         )}
                         <button
                           onClick={() => setPage(n)}
                           className={`h-8 w-8 flex items-center justify-center rounded-full text-xs font-bold transition-colors
                             ${page === n
-                              ? 'bg-[#7f13ec] text-white'
-                              : 'bg-white/5 hover:bg-white/10 text-slate-300'
+                              ? 'bg-primary text-textPrimary'
+                              : 'bg-surfaceAlt/50 hover:bg-surfaceAlt text-textSecondary'
                             }`}
                         >
                           {n}
@@ -568,222 +605,338 @@ export default function AdminEventManagement() {
           className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="bg-[#1a0d28] rounded-2xl border border-white/10 shadow-2xl shadow-black/60 w-full max-w-3xl flex flex-col max-h-[90vh]">
+          {/* Panel principal — animación de entrada */}
+          <div
+            className="admin-modal-panel w-full max-w-3xl flex flex-col max-h-[90vh] rounded-2xl overflow-hidden"
+            style={{ background: '#1a0d28', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)' }}
+          >
 
-            {/* ── Header: ícono grande + nombre + badges + cerrar ── */}
-            <div className="flex items-center gap-4 px-6 pt-5 pb-4 border-b border-white/5 flex-shrink-0">
-              {/* Ícono del evento — caja grande rounded-2xl con inicial */}
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#7f13ec] to-[#3b0764] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#7f13ec]/30 border border-white/10">
-                <span className="text-2xl font-black text-white select-none">
-                  {modalData.eventName?.charAt(0).toUpperCase() ?? '?'}
-                </span>
-              </div>
-
-              {/* Título + ID */}
-              <div className="flex-1 min-w-0">
-                <h2 className="text-2xl font-black text-white leading-tight truncate">
-                  {modalData.eventName}
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">ID #{modalData.eventId}</p>
-              </div>
-
-              {/* Badges de estado y visibilidad + cerrar */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Badge estado con ícono */}
-                <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white
-                  ${statusStyle(modalData.status).bg}`}>
-                  {modalData.status === 'DRAFT'     && <Clock        className="w-3.5 h-3.5" />}
-                  {modalData.status === 'PUBLISHED'  && <CheckCircle  className="w-3.5 h-3.5" />}
-                  {modalData.status === 'CANCELLED'  && <XCircle      className="w-3.5 h-3.5" />}
-                  {modalData.status === 'COMPLETED'  && <CheckCircle  className="w-3.5 h-3.5" />}
-                  {statusStyle(modalData.status).label}
-                </span>
-
-                {/* Badge visibilidad con ícono */}
-                {modalData.isPublic != null && (
-                  <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold
-                    ${modalData.isPublic
-                      ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25'
-                      : 'bg-slate-700/60   text-slate-400   border border-white/10'
-                    }`}
-                  >
-                    {modalData.isPublic ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                    {modalData.isPublic ? 'Público' : 'Privado'}
-                  </span>
+            {/* ══ HERO HEADER — imagen de fondo + corte diagonal SVG ══════════ */}
+            <div className="relative flex-shrink-0">
+              {/* Bloque de imagen — altura fija, sin clip-path */}
+              <div
+                className="relative w-full"
+                style={{ height: '190px', background: '#1a0d28' }}
+              >
+                {/* Imagen de fondo — cuando existe */}
+                {mediaUrls.length > 0 && (
+                  <img
+                    src={mediaUrls[carouselIdx]}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                    aria-hidden="true"
+                  />
                 )}
 
-                {/* Botón cerrar */}
-                <button
-                  onClick={closeModal}
-                  className="ml-1 p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                {/* Fallback sin imagen — patrón de líneas diagonales moradas,
+                    sin ningún blanco ni gris */}
+                {mediaUrls.length === 0 && (
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      backgroundImage: `repeating-linear-gradient(
+                        -45deg,
+                        transparent 0px,
+                        transparent 18px,
+                        rgba(124,58,237,0.09) 18px,
+                        rgba(124,58,237,0.09) 19px
+                      )`,
+                    }}
+                  />
+                )}
+
+                {/* Scrim — siempre presente, más pronunciado en la base */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: mediaUrls.length > 0
+                      ? 'linear-gradient(to top, rgba(15,5,32,0.97) 0%, rgba(18,6,36,0.70) 38%, rgba(22,8,42,0.35) 65%, rgba(26,10,44,0.12) 100%)'
+                      : 'linear-gradient(to top, rgba(15,5,32,0.85) 0%, rgba(15,5,32,0.45) 60%, rgba(15,5,32,0.15) 100%)',
+                  }}
+                />
+
+                {/* Scrim radial esquina superior derecha — garantiza legibilidad de badges */}
+                <div
+                  className="absolute top-0 right-0 pointer-events-none"
+                  style={{
+                    width: '220px', height: '110px',
+                    background: 'radial-gradient(ellipse at 100% 0%, rgba(15,5,32,0.80) 0%, transparent 65%)',
+                  }}
+                />
+
+                {/* Badges + cerrar */}
+                <div className="absolute top-3.5 right-4 flex items-center gap-1.5 z-10">
+                  {(() => {
+                    const s = statusStyle(modalData.status);
+                    const dotCls =
+                      modalData.status === 'PUBLISHED' ? 'bg-emerald-400' :
+                      modalData.status === 'CANCELLED' ? 'bg-rose-400'    :
+                      modalData.status === 'COMPLETED' ? 'bg-violet-400'  :
+                      'bg-slate-400';
+                    return (
+                      <span className={`admin-badge-angular flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold ${s.cls}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotCls}`} />
+                        {s.label}
+                      </span>
+                    );
+                  })()}
+                  {modalData.isPublic != null && (
+                    <span className={`admin-badge-angular flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold
+                      ${modalData.isPublic
+                        ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/35'
+                        : 'bg-violet-900/40 text-violet-300 border border-violet-700/40'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${modalData.isPublic ? 'bg-emerald-400' : 'bg-violet-400'}`} />
+                      {modalData.isPublic ? 'Activo' : 'Privado'}
+                    </span>
+                  )}
+                  <button
+                    onClick={closeModal}
+                    className="p-1.5 rounded-lg text-white/55 hover:text-white hover:bg-white/10"
+                    style={{ transition: 'color 150ms, background 150ms, transform 200ms' }}
+                    aria-label="Cerrar"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Nombre + ID */}
+                <div className="absolute bottom-3 left-0 right-0 px-6 z-10">
+                  <h2
+                    className="text-2xl font-black text-white leading-tight tracking-wider uppercase"
+                    style={{ textShadow: '0 2px 16px rgba(0,0,0,0.7)' }}
+                  >
+                    {modalData.eventName}
+                  </h2>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] mt-0.5"
+                    style={{ color: 'rgba(196,181,253,0.62)' }}>
+                    ID #{modalData.eventId}
+                  </p>
+                </div>
               </div>
+
+              {/* Corte diagonal SVG — único método fiable sin artefactos cross-browser.
+                  Dibuja un path que tapa la esquina inferior-derecha con el mismo fondo
+                  del panel (#1a0d28), creando la ilusión del ángulo ~8°. */}
+              <svg
+                aria-hidden="true"
+                className="absolute bottom-0 left-0 w-full pointer-events-none"
+                style={{ height: '22px', display: 'block' }}
+                preserveAspectRatio="none"
+                viewBox="0 0 100 22"
+              >
+                <path d="M0 22 L100 0 L100 22 Z" fill="#1a0d28" />
+              </svg>
+
+              {/* Tira de miniaturas */}
+              {mediaUrls.length > 1 && (
+                <div
+                  className="flex gap-2 px-6 py-2.5"
+                  style={{ background: 'rgba(15,5,32,0.80)', borderBottom: '1px solid rgba(124,58,237,0.15)' }}
+                >
+                  {mediaUrls.map((url, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCarouselIdx(i)}
+                      className={`admin-thumbnail flex-shrink-0 rounded-md overflow-hidden focus:outline-none
+                        ${i === carouselIdx ? 'opacity-100' : 'opacity-40 hover:opacity-70'}`}
+                      style={{
+                        width: '48px', height: '34px',
+                        ...(i === carouselIdx
+                          ? { outline: '2px solid rgba(167,139,250,0.9)', outlineOffset: '2px' }
+                          : {}),
+                      }}
+                      aria-label={`Imagen ${i + 1}`}
+                      aria-pressed={i === carouselIdx}
+                    >
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+
+                  {/* Contador */}
+                  <span className="ml-auto self-center text-[11px] font-semibold tabular-nums" style={{ color: 'rgba(196,181,253,0.60)' }}>
+                    {carouselIdx + 1} / {mediaUrls.length}
+                  </span>
+
+                  {/* Botón abrir lightbox */}
+                  <button
+                    onClick={() => { setLightboxIdx(carouselIdx); setLightboxOpen(true); }}
+                    className="self-center p-1 rounded hover:text-white/80 transition-colors" style={{ color: 'rgba(196,181,253,0.55)' }}
+                    aria-label="Ver en pantalla completa"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Separador — solo dentro del cuerpo, no aquí */}
             </div>
 
-            {/* ── Cuerpo scrollable ── */}
-            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5">
+            {/* ══ CUERPO scrollable ════════════════════════════════════════════ */}
+            <div className="overflow-y-auto flex-1 px-6 pt-5 pb-8 space-y-5">
 
               {detailLoading && (
-                <div className="flex items-center gap-2 text-xs text-slate-500">
+                <div className="flex items-center gap-2 text-xs" style={{ color: 'rgba(196,181,253,0.55)' }}>
                   <Loader2 className="w-3 h-3 animate-spin" /> Cargando información completa…
                 </div>
               )}
 
-              {/* ── Galería de imágenes ── */}
-              <div>
-                {/* Imagen principal grande */}
-                <div
-                  className={`relative w-full h-64 rounded-xl overflow-hidden bg-[#12091b] border border-white/5
-                    ${mediaUrls.length > 0 ? 'cursor-zoom-in group' : ''}`}
-                  onClick={() => {
-                    if (mediaUrls.length > 0) {
-                      setLightboxIdx(carouselIdx);
-                      setLightboxOpen(true);
-                    }
-                  }}
-                >
-                  {mediaUrls.length > 0 ? (
-                    <img
-                      key={carouselIdx}
-                      src={mediaUrls[carouselIdx]}
-                      alt={`${modalData.eventName} — imagen ${carouselIdx + 1}`}
-                      className="w-full h-full object-cover object-center transition-opacity duration-200"
-                    />
-                  ) : (
-                    <EventImagePlaceholder size="lg" />
+              {/* ── Meta inline: fecha · hora · ubicación — chips ────────────── */}
+              {(modalData.startDate || modalData.siteName) && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {modalData.startDate && (
+                    <span
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
+                      style={{
+                        background: 'rgba(124,58,237,0.18)',
+                        border: '1px solid rgba(124,58,237,0.30)',
+                        color: 'rgba(220,210,255,0.92)',
+                      }}
+                    >
+                      <Calendar className="w-3 h-3 flex-shrink-0" />
+                      {fmtDate(modalData.startDate)}
+                      {fmtTime(modalData.startDate) !== '—' && (
+                        <span style={{ color: 'rgba(196,181,253,0.65)' }}>· {fmtTime(modalData.startDate)}</span>
+                      )}
+                    </span>
                   )}
-
-                  {mediaUrls.length > 0 && (
-                    <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                  {modalData.siteName && (
+                    <span
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
+                      style={{
+                        background: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        color: 'rgba(255,255,255,0.72)',
+                      }}
+                    >
+                      <MapPin className="w-3 h-3 flex-shrink-0" />
+                      {modalData.siteName}
+                    </span>
                   )}
-                  {mediaUrls.length > 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                      <div className="bg-black/50 backdrop-blur-sm rounded-full p-3">
-                        <ZoomIn className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
-                  )}
-                  {mediaUrls.length > 1 && (
-                    <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full pointer-events-none">
-                      {carouselIdx + 1} / {mediaUrls.length}
-                    </div>
-                  )}
-                </div>
-
-                {/* Tira de miniaturas — solo si hay más de una imagen */}
-                {mediaUrls.length > 1 && (
-                  <div className="overflow-x-auto overflow-y-visible mt-4 py-1.5 px-0.5">
-                    <div className="flex justify-center gap-2 min-w-min mx-auto">
-                      {mediaUrls.map((url, i) => (
-                      /*
-                       * Estructura de dos capas para que el ring no quede tapado:
-                       *   - <button> exterior: lleva ring + rounded + transition (sin overflow-hidden)
-                       *   - <div> interior:    lleva overflow-hidden + rounded (mismo radio)
-                       * Si overflow-hidden y ring estuvieran en el mismo elemento, el ring
-                       * (implementado como box-shadow externo) quedaría recortado.
-                       */
-                      <button
-                        key={i}
-                        onClick={() => setCarouselIdx(i)}
-                        className={`flex-shrink-0 w-16 h-16 rounded-lg transition-all focus:outline-none
-                          ${i === carouselIdx
-                            ? 'ring-2 ring-[#7f13ec] ring-offset-2 ring-offset-[#1a0d28] opacity-100'
-                            : 'opacity-50 hover:opacity-80'
-                          }`}
-                        aria-label={`Imagen ${i + 1}`}
-                      >
-                        <div className="w-full h-full rounded-lg overflow-hidden">
-                          <img
-                            src={url}
-                            alt={`Miniatura ${i + 1}`}
-                            className="w-full h-full object-cover object-center"
-                          />
-                        </div>
-                      </button>
-                    ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* ── Descripción ── */}
-              {modalData.description && (
-                <div className="bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
-                  <p className="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-2">Descripción</p>
-                  <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{modalData.description}</p>
                 </div>
               )}
 
-              {/* ── Grid de tarjetas con ícono ── */}
-              <div className="grid grid-cols-2 gap-2.5">
+              {/* ── Descripción del evento ────────────────────────────────────── */}
+              {modalData.description && (
+                <>
+                  <div className="admin-divider-angled" />
+                  <div
+                    className="flex items-start gap-3 rounded-xl p-4"
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(124,58,237,0.18)' }}
+                    >
+                      <FileText className="w-[15px] h-[15px]" style={{ color: 'rgba(167,139,250,0.85)' }} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5" style={{ color: 'rgba(196,181,253,0.78)' }}>
+                        Descripción del evento
+                      </p>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(220,210,255,0.75)' }}>
+                        {modalData.description}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
 
-                <InfoCard icon={UserCircle} label="Organizador">
-                  <p className="text-sm font-bold text-white truncate">{modalData.organizerName || '—'}</p>
-                  {modalData.organizerEmail && (
-                    <p className="text-xs text-[#a78bfa] truncate mt-0.5">{modalData.organizerEmail}</p>
-                  )}
-                  {modalData.organizerUserId && (
-                    <p className="text-[10px] text-slate-500 mt-0.5">ID: {modalData.organizerUserId}</p>
-                  )}
-                </InfoCard>
+              {/* Separador */}
+              <div className="admin-divider-angled" />
 
-                <InfoCard icon={Tag} iconBg="from-violet-600 to-violet-800" label="Categoría">
-                  {modalData.categoryName
-                    ? <span className="inline-block px-2 py-0.5 bg-violet-500/15 text-violet-300 rounded-md text-xs font-semibold border border-violet-500/20">
-                        {modalData.categoryName}
-                      </span>
-                    : <p className="text-sm font-bold text-white">—</p>
-                  }
-                </InfoCard>
-
-                <InfoCard icon={Calendar} iconBg="from-sky-600 to-sky-800" label="Fecha de inicio">
-                  <p className="text-sm font-bold text-white">{fmtDate(modalData.startDate)}</p>
-                </InfoCard>
-
-                <InfoCard icon={Calendar} iconBg="from-sky-600 to-sky-800" label="Fecha de fin">
-                  <p className="text-sm font-bold text-white">{fmtDate(modalData.finishDate)}</p>
-                </InfoCard>
-
-                <InfoCard icon={MapPin} iconBg="from-rose-600 to-rose-800" label="Ubicación / Sede" wide>
-                  <p className="text-sm font-bold text-white">{modalData.siteName || '—'}</p>
-                </InfoCard>
-
-                <InfoCard icon={Ticket} iconBg="from-emerald-600 to-emerald-800" label="Boletas disponibles">
-                  <p className="text-sm font-bold text-white">{modalData.availableSeats?.toLocaleString('es-CO') ?? '—'}</p>
-                </InfoCard>
-
-                <InfoCard
-                  icon={modalData.isPublic ? Globe : Lock}
-                  iconBg={modalData.isPublic ? 'from-emerald-600 to-emerald-800' : 'from-slate-600 to-slate-700'}
-                  label="Visibilidad"
-                >
-                  <p className={`text-sm font-bold ${modalData.isPublic ? 'text-emerald-400' : 'text-slate-400'}`}>
-                    {modalData.isPublic == null ? '—' : modalData.isPublic ? 'Público' : 'Privado'}
-                  </p>
-                </InfoCard>
-
-                {modalData.createdAt && (
-                  <InfoCard icon={Calendar} iconBg="from-slate-600 to-slate-700" label="Creado el" wide>
-                    <p className="text-sm font-bold text-white">{fmtDateTime(modalData.createdAt)}</p>
-                    {modalData.createdBy && (
-                      <p className="text-[10px] text-slate-500 mt-0.5">por {modalData.createdBy}</p>
+              {/* ── Grid 2×N de InfoCards ─────────────────────────────────────── */}
+              <div>
+                {/* Grupo temporal — fecha inicio + fin */}
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: 'rgba(196,181,253,0.82)' }}>
+                  Fechas
+                </p>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <InfoCard icon={Calendar} iconColor="text-sky-400" iconBg="bg-sky-500/15" label="Fecha y hora">
+                    <p className="text-sm font-bold text-white">{fmtDate(modalData.startDate)}</p>
+                    {fmtTime(modalData.startDate) !== '—' && (
+                      <p className="text-xs mt-0.5" style={{ color: 'rgba(196,181,253,0.65)' }}>{fmtTime(modalData.startDate)}</p>
                     )}
                   </InfoCard>
-                )}
-
-                {modalData.updatedAt && (
-                  <InfoCard icon={Calendar} iconBg="from-slate-600 to-slate-700" label="Última actualización" wide>
-                    <p className="text-sm font-bold text-white">{fmtDateTime(modalData.updatedAt)}</p>
+                  <InfoCard icon={Calendar} iconColor="text-sky-400" iconBg="bg-sky-500/15" label="Fecha de fin">
+                    <p className="text-sm font-bold text-white">{fmtDate(modalData.finishDate)}</p>
                   </InfoCard>
-                )}
+                </div>
+
+                {/* Grupo de contexto — tipo, ciudad, modalidad, estado */}
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: 'rgba(196,181,253,0.82)' }}>
+                  Detalles
+                </p>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <InfoCard icon={Tag} iconColor="text-violet-400" iconBg="bg-violet-500/15" label="Tipo de evento">
+                    {modalData.categoryName
+                      ? <span
+                          className="admin-badge-angular inline-block mt-0.5 px-2 py-0.5 text-xs font-semibold"
+                          style={{ background: 'rgba(124,58,237,0.15)', color: 'rgba(196,181,253,0.9)', border: '1px solid rgba(124,58,237,0.25)' }}
+                        >
+                          {modalData.categoryName}
+                        </span>
+                      : <p className="text-sm font-bold text-white">—</p>
+                    }
+                  </InfoCard>
+                  <InfoCard icon={MapPin} iconColor="text-rose-400" iconBg="bg-rose-500/15" label="Ciudad">
+                    <p className="text-sm font-bold text-white">{modalData.siteName || '—'}</p>
+                  </InfoCard>
+                  <InfoCard icon={Users} iconColor="text-amber-400" iconBg="bg-amber-500/15" label="Modalidad">
+                    <p className="text-sm font-bold text-white">
+                      {modalData.isPublic == null ? '—' : modalData.isPublic ? 'Presencial' : 'Virtual'}
+                    </p>
+                  </InfoCard>
+                  <InfoCard
+                    icon={Shield}
+                    iconColor={modalData.isPublic ? 'text-emerald-400' : 'text-violet-300'}
+                    iconBg={modalData.isPublic ? 'bg-emerald-500/15' : 'bg-violet-900/30'}
+                    label="Estado"
+                  >
+                    <p className={`text-sm font-bold ${modalData.isPublic ? 'text-emerald-400' : 'text-violet-300'}`}>
+                      {modalData.isPublic == null ? '—' : modalData.isPublic ? 'Público' : 'Privado'}
+                    </p>
+                  </InfoCard>
+                </div>
+
+                {/* Organizador + boletas */}
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: 'rgba(196,181,253,0.82)' }}>
+                  Organización
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <InfoCard icon={UserCircle} iconColor="text-violet-300" iconBg="bg-violet-900/30" label="Organizador" wide>
+                    <p className="text-sm font-bold text-white truncate">{modalData.organizerName || '—'}</p>
+                    {modalData.organizerEmail && (
+                      <p className="text-xs truncate mt-0.5" style={{ color: 'rgba(167,139,250,0.75)' }}>
+                        {modalData.organizerEmail}
+                      </p>
+                    )}
+                  </InfoCard>
+                  <InfoCard icon={Ticket} iconColor="text-emerald-400" iconBg="bg-emerald-500/15" label="Boletas disponibles">
+                    <p className="text-sm font-bold text-white">{modalData.availableSeats?.toLocaleString('es-CO') ?? '—'}</p>
+                  </InfoCard>
+                  {modalData.createdAt && (
+                    <InfoCard icon={Clock} iconColor="text-violet-300" iconBg="bg-violet-900/30" label="Creado el">
+                      <p className="text-sm font-bold text-white">{fmtDateTime(modalData.createdAt)}</p>
+                      {modalData.createdBy && (
+                        <p className="text-[10px] mt-0.5" style={{ color: 'rgba(196,181,253,0.55)' }}>por {modalData.createdBy}</p>
+                      )}
+                    </InfoCard>
+                  )}
+                  {modalData.updatedAt && (
+                    <InfoCard icon={Clock} iconColor="text-violet-300" iconBg="bg-violet-900/30" label="Última actualización">
+                      <p className="text-sm font-bold text-white">{fmtDateTime(modalData.updatedAt)}</p>
+                    </InfoCard>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* ── Footer: botones de acción ── */}
+            {/* ══ FOOTER: botones de acción ════════════════════════════════════ */}
             {allowedTransitions(modalData.status).length > 0 && (
-              <div className="px-6 py-4 border-t border-white/5 flex gap-3 flex-shrink-0">
+              <div
+                className="px-6 py-4 flex gap-3 flex-shrink-0"
+                style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+              >
                 {allowedTransitions(modalData.status).map(({ value, label: tLabel }) => (
                   <button
                     key={value}
@@ -793,23 +946,27 @@ export default function AdminEventManagement() {
                         : handleStatusChange(modalData.eventId, value, modalData.eventName)
                     }
                     disabled={actionLoading}
-                    className={`flex-1 py-3 rounded-full text-sm font-bold border transition-all disabled:opacity-50
-                      flex items-center justify-center gap-2
+                    className={`flex-1 py-3.5 rounded-xl text-sm font-bold border transition-all disabled:opacity-50
+                      flex items-center justify-center gap-2 tracking-wide
                       ${value === 'PUBLISHED'
-                        ? 'bg-gradient-to-r from-[#7f13ec] to-[#3b82f6] text-white border-transparent hover:brightness-110 shadow-lg shadow-[#7f13ec]/30'
+                        ? 'admin-publish-btn text-white border-transparent hover:brightness-110'
                         : value === 'CANCELLED'
                           ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500 hover:text-white hover:border-rose-500'
-                          : 'bg-violet-500/10 text-violet-400 border-violet-500/20 hover:bg-violet-500 hover:text-white hover:border-violet-500'
+                          : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20'
                       }`}
+                    style={value === 'PUBLISHED' ? {
+                      background: 'linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%)',
+                      boxShadow: 'rgba(124,58,237,0.45) 0 12px 32px, rgba(124,58,237,0.15) 0 0 0 1px inset',
+                    } : undefined}
                   >
                     {actionLoading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        {value === 'PUBLISHED' && <Rocket  className="w-4 h-4" />}
+                        {value === 'PUBLISHED' && <Send    className="w-4 h-4" />}
                         {value === 'CANCELLED' && <XCircle className="w-4 h-4" />}
                         {value === 'COMPLETED' && <Check   className="w-4 h-4" />}
-                        {actionLoading ? 'Procesando…' : tLabel}
+                        {tLabel}
                       </>
                     )}
                   </button>
@@ -907,7 +1064,7 @@ export default function AdminEventManagement() {
       ═══════════════════════════════════════════════════════════════════════ */}
       {pendingCancel && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-          <div className="bg-[#1a0d28] rounded-2xl border border-white/10 shadow-2xl shadow-black/60 w-full max-w-sm p-6 flex flex-col items-center text-center gap-4">
+          <div className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl shadow-black/60 w-full max-w-sm p-6 flex flex-col items-center text-center gap-4">
 
             {/* Icono de advertencia */}
             <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
@@ -915,8 +1072,8 @@ export default function AdminEventManagement() {
             </div>
 
             <div>
-              <h3 className="text-base font-black text-white mb-1">¿Cancelar este evento?</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
+              <h3 className="text-base font-black text-textPrimary mb-1">¿Cancelar este evento?</h3>
+              <p className="text-sm text-textSecondary leading-relaxed">
                 Estás por cancelar{' '}
                 <span className="text-white font-semibold">"{pendingCancel.eventName}"</span>.
                 Esta acción no se puede deshacer y dejará de ser visible para los asistentes.
@@ -927,8 +1084,8 @@ export default function AdminEventManagement() {
               <button
                 onClick={dismissCancel}
                 disabled={actionLoading}
-                className="flex-1 py-2.5 rounded-full text-sm font-bold bg-white/5 text-slate-300
-                  border border-white/10 hover:bg-white/10 transition-all disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-full text-sm font-bold bg-surfaceAlt text-textSecondary
+                  border border-surfaceAlt hover:bg-surfaceAlt/80 transition-all disabled:opacity-50"
               >
                 No, volver
               </button>
