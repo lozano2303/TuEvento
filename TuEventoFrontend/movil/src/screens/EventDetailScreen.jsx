@@ -1011,6 +1011,53 @@ export default function EventDetailScreen() {
                   </ScrollView>
                 </View>
               )}
+
+              {/* ── Botón de checkout — visible cuando el carrito está lleno ── */}
+              {cart.length > 0 && cart.length >= selectedQuantity && (
+                <TouchableOpacity
+                  onPress={() => {
+                    const seatIds = cart.map((s) => s.seatId);
+                    const cartItems = cart.map((s) => {
+                      const section = sections.find(
+                        (sec) => sec.eventSectionId === s.eventSectionId
+                      );
+                      return {
+                        seatId:      s.seatId,
+                        code:        s.code,
+                        sectionName: section?.sectionTypeName ?? "Sección",
+                        price:       section?.price ?? 0,
+                      };
+                    });
+                    navigation.navigate("Checkout", {
+                      eventId,
+                      seatIds,
+                      cartItems,
+                      eventTitle: event?.eventName ?? "Evento",
+                    });
+                  }}
+                  activeOpacity={0.85}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    backgroundColor: colors.success,
+                    borderRadius: 14,
+                    paddingVertical: 15,
+                    marginTop: 4,
+                    shadowColor: colors.success,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.35,
+                    shadowRadius: 8,
+                    elevation: 6,
+                  }}
+                >
+                  <Ionicons name="card-outline" size={20} color="#FFFFFF" />
+                  <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "800" }}>
+                    Ir al pago · {cart.length} {cart.length === 1 ? "silla" : "sillas"}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </View>
