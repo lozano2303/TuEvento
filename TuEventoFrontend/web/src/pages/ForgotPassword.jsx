@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { forgotPassword, resetPassword } from "../services/Login.js";
 import { Eye, EyeOff, CheckCircle, Lock, ArrowRight, PartyPopper, Sparkles } from "lucide-react";
 import BaseModal from "../components/common/BaseModal.jsx";
+import loginHero from "../assets/images/tu-evento-login-hero-left.png";
 
 export default function ForgotPassword({ onBackToLogin }) {
   const [step, setStep] = useState('email'); // 'email' or 'reset'
@@ -116,16 +117,13 @@ export default function ForgotPassword({ onBackToLogin }) {
   if (step === 'reset') {
     return (
       <div className="min-h-screen flex">
-        <div className="theme-auth-hero w-1/2 flex items-center justify-center p-8">
-          <div className="text-center space-y-6 max-w-sm">
-            <img
-              src="/src/assets/images/fondologin.png"
-              alt="Ilustración escritorio"
-              className="w-full max-w-xs drop-shadow-2xl"
-            />
-          </div>
+        <div className="relative w-1/2 overflow-hidden">
+          <img
+            src={loginHero}
+            alt="Tu Evento — plataforma de eventos en vivo"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
         </div>
-
         <div className="w-1/2 bg-background flex items-center justify-center p-8">
           <div className="w-full max-w-sm space-y-6">
             <div className="text-center space-y-2">
@@ -295,14 +293,12 @@ export default function ForgotPassword({ onBackToLogin }) {
 
   return (
     <div className="min-h-screen flex">
-      <div className="theme-auth-hero w-1/2 flex items-center justify-center p-8">
-        <div className="text-center space-y-6 max-w-sm">
-          <img
-            src="/src/assets/images/fondologin.png"
-            alt="Ilustración escritorio"
-            className="w-full max-w-xs drop-shadow-2xl"
-          />
-        </div>
+      <div className="relative w-1/2 overflow-hidden">
+        <img
+          src={loginHero}
+          alt="Tu Evento — plataforma de eventos en vivo"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
       </div>
 
       <div className="w-1/2 bg-background flex items-center justify-center p-8">
