@@ -29,7 +29,7 @@ public class EventMediaController {
 
     @Operation(summary = "Upload media for an event")
     @PostMapping(consumes = "multipart/form-data")
-    @PreAuthorize("hasAuthority('ORGANIZER')")
+    @PreAuthorize("hasAuthority('ORGANIZER') or hasAuthority('ADMIN')")
     public ResponseEntity<ApiResponse<EventMediaResponse>> uploadMedia(
             @PathVariable Long eventId,
             @RequestParam("file") MultipartFile file,
