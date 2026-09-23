@@ -1087,3 +1087,109 @@ input[type="password"]::-ms-reveal { display: none; }
 .bm-body--scroll::-webkit-scrollbar       { width: 4px; }
 .bm-body--scroll::-webkit-scrollbar-track { background: var(--color-surface); }
 .bm-body--scroll::-webkit-scrollbar-thumb { background: var(--color-surfaceAlt); border-radius: 2px; }
+
+/* ── Admin Event Modal — estética angular/deportiva ─────────────────────────
+   Clases auxiliares para el modal de detalle de evento en AdminEventManagement.
+   Fondo fijo #1a0d28 (fuera del sistema de temas) — los valores son hardcodeados
+   intencionalmente para este componente.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Animación de entrada del modal — mismo easing que modalIn pero con translate en Y */
+@keyframes adminModalIn {
+  from { opacity: 0; transform: scale(0.97) translateY(10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+
+/* Panel del modal */
+.admin-modal-panel {
+  animation: adminModalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Hero header — corte diagonal limpio via div de recorte interno.
+   El contenedor exterior tiene overflow-hidden; el div interno usa
+   padding-bottom para que la zona de corte tenga altura real.
+   El "diente" diagonal se logra con un div absoluto al fondo del hero
+   con el mismo color del panel, sin pseudo-elementos que queden visibles. */
+.admin-modal-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Franja diagonal decorativa en el botón Publicar.
+   Una sola línea translúcida de esquina a esquina — highlight sutil, no tres rayas. */
+.admin-publish-btn {
+  position: relative;
+  overflow: hidden;
+}
+.admin-publish-btn::before {
+  content: '';
+  position: absolute;
+  /* La franja va de la esquina superior-izquierda a la inferior-derecha
+     usando un gradiente lineal de 1px de ancho efectivo a 35°: */
+  inset: 0;
+  background: linear-gradient(
+    35deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.13) 36%,
+    rgba(255, 255, 255, 0.13) 37%,
+    transparent 38%
+  );
+  pointer-events: none;
+}
+
+/* Badge angular — clip-path para esquinas cortadas en vez de border-radius.
+   Corte de ~4px en las esquinas superior-derecha e inferior-izquierda. */
+.admin-badge-angular {
+  border-radius: 0 !important;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 5px) 0,
+    100% 5px,
+    100% 100%,
+    5px 100%,
+    0 calc(100% - 5px)
+  );
+  padding-left:  0.65rem;
+  padding-right: 0.65rem;
+}
+
+/* Separador con quiebre diagonal sutil en el extremo derecho.
+   Height real = 2px; el pseudo-elemento añade el quiebre de ~3px en un extremo. */
+.admin-divider-angled {
+  position: relative;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 0;
+}
+.admin-divider-angled::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: -2px;
+  width: 40px;
+  height: 4px;
+  /* Línea inclinada: de (0, 3px) a (40px, 0) */
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.14)
+  );
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+}
+
+/* InfoCard con micro-lift en hover */
+.admin-info-card {
+  transition: transform 120ms ease, border-color 120ms ease !important;
+  will-change: transform;
+}
+.admin-info-card:hover {
+  transform: translateY(-1px);
+}
+
+/* Miniatura del carrusel — scale sutil en hover */
+.admin-thumbnail {
+  transition: transform 150ms ease, opacity 150ms ease !important;
+}
+.admin-thumbnail:hover {
+  transform: scale(1.05);
+}

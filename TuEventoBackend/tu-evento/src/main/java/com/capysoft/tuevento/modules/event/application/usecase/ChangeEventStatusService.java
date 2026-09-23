@@ -48,10 +48,15 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
         validateTransition(event.getStatus(), request.getNewStatus());
 
         if (request.getNewStatus() == EventStatus.PUBLISHED) {
-            // 1. Validar que tenga al menos una imagen
-            if (eventMediaRepository.countByEventId(eventId) == 0) {
-                throw new BusinessException("EVENT_PUBLISH_NO_MEDIA",
-                        "Event must have at least one image before publishing");
+            // 1. Validar que tenga entre 3 y 9 imágenes (inclusive)
+            long mediaCount = eventMediaRepository.countByEventId(eventId);
+            if (mediaCount < 3) {
+                throw new BusinessException("EVENT_PUBLISH_MEDIA_COUNT_INVALID",
+                        "Event must have at least 3 images before publishing (currently has " + mediaCount + ")");
+            }
+            if (mediaCount > 9) {
+                throw new BusinessException("EVENT_PUBLISH_MEDIA_COUNT_INVALID",
+                        "Event must have at most 9 images before publishing (currently has " + mediaCount + ")");
             }
             // 2. Validar que tenga al menos una sección con sillas configurada
             List<EventSection> sections = eventSectionRepository.findAllByEventId(eventId.intValue());

@@ -298,14 +298,14 @@ export default function EventDetail() {
             {/* Imagen principal */}
             <div
               className="relative rounded-2xl overflow-hidden"
-              style={{ border: '0.5px solid rgba(167,139,250,0.2)', aspectRatio: '16/9' }}
+              style={{ border: '0.5px solid rgba(167,139,250,0.2)', aspectRatio: '16/9', background: 'var(--color-surface)' }}
             >
               {media.length > 0 ? (
                 <>
                   <img
                     src={media[activeImage].imgUrl}
                     alt={`${event.eventName} — imagen ${activeImage + 1}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                   {media.length > 1 && (
                     <>
