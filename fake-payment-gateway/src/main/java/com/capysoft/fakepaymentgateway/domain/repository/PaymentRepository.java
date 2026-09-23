@@ -2,6 +2,7 @@ package com.capysoft.fakepaymentgateway.domain.repository;
 
 import com.capysoft.fakepaymentgateway.domain.model.Payment;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -12,4 +13,5 @@ public interface PaymentRepository {
     Payment save(Payment payment);
     Optional<Payment> findByPaymentId(String paymentId);
     boolean existsByPaymentId(String paymentId);
+    List<Payment> findAll();
 }
