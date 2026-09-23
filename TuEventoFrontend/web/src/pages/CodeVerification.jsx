@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Mail, ArrowRight, RefreshCw, PartyPopper, Sparkles } from "lucide-react";
 import { verifyActivationCode, resendActivationCode, resendActivationCodeByEmail } from "../services/Login.js";
+import loginHero from "../assets/images/tu-evento-login-hero-left.png";
 
 export default function CodeVerification({ userID: propUserID, userEmail: propUserEmail, onVerificationSuccess, onBackToLogin }) {
   const navigate = useNavigate();
@@ -203,15 +204,13 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
 
   return (
     <div className="min-h-screen flex">
-      {/* Columna izquierda - Ilustración con gradiente púrpura */}
-      <div className="theme-auth-hero w-1/2 flex items-center justify-center p-8">
-        <div className="text-center space-y-6 max-w-sm">
-          <img
-            src="/src/assets/images/fondologin.png"
-            alt="Ilustración escritorio"
-            className="w-full max-w-xs drop-shadow-2xl"
-          />
-        </div>
+      {/* Columna izquierda — hero a pantalla completa */}
+      <div className="relative w-1/2 overflow-hidden">
+        <img
+          src={loginHero}
+          alt="Tu Evento — plataforma de eventos en vivo"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
       </div>
 
       <div className="w-1/2 bg-background flex items-center justify-center p-8">

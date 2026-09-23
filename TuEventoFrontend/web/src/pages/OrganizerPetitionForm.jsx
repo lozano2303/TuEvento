@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileText, UserCheck, Info, Send, Delete, CheckCircle, Clock, XCircle, AlertCircle, CreditCard } from 'lucide-react';
+import { Upload, FileText, UserCheck, Info, Send, Delete, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react';
 import { createPetition, getPetitionStatus } from '../services/OrganizerPetitionService';
 
 const OrganizerPetitionForm = () => {
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
-  const [documentType, setDocumentType] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -38,13 +37,11 @@ const OrganizerPetitionForm = () => {
   const handleRemoveFile = () => setSelectedFile(null);
 
   const handleSubmit = async () => {
-    if (!documentType) { setError('Selecciona el tipo de documento'); return; }
     if (!selectedFile) { setError('Selecciona un documento'); return; }
     setLoading(true); setError(null);
     try {
       const formData = new FormData();
       formData.append('document', selectedFile);
-      formData.append('documentType', documentType);
       await createPetition(formData);
       setSuccess(true);
       await checkPetitionStatus();
@@ -150,52 +147,6 @@ const OrganizerPetitionForm = () => {
 
             {showFileUpload && (
               <>
-                {/* Document type selector */}
-                <div>
-                  <h3 className="text-textPrimary text-lg font-bold leading-tight tracking-tight mb-3 flex items-center gap-2">
-                    <CreditCard className="text-primary w-5 h-5" />
-                    Tipo de documento
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {[
-                      { value: 'Cédula',     label: 'Cédula de ciudadanía / ID' },
-                      { value: 'Pasaporte',  label: 'Pasaporte' },
-                      { value: 'Otro',       label: 'Otro documento oficial' },
-                    ].map(({ value, label }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => { setDocumentType(value); setError(null); }}
-                        className="flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all"
-                        style={{
-                          background: documentType === value
-                            ? 'color-mix(in srgb, var(--color-primary) 15%, transparent)'
-                            : 'color-mix(in srgb, var(--color-surface) 40%, transparent)',
-                          border: `1px solid ${documentType === value ? 'var(--color-primary)' : 'var(--color-surfaceAlt)'}`,
-                        }}
-                      >
-                        <span
-                          className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
-                          style={{
-                            borderColor: documentType === value ? 'var(--color-primary)' : 'var(--color-surfaceAlt)',
-                          }}
-                        >
-                          {documentType === value && (
-                            <span
-                              className="w-2 h-2 rounded-full"
-                              style={{ background: 'var(--color-primary)' }}
-                            />
-                          )}
-                        </span>
-                        <span className="text-sm font-medium" style={{
-                          color: documentType === value ? 'var(--color-textPrimary)' : 'var(--color-textSecondary)',
-                        }}>
-                          {label}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
                 <div
                   className="rounded-xl p-8 transition-all"
                   style={{
@@ -255,7 +206,7 @@ const OrganizerPetitionForm = () => {
             )}
 
             <button onClick={handleSubmit}
-              disabled={!selectedFile || !documentType || loading || petitionStatus?.status === 'PENDING' || petitionStatus?.status === 'APPROVED'}
+              disabled={!selectedFile || loading || petitionStatus?.status === 'PENDING' || petitionStatus?.status === 'APPROVED'}
               className="flex items-center justify-center gap-2 w-full h-14 rounded-xl text-textPrimary font-bold text-lg tracking-wide transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))' }}>
               {loading ? (

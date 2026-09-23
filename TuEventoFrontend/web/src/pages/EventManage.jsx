@@ -1,12 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, LayoutDashboard, Pencil, Trash2, AlertTriangle, ImagePlus } from 'lucide-react';
+import {
+  Plus, LayoutDashboard, Pencil, Trash2, AlertTriangle, ImagePlus,
+  Eye, Calendar, Tag, Globe, Lock, Rocket, ChevronLeft, ChevronRight,
+  FileText, MapPin, Users,
+} from 'lucide-react';
 import * as EventService from '../services/EventService';
 import * as CategoryService from '../services/CategoryService';
 import { getEventMedia, uploadEventMedia } from '../services/EventMediaService';
 import StatusDropdown from '../components/event-manage/StatusDropdown';
 import Modal from '../components/common/Modal';
-import { STATUS_BADGE, TRANSITION_INFO } from '../constants/eventStatus';
+import { STATUS_BADGE, TRANSITION_INFO, VALID_TRANSITIONS } from '../constants/eventStatus';
+import { normalizeImage } from '../utils/imageNormalize';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 // STATUS_BADGE y STATUS_LABEL se importan desde constants/eventStatus.js
@@ -62,6 +67,13 @@ export default function EventManage() {
   // Filtro de estado — frontend sobre datos ya cargados
   const [statusFilter, setStatusFilter] = useState('ALL');
 
+  // Modal de detalle de evento
+  const [detailTarget,    setDetailTarget]    = useState(null);  // event summary
+  const [detailFull,      setDetailFull]      = useState(null);  // EventResponse completo
+  const [detailMedia,     setDetailMedia]     = useState([]);    // string[] de URLs
+  const [detailLoading,   setDetailLoading]   = useState(false);
+  const [detailCarousel,  setDetailCarousel]  = useState(0);
+
   // ── Carga inicial ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!userId) { setError('No hay sesión activa'); setIsLoading(false); return; }
@@ -103,8 +115,18 @@ export default function EventManage() {
         message = 'Este evento no tiene un layout guardado todavía. Ve a "Editar layout" y guarda al menos una sección antes de publicar.';
       } else if (message.includes('at least one section with seats') || message.includes('EVENT_SECTIONS_REQUIRED')) {
         message = 'Este evento no tiene ninguna sección con sillas configurada. Ve a "Editar layout", agrega al menos una sección y guarda antes de publicar.';
-      } else if (message.includes('at least one image') || message.includes('EVENT_PUBLISH_NO_MEDIA')) {
-        message = 'Este evento no tiene imágenes. Ve a "Gestionar imágenes" y sube al menos una foto antes de publicar.';
+      } else if (message.includes('EVENT_PUBLISH_MEDIA_COUNT_INVALID') || message.includes('at least 3 images') || message.includes('at most 9 images')) {
+        // El backend incluye el conteo actual en el mensaje: "currently has N"
+        const match = message.match(/currently has (\d+)/);
+        const count = match ? parseInt(match[1], 10) : null;
+        const isTooFew = message.includes('at least 3') || (count !== null && count < 3);
+        if (isTooFew) {
+          const detail = count !== null ? ` Actualmente tienes ${count}.` : '';
+          message = `Necesitas entre 3 y 9 imágenes para publicar tu evento.${detail} Ve a "Gestionar imágenes" y sube más fotos.`;
+        } else {
+          const detail = count !== null ? ` Actualmente tienes ${count}.` : '';
+          message = `El evento no puede tener más de 9 imágenes para publicarse.${detail} Elimina algunas desde "Gestionar imágenes".`;
+        }
       }
       setErrorModal({ title: 'No se pudo cambiar el estado', message });
     } finally {
@@ -192,6 +214,46 @@ export default function EventManage() {
 
   // El cierre por click fuera lo maneja StatusDropdown internamente vía su propio useEffect.
 
+  // ── Detalle de evento ────────────────────────────────────────────────────
+  const openDetail = async (event) => {
+    setDetailTarget(event);
+    setDetailFull(null);
+    setDetailMedia([]);
+    setDetailCarousel(0);
+    // Carga en paralelo EventResponse completo + imágenes
+    setDetailLoading(true);
+    try {
+      const [detailRes, mediaRes] = await Promise.allSettled([
+        EventService.getEventById(event.eventId),
+        getEventMedia(event.eventId),
+      ]);
+      if (detailRes.status === 'fulfilled') setDetailFull(detailRes.value?.data ?? null);
+      if (mediaRes.status === 'fulfilled') {
+        const urls = (mediaRes.value?.data ?? [])
+          .sort((a, b) => a.mediaId - b.mediaId)
+          .map((m) => m.imgUrl)
+          .filter(Boolean);
+        setDetailMedia(urls);
+      }
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeDetail = () => {
+    setDetailTarget(null);
+    setDetailFull(null);
+    setDetailMedia([]);
+    setDetailCarousel(0);
+  };
+
+  // ── Publicar desde modal de detalle ──────────────────────────────────────
+  const handlePublishFromDetail = () => {
+    if (!detailTarget) return;
+    closeDetail();
+    handleTransitionRequest(detailTarget, 'PUBLISHED');
+  };
+
   // ── Gestión de imágenes ───────────────────────────────────────────────────
   const openMedia = async (event) => {
     setMediaTarget(event);
@@ -208,13 +270,63 @@ export default function EventManage() {
     }
   };
 
-  const handleMediaFileSelect = (e) => {
-    const selected = Array.from(e.target.files ?? []).map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-    }));
-    setMediaFiles((prev) => [...prev, ...selected]);
+  const MAX_MEDIA_SIZE_MB = 10;
+  const MAX_MEDIA_SIZE_BYTES = MAX_MEDIA_SIZE_MB * 1024 * 1024;
+  const MAX_MEDIA_COUNT = 9;
+
+  const handleMediaFileSelect = async (e) => {
+    const files = Array.from(e.target.files ?? []);
     if (mediaInputRef.current) mediaInputRef.current.value = '';
+    if (files.length === 0) return;
+
+    // ── Guard: límite máximo de 9 imágenes por evento ────────────────────
+    // totalActual = imágenes ya en BD + las que ya están en cola pendiente de subir
+    const totalActual = mediaList.length + mediaFiles.length;
+    const remaining = MAX_MEDIA_COUNT - totalActual;
+
+    if (remaining <= 0) {
+      setMediaUploadError(
+        `Ya tienes ${totalActual} imagen${totalActual !== 1 ? 'es' : ''} — el máximo permitido es ${MAX_MEDIA_COUNT}. Elimina alguna antes de agregar más.`,
+      );
+      return;
+    }
+
+    // Si las nuevas seleccionadas superan el espacio disponible, recortamos y avisamos
+    const accepted = files.slice(0, remaining);
+    const rejected = files.length - accepted.length;
+
+    // Validar tamaño antes de procesar
+    const oversized = accepted.filter((f) => f.size > MAX_MEDIA_SIZE_BYTES);
+    if (oversized.length > 0) {
+      const names = oversized.map((f) => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)} MB)`).join(', ');
+      setMediaUploadError(
+        `${oversized.length > 1 ? 'Las siguientes imágenes superan' : 'La imagen supera'} el límite de ${MAX_MEDIA_SIZE_MB} MB: ${names}`,
+      );
+    }
+
+    const valid = accepted.filter((f) => f.size <= MAX_MEDIA_SIZE_BYTES);
+    if (valid.length === 0) return;
+
+    // Si se recortaron archivos por el límite de 9, informar cuántos se aceptaron
+    if (rejected > 0) {
+      setMediaUploadError(
+        `Ya tienes ${totalActual} imagen${totalActual !== 1 ? 'es' : ''}, puedes agregar máximo ${remaining} más. Se seleccionaron solo las primeras ${accepted.length}.`,
+      );
+    } else {
+      setMediaUploadError(null);
+    }
+
+    // Normalizar cada imagen a 1280×1280 en el browser antes de agregar al estado
+    try {
+      const normalized = await Promise.all(valid.map((f) => normalizeImage(f)));
+      const selected = normalized.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      setMediaFiles((prev) => [...prev, ...selected]);
+    } catch (err) {
+      setMediaUploadError(err.message);
+    }
   };
 
   const handleMediaRemoveFile = (idx) => {
@@ -400,6 +512,15 @@ export default function EventManage() {
                     {/* Acciones */}
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
+                        {/* Ver detalle */}
+                        <button
+                          onClick={() => openDetail(event)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-accent hover:bg-accent/10 transition-colors"
+                          title="Ver detalle del evento"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+
                         {/* Editar layout — solo disponible en DRAFT */}
                         <button
                           onClick={() => event.status === 'DRAFT' && navigate(`/events/${event.eventId}/layout`)}
@@ -456,6 +577,283 @@ export default function EventManage() {
           </table>
         </div>
       )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          Modal de detalle de evento — layout igual a la imagen de referencia
+      ══════════════════════════════════════════════════════════════════ */}
+      {detailTarget && (() => {
+        // Datos combinados: summary (siempre disponible) + fullDetail (llega async)
+        const ev          = detailTarget;
+        const full        = detailFull;
+        const badge       = STATUS_BADGE[ev.status] ?? STATUS_BADGE.DRAFT;
+        const canPublish  = VALID_TRANSITIONS[ev.status]?.includes('PUBLISHED');
+        const fmtDate     = (d) => d
+          ? new Date(d + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+          : '—';
+
+        // Campos del grid
+        const gridFields = [
+          {
+            icon: Calendar,
+            label: 'FECHA Y HORA',
+            value: fmtDate(ev.startDate),
+            sub:   null,
+          },
+          {
+            icon: Tag,
+            label: 'TIPO DE EVENTO',
+            value: full?.categoryName ?? ev.categoryName ?? null,
+            pill:  true,
+          },
+          {
+            icon: MapPin,
+            label: 'CIUDAD',
+            value: full?.siteName ?? ev.siteName ?? '—',
+          },
+          {
+            icon: Calendar,
+            label: 'FECHA DE FIN',
+            value: fmtDate(ev.finishDate),
+          },
+          {
+            icon: Users,
+            label: 'SILLAS DISPONIBLES',
+            value: ev.availableSeats != null ? ev.availableSeats.toLocaleString('es-CO') : '—',
+          },
+          {
+            icon: ev.isPublic ? Globe : Lock,
+            label: 'ESTADO',
+            value: ev.isPublic ? 'Público' : 'Privado',
+            accent: ev.isPublic,
+          },
+        ];
+
+        return (
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={(e) => { if (e.target === e.currentTarget) closeDetail(); }}
+            role="presentation"
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="detail-modal-title"
+              className="bg-surface border border-surfaceAlt rounded-2xl w-full max-w-2xl flex flex-col max-h-[92vh] shadow-2xl"
+              style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}
+            >
+              {/* ── Header ── */}
+              <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-surfaceAlt flex-shrink-0">
+                {/* Avatar inicial */}
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border border-surfaceAlt"
+                  style={{ background: 'var(--color-surfaceAlt)' }}
+                >
+                  <span className="text-base font-bold text-textSecondary select-none">
+                    {ev.eventName?.charAt(0).toUpperCase() ?? '?'}
+                  </span>
+                </div>
+
+                {/* Nombre */}
+                <p id="detail-modal-title" className="flex-1 font-bold text-base text-textPrimary truncate min-w-0">
+                  {ev.eventName}
+                </p>
+
+                {/* Badges */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {/* Badge estado del evento */}
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badge.cls}`}>
+                    {badge.label}
+                  </span>
+                  {/* Badge visibilidad */}
+                  {ev.isPublic != null && (
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border
+                      ${ev.isPublic
+                        ? 'bg-success/10 text-success border-success/30'
+                        : 'bg-surfaceAlt/60 text-textMuted border-surfaceAlt'}`}>
+                      {ev.isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                      {ev.isPublic ? 'Activo' : 'Privado'}
+                    </span>
+                  )}
+                  {/* Cerrar */}
+                  <button
+                    onClick={closeDetail}
+                    className="ml-1 w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-textPrimary hover:bg-surfaceAlt transition-colors"
+                    aria-label="Cerrar"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              {/* ── Cuerpo scrollable ── */}
+              <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+
+                {/* ── Fila superior: info + galería ── */}
+                <div className="flex gap-4">
+
+                  {/* Columna izquierda — título + meta + descripción corta */}
+                  <div className="flex-1 min-w-0 flex flex-col gap-2">
+                    <h2 className="text-xl font-bold text-textPrimary leading-tight">
+                      {ev.eventName}
+                    </h2>
+
+                    {/* Meta en línea: fecha · hora · ciudad */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-textSecondary">
+                      {ev.startDate && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-textMuted" />
+                          {fmtDate(ev.startDate)}
+                        </span>
+                      )}
+                      {(full?.siteName ?? ev.siteName) && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-textMuted" />
+                          {full?.siteName ?? ev.siteName}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Descripción corta */}
+                    {(full?.description ?? ev.description) && (
+                      <p className="text-sm text-textSecondary leading-relaxed line-clamp-3">
+                        {full?.description ?? ev.description}
+                      </p>
+                    )}
+
+                    {detailLoading && (
+                      <div className="flex items-center gap-2 text-xs text-textMuted mt-1">
+                        <span className="w-3 h-3 border border-accent/30 border-t-accent rounded-full animate-spin" />
+                        Cargando detalles…
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Columna derecha — galería */}
+                  <div className="w-44 flex-shrink-0 flex flex-col gap-2">
+                    {/* Imagen principal */}
+                    <div
+                      className="relative rounded-xl overflow-hidden bg-surfaceAlt"
+                      style={{ aspectRatio: '4/3' }}
+                    >
+                      {detailMedia.length > 0 ? (
+                        <img
+                          src={detailMedia[detailCarousel]}
+                          alt={`${ev.eventName} — ${detailCarousel + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImagePlus className="w-6 h-6 text-textMuted/40" />
+                        </div>
+                      )}
+                      {/* Contador */}
+                      {detailMedia.length > 1 && (
+                        <div className="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
+                          {detailCarousel + 1}/{detailMedia.length}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Miniaturas */}
+                    {detailMedia.length > 1 && (
+                      <div className="flex gap-1.5 justify-center">
+                        {detailMedia.slice(0, 4).map((url, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setDetailCarousel(i)}
+                            className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 transition-all"
+                            style={i === detailCarousel
+                              ? { outline: '2px solid var(--color-accent)', outlineOffset: '1px' }
+                              : { opacity: 0.5 }}
+                            aria-label={`Imagen ${i + 1}`}
+                            aria-pressed={i === detailCarousel}
+                          >
+                            <img src={url} alt="" className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Descripción expandida con ícono ── */}
+                {(full?.description ?? ev.description) && (
+                  <div
+                    className="flex items-start gap-3 rounded-xl p-3.5 border"
+                    style={{ background: 'var(--color-surfaceAlt)', borderColor: 'var(--color-surfaceAlt)' }}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border border-surfaceAlt/50"
+                      style={{ background: 'color-mix(in srgb, var(--color-accent) 8%, transparent)' }}
+                    >
+                      <FileText className="w-4 h-4 text-accent" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-textMuted mb-1">
+                        Descripción del evento
+                      </p>
+                      <p className="text-sm text-textSecondary leading-relaxed whitespace-pre-wrap">
+                        {full?.description ?? ev.description}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Grid 2×N de campos ── */}
+                <div className="grid grid-cols-2 gap-2">
+                  {gridFields.map(({ icon: Icon, label, value, pill, accent }) => (
+                    <div
+                      key={label}
+                      className="flex items-center gap-3 rounded-xl p-3 border"
+                      style={{ background: 'var(--color-surfaceAlt)', borderColor: 'var(--color-surfaceAlt)' }}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'color-mix(in srgb, var(--color-accent) 8%, transparent)' }}
+                      >
+                        <Icon className="w-3.5 h-3.5 text-accent" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[8px] font-bold uppercase tracking-widest text-textMuted">
+                          {label}
+                        </p>
+                        {pill && value ? (
+                          <span className="inline-block mt-0.5 px-2 py-0.5 rounded-md text-xs font-semibold border"
+                            style={{
+                              background: 'color-mix(in srgb, var(--color-accent) 10%, transparent)',
+                              color: 'var(--color-accent)',
+                              borderColor: 'color-mix(in srgb, var(--color-accent) 25%, transparent)',
+                            }}>
+                            {value}
+                          </span>
+                        ) : (
+                          <p className={`text-sm font-bold mt-0.5 ${accent ? 'text-success' : 'text-textPrimary'}`}>
+                            {value ?? '—'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Footer: botón Publicar ── */}
+              {canPublish && (
+                <div className="px-5 py-4 border-t border-surfaceAlt flex-shrink-0">
+                  <button
+                    onClick={handlePublishFromDetail}
+                    className="w-full py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all hover:brightness-110"
+                    style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%)' }}
+                  >
+                    <Rocket className="w-4 h-4" />
+                    Publicar
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Modal: confirmar eliminación ────────────────────────────────── */}
       <Modal
@@ -756,8 +1154,8 @@ export default function EventManage() {
               </p>
               <div className="grid grid-cols-3 gap-2">
                 {mediaFiles.map(({ preview }, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden">
-                    <img src={preview} alt="" className="w-full h-full object-cover" />
+                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden" style={{ background: 'var(--color-surface)' }}>
+                    <img src={preview} alt="" className="w-full h-full object-contain" />
                     <button
                       onClick={() => handleMediaRemoveFile(idx)}
                       className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-error transition-colors"
