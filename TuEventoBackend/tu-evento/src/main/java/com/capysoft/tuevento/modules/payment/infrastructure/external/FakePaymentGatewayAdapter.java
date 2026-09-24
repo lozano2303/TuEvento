@@ -141,6 +141,24 @@ public class FakePaymentGatewayAdapter implements PaymentGatewayPort {
             Void.class
         );
     }
+
+    @Override
+    public void refundPayment(String gatewayPaymentId) {
+        String url = gatewayUrl + "/admin/payments/" + gatewayPaymentId + "/refund";
+
+        log.info("Refunding payment in fake-gateway: paymentId={}", gatewayPaymentId);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        restTemplate.exchange(
+            url,
+            HttpMethod.POST,
+            entity,
+            Void.class
+        );
+    }
     
     @Override
     public GatewayPaymentEvent processWebhook(String payload, String signature) {

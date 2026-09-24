@@ -83,6 +83,14 @@ public class Payment {
         transitionTo(PaymentStatus.CANCELLED);
         return createStatusChangedEvent();
     }
+
+    /**
+     * Reembolsa el pago. Transición válida: APPROVED → REFUNDED.
+     */
+    public PaymentStatusChanged refund() {
+        transitionTo(PaymentStatus.REFUNDED);
+        return createStatusChangedEvent();
+    }
     
     /**
      * Realiza una transición de estado validando las reglas del dominio.

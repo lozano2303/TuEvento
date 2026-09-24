@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added — feat(payment-refund)
+
+- **fake-payment-gateway — pom.xml**: Added `maven-compiler-plugin` `annotationProcessorPaths` for Lombok, fixing pre-existing build break on `PaymentEntity` / `WebhookDeliveryLogEntity` accessors.
+- **fake-payment-gateway — PaymentStatus**: `REFUNDED` state added with transition `APPROVED → REFUNDED` (terminal). All other origin states throw `InvalidStatusTransitionException`.
+- **fake-payment-gateway — Payment**: `refund()` method added; returns `PaymentStatusChanged` event.
+- **fake-payment-gateway — RefundPaymentUseCase**: New use case for `POST /admin/payments/{id}/refund`; validates transition in domain, persists, fires webhook via existing `WebhookNotifierPort`.
+- **fake-payment-gateway — payment.refunded webhook**: No new mechanism — `WebhookNotifierAdapter` unchanged; HMAC-SHA256 signed, 3-retry backoff, audit log. Event type `"payment.refunded"` produced automatically from `status.name().toLowerCase()`.
+- **fake-payment-gateway — pay.html**: `↩️ Reembolsar` button rendered only when status `=== 'APPROVED'`; `REFUNDED` badge style (purple); updated `isTerminal`, `renderTerminal`, `actionLabel`.
+- **Payment Module — PaymentGatewayPort**: Added `refundPayment(String gatewayPaymentId): void` to the generic gateway contract.
+- **Payment Module — FakePaymentGatewayAdapter**: Implemented `refundPayment()` as `POST {fake-gateway-url}/admin/payments/{id}/refund` using the existing `paymentRestTemplate`, same pattern as `cancelPayment()`.
+- **Payment Module — RequestRefundUseCaseImpl**: New use case invoked by `POST /api/v1/payments/{id}/refund`. Validates `Payment.status == APPROVED`, creates `Refund` record in `REQUESTED` state with caller-supplied reason, then calls `PaymentGatewayPort.refundPayment()` to trigger the gateway transition and the `payment.refunded` webhook.
+- **Payment Module — ProcessWebhookUseCaseImpl**: Extended `"REFUNDED"` case in the webhook switch — calls `payment.refund()`, saves `PaymentLog(APPROVED → REFUNDED)`, transitions the `Refund` record to `PROCESSED` (sets `processedAt`), and invokes `ConfirmRefundUseCase.confirmRefund(orderId)` in the ticket module. Same idempotency and HMAC-verification path as all other webhook events.
+- **Payment Module — POST /api/v1/payments/{id}/refund**: New REST endpoint on `PaymentController`. Requires `ADMIN` or `ORGANIZER` authority (`@PreAuthorize`). Accepts `RefundPaymentRequest { reason: String }` (`@NotBlank`, `@Size(max=500)`). Returns `200 OK` with `ApiResponse<Void>`.
+- **Ticket Module — ConfirmRefundUseCase** (port `application/port/in`): New in-port following the same pattern as `ConfirmOrderPaymentUseCase` / `FailOrderPaymentUseCase`. Contract: `confirmRefund(Long orderId)`.
+- **Ticket Module — ConfirmRefundUseCaseImpl**: Transitions `Order: PAID → REFUNDED` (domain validates state machine), transitions all associated `Ticket`s to `REFUNDED` via `ticket.markAsRefunded()`, generates `TicketLog` per ticket (`changedBy = "payment-module"`, `reason = "Refund confirmed via webhook payment.refunded"`). **Seats are NOT released** — they remain `SOLD` as per business decision (seats already used or event passed/cancelled).
+
 ### Added
 - **Payment Module (Backend)**: Módulo completo de gestión de pagos integrado con fake-payment-gateway y ticket module, siguiendo arquitectura DDD + Hexagonal
   - **Dominio puro**: Payment (aggregate root) con estados (PENDING→APPROVED|REJECTED|ERROR, APPROVED→REFUNDED), PaymentGateway enum (FAKE, WOMPI - Wompi sin implementar), PaymentMethod enum (CARD, PSE, NEQUI, CASH, QR), PaymentLog (auditoría), TransactionWebhook (recepción de eventos con gatewayEventId UNIQUE para idempotencia), Refund (estructura sin use cases)
