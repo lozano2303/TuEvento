@@ -20,6 +20,8 @@ import AdminEventManagement from './pages/AdminEventManagement';
 import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
 import PaymentPending from './pages/PaymentPending';
+import TerminosDeUso from './pages/TerminosDeUso';
+import Privacidad from './pages/Privacidad';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -98,6 +100,8 @@ function AppContent() {
               <CompleteProfile />
             </ProtectedRoute>
           } />
+          <Route path="/terminos-de-uso" element={<TerminosDeUso />} />
+          <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/events/:eventId/layout" element={
             <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
               <EventLayoutEditor />
