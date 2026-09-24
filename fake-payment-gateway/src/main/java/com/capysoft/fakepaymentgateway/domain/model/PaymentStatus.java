@@ -22,6 +22,12 @@ public enum PaymentStatus {
     APPROVED {
         @Override
         public Set<PaymentStatus> allowedTransitions() {
+            return Set.of(REFUNDED);
+        }
+    },
+    REFUNDED {
+        @Override
+        public Set<PaymentStatus> allowedTransitions() {
             return Set.of(); // Estado terminal
         }
     },

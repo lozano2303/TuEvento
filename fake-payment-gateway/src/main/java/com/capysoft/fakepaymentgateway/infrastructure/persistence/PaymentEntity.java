@@ -1,5 +1,7 @@
 package com.capysoft.fakepaymentgateway.infrastructure.persistence;
 
+import org.hibernate.annotations.Check;
+
 import com.capysoft.fakepaymentgateway.domain.model.PaymentMethod;
 import com.capysoft.fakepaymentgateway.domain.model.PaymentStatus;
 import jakarta.persistence.*;
@@ -14,6 +16,7 @@ import java.time.Instant;
  */
 @Entity
 @Table(name = "payments")
+@Check(constraints = "status IN ('PENDING','PROCESSING','APPROVED','DECLINED','FAILED','CANCELLED','REFUNDED')")
 @Getter
 @Setter
 public class PaymentEntity {

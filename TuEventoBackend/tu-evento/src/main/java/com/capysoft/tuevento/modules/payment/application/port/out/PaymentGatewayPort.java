@@ -41,4 +41,11 @@ public interface PaymentGatewayPort {
      * @return Evento parseado del gateway
      */
     GatewayPaymentEvent processWebhook(String payload, String signature);
+
+    /**
+     * Solicita el reembolso de un pago aprobado en el gateway externo.
+     *
+     * @param gatewayPaymentId ID del pago en el gateway (ej. "fake_xxx")
+     */
+    void refundPayment(String gatewayPaymentId);
 }

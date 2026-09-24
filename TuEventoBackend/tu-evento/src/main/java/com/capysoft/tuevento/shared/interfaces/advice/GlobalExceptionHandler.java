@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.capysoft.tuevento.modules.geolocation.domain.exception.SiteAlreadyExistsException;
+import com.capysoft.tuevento.modules.payment.domain.model.InvalidPaymentStatusTransitionException;
 import com.capysoft.tuevento.modules.profile.domain.exception.ProfileAlreadyExistsException;
+import com.capysoft.tuevento.modules.ticket.domain.model.InvalidOrderStatusTransitionException;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.ImagePolicyViolationException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
@@ -100,6 +102,27 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalStateException(IllegalStateException ex) {
+        log.warn("Illegal state — {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidPaymentStatusTransitionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidPaymentStatusTransition(InvalidPaymentStatusTransitionException ex) {
+        log.warn("Invalid payment status transition — {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidOrderStatusTransitionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidOrderStatusTransition(InvalidOrderStatusTransitionException ex) {
+        log.warn("Invalid order status transition — {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
