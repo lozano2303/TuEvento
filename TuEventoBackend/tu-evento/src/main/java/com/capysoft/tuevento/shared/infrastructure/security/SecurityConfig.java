@@ -173,6 +173,13 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE,
                                 "/api/v1/seats/**").hasAnyAuthority("ORGANIZER", "ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
+                        // ── Wallet — los GET caen en anyRequest().authenticated()
+                        // Los POST tienen @PreAuthorize en el controller, pero necesitan
+                        // pasar el filtro de SecurityConfig como authenticated() primero.
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/v1/wallet/credit").hasAuthority("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/v1/wallet/adjust").hasAuthority("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .build();

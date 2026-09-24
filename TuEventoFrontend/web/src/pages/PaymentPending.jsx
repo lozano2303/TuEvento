@@ -115,8 +115,9 @@ export default function PaymentPending() {
         const r    = await getPayment(paymentId);
         const data = r.data;
 
-        // Abrir popup automáticamente en cuanto tengamos el gatewayTransactionId
-        if (data.gatewayTransactionId && !popupOpened.current) {
+        // Abrir popup automáticamente — pero NO para pagos wallet_only_
+        const isWalletOnly = data.gatewayTransactionId?.startsWith('wallet_only_');
+        if (data.gatewayTransactionId && !popupOpened.current && !isWalletOnly) {
           setGwTxId(data.gatewayTransactionId);
           openPopup(data.gatewayTransactionId);
         }
@@ -173,6 +174,8 @@ export default function PaymentPending() {
               <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
                 {popupOpen
                   ? 'Completá el pago en la ventana que se abrió.'
+                  : gatewayTxId?.startsWith('wallet_only_')
+                  ? 'Confirmando tu pago con cartera…'
                   : 'Abriendo la ventana de pago…'}
               </p>
             </div>
