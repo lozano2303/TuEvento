@@ -5,8 +5,10 @@ import com.capysoft.tuevento.modules.payment.application.port.out.PaymentGateway
 import com.capysoft.tuevento.modules.payment.domain.model.*;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentLogRepository;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentRepository;
+import com.capysoft.tuevento.modules.payment.domain.repository.RefundRepository;
 import com.capysoft.tuevento.modules.payment.domain.repository.TransactionWebhookRepository;
 import com.capysoft.tuevento.modules.ticket.application.port.in.ConfirmOrderPaymentUseCase;
+import com.capysoft.tuevento.modules.ticket.application.port.in.ConfirmRefundUseCase;
 import com.capysoft.tuevento.modules.ticket.application.port.in.FailOrderPaymentUseCase;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -33,9 +35,11 @@ public class ProcessWebhookUseCaseImpl {
     private final PaymentRepository paymentRepository;
     private final TransactionWebhookRepository webhookRepository;
     private final PaymentLogRepository paymentLogRepository;
+    private final RefundRepository refundRepository;
     private final PaymentGatewayPort paymentGatewayPort;
     private final ConfirmOrderPaymentUseCase confirmOrderPaymentUseCase;
     private final FailOrderPaymentUseCase failOrderPaymentUseCase;
+    private final ConfirmRefundUseCase confirmRefundUseCase;
     
     @Transactional
     public void execute(String payload, String signature) {
@@ -115,6 +119,31 @@ public class ProcessWebhookUseCaseImpl {
                         payment.getPaymentId(), payment.getOrderId());
                     break;
                     
+                case "REFUNDED":
+                    payment.refund();
+                    paymentRepository.save(payment);
+
+                    savePaymentLog(payment.getPaymentId(), oldStatus, PaymentStatus.REFUNDED, reason);
+
+                    // Actualizar el registro Refund a PROCESSED
+                    refundRepository.findByPaymentId(payment.getPaymentId()).ifPresent(refund -> {
+                        Refund processed = Refund.builder()
+                            .refundId(refund.getRefundId())
+                            .paymentId(refund.getPaymentId())
+                            .status(RefundStatus.PROCESSED)
+                            .reason(refund.getReason())
+                            .requestedAt(refund.getRequestedAt())
+                            .processedAt(LocalDateTime.now())
+                            .build();
+                        refundRepository.save(processed);
+                    });
+
+                    // Transicionar Order y Tickets a REFUNDED en módulo ticket
+                    confirmRefundUseCase.confirmRefund(payment.getOrderId());
+                    log.info("Payment refunded and order/tickets set to REFUNDED: paymentId={}, orderId={}",
+                        payment.getPaymentId(), payment.getOrderId());
+                    break;
+
                 default:
                     log.warn("Unhandled payment status from webhook: status={}, eventId={}", 
                         event.getStatus(), event.getEventId());

@@ -6,6 +6,7 @@ import com.capysoft.fakepaymentgateway.application.usecase.CancelPaymentUseCase;
 import com.capysoft.fakepaymentgateway.application.usecase.DeclinePaymentUseCase;
 import com.capysoft.fakepaymentgateway.application.usecase.FailPaymentUseCase;
 import com.capysoft.fakepaymentgateway.application.usecase.GetPaymentUseCase;
+import com.capysoft.fakepaymentgateway.application.usecase.RefundPaymentUseCase;
 import com.capysoft.fakepaymentgateway.domain.repository.PaymentRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,7 @@ public class AdminPaymentController {
     private final DeclinePaymentUseCase declinePaymentUseCase;
     private final FailPaymentUseCase failPaymentUseCase;
     private final CancelPaymentUseCase cancelPaymentUseCase;
+    private final RefundPaymentUseCase refundPaymentUseCase;
     private final GetPaymentUseCase getPaymentUseCase;
     private final PaymentRepository paymentRepository;
 
@@ -31,6 +33,7 @@ public class AdminPaymentController {
         DeclinePaymentUseCase declinePaymentUseCase,
         FailPaymentUseCase failPaymentUseCase,
         CancelPaymentUseCase cancelPaymentUseCase,
+        RefundPaymentUseCase refundPaymentUseCase,
         GetPaymentUseCase getPaymentUseCase,
         PaymentRepository paymentRepository
     ) {
@@ -38,6 +41,7 @@ public class AdminPaymentController {
         this.declinePaymentUseCase = declinePaymentUseCase;
         this.failPaymentUseCase = failPaymentUseCase;
         this.cancelPaymentUseCase = cancelPaymentUseCase;
+        this.refundPaymentUseCase = refundPaymentUseCase;
         this.getPaymentUseCase = getPaymentUseCase;
         this.paymentRepository = paymentRepository;
     }
@@ -79,6 +83,12 @@ public class AdminPaymentController {
     @PostMapping("/{paymentId}/cancel")
     public ResponseEntity<Void> cancelPayment(@PathVariable String paymentId) {
         cancelPaymentUseCase.execute(paymentId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{paymentId}/refund")
+    public ResponseEntity<Void> refundPayment(@PathVariable String paymentId) {
+        refundPaymentUseCase.execute(paymentId);
         return ResponseEntity.ok().build();
     }
 }
