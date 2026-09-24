@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.payment.infrastructure.persistence.entity;
 
 import com.capysoft.tuevento.modules.payment.domain.model.RefundStatus;
+import com.capysoft.tuevento.shared.infrastructure.persistence.JpaAuditingEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -8,7 +9,6 @@ import java.time.LocalDateTime;
 
 /**
  * Entidad JPA para Refund.
- * Estructura lista para fase futura (sin casos de uso implementados todavía).
  */
 @Entity
 @Table(name = "refund")
@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RefundEntity {
+public class RefundEntity extends JpaAuditingEntity {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

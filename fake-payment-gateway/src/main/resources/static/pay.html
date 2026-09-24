@@ -74,6 +74,8 @@
     .status-FAILED .status-dot     { background: #f87171; }
     .status-CANCELLED  { background: rgba(148,163,184,0.15); color: #94a3b8; }
     .status-CANCELLED .status-dot  { background: #94a3b8; }
+    .status-REFUNDED   { background: rgba(124,58,237,0.15); color: #a78bfa; }
+    .status-REFUNDED .status-dot   { background: #a78bfa; }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
@@ -150,6 +152,7 @@
     .btn-decline  { background: linear-gradient(135deg, #dc2626, #f87171); color: #fff; }
     .btn-fail     { background: linear-gradient(135deg, #b45309, #fbbf24); color: #fff; }
     .btn-cancel   { background: rgba(148,163,184,0.12); color: #94a3b8; border: 1px solid rgba(148,163,184,0.2); }
+    .btn-refund   { background: linear-gradient(135deg, #7c3aed, #a78bfa); color: #fff; }
 
     .btn-row {
       display: flex;
@@ -322,7 +325,7 @@
 
       // Cerrar el popup automáticamente en estados terminales
       setTimeout(() => {
-        const terminalActions = ['approve', 'decline', 'fail', 'cancel'];
+        const terminalActions = ['approve', 'decline', 'fail', 'cancel', 'refund'];
         if (terminalActions.includes(action)) {
           window.close();
         }
@@ -334,7 +337,7 @@
   }
 
   function actionLabel(a) {
-    return { approve: 'Aprobado', decline: 'Rechazado', fail: 'Fallido', cancel: 'Cancelado' }[a] ?? a;
+    return { approve: 'Aprobado', decline: 'Rechazado', fail: 'Fallido', cancel: 'Cancelado', refund: 'Reembolsado' }[a] ?? a;
   }
 
   function disableButtons(disabled) {
@@ -378,12 +381,16 @@
       </div>
 
       <div class="actions" id="actions">
-        ${terminal ? renderTerminal(data.status) : renderButtons()}
+        ${terminal ? renderTerminal(data.status) : renderButtons(data.status)}
       </div>
     `;
   }
 
-  function renderButtons() {
+  function renderButtons(status) {
+    // El botón Refund solo aparece cuando el pago ya fue aprobado.
+    const refundBtn = status === 'APPROVED'
+      ? `<button class="btn btn-refund" onclick="doAction('refund')">↩️ Reembolsar</button>`
+      : '';
     return `
       <div class="btn-row">
         <button class="btn btn-approve" onclick="doAction('approve')">✅ Aprobar</button>
@@ -393,16 +400,18 @@
         <button class="btn btn-fail"   onclick="doAction('fail')">⚠️ Fallar</button>
         <button class="btn btn-cancel" onclick="doAction('cancel')">🚫 Cancelar</button>
       </div>
+      ${refundBtn ? `<div class="btn-row">${refundBtn}</div>` : ''}
     `;
   }
 
   function renderTerminal(status) {
-    const icons = { APPROVED: '✅', DECLINED: '❌', FAILED: '⚠️', CANCELLED: '🚫' };
+    const icons = { APPROVED: '✅', DECLINED: '❌', FAILED: '⚠️', CANCELLED: '🚫', REFUNDED: '↩️' };
     const msgs  = {
       APPROVED:  'Pago aprobado. El webhook fue enviado al backend.',
       DECLINED:  'Pago rechazado. El webhook fue enviado al backend.',
       FAILED:    'Pago fallido. El webhook fue enviado al backend.',
       CANCELLED: 'Pago cancelado.',
+      REFUNDED:  'Pago reembolsado. El webhook payment.refunded fue enviado al backend.',
     };
     return `
       <div class="terminal-msg">
@@ -422,7 +431,7 @@
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
   function isTerminal(status) {
-    return ['APPROVED', 'DECLINED', 'FAILED', 'CANCELLED'].includes(status);
+    return ['APPROVED', 'DECLINED', 'FAILED', 'CANCELLED', 'REFUNDED'].includes(status);
   }
 
   function formatMoney(amount, currency) {
