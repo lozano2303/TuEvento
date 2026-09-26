@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 078-fix-wallet-reference-admin-adjustment
+      author: capysoft
+      comment: "Permite entity_id NULL para ADMIN_ADJUSTMENT y actualiza constraint de entity_type"
+      changes:
+        # 1. Drop constraint antiguo que no incluye ADMIN_ADJUSTMENT
+        - sql:
+            sql: "ALTER TABLE wallet_reference DROP CONSTRAINT IF EXISTS chk_wr_entity_type;"
+        
+        # 2. Hacer entity_id nullable (para ajustes administrativos que no tienen entidad asociada)
+        - dropNotNullConstraint:
+            tableName: wallet_reference
+            columnName: entity_id
+            columnDataType: BIGINT
+        
+        # 3. Crear nuevo constraint incluyendo ADMIN_ADJUSTMENT
+        - sql:
+            sql: "ALTER TABLE wallet_reference ADD CONSTRAINT chk_wr_entity_type CHECK (entity_type IN ('EVENT_CANCELLATION', 'ORDER', 'TICKET', 'ADMIN_ADJUSTMENT'));"

@@ -85,7 +85,7 @@ export default function Checkout() {
 
       // Pago 100% wallet → ir directo a confirmación sin popup de gateway
       if (useWallet && (payment.amountToPayViaGateway ?? payment.amount) === 0) {
-        navigate(`/checkout/confirmed`, {
+        navigate(`/checkout/confirmed/${paymentId}`, {
           state: { orderId: order.orderId ?? order.id, eventId, cartItems, eventTitle, walletOnly: true },
         });
         return;

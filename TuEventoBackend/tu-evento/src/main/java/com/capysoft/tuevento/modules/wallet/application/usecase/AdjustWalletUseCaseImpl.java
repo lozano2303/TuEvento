@@ -26,7 +26,7 @@ import java.util.UUID;
  *  2. Calcular nuevo balance validando invariante >= 0
  *  3. Crear WalletTransaction ADJUSTMENT en COMPLETED con amount = abs(amount)
  *  4. Actualizar balance
- *  5. Crear WalletReference de trazabilidad (entityType=ORDER, entityId=0 para ajustes manuales)
+ *  5. Crear WalletReference de trazabilidad (entityType=ADMIN_ADJUSTMENT para ajustes manuales)
  */
 @Service
 @RequiredArgsConstructor
@@ -85,11 +85,11 @@ public class AdjustWalletUseCaseImpl {
         Wallet adjusted = wallet.toBuilder().balance(newBalance).build();
         Wallet savedWallet = walletRepository.save(adjusted);
 
-        // 5. Referencia de trazabilidad (ORDER/0 para ajustes manuales sin entidad específica)
+        // 5. Referencia de trazabilidad (ADMIN_ADJUSTMENT para ajustes manuales)
         WalletReference reference = WalletReference.builder()
             .transactionId(savedTx.getTransactionId())
-            .entityType(WalletReferenceEntityType.ORDER)
-            .entityId(0L)
+            .entityType(WalletReferenceEntityType.ADMIN_ADJUSTMENT)
+            .entityId(null) // entityId no aplica para ajustes administrativos
             .build();
         walletReferenceRepository.save(reference);
 

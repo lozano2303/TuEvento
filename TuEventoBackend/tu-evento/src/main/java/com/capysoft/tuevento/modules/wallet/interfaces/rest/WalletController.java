@@ -69,8 +69,8 @@ public class WalletController {
         WalletResponse response = creditWalletUseCase.execute(
             request.getUserId(),
             request.getAmount(),
-            WalletReferenceEntityType.ORDER, // referencia genérica para crédito manual
-            0L,
+            WalletReferenceEntityType.ADMIN_ADJUSTMENT,
+            null, // entityId no aplica para ajustes administrativos
             request.getReason(),
             idempotencyKey
         );
