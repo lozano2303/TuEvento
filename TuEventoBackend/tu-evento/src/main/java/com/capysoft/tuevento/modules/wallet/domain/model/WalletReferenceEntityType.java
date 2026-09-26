@@ -6,5 +6,6 @@ package com.capysoft.tuevento.modules.wallet.domain.model;
 public enum WalletReferenceEntityType {
     EVENT_CANCELLATION, // Crédito por cancelación de evento
     ORDER,              // Movimiento asociado a una orden de compra
-    TICKET              // Movimiento asociado a un ticket individual
+    TICKET,             // Movimiento asociado a un ticket individual
+    ADMIN_ADJUSTMENT    // Crédito o ajuste manual de administrador
 }

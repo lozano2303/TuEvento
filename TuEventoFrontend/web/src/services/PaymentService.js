@@ -5,14 +5,14 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 /**
  * Inicia un pago para una orden.
  * POST /api/v1/payments
- * @param {{ orderId: number, paymentMethod: string }} params
+ * @param {{ orderId: number, paymentMethod: string, applyWalletCredit?: boolean }} params
  * @returns {{ success: true, data: PaymentResponse }}
  */
-export const createPayment = async ({ orderId, paymentMethod }) => {
+export const createPayment = async ({ orderId, paymentMethod, applyWalletCredit = false }) => {
   const res = await httpRequest(`${API_URL}/payments`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ orderId, paymentMethod }),
+    body: JSON.stringify({ orderId, paymentMethod, applyWalletCredit }),
   });
   const body = await res.json();
   if (!res.ok) throw new Error(body.message || 'Error al iniciar el pago');
