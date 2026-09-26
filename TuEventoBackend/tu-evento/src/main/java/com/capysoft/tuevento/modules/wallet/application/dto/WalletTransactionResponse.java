@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.wallet.application.dto;
 
+import com.capysoft.tuevento.modules.wallet.domain.model.WalletReferenceEntityType;
 import com.capysoft.tuevento.modules.wallet.domain.model.WalletTransaction;
 import com.capysoft.tuevento.modules.wallet.domain.model.WalletTransactionStatus;
 import com.capysoft.tuevento.modules.wallet.domain.model.WalletTransactionType;
@@ -25,6 +26,11 @@ public class WalletTransactionResponse {
     private String idempotencyKey;
     private LocalDateTime createdAt;
     private String createdBy;
+
+    // Campos enriquecidos para frontend
+    private WalletReferenceEntityType entityType;
+    private Long entityId;
+    private String eventName;  // Nombre del evento si entityType es ORDER
 
     public static WalletTransactionResponse fromDomain(WalletTransaction t) {
         return WalletTransactionResponse.builder()
