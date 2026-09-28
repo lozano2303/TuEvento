@@ -26,11 +26,19 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
  * El width del GoogleLogin se fija en 120px para que su botón interno ocupe
  * exactamente el contenedor del overlay sin desbordarse.
  */
+/**
+ * GoogleButton rediseñado para el nuevo layout glassmorphism.
+ *
+ * Usa la clase login-google-wrapper como contenedor (w-full en el grid de 2 col).
+ * El overlay tiene position:absolute inset-0 con display:flex + stretch, de modo
+ * que el iframe interno de GoogleLogin ocupa el 100% del wrapper y cualquier clic
+ * dentro del botón visual dispara el flujo OAuth real.
+ */
 function GoogleButton({ onSuccess, onError }) {
   return (
-    <div className="relative" style={{ display: 'inline-flex' }}>
-      {/* ── Capa visual — el usuario ve esto ── */}
-      <div className="flex items-center gap-3 btn-oauth-google pointer-events-none select-none">
+    <div className="login-google-wrapper" role="button" tabIndex={0} aria-label="Iniciar sesión con Google">
+      {/* ── Capa visual ── */}
+      <div className="login-google-visual">
         <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
           <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -38,20 +46,16 @@ function GoogleButton({ onSuccess, onError }) {
           <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
           <path fill="none" d="M0 0h48v48H0z"/>
         </svg>
-        <span className="text-sm font-medium leading-none">Google</span>
+        <span style={{ fontSize: '0.8125rem', fontWeight: 500 }}>Google</span>
       </div>
 
-      {/* ── Overlay invisible — dispara el flujo OAuth real ── */}
-      <div
-        className="absolute inset-0 overflow-hidden"
-        style={{ opacity: 0 }}
-        aria-hidden="true"
-      >
+      {/* ── Overlay invisible full-width — dispara el flujo OAuth real ── */}
+      <div className="login-google-overlay" aria-hidden="true">
         <GoogleLogin
           onSuccess={onSuccess}
           onError={onError}
           useOneTap={false}
-          width="200"
+          width="600"
         />
       </div>
     </div>
@@ -507,278 +511,382 @@ export default function Login() {
 
   // ─── Vista principal Login / Registro ────────────────────────────────────
   return (
-    <div className="min-h-screen flex items-stretch">
+    <div className="login-root">
 
-      {/* Columna izquierda — hero a pantalla completa */}
-      <div className="relative w-full overflow-hidden">
-        <img
-          src={loginHero}
-          alt="Tu Evento — plataforma de eventos en vivo"
-          className="absolute inset-0 w-full h-full object-cover"
+      {/* ── Imagen hero anclada a la izquierda (~65% ancho) ── */}
+      <img
+        src={loginHero}
+        alt="Tu Evento — plataforma de eventos en vivo"
+        className="login-hero-img"
+      />
+
+      {/* ── Overlay muy sutil ── */}
+      <div className="login-hero-overlay" />
+
+      {/* ── Forma decorativa SVG — esquina superior izquierda (paralelogramo) ── */}
+      <svg
+        className="login-deco-tl"
+        viewBox="0 0 260 260"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <polygon
+          points="0,0 200,0 260,60 260,260"
+          fill="rgba(109,40,217,0.07)"
+          stroke="#a855f7"
+          strokeWidth="1.5"
         />
-      </div>
+        <polygon
+          points="0,0 140,0 200,60 200,200"
+          fill="none"
+          stroke="rgba(168,85,247,0.30)"
+          strokeWidth="1"
+        />
+      </svg>
 
-      {/* Columna derecha */}
-      <div className="w-full bg-background flex items-center justify-center p-10">
-        <div className="w-full max-w-sm">
+      {/* ── Forma decorativa SVG — inferior derecha (misma que tl, girada 180° por CSS) ── */}
+      <svg
+        className="login-deco-br"
+        viewBox="0 0 260 260"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <polygon
+          points="0,0 200,0 260,60 260,260"
+          fill="rgba(109,40,217,0.07)"
+          stroke="#a855f7"
+          strokeWidth="1.5"
+        />
+        <polygon
+          points="0,0 140,0 200,60 200,200"
+          fill="none"
+          stroke="rgba(168,85,247,0.30)"
+          strokeWidth="1"
+        />
+      </svg>
 
-          {/* Título */}
-          <div className="text-center mb-8">
-            <div className="mb-4">
-              <button
-                type="button"
-                onClick={() => window.location.href = '/'}
-                className="inline-flex items-center gap-1.5 text-sm transition-colors"
-                style={{ color: 'var(--color-textMuted)' }}
-                onMouseOver={e => e.currentTarget.style.color = 'var(--color-textPrimary)'}
-                onMouseOut={e => e.currentTarget.style.color = 'var(--color-textMuted)'}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 12H5M12 5l-7 7 7 7"/>
-                </svg>
-                Volver al inicio
-              </button>
-            </div>
-            <h1 className="text-3xl font-bold text-textPrimary">
-              {view === 'login' ? "Iniciar Sesión" : "Registrarse"}
+      {/* ── Layout interior — tarjeta empujada a la derecha ── */}
+      <div className="login-inner">
+
+        {/* ── Columna del formulario ── */}
+        <div className="login-form-col">
+
+          {/* ── Tarjeta glassmorphism ── */}
+          <div className="login-card">
+
+            {/* Encabezado */}
+            <p className="login-card-eyebrow">BIENVENIDO DE NUEVO</p>
+            <h1 className="login-card-title">
+              {view === 'login' ? 'Iniciar Sesión' : 'Registrarse'}
             </h1>
-            <p className="text-textMuted text-sm mt-2">Ingresa tus datos personales</p>
-          </div>
+            <p className="login-card-subtitle">
+              Ingresa tus datos personales para acceder a tu cuenta.
+            </p>
 
-          {/* Formulario */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* ── Formulario ── */}
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
 
-            {/* Nombre — solo registro */}
-            {view !== 'login' && (
+              {/* Nombre — solo registro */}
+              {view !== 'login' && (
+                <div>
+                  <div className="login-input-wrap">
+                    <User className="login-input-icon" aria-hidden="true" />
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="Nombre completo"
+                      className={`login-input${fieldErrors.name ? ' login-input-error' : ''}`}
+                      required
+                      autoComplete="name"
+                      aria-invalid={!!fieldErrors.name}
+                      aria-describedby={fieldErrors.name ? 'err-name' : undefined}
+                    />
+                  </div>
+                  {fieldErrors.name && (
+                    <p id="err-name" className="login-field-error">
+                      <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                      {fieldErrors.name}
+                    </p>
+                  )}
+                  {formData.name && !fieldErrors.name && (
+                    <div style={{ marginTop: '0.2rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                      {formData.name.trim().split(/\s+/).length < 2 && (
+                        <p className="login-field-error">
+                          <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                          Nombre y apellido
+                        </p>
+                      )}
+                      {!formData.name.trim().split(/\s+/).every(w => w.length >= 3) && (
+                        <p className="login-field-error">
+                          <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                          Mínimo 3 caracteres por palabra
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Email */}
               <div>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
+                <div className="login-input-wrap">
+                  <Mail className="login-input-icon" aria-hidden="true" />
                   <input
-                    type="text" name="name" value={formData.name}
+                    type="email"
+                    name="email"
+                    value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="Nombre completo"
-                    className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+                    placeholder="Correo electrónico"
+                    className={`login-input${fieldErrors.email ? ' login-input-error' : ''}`}
                     required
+                    autoComplete="email"
+                    aria-invalid={!!fieldErrors.email}
+                    aria-describedby={fieldErrors.email ? 'err-email' : undefined}
                   />
                 </div>
-                {fieldErrors.name && <p className="form-error text-xs mt-1">{fieldErrors.name}</p>}
-                {formData.name && !fieldErrors.name && (
-                  <div className="mt-1 space-y-0.5">
-                    {formData.name.trim().split(/\s+/).length < 2 && (
-                      <p className="text-xs form-error flex items-center">
-                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Nombre y apellido
-                      </p>
-                    )}
-                    {!formData.name.trim().split(/\s+/).every(w => w.length >= 3) && (
-                      <p className="text-xs form-error flex items-center">
-                        <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Mínimo 3 caracteres por palabra
-                      </p>
-                    )}
+                {fieldErrors.email && (
+                  <p id="err-email" className="login-field-error">
+                    <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    {fieldErrors.email}
+                  </p>
+                )}
+                {formData.email && !fieldErrors.email && view !== 'login' && !formData.email.trim().toLowerCase().endsWith('@gmail.com') && (
+                  <p className="login-field-error">
+                    <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    Debe ser @gmail.com
+                  </p>
+                )}
+              </div>
+
+              {/* Contraseña */}
+              <div>
+                <div className="login-input-wrap">
+                  <svg className="login-input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Contraseña"
+                    autoComplete="new-password"
+                    className={`login-input${fieldErrors.password ? ' login-input-error' : ''}`}
+                    required
+                    aria-invalid={!!fieldErrors.password}
+                    aria-describedby={fieldErrors.password ? 'err-password' : undefined}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="login-input-eye"
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {showPassword ? <EyeOff width={18} height={18} /> : <Eye width={18} height={18} />}
+                  </button>
+                </div>
+                {fieldErrors.password && (
+                  <p id="err-password" className="login-field-error">
+                    <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    {fieldErrors.password}
+                  </p>
+                )}
+
+                {/* Barra de fortaleza — solo registro */}
+                {view !== 'login' && formData.password.length > 0 && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                      {[1, 2, 3, 4].map(i => (
+                        <div
+                          key={i}
+                          className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${passwordStrength >= i ? barColors[passwordStrength] : 'bg-surfaceAlt'}`}
+                          style={{ height: '5px', flex: 1, borderRadius: '9999px' }}
+                        />
+                      ))}
+                    </div>
+                    <p className={`text-xs font-medium transition-colors duration-300 ${strengthColor[passwordStrength]}`}>
+                      {strengthLabel[passwordStrength]}
+                    </p>
+                    {(() => {
+                      const missing = [];
+                      if (formData.password.length < 8) missing.push('8 caracteres');
+                      if (!/[A-Z]/.test(formData.password)) missing.push('mayúscula');
+                      if (!/[a-z]/.test(formData.password)) missing.push('minúscula');
+                      if (!/\d/.test(formData.password)) missing.push('número');
+                      if (!/[@$!%*?&]/.test(formData.password)) missing.push('carácter especial (@$!%*?&)');
+                      return missing.length > 0 ? (
+                        <p className="login-field-error" style={{ marginTop: '0.2rem' }}>
+                          <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                          Debe contener {missing.join(', ')}
+                        </p>
+                      ) : null;
+                    })()}
                   </div>
                 )}
               </div>
-            )}
 
-            {/* Email */}
-            <div>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" />
-                <input
-                  type="email" name="email" value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Correo electrónico"
-                  className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
-                  required
-                />
-              </div>
-              {fieldErrors.email && <p className="form-error text-xs mt-1">{fieldErrors.email}</p>}
-              {formData.email && !fieldErrors.email && view !== 'login' && (
-                <div className="mt-1 space-y-0.5">
-                  {!formData.email.trim().toLowerCase().endsWith('@gmail.com') && (
-                    <p className="text-xs form-error flex items-center">
-                      <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Debe ser @gmail.com
+              {/* Confirmar contraseña — solo registro */}
+              {view !== 'login' && (
+                <div>
+                  <div className="login-input-wrap">
+                    <svg className="login-input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      placeholder="Confirmar contraseña"
+                      autoComplete="new-password"
+                      className={`login-input${fieldErrors.confirmPassword ? ' login-input-error' : ''}`}
+                      required
+                      aria-invalid={!!fieldErrors.confirmPassword}
+                      aria-describedby={fieldErrors.confirmPassword ? 'err-confirm' : undefined}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="login-input-eye"
+                      aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    >
+                      {showConfirmPassword ? <EyeOff width={18} height={18} /> : <Eye width={18} height={18} />}
+                    </button>
+                  </div>
+                  {fieldErrors.confirmPassword && (
+                    <p id="err-confirm" className="login-field-error">
+                      <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                      {fieldErrors.confirmPassword}
+                    </p>
+                  )}
+                  {formData.confirmPassword && !fieldErrors.confirmPassword && formData.confirmPassword !== formData.password && (
+                    <p className="login-field-error">
+                      <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                      Las contraseñas no coinciden
                     </p>
                   )}
                 </div>
               )}
-            </div>
 
-            {/* Contraseña */}
-            <div>
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                <input
-                  type={showPassword ? 'text' : 'password'} name="password" value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="Contraseña"
-                  autoComplete="new-password"
-                  className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
-                  required
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted hover:text-textSecondary">
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              {fieldErrors.password && <p className="form-error text-xs mt-1">{fieldErrors.password}</p>}
-
-              {/* ── Requisitos de contraseña — SOLO en registro ── */}
-              {view !== 'login' && formData.password.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4].map(i => (
-                      <div
-                        key={i}
-                        className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                          passwordStrength >= i ? barColors[passwordStrength] : 'bg-surfaceAlt'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <p className={`text-xs font-medium transition-colors duration-300 ${strengthColor[passwordStrength]}`}>
-                    {strengthLabel[passwordStrength]}
-                  </p>
-                  <div className="mt-2 space-y-0.5">
-                    {(() => {
-                      const missing = [];
-                      if (formData.password.length < 8) missing.push("8 caracteres");
-                      if (!/[A-Z]/.test(formData.password)) missing.push("mayúscula");
-                      if (!/[a-z]/.test(formData.password)) missing.push("minúscula");
-                      if (!/\d/.test(formData.password)) missing.push("número");
-                      if (!/[@$!%*?&]/.test(formData.password)) missing.push("carácter especial (@$!%*?&)");
-                      
-                      if (missing.length > 0) {
-                        return (
-                          <p className="text-xs form-error flex items-center">
-                            <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg>
-                            Debe contener {missing.join(", ")}
-                          </p>
-                        );
-                      }
-                      return null;
-                    })()}
-                  </div>
-                </div>
+              {/* Error global */}
+              {error && (
+                <p className="login-field-error" style={{ fontSize: '0.8125rem' }}>
+                  <svg aria-hidden="true" fill="currentColor" width="14" height="14" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                  {error}
+                </p>
               )}
-            </div>
 
-            {/* Confirmar contraseña — solo registro */}
-            {view !== 'login' && (
-              <div>
-                <div className="relative">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textMuted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    placeholder="Confirmar contraseña"
-                    autoComplete="new-password"
-                    className="w-full bg-surface border border-surfaceAlt rounded-lg pl-10 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                    required
-                  />
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted hover:text-textSecondary">
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                {fieldErrors.confirmPassword && <p className="form-error text-xs mt-1">{fieldErrors.confirmPassword}</p>}
-                {formData.confirmPassword && !fieldErrors.confirmPassword && formData.confirmPassword !== formData.password && (
-                  <p className="text-xs mt-1 text-red-400 flex items-center">
-                    <svg aria-hidden="true" className="Qk3oof xTjuxe mr-1" fill="currentColor" focusable="false" width="16px" height="16px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"></path></svg> Las contraseñas no coinciden
-                  </p>
-                )}
-              </div>
-            )}
+              {/* Botón principal */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="login-btn-primary"
+                style={{ marginTop: '0.25rem' }}
+              >
+                {loading ? 'Cargando...' : (view === 'login' ? 'INICIAR SESIÓN' : 'REGISTRARSE')}
+                {!loading && <ArrowRight width={16} height={16} aria-hidden="true" />}
+              </button>
 
-            {error && (
-              <p className="form-error text-sm">{error}</p>
-            )}
-
-            {/* Botón principal */}
-            <button
-              type="submit" disabled={loading}
-              className="w-full bg-gradient-to-r from-primary to-primaryDark hover:from-primaryDark hover:to-primaryDark disabled:opacity-50 disabled:cursor-not-allowed text-textPrimary font-semibold py-3 rounded-lg transition-all duration-300 text-sm tracking-widest"
-            >
-              {loading ? "Cargando..." : (view === 'login' ? "INICIAR SESIÓN" : "REGISTRARSE")}
-            </button>
-
-            {/* ¿No has activado tu cuenta? — solo registro */}
-            {view !== 'login' && (
-              <div className="text-center">
-                <p className="text-textMuted text-xs">
-                  ¿No has activado tu cuenta?{" "}
-                  <button type="button" onClick={handleResendActivation} className="text-accent hover:text-primary font-medium transition-colors">
+              {/* Reenviar activación — solo registro */}
+              {view !== 'login' && (
+                <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(196,181,253,0.65)' }}>
+                  ¿No has activado tu cuenta?{' '}
+                  <button
+                    type="button"
+                    onClick={handleResendActivation}
+                    className="login-footer-link"
+                    style={{ fontSize: '0.75rem' }}
+                  >
                     Reenviar correo de activación
                   </button>
                 </p>
-              </div>
-            )}
+              )}
 
-            {/* ¿Olvidaste tu contraseña? — solo login */}
-            {view === 'login' && (
-              <div className="text-center">
-                <p className="text-textMuted text-xs">
-                  ¿No recuerdas tu contraseña?{" "}
-                  <button type="button" onClick={() => setView('forgot')} className="text-accent hover:text-primary font-medium transition-colors">
-                    Recupérala
+              {/* Separador con "¿Olvidaste tu contraseña?" — solo login */}
+              {view === 'login' && (
+                <div className="login-separator">
+                  <div className="login-separator-line" />
+                  <span className="login-separator-text">
+                    ¿No recuerdas tu contraseña?{' '}
+                    <button
+                      type="button"
+                      onClick={() => setView('forgot')}
+                      className="login-footer-link"
+                      style={{ fontSize: '0.7rem', letterSpacing: '0.02em' }}
+                    >
+                      Recupérala
+                    </button>
+                  </span>
+                  <div className="login-separator-line" />
+                </div>
+              )}
+
+              {/* Separador antes de redes sociales */}
+              {view !== 'login' && (
+                <div className="login-separator">
+                  <div className="login-separator-line" />
+                  <span className="login-separator-text">o continúa con</span>
+                  <div className="login-separator-line" />
+                </div>
+              )}
+
+              {/* Botones sociales en grid 2 columnas */}
+              <div className="login-social-grid">
+                {/* Google */}
+                <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                  <GoogleButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
+                </GoogleOAuthProvider>
+
+                {/* Facebook */}
+                <button
+                  type="button"
+                  onClick={handleFacebookLogin}
+                  className="login-btn-social"
+                  title="Iniciar con Facebook"
+                  aria-label="Iniciar sesión con Facebook"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="12" cy="12" r="12" fill="#1877f2" />
+                    <path fill="white" d="M16.3 8H14c-.3 0-.7.3-.7.8V10h3l-.4 2.5H13.3V19h-2.6v-6.5H9V10h1.7V8.6C10.7 6.6 12 5.5 13.9 5.5c.9 0 1.9.1 2.4.2V8z"/>
+                  </svg>
+                  <span>Facebook</span>
+                </button>
+              </div>
+
+              {/* ¿Tienes cuenta? */}
+              <div style={{ textAlign: 'center', paddingTop: '0.25rem' }}>
+                <p style={{ fontSize: '0.8rem', color: 'rgba(196,181,253,0.70)', marginBottom: '0.4rem' }}>
+                  {view === 'login' ? '¿No tienes una cuenta?' : '¿Ya tienes una cuenta?'}{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setView(view === 'login' ? 'register' : 'login'); setError(''); setFieldErrors({}); setPasswordStrength(0); }}
+                    className="login-footer-link"
+                    style={{ fontSize: '0.8rem' }}
+                  >
+                    {view === 'login' ? 'Crear cuenta' : 'Inicia sesión'}
+                  </button>
+                </p>
+                <p style={{ fontSize: '0.68rem', color: 'rgba(196,181,253,0.40)' }}>
+                  {view === 'login' ? 'Al iniciar sesión, aceptas nuestros' : 'Al registrarte, aceptas nuestros'}{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowTermsModal(true)}
+                    className="login-footer-link"
+                    style={{ fontSize: '0.68rem' }}
+                  >
+                    Términos y condiciones
                   </button>
                 </p>
               </div>
-            )}
 
-            {/* Separador redes sociales */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-surfaceAlt" />
-              <div className="flex-1 h-px bg-surfaceAlt" />
-            </div>
-
-            {/* Botones Google / Facebook */}
-            <div className="flex justify-center gap-4">
-              {/* ── Botón Google GSI — mismo tamaño y estructura que Facebook ── */}
-              <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-                <GoogleButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
-              </GoogleOAuthProvider>
-
-              <button
-                type="button"
-                onClick={handleFacebookLogin}
-                className="flex items-center gap-3 btn-oauth-facebook"
-                title="Iniciar con Facebook"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path fill="white" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-                <span className="text-sm font-medium leading-none">Facebook</span>
-              </button>
-            </div>
-
-            {/* ¿Tienes cuenta? + Términos */}
-            <div className="text-center space-y-2 pt-1">
-              <p className="text-textMuted text-xs">
-                {view === 'login' ? "¿No tienes una cuenta aún?" : "¿Ya tienes una cuenta?"}
-                {" "}
-                <button type="button"
-                  onClick={() => { setView(view === 'login' ? 'register' : 'login'); setError(""); setFieldErrors({}); setPasswordStrength(0); }}
-                  className="text-accent hover:text-primary font-medium transition-colors"
-                >
-                  {view === 'login' ? "Haz clic aquí" : "Inicia sesión"}
-                </button>
-              </p>
-              <p className="text-textMuted text-xs opacity-70">
-                {view === 'login' ? "Al iniciar sesión, aceptas nuestros" : "Al registrarte, aceptas nuestros"}{" "}
-                <button type="button" onClick={() => setShowTermsModal(true)}
-                  className="text-accent hover:text-primary underline transition-colors">
-                  Términos y condiciones
-                </button>
-              </p>
-            </div>
-
-          </form>
-        </div>
-      </div>
+            </form>
+          </div>{/* /login-card */}
+        </div>{/* /login-form-col */}
+      </div>{/* /login-inner */}
 
       {/* ══════════════ MODAL TÉRMINOS ══════════════ */}
       <BaseModal
