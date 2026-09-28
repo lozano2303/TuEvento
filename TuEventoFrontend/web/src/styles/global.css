@@ -1193,3 +1193,437 @@ input[type="password"]::-ms-reveal { display: none; }
 .admin-thumbnail:hover {
   transform: scale(1.05);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOGIN PAGE — Estilos propios con prefijo login-
+   Aislados del ThemeContext: usan variables --login-* fijas para no interferir
+   con la paleta dinámica del resto de la app.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Variables + contenedor raíz ─────────────────────────────────────────── */
+.login-root {
+  --login-bg-start:      #0a0420;
+  --login-bg-end:        #1a0838;
+  --login-purple:        #7c3aed;
+  --login-purple-mid:    #9333ea;
+  --login-purple-light:  #a855f7;
+  --login-purple-border: rgba(124, 58, 237, 0.60);
+  --login-input-bg:      rgba(255, 255, 255, 0.04);
+  --login-text-muted:    rgba(196, 181, 253, 0.70);
+
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  /* Fondo morado oscuro que rellena el lado derecho donde no llega la imagen */
+  background:
+    radial-gradient(ellipse 55% 55% at  8%  8%,  rgba(109,40,217,0.32) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 45% at 92% 92%,  rgba(147,51,234,0.24) 0%, transparent 70%),
+    radial-gradient(circle at bottom right, rgba(124,58,237,0.12), transparent 55%),
+    linear-gradient(135deg, var(--login-bg-start) 0%, var(--login-bg-end) 100%);
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* ── Imagen hero — anclada a la izquierda, ~65 % de ancho ───────────────── */
+.login-hero-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 65%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left center;
+  opacity: 1;
+  /* Fundido suave hacia la derecha — sin oscurecer la imagen */
+  -webkit-mask-image: linear-gradient(to right, black 60%, transparent 100%);
+  mask-image: linear-gradient(to right, black 60%, transparent 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ── Overlay muy sutil — solo para integrar imagen con fondo ─────────────── */
+.login-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(10, 4, 32, 0.00) 0%,
+    rgba(10, 4, 32, 0.08) 50%,
+    rgba(10, 4, 32, 0.15) 100%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ── Formas decorativas SVG — líneas de neón ─────────────────────────────── */
+/* Los SVGs son inline en el JSX; estas clases controlan posición y z-index. */
+.login-deco-tl {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 260px;
+  pointer-events: none;
+  z-index: 3;
+  filter: drop-shadow(0 0 8px #7c3aed);
+}
+
+.login-deco-br {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 260px;
+  height: 260px;
+  pointer-events: none;
+  z-index: 3;
+  filter: drop-shadow(0 0 8px #7c3aed);
+  transform: rotate(180deg);
+}
+
+@media (max-width: 1023px) {
+  .login-deco-tl,
+  .login-deco-br {
+    width: 180px;
+    height: 180px;
+  }
+}
+
+/* ── Layout interior ─────────────────────────────────────────────────────── */
+.login-inner {
+  position: relative;
+  z-index: 4;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;   /* tarjeta empujada a la derecha */
+}
+
+/* ── Columna del formulario ──────────────────────────────────────────────── */
+.login-form-col {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  /* En móvil: centrado con margen de 16px */
+}
+
+@media (min-width: 1024px) {
+  .login-form-col {
+    /* Margen derecho clamp para que no quede pegada al borde */
+    padding-right: clamp(24px, 8vw, 160px);
+    padding-left: 1.5rem;
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+    align-items: flex-end;
+  }
+}
+
+/* ── Tarjeta glassmorphism ────────────────────────────────────────────────── */
+.login-card {
+  width: 100%;
+  max-width: 560px;
+  border-radius: 28px;
+  background: linear-gradient(
+    160deg,
+    rgba(30, 12, 68, 0.65) 0%,
+    rgba(20, 8, 50, 0.58) 100%
+  );
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(124, 58, 237, 0.60);
+  box-shadow:
+    0 0 0 1px rgba(168, 85, 247, 0.12),
+    0 8px 36px rgba(0, 0, 0, 0.50),
+    0 0 70px rgba(109, 40, 217, 0.20),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  padding: 3rem 2rem;   /* ~48px vertical */
+}
+
+@media (min-width: 640px) {
+  .login-card {
+    padding: 3rem 3rem;
+  }
+}
+
+/* ── Encabezado de la tarjeta ────────────────────────────────────────────── */
+.login-card-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #a855f7;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.login-card-title {
+  font-size: 2.25rem;   /* 36px */
+  font-weight: 700;
+  color: #ffffff;
+  text-align: center;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.5rem;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.login-card-subtitle {
+  font-size: 0.8125rem;
+  color: var(--login-text-muted);
+  text-align: center;
+  line-height: 1.55;
+  margin-bottom: 1.75rem;
+  max-width: 340px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── Inputs ──────────────────────────────────────────────────────────────── */
+.login-input-wrap {
+  position: relative;
+}
+
+.login-input-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 17px;
+  height: 17px;
+  color: rgba(196, 181, 253, 0.55);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.login-input {
+  width: 100%;
+  height: 56px;
+  background: var(--login-input-bg);
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  border-radius: 12px;
+  padding: 0 3rem 0 3rem;
+  color: #ffffff;
+  font-size: 0.9375rem;   /* 15px */
+  font-family: 'Montserrat', sans-serif;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.login-input::placeholder {
+  color: rgba(196, 181, 253, 0.45);
+  font-size: 0.9375rem;
+}
+
+.login-input:focus {
+  border-color: #a855f7;
+  box-shadow:
+    0 0 0 3px rgba(168, 85, 247, 0.22),
+    0 0 14px rgba(168, 85, 247, 0.14);
+}
+
+.login-input.login-input-error {
+  border-color: rgba(248, 113, 113, 0.70);
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
+}
+
+.login-input-eye {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: rgba(196, 181, 253, 0.50);
+  display: flex;
+  align-items: center;
+  transition: color 140ms ease;
+}
+
+.login-input-eye:hover {
+  color: rgba(196, 181, 253, 0.90);
+}
+
+/* ── Separador ───────────────────────────────────────────────────────────── */
+.login-separator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0;
+}
+
+.login-separator-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(124,58,237,0.40), transparent);
+}
+
+.login-separator-text {
+  font-size: 0.7rem;
+  color: rgba(196,181,253,0.50);
+  white-space: nowrap;
+  letter-spacing: 0.08em;
+}
+
+/* ── Botón principal ─────────────────────────────────────────────────────── */
+.login-btn-primary {
+  width: 100%;
+  height: 56px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #6d28d9 0%, #9333ea 55%, #a855f7 100%);
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Montserrat', sans-serif;
+  box-shadow:
+    0 4px 20px rgba(109, 40, 217, 0.50),
+    0 1px 0 rgba(255,255,255,0.08) inset;
+  transition: box-shadow 180ms ease, transform 180ms ease, filter 180ms ease;
+}
+
+.login-btn-primary:hover:not(:disabled) {
+  box-shadow:
+    0 6px 28px rgba(109, 40, 217, 0.65),
+    0 0 18px rgba(168, 85, 247, 0.32);
+  transform: translateY(-1px);
+  filter: brightness(1.07);
+}
+
+.login-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-btn-primary:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ── Botones sociales (grid 2 columnas) ──────────────────────────────────── */
+.login-social-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.875rem;
+}
+
+.login-btn-social {
+  width: 100%;
+  height: 56px;
+  border-radius: 12px;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+  font-size: 0.9375rem;   /* 15px */
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.login-btn-social:hover {
+  background: rgba(124, 58, 237, 0.16);
+  border-color: rgba(168, 85, 247, 0.60);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.16);
+}
+
+/* ── Wrapper del GoogleButton dentro del grid ────────────────────────────── */
+.login-google-wrapper {
+  position: relative;
+  width: 100%;
+  height: 56px;
+  border-radius: 12px;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  color: #ffffff;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.login-google-wrapper:hover {
+  background: rgba(124, 58, 237, 0.16);
+  border-color: rgba(168, 85, 247, 0.60);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.16);
+}
+
+/* Contenido visual del botón Google (bajo el overlay) */
+.login-google-visual {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  pointer-events: none;
+  user-select: none;
+  position: relative;
+  z-index: 0;
+}
+
+/* Overlay GoogleLogin — cubre todo el wrapper */
+.login-google-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  z-index: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+}
+
+.login-google-overlay > div,
+.login-google-overlay iframe,
+.login-google-overlay > div > div {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: unset !important;
+}
+
+/* ── Links de pie de tarjeta ─────────────────────────────────────────────── */
+.login-footer-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+  color: #a855f7;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+  transition: color 140ms ease;
+  padding: 0;
+}
+
+.login-footer-link:hover {
+  color: #c084fc;
+}
+
+/* ── Mensajes de error dentro de la tarjeta ──────────────────────────────── */
+.login-field-error {
+  color: #fca5a5;
+  font-size: 0.72rem;
+  margin-top: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ── Barra de fortaleza — reutiliza strength-bar-* existentes ────────────── */
