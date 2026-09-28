@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.payment.application.usecase;
 
 import com.capysoft.tuevento.modules.payment.application.dto.response.PaymentResponse;
+import com.capysoft.tuevento.modules.payment.domain.event.PaymentApprovedEvent;
 import com.capysoft.tuevento.modules.payment.domain.model.*;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentLogRepository;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentRepository;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +43,7 @@ public class CreateWalletOnlyPaymentUseCase {
     private final PaymentLogRepository paymentLogRepository;
     private final ConfirmOrderPaymentUseCase confirmOrderPaymentUseCase;
     private final ConfirmWalletPaymentUseCaseImpl confirmWalletPaymentUseCase;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${payment.gateway}")
     private String gatewayName;
@@ -83,6 +86,22 @@ public class CreateWalletOnlyPaymentUseCase {
 
         // 4. Confirmar reserva wallet (PENDING → COMPLETED, descuenta balance)
         confirmWalletPaymentUseCase.execute(walletTransactionId);
+
+        // 5. Publicar evento para notificaciones
+        try {
+            PaymentApprovedEvent approvedEvent = PaymentApprovedEvent.builder()
+                    .paymentId(savedPayment.getPaymentId())
+                    .userId(order.getUserId().intValue())
+                    .walletAmount(walletAmount)
+                    .gatewayAmount(BigDecimal.ZERO)
+                    .currency(order.getTotalAmount().getCurrency().toString())
+                    .build();
+            eventPublisher.publishEvent(approvedEvent);
+            log.debug("PaymentApprovedEvent published for wallet-only payment: paymentId={}", savedPayment.getPaymentId());
+        } catch (Exception e) {
+            log.error("Failed to publish PaymentApprovedEvent (non-breaking): paymentId={}", 
+                    savedPayment.getPaymentId(), e);
+        }
 
         log.info("Wallet-only payment completed: orderId={}, walletTxId={}, amount={}",
             order.getOrderId(), walletTransactionId, walletAmount);

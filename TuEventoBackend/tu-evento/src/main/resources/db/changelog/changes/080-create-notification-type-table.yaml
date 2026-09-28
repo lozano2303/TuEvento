@@ -1,0 +1,102 @@
+databaseChangeLog:
+  - changeSet:
+      id: 080-create-notification-type-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: notification_type
+            columns:
+              - column:
+                  name: notification_type_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: description
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+              - column:
+                  name: updated_by
+                  type: VARCHAR(100)
+        - insert:
+            tableName: notification_type
+            columns:
+              - column:
+                  name: name
+                  value: PAYMENT_APPROVED
+              - column:
+                  name: description
+                  value: Pago aprobado (pasarela o cartera)
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()
+        - insert:
+            tableName: notification_type
+            columns:
+              - column:
+                  name: name
+                  value: PAYMENT_REFUNDED
+              - column:
+                  name: description
+                  value: Pago reembolsado
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()
+        - insert:
+            tableName: notification_type
+            columns:
+              - column:
+                  name: name
+                  value: WALLET_CREDITED
+              - column:
+                  name: description
+                  value: Crédito acreditado en la cartera
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()

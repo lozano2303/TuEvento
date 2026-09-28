@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.wallet.application.usecase;
 
 import com.capysoft.tuevento.modules.wallet.application.dto.WalletResponse;
+import com.capysoft.tuevento.modules.wallet.domain.event.WalletCreditedEvent;
 import com.capysoft.tuevento.modules.wallet.domain.model.*;
 import com.capysoft.tuevento.modules.wallet.domain.repository.WalletReferenceRepository;
 import com.capysoft.tuevento.modules.wallet.domain.repository.WalletRepository;
@@ -8,11 +9,11 @@ import com.capysoft.tuevento.modules.wallet.domain.repository.WalletTransactionR
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 /**
  * Acredita saldo en la wallet de un usuario.
@@ -39,6 +40,7 @@ public class CreditWalletUseCaseImpl {
     private final WalletRepository walletRepository;
     private final WalletTransactionRepository walletTransactionRepository;
     private final WalletReferenceRepository walletReferenceRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public WalletResponse execute(
@@ -90,6 +92,22 @@ public class CreditWalletUseCaseImpl {
             .entityId(entityId)
             .build();
         walletReferenceRepository.save(reference);
+
+        // 6. Publicar evento para notificaciones cuando la transacción está COMPLETED
+        try {
+            WalletCreditedEvent creditedEvent = WalletCreditedEvent.builder()
+                    .walletTransactionId(savedTx.getTransactionId())
+                    .userId(userId.intValue())
+                    .amount(amount)
+                    .currency(savedWallet.getCurrency())
+                    .reason(reason)
+                    .build();
+            eventPublisher.publishEvent(creditedEvent);
+            log.debug("WalletCreditedEvent published: walletTransactionId={}", savedTx.getTransactionId());
+        } catch (Exception e) {
+            log.error("Failed to publish WalletCreditedEvent (non-breaking): walletTransactionId={}", 
+                    savedTx.getTransactionId(), e);
+        }
 
         log.info("Wallet credited: userId={}, amount={}, walletId={}, txId={}, reason={}",
             userId, amount, savedWallet.getWalletId(), savedTx.getTransactionId(), reason);
