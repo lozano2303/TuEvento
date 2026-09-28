@@ -5,16 +5,20 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * Request para crear un pago.
- */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreatePaymentRequest {
-    
+
     @NotNull(message = "Order ID is required")
     private Long orderId;
-    
-    private String paymentMethod; // Opcional, por ahora usa QR por defecto
+
+    private String paymentMethod; // Opcional, por defecto QR
+
+    /**
+     * Si true, el orquestador consulta el saldo disponible y aplica
+     * crédito de wallet antes de cobrar por pasarela.
+     * Default: false — flujo idéntico al anterior.
+     */
+    private boolean applyWalletCredit = false;
 }

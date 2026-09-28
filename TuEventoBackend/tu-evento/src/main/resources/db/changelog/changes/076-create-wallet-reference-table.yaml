@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: 076-create-wallet-reference-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: wallet_reference
+            columns:
+              - column:
+                  name: wallet_reference_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: transaction_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entity_type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entity_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: wallet_reference
+            baseColumnNames: transaction_id
+            referencedTableName: wallet_transaction
+            referencedColumnNames: transaction_id
+            constraintName: fk_wallet_reference_transaction
+        - sql:
+            sql: "ALTER TABLE wallet_reference ADD CONSTRAINT chk_wr_entity_type CHECK (entity_type IN ('EVENT_CANCELLATION', 'ORDER', 'TICKET'));"
+        - createIndex:
+            tableName: wallet_reference
+            indexName: idx_wr_transaction_id
+            columns:
+              - column:
+                  name: transaction_id
+        - createIndex:
+            tableName: wallet_reference
+            indexName: idx_wr_entity
+            columns:
+              - column:
+                  name: entity_type
+              - column:
+                  name: entity_id
