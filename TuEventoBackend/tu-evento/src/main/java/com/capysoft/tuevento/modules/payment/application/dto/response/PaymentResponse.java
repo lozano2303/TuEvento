@@ -11,9 +11,6 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Response de pago.
- */
 @Getter
 @Builder
 @NoArgsConstructor
@@ -24,22 +21,31 @@ public class PaymentResponse {
     private PaymentGateway gateway;
     private String gatewayTransactionId;
     private PaymentStatus status;
-    private BigDecimal amount;
+    private BigDecimal amount;               // Monto cobrado por pasarela
     private String currency;
     private String paymentMethod;
+    private BigDecimal walletAmountApplied;  // Monto cubierto por wallet (0 si no aplica)
+    private BigDecimal amountToPayViaGateway; // Alias legible de amount (para el frontend)
     private LocalDateTime processedAt;
     private LocalDateTime createdAt;
-    
+
     public static PaymentResponse fromDomain(Payment payment) {
+        BigDecimal gatewayAmount = payment.getAmount() != null
+            ? payment.getAmount().getAmount() : BigDecimal.ZERO;
+        BigDecimal walletApplied = payment.getWalletAmountApplied() != null
+            ? payment.getWalletAmountApplied() : BigDecimal.ZERO;
+
         return PaymentResponse.builder()
             .paymentId(payment.getPaymentId())
             .orderId(payment.getOrderId())
             .gateway(payment.getGateway())
             .gatewayTransactionId(payment.getGatewayTransactionId())
             .status(payment.getStatus())
-            .amount(payment.getAmount().getAmount())
-            .currency(payment.getAmount().getCurrency())
+            .amount(gatewayAmount)
+            .currency(payment.getAmount() != null ? payment.getAmount().getCurrency() : "COP")
             .paymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : null)
+            .walletAmountApplied(walletApplied)
+            .amountToPayViaGateway(gatewayAmount)
             .processedAt(payment.getProcessedAt())
             .createdAt(payment.getCreatedAt())
             .build();

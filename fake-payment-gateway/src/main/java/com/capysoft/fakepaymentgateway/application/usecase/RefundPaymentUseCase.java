@@ -1,11 +1,12 @@
 package com.capysoft.fakepaymentgateway.application.usecase;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.capysoft.fakepaymentgateway.application.port.out.WebhookNotifierPort;
 import com.capysoft.fakepaymentgateway.domain.event.PaymentStatusChanged;
 import com.capysoft.fakepaymentgateway.domain.model.Payment;
 import com.capysoft.fakepaymentgateway.domain.repository.PaymentRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Caso de uso para reembolsar un pago aprobado.
@@ -33,7 +34,15 @@ public class RefundPaymentUseCase {
         // Dominio valida la transición: solo APPROVED → REFUNDED es válido.
         // Si el estado actual no es APPROVED lanza InvalidStatusTransitionException.
         PaymentStatusChanged refundedEvent = payment.refund();
+        
+        // IMPORTANTE: Persistir ANTES de notificar webhook
+        // Si save() falla (ej. por constraint violation), la excepción aborta la transacción
+        // y el webhook nunca se envía, manteniendo consistencia entre ambos sistemas
         paymentRepository.save(payment);
+        
+        // Solo si el save fue exitoso, enviar webhook
+        // Nota: El webhook se envía dentro de la transacción. Si falla el envío HTTP,
+        // la transacción completa hace rollback y se devuelve error al caller.
         webhookNotifier.notify(refundedEvent);
     }
 }

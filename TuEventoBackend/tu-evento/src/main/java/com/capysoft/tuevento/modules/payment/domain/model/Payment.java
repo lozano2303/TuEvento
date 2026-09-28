@@ -3,11 +3,16 @@ package com.capysoft.tuevento.modules.payment.domain.model;
 import com.capysoft.tuevento.modules.ticket.domain.model.Money;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
  * Aggregate root del dominio de pagos.
  * Representa un pago procesado a través de un gateway externo.
+ *
+ * amount = monto cobrado por la pasarela (puede ser 0 en pagos 100% wallet).
+ * walletAmountApplied = monto cubierto por wallet (default 0).
+ * total de la orden = amount + walletAmountApplied.
  */
 @Getter
 @Builder
@@ -19,27 +24,29 @@ public class Payment {
     private PaymentGateway gateway;
     private String gatewayTransactionId; // providerPaymentId del gateway externo
     private PaymentStatus status;
-    private Money amount;
+    private Money amount;                        // Monto cobrado por pasarela (>= 0)
     private PaymentMethod paymentMethod;
+    private BigDecimal walletAmountApplied;      // Monto cubierto por wallet (default 0)
+    private Long walletTransactionId;            // FK a wallet_transaction (nullable)
     private LocalDateTime processedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String createdBy;
     private String updatedBy;
-    
+
     /**
      * Transiciona el pago a un nuevo estado validando las reglas del dominio.
      */
     public void transitionTo(PaymentStatus newStatus) {
         if (!status.canTransitionTo(newStatus)) {
             throw new InvalidPaymentStatusTransitionException(
-                String.format("Cannot transition payment %d from %s to %s", 
+                String.format("Cannot transition payment %d from %s to %s",
                     paymentId, status, newStatus)
             );
         }
         this.status = newStatus;
     }
-    
+
     /**
      * Marca el pago como aprobado.
      */
@@ -47,7 +54,7 @@ public class Payment {
         transitionTo(PaymentStatus.APPROVED);
         this.processedAt = LocalDateTime.now();
     }
-    
+
     /**
      * Marca el pago como rechazado.
      */
@@ -55,7 +62,7 @@ public class Payment {
         transitionTo(PaymentStatus.REJECTED);
         this.processedAt = LocalDateTime.now();
     }
-    
+
     /**
      * Marca el pago como error.
      */
@@ -63,11 +70,21 @@ public class Payment {
         transitionTo(PaymentStatus.ERROR);
         this.processedAt = LocalDateTime.now();
     }
-    
+
     /**
      * Reembolsa el pago.
      */
     public void refund() {
         transitionTo(PaymentStatus.REFUNDED);
+    }
+
+    /**
+     * True si este pago fue cubierto completamente por wallet (sin pasarela).
+     */
+    public boolean isWalletOnly() {
+        return amount != null
+            && amount.getAmount().compareTo(BigDecimal.ZERO) == 0
+            && walletAmountApplied != null
+            && walletAmountApplied.compareTo(BigDecimal.ZERO) > 0;
     }
 }

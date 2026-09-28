@@ -4,7 +4,68 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Added — feat(payment-refund)
+### Added — feat(wallet)
+
+- **Wallet Module — Domain (DDD puro)**: `Wallet` (aggregate root con `balance >= 0`, bloqueo optimista `@Version`, `credit()`/`debit()`), `WalletTransaction` (inmutable en monto/tipo; solo cambia `status`; `complete()`/`fail()` retornan nuevas instancias), `WalletReference` (trazabilidad del origen de cada movimiento), enums `WalletTransactionType` (CREDIT/PAYMENT/REVERSAL/ADJUSTMENT), `WalletTransactionStatus` (PENDING/COMPLETED/FAILED), `WalletReferenceEntityType` (EVENT_CANCELLATION/ORDER/TICKET). Excepciones: `InsufficientWalletBalanceException` (→ 422), `WalletNotFoundException` (extiende `NotFoundException` → 404).
+
+- **Wallet Module — Repositorios de dominio**: `WalletRepository`, `WalletTransactionRepository` (con `sumPendingPayments(walletId)`), `WalletReferenceRepository`.
+
+- **Wallet Module — Infraestructura JPA**: `WalletEntity` (extiende `JpaAuditingEntity`, `@Version`), `WalletTransactionEntity` (solo `@CreatedDate`/`@CreatedBy` — sin `updated_at` por inmutabilidad), `WalletReferenceEntity` (sin auditoría). JPA repos + impls (`WalletRepositoryImpl`, `WalletTransactionRepositoryImpl`, `WalletReferenceRepositoryImpl`).
+
+- **Wallet Module — Casos de uso**:
+  - `GetWalletUseCaseImpl`: balance total + disponible (balance − PAYMENTs PENDING).
+  - `GetWalletTransactionsUseCaseImpl`: historial ordenado por `createdAt desc`.
+  - `CreditWalletUseCaseImpl`: lazy wallet creation, idempotente por `idempotencyKey`, CREDIT→COMPLETED directo, crea `WalletReference`.
+  - `AdjustWalletUseCaseImpl`: ajuste manual (±), valida balance ≥ 0, solo ADMIN.
+  - `ReserveWalletPaymentUseCaseImpl`: PAYMENT PENDING sin tocar balance; toca fila `@Version` para bloqueo optimista ante doble gasto concurrente; devuelve `transactionId`.
+  - `ConfirmWalletPaymentUseCaseImpl`: idempotente (skip si COMPLETED), descuenta balance, PENDING→COMPLETED con snapshot `balanceAfter`.
+  - `ReleaseWalletPaymentUseCaseImpl`: idempotente (skip si FAILED), PENDING→FAILED sin tocar balance.
+  - `ReverseWalletPaymentUseCaseImpl`: idempotente via `reversal-{txId}`, valida COMPLETED, devuelve crédito, crea REVERSAL, copia `WalletReference`s del original.
+
+- **Wallet Module — REST** (`/api/v1/wallet`):
+  - `GET /me` — balance + disponible del usuario autenticado.
+  - `GET /me/transactions` — historial.
+  - `POST /credit` — ADMIN; crea crédito manual.
+  - `POST /adjust` — ADMIN; ajuste ± con `reason` obligatorio.
+
+- **Liquibase changesets**:
+  - `074` — tabla `wallet` (PK, UNIQUE `user_id`, `balance >= 0`, `version`, audit columns).
+  - `075` — tabla `wallet_transaction` (`amount > 0`, UNIQUE `idempotency_key`, FK → `wallet`).
+  - `076` — tabla `wallet_reference` (FK → `wallet_transaction`, index compuesto `entity_type+entity_id`).
+  - `077` — `ALTER TABLE payment ADD wallet_amount_applied DECIMAL NOT NULL DEFAULT 0, wallet_transaction_id BIGINT NULL` (FK → `wallet_transaction`).
+
+- **Payment Module — dominio**: `Payment` agregado `walletAmountApplied` (BigDecimal, default 0), `walletTransactionId` (Long nullable), método `isWalletOnly()` (amount==0 y walletAmountApplied>0).
+
+- **Payment Module — infraestructura**: `PaymentEntity` + `PaymentRepositoryImpl` actualizados para mapear los nuevos campos (null-safe, default ZERO). `PaymentResponse` expone `walletAmountApplied` y `amountToPayViaGateway`.
+
+- **Payment Module — CreatePaymentRequest**: campo `applyWalletCredit` (boolean, default false).
+
+- **Payment Module — ChargeOrderViaGatewayUseCase**: subcomponente extraído del antiguo `CreatePaymentUseCaseImpl`; recibe `(order, amountToCharge, paymentMethod, walletAmountApplied, walletTransactionId)`; no sabe nada de wallet.
+
+- **Payment Module — CreateWalletOnlyPaymentUseCase**: pago 100% wallet sin pasarela; `amount=0`, `gatewayTransactionId='wallet_only_'+UUID`, APPROVED directamente; confirma orden y wallet en la misma `@Transactional`.
+
+- **Payment Module — CreatePaymentUseCaseImpl (orquestador)**:
+  - `applyWalletCredit=false` → flujo gateway idéntico al anterior.
+  - `applyWalletCredit=true`, sin saldo → fallback gateway.
+  - Saldo parcial → ReserveWallet + ChargeOrderViaGateway(remainder).
+  - Saldo total → CreateWalletOnlyPayment.
+  - Garantía de rollback: todo en una sola `@Transactional` — si el gateway falla tras reservar, la reserva se deshace.
+
+- **Payment Module — ProcessWebhookUseCaseImpl**: APPROVED llama `ConfirmWalletPayment` si `walletTransactionId != null`; DECLINED/FAILED/CANCELLED llaman `ReleaseWalletPayment`; REFUNDED llama `ReverseWalletPayment` si `walletAmountApplied > 0`.
+
+- **Payment Module — RequestRefundUseCaseImpl**: si `payment.isWalletOnly()`, ejecuta cierre local (`closeRefundLocally`) en-proceso sin llamar al gateway: Payment→REFUNDED, PaymentLog, Refund→PROCESSED, `ConfirmRefundUseCase`, `ReverseWalletPayment`. El cierre local es simétrico al bloque REFUNDED del webhook.
+
+- **SecurityConfig**: matchers explícitos `POST /api/v1/wallet/credit` y `/api/v1/wallet/adjust` con `hasAuthority('ADMIN')`.
+
+- **GlobalExceptionHandler**: `InsufficientWalletBalanceException` → 422 `UNPROCESSABLE_ENTITY`.
+
+- **Frontend Web — WalletService.js**: `getMyWallet`, `getMyWalletTransactions`, `creditWallet`, `adjustWallet`.
+
+- **Frontend Web — Checkout.jsx**: consulta `GET /api/v1/wallet/me` tras crear la orden (silencia 404); si `availableBalance > 0` muestra toggle "Pago normal / Usar cartera" con desglose (total − descuento wallet − restante por pasarela); botón cambia a "Pagar con cartera" cuando el saldo cubre el total; envía `applyWalletCredit` al backend; ruta directa a confirmación si `amountToPayViaGateway === 0`.
+
+- **Frontend Web — PaymentPending.jsx**: el poll no abre popup del gateway para `gatewayTransactionId` con prefijo `wallet_only_`; mensaje de espera diferenciado para pagos wallet.
+
+
 
 - **fake-payment-gateway — pom.xml**: Added `maven-compiler-plugin` `annotationProcessorPaths` for Lombok, fixing pre-existing build break on `PaymentEntity` / `WebhookDeliveryLogEntity` accessors.
 - **fake-payment-gateway — PaymentStatus**: `REFUNDED` state added with transition `APPROVED → REFUNDED` (terminal). All other origin states throw `InvalidStatusTransitionException`.

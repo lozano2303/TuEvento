@@ -1,0 +1,77 @@
+databaseChangeLog:
+  - changeSet:
+      id: 075-create-wallet-transaction-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: wallet_transaction
+            columns:
+              - column:
+                  name: transaction_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: wallet_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: DECIMAL(19, 4)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  defaultValue: "PENDING"
+              - column:
+                  name: balance_after
+                  type: DECIMAL(19, 4)
+              - column:
+                  name: idempotency_key
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+        - addForeignKeyConstraint:
+            baseTableName: wallet_transaction
+            baseColumnNames: wallet_id
+            referencedTableName: wallet
+            referencedColumnNames: wallet_id
+            constraintName: fk_wallet_transaction_wallet
+        - sql:
+            sql: "ALTER TABLE wallet_transaction ADD CONSTRAINT chk_wt_type CHECK (type IN ('CREDIT', 'PAYMENT', 'REVERSAL', 'ADJUSTMENT'));"
+        - sql:
+            sql: "ALTER TABLE wallet_transaction ADD CONSTRAINT chk_wt_status CHECK (status IN ('PENDING', 'COMPLETED', 'FAILED'));"
+        - sql:
+            sql: "ALTER TABLE wallet_transaction ADD CONSTRAINT chk_wt_amount CHECK (amount > 0);"
+        - createIndex:
+            tableName: wallet_transaction
+            indexName: idx_wt_wallet_id
+            columns:
+              - column:
+                  name: wallet_id
+        - createIndex:
+            tableName: wallet_transaction
+            indexName: idx_wt_idempotency_key
+            columns:
+              - column:
+                  name: idempotency_key

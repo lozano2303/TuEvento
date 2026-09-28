@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 077-alter-payment-add-wallet-columns
+      author: capysoft
+      changes:
+        - addColumn:
+            tableName: payment
+            columns:
+              - column:
+                  name: wallet_amount_applied
+                  type: DECIMAL(19, 4)
+                  constraints:
+                    nullable: false
+                  defaultValueNumeric: 0
+              - column:
+                  name: wallet_transaction_id
+                  type: BIGINT
+        - addForeignKeyConstraint:
+            baseTableName: payment
+            baseColumnNames: wallet_transaction_id
+            referencedTableName: wallet_transaction
+            referencedColumnNames: transaction_id
+            constraintName: fk_payment_wallet_transaction
+        - sql:
+            sql: "ALTER TABLE payment ADD CONSTRAINT chk_payment_wallet_amount CHECK (wallet_amount_applied >= 0);"

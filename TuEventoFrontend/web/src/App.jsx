@@ -20,6 +20,7 @@ import AdminEventManagement from './pages/AdminEventManagement';
 import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
 import PaymentPending from './pages/PaymentPending';
+import PaymentConfirmation from './pages/PaymentConfirmation';
 import TerminosDeUso from './pages/TerminosDeUso';
 import Privacidad from './pages/Privacidad';
 
@@ -120,6 +121,11 @@ function AppContent() {
           <Route path="/checkout/pending/:paymentId" element={
             <ProtectedRoute>
               <PaymentPending />
+            </ProtectedRoute>
+          } />
+          <Route path="/checkout/confirmed/:paymentId" element={
+            <ProtectedRoute>
+              <PaymentConfirmation />
             </ProtectedRoute>
           } />
         </Routes>

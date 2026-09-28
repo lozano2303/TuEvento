@@ -53,4 +53,11 @@ public class PaymentEntity extends JpaAuditingEntity {
     
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
+
+    @Column(name = "wallet_amount_applied", nullable = false, precision = 19, scale = 4)
+    @Builder.Default
+    private BigDecimal walletAmountApplied = java.math.BigDecimal.ZERO;
+
+    @Column(name = "wallet_transaction_id")
+    private Long walletTransactionId;
 }
