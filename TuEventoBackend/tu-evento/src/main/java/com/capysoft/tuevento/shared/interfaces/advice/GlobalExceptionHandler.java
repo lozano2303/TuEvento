@@ -102,8 +102,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException ex) {
+        // No stack trace — structured response with code for frontend error mapping.
+        // The 'code' field maps to: EVENT_DATES_REQUIRED, EVENT_START_DATE_IN_PAST,
+        // EVENT_END_BEFORE_START, EVENT_START_DATE_TOO_FAR, and all other business codes.
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage()));
+                .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
 
     @ExceptionHandler(IllegalStateException.class)

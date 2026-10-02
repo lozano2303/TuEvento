@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.event.application.usecase;
 import com.capysoft.tuevento.modules.event.application.dto.request.ChangeEventStatusRequest;
 import com.capysoft.tuevento.modules.event.application.dto.response.EventStatusLogResponse;
 import com.capysoft.tuevento.modules.event.application.port.in.AdminChangeEventStatusPort;
+import com.capysoft.tuevento.modules.event.application.validator.EventDateValidator;
 import com.capysoft.tuevento.modules.event.domain.event.EventStatusChangedEvent;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
@@ -36,6 +37,7 @@ public class AdminChangeEventStatusUseCase implements AdminChangeEventStatusPort
     private final EventSectionRepository    eventSectionRepository;
     private final EventMediaRepository      eventMediaRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final EventDateValidator        eventDateValidator;
 
     @Override
     @Transactional
@@ -50,6 +52,9 @@ public class AdminChangeEventStatusUseCase implements AdminChangeEventStatusPort
         validateTransition(event.getStatus(), request.getNewStatus());
 
         if (request.getNewStatus() == EventStatus.PUBLISHED) {
+            // Re-validate start date: a draft created weeks ago may now have a past start date
+            eventDateValidator.validateForPublish(event.getStartDate());
+
             // Validar que tenga entre 3 y 9 imágenes (inclusive)
             long mediaCount = eventMediaRepository.countByEventId(eventId);
             if (mediaCount < 3) {
