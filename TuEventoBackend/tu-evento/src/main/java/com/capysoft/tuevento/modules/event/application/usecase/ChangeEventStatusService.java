@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.event.application.usecase;
 import com.capysoft.tuevento.modules.event.application.dto.request.ChangeEventStatusRequest;
 import com.capysoft.tuevento.modules.event.application.dto.response.EventStatusLogResponse;
 import com.capysoft.tuevento.modules.event.application.port.in.ChangeEventStatusUseCase;
+import com.capysoft.tuevento.modules.event.application.validator.EventDateValidator;
 import com.capysoft.tuevento.modules.event.domain.event.EventStatusChangedEvent;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
@@ -32,6 +33,7 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
     private final EventSectionRepository   eventSectionRepository;
     private final EventMediaRepository     eventMediaRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final EventDateValidator        eventDateValidator;
 
     @Override
     @Transactional
@@ -48,7 +50,10 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
         validateTransition(event.getStatus(), request.getNewStatus());
 
         if (request.getNewStatus() == EventStatus.PUBLISHED) {
-            // 1. Validar que tenga entre 3 y 9 imágenes (inclusive)
+            // 1. Re-validate start date: a draft created weeks ago may now have a past date
+            eventDateValidator.validateForPublish(event.getStartDate());
+
+            // 2. Validar que tenga entre 3 y 9 imágenes (inclusive)
             long mediaCount = eventMediaRepository.countByEventId(eventId);
             if (mediaCount < 3) {
                 throw new BusinessException("EVENT_PUBLISH_MEDIA_COUNT_INVALID",
@@ -58,7 +63,7 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
                 throw new BusinessException("EVENT_PUBLISH_MEDIA_COUNT_INVALID",
                         "Event must have at most 9 images before publishing (currently has " + mediaCount + ")");
             }
-            // 2. Validar que tenga al menos una sección con sillas configurada
+            // 3. Validar que tenga al menos una sección con sillas configurada
             List<EventSection> sections = eventSectionRepository.findAllByEventId(eventId.intValue());
             if (sections.isEmpty()) {
                 throw new BusinessException("EVENT_SECTIONS_REQUIRED",

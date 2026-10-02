@@ -7,6 +7,7 @@ import com.capysoft.tuevento.modules.category.application.port.in.CategoryUseCas
 import com.capysoft.tuevento.modules.event.application.dto.request.CreateEventRequest;
 import com.capysoft.tuevento.modules.event.application.dto.response.EventResponse;
 import com.capysoft.tuevento.modules.event.application.port.in.CreateEventUseCase;
+import com.capysoft.tuevento.modules.event.application.validator.EventDateValidator;
 import com.capysoft.tuevento.modules.event.domain.event.EventCreatedEvent;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
@@ -36,15 +37,13 @@ public class CreateEventService implements CreateEventUseCase {
     private final CategoryUseCase           categoryUseCase;
     private final CategoryEventUseCase      categoryEventUseCase;
     private final GetSitePort               getSitePort;
+    private final EventDateValidator        eventDateValidator;
 
     @Override
     @Transactional
     public EventResponse execute(CreateEventRequest request, Long userId) {
-        if (request.getFinishDate() != null && request.getStartDate() != null
-                && !request.getFinishDate().isAfter(request.getStartDate())) {
-            throw new BusinessException("EVENT_INVALID_DATES",
-                    "finishDate must be after startDate");
-        }
+        // Validate dates: required, not in the past, not too far ahead, end ≥ start
+        eventDateValidator.validate(request.getStartDate(), request.getFinishDate());
 
         // Validate site exists and seats do not exceed capacity
         SiteResponse site;
