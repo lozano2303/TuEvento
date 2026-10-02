@@ -1,13 +1,13 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.config;
 
+import java.util.Properties;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.scheduling.annotation.EnableAsync;
-
-import java.util.Properties;
 
 /**
  * Configuración del módulo de notificaciones.
@@ -18,16 +18,16 @@ import java.util.Properties;
 @EnableAsync
 public class NotificationConfig {
 
-    @Value("${notification.mail.host:smtp.gmail.com}")
+    @Value("${spring.mail.host:smtp.gmail.com}")
     private String mailHost;
 
-    @Value("${notification.mail.port:587}")
+    @Value("${spring.mail.port:587}")
     private int mailPort;
 
-    @Value("${notification.mail.username:}")
+    @Value("${spring.mail.username:}")
     private String mailUsername;
 
-    @Value("${notification.mail.password:}")
+    @Value("${spring.mail.password:}")
     private String mailPassword;
 
     @Value("${notification.email.enabled:true}")
@@ -58,7 +58,7 @@ public class NotificationConfig {
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.debug", "false"); // Cambiar a true para debug
+        props.put("mail.debug", "false");
         props.put("mail.smtp.ssl.trust", mailHost);
 
         return mailSender;

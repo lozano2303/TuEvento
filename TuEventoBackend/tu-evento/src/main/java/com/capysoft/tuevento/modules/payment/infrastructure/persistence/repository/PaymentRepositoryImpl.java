@@ -1,14 +1,19 @@
 package com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
 import com.capysoft.tuevento.modules.payment.domain.model.Payment;
+import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentRepository;
 import com.capysoft.tuevento.modules.payment.infrastructure.persistence.entity.PaymentEntity;
 import com.capysoft.tuevento.modules.ticket.domain.model.Money;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -41,6 +46,14 @@ public class PaymentRepositoryImpl implements PaymentRepository {
     @Override
     public boolean existsById(Long paymentId) {
         return jpaRepository.existsById(paymentId);
+    }
+
+    @Override
+    public List<Payment> findByOrderIdInAndStatus(List<Long> orderIds, PaymentStatus status) {
+        return jpaRepository.findByOrderIdInAndStatus(orderIds, status)
+                .stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
     }
 
     private PaymentEntity toEntity(Payment payment) {

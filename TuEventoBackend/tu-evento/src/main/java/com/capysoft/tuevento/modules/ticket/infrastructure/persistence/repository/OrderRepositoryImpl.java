@@ -1,15 +1,17 @@
 package com.capysoft.tuevento.modules.ticket.infrastructure.persistence.repository;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
 import com.capysoft.tuevento.modules.ticket.domain.model.Money;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
 import com.capysoft.tuevento.modules.ticket.infrastructure.persistence.entity.OrderEntity;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Implementación del repositorio Order usando JPA.
@@ -35,6 +37,13 @@ public class OrderRepositoryImpl implements OrderRepository {
     @Override
     public List<Order> findByUserId(Long userId) {
         return jpaRepository.findByUserId(userId).stream()
+            .map(this::toDomain)
+            .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<Order> findByEventId(Long eventId) {
+        return jpaRepository.findByEventId(eventId).stream()
             .map(this::toDomain)
             .collect(Collectors.toList());
     }

@@ -12,7 +12,8 @@ import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.
 
 public interface RefreshTokenJpaRepository extends JpaRepository<RefreshTokenEntity, Integer> {
 
-    Optional<RefreshTokenEntity> findByToken(String token);
+    @Query("SELECT r FROM RefreshTokenEntity r WHERE r.token = :token AND r.revoked = false ORDER BY r.issuedAt DESC LIMIT 1")
+    Optional<RefreshTokenEntity> findByToken(@Param("token") String token);
 
     Optional<RefreshTokenEntity> findByAuthSessionAuthSessionId(Integer authSessionId);
 

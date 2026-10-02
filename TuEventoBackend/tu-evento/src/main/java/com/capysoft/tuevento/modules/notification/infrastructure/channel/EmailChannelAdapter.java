@@ -42,6 +42,8 @@ public class EmailChannelAdapter implements NotificationChannelPort {
     public void deliver(Notification notification, List<Integer> userIds) {
         for (Integer userId : userIds) {
             String userEmail = null;
+            NotificationUser savedRecord = null;
+            
             try {
                 // Obtener email del LoginCredentials
                 userEmail = loginCredentialsRepository.findByUserId(userId)
@@ -61,7 +63,7 @@ public class EmailChannelAdapter implements NotificationChannelPort {
                 }
 
                 // Crear registro PENDING
-                NotificationUser saved = notificationUserRepository.save(NotificationUser.builder()
+                savedRecord = notificationUserRepository.save(NotificationUser.builder()
                         .notificationId(notification.getNotificationId())
                         .userId(userId)
                         .emailAddress(userEmail)
@@ -72,36 +74,50 @@ public class EmailChannelAdapter implements NotificationChannelPort {
                 // Enviar correo
                 sendEmail(userEmail, notification.getSubject(), notification.getBody());
 
-                // Actualizar a SENT
-                saved = NotificationUser.builder()
-                        .notificationUserId(saved.getNotificationUserId())
-                        .notificationId(saved.getNotificationId())
-                        .userId(saved.getUserId())
-                        .emailAddress(saved.getEmailAddress())
+                // Actualizar a SENT (preservando el ID)
+                NotificationUser updated = NotificationUser.builder()
+                        .notificationUserId(savedRecord.getNotificationUserId())
+                        .notificationId(savedRecord.getNotificationId())
+                        .userId(savedRecord.getUserId())
+                        .emailAddress(savedRecord.getEmailAddress())
                         .deliveredStatus(DeliveredStatus.SENT)
                         .errorMessage(null)
-                        .readAt(saved.getReadAt())
+                        .readAt(savedRecord.getReadAt())
                         .build();
-                notificationUserRepository.save(saved);
+                notificationUserRepository.save(updated);
 
                 log.debug("EMAIL notification sent: notificationUserId={}, userId={}, email={}",
-                        saved.getNotificationUserId(), userId, maskEmail(userEmail));
+                        updated.getNotificationUserId(), userId, maskEmail(userEmail));
 
             } catch (Exception e) {
                 log.error("Failed to send EMAIL notification: userId={}, email={}, notificationId={}",
                         userId, maskEmail(userEmail), notification.getNotificationId(), e);
 
-                // Guardar o actualizar como FAILED
+                // Actualizar registro existente a FAILED (si existe) o crear uno nuevo
                 try {
-                    NotificationUser failed = NotificationUser.builder()
-                            .notificationId(notification.getNotificationId())
-                            .userId(userId)
-                            .emailAddress(userEmail)
-                            .deliveredStatus(DeliveredStatus.FAILED)
-                            .errorMessage(truncate(e.getMessage(), 1000))
-                            .build();
-
-                    notificationUserRepository.save(failed);
+                    if (savedRecord != null && savedRecord.getNotificationUserId() != null) {
+                        // Ya existe un registro PENDING, actualizarlo a FAILED
+                        NotificationUser failed = NotificationUser.builder()
+                                .notificationUserId(savedRecord.getNotificationUserId())
+                                .notificationId(savedRecord.getNotificationId())
+                                .userId(savedRecord.getUserId())
+                                .emailAddress(savedRecord.getEmailAddress())
+                                .deliveredStatus(DeliveredStatus.FAILED)
+                                .errorMessage(truncate(e.getMessage(), 1000))
+                                .readAt(savedRecord.getReadAt())
+                                .build();
+                        notificationUserRepository.save(failed);
+                    } else {
+                        // No se llegó a crear el registro PENDING, crear uno FAILED
+                        NotificationUser failed = NotificationUser.builder()
+                                .notificationId(notification.getNotificationId())
+                                .userId(userId)
+                                .emailAddress(userEmail)
+                                .deliveredStatus(DeliveredStatus.FAILED)
+                                .errorMessage(truncate(e.getMessage(), 1000))
+                                .build();
+                        notificationUserRepository.save(failed);
+                    }
                 } catch (Exception saveError) {
                     log.error("Failed to save FAILED EMAIL notification: userId={}", userId, saveError);
                 }

@@ -26,16 +26,24 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class PaymentEventListener {
 
     private final SendNotificationUseCase sendNotificationUseCase;
+
+    public PaymentEventListener(SendNotificationUseCase sendNotificationUseCase) {
+        this.sendNotificationUseCase = sendNotificationUseCase;
+        log.info("=== DEBUG: PaymentEventListener INITIALIZED ===");
+    }
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handlePaymentApproved(PaymentApprovedEvent event) {
         try {
+            log.info("=== DEBUG: PaymentEventListener.handlePaymentApproved called ===");
+            log.info("Event: paymentId={}, userId={}, walletAmount={}, gatewayAmount={}", 
+                    event.getPaymentId(), event.getUserId(), event.getWalletAmount(), event.getGatewayAmount());
+                    
             log.debug("Processing PaymentApprovedEvent: paymentId={}, userId={}", 
                     event.getPaymentId(), event.getUserId());
 

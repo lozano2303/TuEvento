@@ -1,5 +1,13 @@
 package com.capysoft.tuevento.modules.notification.application.usecase;
 
+import java.time.LocalDateTime;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.capysoft.tuevento.modules.notification.application.dto.InAppNotificationDetails;
 import com.capysoft.tuevento.modules.notification.application.dto.InAppNotificationPageResponse;
 import com.capysoft.tuevento.modules.notification.application.dto.InAppNotificationResponse;
@@ -7,14 +15,8 @@ import com.capysoft.tuevento.modules.notification.domain.model.NotificationUser;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationUserRepository;
 import com.capysoft.tuevento.modules.notification.infrastructure.persistence.repository.NotificationUserRepositoryAdapter;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +42,7 @@ public class InAppNotificationQueryUseCase {
                 .entityType(details.getEntityType())
                 .entityId(details.getEntityId())
                 .sentAt(details.getSentAt())
+                .readAt(details.getReadAt())
                 .read(details.getReadAt() != null)
                 .build());
                 

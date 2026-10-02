@@ -1,11 +1,11 @@
 package com.capysoft.tuevento.modules.notification.application.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationChannelNames;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 /**
  * Fábrica simple de textos en español (sin motor de plantillas).
@@ -21,6 +21,7 @@ public final class NotificationMessageFactory {
             case NotificationTypeNames.PAYMENT_APPROVED -> paymentApproved(email, command);
             case NotificationTypeNames.PAYMENT_REFUNDED -> paymentRefunded(email, command);
             case NotificationTypeNames.WALLET_CREDITED -> walletCredited(email, command);
+            case NotificationTypeNames.WELCOME -> welcome(email, command);
             default -> new MessageContent(
                     "Notificación",
                     email ? html("Tienes una nueva notificación en TuEvento.") : "Tienes una nueva notificación.");
@@ -57,6 +58,26 @@ public final class NotificationMessageFactory {
             return new MessageContent("TuEvento — Crédito en tu cartera", html(line));
         }
         return new MessageContent("Crédito en tu cartera", line);
+    }
+
+    private static MessageContent welcome(boolean email, SendNotificationCommand command) {
+        String userName = (command.getReason() != null && !command.getReason().isBlank()) 
+                ? command.getReason() 
+                : "Usuario";
+        if (email) {
+            return new MessageContent(
+                    "Bienvenido a TuEvento",
+                    html(
+                        "¡Hola " + userName + "! Bienvenido a TuEvento, tu plataforma para descubrir y disfrutar eventos increíbles.",
+                        "En TuEvento puedes:",
+                        "• Explorar y comprar tickets para eventos de todo tipo",
+                        "• Solicitar ser organizador presentando tu cédula/pasaporte y documentos adicionales",
+                        "Estamos felices de tenerte con nosotros. ¡Comienza a explorar ahora!"
+                    ));
+        }
+        return new MessageContent(
+                "¡Bienvenido a TuEvento!",
+                "Explora eventos y compra tickets. Solicita ser organizador con tu documentación para crear tus propios eventos.");
     }
 
     private static String paymentBreakdown(SendNotificationCommand command) {

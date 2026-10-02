@@ -1,18 +1,21 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.channel;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Component;
+
 import com.capysoft.tuevento.modules.notification.application.port.out.NotificationChannelPort;
 import com.capysoft.tuevento.modules.notification.domain.model.DeliveredStatus;
 import com.capysoft.tuevento.modules.notification.domain.model.Notification;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationChannelNames;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationUser;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationUserRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Canal IN_APP: La fila notification_user nace en DELIVERED (guardarla ya es entregarla).
@@ -26,6 +29,7 @@ public class InAppChannelAdapter implements NotificationChannelPort {
 
     private final NotificationUserRepository notificationUserRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final com.capysoft.tuevento.modules.notification.infrastructure.persistence.repository.JpaNotificationTypeRepository jpaNotificationTypeRepository;
 
     @Override
     public String channelName() {
@@ -48,28 +52,36 @@ public class InAppChannelAdapter implements NotificationChannelPort {
                 log.debug("IN_APP notification saved: notificationUserId={}, userId={}",
                         saved.getNotificationUserId(), userId);
 
+                // Obtener el nombre del tipo de notificación
+                String typeName = jpaNotificationTypeRepository.findById(notification.getNotificationTypeId())
+                        .map(entity -> entity.getName())
+                        .orElse("UNKNOWN");
+
                 // Intentar push por WebSocket (nunca debe romper el guardado)
                 try {
-                    Map<String, Object> message = Map.of(
-                            "notificationUserId", saved.getNotificationUserId(),
-                            "type", "notification",
-                            "subject", notification.getSubject(),
-                            "body", notification.getBody(),
-                            "entityType", notification.getEntityType(),
-                            "entityId", notification.getEntityId(),
-                            "sentAt", notification.getSentAt() != null ? notification.getSentAt().toString() : null
-                    );
+                    // Usar HashMap en lugar de Map.of() porque Map.of() no permite valores null
+                    Map<String, Object> message = new HashMap<>();
+                    message.put("notificationUserId", saved.getNotificationUserId());
+                    message.put("type", typeName);
+                    message.put("subject", notification.getSubject());
+                    message.put("body", notification.getBody());
+                    message.put("entityType", notification.getEntityType() != null ? notification.getEntityType() : "");
+                    message.put("entityId", notification.getEntityId() != null ? notification.getEntityId().longValue() : 0L);
+                    message.put("sentAt", notification.getSentAt() != null ? notification.getSentAt().toString() : null);
+                    message.put("readAt", saved.getReadAt() != null ? saved.getReadAt().toString() : null);
+                    message.put("read", false);  // Nueva notificación siempre es no leída
 
-                    messagingTemplate.convertAndSendToUser(
-                            userId.toString(),
-                            "/queue/notifications",
-                            message
-                    );
+                    // Usar topic en lugar de user destination para evitar problemas con el simple broker
+                    // El frontend se suscribe a /topic/notifications/{userId}
+                    String topicDestination = "/topic/notifications/" + userId;
                     
-                    log.debug("WebSocket push attempted for userId={}", userId);
+                    messagingTemplate.convertAndSend(topicDestination, message);
+                    
+                    log.debug("[InAppChannel] Message sent to {} for userId={}, type={}", 
+                            topicDestination, userId, typeName);
                 } catch (Exception wsError) {
-                    log.warn("WebSocket push failed (non-breaking): userId={}, error={}",
-                            userId, wsError.getMessage());
+                    log.error("[InAppChannel] WebSocket push failed (non-breaking): userId={}, error={}", 
+                            userId, wsError.getMessage(), wsError);
                     // No se actualiza el estado DELIVERED porque el push es solo una mejora UX
                 }
 
