@@ -12,10 +12,63 @@ import StatusDropdown from '../components/event-manage/StatusDropdown';
 import Modal from '../components/common/Modal';
 import { STATUS_BADGE, TRANSITION_INFO, VALID_TRANSITIONS } from '../constants/eventStatus';
 import { normalizeImage } from '../utils/imageNormalize';
+import { mapBackendDateError } from '../components/event-wizard/StepGeneralInfo';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 // STATUS_BADGE y STATUS_LABEL se importan desde constants/eventStatus.js
 // STATUS_OPTIONS ya no se usa — StatusDropdown filtra por VALID_TRANSITIONS internamente
+
+/** Returns "YYYY-MM-DD" for today in local timezone. */
+const todayStr = () => new Date().toLocaleDateString('en-CA');
+
+/** Returns "YYYY-MM-DD" for today + 2 years (mirrors backend MAX_YEARS_AHEAD). */
+const maxStartStr = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 2);
+  return d.toLocaleDateString('en-CA');
+};
+
+/**
+ * Validates the two date fields for the edit modal.
+ * Only validates a date that was explicitly changed by the organizer.
+ * Returns an errors object { startDate?, finishDate? }.
+ */
+function validateEditDates(editForm, originalForm) {
+  const e = {};
+  const today = todayStr();
+  const maxStart = maxStartStr();
+
+  const startChanged  = editForm.startDate  !== originalForm.startDate;
+  const finishChanged = editForm.finishDate !== originalForm.finishDate;
+
+  if (!startChanged && !finishChanged) return e; // no dates touched — skip all checks
+
+  if (startChanged) {
+    if (!editForm.startDate) {
+      e.startDate = 'La fecha de inicio es obligatoria';
+    } else if (editForm.startDate < today) {
+      e.startDate = 'La fecha de inicio no puede estar en el pasado';
+    } else if (editForm.startDate > maxStart) {
+      e.startDate = 'La fecha de inicio es demasiado lejana (máximo 2 años)';
+    }
+  }
+
+  const effectiveStart = editForm.startDate || originalForm.startDate;
+  if (finishChanged) {
+    if (!editForm.finishDate) {
+      e.finishDate = 'La fecha de fin es obligatoria';
+    } else if (effectiveStart && editForm.finishDate < effectiveStart) {
+      e.finishDate = 'La fecha de fin debe ser posterior a la de inicio';
+    }
+  } else if (startChanged && editForm.startDate && editForm.finishDate) {
+    // Start changed but finish didn't — check cross-field still holds
+    if (editForm.finishDate < editForm.startDate) {
+      e.finishDate = 'La fecha de fin debe ser posterior a la de inicio';
+    }
+  }
+
+  return e;
+}
 
 const inputClass =
   'w-full bg-background border border-surfaceAlt rounded-lg px-3 py-2 text-sm text-textPrimary ' +
@@ -51,6 +104,8 @@ export default function EventManage() {
   const [editModalOpen,    setEditModalOpen]    = useState(false);
   const [isLoadingEditForm, setIsLoadingEditForm] = useState(false);
   const [editForm,         setEditForm]         = useState({});
+  const [originalEditForm, setOriginalEditForm] = useState({}); // snapshot at open — for "did date change?" check
+  const [editDateErrors,   setEditDateErrors]   = useState({});
   const [categories,       setCategories]       = useState([]);
   const [isSubmitting,     setIsSubmitting]     = useState(false);
   const [editError,        setEditError]        = useState(null);
@@ -127,6 +182,11 @@ export default function EventManage() {
           const detail = count !== null ? ` Actualmente tienes ${count}.` : '';
           message = `El evento no puede tener más de 9 imágenes para publicarse.${detail} Elimina algunas desde "Gestionar imágenes".`;
         }
+      } else {
+        // Map backend date validation codes to Spanish messages
+        const code = err.code ?? err.response?.data?.code;
+        const mapped = mapBackendDateError(code);
+        if (mapped) message = mapped;
       }
       setErrorModal({ title: 'No se pudo cambiar el estado', message });
     } finally {
@@ -157,10 +217,11 @@ export default function EventManage() {
     setEditModalOpen(true);
     setIsLoadingEditForm(true);
     setEditError(null);
+    setEditDateErrors({});
     try {
       const res  = await EventService.getEventById(eventSummary.eventId);
       const full = res.data; // EventResponse — sí incluye description
-      setEditForm({
+      const form = {
         eventName:      full.eventName      ?? '',
         description:    full.description    ?? '',
         startDate:      full.startDate      ?? '',
@@ -168,7 +229,9 @@ export default function EventManage() {
         isPublic:       full.isPublic       ?? true,
         availableSeats: full.availableSeats ?? '',
         categoryId:     full.categoryId     ?? '',
-      });
+      };
+      setEditForm(form);
+      setOriginalEditForm(form); // snapshot for "did date change?" guard
     } catch (err) {
       setEditError('No se pudo cargar la información completa del evento');
       setEditModalOpen(false);
@@ -179,11 +242,12 @@ export default function EventManage() {
 
   const handleEditSubmit = useCallback(async () => {
     if (!editTarget) return;
-    // Validación: finishDate posterior a startDate
-    if (editForm.startDate && editForm.finishDate && editForm.finishDate <= editForm.startDate) {
-      setEditError('La fecha de fin debe ser posterior a la fecha de inicio');
-      return;
-    }
+
+    // Client-side date validation — only validates dates that were modified
+    const dateErrors = validateEditDates(editForm, originalEditForm);
+    setEditDateErrors(dateErrors);
+    if (Object.keys(dateErrors).length > 0) return;
+
     setIsSubmitting(true);
     setEditError(null);
     try {
@@ -205,12 +269,16 @@ export default function EventManage() {
       );
       setEditModalOpen(false);
       setEditTarget(null);
+      setEditDateErrors({});
     } catch (err) {
-      setEditError(err.message);
+      // Map backend error codes to Spanish user-facing messages
+      const code    = err.code ?? err.response?.data?.code;
+      const mapped  = mapBackendDateError(code);
+      setEditError(mapped ?? err.message);
     } finally {
       setIsSubmitting(false);
     }
-  }, [editTarget, editForm]);
+  }, [editTarget, editForm, originalEditForm]);
 
   // El cierre por click fuera lo maneja StatusDropdown internamente vía su propio useEffect.
 
@@ -895,13 +963,13 @@ export default function EventManage() {
       {/* ── Modal: editar info general ──────────────────────────────────── */}
       <Modal
         isOpen={editModalOpen}
-        onClose={() => { if (!isSubmitting) { setEditModalOpen(false); setEditTarget(null); } }}
+        onClose={() => { if (!isSubmitting) { setEditModalOpen(false); setEditTarget(null); setEditDateErrors({}); } }}
         title="Editar evento"
         hideClose={isSubmitting}
         footer={
           <>
             <button
-              onClick={() => { setEditModalOpen(false); setEditTarget(null); }}
+              onClick={() => { setEditModalOpen(false); setEditTarget(null); setEditDateErrors({}); }}
               disabled={isSubmitting}
               className="px-4 py-2 rounded-xl text-sm font-medium text-textSecondary bg-surfaceAlt hover:bg-surfaceAlt/80 transition-colors disabled:opacity-60"
             >
@@ -957,16 +1025,41 @@ export default function EventManage() {
                   <input
                     type="date" className={inputClass}
                     value={editForm.startDate}
-                    onChange={(e) => setEditForm((f) => ({ ...f, startDate: e.target.value }))}
+                    min={todayStr()}
+                    max={maxStartStr()}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // If new start is after current finish, clear finish to avoid silent error
+                      setEditForm((f) => ({
+                        ...f,
+                        startDate:  val,
+                        finishDate: f.finishDate && val > f.finishDate ? '' : f.finishDate,
+                      }));
+                      setEditDateErrors((prev) => ({ ...prev, startDate: undefined }));
+                    }}
                   />
+                  {editDateErrors.startDate && (
+                    <p className="text-xs mt-1" style={{ color: 'var(--color-error)' }}>
+                      {editDateErrors.startDate}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className={labelClass}>Fecha fin</label>
                   <input
                     type="date" className={inputClass}
                     value={editForm.finishDate}
-                    onChange={(e) => setEditForm((f) => ({ ...f, finishDate: e.target.value }))}
+                    min={editForm.startDate || todayStr()}
+                    onChange={(e) => {
+                      setEditForm((f) => ({ ...f, finishDate: e.target.value }));
+                      setEditDateErrors((prev) => ({ ...prev, finishDate: undefined }));
+                    }}
                   />
+                  {editDateErrors.finishDate && (
+                    <p className="text-xs mt-1" style={{ color: 'var(--color-error)' }}>
+                      {editDateErrors.finishDate}
+                    </p>
+                  )}
                 </div>
               </div>
 
