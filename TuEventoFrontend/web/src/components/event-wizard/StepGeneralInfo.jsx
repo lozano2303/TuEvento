@@ -2,14 +2,46 @@ import { useState, useEffect } from 'react';
 import { getActiveCategories } from '../../services/CategoryService';
 import { getDepartments, getCitiesByDepartment } from '../../services/GeolocationService';
 
+/** Maximum years ahead allowed for an event start date (mirrors backend rule). */
+const MAX_YEARS_AHEAD = 2;
+
+/** Returns "YYYY-MM-DD" for today in the local (Bogota) timezone. */
+function todayStr() {
+  return new Date().toLocaleDateString('en-CA'); // en-CA gives YYYY-MM-DD
+}
+
+/** Returns "YYYY-MM-DD" for today + N years. */
+function maxStartDateStr() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + MAX_YEARS_AHEAD);
+  return d.toLocaleDateString('en-CA');
+}
+
+/**
+ * Maps backend error codes (returned in ApiResponse.code) to user-facing
+ * Spanish messages. Falls back to the raw backend message if the code is not
+ * mapped here.
+ */
+function mapBackendDateError(code) {
+  const MAP = {
+    EVENT_DATES_REQUIRED:     'Las fechas de inicio y fin son obligatorias',
+    EVENT_START_DATE_IN_PAST: 'La fecha de inicio no puede estar en el pasado',
+    EVENT_END_BEFORE_START:   'La fecha de fin debe ser posterior a la de inicio',
+    EVENT_START_DATE_TOO_FAR: 'La fecha de inicio es demasiado lejana (máximo 2 años)',
+  };
+  return MAP[code] ?? null;
+}
+
+export { mapBackendDateError };
+
 export default function StepGeneralInfo({ formData, onChange, onNext, onCityChange, onDepartmentChange }) {
-  const [categories,   setCategories]   = useState([]);
-  const [departments,  setDepartments]  = useState([]);
-  const [cities,       setCities]       = useState([]);
-  const [loadingCats,  setLoadingCats]  = useState(false);
-  const [loadingDepts, setLoadingDepts] = useState(false);
-  const [loadingCities,setLoadingCities]= useState(false);
-  const [errors,       setErrors]       = useState([]);
+  const [categories,    setCategories]    = useState([]);
+  const [departments,   setDepartments]   = useState([]);
+  const [cities,        setCities]        = useState([]);
+  const [loadingCats,   setLoadingCats]   = useState(false);
+  const [loadingDepts,  setLoadingDepts]  = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [errors,        setErrors]        = useState({});
 
   // ── Cargar categorías y departamentos al montar ───────────────────────────
   useEffect(() => {
@@ -36,17 +68,45 @@ export default function StepGeneralInfo({ formData, onChange, onNext, onCityChan
       .finally(() => setLoadingCities(false));
   }, [formData.departmentId]);
 
+  // ── Si la fecha de inicio cambia a una posterior a la fecha de fin, limpiar fin ──
+  const handleStartDateChange = (value) => {
+    onChange({ startDate: value });
+    if (formData.finishDate && value && value > formData.finishDate) {
+      onChange({ startDate: value, finishDate: '' });
+      setErrors(prev => ({
+        ...prev,
+        startDate:  undefined,
+        finishDate: 'La fecha de fin debe ser posterior a la de inicio',
+      }));
+    }
+  };
+
   // ── Validación del paso 1 ─────────────────────────────────────────────────
   const validate = () => {
     const e = {};
+    const today = todayStr();
+    const maxStart = maxStartDateStr();
+
     if (!formData.eventName.trim())   e.eventName   = 'El nombre es requerido';
     if (!formData.description.trim()) e.description = 'La descripción es requerida';
-    if (!formData.startDate)          e.startDate   = 'La fecha de inicio es requerida';
-    if (!formData.finishDate)         e.finishDate  = 'La fecha de fin es requerida';
-    if (formData.startDate && formData.finishDate && formData.finishDate <= formData.startDate)
+
+    // Date rules (mirrors backend EventDateValidator)
+    if (!formData.startDate) {
+      e.startDate = 'La fecha de inicio es obligatoria';
+    } else if (formData.startDate < today) {
+      e.startDate = 'La fecha de inicio no puede estar en el pasado';
+    } else if (formData.startDate > maxStart) {
+      e.startDate = 'La fecha de inicio es demasiado lejana (máximo 2 años)';
+    }
+
+    if (!formData.finishDate) {
+      e.finishDate = 'La fecha de fin es obligatoria';
+    } else if (formData.startDate && formData.finishDate < formData.startDate) {
       e.finishDate = 'La fecha de fin debe ser posterior a la de inicio';
-    if (!formData.categoryId)         e.categoryId  = 'Selecciona una categoría';
-    if (!formData.cityId)             e.cityId      = 'Selecciona una ciudad';
+    }
+
+    if (!formData.categoryId) e.categoryId = 'Selecciona una categoría';
+    if (!formData.cityId)     e.cityId     = 'Selecciona una ciudad';
     return e;
   };
 
@@ -61,7 +121,8 @@ export default function StepGeneralInfo({ formData, onChange, onNext, onCityChan
     'w-full bg-background border border-surfaceAlt rounded-lg px-3 py-2 text-sm text-textPrimary ' +
     'focus:outline-none focus:border-accent transition-colors placeholder:text-textMuted';
   const labelClass = 'block text-xs font-semibold text-textMuted uppercase tracking-wider mb-1';
-  const errorClass = 'text-xs text-red-400 mt-1';
+  // Use semantic theme tokens — consistent with StepEventMedia and EventManage
+  const errorClass = 'text-xs mt-1' ;
 
   return (
     <div className="space-y-5">
@@ -75,7 +136,9 @@ export default function StepGeneralInfo({ formData, onChange, onNext, onCityChan
           value={formData.eventName}
           onChange={e => onChange({ eventName: e.target.value })}
         />
-        {errors.eventName && <p className={errorClass}>{errors.eventName}</p>}
+        {errors.eventName && (
+          <p className={errorClass} style={{ color: 'var(--color-error)' }}>{errors.eventName}</p>
+        )}
       </div>
 
       {/* Descripción */}
@@ -88,7 +151,9 @@ export default function StepGeneralInfo({ formData, onChange, onNext, onCityChan
           value={formData.description}
           onChange={e => onChange({ description: e.target.value })}
         />
-        {errors.description && <p className={errorClass}>{errors.description}</p>}
+        {errors.description && (
+          <p className={errorClass} style={{ color: 'var(--color-error)' }}>{errors.description}</p>
+        )}
       </div>
 
       {/* Fechas */}
@@ -99,9 +164,13 @@ export default function StepGeneralInfo({ formData, onChange, onNext, onCityChan
             type="date"
             className={inputClass}
             value={formData.startDate}
-            onChange={e => onChange({ startDate: e.target.value })}
+            min={todayStr()}
+            max={maxStartDateStr()}
+            onChange={e => handleStartDateChange(e.target.value)}
           />
-          {errors.startDate && <p className={errorClass}>{errors.startDate}</p>}
+          {errors.startDate && (
+            <p className={errorClass} style={{ color: 'var(--color-error)' }}>{errors.startDate}</p>
+          )}
         </div>
         <div>
           <label className={labelClass}>Fecha de fin *</label>
@@ -109,9 +178,12 @@ export default function StepGeneralInfo({ formData, onChange, onNext, onCityChan
             type="date"
             className={inputClass}
             value={formData.finishDate}
+            min={formData.startDate || todayStr()}
             onChange={e => onChange({ finishDate: e.target.value })}
           />
-          {errors.finishDate && <p className={errorClass}>{errors.finishDate}</p>}
+          {errors.finishDate && (
+            <p className={errorClass} style={{ color: 'var(--color-error)' }}>{errors.finishDate}</p>
+          )}
         </div>
       </div>
 
@@ -153,7 +225,9 @@ export default function StepGeneralInfo({ formData, onChange, onNext, onCityChan
             <option key={c.categoryId} value={c.categoryId}>{c.name}</option>
           ))}
         </select>
-        {errors.categoryId && <p className={errorClass}>{errors.categoryId}</p>}
+        {errors.categoryId && (
+          <p className={errorClass} style={{ color: 'var(--color-error)' }}>{errors.categoryId}</p>
+        )}
       </div>
 
       {/* Departamento */}
@@ -200,7 +274,9 @@ export default function StepGeneralInfo({ formData, onChange, onNext, onCityChan
             <option key={c.cityId} value={c.cityId}>{c.name}</option>
           ))}
         </select>
-        {errors.cityId && <p className={errorClass}>{errors.cityId}</p>}
+        {errors.cityId && (
+          <p className={errorClass} style={{ color: 'var(--color-error)' }}>{errors.cityId}</p>
+        )}
       </div>
 
       {/* Siguiente */}
