@@ -6,9 +6,7 @@ import com.capysoft.tuevento.modules.notification.domain.model.NotificationEntit
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
 import com.capysoft.tuevento.modules.payment.domain.event.PaymentApprovedEvent;
 import com.capysoft.tuevento.modules.payment.domain.event.PaymentRefundedEvent;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -32,7 +30,6 @@ public class PaymentEventListener {
 
     public PaymentEventListener(SendNotificationUseCase sendNotificationUseCase) {
         this.sendNotificationUseCase = sendNotificationUseCase;
-        log.info("=== DEBUG: PaymentEventListener INITIALIZED ===");
     }
 
     @Async
@@ -40,9 +37,6 @@ public class PaymentEventListener {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handlePaymentApproved(PaymentApprovedEvent event) {
         try {
-            log.info("=== DEBUG: PaymentEventListener.handlePaymentApproved called ===");
-            log.info("Event: paymentId={}, userId={}, walletAmount={}, gatewayAmount={}", 
-                    event.getPaymentId(), event.getUserId(), event.getWalletAmount(), event.getGatewayAmount());
                     
             log.debug("Processing PaymentApprovedEvent: paymentId={}, userId={}", 
                     event.getPaymentId(), event.getUserId());

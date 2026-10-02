@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added — feat(language)
+
+- **Language Module — Domain (DDD puro)**: `Language` (aggregate root con `code` UNIQUE normalizado trim+lowercase, `name`, `isActive`, `isDefault` con bloqueo mutuo), validaciones en dominio (`deactivate()` bloquea idioma por defecto), eventos `LanguageActivatedEvent`/`LanguageDeactivatedEvent`/`DefaultLanguageChangedEvent` con IDs primitivos.
+
+- **Language Module — Repositorios de dominio**: `LanguageRepository` con métodos `findByCode()`, `findDefaultLanguage()`, `findAllActive()`, `existsByCode()`, `flush()`.
+
+- **Language Module — Infraestructura JPA**: `LanguageEntity` extiende `JpaAuditingEntity` (created_at, updated_at, created_by, updated_by), `LanguageJpaRepository` con queries ordenadas, `LanguageRepositoryImpl` con mappers.
+
+- **Language Module — Casos de uso**: `CreateLanguageUseCaseImpl` (normaliza código, valida único), `GetLanguagesUseCaseImpl` (consultas públicas y admin), `UpdateLanguageUseCaseImpl` (update, activate, deactivate, setDefault con validaciones de negocio y transacción única con flush).
+
+- **Language Module — REST** (`/api/v1/languages` público, `/api/v1/admin/languages` admin): GET idiomas activos (público), GET idioma por ID (público), GET todos los idiomas (admin), POST crear (admin), PUT actualizar (admin), PATCH activate/deactivate (admin), POST set-default (admin).
+
+- **Liquibase changesets**: `084-create-language-table.yaml` (PK, code UNIQUE, is_default con índice único parcial WHERE is_default = TRUE, audit columns), `085-seed-languages.yaml` (Español default, English).
+
+- **Shared Domain**: Enums `TranslationStatus` (AUTOMATIC, REVIEWED, REJECTED) y `TranslationSource` (MANUAL, MACHINE) en `shared/domain/valueobject`.
+
+- **SecurityConfig**: Rutas `/api/v1/languages` y `/api/v1/languages/*` agregadas a PUBLIC_GET_ENDPOINTS, rutas `/api/v1/admin/languages/**` protegidas con hasAuthority('ADMIN').
+
+### Changed — chore(notification)
+
+- **Notification Module**: Removidos logs temporales de debug de `SendNotificationUseCase` y `PaymentEventListener`, limpieza de imports no utilizados.
+
 ### Added — feat(wallet)
 
 - **Wallet Module — Domain (DDD puro)**: `Wallet` (aggregate root con `balance >= 0`, bloqueo optimista `@Version`, `credit()`/`debit()`), `WalletTransaction` (inmutable en monto/tipo; solo cambia `status`; `complete()`/`fail()` retornan nuevas instancias), `WalletReference` (trazabilidad del origen de cada movimiento), enums `WalletTransactionType` (CREDIT/PAYMENT/REVERSAL/ADJUSTMENT), `WalletTransactionStatus` (PENDING/COMPLETED/FAILED), `WalletReferenceEntityType` (EVENT_CANCELLATION/ORDER/TICKET). Excepciones: `InsufficientWalletBalanceException` (→ 422), `WalletNotFoundException` (extiende `NotFoundException` → 404).

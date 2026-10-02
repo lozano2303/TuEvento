@@ -61,6 +61,8 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {
             "/api/v1/themes",
+            "/api/v1/languages",          // GET idiomas activos — público
+            "/api/v1/languages/*",        // GET idioma por ID — público
             "/api/v1/events/*",
             "/api/v1/events/public",
             "/api/v1/events/public/**",
@@ -173,6 +175,15 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE,
                                 "/api/v1/seats/**").hasAnyAuthority("ORGANIZER", "ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
+                        // ── Language admin endpoints ──
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/v1/admin/languages").hasAuthority("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT,
+                                "/api/v1/admin/languages/**").hasAuthority("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH,
+                                "/api/v1/admin/languages/**").hasAuthority("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/v1/admin/languages/*/set-default").hasAuthority("ADMIN")
                         // ── Wallet — los GET caen en anyRequest().authenticated()
                         // Los POST tienen @PreAuthorize en el controller, pero necesitan
                         // pasar el filtro de SecurityConfig como authenticated() primero.
