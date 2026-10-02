@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 083-insert-welcome-notification-type
+      author: capysoft
+      changes:
+        - insert:
+            tableName: notification_type
+            columns:
+              - column:
+                  name: name
+                  value: WELCOME
+              - column:
+                  name: description
+                  value: Bienvenida al registrarse en la plataforma
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()

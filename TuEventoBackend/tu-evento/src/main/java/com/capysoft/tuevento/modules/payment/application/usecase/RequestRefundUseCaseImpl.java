@@ -1,15 +1,19 @@
 package com.capysoft.tuevento.modules.payment.application.usecase;
 
 import com.capysoft.tuevento.modules.payment.application.port.out.PaymentGatewayPort;
+import com.capysoft.tuevento.modules.payment.domain.event.PaymentRefundedEvent;
 import com.capysoft.tuevento.modules.payment.domain.model.*;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentLogRepository;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentRepository;
 import com.capysoft.tuevento.modules.payment.domain.repository.RefundRepository;
 import com.capysoft.tuevento.modules.ticket.application.port.in.ConfirmRefundUseCase;
+import com.capysoft.tuevento.modules.ticket.domain.model.Order;
+import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
 import com.capysoft.tuevento.modules.wallet.application.usecase.ReverseWalletPaymentUseCaseImpl;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,9 +47,11 @@ public class RequestRefundUseCaseImpl {
     private final PaymentRepository paymentRepository;
     private final RefundRepository refundRepository;
     private final PaymentLogRepository paymentLogRepository;
+    private final OrderRepository orderRepository;
     private final PaymentGatewayPort paymentGatewayPort;
     private final ConfirmRefundUseCase confirmRefundUseCase;
     private final ReverseWalletPaymentUseCaseImpl reverseWalletPaymentUseCase;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void execute(Long paymentId, String reason) {
@@ -123,6 +129,27 @@ public class RequestRefundUseCaseImpl {
                 "Wallet-only refund: " + reason);
             log.info("Wallet credit reversed on wallet-only refund: txId={}, amount={}",
                 payment.getWalletTransactionId(), walletApplied);
+        }
+
+        // Publicar evento para notificaciones
+        try {
+            Order order = orderRepository.findById(payment.getOrderId()).orElse(null);
+            if (order != null) {
+                PaymentRefundedEvent refundedEvent = PaymentRefundedEvent.builder()
+                        .paymentId(payment.getPaymentId())
+                        .userId(order.getUserId().intValue())
+                        .walletAmount(payment.getWalletAmountApplied())
+                        .gatewayAmount(payment.getAmount() != null ? payment.getAmount().getAmount() : BigDecimal.ZERO)
+                        .currency(payment.getAmount() != null ? payment.getAmount().getCurrency().toString() : "USD")
+                        .build();
+                eventPublisher.publishEvent(refundedEvent);
+                log.debug("PaymentRefundedEvent published for wallet-only refund: paymentId={}", payment.getPaymentId());
+            } else {
+                log.warn("Order not found for payment {}, PaymentRefundedEvent not published", payment.getPaymentId());
+            }
+        } catch (Exception e) {
+            log.error("Failed to publish PaymentRefundedEvent (non-breaking): paymentId={}", 
+                    payment.getPaymentId(), e);
         }
 
         log.info("Wallet-only refund closed locally: paymentId={}, orderId={}",

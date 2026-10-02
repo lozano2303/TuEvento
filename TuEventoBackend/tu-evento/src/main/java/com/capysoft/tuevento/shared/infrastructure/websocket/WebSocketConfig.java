@@ -1,12 +1,13 @@
 package com.capysoft.tuevento.shared.infrastructure.websocket;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Configuración base de WebSocket para comunicación en tiempo real.
@@ -37,13 +38,16 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     /**
      * Configura el broker de mensajes:
-     * - /topic: destinos de subscripción (server → clients broadcast)
+     * - /topic: destinos de subscripción broadcast (server → clients broadcast)
+     * - /queue: destinos de mensajes personales por usuario (server → specific user)
+     * - /user: prefijo para envío de mensajes a usuarios específicos
      * - /app: prefijo de destinos donde el cliente envía mensajes (client → server)
      */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/topic");
+        registry.enableSimpleBroker("/topic", "/queue");
         registry.setApplicationDestinationPrefixes("/app");
+        registry.setUserDestinationPrefix("/user");
     }
 
     /**
@@ -55,6 +59,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      *   sin soporte nativo de WebSocket
      * - Autenticación: JwtHandshakeInterceptor valida el token antes de establecer
      *   la conexión (vía query param ?token=...)
+     * - UserHandshakeHandler: crea un Principal con el userId para que Spring pueda
+     *   resolver destinos de usuario (/user/{userId}/queue/...)
      * - Compatible con web y móvil usando @stomp/stompjs + sockjs-client
      */
     @Override
@@ -62,6 +68,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns(allowedOrigins.split(","))
                 .addInterceptors(jwtHandshakeInterceptor)
+                .setHandshakeHandler(new UserHandshakeHandler())
                 .withSockJS();
     }
 }

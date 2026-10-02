@@ -1,0 +1,91 @@
+databaseChangeLog:
+  - changeSet:
+      id: 081-create-notification-table
+      author: capysoft
+      comment: "entity_type/entity_id son referencia genérica sin FK (mismo patrón que wallet_reference)."
+      changes:
+        - createTable:
+            tableName: notification
+            columns:
+              - column:
+                  name: notification_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: channel_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notification_type_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entity_type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entity_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: body
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sent_at
+                  type: TIMESTAMP
+              - column:
+                  name: idempotency_key
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+              - column:
+                  name: updated_by
+                  type: VARCHAR(100)
+        - addForeignKeyConstraint:
+            baseTableName: notification
+            baseColumnNames: channel_id
+            referencedTableName: channel
+            referencedColumnNames: channel_id
+            constraintName: fk_notification_channel
+        - addForeignKeyConstraint:
+            baseTableName: notification
+            baseColumnNames: notification_type_id
+            referencedTableName: notification_type
+            referencedColumnNames: notification_type_id
+            constraintName: fk_notification_type
+        - createIndex:
+            tableName: notification
+            indexName: idx_notification_entity
+            columns:
+              - column:
+                  name: entity_type
+              - column:
+                  name: entity_id
