@@ -1,0 +1,66 @@
+databaseChangeLog:
+  - changeSet:
+      id: 084-create-language-table
+      author: system
+      changes:
+        - createTable:
+            tableName: language
+            columns:
+              - column:
+                  name: language_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_default
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_by
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_language_is_default_unique
+            tableName: language
+            unique: true
+            columns:
+              - column:
+                  name: is_default
+            where: "is_default = TRUE"
