@@ -43,10 +43,14 @@ public class SendNotificationUseCase {
         this.channelsByName = channelPorts.stream()
                 .collect(Collectors.toMap(NotificationChannelPort::channelName, Function.identity()));
         this.emailEnabled = emailEnabled;
+        log.info("=== DEBUG: EmailEnabled configuration loaded: {} ===", emailEnabled);
     }
 
     @Transactional
     public void execute(SendNotificationCommand command) {
+        log.info("=== DEBUG: SendNotificationUseCase.execute called ===");
+        log.info("Command: {}", command);
+        
         if (command == null || command.getUserIds() == null || command.getUserIds().isEmpty()) {
             log.warn("SendNotification skipped: missing recipients type={}", command == null ? null : command.getTypeName());
             return;
@@ -55,25 +59,34 @@ public class SendNotificationUseCase {
         NotificationType type = notificationTypeRepository.findByName(command.getTypeName())
                 .filter(NotificationType::isActive)
                 .orElse(null);
+        log.info("DEBUG: NotificationType found: {}", type != null ? type.getName() : "NULL");
         if (type == null) {
             log.warn("SendNotification skipped: unknown or inactive type={}", command.getTypeName());
             return;
         }
 
         List<Channel> activeChannels = channelRepository.findAllActive();
+        log.info("DEBUG: Active channels found: {}", activeChannels.size());
+        for (Channel ch : activeChannels) {
+            log.info("  - Channel: {} (active: {})", ch.getName(), ch.isActive());
+        }
         for (Channel channel : activeChannels) {
+            log.info("DEBUG: Processing channel: {}", channel.getName());
+            
             if (NotificationChannelNames.EMAIL.equals(channel.getName()) && !emailEnabled) {
                 log.debug("EMAIL channel skipped because notification.email.enabled=false");
                 continue;
             }
 
             NotificationChannelPort adapter = channelsByName.get(channel.getName());
+            log.info("DEBUG: Adapter found for {}: {}", channel.getName(), adapter != null);
             if (adapter == null) {
                 log.warn("No adapter registered for channel={}", channel.getName());
                 continue;
             }
 
             String idempotencyKey = command.getTypeName() + ":" + command.getEntityId() + ":" + channel.getName();
+            log.info("DEBUG: Checking idempotency key: {}", idempotencyKey);
             if (notificationRepository.existsByIdempotencyKey(idempotencyKey)) {
                 log.info("Notification already sent, skipping duplicate idempotencyKey={}", idempotencyKey);
                 continue;

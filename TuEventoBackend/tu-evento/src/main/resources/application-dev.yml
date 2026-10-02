@@ -107,3 +107,7 @@ payment:
     url: ${FAKE_GATEWAY_URL:http://localhost:4001}
   webhook:
     secret: ${WEBHOOK_SECRET:default-secret-change-in-production}
+
+notification:
+  email:
+    enabled: ${NOTIFICATION_EMAIL_ENABLED:true}
