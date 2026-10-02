@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { ThemeProvider } from './context/ThemeContext'
+import { NotificationProvider } from './context/NotificationContext'
 import Login from './pages/login'
 import LadingPage from './pages/ladingPage'
 import AboutUs from './pages/AboutUs'
@@ -23,6 +24,7 @@ import PaymentPending from './pages/PaymentPending';
 import PaymentConfirmation from './pages/PaymentConfirmation';
 import TerminosDeUso from './pages/TerminosDeUso';
 import Privacidad from './pages/Privacidad';
+import Notifications from './pages/Notifications';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -94,6 +96,11 @@ function AppContent() {
               <ProfilePage />
             </ProtectedRoute>
           } />
+          <Route path="/notifications" element={
+            <ProtectedRoute>
+              <Notifications />
+            </ProtectedRoute>
+          } />
           <Route path="/verification" element={<CodeVerification />} />
           <Route path="/reactivate-account" element={<ReactivateAccountPage />} />
           <Route path="/complete-profile" element={
@@ -153,7 +160,9 @@ function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <AppContent />
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
       </ThemeProvider>
     </BrowserRouter>
   )

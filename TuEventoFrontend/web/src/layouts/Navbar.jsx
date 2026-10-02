@@ -1,8 +1,9 @@
-import { Calendar, User, Plus, Wallet, Menu, X } from "lucide-react";
+import { Calendar, User, Plus, Wallet, Menu, X, Bell } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ChangePassword from "../pages/ChangePassword.jsx";
 import { getEventsByUser } from "../services/EventService.js";
+import NotificationBell from "../components/common/NotificationBell.jsx";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -119,8 +120,11 @@ const displayName = (() => {
             )}
           </div>
 
-          {/* Derecha: usuario + hamburguesa */}
+          {/* Derecha: notificaciones + usuario + hamburguesa */}
           <div className="flex items-center gap-2">
+            
+            {/* Campana de notificaciones (solo si hay usuario) */}
+            {userData && <NotificationBell />}
 
             {userData ? (
               <div className="relative user-modal">
@@ -153,6 +157,21 @@ const displayName = (() => {
                       <div>
                         <p className="text-[14px] font-semibold text-textPrimary leading-tight">Perfil</p>
                         <p className="text-[11px] text-textMuted leading-tight mt-0.5">Ver y editar tu cuenta</p>
+                      </div>
+                      <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                    </Link>
+
+                    <Link
+                      to="/notifications"
+                      onClick={() => setIsModalOpen(false)}
+                      className="theme-menu-item flex items-center gap-3 px-4 py-3.5 transition-colors theme-menu-divider"
+                    >
+                      <div className="theme-menu-item-icon w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0">
+                        <Bell className="w-[17px] h-[17px] text-accent" />
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">Notificaciones</p>
+                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">Ver todas tus notificaciones</p>
                       </div>
                       <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                     </Link>

@@ -1,0 +1,82 @@
+databaseChangeLog:
+  - changeSet:
+      id: 082-create-notification-user-table
+      author: capysoft
+      comment: "delivered_status en MAYÚSCULAS para coincidir con @Enumerated(EnumType.STRING) (bug #9 seat_log)."
+      changes:
+        - createTable:
+            tableName: notification_user
+            columns:
+              - column:
+                  name: notification_user_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: notification_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email_address
+                  type: VARCHAR(255)
+              - column:
+                  name: delivered_status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: error_message
+                  type: TEXT
+              - column:
+                  name: read_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+              - column:
+                  name: updated_by
+                  type: VARCHAR(100)
+        - addForeignKeyConstraint:
+            baseTableName: notification_user
+            baseColumnNames: notification_id
+            referencedTableName: notification
+            referencedColumnNames: notification_id
+            constraintName: fk_notification_user_notification
+        - addForeignKeyConstraint:
+            baseTableName: notification_user
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_notification_user_user
+        - addUniqueConstraint:
+            tableName: notification_user
+            columnNames: notification_id, user_id
+            constraintName: uk_notification_user_notification_user
+        - sql:
+            sql: "ALTER TABLE notification_user ADD CONSTRAINT chk_notification_user_delivered_status CHECK (delivered_status IN ('PENDING','SENT','DELIVERED','FAILED'));"
+        - createIndex:
+            tableName: notification_user
+            indexName: idx_notification_user_user_read
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: read_at

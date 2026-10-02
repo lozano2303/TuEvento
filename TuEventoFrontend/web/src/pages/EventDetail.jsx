@@ -8,17 +8,18 @@ import { getEventMedia } from '../services/EventMediaService';
 import * as LayoutService from '../services/LayoutService';
 import * as SeatService from '../services/SeatService';
 import * as EventSectionService from '../services/EventSectionService';
-import { connectSeatSocket, disconnectSeatSocket } from '../services/websocketClient';
 import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
+import { useNotifications } from '../context/NotificationContext';
 
 export default function EventDetail() {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const { toast, showToast, hideToast } = useToast();
+  const { subscribe } = useNotifications(); // Hook para suscripciones WebSocket
   
   const [event, setEvent] = useState(null);
   const [media, setMedia] = useState([]);
@@ -36,7 +37,7 @@ export default function EventDetail() {
   const [reserving, setReserving] = useState(new Set());
   const [currentUserId, setCurrentUserId] = useState(null);
   const [zoom, setZoom] = useState(0.5);
-  const wsClientRef = useRef(null);
+  
   // P4: ref que siempre apunta al seats más reciente sin necesitar estar en deps de useCallback
   const seatsRef = useRef({});
 
@@ -86,61 +87,40 @@ export default function EventDetail() {
     seatsRef.current = seats;
   }, [seats]);
 
-  // WebSocket
+  // WebSocket: Suscripción dinámica a actualizaciones de sillas del evento
   useEffect(() => {
     if (!eventId || isLoading) return;
 
-    let reconnectAttempts = 0;
-    const MAX_RECONNECT_ATTEMPTS = 3;
+    const destination = `/topic/events/${eventId}/seats`;
+    const key = `seats-event-${eventId}`;
 
-    const connectWS = () => {
-      try {
-        const client = connectSeatSocket(parseInt(eventId), (event) => {
-          setSeats((prev) => {
-            const seat = prev[event.seatId];
-            if (!seat) return prev;
+    // Suscribirse usando el WebSocket centralizado
+    const unsubscribe = subscribe(
+      destination,
+      (event) => {
+        setSeats((prev) => {
+          const seat = prev[event.seatId];
+          if (!seat) return prev;
 
-            return {
-              ...prev,
-              [event.seatId]: {
-                ...seat,
-                status: event.newStatus,
-                reservedBy: event.newStatus === 'RESERVED' ? seat.reservedBy : null,
-                reservedUntil: event.reservedUntil,
-              },
-            };
-          });
-        });
-
-        wsClientRef.current = client;
-        reconnectAttempts = 0; // Reset en conexión exitosa
-
-        // CASO 6: Detectar desconexión de WebSocket
-        if (client?.ws) {
-          client.ws.onclose = () => {
-            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-              showToast('ws-disconnected', 'Se perdió la conexión en tiempo real, reconectando...', 'warning');
-              reconnectAttempts++;
-              setTimeout(connectWS, 2000 * reconnectAttempts); // Backoff exponencial
-            }
+          return {
+            ...prev,
+            [event.seatId]: {
+              ...seat,
+              status: event.newStatus,
+              reservedBy: event.newStatus === 'RESERVED' ? seat.reservedBy : null,
+              reservedUntil: event.reservedUntil,
+            },
           };
-        }
-      } catch (err) {
-        console.warn('[EventDetail] WebSocket connection failed:', err);
-        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-          showToast('ws-disconnected', 'Se perdió la conexión en tiempo real, reconectando...', 'warning');
-          reconnectAttempts++;
-          setTimeout(connectWS, 2000 * reconnectAttempts);
-        }
-      }
-    };
+        });
+      },
+      key
+    );
 
-    connectWS();
-
+    // Cleanup: desuscribirse al salir de la página del evento
     return () => {
-      if (wsClientRef.current) disconnectSeatSocket(wsClientRef.current);
+      unsubscribe();
     };
-  }, [eventId, isLoading, showToast]);
+  }, [eventId, isLoading, subscribe]);
 
   const cart = useMemo(() => {
     if (!currentUserId) return [];
