@@ -7,6 +7,7 @@ import com.capysoft.tuevento.modules.category.application.port.in.CategoryUseCas
 import com.capysoft.tuevento.modules.event.application.dto.request.UpdateEventRequest;
 import com.capysoft.tuevento.modules.event.application.dto.response.EventResponse;
 import com.capysoft.tuevento.modules.event.application.port.in.UpdateEventUseCase;
+import com.capysoft.tuevento.modules.event.application.validator.EventDateValidator;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
@@ -31,6 +32,7 @@ public class UpdateEventService implements UpdateEventUseCase {
     private final GetSitePort          getSitePort;
     private final CategoryUseCase      categoryUseCase;
     private final CategoryEventUseCase categoryEventUseCase;
+    private final EventDateValidator   eventDateValidator;
 
     @Override
     @Transactional
@@ -57,6 +59,15 @@ public class UpdateEventService implements UpdateEventUseCase {
         Boolean   isPublic       = request.getIsPublic()       != null ? request.getIsPublic()       : event.getIsPublic();
         int       availableSeats = request.getAvailableSeats() != null ? request.getAvailableSeats() : event.getAvailableSeats();
 
+        // Validate dates only when the caller explicitly changed at least one of them.
+        // This lets organizers edit other fields (name, description, etc.) on events
+        // whose dates are already in the past without being blocked.
+        boolean startDateChanged  = request.getStartDate()  != null && !request.getStartDate().equals(event.getStartDate());
+        boolean finishDateChanged = request.getFinishDate() != null && !request.getFinishDate().equals(event.getFinishDate());
+        if (startDateChanged || finishDateChanged) {
+            eventDateValidator.validate(startDate, finishDate);
+        }
+
         // Validate site exists and seats do not exceed capacity
         SiteResponse site;
         try {
@@ -68,11 +79,6 @@ public class UpdateEventService implements UpdateEventUseCase {
         if (availableSeats > site.getCapacity()) {
             throw new BusinessException("SEATS_EXCEED_CAPACITY",
                     "availableSeats cannot exceed site capacity of " + site.getCapacity());
-        }
-
-        if (!finishDate.isAfter(startDate)) {
-            throw new BusinessException("EVENT_INVALID_DATES",
-                    "finishDate must be after startDate");
         }
 
         // FIX 1: Update category if provided
