@@ -119,6 +119,7 @@ public class GetEventService implements GetEventUseCase {
                 .isPublic(e.getIsPublic())
                 .availableSeats(e.getAvailableSeats())
                 .categoryId(categoryId)
+                .rejectionReason(e.getRejectionReason())
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())
                 .createdBy(e.getCreatedBy())

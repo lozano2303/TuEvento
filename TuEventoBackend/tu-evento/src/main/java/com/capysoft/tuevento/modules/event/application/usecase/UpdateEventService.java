@@ -113,6 +113,7 @@ public class UpdateEventService implements UpdateEventUseCase {
                 .status(event.getStatus())
                 .isPublic(isPublic)
                 .availableSeats(availableSeats)
+                .rejectionReason(event.getRejectionReason())
                 .build());
 
         // FIX 2: Resolve categoryId for response — fail-soft
@@ -139,6 +140,7 @@ public class UpdateEventService implements UpdateEventUseCase {
                 .isPublic(updated.getIsPublic())
                 .availableSeats(updated.getAvailableSeats())
                 .categoryId(resolvedCategoryId)
+                .rejectionReason(updated.getRejectionReason())
                 .createdAt(updated.getCreatedAt())
                 .updatedAt(updated.getUpdatedAt())
                 .createdBy(updated.getCreatedBy())

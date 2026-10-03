@@ -8,8 +8,8 @@ import com.capysoft.tuevento.modules.event.domain.event.EventStatusChangedEvent;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatusLog;
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
+import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventStatusLogRepository;
 import com.capysoft.tuevento.modules.section.domain.model.EventSection;
 import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
@@ -24,6 +24,21 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Organizer-facing event status transitions.
+ *
+ * <h3>Allowed transitions</h3>
+ * <pre>
+ *   DRAFT          → PENDING_REVIEW  (3 business validations applied)
+ *   PENDING_REVIEW → DRAFT           (organizer withdraws submission)
+ *   REJECTED       → DRAFT           (organizer corrects and re-submits later)
+ *   PUBLISHED      → CANCELLED
+ *   PUBLISHED      → COMPLETED       (manual; normally done by the scheduler)
+ * </pre>
+ *
+ * The organizer can no longer publish directly to PUBLISHED — that transition
+ * now belongs exclusively to the admin via {@link AdminChangeEventStatusUseCase}.
+ */
 @Service
 @RequiredArgsConstructor
 public class ChangeEventStatusService implements ChangeEventStatusUseCase {
@@ -38,6 +53,7 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
     @Override
     @Transactional
     public EventStatusLogResponse execute(Long eventId, ChangeEventStatusRequest request, Long userId) {
+
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("EVENT_NOT_FOUND",
                         "Event not found with id: " + eventId));
@@ -49,36 +65,47 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
 
         validateTransition(event.getStatus(), request.getNewStatus());
 
-        if (request.getNewStatus() == EventStatus.PUBLISHED) {
-            // 1. Re-validate start date: a draft created weeks ago may now have a past date
+        // ── Business validations per target status ────────────────────────────
+
+        if (request.getNewStatus() == EventStatus.PENDING_REVIEW) {
+            // 1. Start date must still be in the future (or today).
             eventDateValidator.validateForPublish(event.getStartDate());
 
-            // 2. Validar que tenga entre 3 y 9 imágenes (inclusive)
+            // 2. Between 3 and 9 images required.
             long mediaCount = eventMediaRepository.countByEventId(eventId);
             if (mediaCount < 3) {
                 throw new BusinessException("EVENT_PUBLISH_MEDIA_COUNT_INVALID",
-                        "Event must have at least 3 images before publishing (currently has " + mediaCount + ")");
+                        "Event must have at least 3 images before submitting for review (currently has "
+                                + mediaCount + ")");
             }
             if (mediaCount > 9) {
                 throw new BusinessException("EVENT_PUBLISH_MEDIA_COUNT_INVALID",
-                        "Event must have at most 9 images before publishing (currently has " + mediaCount + ")");
+                        "Event must have at most 9 images before submitting for review (currently has "
+                                + mediaCount + ")");
             }
-            // 3. Validar que tenga al menos una sección con sillas configurada
+
+            // 3. At least one section with seats configured.
             List<EventSection> sections = eventSectionRepository.findAllByEventId(eventId.intValue());
             if (sections.isEmpty()) {
                 throw new BusinessException("EVENT_SECTIONS_REQUIRED",
-                        "Event cannot be published without at least one section with seats configured");
+                        "Event cannot be submitted for review without at least one section with seats configured");
             }
         }
 
-        // Validación defensiva: COMPLETED solo puede forzarse manualmente el día después
-        // de la fecha de finalización. El caso normal lo cubre el scheduler automático.
+        // COMPLETED can only be set the day after the finish date.
         if (request.getNewStatus() == EventStatus.COMPLETED) {
             if (!LocalDate.now().isAfter(event.getFinishDate())) {
                 throw new BusinessException("EVENT_COMPLETE_TOO_EARLY",
                         "Event can only be completed the day after its finish date");
             }
         }
+
+        // ── Persist updated event ─────────────────────────────────────────────
+
+        // When reverting to DRAFT (from PENDING_REVIEW or REJECTED), clear rejectionReason.
+        String newRejectionReason = (request.getNewStatus() == EventStatus.DRAFT)
+                ? null
+                : event.getRejectionReason();
 
         eventRepository.save(Event.builder()
                 .eventId(event.getEventId())
@@ -91,7 +118,10 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
                 .status(request.getNewStatus())
                 .isPublic(event.getIsPublic())
                 .availableSeats(event.getAvailableSeats())
+                .rejectionReason(newRejectionReason)
                 .build());
+
+        // ── Audit log ─────────────────────────────────────────────────────────
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -102,6 +132,8 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
                 .changedAt(now)
                 .changedBy(userId)
                 .build());
+
+        // ── Domain event (consumed by Phase 4 notification listener) ──────────
 
         eventPublisher.publishEvent(EventStatusChangedEvent.builder()
                 .eventId(eventId)
@@ -120,11 +152,15 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
                 .build();
     }
 
+    // ── Transition table (organizer) ──────────────────────────────────────────
+
     private void validateTransition(EventStatus current, EventStatus next) {
         boolean allowed = switch (current) {
-            case DRAFT     -> next == EventStatus.PUBLISHED;
-            case PUBLISHED -> next == EventStatus.CANCELLED || next == EventStatus.COMPLETED;
-            default        -> false;
+            case DRAFT          -> next == EventStatus.PENDING_REVIEW;
+            case PENDING_REVIEW -> next == EventStatus.DRAFT;
+            case REJECTED       -> next == EventStatus.DRAFT;
+            case PUBLISHED      -> next == EventStatus.CANCELLED || next == EventStatus.COMPLETED;
+            default             -> false;
         };
 
         if (!allowed) {
