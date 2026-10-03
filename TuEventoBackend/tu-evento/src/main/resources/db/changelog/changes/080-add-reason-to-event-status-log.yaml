@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 080-add-reason-to-event-status-log
+      author: capysoft
+      comment: >
+        Add a nullable reason (TEXT) column to event_status_log so that admin
+        rejection reasons are persisted in the audit trail alongside the
+        status transition record.
+      changes:
+        - addColumn:
+            tableName: event_status_log
+            columns:
+              - column:
+                  name: reason
+                  type: TEXT
+                  constraints:
+                    nullable: true

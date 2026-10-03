@@ -15,4 +15,6 @@ public class EventStatusLogResponse {
     private final EventStatus newStatus;
     private final LocalDateTime changedAt;
     private final Long changedBy;
+    /** Present when newStatus is REJECTED; null otherwise. */
+    private final String reason;
 }

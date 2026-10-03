@@ -16,4 +16,6 @@ public class EventStatusLog {
     private EventStatus newStatus;
     private LocalDateTime changedAt;
     private Long changedBy;
+    /** Stores the admin rejection reason when newStatus is REJECTED; null otherwise. */
+    private String reason;
 }

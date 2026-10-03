@@ -23,6 +23,8 @@ public class EventResponse {
     private final Boolean isPublic;
     private final int availableSeats;
     private final Integer categoryId;
+    /** Populated when status is REJECTED; null otherwise. */
+    private final String rejectionReason;
     private final LocalDateTime createdAt;
     private final LocalDateTime updatedAt;
     private final String createdBy;

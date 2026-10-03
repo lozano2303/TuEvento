@@ -96,6 +96,7 @@ public class EventAutoCompletionScheduler {
                     .status(EventStatus.COMPLETED)
                     .isPublic(event.getIsPublic())
                     .availableSeats(event.getAvailableSeats())
+                    .rejectionReason(event.getRejectionReason())
                     .build());
 
             eventStatusLogRepository.save(EventStatusLog.builder()
