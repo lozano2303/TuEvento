@@ -283,6 +283,42 @@ class AdminChangeEventStatusUseCaseTest {
         }
 
         @Test
+        @DisplayName("start date in the past → EVENT_START_DATE_IN_PAST propagates and event is not saved")
+        void pastStartDate_throws_and_event_not_saved() {
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(pendingReviewEvent()));
+            doThrow(new BusinessException("EVENT_START_DATE_IN_PAST",
+                    "Cannot publish: startDate is in the past"))
+                    .when(eventDateValidator).validateForPublish(any());
+
+            ChangeEventStatusRequest req = ChangeEventStatusRequest.builder()
+                    .newStatus(EventStatus.PUBLISHED).build();
+
+            assertThatThrownBy(() -> useCase.execute(EVENT_ID, req, ADMIN_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                            .isEqualTo("EVENT_START_DATE_IN_PAST"));
+
+            verify(eventRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("more than 9 images → throws EVENT_PUBLISH_MEDIA_COUNT_INVALID and event is not saved")
+        void tooManyImages_throws_and_event_not_saved() {
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(pendingReviewEvent()));
+            when(eventMediaRepository.countByEventId(EVENT_ID)).thenReturn(10L);
+
+            ChangeEventStatusRequest req = ChangeEventStatusRequest.builder()
+                    .newStatus(EventStatus.PUBLISHED).build();
+
+            assertThatThrownBy(() -> useCase.execute(EVENT_ID, req, ADMIN_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                            .isEqualTo("EVENT_PUBLISH_MEDIA_COUNT_INVALID"));
+
+            verify(eventRepository, never()).save(any());
+        }
+
+        @Test
         @DisplayName("admin can act on events owned by another user (no ownership check)")
         void noOwnershipCheck_adminCanActOnAnyEvent() {
             Event event = pendingReviewEvent(); // owned by OWNER_ID, not ADMIN_ID
