@@ -21,6 +21,8 @@ public class Event {
     private EventStatus status;
     private Boolean isPublic;
     private int availableSeats;
+    /** Populated when status is REJECTED; null otherwise. */
+    private String rejectionReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String createdBy;
