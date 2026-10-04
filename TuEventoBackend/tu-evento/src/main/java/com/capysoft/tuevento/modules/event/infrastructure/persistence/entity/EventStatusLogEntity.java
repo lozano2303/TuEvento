@@ -36,4 +36,8 @@ public class EventStatusLogEntity {
 
     @Column(name = "changed_by")
     private Long changedBy;
+
+    /** Stores the admin rejection reason when newStatus is REJECTED; null otherwise. */
+    @Column(name = "reason", columnDefinition = "TEXT")
+    private String reason;
 }

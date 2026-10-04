@@ -48,4 +48,8 @@ public class EventEntity extends JpaAuditingEntity {
 
     @Column(name = "available_seats", nullable = false)
     private int availableSeats;
+
+    /** Populated when status is REJECTED; null otherwise. Cleared when reverted to DRAFT. */
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
 }

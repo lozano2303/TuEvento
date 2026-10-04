@@ -4,8 +4,10 @@ import com.capysoft.tuevento.modules.event.application.dto.request.UploadEventMe
 import com.capysoft.tuevento.modules.event.application.dto.response.EventMediaResponse;
 import com.capysoft.tuevento.modules.event.application.port.in.UploadEventMediaUseCase;
 import com.capysoft.tuevento.modules.event.domain.event.EventMediaUploadedEvent;
+import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventMedia;
 import com.capysoft.tuevento.modules.event.domain.model.EventMediaLog;
+import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaLogRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
@@ -37,10 +39,15 @@ public class UploadEventMediaService implements UploadEventMediaUseCase {
     @Override
     @Transactional
     public EventMediaResponse execute(UploadEventMediaRequest request, Long userId) {
-        // Verify event exists before uploading any file
-        eventRepository.findById(request.getEventId())
+        // Verify event exists and is in DRAFT before uploading any file.
+        Event event = eventRepository.findById(request.getEventId())
                 .orElseThrow(() -> new NotFoundException("EVENT_NOT_FOUND",
                         "Event not found with id: " + request.getEventId()));
+
+        if (event.getStatus() != EventStatus.DRAFT) {
+            throw new BusinessException("EVENT_UPDATE_NOT_ALLOWED",
+                    "Media can only be uploaded while the event is in DRAFT status");
+        }
 
         byte[] content;
         try {
