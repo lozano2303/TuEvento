@@ -112,14 +112,17 @@ export const getAdminEvents = async (status = null) => {
 /**
  * Cambia el estado de cualquier evento como administrador — bypasea el check de propiedad.
  * PATCH /admin/events/{eventId}/status
- * newStatus: 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED'
+ * newStatus: 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED'
+ * reason: required when newStatus is 'REJECTED', ignored otherwise.
  * Requiere rol ADMIN.
  */
-export const adminChangeEventStatus = async (eventId, newStatus) => {
+export const adminChangeEventStatus = async (eventId, newStatus, reason = null) => {
+  const body = { newStatus };
+  if (reason) body.reason = reason;
   const res = await httpRequest(`${API_URL}/admin/events/${eventId}/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ newStatus }),
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Error al cambiar el estado del evento');
