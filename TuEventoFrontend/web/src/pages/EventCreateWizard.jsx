@@ -83,7 +83,7 @@ export default function EventCreateWizard() {
           </div>
           <h1 className="text-xl font-bold text-textPrimary">Crear evento</h1>
           <p className="text-sm text-textMuted mt-1">
-            Completa los datos para publicar tu evento en TuEvento.
+            Completa los datos para crear tu evento en TuEvento.
           </p>
         </div>
 

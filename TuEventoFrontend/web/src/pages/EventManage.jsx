@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Plus, LayoutDashboard, Pencil, Trash2, AlertTriangle, ImagePlus,
   Eye, Calendar, Tag, Globe, Lock, Rocket, ChevronLeft, ChevronRight,
-  FileText, MapPin, Users,
+  FileText, MapPin, Users, Clock, XCircle,
 } from 'lucide-react';
 import * as EventService from '../services/EventService';
 import * as CategoryService from '../services/CategoryService';
@@ -187,6 +187,10 @@ export default function EventManage() {
         const code = err.code ?? err.response?.data?.code;
         const mapped = mapBackendDateError(code);
         if (mapped) message = mapped;
+        // Organizer tried to jump directly to PUBLISHED (bypassing review)
+        if (!mapped && (message.includes('EVENT_INVALID_STATUS_TRANSITION') || message.includes('is not allowed'))) {
+          message = 'Este evento no se puede publicar directamente. Usa "Enviar a revisión" para que un administrador lo apruebe.';
+        }
       }
       setErrorModal({ title: 'No se pudo cambiar el estado', message });
     } finally {
@@ -315,11 +319,11 @@ export default function EventManage() {
     setDetailCarousel(0);
   };
 
-  // ── Publicar desde modal de detalle ──────────────────────────────────────
+  // ── Enviar a revisión desde modal de detalle ─────────────────────────────
   const handlePublishFromDetail = () => {
     if (!detailTarget) return;
     closeDetail();
-    handleTransitionRequest(detailTarget, 'PUBLISHED');
+    handleTransitionRequest(detailTarget, 'PENDING_REVIEW');
   };
 
   // ── Gestión de imágenes ───────────────────────────────────────────────────
@@ -417,7 +421,11 @@ export default function EventManage() {
       setMediaList(res.data ?? []);
       setMediaFiles([]);
     } catch (err) {
-      setMediaUploadError(`No se pudo subir: ${err.message}`);
+      let uploadErrMsg = `No se pudo subir: ${err.message}`;
+      if (err.message?.includes('EVENT_UPDATE_NOT_ALLOWED') || err.message?.includes('Only DRAFT events')) {
+        uploadErrMsg = 'Las imágenes solo se pueden modificar cuando el evento está en estado Borrador.';
+      }
+      setMediaUploadError(uploadErrMsg);
     } finally {
       setIsUploadingMedia(false);
     }
@@ -428,11 +436,13 @@ export default function EventManage() {
 
   // Eventos filtrados por estado — frontend, sin llamada adicional al backend
   const FILTER_OPTIONS = [
-    { value: 'ALL',       label: 'Todos' },
-    { value: 'DRAFT',     label: STATUS_BADGE.DRAFT.label },
-    { value: 'PUBLISHED', label: STATUS_BADGE.PUBLISHED.label },
-    { value: 'CANCELLED', label: STATUS_BADGE.CANCELLED.label },
-    { value: 'COMPLETED', label: STATUS_BADGE.COMPLETED.label },
+    { value: 'ALL',            label: 'Todos' },
+    { value: 'DRAFT',          label: STATUS_BADGE.DRAFT.label },
+    { value: 'PENDING_REVIEW', label: STATUS_BADGE.PENDING_REVIEW.label },
+    { value: 'PUBLISHED',      label: STATUS_BADGE.PUBLISHED.label },
+    { value: 'REJECTED',       label: STATUS_BADGE.REJECTED.label },
+    { value: 'CANCELLED',      label: STATUS_BADGE.CANCELLED.label },
+    { value: 'COMPLETED',      label: STATUS_BADGE.COMPLETED.label },
   ];
   const visibleEvents = statusFilter === 'ALL'
     ? events
@@ -551,6 +561,19 @@ export default function EventManage() {
                         {event.eventName}
                       </p>
                       <p className="text-[11px] text-textMuted mt-0.5">#{event.eventId}</p>
+                      {/* Inline status notices under the event name */}
+                      {event.status === 'PENDING_REVIEW' && (
+                        <p className="text-[10px] text-yellow-400 mt-0.5 flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5 flex-shrink-0" />
+                          En espera de aprobación
+                        </p>
+                      )}
+                      {event.status === 'REJECTED' && (
+                        <p className="text-[10px] text-red-400 mt-0.5 flex items-center gap-1">
+                          <XCircle className="w-2.5 h-2.5 flex-shrink-0" />
+                          Rechazado — revisa el motivo
+                        </p>
+                      )}
                     </td>
 
                     {/* Estado — portal dropdown */}
@@ -606,18 +629,30 @@ export default function EventManage() {
 
                         {/* Editar info */}
                         <button
-                          onClick={() => openEdit(event)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-primary hover:bg-primary/10 transition-colors"
-                          title="Editar información del evento"
+                          onClick={() => event.status === 'DRAFT' && openEdit(event)}
+                          disabled={event.status !== 'DRAFT'}
+                          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
+                            ${event.status === 'DRAFT'
+                              ? 'text-textMuted hover:text-primary hover:bg-primary/10 cursor-pointer'
+                              : 'text-textMuted/30 cursor-not-allowed'}`}
+                          title={event.status === 'DRAFT'
+                            ? 'Editar información del evento'
+                            : 'La información solo se puede editar en estado Borrador'}
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Gestionar imágenes */}
+                        {/* Gestionar imágenes — solo disponible en DRAFT */}
                         <button
-                          onClick={() => openMedia(event)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-accent hover:bg-accent/10 transition-colors"
-                          title="Gestionar imágenes del evento"
+                          onClick={() => event.status === 'DRAFT' && openMedia(event)}
+                          disabled={event.status !== 'DRAFT'}
+                          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
+                            ${event.status === 'DRAFT'
+                              ? 'text-textMuted hover:text-accent hover:bg-accent/10 cursor-pointer'
+                              : 'text-textMuted/30 cursor-not-allowed'}`}
+                          title={event.status === 'DRAFT'
+                            ? 'Gestionar imágenes del evento'
+                            : 'Las imágenes solo se pueden modificar en estado Borrador'}
                         >
                           <ImagePlus className="w-3.5 h-3.5" />
                         </button>
@@ -654,7 +689,7 @@ export default function EventManage() {
         const ev          = detailTarget;
         const full        = detailFull;
         const badge       = STATUS_BADGE[ev.status] ?? STATUS_BADGE.DRAFT;
-        const canPublish  = VALID_TRANSITIONS[ev.status]?.includes('PUBLISHED');
+        const canSubmitReview = VALID_TRANSITIONS[ev.status]?.includes('PENDING_REVIEW');
         const fmtDate     = (d) => d
           ? new Date(d + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
           : '—';
@@ -844,8 +879,33 @@ export default function EventManage() {
                   </div>
                 </div>
 
-                {/* ── Descripción expandida con ícono ── */}
-                {(full?.description ?? ev.description) && (
+                {/* ── Banner de estado de revisión ── */}
+                {ev.status === 'PENDING_REVIEW' && (
+                  <div className="flex items-start gap-3 rounded-xl p-3.5 border border-yellow-500/30"
+                    style={{ background: 'color-mix(in srgb, var(--color-warning, #eab308) 8%, transparent)' }}>
+                    <Clock className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-yellow-300 leading-snug">
+                      Tu evento está en revisión. Te lo publicaremos cuando el administrador lo apruebe.
+                    </p>
+                  </div>
+                )}
+                {ev.status === 'REJECTED' && (
+                  <div className="flex items-start gap-3 rounded-xl p-3.5 border border-red-500/30"
+                    style={{ background: 'color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent)' }}>
+                    <XCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-red-400 mb-1">Evento rechazado</p>
+                      {(full?.rejectionReason) && (
+                        <p className="text-xs text-red-300 leading-snug">{full.rejectionReason}</p>
+                      )}
+                      <p className="text-xs text-red-300/70 mt-1 leading-snug">
+                        Cierra este panel, corrige el evento y envíalo a revisión nuevamente.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Descripción expandida con ícono ── */}                {(full?.description ?? ev.description) && (
                   <div
                     className="flex items-start gap-3 rounded-xl p-3.5 border"
                     style={{ background: 'var(--color-surfaceAlt)', borderColor: 'var(--color-surfaceAlt)' }}
@@ -905,8 +965,8 @@ export default function EventManage() {
                 </div>
               </div>
 
-              {/* ── Footer: botón Publicar ── */}
-              {canPublish && (
+              {/* ── Footer: botón Enviar a revisión (solo desde DRAFT) ── */}
+              {canSubmitReview && (
                 <div className="px-5 py-4 border-t border-surfaceAlt flex-shrink-0">
                   <button
                     onClick={handlePublishFromDetail}
@@ -914,7 +974,7 @@ export default function EventManage() {
                     style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%)' }}
                   >
                     <Rocket className="w-4 h-4" />
-                    Publicar
+                    Enviar a revisión
                   </button>
                 </div>
               )}
@@ -1115,11 +1175,18 @@ export default function EventManage() {
       {/* ── Modal: confirmar transición de estado ──────────────────────── */}
       {pendingTransition && (() => {
         const info = TRANSITION_INFO[pendingTransition.newStatus];
+        // When reverting to DRAFT from REJECTED, show a more specific title
+        const title = (pendingTransition.newStatus === 'DRAFT' && pendingTransition.event?.status === 'REJECTED')
+          ? '¿Corregir este evento?'
+          : info.title;
+        const body = (pendingTransition.newStatus === 'DRAFT' && pendingTransition.event?.status === 'REJECTED')
+          ? 'El evento volverá a estado Borrador para que puedas corregirlo y enviarlo a revisión nuevamente.'
+          : info.body;
         return (
           <Modal
             isOpen
             onClose={() => !transitionBusy && setPendingTransition(null)}
-            title={info.title}
+            title={title}
             maxWidth="max-w-md"
             hideClose={transitionBusy}
             footer={
@@ -1141,7 +1208,7 @@ export default function EventManage() {
               </>
             }
           >
-            <p className="text-sm text-textSecondary px-5 py-4 leading-relaxed">{info.body}</p>
+            <p className="text-sm text-textSecondary px-5 py-4 leading-relaxed">{body}</p>
           </Modal>
         );
       })()}
@@ -1217,26 +1284,36 @@ export default function EventManage() {
             <p className="text-sm text-textMuted text-center py-4">Este evento aún no tiene imágenes</p>
           )}
 
-          {/* Agregar más imágenes */}
+          {/* Agregar más imágenes — solo en DRAFT */}
           <div>
             <p className="text-[10px] font-semibold text-textMuted uppercase tracking-wider mb-2">
               Agregar imágenes
             </p>
-            <input
-              ref={mediaInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              id="manage-media-upload"
-              className="hidden"
-              onChange={handleMediaFileSelect}
-            />
-            <label
-              htmlFor="manage-media-upload"
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed cursor-pointer transition-colors border-surfaceAlt hover:border-accent text-textMuted hover:text-accent text-sm"
-            >
-              <ImagePlus className="w-4 h-4" /> Seleccionar imágenes
-            </label>
+            {mediaTarget?.status !== 'DRAFT' ? (
+              <div className="flex items-center gap-2 rounded-xl border border-surfaceAlt px-3 py-2.5 text-xs text-textMuted"
+                style={{ background: 'var(--color-surfaceAlt)' }}>
+                <ImagePlus className="w-3.5 h-3.5 flex-shrink-0" />
+                Las imágenes solo se pueden modificar en estado Borrador.
+              </div>
+            ) : (
+              <>
+                <input
+                  ref={mediaInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  id="manage-media-upload"
+                  className="hidden"
+                  onChange={handleMediaFileSelect}
+                />
+                <label
+                  htmlFor="manage-media-upload"
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed cursor-pointer transition-colors border-surfaceAlt hover:border-accent text-textMuted hover:text-accent text-sm"
+                >
+                  <ImagePlus className="w-4 h-4" /> Seleccionar imágenes
+                </label>
+              </>
+            )}
           </div>
 
           {/* Preview de archivos seleccionados */}
