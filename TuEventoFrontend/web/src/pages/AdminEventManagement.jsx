@@ -4,7 +4,7 @@ import {
   Users, LogOut, User, Settings, ChevronDown, X, CheckCircle, XCircle,
   AlertTriangle, Globe, Lock, Loader2, ChevronLeft, ChevronRight,
   UserCircle, Tag, MapPin, Ticket, ZoomIn, Clock, Check, Send,
-  FileText, Shield,
+  FileText, Shield, MessageSquareDashed,
 } from 'lucide-react';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
 import ConfirmModal from '../components/common/ConfirmModal';
@@ -40,19 +40,27 @@ const fmtTime = (d) => {
 // Valores hardcodeados aquí porque este componente vive fuera del sistema de temas
 // (AdminPanel usa su propio fondo oscuro fijo #12091b/#1a0d28).
 const statusStyle = (status) => {
-  if (status === 'DRAFT')     return {
+  if (status === 'DRAFT')          return {
     label: 'Borrador',
     cls: 'bg-slate-500/10 text-slate-400 border border-slate-500/30',
   };
-  if (status === 'PUBLISHED') return {
+  if (status === 'PENDING_REVIEW') return {
+    label: 'En revisión',
+    cls: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30',
+  };
+  if (status === 'PUBLISHED')      return {
     label: 'Activo',
     cls: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30',
   };
-  if (status === 'CANCELLED') return {
+  if (status === 'REJECTED')       return {
+    label: 'Rechazado',
+    cls: 'bg-rose-800/20 text-rose-300 border border-rose-700/40',
+  };
+  if (status === 'CANCELLED')      return {
     label: 'Cancelado',
     cls: 'bg-rose-500/10 text-rose-400 border border-rose-500/30',
   };
-  if (status === 'COMPLETED') return {
+  if (status === 'COMPLETED')      return {
     label: 'Finalizado',
     cls: 'bg-primary/10 text-primary border border-primary/30',
   };
@@ -60,12 +68,14 @@ const statusStyle = (status) => {
 };
 
 // Transiciones permitidas según las reglas de negocio del backend:
-//   DRAFT      → PUBLISHED
-//   PUBLISHED  → CANCELLED | COMPLETED
-//   CANCELLED  → (ninguna — estado final)
-//   COMPLETED  → (ninguna — estado final)
+//   PENDING_REVIEW → PUBLISHED | REJECTED
+//   PUBLISHED      → CANCELLED | COMPLETED
+//   DRAFT, REJECTED, CANCELLED, COMPLETED → (ninguna acción del admin)
 const allowedTransitions = (status) => {
-  if (status === 'DRAFT')     return [{ value: 'PUBLISHED', label: 'Publicar'  }];
+  if (status === 'PENDING_REVIEW') return [
+    { value: 'PUBLISHED', label: 'Publicar'  },
+    { value: 'REJECTED',  label: 'Rechazar'  },
+  ];
   if (status === 'PUBLISHED') return [
     { value: 'CANCELLED', label: 'Cancelar'  },
     { value: 'COMPLETED', label: 'Finalizar' },
@@ -107,11 +117,16 @@ const InfoCard = ({
 export default function AdminEventManagement() {
   const [events,        setEvents]        = useState([]);
   const [loading,       setLoading]       = useState(true);
-  const [filter,        setFilter]        = useState('all');
+  const [filter,        setFilter]        = useState('PENDING_REVIEW');
   const [error,         setError]         = useState(null);
   const [page,          setPage]          = useState(1);
   const [showMenu,      setShowMenu]      = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Modal de rechazo (motivo obligatorio)
+  const [pendingReject,    setPendingReject]    = useState(null);  // { eventId, eventName } | null
+  const [rejectReason,     setRejectReason]     = useState('');
+  const [rejectFromModal,  setRejectFromModal]  = useState(false);
 
   // Modal de detalle
   const [selected,       setSelected]       = useState(null);   // AdminEventSummaryResponse (tabla)
@@ -148,12 +163,19 @@ export default function AdminEventManagement() {
     { icon: Users,           label: 'Solicitudes',        href: '/admin-panel'  },
   ];
 
+  // Contadores de estados especiales — derivados de la lista actual sin petición extra.
+  // Se recalculan cuando cambia `events`. Se usan en los chips de filtro.
+  const pendingCount  = events.filter(e => e.status === 'PENDING_REVIEW').length;
+  const rejectedCount = events.filter(e => e.status === 'REJECTED').length;
+
   const filters = [
-    { key: 'all',       label: 'Todos'       },
-    { key: 'DRAFT',     label: 'Borradores'  },
-    { key: 'PUBLISHED', label: 'Activos'     },
-    { key: 'CANCELLED', label: 'Cancelados'  },
-    { key: 'COMPLETED', label: 'Finalizados' },
+    { key: 'all',            label: 'Todos',        count: null           },
+    { key: 'PENDING_REVIEW', label: 'En revisión',  count: pendingCount   },
+    { key: 'DRAFT',          label: 'Borradores',   count: null           },
+    { key: 'PUBLISHED',      label: 'Activos',      count: null           },
+    { key: 'REJECTED',       label: 'Rechazados',   count: rejectedCount  },
+    { key: 'CANCELLED',      label: 'Cancelados',   count: null           },
+    { key: 'COMPLETED',      label: 'Finalizados',  count: null           },
   ];
 
   // ── Fetch lista ───────────────────────────────────────────────────────────
@@ -234,34 +256,60 @@ export default function AdminEventManagement() {
     setLightboxIdx(0);
   };
 
-  // ── Cambio de estado (no-cancelar) ────────────────────────────────────────
+  // ── Cambio de estado (no-cancelar, no-rechazar) ──────────────────────────
   const handleStatusChange = async (eventId, newStatus, eventName) => {
-    // Para CANCELLED usamos nuestro propio modal de confirmación
+    // CANCELLED: modal destructivo dedicado
     if (newStatus === 'CANCELLED') {
       setPendingCancel({ eventId, eventName });
       return;
     }
+    // REJECTED: modal con textarea de motivo obligatorio
+    if (newStatus === 'REJECTED') {
+      setRejectReason('');
+      setRejectFromModal(false);
+      setPendingReject({ eventId, eventName });
+      return;
+    }
 
     const labels = { PUBLISHED: 'publicar', COMPLETED: 'finalizar' };
-    // Abre el ConfirmModal estilizado en lugar de window.confirm
     setPendingConfirm({ eventId, newStatus, eventName,
       label: (labels[newStatus] || newStatus).charAt(0).toUpperCase()
              + (labels[newStatus] || newStatus).slice(1),
     });
   };
 
-  const executeStatusChange = async (eventId, newStatus) => {
+  const executeStatusChange = async (eventId, newStatus, reason = null) => {
     setActionLoading(true);
     setError(null);
     try {
-      await adminChangeEventStatus(eventId, newStatus);
+      await adminChangeEventStatus(eventId, newStatus, reason);
       closeModal();
       setPendingCancel(null);
       setPendingConfirm(null);
+      setPendingReject(null);
+      setRejectReason('');
       setCancelFromModal(false);
+      setRejectFromModal(false);
       await fetchEvents();
     } catch (err) {
-      setError(err.message || 'Error al cambiar el estado del evento');
+      // Translate backend error codes to Spanish for the admin
+      let msg = err.message || 'Error al cambiar el estado del evento';
+      if (msg.includes('EVENT_INVALID_STATUS_TRANSITION') || msg.includes('is not allowed')) {
+        msg = 'Esta transición de estado ya no está permitida. Recarga la página para ver el estado actual del evento.';
+      } else if (msg.includes('EVENT_START_DATE_IN_PAST')) {
+        msg = 'No se puede publicar: la fecha de inicio del evento ya pasó. El organizador debe actualizarla antes de poder aprobarlo.';
+      } else if (msg.includes('EVENT_PUBLISH_MEDIA_COUNT_INVALID') || msg.includes('at least 3 images') || msg.includes('at most 9 images')) {
+        const match = msg.match(/currently has (\d+)/);
+        const count = match ? parseInt(match[1], 10) : null;
+        msg = count !== null
+          ? `No se puede publicar: el evento tiene ${count} imagen${count !== 1 ? 'es' : ''} (se requieren entre 3 y 9).`
+          : 'No se puede publicar: el evento no tiene el número correcto de imágenes (se requieren entre 3 y 9).';
+      } else if (msg.includes('EVENT_SECTIONS_REQUIRED') || msg.includes('at least one section')) {
+        msg = 'No se puede publicar: el evento no tiene ninguna sección con sillas configurada.';
+      } else if (msg.includes('EVENT_REJECTION_REASON_REQUIRED') || msg.includes('non-blank rejection reason')) {
+        msg = 'El motivo de rechazo es obligatorio y no puede estar vacío.';
+      }
+      setError(msg);
     } finally {
       setActionLoading(false);
     }
@@ -279,6 +327,22 @@ export default function AdminEventManagement() {
   const dismissCancel = () => {
     setPendingCancel(null);
     setCancelFromModal(false);
+  };
+
+  // ── Flujo de rechazo ──────────────────────────────────────────────────────
+  const requestReject = (eventId, eventName, fromModal = false) => {
+    setRejectReason('');
+    setRejectFromModal(fromModal);
+    setPendingReject({ eventId, eventName });
+  };
+
+  const confirmReject = () =>
+    executeStatusChange(pendingReject.eventId, 'REJECTED', rejectReason.trim());
+
+  const dismissReject = () => {
+    setPendingReject(null);
+    setRejectReason('');
+    setRejectFromModal(false);
   };
 
   // ── Logout / navegación ───────────────────────────────────────────────────
@@ -389,17 +453,23 @@ export default function AdminEventManagement() {
 
           {/* Filter pills */}
           <div className="flex items-center gap-2 mb-6 flex-wrap">
-            {filters.map(({ key, label }) => (
+            {filters.map(({ key, label, count }) => (
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all
+                className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-1.5
                   ${filter === key
                     ? 'bg-primary text-textPrimary'
                     : 'bg-surfaceAlt/60 text-textMuted hover:bg-surfaceAlt'
                   }`}
               >
                 {label}
+                {count !== null && count > 0 && (
+                  <span className={`min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center
+                    ${filter === key ? 'bg-white/25 text-white' : 'bg-yellow-500/25 text-yellow-400'}`}>
+                    {count}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -519,19 +589,23 @@ export default function AdminEventManagement() {
                                   onClick={() =>
                                     value === 'CANCELLED'
                                       ? requestCancel(ev.eventId, ev.eventName, false)
-                                      : handleStatusChange(ev.eventId, value, ev.eventName)
+                                      : value === 'REJECTED'
+                                        ? requestReject(ev.eventId, ev.eventName, false)
+                                        : handleStatusChange(ev.eventId, value, ev.eventName)
                                   }
                                   disabled={actionLoading}
                                   title={tLabel}
                                   className={`p-1.5 rounded-full transition-colors disabled:opacity-40
                                     ${value === 'PUBLISHED' ? 'hover:bg-emerald-500/20 text-emerald-400' : ''}
+                                    ${value === 'REJECTED'  ? 'hover:bg-rose-800/30    text-rose-300'    : ''}
                                     ${value === 'CANCELLED' ? 'hover:bg-rose-500/20    text-rose-400'    : ''}
-                                    ${value === 'COMPLETED' ? 'hover:bg-primary/20  text-primary'  : ''}
+                                    ${value === 'COMPLETED' ? 'hover:bg-primary/20     text-primary'     : ''}
                                   `}
                                 >
-                                  {value === 'PUBLISHED' && <CheckCircle className="w-4 h-4" />}
-                                  {value === 'CANCELLED' && <XCircle     className="w-4 h-4" />}
-                                  {value === 'COMPLETED' && <CheckCircle className="w-4 h-4" />}
+                                  {value === 'PUBLISHED' && <CheckCircle        className="w-4 h-4" />}
+                                  {value === 'REJECTED'  && <MessageSquareDashed className="w-4 h-4" />}
+                                  {value === 'CANCELLED' && <XCircle            className="w-4 h-4" />}
+                                  {value === 'COMPLETED' && <CheckCircle        className="w-4 h-4" />}
                                 </button>
                               ))}
                             </div>
@@ -669,9 +743,11 @@ export default function AdminEventManagement() {
                   {(() => {
                     const s = statusStyle(modalData.status);
                     const dotCls =
-                      modalData.status === 'PUBLISHED' ? 'bg-emerald-400' :
-                      modalData.status === 'CANCELLED' ? 'bg-rose-400'    :
-                      modalData.status === 'COMPLETED' ? 'bg-violet-400'  :
+                      modalData.status === 'PENDING_REVIEW' ? 'bg-yellow-400' :
+                      modalData.status === 'PUBLISHED'      ? 'bg-emerald-400' :
+                      modalData.status === 'REJECTED'       ? 'bg-rose-300'   :
+                      modalData.status === 'CANCELLED'      ? 'bg-rose-400'   :
+                      modalData.status === 'COMPLETED'      ? 'bg-violet-400'  :
                       'bg-slate-400';
                     return (
                       <span className={`admin-badge-angular flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold ${s.cls}`}>
@@ -841,8 +917,31 @@ export default function AdminEventManagement() {
                 </>
               )}
 
-              {/* Separador */}
+              {/* ── Separador */}
               <div className="admin-divider-angled" />
+
+              {/* ── Motivo de rechazo — solo cuando status === REJECTED ───── */}
+              {modalData.status === 'REJECTED' && (fullDetail?.rejectionReason) && (
+                <div
+                  className="flex items-start gap-3 rounded-xl p-4"
+                  style={{ background: 'rgba(190,18,60,0.08)', border: '1px solid rgba(190,18,60,0.25)' }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'rgba(190,18,60,0.18)' }}
+                  >
+                    <MessageSquareDashed className="w-[15px] h-[15px]" style={{ color: 'rgba(251,113,133,0.85)' }} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5" style={{ color: 'rgba(251,113,133,0.78)' }}>
+                      Motivo de rechazo
+                    </p>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(255,180,190,0.80)' }}>
+                      {fullDetail.rejectionReason}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* ── Grid 2×N de InfoCards ─────────────────────────────────────── */}
               <div>
@@ -943,16 +1042,20 @@ export default function AdminEventManagement() {
                     onClick={() =>
                       value === 'CANCELLED'
                         ? requestCancel(modalData.eventId, modalData.eventName, true)
-                        : handleStatusChange(modalData.eventId, value, modalData.eventName)
+                        : value === 'REJECTED'
+                          ? requestReject(modalData.eventId, modalData.eventName, true)
+                          : handleStatusChange(modalData.eventId, value, modalData.eventName)
                     }
                     disabled={actionLoading}
                     className={`flex-1 py-3.5 rounded-xl text-sm font-bold border transition-all disabled:opacity-50
                       flex items-center justify-center gap-2 tracking-wide
                       ${value === 'PUBLISHED'
                         ? 'admin-publish-btn text-white border-transparent hover:brightness-110'
-                        : value === 'CANCELLED'
-                          ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500 hover:text-white hover:border-rose-500'
-                          : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20'
+                        : value === 'REJECTED'
+                          ? 'bg-rose-800/15 text-rose-300 border-rose-700/30 hover:bg-rose-700/60 hover:text-white hover:border-rose-600'
+                          : value === 'CANCELLED'
+                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500 hover:text-white hover:border-rose-500'
+                            : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20'
                       }`}
                     style={value === 'PUBLISHED' ? {
                       background: 'linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%)',
@@ -963,9 +1066,10 @@ export default function AdminEventManagement() {
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        {value === 'PUBLISHED' && <Send    className="w-4 h-4" />}
-                        {value === 'CANCELLED' && <XCircle className="w-4 h-4" />}
-                        {value === 'COMPLETED' && <Check   className="w-4 h-4" />}
+                        {value === 'PUBLISHED' && <Send              className="w-4 h-4" />}
+                        {value === 'REJECTED'  && <MessageSquareDashed className="w-4 h-4" />}
+                        {value === 'CANCELLED' && <XCircle           className="w-4 h-4" />}
+                        {value === 'COMPLETED' && <Check             className="w-4 h-4" />}
                         {tLabel}
                       </>
                     )}
@@ -1097,6 +1201,96 @@ export default function AdminEventManagement() {
                   transition-all disabled:opacity-50"
               >
                 {actionLoading ? 'Cancelando…' : 'Sí, cancelar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          Modal de rechazo — motivo obligatorio (20–1000 caracteres)
+      ═══════════════════════════════════════════════════════════════════════ */}
+      {pendingReject && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div
+            className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl shadow-black/60 w-full max-w-md p-6 flex flex-col gap-5"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reject-modal-title"
+          >
+            {/* Cabecera */}
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-full bg-rose-800/20 border border-rose-700/30 flex items-center justify-center flex-shrink-0">
+                <MessageSquareDashed className="w-5 h-5 text-rose-300" />
+              </div>
+              <div className="min-w-0">
+                <h3 id="reject-modal-title" className="text-base font-black text-textPrimary mb-0.5">
+                  Rechazar evento
+                </h3>
+                <p className="text-xs text-textMuted leading-snug">
+                  <span className="text-textSecondary font-medium">"{pendingReject.eventName}"</span>
+                  {' '}— indica el motivo para que el organizador pueda corregirlo.
+                </p>
+              </div>
+            </div>
+
+            {/* Textarea del motivo */}
+            <div>
+              <label
+                htmlFor="reject-reason"
+                className="block text-xs font-semibold text-textMuted uppercase tracking-wider mb-1.5"
+              >
+                Motivo de rechazo <span className="text-rose-400">*</span>
+              </label>
+              <textarea
+                id="reject-reason"
+                rows={4}
+                maxLength={1000}
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Ej: Las imágenes no corresponden al evento descrito. Por favor, sube fotos del lugar real."
+                className="w-full rounded-xl px-3 py-2.5 text-sm text-textPrimary resize-none
+                  focus:outline-none transition-colors"
+                style={{
+                  background: 'var(--color-surfaceAlt)',
+                  border: rejectReason.trim().length > 0 && rejectReason.trim().length < 20
+                    ? '1px solid rgba(248,113,113,0.6)'
+                    : '1px solid var(--color-surfaceAlt)',
+                }}
+              />
+              {/* Contador de caracteres + aviso de mínimo */}
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-[10px] text-textMuted">
+                  {rejectReason.trim().length < 20 && rejectReason.trim().length > 0
+                    ? <span style={{ color: 'rgba(248,113,113,0.9)' }}>Mínimo 20 caracteres</span>
+                    : <span>Mínimo 20 caracteres</span>
+                  }
+                </p>
+                <p className="text-[10px] text-textMuted tabular-nums">
+                  {rejectReason.length}/1000
+                </p>
+              </div>
+            </div>
+
+            {/* Botones */}
+            <div className="flex gap-3">
+              <button
+                onClick={dismissReject}
+                disabled={actionLoading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-surfaceAlt text-textSecondary
+                  border border-surfaceAlt hover:bg-surfaceAlt/80 transition-all disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmReject}
+                disabled={actionLoading || rejectReason.trim().length < 20}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-40
+                  bg-rose-800/20 text-rose-300 border border-rose-700/30
+                  hover:bg-rose-700/60 hover:text-white hover:border-rose-600
+                  disabled:cursor-not-allowed"
+              >
+                {actionLoading ? 'Rechazando…' : 'Confirmar rechazo'}
               </button>
             </div>
           </div>
