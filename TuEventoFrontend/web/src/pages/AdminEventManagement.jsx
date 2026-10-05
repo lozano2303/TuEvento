@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { performLogout } from '../services/httpClient';
 import { getAdminEvents, adminChangeEventStatus, getEventById } from '../services/EventService';
 import { getEventMedia } from '../services/EventMediaService';
+import { getByEvent as getEventSections } from '../services/EventSectionService';
 
 const PAGE_SIZE = 10;
 
@@ -20,6 +21,12 @@ const fmtDate = (d) =>
   d ? new Date(d + 'T00:00:00').toLocaleDateString('es-CO', {
     day: '2-digit', month: 'short', year: 'numeric',
   }) : '—';
+
+/** Formats a numeric price as COP currency, e.g. 25000 → "$ 25.000". */
+const fmtCOP = (n) =>
+  new Intl.NumberFormat('es-CO', {
+    style: 'currency', currency: 'COP', maximumFractionDigits: 0,
+  }).format(Number(n) || 0);
 
 const fmtDateTime = (dt) =>
   dt ? new Date(dt).toLocaleString('es-CO', {
@@ -139,7 +146,9 @@ export default function AdminEventManagement() {
   // Lightbox de pantalla completa
   const [lightboxOpen,   setLightboxOpen]   = useState(false);
   const [lightboxIdx,    setLightboxIdx]    = useState(0);
-
+  // Secciones del evento (estructura de sillas / precios)
+  const [eventSections,     setEventSections]     = useState([]);  // EventSectionResponse[]
+  const [sectionsError,     setSectionsError]     = useState(false);
   // Modal de confirmación de cancelación
   const [pendingCancel,  setPendingCancel]  = useState(null);   // { eventId, eventName } | null
   const [cancelFromModal, setCancelFromModal] = useState(false); // si se disparó desde el modal de detalle
@@ -218,13 +227,17 @@ export default function AdminEventManagement() {
     setFullDetail(null);
     setMediaUrls([]);
     setCarouselIdx(0);
+    setEventSections([]);
+    setSectionsError(false);
     setShowModal(true);
     setDetailLoading(true);
     try {
-      // Carga EventResponse + lista de imágenes en paralelo
-      const [detailRes, mediaRes] = await Promise.allSettled([
+      // Load EventResponse, image list and event sections in parallel.
+      // Section failure is non-blocking: the rest of the modal renders normally.
+      const [detailRes, mediaRes, sectionsRes] = await Promise.allSettled([
         getEventById(ev.eventId),
         getEventMedia(ev.eventId),
+        getEventSections(ev.eventId),
       ]);
 
       if (detailRes.status === 'fulfilled') {
@@ -238,6 +251,11 @@ export default function AdminEventManagement() {
           .map((m) => m.imgUrl)
           .filter(Boolean);
         setMediaUrls(urls);
+      }
+      if (sectionsRes.status === 'fulfilled') {
+        setEventSections(sectionsRes.value?.data ?? []);
+      } else {
+        setSectionsError(true);
       }
     } catch {
       // fallback silencioso — el modal sigue mostrando datos del summary
@@ -254,6 +272,8 @@ export default function AdminEventManagement() {
     setCarouselIdx(0);
     setLightboxOpen(false);
     setLightboxIdx(0);
+    setEventSections([]);
+    setSectionsError(false);
   };
 
   // ── Cambio de estado (no-cancelar, no-rechazar) ──────────────────────────
@@ -803,13 +823,13 @@ export default function AdminEventManagement() {
                 <path d="M0 22 L100 0 L100 22 Z" fill="#1a0d28" />
               </svg>
 
-              {/* Tira de miniaturas */}
-              {mediaUrls.length > 1 && (
+              {/* Tira de miniaturas + chip de conteo de imágenes */}
+              {mediaUrls.length > 0 && (
                 <div
-                  className="flex gap-2 px-6 py-2.5"
+                  className="flex gap-2 px-6 py-2.5 items-center"
                   style={{ background: 'rgba(15,5,32,0.80)', borderBottom: '1px solid rgba(124,58,237,0.15)' }}
                 >
-                  {mediaUrls.map((url, i) => (
+                  {mediaUrls.length > 1 && mediaUrls.map((url, i) => (
                     <button
                       key={i}
                       onClick={() => setCarouselIdx(i)}
@@ -841,6 +861,24 @@ export default function AdminEventManagement() {
                   >
                     <ZoomIn className="w-3.5 h-3.5" />
                   </button>
+
+                  {/* Image count chip — highlights out-of-range values (valid: 3–9) */}
+                  {(() => {
+                    const count = mediaUrls.length;
+                    const ok    = count >= 3 && count <= 9;
+                    return (
+                      <span
+                        className="ml-auto self-center text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                        style={ok
+                          ? { background: 'rgba(52,211,153,0.12)', color: 'rgba(52,211,153,0.9)',  borderColor: 'rgba(52,211,153,0.30)' }
+                          : { background: 'rgba(251,191,36,0.12)', color: 'rgba(251,191,36,0.9)',  borderColor: 'rgba(251,191,36,0.30)' }}
+                        title={ok ? `${count} imágenes — OK` : `${count} imágenes — fuera del rango permitido (3–9)`}
+                      >
+                        {count} {count === 1 ? 'imagen' : 'imágenes'}
+                        {!ok && ' ⚠'}
+                      </span>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -995,6 +1033,85 @@ export default function AdminEventManagement() {
                       {modalData.isPublic == null ? '—' : modalData.isPublic ? 'Público' : 'Privado'}
                     </p>
                   </InfoCard>
+                </div>
+
+                {/* ── Secciones del evento ─────────────────────────────────── */}
+                <div className="admin-divider-angled" />
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2"
+                    style={{ color: 'rgba(196,181,253,0.82)' }}>
+                    Estructura de secciones
+                  </p>
+
+                  {sectionsError ? (
+                    <p className="text-xs" style={{ color: 'rgba(251,191,36,0.7)' }}>
+                      No se pudieron cargar las secciones en este momento.
+                    </p>
+                  ) : eventSections.length === 0 && !detailLoading ? (
+                    <p className="text-xs" style={{ color: 'rgba(196,181,253,0.45)' }}>
+                      Este evento aún no tiene secciones configuradas.
+                    </p>
+                  ) : eventSections.length > 0 && (
+                    <div className="rounded-xl overflow-hidden border" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
+                            {['Tipo', 'Capacidad', 'Disponibles', 'Precio', 'Activa'].map((h) => (
+                              <th key={h}
+                                className="px-3 py-2 text-left font-bold uppercase tracking-wider"
+                                style={{ color: 'rgba(196,181,253,0.60)' }}>
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {eventSections.map((s) => (
+                            <tr key={s.eventSectionId}
+                              className="border-t"
+                              style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                              <td className="px-3 py-2 font-semibold" style={{ color: 'rgba(220,210,255,0.85)' }}>
+                                {s.sectionTypeName ?? '—'}
+                              </td>
+                              <td className="px-3 py-2 tabular-nums" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                                {s.capacity?.toLocaleString('es-CO') ?? '—'}
+                              </td>
+                              <td className="px-3 py-2 tabular-nums" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                                {s.availableSeats?.toLocaleString('es-CO') ?? '—'}
+                              </td>
+                              <td className="px-3 py-2 tabular-nums" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                                {s.price != null ? fmtCOP(s.price) : '—'}
+                              </td>
+                              <td className="px-3 py-2">
+                                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${
+                                  s.isActive
+                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
+                                    : 'bg-slate-500/10 text-slate-400 border-slate-500/25'
+                                }`}>
+                                  {s.isActive ? 'Sí' : 'No'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        {/* Total row */}
+                        <tfoot>
+                          <tr className="border-t" style={{ borderColor: 'rgba(124,58,237,0.25)', background: 'rgba(124,58,237,0.06)' }}>
+                            <td className="px-3 py-2 font-bold text-xs" style={{ color: 'rgba(196,181,253,0.80)' }}>
+                              Total
+                            </td>
+                            <td className="px-3 py-2 font-bold tabular-nums" style={{ color: 'rgba(196,181,253,0.80)' }}>
+                              {eventSections.reduce((acc, s) => acc + (s.capacity ?? 0), 0).toLocaleString('es-CO')}
+                            </td>
+                            <td className="px-3 py-2 font-bold tabular-nums" style={{ color: 'rgba(196,181,253,0.80)' }}>
+                              {eventSections.reduce((acc, s) => acc + (s.availableSeats ?? 0), 0).toLocaleString('es-CO')}
+                            </td>
+                            <td colSpan={2} />
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  )}
                 </div>
 
                 {/* Organizador + boletas */}
