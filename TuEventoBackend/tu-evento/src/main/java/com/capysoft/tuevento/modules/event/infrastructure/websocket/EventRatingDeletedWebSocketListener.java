@@ -11,16 +11,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import java.util.Map;
 
 /**
- * Listener que escucha {@link EventRatingDeletedEvent} y, tras confirmar la transacción
- * (AFTER_COMMIT), notifica a todos los clientes suscritos que deben retirar el comentario
- * de su lista local.
- *
- * <p>Canal: {@code /topic/events/{eventId}/comments/deleted}
- *
- * <p>Payload: {@code { "ratingId": <id> }} — mínimo e idempotente en el cliente.
- *
- * <p>El push WebSocket es no-bloqueante: si {@code SimpMessagingTemplate} lanza,
- * se loguea y el flujo continúa sin afectar la transacción ya confirmada.
+ * Notifica a los clientes WebSocket que un comentario fue eliminado.
+ * Canal: /topic/events/{eventId}/comments/deleted
+ * Payload: { "ratingId": <id> }
  */
 @Slf4j
 @Component
@@ -32,13 +25,9 @@ public class EventRatingDeletedWebSocketListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onEventRatingDeleted(EventRatingDeletedEvent event) {
         String topic = "/topic/events/" + event.getEventId() + "/comments/deleted";
-
         try {
             messagingTemplate.convertAndSend(topic, Map.of("ratingId", event.getRatingId()));
-
-            log.debug("[EventComment] Deletion broadcast to {}: ratingId={}, userId={}",
-                    topic, event.getRatingId(), event.getUserId());
-
+            log.debug("[EventComment] Deletion broadcast to {}: ratingId={}", topic, event.getRatingId());
         } catch (Exception e) {
             log.error("[EventComment] WebSocket deletion push failed (non-breaking): ratingId={}, error={}",
                     event.getRatingId(), e.getMessage(), e);

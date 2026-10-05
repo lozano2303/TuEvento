@@ -13,8 +13,11 @@ public class EventRatingAddedEvent {
     private Long ratingId;
     private Long eventId;
     private Long userId;
-    private int rating;
+    /** Nullable: null si el comentario no lleva calificación (R3/R4). */
+    private Integer rating;
     private String comment;
     private Boolean isVisible;
+    /** True si el autor es el organizador del evento (R4). */
+    private Boolean isOrganizer;
     private LocalDateTime occurredAt;
 }

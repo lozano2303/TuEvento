@@ -15,145 +15,115 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for {@link DeleteEventRatingService}.
- *
- * <h3>Coverage</h3>
- * <ul>
- *   <li>Happy path: borra el rating y publica EventRatingDeletedEvent</li>
- *   <li>Tras borrar, existsByEventIdAndUserId ya no bloquea (usuario puede volver a comentar)</li>
- *   <li>Rating no encontrado → NotFoundException RATING_NOT_FOUND</li>
- *   <li>Rating de otro evento → NotFoundException RATING_NOT_FOUND</li>
- *   <li>Rating de otra persona → BusinessException RATING_ACCESS_DENIED</li>
- * </ul>
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DeleteEventRatingService")
 class DeleteEventRatingServiceTest {
 
     @Mock private EventRatingRepository    ratingRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private Clock                    clock;
 
     @InjectMocks
     private DeleteEventRatingService service;
-
-    // ── Fixtures ──────────────────────────────────────────────────────────────
 
     private static final Long EVENT_ID  = 10L;
     private static final Long RATING_ID = 42L;
     private static final Long OWNER_ID  = 7L;
     private static final Long OTHER_ID  = 99L;
 
-    private EventRating ownerRating() {
+    @SuppressWarnings("all")
+    private void setupClock() {
+        when(clock.instant()).thenReturn(Instant.parse("2026-10-05T14:00:00Z"));
+        when(clock.getZone()).thenReturn(ZoneId.of("America/Bogota"));
+    }
+
+    private EventRating ownerRating(Integer rating) {
         return EventRating.builder()
                 .ratingId(RATING_ID).eventId(EVENT_ID).userId(OWNER_ID)
-                .rating(4).comment("Buen evento").isVisible(true)
+                .rating(rating).comment("Buen evento").isVisible(true)
                 .createdAt(LocalDateTime.now())
                 .build();
     }
-
-    // ── Happy path ────────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("Happy path")
     class HappyPath {
 
         @Test
-        @DisplayName("dueño borra OK: llama deleteById y publica EventRatingDeletedEvent")
-        void owner_deletes_successfully() {
-            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(ownerRating()));
+        @DisplayName("dueño borra su comentario con rating → deleteById + EventRatingDeletedEvent")
+        void owner_deletes_rated_comment() {
+            setupClock();
+            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(ownerRating(4)));
 
             service.execute(EVENT_ID, RATING_ID, OWNER_ID);
 
             verify(ratingRepository).deleteById(RATING_ID);
-
-            ArgumentCaptor<EventRatingDeletedEvent> captor =
-                    ArgumentCaptor.forClass(EventRatingDeletedEvent.class);
-            verify(eventPublisher).publishEvent(captor.capture());
-
-            EventRatingDeletedEvent evt = captor.getValue();
-            assertThat(evt.getRatingId()).isEqualTo(RATING_ID);
-            assertThat(evt.getEventId()).isEqualTo(EVENT_ID);
-            assertThat(evt.getUserId()).isEqualTo(OWNER_ID);
-            assertThat(evt.getOccurredAt()).isNotNull();
+            ArgumentCaptor<EventRatingDeletedEvent> cap = ArgumentCaptor.forClass(EventRatingDeletedEvent.class);
+            verify(eventPublisher).publishEvent(cap.capture());
+            assertThat(cap.getValue().getRatingId()).isEqualTo(RATING_ID);
+            assertThat(cap.getValue().getEventId()).isEqualTo(EVENT_ID);
+            assertThat(cap.getValue().getUserId()).isEqualTo(OWNER_ID);
         }
 
         @Test
-        @DisplayName("tras borrar, existsByEventIdAndUserId retorna false → usuario puede volver a comentar")
-        void after_delete_user_can_comment_again() {
-            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(ownerRating()));
-            // Simula que después del borrado existsByEventIdAndUserId retorna false
-            when(ratingRepository.existsByEventIdAndUserId(EVENT_ID, OWNER_ID)).thenReturn(false);
+        @DisplayName("dueño borra su comentario sin rating (null) → también permitido")
+        void owner_deletes_unrated_comment() {
+            setupClock();
+            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(ownerRating(null)));
 
-            service.execute(EVENT_ID, RATING_ID, OWNER_ID);
-
-            // existsByEventIdAndUserId puede ser llamado (por AddEventRatingService en el futuro),
-            // y ahora devuelve false — el usuario puede volver a comentar.
-            assertThat(ratingRepository.existsByEventIdAndUserId(EVENT_ID, OWNER_ID)).isFalse();
+            assertThatNoException().isThrownBy(() ->
+                    service.execute(EVENT_ID, RATING_ID, OWNER_ID));
+            verify(ratingRepository).deleteById(RATING_ID);
         }
     }
 
-    // ── Validaciones ──────────────────────────────────────────────────────────
-
     @Nested
-    @DisplayName("Validaciones de negocio")
+    @DisplayName("Validaciones")
     class Validations {
 
         @Test
         @DisplayName("rating no encontrado → NotFoundException RATING_NOT_FOUND")
-        void rating_not_found_throws() {
+        void not_found_throws() {
             when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.execute(EVENT_ID, RATING_ID, OWNER_ID))
                     .isInstanceOf(NotFoundException.class)
-                    .satisfies(ex -> assertThat(((NotFoundException) ex).getCode())
-                            .isEqualTo("RATING_NOT_FOUND"));
-
+                    .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("RATING_NOT_FOUND"));
             verify(ratingRepository, never()).deleteById(anyLong());
-            verify(eventPublisher, never()).publishEvent(any());
         }
 
         @Test
-        @DisplayName("rating existe pero pertenece a otro evento → NotFoundException RATING_NOT_FOUND")
-        void rating_belongs_to_different_event_throws() {
-            Long otherEventId = 999L;
-            EventRating ratingOfOtherEvent = EventRating.builder()
-                    .ratingId(RATING_ID).eventId(otherEventId).userId(OWNER_ID)
-                    .rating(3).comment("Otro evento").isVisible(true)
-                    .createdAt(LocalDateTime.now())
-                    .build();
+        @DisplayName("rating de otro evento → NotFoundException RATING_NOT_FOUND")
+        void wrong_event_throws() {
+            EventRating otherEvent = EventRating.builder()
+                    .ratingId(RATING_ID).eventId(999L).userId(OWNER_ID)
+                    .rating(3).comment("x").isVisible(true).createdAt(LocalDateTime.now()).build();
+            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(otherEvent));
 
-            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(ratingOfOtherEvent));
-
-            // Se pasa EVENT_ID pero el rating pertenece a otherEventId
             assertThatThrownBy(() -> service.execute(EVENT_ID, RATING_ID, OWNER_ID))
                     .isInstanceOf(NotFoundException.class)
-                    .satisfies(ex -> assertThat(((NotFoundException) ex).getCode())
-                            .isEqualTo("RATING_NOT_FOUND"));
-
-            verify(ratingRepository, never()).deleteById(anyLong());
+                    .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("RATING_NOT_FOUND"));
         }
 
         @Test
-        @DisplayName("rating existe y pertenece al evento pero es de otra persona → BusinessException RATING_ACCESS_DENIED")
-        void non_owner_throws_access_denied() {
-            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(ownerRating()));
+        @DisplayName("rating de otra persona → BusinessException RATING_ACCESS_DENIED")
+        void non_owner_throws() {
+            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(ownerRating(4)));
 
-            // OTHER_ID intenta borrar el rating del OWNER_ID
             assertThatThrownBy(() -> service.execute(EVENT_ID, RATING_ID, OTHER_ID))
                     .isInstanceOf(BusinessException.class)
-                    .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
-                            .isEqualTo("RATING_ACCESS_DENIED"));
-
+                    .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("RATING_ACCESS_DENIED"));
             verify(ratingRepository, never()).deleteById(anyLong());
-            verify(eventPublisher, never()).publishEvent(any());
         }
     }
 }

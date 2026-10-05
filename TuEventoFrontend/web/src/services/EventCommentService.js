@@ -3,17 +3,18 @@
  *
  * Endpoints:
  *   GET    /events/{eventId}/ratings              — lista pública (sin auth)
- *   POST   /events/{eventId}/ratings              — crear comentario (auth USER)
- *   DELETE /events/{eventId}/ratings/{ratingId}   — borrar comentario propio (auth USER)
+ *   POST   /events/{eventId}/ratings              — crear comentario (cualquier usuario autenticado, R1)
+ *   DELETE /events/{eventId}/ratings/{ratingId}   — borrar comentario propio (cualquier usuario autenticado, R1)
  *
- * El POST guarda el comentario en BD y, tras el commit, el backend
- * lo transmite por WebSocket al canal /topic/events/{eventId}/comments.
- *
- * El DELETE borra físicamente el comentario y el backend notifica en
- * /topic/events/{eventId}/comments/deleted con payload { ratingId }.
+ * Reglas de negocio aplicadas en el backend:
+ *   R1 — Cualquier usuario autenticado puede comentar y borrar sus propios comentarios.
+ *   R2 — Múltiples comentarios por persona y evento.
+ *   R3 — El primer comentario con rating en el evento lleva calificación; los siguientes no.
+ *   R4 — El organizador del evento nunca lleva calificación.
+ *   R5 — Antispam: máximo 1 comentario cada 10 segundos por persona/evento.
  *
  * El payload de GET y POST tiene la misma forma:
- *   { ratingId, userId, authorName, rating, comment, isVisible, createdAt }
+ *   { ratingId, userId, authorName, rating (nullable), comment, isVisible, isOrganizer, createdAt }
  */
 import { httpRequest } from './httpClient.js';
 
@@ -34,11 +35,11 @@ export const getEventComments = async (eventId) => {
 
 /**
  * Publica un nuevo comentario/rating en un evento.
- * Requiere autenticación con rol USER.
+ * Requiere autenticación — cualquier rol puede comentar (R1).
  *
  * @param {string|number} eventId
- * @param {{ rating: number, comment: string }} payload
- *   - rating: entero entre 1 y 5
+ * @param {{ rating?: number, comment: string }} payload
+ *   - rating: entero entre 1 y 5, opcional (R3/R4 deciden si aplica)
  *   - comment: texto no vacío, máximo 500 caracteres
  * @returns {Promise<{ data: object }>}
  */
@@ -55,7 +56,6 @@ export const addEventComment = async (eventId, payload) => {
 
 /**
  * Elimina de forma permanente un comentario/rating propio.
- * Requiere autenticación con rol USER.
  * El backend valida que el comentario pertenezca al usuario autenticado
  * (ownership extraído del JWT, nunca del body).
  *

@@ -22,8 +22,9 @@ public class EventRatingRepositoryImpl implements EventRatingRepository {
     }
 
     @Override
-    public List<EventRating> findByEventId(Long eventId) {
-        return jpaRepository.findByEventId(eventId).stream().map(mapper::toDomain).toList();
+    public List<EventRating> findByEventIdOrderByCreatedAtDesc(Long eventId) {
+        return jpaRepository.findByEventIdOrderByCreatedAtDescRatingIdDesc(eventId)
+                .stream().map(mapper::toDomain).toList();
     }
 
     @Override
@@ -32,8 +33,14 @@ public class EventRatingRepositoryImpl implements EventRatingRepository {
     }
 
     @Override
-    public boolean existsByEventIdAndUserId(Long eventId, Long userId) {
-        return jpaRepository.existsByEventIdAndUserId(eventId, userId);
+    public Optional<EventRating> findLastByEventIdAndUserId(Long eventId, Long userId) {
+        return jpaRepository.findTop1ByEventIdAndUserIdOrderByCreatedAtDesc(eventId, userId)
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public boolean existsRatedCommentByEventIdAndUserId(Long eventId, Long userId) {
+        return jpaRepository.existsRatedCommentByEventIdAndUserId(eventId, userId);
     }
 
     @Override
