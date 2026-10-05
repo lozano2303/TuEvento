@@ -11,4 +11,5 @@ public interface EventRatingRepository {
     List<EventRating> findByEventId(Long eventId);
     Optional<EventRating> findById(Long ratingId);
     boolean existsByEventIdAndUserId(Long eventId, Long userId);
+    void deleteById(Long ratingId);
 }

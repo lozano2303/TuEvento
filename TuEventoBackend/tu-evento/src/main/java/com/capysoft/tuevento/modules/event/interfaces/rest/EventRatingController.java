@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.event.interfaces.rest;
 import com.capysoft.tuevento.modules.event.application.dto.request.AddEventRatingRequest;
 import com.capysoft.tuevento.modules.event.application.dto.response.EventRatingResponse;
 import com.capysoft.tuevento.modules.event.application.port.in.AddEventRatingUseCase;
+import com.capysoft.tuevento.modules.event.application.port.in.DeleteEventRatingUseCase;
 import com.capysoft.tuevento.modules.event.domain.model.EventRating;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 public class EventRatingController {
 
     private final AddEventRatingUseCase addEventRatingUseCase;
+    private final DeleteEventRatingUseCase deleteEventRatingUseCase;
     private final EventRatingRepository eventRatingRepository;
     private final ProfileJpaRepository profileJpaRepository;
 
@@ -78,5 +80,16 @@ public class EventRatingController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(ApiResponse.ok("Ratings retrieved successfully", response));
+    }
+
+    @Operation(summary = "Delete a rating from an event — owner only")
+    @DeleteMapping("/{ratingId}")
+    @PreAuthorize("hasAuthority('USER')")
+    public ResponseEntity<ApiResponse<Void>> deleteRating(
+            @PathVariable Long eventId,
+            @PathVariable Long ratingId,
+            @AuthenticationPrincipal SecurityUser principal) {
+        deleteEventRatingUseCase.execute(eventId, ratingId, principal.getUserId().longValue());
+        return ResponseEntity.ok(ApiResponse.ok("Rating deleted successfully"));
     }
 }

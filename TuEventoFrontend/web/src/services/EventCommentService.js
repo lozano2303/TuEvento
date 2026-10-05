@@ -2,14 +2,17 @@
  * EventCommentService — gestión de comentarios/ratings de eventos.
  *
  * Endpoints:
- *   GET  /events/{eventId}/ratings         — lista pública (sin auth)
- *   POST /events/{eventId}/ratings         — crear comentario (auth USER)
+ *   GET    /events/{eventId}/ratings              — lista pública (sin auth)
+ *   POST   /events/{eventId}/ratings              — crear comentario (auth USER)
+ *   DELETE /events/{eventId}/ratings/{ratingId}   — borrar comentario propio (auth USER)
  *
  * El POST guarda el comentario en BD y, tras el commit, el backend
- * lo transmite por WebSocket al canal /topic/events/{eventId}/comments
- * para todos los clientes suscritos.
+ * lo transmite por WebSocket al canal /topic/events/{eventId}/comments.
  *
- * El payload de ambos endpoints tiene la misma forma:
+ * El DELETE borra físicamente el comentario y el backend notifica en
+ * /topic/events/{eventId}/comments/deleted con payload { ratingId }.
+ *
+ * El payload de GET y POST tiene la misma forma:
  *   { ratingId, userId, authorName, rating, comment, isVisible, createdAt }
  */
 import { httpRequest } from './httpClient.js';
@@ -47,5 +50,25 @@ export const addEventComment = async (eventId, payload) => {
   });
   const body = await res.json();
   if (!res.ok) throw new Error(body.message || 'Error al publicar el comentario');
+  return body;
+};
+
+/**
+ * Elimina de forma permanente un comentario/rating propio.
+ * Requiere autenticación con rol USER.
+ * El backend valida que el comentario pertenezca al usuario autenticado
+ * (ownership extraído del JWT, nunca del body).
+ *
+ * @param {string|number} eventId
+ * @param {string|number} ratingId
+ * @returns {Promise<{ data: null }>}
+ * @throws Error con mensaje del backend en caso de 403 (no propietario) o 404 (no existe)
+ */
+export const deleteEventComment = async (eventId, ratingId) => {
+  const res = await httpRequest(`${API_URL}/events/${eventId}/ratings/${ratingId}`, {
+    method: 'DELETE',
+  });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.message || 'Error al eliminar el comentario');
   return body;
 };
