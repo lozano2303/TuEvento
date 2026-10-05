@@ -868,10 +868,11 @@ export default function AdminEventManagement() {
                     const ok    = count >= 3 && count <= 9;
                     return (
                       <span
-                        className="ml-auto self-center text-[10px] font-bold px-2 py-0.5 rounded-full border"
-                        style={ok
-                          ? { background: 'rgba(52,211,153,0.12)', color: 'rgba(52,211,153,0.9)',  borderColor: 'rgba(52,211,153,0.30)' }
-                          : { background: 'rgba(251,191,36,0.12)', color: 'rgba(251,191,36,0.9)',  borderColor: 'rgba(251,191,36,0.30)' }}
+                        className={`ml-auto self-center text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          ok
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                            : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'
+                        }`}
                         title={ok ? `${count} imágenes — OK` : `${count} imágenes — fuera del rango permitido (3–9)`}
                       >
                         {count} {count === 1 ? 'imagen' : 'imágenes'}
@@ -1038,28 +1039,26 @@ export default function AdminEventManagement() {
                 {/* ── Secciones del evento ─────────────────────────────────── */}
                 <div className="admin-divider-angled" />
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2"
-                    style={{ color: 'rgba(196,181,253,0.82)' }}>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2 text-violet-300">
                     Estructura de secciones
                   </p>
 
                   {sectionsError ? (
-                    <p className="text-xs" style={{ color: 'rgba(251,191,36,0.7)' }}>
+                    <p className="text-xs text-amber-400/70">
                       No se pudieron cargar las secciones en este momento.
                     </p>
                   ) : eventSections.length === 0 && !detailLoading ? (
-                    <p className="text-xs" style={{ color: 'rgba(196,181,253,0.45)' }}>
+                    <p className="text-xs text-violet-300/50">
                       Este evento aún no tiene secciones configuradas.
                     </p>
                   ) : eventSections.length > 0 && (
-                    <div className="rounded-xl overflow-hidden border" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                    <div className="rounded-xl overflow-hidden border border-white/[0.07]">
                       <table className="w-full text-xs">
                         <thead>
-                          <tr style={{ background: 'rgba(255,255,255,0.04)' }}>
+                          <tr className="bg-white/[0.04]">
                             {['Tipo', 'Capacidad', 'Disponibles', 'Precio', 'Activa'].map((h) => (
                               <th key={h}
-                                className="px-3 py-2 text-left font-bold uppercase tracking-wider"
-                                style={{ color: 'rgba(196,181,253,0.60)' }}>
+                                className="px-3 py-2 text-left font-bold uppercase tracking-wider text-violet-300/70">
                                 {h}
                               </th>
                             ))}
@@ -1068,18 +1067,17 @@ export default function AdminEventManagement() {
                         <tbody>
                           {eventSections.map((s) => (
                             <tr key={s.eventSectionId}
-                              className="border-t"
-                              style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-                              <td className="px-3 py-2 font-semibold" style={{ color: 'rgba(220,210,255,0.85)' }}>
+                              className="border-t border-white/5">
+                              <td className="px-3 py-2 font-semibold text-violet-200">
                                 {s.sectionTypeName ?? '—'}
                               </td>
-                              <td className="px-3 py-2 tabular-nums" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                              <td className="px-3 py-2 tabular-nums text-white/65">
                                 {s.capacity?.toLocaleString('es-CO') ?? '—'}
                               </td>
-                              <td className="px-3 py-2 tabular-nums" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                              <td className="px-3 py-2 tabular-nums text-white/65">
                                 {s.availableSeats?.toLocaleString('es-CO') ?? '—'}
                               </td>
-                              <td className="px-3 py-2 tabular-nums" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                              <td className="px-3 py-2 tabular-nums text-white/65">
                                 {s.price != null ? fmtCOP(s.price) : '—'}
                               </td>
                               <td className="px-3 py-2">
@@ -1096,14 +1094,14 @@ export default function AdminEventManagement() {
                         </tbody>
                         {/* Total row */}
                         <tfoot>
-                          <tr className="border-t" style={{ borderColor: 'rgba(124,58,237,0.25)', background: 'rgba(124,58,237,0.06)' }}>
-                            <td className="px-3 py-2 font-bold text-xs" style={{ color: 'rgba(196,181,253,0.80)' }}>
+                          <tr className="border-t border-violet-600/25 bg-violet-900/10">
+                            <td className="px-3 py-2 font-bold text-xs text-violet-300">
                               Total
                             </td>
-                            <td className="px-3 py-2 font-bold tabular-nums" style={{ color: 'rgba(196,181,253,0.80)' }}>
+                            <td className="px-3 py-2 font-bold tabular-nums text-violet-300">
                               {eventSections.reduce((acc, s) => acc + (s.capacity ?? 0), 0).toLocaleString('es-CO')}
                             </td>
-                            <td className="px-3 py-2 font-bold tabular-nums" style={{ color: 'rgba(196,181,253,0.80)' }}>
+                            <td className="px-3 py-2 font-bold tabular-nums text-violet-300">
                               {eventSections.reduce((acc, s) => acc + (s.availableSeats ?? 0), 0).toLocaleString('es-CO')}
                             </td>
                             <td colSpan={2} />
