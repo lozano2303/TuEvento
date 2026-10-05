@@ -12,3 +12,21 @@ spring:
 
 server:
   port: 8080
+
+# Translation configuration
+translation:
+  provider: libretranslate
+  protected-terms: ${TRANSLATION_PROTECTED_TERMS:Tu Evento}
+  max-attempts: 3
+  processing-timeout-minutes: 10
+  libretranslate:
+    base-url: ${TRANSLATION_LIBRETRANSLATE_BASE_URL:http://localhost:5001}
+    timeout:
+      connect: 10s
+      read: 30s
+  executor:
+    core-pool-size: 2
+    max-pool-size: 4
+    queue-capacity: 50
+  backoff:
+    max-minutes: 60

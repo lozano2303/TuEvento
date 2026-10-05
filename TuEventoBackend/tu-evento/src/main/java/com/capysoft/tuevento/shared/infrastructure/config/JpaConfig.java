@@ -22,14 +22,14 @@ public class JpaConfig {
 
     /**
      * Resuelve el identificador del usuario autenticado actual.
-     * Se adapta al módulo de seguridad una vez que UserDetails esté implementado.
+     * Para operaciones asíncronas sin contexto de usuario, retorna "system".
      */
     @Bean
     public AuditorAware<String> auditorProvider() {
         return () -> {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
-                return Optional.empty();
+                return Optional.of("system"); // Default para operaciones asíncronas
             }
             return Optional.ofNullable(auth.getName());
         };

@@ -142,6 +142,26 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  # ── Translation Service ────────────────────────────────────────────────────
+  libretranslate:
+    image: libretranslate/libretranslate:v1.9.6
+    container_name: tuevento-libretranslate
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5001:5000"
+    environment:
+      - LT_LOAD_ONLY=es,en,fr,pt
+    volumes:
+      - libretranslate-models:/home/libretranslate/.local:rw
+    healthcheck:
+      test: ['CMD-SHELL', './venv/bin/python scripts/healthcheck.py']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
+    networks:
+      - tuevento-network
+
   # ── Backend (Spring Boot) ───────────────────────────────────────────────────
   backend:
     build:
@@ -197,6 +217,10 @@ services:
       - REDIS_PORT=6379
 
       - APP_CORS_ALLOWED_ORIGINS=http://localhost:3000
+
+      # Translation service configuration
+      - TRANSLATION_LIBRETRANSLATE_BASE_URL=http://libretranslate:5000
+      - TRANSLATION_PROTECTED_TERMS=${TRANSLATION_PROTECTED_TERMS:-Tu Evento}
     depends_on:
       postgres:
         condition: service_started
@@ -206,6 +230,8 @@ services:
         condition: service_started
       nsfw-classifier:
         condition: service_started
+      libretranslate:
+        condition: service_healthy
     networks:
       - tuevento-network
 
@@ -275,3 +301,4 @@ volumes:
   sonarqube_data:
   sonarqube_logs:
   sonarqube_extensions:
+  libretranslate-models:
