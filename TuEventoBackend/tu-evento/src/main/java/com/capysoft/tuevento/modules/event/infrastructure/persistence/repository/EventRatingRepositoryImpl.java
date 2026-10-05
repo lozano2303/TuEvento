@@ -35,4 +35,9 @@ public class EventRatingRepositoryImpl implements EventRatingRepository {
     public boolean existsByEventIdAndUserId(Long eventId, Long userId) {
         return jpaRepository.existsByEventIdAndUserId(eventId, userId);
     }
+
+    @Override
+    public void deleteById(Long ratingId) {
+        jpaRepository.deleteById(ratingId);
+    }
 }
