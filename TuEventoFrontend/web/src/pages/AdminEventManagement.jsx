@@ -1071,13 +1071,13 @@ export default function AdminEventManagement() {
                               <td className="px-3 py-2 font-semibold text-violet-200">
                                 {s.sectionTypeName ?? '—'}
                               </td>
-                              <td className="px-3 py-2 tabular-nums text-white/65">
+                              <td className="px-3 py-2 tabular-nums text-white/[0.65]">
                                 {s.capacity?.toLocaleString('es-CO') ?? '—'}
                               </td>
-                              <td className="px-3 py-2 tabular-nums text-white/65">
+                              <td className="px-3 py-2 tabular-nums text-white/[0.65]">
                                 {s.availableSeats?.toLocaleString('es-CO') ?? '—'}
                               </td>
-                              <td className="px-3 py-2 tabular-nums text-white/65">
+                              <td className="px-3 py-2 tabular-nums text-white/[0.65]">
                                 {s.price != null ? fmtCOP(s.price) : '—'}
                               </td>
                               <td className="px-3 py-2">
