@@ -22,12 +22,11 @@ import java.util.Map;
  * <ul>
  *   <li>Solo publica comentarios visibles ({@code isVisible = true}).
  *   <li>El payload tiene la misma forma que cada elemento del GET /ratings:
- *       ratingId, userId, authorName, rating, comment, isVisible, createdAt.
+ *       ratingId, userId, authorName, rating (nullable), comment,
+ *       isVisible, isOrganizer, createdAt.
  *   <li>Usa {@code AFTER_COMMIT} para garantizar que la BD ya tiene el registro
- *       antes de notificar a los clientes — nunca publica un comentario que
- *       luego hace rollback.
- *   <li>El fallo del push WebSocket es no-bloqueante: si {@code SimpMessagingTemplate}
- *       lanza, se loguea y la operación sigue sin afectar la transacción ya confirmada.
+ *       antes de notificar a los clientes.
+ *   <li>El fallo del push WebSocket es no-bloqueante.
  * </ul>
  */
 @Slf4j
@@ -36,15 +35,10 @@ import java.util.Map;
 public class EventCommentWebSocketListener {
 
     private final SimpMessagingTemplate messagingTemplate;
-    private final ProfileJpaRepository profileJpaRepository;
+    private final ProfileJpaRepository  profileJpaRepository;
 
-    /**
-     * Recibe el evento de dominio después de que la transacción hace commit.
-     * Si el comentario no es visible, se descarta silenciosamente.
-     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onEventRatingAdded(EventRatingAddedEvent event) {
-        // Comentarios ocultos no se transmiten al canal
         if (!Boolean.TRUE.equals(event.getIsVisible())) {
             log.debug("[EventComment] Skipping non-visible comment ratingId={}", event.getRatingId());
             return;
@@ -57,25 +51,23 @@ public class EventCommentWebSocketListener {
                     .map(p -> p.getFullName())
                     .orElse("Usuario");
 
-            // Payload idéntico a EventRatingResponse para que el frontend
-            // no necesite transformar la respuesta REST vs la del WebSocket
             Map<String, Object> payload = new HashMap<>();
             payload.put("ratingId",    event.getRatingId());
             payload.put("userId",      event.getUserId());
             payload.put("authorName",  authorName);
-            payload.put("rating",      event.getRating());
+            payload.put("rating",      event.getRating());       // nullable
             payload.put("comment",     event.getComment());
             payload.put("isVisible",   event.getIsVisible());
+            payload.put("isOrganizer", Boolean.TRUE.equals(event.getIsOrganizer()));
             payload.put("createdAt",   event.getOccurredAt() != null
                     ? event.getOccurredAt().toString() : null);
 
             messagingTemplate.convertAndSend(topic, payload);
 
-            log.debug("[EventComment] Comment broadcast to {}: ratingId={}, userId={}",
-                    topic, event.getRatingId(), event.getUserId());
+            log.debug("[EventComment] Comment broadcast to {}: ratingId={}, userId={}, isOrganizer={}",
+                    topic, event.getRatingId(), event.getUserId(), event.getIsOrganizer());
 
         } catch (Exception e) {
-            // El push WebSocket es una mejora UX; no puede romper el flujo ya confirmado
             log.error("[EventComment] WebSocket push failed (non-breaking): ratingId={}, error={}",
                     event.getRatingId(), e.getMessage(), e);
         }
