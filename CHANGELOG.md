@@ -31,7 +31,8 @@ All notable changes to this project will be documented in this file.
 - **`AddEventRatingRequest`**: `rating` deja de ser `@NotNull` (es opcional según R3/R4).
 - **`EventRating` / `EventRatingEntity`**: `rating` cambia de `int` a `Integer` (nullable).
 - **`EventRatingRepository`**: `findByEventIdOrderByCreatedAtDesc`, `findLastByEventIdAndUserId` (antispam R5), `existsRatedCommentByEventIdAndUserId` (R3). Eliminado: `findByEventId`, `existsByEventIdAndUserId`.
-- **`AddEventRatingService`**: aplica R1-R5 con `Clock` inyectable. Resuelve `authorName` e `isOrganizer` en la respuesta.
+- **`EventRatingRepositoryImpl`**: implementa los nuevos métodos de dominio.
+- **`AddEventRatingService`**: aplica R1-R5 con `Clock` inyectable. Resuelve `authorName` e `isOrganizer` en la respuesta. Propaga `body.code` en errores para detección fiable en frontend.
 - **`EventRatingAddedEvent`**: campos `isOrganizer`, `rating` nullable.
 - **`EventCommentWebSocketListener`**: emite `isOrganizer` en el payload WS.
 - **`EventRatingController`** GET: carga perfiles sin N+1, incluye `isOrganizer` y `userId` por comentario.
@@ -39,7 +40,7 @@ All notable changes to this project will be documented in this file.
 
 **Frontend**
 
-- **`EventCommentService.js`**: documenta R1-R5; `addEventComment` acepta `rating` opcional; `deleteEventComment(eventId, ratingId)` nuevo.
+- **`EventCommentService.js`**: documenta R1-R5; `addEventComment` acepta `rating` opcional y propaga `err.code`; `deleteEventComment(eventId, ratingId)` nuevo.
 - **`EventDetail.jsx`**:
   - Guarda `eventOrganizerUserId` desde `eventRes.data.userId` al montar (R4).
   - `needsRatingSelector`: muestra el selector de estrellas solo si el usuario no es el organizador y no tiene aún un comentario con rating.
