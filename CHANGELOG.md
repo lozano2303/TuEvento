@@ -4,7 +4,33 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Added — feat(notifications): event review notifications
+### Added — feat(event-comments-websocket): comentarios de eventos en tiempo real
+
+**Backend**
+
+- **`AddEventRatingRequest`**: anotación `@Size(max = 500)` en el campo `comment` — la columna en PostgreSQL es `VARCHAR` sin longitud (equivale a `TEXT`), no se requiere migración.
+- **`AddEventRatingService`**: nueva validación `isPublic = false` → `BusinessException(EVENT_RATING_NOT_ALLOWED)` antes de guardar el comentario. Inyecta `ProfileJpaRepository` para resolver `authorName` y lo incluye en el `EventRatingResponse`.
+- **`EventRatingAddedEvent`**: campos `comment` e `isVisible` añadidos; el service los puebla en el `publishEvent`.
+- **`EventRatingResponse`**: campo `authorName` (String) añadido. Tanto el `POST` como el `GET /ratings` lo devuelven — el payload REST y el WebSocket tienen ahora la misma forma.
+- **`EventRatingController`**: inyecta `ProfileJpaRepository` y resuelve `authorName` en el `GET /api/v1/events/{eventId}/ratings`.
+- **`EventCommentWebSocketListener`** (nuevo, `modules/event/infrastructure/websocket/`): `@TransactionalEventListener(phase = AFTER_COMMIT)` sobre `EventRatingAddedEvent`. Descarta comentarios con `isVisible = false`. Publica al canal `/topic/events/{eventId}/comments` un payload idéntico al `EventRatingResponse`. El push WebSocket es no-bloqueante (try/catch).
+
+**Frontend**
+
+- **`EventCommentService.js`** (nuevo, `src/services/`): `getEventComments(eventId)` — `GET` público; `addEventComment(eventId, payload)` — `POST` autenticado con `httpRequest()`.
+- **`EventDetail.jsx`**: sección de comentarios añadida al final de la página.
+  - Al cargar: `GET /ratings` carga los comentarios existentes.
+  - `useEffect` se suscribe a `/topic/events/{eventId}/comments` usando `subscribe()` de `NotificationContext` (WebSocket centralizado ya existente) con cleanup al desmontar.
+  - Anti-duplicado: `commentIdsRef` (Set de `ratingId`) previene que quien comenta vea su comentario dos veces (local inmediato + llegada WS).
+  - Formulario visible solo si hay token; selector de estrellas 1-5, `textarea` con `maxLength=500` y contador de caracteres.
+  - Reconexión automática heredada del cliente STOMP (`reconnectDelay: 5000`).
+
+**Tests**
+
+- **`AddEventRatingServiceTest`** (7 casos): happy path con `authorName`, fallback sin perfil, evento COMPLETED, evento no encontrado, estado inválido, evento privado, usuario ya calificó.
+- **`EventCommentWebSocketListenerTest`** (4 casos): topic y payload correctos, fallback de `authorName`, comentario no visible descartado, fallo de `SimpMessagingTemplate` no propaga excepción.
+
+
 
 - **Migración 086** (`086-seed-event-notification-types.yaml`): inserta los tipos `EVENT_PUBLISHED` y `EVENT_REJECTED` en la tabla `notification_type`.
 - **`EventStatusChangedEvent`** enriquecido con tres nuevos campos: `organizerId` (userId del dueño del evento), `eventName` (título legible) y `reason` (motivo de rechazo, solo cuando `newStatus = REJECTED`). Los publishers `ChangeEventStatusService` y `AdminChangeEventStatusUseCase` los pueblan; el scheduler no los necesita.
