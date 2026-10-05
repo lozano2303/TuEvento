@@ -17,8 +17,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -27,91 +26,88 @@ import static org.mockito.Mockito.*;
  *
  * <h3>Coverage</h3>
  * <ul>
- *   <li>Happy path: publica al topic correcto con payload completo</li>
- *   <li>authorName cae a "Usuario" cuando no hay perfil</li>
- *   <li>Comentario no visible → no se publica</li>
- *   <li>Fallo de SimpMessagingTemplate → no lanza excepción (non-breaking)</li>
+ *   <li>Payload con rating null (segundo comentario o organizador)</li>
+ *   <li>Payload con isOrganizer=true</li>
+ *   <li>Comentario no visible no se emite</li>
+ *   <li>Fallo de SimpMessagingTemplate → non-breaking</li>
  * </ul>
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("EventCommentWebSocketListener")
 class EventCommentWebSocketListenerTest {
 
-    @Mock private SimpMessagingTemplate  messagingTemplate;
-    @Mock private ProfileJpaRepository   profileJpaRepository;
+    @Mock private SimpMessagingTemplate messagingTemplate;
+    @Mock private ProfileJpaRepository  profileJpaRepository;
 
     @InjectMocks
     private EventCommentWebSocketListener listener;
-
-    // ── Fixtures ──────────────────────────────────────────────────────────────
 
     private static final Long EVENT_ID  = 42L;
     private static final Long USER_ID   = 7L;
     private static final Long RATING_ID = 99L;
 
-    private EventRatingAddedEvent visibleEvent() {
+    private EventRatingAddedEvent event(Integer rating, Boolean isOrganizer) {
         return EventRatingAddedEvent.builder()
-                .ratingId(RATING_ID)
-                .eventId(EVENT_ID)
-                .userId(USER_ID)
-                .rating(5)
-                .comment("Increíble experiencia")
-                .isVisible(true)
+                .ratingId(RATING_ID).eventId(EVENT_ID).userId(USER_ID)
+                .rating(rating).comment("Test comment").isVisible(true)
+                .isOrganizer(isOrganizer)
                 .occurredAt(LocalDateTime.of(2026, 10, 5, 14, 30, 0))
                 .build();
     }
-
-    // ── Tests: happy path ─────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("Happy path")
     class HappyPath {
 
         @Test
-        @DisplayName("publica al topic /topic/events/{id}/comments con payload completo")
-        void publishes_to_correct_topic_with_full_payload() {
-            ProfileEntity profile = mock(ProfileEntity.class);
-            when(profile.getFullName()).thenReturn("Carlos López");
-            when(profileJpaRepository.findByUserId(USER_ID.intValue()))
-                    .thenReturn(Optional.of(profile));
+        @DisplayName("payload incluye rating null e isOrganizer=false para segundo comentario")
+        void null_rating_and_false_organizer_in_payload() {
+            when(profileJpaRepository.findByUserId(USER_ID.intValue())).thenReturn(Optional.empty());
 
-            listener.onEventRatingAdded(visibleEvent());
+            listener.onEventRatingAdded(event(null, false));
 
             @SuppressWarnings("unchecked")
-            ArgumentCaptor<Map<String, Object>> payloadCaptor =
-                    ArgumentCaptor.forClass(Map.class);
+            ArgumentCaptor<Map<String, Object>> cap = ArgumentCaptor.forClass(Map.class);
             verify(messagingTemplate).convertAndSend(
-                    eq("/topic/events/" + EVENT_ID + "/comments"),
-                    payloadCaptor.capture());
+                    eq("/topic/events/" + EVENT_ID + "/comments"), cap.capture());
 
-            Map<String, Object> payload = payloadCaptor.getValue();
+            Map<String, Object> payload = cap.getValue();
+            assertThat(payload.get("rating")).isNull();
+            assertThat(payload.get("isOrganizer")).isEqualTo(false);
             assertThat(payload.get("ratingId")).isEqualTo(RATING_ID);
-            assertThat(payload.get("userId")).isEqualTo(USER_ID);
-            assertThat(payload.get("authorName")).isEqualTo("Carlos López");
-            assertThat(payload.get("rating")).isEqualTo(5);
-            assertThat(payload.get("comment")).isEqualTo("Increíble experiencia");
-            assertThat(payload.get("isVisible")).isEqualTo(true);
-            assertThat(payload.get("createdAt")).isEqualTo("2026-10-05T14:30");
         }
 
         @Test
-        @DisplayName("authorName cae a 'Usuario' cuando no hay perfil registrado")
-        void authorName_fallback_when_no_profile() {
-            when(profileJpaRepository.findByUserId(USER_ID.intValue()))
-                    .thenReturn(Optional.empty());
+        @DisplayName("payload incluye isOrganizer=true para el dueño del evento")
+        void organizer_flag_propagated() {
+            ProfileEntity p = mock(ProfileEntity.class);
+            when(p.getFullName()).thenReturn("Carlos Org");
+            when(profileJpaRepository.findByUserId(USER_ID.intValue())).thenReturn(Optional.of(p));
 
-            listener.onEventRatingAdded(visibleEvent());
+            listener.onEventRatingAdded(event(null, true));
 
             @SuppressWarnings("unchecked")
-            ArgumentCaptor<Map<String, Object>> payloadCaptor =
-                    ArgumentCaptor.forClass(Map.class);
-            verify(messagingTemplate).convertAndSend(anyString(), payloadCaptor.capture());
+            ArgumentCaptor<Map<String, Object>> cap = ArgumentCaptor.forClass(Map.class);
+            verify(messagingTemplate).convertAndSend(anyString(), cap.capture());
 
-            assertThat(payloadCaptor.getValue().get("authorName")).isEqualTo("Usuario");
+            assertThat(cap.getValue().get("isOrganizer")).isEqualTo(true);
+            assertThat(cap.getValue().get("authorName")).isEqualTo("Carlos Org");
+            assertThat(cap.getValue().get("rating")).isNull();
+        }
+
+        @Test
+        @DisplayName("authorName cae a 'Usuario' cuando no hay perfil")
+        void author_name_fallback() {
+            when(profileJpaRepository.findByUserId(USER_ID.intValue())).thenReturn(Optional.empty());
+
+            listener.onEventRatingAdded(event(4, false));
+
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<Map<String, Object>> cap = ArgumentCaptor.forClass(Map.class);
+            verify(messagingTemplate).convertAndSend(anyString(), cap.capture());
+            assertThat(cap.getValue().get("authorName")).isEqualTo("Usuario");
         }
     }
-
-    // ── Tests: comentario no visible ──────────────────────────────────────────
 
     @Nested
     @DisplayName("Comentario no visible")
@@ -119,41 +115,29 @@ class EventCommentWebSocketListenerTest {
 
         @Test
         @DisplayName("isVisible=false → no se llama a SimpMessagingTemplate")
-        void non_visible_comment_is_not_broadcast() {
-            EventRatingAddedEvent hiddenEvent = EventRatingAddedEvent.builder()
-                    .ratingId(RATING_ID)
-                    .eventId(EVENT_ID)
-                    .userId(USER_ID)
-                    .rating(1)
-                    .comment("Comentario oculto")
-                    .isVisible(false)
-                    .occurredAt(LocalDateTime.now())
-                    .build();
+        void hidden_comment_not_broadcast() {
+            EventRatingAddedEvent hidden = EventRatingAddedEvent.builder()
+                    .ratingId(RATING_ID).eventId(EVENT_ID).userId(USER_ID)
+                    .rating(3).comment("Oculto").isVisible(false).isOrganizer(false)
+                    .occurredAt(LocalDateTime.now()).build();
 
-            listener.onEventRatingAdded(hiddenEvent);
-
-            verifyNoInteractions(messagingTemplate);
-            verifyNoInteractions(profileJpaRepository);
+            listener.onEventRatingAdded(hidden);
+            verifyNoInteractions(messagingTemplate, profileJpaRepository);
         }
     }
 
-    // ── Tests: tolerancia a fallos ────────────────────────────────────────────
-
     @Nested
-    @DisplayName("Tolerancia a fallos del WebSocket")
+    @DisplayName("Tolerancia a fallos")
     class FaultTolerance {
 
         @Test
-        @DisplayName("fallo de SimpMessagingTemplate → no lanza excepción (non-breaking)")
-        void messaging_failure_does_not_propagate() {
-            when(profileJpaRepository.findByUserId(USER_ID.intValue()))
-                    .thenReturn(Optional.empty());
-            doThrow(new RuntimeException("Broker no disponible"))
+        @DisplayName("fallo de SimpMessagingTemplate → no lanza excepción")
+        void messaging_failure_non_breaking() {
+            when(profileJpaRepository.findByUserId(USER_ID.intValue())).thenReturn(Optional.empty());
+            doThrow(new RuntimeException("Broker down"))
                     .when(messagingTemplate).convertAndSend(anyString(), any(Object.class));
 
-            // No debe lanzar — el push WS es no-bloqueante
-            assertThatNoException().isThrownBy(() ->
-                    listener.onEventRatingAdded(visibleEvent()));
+            assertThatNoException().isThrownBy(() -> listener.onEventRatingAdded(event(null, false)));
         }
     }
 }

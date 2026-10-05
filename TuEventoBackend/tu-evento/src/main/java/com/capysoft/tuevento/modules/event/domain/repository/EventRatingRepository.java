@@ -8,8 +8,17 @@ import java.util.Optional;
 public interface EventRatingRepository {
 
     EventRating save(EventRating rating);
-    List<EventRating> findByEventId(Long eventId);
+
+    /** Todos los comentarios del evento, orden createdAt DESC, ratingId DESC. */
+    List<EventRating> findByEventIdOrderByCreatedAtDesc(Long eventId);
+
     Optional<EventRating> findById(Long ratingId);
-    boolean existsByEventIdAndUserId(Long eventId, Long userId);
+
+    /** Último comentario del usuario en el evento (para antispam R5). */
+    Optional<EventRating> findLastByEventIdAndUserId(Long eventId, Long userId);
+
+    /** ¿Tiene ya el usuario un comentario con rating != null en este evento? (R3) */
+    boolean existsRatedCommentByEventIdAndUserId(Long eventId, Long userId);
+
     void deleteById(Long ratingId);
 }
