@@ -311,7 +311,14 @@ export default function EventDetail() {
       setCommentText('');
       setCommentRating(5);
     } catch (err) {
-      setCommentError(err.message || 'No se pudo publicar el comentario');
+      const msg = err.message || '';
+      if (msg.includes('SESSION_EXPIRED') || msg.includes('401')) {
+        setCommentError('Tu sesión expiró. Iniciá sesión de nuevo para comentar.');
+      } else if (msg.includes('403') || msg.includes('Access denied') || msg.includes('Forbidden')) {
+        setCommentError('No tenés permiso para comentar en este evento.');
+      } else {
+        setCommentError(msg || 'No se pudo publicar el comentario.');
+      }
     } finally {
       setCommentSubmitting(false);
     }
@@ -522,7 +529,7 @@ export default function EventDetail() {
           </h2>
 
           {/* Formulario — solo si está autenticado */}
-          {localStorage.getItem('token') && (
+          {localStorage.getItem('token') && localStorage.getItem('role') === 'USER' && (
             <form
               onSubmit={handleCommentSubmit}
               className="mb-8 p-4 rounded-xl"
