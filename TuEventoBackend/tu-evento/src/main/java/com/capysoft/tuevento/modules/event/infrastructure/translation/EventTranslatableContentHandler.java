@@ -3,19 +3,23 @@ package com.capysoft.tuevento.modules.event.infrastructure.translation;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
+import com.capysoft.tuevento.modules.language.domain.model.EventTranslation;
+import com.capysoft.tuevento.modules.language.domain.repository.EventTranslationRepository;
+import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 /**
  * Handler para traducir contenido de eventos.
- * Implementa la interfaz para el sistema de traducción.
+ * Implementa la interfaz para el sistema de traducción usando tabla event_translation.
  */
 @Component
 @RequiredArgsConstructor
@@ -23,6 +27,8 @@ import java.util.Optional;
 public class EventTranslatableContentHandler implements TranslatableContentHandler {
 
     private final EventRepository eventRepository;
+    private final EventTranslationRepository eventTranslationRepository;
+    private final LanguageRepository languageRepository;
 
     @Override
     public String entityType() {
@@ -60,22 +66,44 @@ public class EventTranslatableContentHandler implements TranslatableContentHandl
                                TranslationSource source, TranslationStatus status) {
         log.debug("Saving translation for event {} in language {}: {}", entityId, languageCode, translatedTexts);
         
-        Event event = eventRepository.findById(entityId)
-                .orElse(null);
-        
-        if (event == null) {
-            log.warn("Event {} not found for saving translation", entityId);
+        // 1. Buscar el idioma por código
+        var language = languageRepository.findByCode(languageCode);
+        if (language.isEmpty()) {
+            log.warn("Language {} not found for saving translation", languageCode);
             return;
         }
         
-        // TODO: For now, apply directly to source entity. 
-        // Later: implement proper translation storage with language versions
+        Long languageId = language.get().getLanguageId();
+        
+        // 2. Buscar traducción existente o crear nueva
+        Optional<EventTranslation> existingTranslation = 
+                eventTranslationRepository.findByEventAndLanguage(entityId, languageId);
+        
+        EventTranslation translation;
+        if (existingTranslation.isPresent()) {
+            // Actualizar traducción existente
+            translation = existingTranslation.get();
+            log.debug("Updating existing translation {} for event {}/{}", 
+                     translation.getTranslationId(), entityId, languageCode);
+        } else {
+            // Crear nueva traducción
+            translation = EventTranslation.builder()
+                    .eventId(entityId)
+                    .languageId(languageId)
+                    .source(source)
+                    .status(status)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            log.debug("Creating new translation for event {}/{}", entityId, languageCode);
+        }
+        
+        // 3. Actualizar contenido traducido
         boolean updated = false;
         
         if (translatedTexts.containsKey("event_name")) {
             String translatedName = translatedTexts.get("event_name");
             if (translatedName != null && !translatedName.trim().isEmpty()) {
-                event.setEventName(translatedName);
+                translation.setTranslatedName(translatedName);
                 updated = true;
             }
         }
@@ -83,14 +111,19 @@ public class EventTranslatableContentHandler implements TranslatableContentHandl
         if (translatedTexts.containsKey("description")) {
             String translatedDescription = translatedTexts.get("description");
             if (translatedDescription != null && !translatedDescription.trim().isEmpty()) {
-                event.setDescription(translatedDescription);
+                translation.setTranslatedDescription(translatedDescription);
                 updated = true;
             }
         }
         
         if (updated) {
-            eventRepository.save(event);
-            log.info("Applied translation for event {} in language {}", entityId, languageCode);
+            translation.setSource(source);
+            translation.setStatus(status);
+            translation.setUpdatedAt(LocalDateTime.now());
+            
+            EventTranslation savedTranslation = eventTranslationRepository.save(translation);
+            log.info("Saved translation {} for event {} in language {}", 
+                    savedTranslation.getTranslationId(), entityId, languageCode);
         } else {
             log.debug("No translations applied to event {}", entityId);
         }
@@ -98,9 +131,15 @@ public class EventTranslatableContentHandler implements TranslatableContentHandl
 
     @Override
     public Optional<TranslationStatus> findTranslationStatus(Long entityId, String languageCode) {
-        // TODO: Implement proper translation status lookup
-        // For now, always return empty - translations will be created
-        log.debug("Finding translation status for event {} in language {} (not implemented)", entityId, languageCode);
-        return Optional.empty();
+        log.debug("Finding translation status for event {} in language {}", entityId, languageCode);
+        
+        var language = languageRepository.findByCode(languageCode);
+        if (language.isEmpty()) {
+            return Optional.empty();
+        }
+        
+        return eventTranslationRepository
+                .findByEventAndLanguage(entityId, language.get().getLanguageId())
+                .map(EventTranslation::getStatus);
     }
 }

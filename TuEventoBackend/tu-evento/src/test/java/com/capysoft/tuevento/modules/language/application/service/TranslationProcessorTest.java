@@ -74,7 +74,7 @@ class TranslationProcessorTest {
         when(languageRepository.findById(1L)).thenReturn(Optional.of(sourceLanguage));
         when(languageRepository.findById(2L)).thenReturn(Optional.of(targetLanguage));
         when(contentHandler.findTranslationStatus(100L, "en"))
-                .thenReturn(Optional.of(TranslationStatus.REVIEWED));
+                .thenReturn(Optional.of(TranslationStatus.PUBLISHED));
 
         // When
         translationProcessor.processTranslationJobs("event", 100L);

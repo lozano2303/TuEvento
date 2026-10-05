@@ -1,0 +1,177 @@
+databaseChangeLog:
+  - changeSet:
+      id: 088-create-translation-tables
+      author: system
+      changes:
+        # Event translations
+        - createTable:
+            tableName: event_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: event_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_event_translation_event
+                    references: event(event_id)
+              - column:
+                  name: language_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_event_translation_language
+                    references: language(language_id)
+              - column:
+                  name: translated_name
+                  type: VARCHAR(100)
+              - column:
+                  name: translated_description
+                  type: VARCHAR(255)
+              - column:
+                  name: source
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: "DRAFT"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(255)
+                  defaultValue: "system"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_by
+                  type: VARCHAR(255)
+                  defaultValue: "system"
+                  constraints:
+                    nullable: false
+
+        # Category translations
+        - createTable:
+            tableName: category_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: category_id
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_category_translation_category
+                    references: category(category_id)
+              - column:
+                  name: language_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_category_translation_language
+                    references: language(language_id)
+              - column:
+                  name: translated_name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_description
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: "DRAFT"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(255)
+                  defaultValue: "system"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_by
+                  type: VARCHAR(255)
+                  defaultValue: "system"
+                  constraints:
+                    nullable: false
+
+        # Unique constraints
+        - addUniqueConstraint:
+            tableName: event_translation
+            columnNames: event_id, language_id
+            constraintName: uk_event_translation_entity_language
+
+        - addUniqueConstraint:
+            tableName: category_translation
+            columnNames: category_id, language_id
+            constraintName: uk_category_translation_entity_language
+
+        # Check constraints for status
+        - sql:
+            sql: "ALTER TABLE event_translation ADD CONSTRAINT ck_event_translation_status CHECK (status IN ('DRAFT', 'PUBLISHED', 'PENDING_REVIEW'))"
+
+        - sql:
+            sql: "ALTER TABLE category_translation ADD CONSTRAINT ck_category_translation_status CHECK (status IN ('DRAFT', 'PUBLISHED', 'PENDING_REVIEW'))"
+
+        # Indexes for better performance
+        - createIndex:
+            tableName: event_translation
+            indexName: idx_event_translation_event_language
+            columns:
+              - column:
+                  name: event_id
+              - column:
+                  name: language_id
+
+        - createIndex:
+            tableName: category_translation
+            indexName: idx_category_translation_category_language
+            columns:
+              - column:
+                  name: category_id
+              - column:
+                  name: language_id

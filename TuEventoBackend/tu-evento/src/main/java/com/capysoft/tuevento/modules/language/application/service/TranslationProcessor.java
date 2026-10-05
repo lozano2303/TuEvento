@@ -101,8 +101,8 @@ public class TranslationProcessor {
             Optional<TranslationStatus> existingStatus = handler.findTranslationStatus(
                     job.getEntityId(), targetLanguage.get().getCode());
                     
-            if (existingStatus.isPresent() && existingStatus.get() == TranslationStatus.REVIEWED) {
-                log.info("Skipping translation save - content is REVIEWED: {}/{}/{}", 
+            if (existingStatus.isPresent() && existingStatus.get() == TranslationStatus.PUBLISHED) {
+                log.info("Skipping translation save - content is PUBLISHED: {}/{}/{}", 
                     job.getEntityType(), job.getEntityId(), targetLanguage.get().getCode());
                 job.markCompleted();
                 translationJobRepository.save(job);
@@ -143,7 +143,7 @@ public class TranslationProcessor {
 
             // 6. Guardar traducción
             handler.saveTranslation(job.getEntityId(), targetLanguage.get().getCode(), 
-                    translatedTexts, TranslationSource.MACHINE, TranslationStatus.AUTOMATIC);
+                    translatedTexts, TranslationSource.MACHINE, TranslationStatus.DRAFT);
             
             // 7. Marcar job como completado
             job.markCompleted();

@@ -3,19 +3,23 @@ package com.capysoft.tuevento.modules.category.infrastructure.translation;
 import com.capysoft.tuevento.modules.category.domain.model.Category;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryRepository;
 import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
+import com.capysoft.tuevento.modules.language.domain.model.CategoryTranslation;
+import com.capysoft.tuevento.modules.language.domain.repository.CategoryTranslationRepository;
+import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 /**
  * Handler para traducir contenido de categorías.
- * Implementa la interfaz para el sistema de traducción.
+ * Implementa la interfaz para el sistema de traducción usando tabla category_translation.
  */
 @Component
 @RequiredArgsConstructor
@@ -23,6 +27,8 @@ import java.util.Optional;
 public class CategoryTranslatableContentHandler implements TranslatableContentHandler {
 
     private final CategoryRepository categoryRepository;
+    private final CategoryTranslationRepository categoryTranslationRepository;
+    private final LanguageRepository languageRepository;
 
     @Override
     public String entityType() {
@@ -62,24 +68,45 @@ public class CategoryTranslatableContentHandler implements TranslatableContentHa
                                TranslationSource source, TranslationStatus status) {
         log.debug("Saving translation for category {} in language {}: {}", entityId, languageCode, translatedTexts);
         
-        // Convert Long to Integer for category ID
-        Integer categoryIdInt = Math.toIntExact(entityId);
-        Category category = categoryRepository.findById(categoryIdInt)
-                .orElse(null);
-        
-        if (category == null) {
-            log.warn("Category {} not found for saving translation", entityId);
+        // 1. Buscar el idioma por código
+        var language = languageRepository.findByCode(languageCode);
+        if (language.isEmpty()) {
+            log.warn("Language {} not found for saving translation", languageCode);
             return;
         }
         
-        // TODO: For now, apply directly to source entity.
-        // Later: implement proper translation storage with language versions
+        Long languageId = language.get().getLanguageId();
+        Integer categoryIdInt = Math.toIntExact(entityId);
+        
+        // 2. Buscar traducción existente o crear nueva
+        Optional<CategoryTranslation> existingTranslation = 
+                categoryTranslationRepository.findByCategoryAndLanguage(categoryIdInt, languageId);
+        
+        CategoryTranslation translation;
+        if (existingTranslation.isPresent()) {
+            // Actualizar traducción existente
+            translation = existingTranslation.get();
+            log.debug("Updating existing translation {} for category {}/{}", 
+                     translation.getTranslationId(), entityId, languageCode);
+        } else {
+            // Crear nueva traducción
+            translation = CategoryTranslation.builder()
+                    .categoryId(categoryIdInt)
+                    .languageId(languageId)
+                    .source(source)
+                    .status(status)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            log.debug("Creating new translation for category {}/{}", entityId, languageCode);
+        }
+        
+        // 3. Actualizar contenido traducido
         boolean updated = false;
         
         if (translatedTexts.containsKey("name")) {
             String translatedName = translatedTexts.get("name");
             if (translatedName != null && !translatedName.trim().isEmpty()) {
-                category.setName(translatedName);
+                translation.setTranslatedName(translatedName);
                 updated = true;
             }
         }
@@ -87,14 +114,19 @@ public class CategoryTranslatableContentHandler implements TranslatableContentHa
         if (translatedTexts.containsKey("description")) {
             String translatedDescription = translatedTexts.get("description");
             if (translatedDescription != null && !translatedDescription.trim().isEmpty()) {
-                category.setDescription(translatedDescription);
+                translation.setTranslatedDescription(translatedDescription);
                 updated = true;
             }
         }
         
         if (updated) {
-            categoryRepository.save(category);
-            log.info("Applied translation for category {} in language {}", entityId, languageCode);
+            translation.setSource(source);
+            translation.setStatus(status);
+            translation.setUpdatedAt(LocalDateTime.now());
+            
+            CategoryTranslation savedTranslation = categoryTranslationRepository.save(translation);
+            log.info("Saved translation {} for category {} in language {}", 
+                    savedTranslation.getTranslationId(), entityId, languageCode);
         } else {
             log.debug("No translations applied to category {}", entityId);
         }
@@ -102,9 +134,16 @@ public class CategoryTranslatableContentHandler implements TranslatableContentHa
 
     @Override
     public Optional<TranslationStatus> findTranslationStatus(Long entityId, String languageCode) {
-        // TODO: Implement proper translation status lookup
-        // For now, always return empty - translations will be created
-        log.debug("Finding translation status for category {} in language {} (not implemented)", entityId, languageCode);
-        return Optional.empty();
+        log.debug("Finding translation status for category {} in language {}", entityId, languageCode);
+        
+        var language = languageRepository.findByCode(languageCode);
+        if (language.isEmpty()) {
+            return Optional.empty();
+        }
+        
+        Integer categoryIdInt = Math.toIntExact(entityId);
+        return categoryTranslationRepository
+                .findByCategoryAndLanguage(categoryIdInt, language.get().getLanguageId())
+                .map(CategoryTranslation::getStatus);
     }
 }
