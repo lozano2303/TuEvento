@@ -89,7 +89,7 @@ public class AdminController {
     // Event-management endpoints
     // ═════════════════════════════════════════════════════════════════════════
 
-    @Operation(summary = "List all events (all statuses). Pass ?status=DRAFT|PUBLISHED|CANCELLED|COMPLETED to filter.")
+    @Operation(summary = "List all events (all statuses). Pass ?status=DRAFT|PENDING_REVIEW|PUBLISHED|REJECTED|CANCELLED|COMPLETED to filter.")
     @GetMapping("/events")
     public ResponseEntity<ApiResponse<List<AdminEventSummaryResponse>>> getEvents(
             @RequestParam(required = false) EventStatus status) {

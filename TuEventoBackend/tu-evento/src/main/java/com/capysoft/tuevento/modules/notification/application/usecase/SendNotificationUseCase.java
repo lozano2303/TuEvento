@@ -75,7 +75,10 @@ public class SendNotificationUseCase {
                 continue;
             }
 
-            String idempotencyKey = command.getTypeName() + ":" + command.getEntityId() + ":" + channel.getName();
+            String idempotencyKey = command.getIdempotencySuffix() != null
+                    ? command.getTypeName() + ":" + command.getEntityId() + ":" + channel.getName()
+                      + ":" + command.getIdempotencySuffix()
+                    : command.getTypeName() + ":" + command.getEntityId() + ":" + channel.getName();
             if (notificationRepository.existsByIdempotencyKey(idempotencyKey)) {
                 log.info("Notification already sent, skipping duplicate idempotencyKey={}", idempotencyKey);
                 continue;

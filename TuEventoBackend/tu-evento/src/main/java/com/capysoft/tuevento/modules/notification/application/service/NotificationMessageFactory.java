@@ -20,8 +20,10 @@ public final class NotificationMessageFactory {
         return switch (typeName) {
             case NotificationTypeNames.PAYMENT_APPROVED -> paymentApproved(email, command);
             case NotificationTypeNames.PAYMENT_REFUNDED -> paymentRefunded(email, command);
-            case NotificationTypeNames.WALLET_CREDITED -> walletCredited(email, command);
-            case NotificationTypeNames.WELCOME -> welcome(email, command);
+            case NotificationTypeNames.WALLET_CREDITED  -> walletCredited(email, command);
+            case NotificationTypeNames.WELCOME          -> welcome(email, command);
+            case NotificationTypeNames.EVENT_PUBLISHED  -> eventPublished(email, command);
+            case NotificationTypeNames.EVENT_REJECTED   -> eventRejected(email, command);
             default -> new MessageContent(
                     "Notificación",
                     email ? html("Tienes una nueva notificación en TuEvento.") : "Tienes una nueva notificación.");
@@ -80,6 +82,46 @@ public final class NotificationMessageFactory {
                 "Explora eventos y compra tickets. Solicita ser organizador con tu documentación para crear tus propios eventos.");
     }
 
+    // ── Event review notifications ────────────────────────────────────────────
+
+    private static MessageContent eventPublished(boolean email, SendNotificationCommand command) {
+        String name = escapeHtml(command.getEventName() != null ? command.getEventName() : "tu evento");
+        if (email) {
+            return new MessageContent(
+                    "TuEvento — Tu evento fue publicado",
+                    html(
+                        "¡Buenas noticias! El administrador aprobó tu evento <strong>" + name + "</strong>.",
+                        "Ya está visible para todos los usuarios en la plataforma.",
+                        "Puedes verlo y gestionarlo desde <em>Mis eventos</em>."
+                    ));
+        }
+        return new MessageContent(
+                "Evento publicado",
+                "¡Tu evento \"" + command.getEventName() + "\" fue aprobado y ya está visible para todos!");
+    }
+
+    private static MessageContent eventRejected(boolean email, SendNotificationCommand command) {
+        String name   = escapeHtml(command.getEventName() != null ? command.getEventName() : "tu evento");
+        String reason = escapeHtml(command.getReason() != null && !command.getReason().isBlank()
+                ? command.getReason()
+                : "El administrador no dejó un motivo detallado.");
+        if (email) {
+            return new MessageContent(
+                    "TuEvento — Tu evento fue rechazado",
+                    html(
+                        "Tu evento <strong>" + name + "</strong> no fue aprobado.",
+                        "Motivo indicado por el administrador: " + reason,
+                        "Puedes corregirlo y volver a enviarlo a revisión desde <em>Mis eventos</em>."
+                    ));
+        }
+        // Plain-text body for IN_APP — strip any residual markdown/HTML from reason
+        String plainReason = command.getReason() != null ? command.getReason() : "Sin motivo especificado.";
+        return new MessageContent(
+                "Evento rechazado",
+                "Tu evento \"" + command.getEventName() + "\" fue rechazado. Motivo: " + plainReason
+                + " Corrígelo desde Mis eventos.");
+    }
+
     private static String paymentBreakdown(SendNotificationCommand command) {
         BigDecimal wallet = zeroIfNull(command.getWalletAmount());
         BigDecimal gateway = zeroIfNull(command.getGatewayAmount());
@@ -119,6 +161,21 @@ public final class NotificationMessageFactory {
         }
         sb.append("<p>TuEvento</p></body></html>");
         return sb.toString();
+    }
+
+    /**
+     * Escapes the five XML/HTML special characters so that user-supplied text
+     * (e.g. an admin-written rejection reason) cannot inject markup into the
+     * HTML email body.
+     */
+    static String escapeHtml(String input) {
+        if (input == null) return "";
+        return input
+                .replace("&",  "&amp;")
+                .replace("<",  "&lt;")
+                .replace(">",  "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'",  "&#39;");
     }
 
     public record MessageContent(String subject, String body) {
