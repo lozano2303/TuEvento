@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: 086-seed-event-notification-types
+      author: capysoft
+      comment: >
+        Seeds two notification types for the event review flow:
+        EVENT_PUBLISHED — sent to the organizer when an admin approves their event.
+        EVENT_REJECTED  — sent to the organizer when an admin rejects their event,
+                          including the rejection reason.
+      changes:
+        - insert:
+            tableName: notification_type
+            columns:
+              - column:
+                  name: name
+                  value: EVENT_PUBLISHED
+              - column:
+                  name: description
+                  value: Evento aprobado y publicado por el administrador
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()
+        - insert:
+            tableName: notification_type
+            columns:
+              - column:
+                  name: name
+                  value: EVENT_REJECTED
+              - column:
+                  name: description
+                  value: Evento rechazado por el administrador (incluye motivo)
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()

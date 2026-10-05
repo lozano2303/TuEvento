@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added — feat(notifications): event review notifications
+
+- **Migración 086** (`086-seed-event-notification-types.yaml`): inserta los tipos `EVENT_PUBLISHED` y `EVENT_REJECTED` en la tabla `notification_type`.
+- **`EventStatusChangedEvent`** enriquecido con tres nuevos campos: `organizerId` (userId del dueño del evento), `eventName` (título legible) y `reason` (motivo de rechazo, solo cuando `newStatus = REJECTED`). Los publishers `ChangeEventStatusService` y `AdminChangeEventStatusUseCase` los pueblan; el scheduler no los necesita.
+- **`NotificationTypeNames`**: constantes `EVENT_PUBLISHED` y `EVENT_REJECTED`.
+- **`NotificationEntityTypes`**: constante `EVENT`.
+- **`SendNotificationCommand`**: campo `idempotencySuffix` (sufijo opcional para la clave de idempotencia `typeName:entityId:channelName[:suffix]`) y campo `eventName`. Retrocompatible con los tipos de pago (sufijo nulo).
+- **`SendNotificationUseCase`**: clave de idempotencia ampliada con el sufijo cuando está presente.
+- **`NotificationMessageFactory`**: casos `EVENT_PUBLISHED` y `EVENT_REJECTED` para canales IN_APP y EMAIL. El cuerpo de email aplica `escapeHtml()` sobre `eventName` y `reason` antes de insertarlos en HTML.
+- **`EventStatusChangedListener`** (nuevo): `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` + `@Transactional(REQUIRES_NEW)`. Filtra a `oldStatus = PENDING_REVIEW` y `newStatus ∈ {PUBLISHED, REJECTED}`. Usa `occurredAt` como sufijo de idempotencia para soportar múltiples ciclos de rechazo del mismo evento.
+- **`AdminController`**: `@Operation` del listado de eventos por estado actualizado para incluir `PENDING_REVIEW` y `REJECTED`.
+- **`Notifications.jsx`** (frontend): íconos `EVENT_PUBLISHED` (`PartyPopper`, `text-success`) y `EVENT_REJECTED` (`Ban`, `text-error`) en `NOTIFICATION_ICONS`.
+- **Tests**: `EventStatusChangedListenerTest` (4 casos), `NotificationMessageFactoryTest` (4 casos), `SendNotificationUseCaseIdempotencyTest` (2 casos).
+
 ### Added — feat(language)
 
 - **Language Module — Domain (DDD puro)**: `Language` (aggregate root con `code` UNIQUE normalizado trim+lowercase, `name`, `isActive`, `isDefault` con bloqueo mutuo), validaciones en dominio (`deactivate()` bloquea idioma por defecto), eventos `LanguageActivatedEvent`/`LanguageDeactivatedEvent`/`DefaultLanguageChangedEvent` con IDs primitivos.
@@ -1066,7 +1080,7 @@ All notable changes to this project will be documented in this file.
 ### feat(event): event module
 #### Added
 - Liquibase changesets 039–045: tablas `event`, `event_status_log`, `event_layout`, `event_media`, `event_media_log`, `event_rating`, `event_comment_reply` con FKs, constraints UNIQUE y CHECK via `sql` raw (compatible con Liquibase OSS)
-- Domain layer: modelos puros (`Event`, `EventStatus`, `EventStatusLog`, `EventLayout`, `EventMedia`, `EventMediaLog`, `EventRating`, `EventCommentReply`), interfaces de repositorio sin dependencias de Spring, eventos de dominio inmutables (`EventCreatedEvent`, `EventStatusChangedEvent`, `EventCancelledEvent`, `EventRatingAddedEvent`, `EventMediaUploadedEvent`)
+- Domain layer: modelos puros (`Event`, `EventStatus`, `EventStatusLog`, `EventLayout`, `EventMedia`, `EventMediaLog`, `EventRating`, `EventCommentReply`), interfaces de repositorio sin dependencias de Spring, eventos de dominio inmutables (`EventCreatedEvent`, `EventStatusChangedEvent` [campos: `eventId`, `oldStatus`, `newStatus`, `changedBy`, `occurredAt`, `organizerId`, `eventName`, `reason`], `EventCancelledEvent`, `EventRatingAddedEvent`, `EventMediaUploadedEvent`)
 - Infrastructure layer: entidades JPA (`EventEntity` extiende `JpaAuditingEntity`, más 6 entidades sin auditoría), `JpaRepository` por entidad, mappers MapStruct, implementaciones `RepositoryImpl`; `EventMediaLogJpaRepository` incluye `@Query` para `findNextVersionByEventId`
 - Application layer: 9 ports in (`CreateEventUseCase`, `UpdateEventUseCase`, `ChangeEventStatusUseCase`, `GetEventUseCase`, `DeleteEventUseCase`, `AddEventRatingUseCase`, `AddCommentReplyUseCase`, `UploadEventMediaUseCase`, `GetEventLayoutUseCase`, `SaveEventLayoutUseCase`), 9 use cases con validaciones de negocio (ownership, transiciones de estado `DRAFT→PUBLISHED→CANCELLED/COMPLETED`, unicidad, rating único por usuario, validación de layout antes de publicar)
 - REST controllers: `EventController` (`/api/v1/events`), `EventRatingController` (`/api/v1/events/{eventId}/ratings`), `EventCommentController` (`/api/v1/ratings/{ratingId}/replies`), `EventMediaController` (`/api/v1/events/{eventId}/media`), `EventLayoutController` (`/api/v1/events/{eventId}/layout` — GET público + PUT `ORGANIZER`)

@@ -151,6 +151,9 @@ public class AdminChangeEventStatusUseCase implements AdminChangeEventStatusPort
                 .newStatus(request.getNewStatus().name())
                 .changedBy(adminUserId)
                 .occurredAt(now)
+                .organizerId(event.getUserId())
+                .eventName(event.getEventName())
+                .reason(request.getNewStatus() == EventStatus.REJECTED ? request.getReason() : null)
                 .build());
 
         return EventStatusLogResponse.builder()
