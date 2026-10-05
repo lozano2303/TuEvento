@@ -49,6 +49,7 @@ export default function EventDetail() {
   const [commentRating, setCommentRating] = useState(5);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentError, setCommentError] = useState(null);
+  const [hoverRating, setHoverRating] = useState(0);
 
   // Ref con los ratingIds ya presentes para evitar duplicados al recibir WS
   const commentIdsRef = useRef(new Set());
@@ -310,12 +311,13 @@ export default function EventDetail() {
       setComments((prev) => [saved, ...prev]);
       setCommentText('');
       setCommentRating(5);
+      setHoverRating(0);
     } catch (err) {
       const msg = err.message || '';
       if (msg.includes('SESSION_EXPIRED') || msg.includes('401')) {
-        setCommentError('Tu sesión expiró. Iniciá sesión de nuevo para comentar.');
+        setCommentError('Tu sesión expiró. Inicia sesión de nuevo para comentar.');
       } else if (msg.includes('403') || msg.includes('Access denied') || msg.includes('Forbidden')) {
-        setCommentError('No tenés permiso para comentar en este evento.');
+        setCommentError('No tienes permiso para comentar en este evento.');
       } else {
         setCommentError(msg || 'No se pudo publicar el comentario.');
       }
@@ -537,22 +539,27 @@ export default function EventDetail() {
             >
               {/* Selector de estrellas */}
               <div className="flex items-center gap-1 mb-3" role="group" aria-label="Calificación">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    onClick={() => setCommentRating(star)}
-                    aria-label={`${star} estrella${star > 1 ? 's' : ''}`}
-                    aria-pressed={star <= commentRating}
-                    className="transition-colors"
-                  >
-                    <Star
-                      className="w-5 h-5"
-                      style={{ color: star <= commentRating ? '#f59e0b' : 'rgba(196,181,253,0.3)' }}
-                      fill={star <= commentRating ? '#f59e0b' : 'none'}
-                    />
-                  </button>
-                ))}
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const active = star <= (hoverRating || commentRating);
+                  return (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setCommentRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      aria-label={`${star} estrella${star > 1 ? 's' : ''}`}
+                      aria-pressed={star <= commentRating}
+                      className="transition-colors cursor-pointer"
+                    >
+                      <Star
+                        className="w-5 h-5 pointer-events-none"
+                        style={{ color: active ? '#f59e0b' : 'rgba(196,181,253,0.3)' }}
+                        fill={active ? '#f59e0b' : 'none'}
+                      />
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Textarea */}
@@ -560,7 +567,7 @@ export default function EventDetail() {
                 <textarea
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Escribí tu comentario sobre el evento…"
+                  placeholder="Escribe tu comentario sobre el evento…"
                   maxLength={500}
                   rows={3}
                   className="flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
