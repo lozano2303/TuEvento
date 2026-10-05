@@ -141,6 +141,9 @@ public class ChangeEventStatusService implements ChangeEventStatusUseCase {
                 .newStatus(request.getNewStatus().name())
                 .changedBy(userId)
                 .occurredAt(now)
+                .organizerId(event.getUserId())
+                .eventName(event.getEventName())
+                .reason(null) // organizer transitions never carry a rejection reason
                 .build());
 
         return EventStatusLogResponse.builder()

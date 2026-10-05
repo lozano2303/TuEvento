@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, DollarSign, Wallet, Info, AlertCircle, RefreshCw, Gift } from 'lucide-react';
+import { CheckCircle2, DollarSign, Wallet, Info, AlertCircle, RefreshCw, Gift, PartyPopper, Ban } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useNotifications } from '../context/NotificationContext';
@@ -9,11 +9,14 @@ import NotificationDetailModal from '../components/common/NotificationDetailModa
  * Iconos según el tipo de notificación
  */
 const NOTIFICATION_ICONS = {
-  PAYMENT_APPROVED: { Icon: CheckCircle2, color: 'text-success' },
-  PAYMENT_REFUNDED: { Icon: RefreshCw, color: 'text-warning' },
-  WALLET_CREDITED: { Icon: Wallet, color: 'text-info' },
-  WELCOME: { Icon: Gift, color: 'text-accent' },
-  DEFAULT: { Icon: Info, color: 'text-accent' },
+  PAYMENT_APPROVED: { Icon: CheckCircle2,  color: 'text-success'  },
+  PAYMENT_REFUNDED: { Icon: RefreshCw,     color: 'text-warning'  },
+  WALLET_CREDITED:  { Icon: Wallet,        color: 'text-info'     },
+  WELCOME:          { Icon: Gift,          color: 'text-accent'   },
+  // Event review flow (Phase 4)
+  EVENT_PUBLISHED:  { Icon: PartyPopper,   color: 'text-success'  },
+  EVENT_REJECTED:   { Icon: Ban,           color: 'text-error'    },
+  DEFAULT:          { Icon: Info,          color: 'text-accent'   },
 };
 
 function getNotificationIcon(notificationType) {
