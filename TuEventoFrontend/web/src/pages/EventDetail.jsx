@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send } from 'lucide-react';
 import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
 import Konva from 'konva';
 import { getEventById } from '../services/EventService';
@@ -8,6 +8,7 @@ import { getEventMedia } from '../services/EventMediaService';
 import * as LayoutService from '../services/LayoutService';
 import * as SeatService from '../services/SeatService';
 import * as EventSectionService from '../services/EventSectionService';
+import { getEventComments, addEventComment } from '../services/EventCommentService';
 import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
 import Toast from '../components/Toast';
@@ -40,6 +41,17 @@ export default function EventDetail() {
   
   // P4: ref que siempre apunta al seats más reciente sin necesitar estar en deps de useCallback
   const seatsRef = useRef({});
+
+  // ── Estado de comentarios ──────────────────────────────────────────────────
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [commentRating, setCommentRating] = useState(5);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentError, setCommentError] = useState(null);
+
+  // Ref con los ratingIds ya presentes para evitar duplicados al recibir WS
+  const commentIdsRef = useRef(new Set());
 
   useEffect(() => {
     const userId = localStorage.getItem('userID');
@@ -86,6 +98,49 @@ export default function EventDetail() {
   useEffect(() => {
     seatsRef.current = seats;
   }, [seats]);
+
+  // ── Carga inicial de comentarios por REST ──────────────────────────────────
+  useEffect(() => {
+    if (!eventId || isLoading) return;
+
+    setCommentsLoading(true);
+    getEventComments(eventId)
+      .then((res) => {
+        const list = res.data ?? [];
+        // Filtrar solo visibles (cortesía defensiva; el backend ya filtra)
+        const visible = list.filter((c) => c.isVisible !== false);
+        setComments(visible);
+        commentIdsRef.current = new Set(visible.map((c) => c.ratingId));
+      })
+      .catch((err) => console.error('[EventDetail] Error cargando comentarios:', err.message))
+      .finally(() => setCommentsLoading(false));
+  }, [eventId, isLoading]);
+
+  // ── Suscripción WebSocket a nuevos comentarios ─────────────────────────────
+  useEffect(() => {
+    if (!eventId || isLoading) return;
+
+    const destination = `/topic/events/${eventId}/comments`;
+    const key = `comments-event-${eventId}`;
+
+    const unsubscribe = subscribe(
+      destination,
+      (incoming) => {
+        // Solo comentarios visibles
+        if (incoming.isVisible === false) return;
+        // Evitar duplicado: si ya está (por el POST propio), no agregar de nuevo
+        if (commentIdsRef.current.has(incoming.ratingId)) return;
+
+        commentIdsRef.current.add(incoming.ratingId);
+        setComments((prev) => [incoming, ...prev]);
+      },
+      key
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [eventId, isLoading, subscribe]);
 
   // WebSocket: Suscripción dinámica a actualizaciones de sillas del evento
   useEffect(() => {
@@ -236,6 +291,31 @@ export default function EventDetail() {
       };
     });
   }, [showToast]);
+
+  // ── Envío de comentario ────────────────────────────────────────────────────
+  const handleCommentSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+
+    const trimmed = commentText.trim();
+    setCommentSubmitting(true);
+    setCommentError(null);
+
+    try {
+      const res = await addEventComment(eventId, { rating: commentRating, comment: trimmed });
+      const saved = res.data;
+
+      // Agregar localmente de inmediato y registrar el ratingId para filtrar el WS
+      commentIdsRef.current.add(saved.ratingId);
+      setComments((prev) => [saved, ...prev]);
+      setCommentText('');
+      setCommentRating(5);
+    } catch (err) {
+      setCommentError(err.message || 'No se pudo publicar el comentario');
+    } finally {
+      setCommentSubmitting(false);
+    }
+  }, [eventId, commentText, commentRating]);
 
   const prev = () => setActiveImage((i) => (i - 1 + media.length) % media.length);
   const next = () => setActiveImage((i) => (i + 1) % media.length);
@@ -426,8 +506,141 @@ export default function EventDetail() {
             eventTitle={event?.title ?? event?.name ?? ''}
           />
         )}
+
+        {/* ── Comentarios ───────────────────────────────────────────────── */}
+        <section
+          aria-label="Comentarios del evento"
+          className="mt-12"
+          style={{ borderTop: '1px solid rgba(167,139,250,0.15)', paddingTop: '2rem' }}
+        >
+          <h2 className="text-lg font-semibold mb-6" style={{ color: '#e9d5ff' }}>
+            Comentarios {comments.length > 0 && (
+              <span className="text-sm font-normal ml-2" style={{ color: 'rgba(196,181,253,0.5)' }}>
+                ({comments.length})
+              </span>
+            )}
+          </h2>
+
+          {/* Formulario — solo si está autenticado */}
+          {localStorage.getItem('token') && (
+            <form
+              onSubmit={handleCommentSubmit}
+              className="mb-8 p-4 rounded-xl"
+              style={{ background: 'rgba(109,40,217,0.1)', border: '1px solid rgba(167,139,250,0.15)' }}
+            >
+              {/* Selector de estrellas */}
+              <div className="flex items-center gap-1 mb-3" role="group" aria-label="Calificación">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setCommentRating(star)}
+                    aria-label={`${star} estrella${star > 1 ? 's' : ''}`}
+                    aria-pressed={star <= commentRating}
+                    className="transition-colors"
+                  >
+                    <Star
+                      className="w-5 h-5"
+                      style={{ color: star <= commentRating ? '#f59e0b' : 'rgba(196,181,253,0.3)' }}
+                      fill={star <= commentRating ? '#f59e0b' : 'none'}
+                    />
+                  </button>
+                ))}
+              </div>
+
+              {/* Textarea */}
+              <div className="flex gap-3 items-start">
+                <textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Escribí tu comentario sobre el evento…"
+                  maxLength={500}
+                  rows={3}
+                  className="flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
+                  style={{
+                    background: 'rgba(15,10,30,0.6)',
+                    border: '1px solid rgba(167,139,250,0.2)',
+                    color: '#e9d5ff',
+                  }}
+                  aria-label="Texto del comentario"
+                />
+                <button
+                  type="submit"
+                  disabled={commentSubmitting || !commentText.trim()}
+                  aria-label="Publicar comentario"
+                  className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-40"
+                  style={{ background: 'rgba(109,40,217,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
+                >
+                  <Send className="w-4 h-4" style={{ color: '#e9d5ff' }} />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>
+                  {commentText.length}/500
+                </span>
+                {commentError && (
+                  <span role="alert" className="text-xs text-red-400">{commentError}</span>
+                )}
+              </div>
+            </form>
+          )}
+
+          {/* Lista de comentarios */}
+          {commentsLoading ? (
+            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>
+              Cargando comentarios…
+            </p>
+          ) : comments.length === 0 ? (
+            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>
+              Todavía no hay comentarios. ¡Sé el primero!
+            </p>
+          ) : (
+            <ul className="space-y-4" aria-label="Lista de comentarios">
+              {comments.map((c) => (
+                <li
+                  key={c.ratingId}
+                  className="p-4 rounded-xl"
+                  style={{ background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(167,139,250,0.12)' }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium" style={{ color: '#c4b5fd' }}>
+                      {c.authorName || 'Usuario'}
+                    </span>
+                    <div className="flex items-center gap-1" aria-label={`${c.rating} de 5 estrellas`}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className="w-3.5 h-3.5"
+                          style={{ color: star <= c.rating ? '#f59e0b' : 'rgba(196,181,253,0.2)' }}
+                          fill={star <= c.rating ? '#f59e0b' : 'none'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>
+                    {c.comment}
+                  </p>
+                  {c.createdAt && (
+                    <time
+                      dateTime={c.createdAt}
+                      className="text-xs mt-1 block"
+                      style={{ color: 'rgba(196,181,253,0.35)' }}
+                    >
+                      {new Date(c.createdAt).toLocaleDateString('es-AR', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit',
+                      })}
+                    </time>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
       </div>
-      
+
       {/* Toast de alertas */}
       <Toast toast={toast} onHide={hideToast} />
     </div>

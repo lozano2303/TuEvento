@@ -11,6 +11,7 @@ public class EventRatingResponse {
 
     private final Long ratingId;
     private final Long userId;
+    private final String authorName;
     private final int rating;
     private final String comment;
     private final Boolean isVisible;

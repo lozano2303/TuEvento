@@ -14,5 +14,7 @@ public class EventRatingAddedEvent {
     private Long eventId;
     private Long userId;
     private int rating;
+    private String comment;
+    private Boolean isVisible;
     private LocalDateTime occurredAt;
 }

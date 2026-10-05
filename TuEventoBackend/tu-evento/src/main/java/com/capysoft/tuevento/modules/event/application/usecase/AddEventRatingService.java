@@ -9,6 +9,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventRating;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class AddEventRatingService implements AddEventRatingUseCase {
     private final EventRepository eventRepository;
     private final EventRatingRepository ratingRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ProfileJpaRepository profileJpaRepository;
 
     @Override
     @Transactional
@@ -36,6 +38,11 @@ public class AddEventRatingService implements AddEventRatingUseCase {
         if (event.getStatus() != EventStatus.COMPLETED && event.getStatus() != EventStatus.PUBLISHED) {
             throw new BusinessException("EVENT_RATING_NOT_ALLOWED",
                     "Ratings are only allowed for PUBLISHED or COMPLETED events");
+        }
+
+        if (!Boolean.TRUE.equals(event.getIsPublic())) {
+            throw new BusinessException("EVENT_RATING_NOT_ALLOWED",
+                    "Ratings are not allowed for private events");
         }
 
         if (ratingRepository.existsByEventIdAndUserId(eventId, userId)) {
@@ -52,17 +59,24 @@ public class AddEventRatingService implements AddEventRatingUseCase {
                 .createdAt(LocalDateTime.now())
                 .build());
 
+        String authorName = profileJpaRepository.findByUserId(userId.intValue())
+                .map(p -> p.getFullName())
+                .orElse("Usuario");
+
         eventPublisher.publishEvent(EventRatingAddedEvent.builder()
                 .ratingId(rating.getRatingId())
                 .eventId(eventId)
                 .userId(userId)
                 .rating(rating.getRating())
+                .comment(rating.getComment())
+                .isVisible(rating.getIsVisible())
                 .occurredAt(rating.getCreatedAt())
                 .build());
 
         return EventRatingResponse.builder()
                 .ratingId(rating.getRatingId())
                 .userId(rating.getUserId())
+                .authorName(authorName)
                 .rating(rating.getRating())
                 .comment(rating.getComment())
                 .isVisible(rating.getIsVisible())
