@@ -16,6 +16,7 @@ import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventStatusLogRepository;
 import com.capysoft.tuevento.modules.geolocation.application.dto.response.SiteResponse;
 import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort;
+import com.capysoft.tuevento.modules.language.application.service.TranslationService;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class CreateEventService implements CreateEventUseCase {
     private final CategoryEventUseCase      categoryEventUseCase;
     private final GetSitePort               getSitePort;
     private final EventDateValidator        eventDateValidator;
+    private final TranslationService        translationService;
 
     @Override
     @Transactional
@@ -110,6 +112,15 @@ public class CreateEventService implements CreateEventUseCase {
                 .status(EventStatus.DRAFT.name())
                 .occurredAt(LocalDateTime.now())
                 .build());
+
+        // Request translation to all available languages (async)
+        try {
+            translationService.requestTranslation("event", event.getEventId(), "es");
+            log.debug("Translation requested for new event {}", event.getEventId());
+        } catch (Exception e) {
+            log.warn("Failed to request translation for event {}: {}", event.getEventId(), e.getMessage());
+            // Non-blocking: continue even if translation fails
+        }
 
         return toResponse(event, request.getCategoryId());
     }

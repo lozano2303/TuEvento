@@ -13,6 +13,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.geolocation.application.dto.response.SiteResponse;
 import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort;
+import com.capysoft.tuevento.modules.language.application.service.TranslationService;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class UpdateEventService implements UpdateEventUseCase {
     private final CategoryUseCase      categoryUseCase;
     private final CategoryEventUseCase categoryEventUseCase;
     private final EventDateValidator   eventDateValidator;
+    private final TranslationService   translationService;
 
     @Override
     @Transactional
@@ -115,6 +117,20 @@ public class UpdateEventService implements UpdateEventUseCase {
                 .availableSeats(availableSeats)
                 .rejectionReason(event.getRejectionReason())
                 .build());
+
+        // Request translation if content changed (name or description)
+        boolean contentChanged = !eventName.equals(event.getEventName()) || 
+                                !description.equals(event.getDescription());
+        
+        if (contentChanged) {
+            try {
+                translationService.requestTranslation("event", updated.getEventId(), "es");
+                log.debug("Translation requested for updated event {}", updated.getEventId());
+            } catch (Exception e) {
+                log.warn("Failed to request translation for event {}: {}", updated.getEventId(), e.getMessage());
+                // Non-blocking: continue even if translation fails
+            }
+        }
 
         // FIX 2: Resolve categoryId for response — fail-soft
         Integer resolvedCategoryId = null;
