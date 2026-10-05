@@ -395,12 +395,13 @@ export default function EventDetail() {
       setCommentRating(0);
       setHoverRating(0);
     } catch (err) {
-      const msg = err.message || '';
+      const code = err.code || '';
+      const msg  = err.message || '';
       if (msg.includes('SESSION_EXPIRED') || msg.includes('401')) {
         setCommentError('Tu sesión expiró. Inicia sesión de nuevo para comentar.');
       } else if (msg.includes('403') || msg.includes('Access denied') || msg.includes('Forbidden')) {
         setCommentError('No tienes permiso para comentar en este evento.');
-      } else if (msg.includes('COMMENT_RATE_LIMITED') || msg.includes('Rate') || msg.includes('rate')) {
+      } else if (code === 'COMMENT_RATE_LIMITED' || msg.includes('COMMENT_RATE_LIMITED')) {
         setCommentError('Espera unos segundos antes de volver a comentar.');
       } else {
         setCommentError(msg || 'No se pudo publicar el comentario.');
