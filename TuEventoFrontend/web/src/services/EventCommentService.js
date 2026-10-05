@@ -49,6 +49,12 @@ export const addEventComment = async (eventId, payload) => {
     body: JSON.stringify(payload),
   });
   const body = await res.json();
-  if (!res.ok) throw new Error(body.message || 'Error al publicar el comentario');
+  if (!res.ok) {
+    // Propagar el code del backend (e.g. COMMENT_RATE_LIMITED) junto al mensaje
+    // para que el caller pueda distinguir errores sin depender de substrings del mensaje.
+    const err = new Error(body.message || 'Error al publicar el comentario');
+    err.code = body.code || null;
+    throw err;
+  }
   return body;
 };
