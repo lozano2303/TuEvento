@@ -4,6 +4,62 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added — feat(event-comments-websocket): comentarios de eventos en tiempo real, R1-R5
+
+**Reglas de negocio (R1-R5)**
+
+- **R1** — Cualquier usuario autenticado (sin importar el rol) puede publicar comentarios en eventos públicos PUBLISHED o COMPLETED.
+- **R2** — Múltiples comentarios por persona y evento están permitidos.
+- **R3** — Solo el primer comentario del usuario en el evento que incluya calificación lleva estrellas; los siguientes se guardan con `rating = null`.
+- **R4** — El organizador del evento (el `userId` dueño) siempre guarda `rating = null`, independientemente de lo que envíe.
+- **R5** — Antispam: máximo 1 comentario por persona/evento cada 10 segundos (`COMMENT_RATE_LIMITED`).
+
+**Backend**
+
+- **Migración 087**: `rating` pasa a nullable (`DROP NOT NULL`); `CHECK` actualizado a `rating IS NULL OR rating BETWEEN 1 AND 5`; índice `idx_event_rating_event_created(event_id, created_at DESC)` para GET ordenado y antispam.
+- **`AddEventRatingRequest`**: `rating` deja de ser `@NotNull` (es opcional según R3/R4).
+- **`EventRating` / `EventRatingEntity`**: `rating` cambia de `int` a `Integer` (nullable).
+- **`EventRatingRepository`**: `findByEventIdOrderByCreatedAtDesc`, `findLastByEventIdAndUserId` (antispam R5), `existsRatedCommentByEventIdAndUserId` (R3). Eliminado: `findByEventId`, `existsByEventIdAndUserId`.
+- **`EventRatingRepositoryImpl`**: implementa los nuevos métodos de dominio.
+- **`AddEventRatingService`**: aplica R1-R5 con `Clock` inyectable; resuelve `authorName` e `isOrganizer`; publica `EventRatingAddedEvent` con los campos nuevos.
+- **`EventRatingAddedEvent`**: campos `isOrganizer`, `rating` nullable.
+- **`EventCommentWebSocketListener`**: emite `isOrganizer` en el payload WS; payload idéntico al `GET /ratings`.
+- **`EventRatingResponse`**: campos `userId` (Long) e `isOrganizer` (Boolean).
+- **`EventRatingController`** GET: carga perfiles sin N+1; incluye `isOrganizer` y `userId` por comentario. POST: abierto a cualquier rol autenticado.
+- **`SecurityConfig`**: `POST /events/*/ratings` → `authenticated()` (antes `hasAuthority("USER")`).
+
+**Frontend**
+
+- **`EventCommentService.js`**: documenta R1-R5; `addEventComment` acepta `rating` opcional.
+- **`EventDetail.jsx`**:
+  - Guarda `eventOrganizerUserId` desde `eventRes.data.userId` al montar (R4).
+  - `needsRatingSelector`: muestra el selector de estrellas solo si el usuario no es el organizador y no tiene aún un comentario con rating.
+  - Formulario visible para cualquier usuario autenticado; si no hay sesión, enlace a `/login`.
+  - Rating inicial `0`; botón submit deshabilitado hasta seleccionar estrella cuando corresponde.
+  - Badge "Organizador" (dorado) y badge "Tú" en comentarios propios.
+  - Estrellas solo si `c.rating != null`.
+  - Tiempo relativo con `date-fns` (`formatDistanceToNow`, locale `es`; ya existía en `package.json`).
+  - Error `COMMENT_RATE_LIMITED` capturado y mostrado al usuario.
+
+**Tests**
+
+- **`AddEventRatingServiceTest`** (18 casos, sin `@MockitoSettings(LENIENT)`): R3 (4 casos), R4 (2), R5 antispam (3), R1 (2), validaciones básicas (5), publicación de evento de dominio (2). `Clock` stubbeado con `givenClock()` solo en los tests que alcanzan el bloque de guardado.
+- **`EventCommentWebSocketListenerTest`** (5 casos): happy path, `authorName` fallback, comentario no visible descartado, `isOrganizer` en payload, fallo de broker no-bloqueante.
+
+
+
+- **Migración 086** (`086-seed-event-notification-types.yaml`): inserta los tipos `EVENT_PUBLISHED` y `EVENT_REJECTED` en la tabla `notification_type`.
+- **`EventStatusChangedEvent`** enriquecido con tres nuevos campos: `organizerId` (userId del dueño del evento), `eventName` (título legible) y `reason` (motivo de rechazo, solo cuando `newStatus = REJECTED`). Los publishers `ChangeEventStatusService` y `AdminChangeEventStatusUseCase` los pueblan; el scheduler no los necesita.
+- **`NotificationTypeNames`**: constantes `EVENT_PUBLISHED` y `EVENT_REJECTED`.
+- **`NotificationEntityTypes`**: constante `EVENT`.
+- **`SendNotificationCommand`**: campo `idempotencySuffix` (sufijo opcional para la clave de idempotencia `typeName:entityId:channelName[:suffix]`) y campo `eventName`. Retrocompatible con los tipos de pago (sufijo nulo).
+- **`SendNotificationUseCase`**: clave de idempotencia ampliada con el sufijo cuando está presente.
+- **`NotificationMessageFactory`**: casos `EVENT_PUBLISHED` y `EVENT_REJECTED` para canales IN_APP y EMAIL. El cuerpo de email aplica `escapeHtml()` sobre `eventName` y `reason` antes de insertarlos en HTML.
+- **`EventStatusChangedListener`** (nuevo): `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` + `@Transactional(REQUIRES_NEW)`. Filtra a `oldStatus = PENDING_REVIEW` y `newStatus ∈ {PUBLISHED, REJECTED}`. Usa `occurredAt` como sufijo de idempotencia para soportar múltiples ciclos de rechazo del mismo evento.
+- **`AdminController`**: `@Operation` del listado de eventos por estado actualizado para incluir `PENDING_REVIEW` y `REJECTED`.
+- **`Notifications.jsx`** (frontend): íconos `EVENT_PUBLISHED` (`PartyPopper`, `text-success`) y `EVENT_REJECTED` (`Ban`, `text-error`) en `NOTIFICATION_ICONS`.
+- **Tests**: `EventStatusChangedListenerTest` (4 casos), `NotificationMessageFactoryTest` (4 casos), `SendNotificationUseCaseIdempotencyTest` (2 casos).
+
 ### Added — feat(language)
 
 - **Language Module — Domain (DDD puro)**: `Language` (aggregate root con `code` UNIQUE normalizado trim+lowercase, `name`, `isActive`, `isDefault` con bloqueo mutuo), validaciones en dominio (`deactivate()` bloquea idioma por defecto), eventos `LanguageActivatedEvent`/`LanguageDeactivatedEvent`/`DefaultLanguageChangedEvent` con IDs primitivos.
@@ -1066,7 +1122,7 @@ All notable changes to this project will be documented in this file.
 ### feat(event): event module
 #### Added
 - Liquibase changesets 039–045: tablas `event`, `event_status_log`, `event_layout`, `event_media`, `event_media_log`, `event_rating`, `event_comment_reply` con FKs, constraints UNIQUE y CHECK via `sql` raw (compatible con Liquibase OSS)
-- Domain layer: modelos puros (`Event`, `EventStatus`, `EventStatusLog`, `EventLayout`, `EventMedia`, `EventMediaLog`, `EventRating`, `EventCommentReply`), interfaces de repositorio sin dependencias de Spring, eventos de dominio inmutables (`EventCreatedEvent`, `EventStatusChangedEvent`, `EventCancelledEvent`, `EventRatingAddedEvent`, `EventMediaUploadedEvent`)
+- Domain layer: modelos puros (`Event`, `EventStatus`, `EventStatusLog`, `EventLayout`, `EventMedia`, `EventMediaLog`, `EventRating`, `EventCommentReply`), interfaces de repositorio sin dependencias de Spring, eventos de dominio inmutables (`EventCreatedEvent`, `EventStatusChangedEvent` [campos: `eventId`, `oldStatus`, `newStatus`, `changedBy`, `occurredAt`, `organizerId`, `eventName`, `reason`], `EventCancelledEvent`, `EventRatingAddedEvent`, `EventMediaUploadedEvent`)
 - Infrastructure layer: entidades JPA (`EventEntity` extiende `JpaAuditingEntity`, más 6 entidades sin auditoría), `JpaRepository` por entidad, mappers MapStruct, implementaciones `RepositoryImpl`; `EventMediaLogJpaRepository` incluye `@Query` para `findNextVersionByEventId`
 - Application layer: 9 ports in (`CreateEventUseCase`, `UpdateEventUseCase`, `ChangeEventStatusUseCase`, `GetEventUseCase`, `DeleteEventUseCase`, `AddEventRatingUseCase`, `AddCommentReplyUseCase`, `UploadEventMediaUseCase`, `GetEventLayoutUseCase`, `SaveEventLayoutUseCase`), 9 use cases con validaciones de negocio (ownership, transiciones de estado `DRAFT→PUBLISHED→CANCELLED/COMPLETED`, unicidad, rating único por usuario, validación de layout antes de publicar)
 - REST controllers: `EventController` (`/api/v1/events`), `EventRatingController` (`/api/v1/events/{eventId}/ratings`), `EventCommentController` (`/api/v1/ratings/{ratingId}/replies`), `EventMediaController` (`/api/v1/events/{eventId}/media`), `EventLayoutController` (`/api/v1/events/{eventId}/layout` — GET público + PUT `ORGANIZER`)

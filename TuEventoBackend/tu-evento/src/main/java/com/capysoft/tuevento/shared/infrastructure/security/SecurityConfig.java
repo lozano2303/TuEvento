@@ -152,6 +152,9 @@ public class SecurityConfig {
                         // Sin estas reglas explícitas, los verbos restantes caerían en anyRequest()
                         // y @PreAuthorize podría bloquearse antes de llegar al use case (403 de Spring,
                         // no el error de negocio del use case).
+                        // ── Ratings: cualquier usuario autenticado puede comentar (R1) ──
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,
+                                "/api/v1/events/*/ratings").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE,
                                 "/api/v1/events/**").hasAuthority("ORGANIZER")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT,
@@ -160,8 +163,6 @@ public class SecurityConfig {
                                 "/api/v1/events/**").hasAuthority("ORGANIZER")
                         .requestMatchers(org.springframework.http.HttpMethod.POST,
                                 "/api/v1/events/*/media").hasAuthority("ORGANIZER")
-                        .requestMatchers(org.springframework.http.HttpMethod.POST,
-                                "/api/v1/events/*/ratings").hasAuthority("USER")
                         .requestMatchers(org.springframework.http.HttpMethod.POST,
                                 "/api/v1/event-sections").hasAnyAuthority("ORGANIZER", "ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT,
