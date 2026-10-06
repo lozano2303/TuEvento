@@ -4,7 +4,7 @@ import com.capysoft.tuevento.modules.language.domain.model.CategoryTranslation;
 import com.capysoft.tuevento.modules.language.domain.repository.CategoryTranslationRepository;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.CategoryTranslationEntity;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.LanguageEntity;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.jpa.CategoryTranslationJpaRepository;
+import com.capysoft.tuevento.modules.language.infrastructure.persistence.repository.CategoryTranslationJpaRepository;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper.CategoryTranslationMapper;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.repository.LanguageJpaRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
@@ -50,7 +50,7 @@ public class CategoryTranslationRepositoryImpl implements CategoryTranslationRep
 
     @Override
     public List<CategoryTranslation> findByStatus(TranslationStatus status) {
-        return jpaRepository.findByStatus(status)
+        return jpaRepository.findByStatus(status.name().toLowerCase())
                 .stream()
                 .map(mapper::toDomain)
                 .toList();
@@ -58,7 +58,7 @@ public class CategoryTranslationRepositoryImpl implements CategoryTranslationRep
 
     @Override
     public List<CategoryTranslation> findByCategoryAndStatus(Integer categoryId, TranslationStatus status) {
-        return jpaRepository.findByCategoryIdAndStatus(categoryId, status)
+        return jpaRepository.findByCategoryIdAndStatus(categoryId, status.name().toLowerCase())
                 .stream()
                 .map(mapper::toDomain)
                 .toList();
