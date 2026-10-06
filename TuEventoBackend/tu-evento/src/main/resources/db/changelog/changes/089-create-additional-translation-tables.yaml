@@ -1,0 +1,161 @@
+databaseChangeLog:
+  - changeSet:
+      id: 089
+      author: kiro
+      changes:
+        - createTable:
+            tableName: notification_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: notification_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_subject
+                  type: varchar(100)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: translated_body
+                  type: varchar(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: source
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: draft
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: theme_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_description
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: draft
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: profile_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: profile_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_bio
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: draft
+                  constraints:
+                    nullable: false
+
+        - addUniqueConstraint:
+            tableName: notification_translation
+            columnNames: notification_id, language_id
+            constraintName: uk_notification_translation_notification_language
+
+        - addUniqueConstraint:
+            tableName: theme_translation
+            columnNames: theme_id, language_id
+            constraintName: uk_theme_translation_theme_language
+
+        - addUniqueConstraint:
+            tableName: profile_translation
+            columnNames: profile_id, language_id
+            constraintName: uk_profile_translation_profile_language
+
+        - addForeignKeyConstraint:
+            baseTableName: notification_translation
+            baseColumnNames: language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_notification_translation_language
+
+        - addForeignKeyConstraint:
+            baseTableName: theme_translation
+            baseColumnNames: language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_theme_translation_language
+
+        - addForeignKeyConstraint:
+            baseTableName: profile_translation
+            baseColumnNames: language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_profile_translation_language

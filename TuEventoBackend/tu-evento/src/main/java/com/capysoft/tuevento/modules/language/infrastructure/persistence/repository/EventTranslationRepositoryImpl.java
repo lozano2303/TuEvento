@@ -4,7 +4,7 @@ import com.capysoft.tuevento.modules.language.domain.model.EventTranslation;
 import com.capysoft.tuevento.modules.language.domain.repository.EventTranslationRepository;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.EventTranslationEntity;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.LanguageEntity;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.jpa.EventTranslationJpaRepository;
+import com.capysoft.tuevento.modules.language.infrastructure.persistence.repository.EventTranslationJpaRepository;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper.EventTranslationMapper;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.repository.LanguageJpaRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
@@ -50,7 +50,7 @@ public class EventTranslationRepositoryImpl implements EventTranslationRepositor
 
     @Override
     public List<EventTranslation> findByStatus(TranslationStatus status) {
-        return jpaRepository.findByStatus(status)
+        return jpaRepository.findByStatus(status.name().toLowerCase())
                 .stream()
                 .map(mapper::toDomain)
                 .toList();
@@ -58,7 +58,7 @@ public class EventTranslationRepositoryImpl implements EventTranslationRepositor
 
     @Override
     public List<EventTranslation> findByEventAndStatus(Long eventId, TranslationStatus status) {
-        return jpaRepository.findByEventIdAndStatus(eventId, status)
+        return jpaRepository.findByEventIdAndStatus(eventId, status.name().toLowerCase())
                 .stream()
                 .map(mapper::toDomain)
                 .toList();

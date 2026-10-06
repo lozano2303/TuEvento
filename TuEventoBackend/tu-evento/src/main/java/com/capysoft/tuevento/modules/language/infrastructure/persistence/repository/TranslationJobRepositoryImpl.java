@@ -4,7 +4,7 @@ import com.capysoft.tuevento.modules.language.domain.model.TranslationJob;
 import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.TranslationJobEntity;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.repository.LanguageJpaRepository;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.jpa.TranslationJobJpaRepository;
+import com.capysoft.tuevento.modules.language.infrastructure.persistence.repository.TranslationJobJpaRepository;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper.TranslationJobMapper;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,7 @@ public class TranslationJobRepositoryImpl implements TranslationJobRepository {
 
     @Override
     public List<TranslationJob> findByEntityAndStatus(String entityType, Long entityId, TranslationJobStatus status) {
-        return jpaRepository.findByEntityAndStatus(entityType, entityId, status)
+        return jpaRepository.findByEntityAndStatus(entityType, entityId, status.name().toLowerCase())
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -59,14 +59,16 @@ public class TranslationJobRepositoryImpl implements TranslationJobRepository {
     @Override
     public boolean claimJob(Long jobId) {
         return jpaRepository.claimJob(jobId, 
-                                     TranslationJobStatus.PROCESSING,
-                                     TranslationJobStatus.PENDING, 
-                                     TranslationJobStatus.FAILED) > 0;
+                                     TranslationJobStatus.PROCESSING.name().toLowerCase(),
+                                     TranslationJobStatus.PENDING.name().toLowerCase(), 
+                                     TranslationJobStatus.FAILED.name().toLowerCase()) > 0;
     }
 
     @Override
     public Optional<TranslationJob> findByEntityAndTargetLanguage(String entityType, Long entityId, Long targetLanguageId) {
         return jpaRepository.findByEntityAndTargetLanguage(entityType, entityId, targetLanguageId)
+                .stream()
+                .findFirst()
                 .map(mapper::toDomain);
     }
 

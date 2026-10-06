@@ -1,8 +1,8 @@
-package com.capysoft.tuevento.modules.language.infrastructure.persistence.jpa;
+package com.capysoft.tuevento.modules.language.infrastructure.persistence.repository;
 
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.EventTranslationEntity;
-import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -10,49 +10,32 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repositorio JPA para EventTranslationEntity.
- */
 @Repository
 public interface EventTranslationJpaRepository extends JpaRepository<EventTranslationEntity, Long> {
 
-    /**
-     * Busca traducción por evento e idioma.
-     */
+    @Query("SELECT et FROM EventTranslationEntity et WHERE et.eventId = :eventId")
+    List<EventTranslationEntity> findByEventId(@Param("eventId") Long eventId);
+
     @Query("SELECT et FROM EventTranslationEntity et WHERE et.eventId = :eventId AND et.language.languageId = :languageId")
     Optional<EventTranslationEntity> findByEventIdAndLanguageId(@Param("eventId") Long eventId, 
                                                                @Param("languageId") Long languageId);
 
-    /**
-     * Busca todas las traducciones de un evento.
-     */
-    List<EventTranslationEntity> findByEventId(Long eventId);
-
-    /**
-     * Busca todas las traducciones en un idioma.
-     */
     @Query("SELECT et FROM EventTranslationEntity et WHERE et.language.languageId = :languageId")
     List<EventTranslationEntity> findByLanguageId(@Param("languageId") Long languageId);
 
-    /**
-     * Busca traducciones por estado.
-     */
-    List<EventTranslationEntity> findByStatus(TranslationStatus status);
+    @Query("SELECT et FROM EventTranslationEntity et WHERE et.status = :status")
+    List<EventTranslationEntity> findByStatus(@Param("status") String status);
 
-    /**
-     * Busca traducciones por evento y estado.
-     */
-    List<EventTranslationEntity> findByEventIdAndStatus(Long eventId, TranslationStatus status);
+    @Query("SELECT et FROM EventTranslationEntity et WHERE et.source = :source")
+    List<EventTranslationEntity> findBySource(@Param("source") String source);
 
-    /**
-     * Elimina traducciones por evento.
-     */
-    void deleteByEventId(Long eventId);
+    @Query("SELECT et FROM EventTranslationEntity et WHERE et.eventId = :eventId AND et.status = :status")
+    List<EventTranslationEntity> findByEventIdAndStatus(@Param("eventId") Long eventId, @Param("status") String status);
 
-    /**
-     * Verifica existencia por evento e idioma.
-     */
+    @Modifying
+    @Query("DELETE FROM EventTranslationEntity et WHERE et.eventId = :eventId")
+    void deleteByEventId(@Param("eventId") Long eventId);
+
     @Query("SELECT COUNT(et) > 0 FROM EventTranslationEntity et WHERE et.eventId = :eventId AND et.language.languageId = :languageId")
-    boolean existsByEventIdAndLanguageId(@Param("eventId") Long eventId, 
-                                       @Param("languageId") Long languageId);
+    boolean existsByEventIdAndLanguageId(@Param("eventId") Long eventId, @Param("languageId") Long languageId);
 }

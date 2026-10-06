@@ -1,0 +1,146 @@
+databaseChangeLog:
+  - changeSet:
+      id: 090
+      author: kiro
+      changes:
+        - createTable:
+            tableName: event_rating_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: rating_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_comment
+                  type: varchar(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: draft
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: seat_block_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: seat_block_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: draft
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: review_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: review_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_comment
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: draft
+                  constraints:
+                    nullable: false
+
+        - addUniqueConstraint:
+            tableName: event_rating_translation
+            columnNames: rating_id, language_id
+            constraintName: uk_event_rating_translation_rating_language
+
+        - addUniqueConstraint:
+            tableName: seat_block_translation
+            columnNames: seat_block_id, language_id
+            constraintName: uk_seat_block_translation_seat_block_language
+
+        - addUniqueConstraint:
+            tableName: review_translation
+            columnNames: review_id, language_id
+            constraintName: uk_review_translation_review_language
+
+        - addForeignKeyConstraint:
+            baseTableName: event_rating_translation
+            baseColumnNames: language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_event_rating_translation_language
+
+        - addForeignKeyConstraint:
+            baseTableName: seat_block_translation
+            baseColumnNames: language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_seat_block_translation_language
+
+        - addForeignKeyConstraint:
+            baseTableName: review_translation
+            baseColumnNames: language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_review_translation_language
