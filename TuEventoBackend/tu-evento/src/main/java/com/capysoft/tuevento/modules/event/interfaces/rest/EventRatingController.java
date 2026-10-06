@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.event.interfaces.rest;
 import com.capysoft.tuevento.modules.event.application.dto.request.AddEventRatingRequest;
 import com.capysoft.tuevento.modules.event.application.dto.response.EventRatingResponse;
 import com.capysoft.tuevento.modules.event.application.port.in.AddEventRatingUseCase;
+import com.capysoft.tuevento.modules.event.application.port.in.DeleteEventRatingUseCase;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventRating;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
@@ -27,8 +28,9 @@ import java.util.stream.Collectors;
  * Endpoints de comentarios/ratings de eventos.
  *
  * <ul>
- *   <li>GET  — público, sin autenticación.</li>
- *   <li>POST — cualquier usuario autenticado (R1).</li>
+ *   <li>GET    — público, sin autenticación.</li>
+ *   <li>POST   — cualquier usuario autenticado (R1).</li>
+ *   <li>DELETE — cualquier usuario autenticado; el service valida ownership.</li>
  * </ul>
  */
 @RestController
@@ -37,10 +39,11 @@ import java.util.stream.Collectors;
 @Tag(name = "Event Ratings", description = "Event comment/rating endpoints")
 public class EventRatingController {
 
-    private final AddEventRatingUseCase addEventRatingUseCase;
-    private final EventRatingRepository eventRatingRepository;
-    private final EventRepository       eventRepository;
-    private final ProfileJpaRepository  profileJpaRepository;
+    private final AddEventRatingUseCase    addEventRatingUseCase;
+    private final DeleteEventRatingUseCase deleteEventRatingUseCase;
+    private final EventRatingRepository    eventRatingRepository;
+    private final EventRepository          eventRepository;
+    private final ProfileJpaRepository     profileJpaRepository;
 
     @Operation(summary = "Add a comment/rating to an event — any authenticated user")
     @PostMapping
@@ -102,5 +105,15 @@ public class EventRatingController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(ApiResponse.ok("Ratings retrieved successfully", response));
+    }
+
+    @Operation(summary = "Delete own comment — any authenticated user")
+    @DeleteMapping("/{ratingId}")
+    public ResponseEntity<ApiResponse<Void>> deleteRating(
+            @PathVariable Long eventId,
+            @PathVariable Long ratingId,
+            @AuthenticationPrincipal SecurityUser principal) {
+        deleteEventRatingUseCase.execute(eventId, ratingId, principal.getUserId().longValue());
+        return ResponseEntity.ok(ApiResponse.ok("Rating deleted successfully"));
     }
 }

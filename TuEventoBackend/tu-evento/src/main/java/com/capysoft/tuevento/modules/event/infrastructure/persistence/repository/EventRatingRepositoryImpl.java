@@ -43,4 +43,8 @@ public class EventRatingRepositoryImpl implements EventRatingRepository {
         return jpaRepository.existsRatedCommentByEventIdAndUserId(eventId, userId);
     }
 
+    @Override
+    public void deleteById(Long ratingId) {
+        jpaRepository.deleteById(ratingId);
+    }
 }

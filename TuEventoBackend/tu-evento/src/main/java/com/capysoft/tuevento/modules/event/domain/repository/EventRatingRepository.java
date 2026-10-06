@@ -19,4 +19,6 @@ public interface EventRatingRepository {
 
     /** ¿Tiene ya el usuario un comentario con rating != null en este evento? (R3) */
     boolean existsRatedCommentByEventIdAndUserId(Long eventId, Long userId);
+
+    void deleteById(Long ratingId);
 }

@@ -8,7 +8,7 @@ import { getEventMedia } from '../services/EventMediaService';
 import * as LayoutService from '../services/LayoutService';
 import * as SeatService from '../services/SeatService';
 import * as EventSectionService from '../services/EventSectionService';
-import { getEventComments, addEventComment } from '../services/EventCommentService';
+import { getEventComments, addEventComment, deleteEventComment } from '../services/EventCommentService';
 import { formatDistanceToNow } from 'date-fns';
 import { es as dateFnsEs } from 'date-fns/locale';
 import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
@@ -52,6 +52,8 @@ export default function EventDetail() {
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentError, setCommentError] = useState(null);
   const [hoverRating, setHoverRating] = useState(0);
+  const [deletingCommentId, setDeletingCommentId] = useState(null);
+  const [deleteCommentError, setDeleteCommentError] = useState(null);
   // userId del organizador del evento (para R4 en el frontend)
   const [eventOrganizerUserId, setEventOrganizerUserId] = useState(null);
 
@@ -149,8 +151,29 @@ export default function EventDetail() {
     };
   }, [eventId, isLoading, subscribe]);
 
-  // ── Suscripción WebSocket a comentarios eliminados — solo en rama delete ───
-  // (se añade en feat/event-comments-delete)
+  // ── Suscripción WebSocket a comentarios eliminados ─────────────────────────
+  useEffect(() => {
+    if (!eventId || isLoading) return;
+
+    const destination = `/topic/events/${eventId}/comments/deleted`;
+    const key = `comments-deleted-event-${eventId}`;
+
+    const unsubscribe = subscribe(
+      destination,
+      (incoming) => {
+        const id = incoming.ratingId;
+        if (!id) return;
+        // Idempotente: quitar por ratingId aunque ya se hubiera quitado localmente
+        commentIdsRef.current.delete(id);
+        setComments((prev) => prev.filter((c) => c.ratingId !== id));
+      },
+      key
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [eventId, isLoading, subscribe]);
 
   // WebSocket: Suscripción dinámica a actualizaciones de sillas del evento
   useEffect(() => {
@@ -301,6 +324,34 @@ export default function EventDetail() {
       };
     });
   }, [showToast]);
+
+  // ── Borrado de comentario propio ──────────────────────────────────────────
+  const handleDeleteComment = useCallback(async (ratingId) => {
+    if (!window.confirm('Esta acción es permanente. ¿Seguro que quieres eliminar tu comentario?')) return;
+
+    setDeletingCommentId(ratingId);
+    setDeleteCommentError(null);
+
+    try {
+      await deleteEventComment(eventId, ratingId);
+      // Quitar localmente y limpiar el ref de ids para que el WS no lo duplique
+      commentIdsRef.current.delete(ratingId);
+      setComments((prev) => prev.filter((c) => c.ratingId !== ratingId));
+    } catch (err) {
+      const msg = err.message || '';
+      if (msg.includes('SESSION_EXPIRED') || msg.includes('401')) {
+        setDeleteCommentError('Tu sesión expiró. Inicia sesión de nuevo.');
+      } else if (msg.includes('403') || msg.includes('Access denied')) {
+        setDeleteCommentError('No tienes permiso para eliminar este comentario.');
+      } else if (msg.includes('404') || msg.includes('NOT_FOUND')) {
+        setDeleteCommentError('El comentario ya no existe.');
+      } else {
+        setDeleteCommentError(msg || 'No se pudo eliminar el comentario.');
+      }
+    } finally {
+      setDeletingCommentId(null);
+    }
+  }, [eventId]);
 
   // ── Helpers de comentarios ────────────────────────────────────────────────
   /**
@@ -705,6 +756,19 @@ export default function EventDetail() {
                           </div>
                         )}
                       </div>
+                      {/* Botón eliminar — solo para el dueño del comentario */}
+                      {isOwn && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteComment(c.ratingId)}
+                          disabled={deletingCommentId === c.ratingId}
+                          aria-label="Eliminar mi comentario"
+                          className="shrink-0 transition-opacity disabled:opacity-40 cursor-pointer"
+                          style={{ color: 'rgba(248,113,113,0.7)' }}
+                        >
+                          <X className="w-3.5 h-3.5 pointer-events-none" />
+                        </button>
+                      )}
                     </div>
 
                     {/* Texto del comentario */}
@@ -722,6 +786,9 @@ export default function EventDetail() {
                 );
               })}
             </ul>
+          )}
+          {deleteCommentError && (
+            <p role="alert" className="text-xs text-red-400 mt-3 text-center">{deleteCommentError}</p>
           )}
         </section>
 

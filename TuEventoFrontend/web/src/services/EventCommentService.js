@@ -2,11 +2,12 @@
  * EventCommentService — gestión de comentarios/ratings de eventos.
  *
  * Endpoints:
- *   GET  /events/{eventId}/ratings   — lista pública (sin auth)
- *   POST /events/{eventId}/ratings   — crear comentario (cualquier usuario autenticado, R1)
+ *   GET    /events/{eventId}/ratings              — lista pública (sin auth)
+ *   POST   /events/{eventId}/ratings              — crear comentario (cualquier usuario autenticado, R1)
+ *   DELETE /events/{eventId}/ratings/{ratingId}   — borrar comentario propio (cualquier usuario autenticado, R1)
  *
  * Reglas de negocio aplicadas en el backend:
- *   R1 — Cualquier usuario autenticado puede comentar.
+ *   R1 — Cualquier usuario autenticado puede comentar y borrar sus propios comentarios.
  *   R2 — Múltiples comentarios por persona y evento.
  *   R3 — El primer comentario con rating en el evento lleva calificación; los siguientes no.
  *   R4 — El organizador del evento nunca lleva calificación.
@@ -53,6 +54,29 @@ export const addEventComment = async (eventId, payload) => {
     // Propagar el code del backend (e.g. COMMENT_RATE_LIMITED) junto al mensaje
     // para que el caller pueda distinguir errores sin depender de substrings del mensaje.
     const err = new Error(body.message || 'Error al publicar el comentario');
+    err.code = body.code || null;
+    throw err;
+  }
+  return body;
+};
+
+/**
+ * Elimina de forma permanente un comentario/rating propio.
+ * El backend valida que el comentario pertenezca al usuario autenticado
+ * (ownership extraído del JWT, nunca del body).
+ *
+ * @param {string|number} eventId
+ * @param {string|number} ratingId
+ * @returns {Promise<{ data: null }>}
+ * @throws Error con mensaje del backend en caso de 403 (no propietario) o 404 (no existe)
+ */
+export const deleteEventComment = async (eventId, ratingId) => {
+  const res = await httpRequest(`${API_URL}/events/${eventId}/ratings/${ratingId}`, {
+    method: 'DELETE',
+  });
+  const body = await res.json();
+  if (!res.ok) {
+    const err = new Error(body.message || 'Error al eliminar el comentario');
     err.code = body.code || null;
     throw err;
   }

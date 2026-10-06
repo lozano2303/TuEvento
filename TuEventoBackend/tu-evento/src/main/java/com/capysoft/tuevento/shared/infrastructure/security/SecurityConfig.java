@@ -148,11 +148,15 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.PUT,
                                 "/api/v1/events/*/layout").authenticated()
                         // ── Verbos no-GET en rutas cubiertas por PUBLIC_GET_ENDPOINTS ──────────────
+                        // ── Verbos no-GET en rutas cubiertas por PUBLIC_GET_ENDPOINTS ──────────────
                         // Estos matchers son necesarios porque PUBLIC_GET_ENDPOINTS solo registra GET.
                         // Sin estas reglas explícitas, los verbos restantes caerían en anyRequest()
                         // y @PreAuthorize podría bloquearse antes de llegar al use case (403 de Spring,
                         // no el error de negocio del use case).
-                        // ── Ratings: cualquier usuario autenticado puede comentar (R1) ──
+                        // ── Ratings: cualquier usuario autenticado puede comentar/borrar (R1) ──
+                        // DELETE /ratings/* va ANTES de DELETE /events/** (que exige ORGANIZER).
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE,
+                                "/api/v1/events/*/ratings/*").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.POST,
                                 "/api/v1/events/*/ratings").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE,
