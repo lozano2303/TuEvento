@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send } from 'lucide-react';
 import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
 import Konva from 'konva';
 import { getEventById } from '../services/EventService';
@@ -8,6 +8,9 @@ import { getEventMedia } from '../services/EventMediaService';
 import * as LayoutService from '../services/LayoutService';
 import * as SeatService from '../services/SeatService';
 import * as EventSectionService from '../services/EventSectionService';
+import { getEventComments, addEventComment } from '../services/EventCommentService';
+import { formatDistanceToNow } from 'date-fns';
+import { es as dateFnsEs } from 'date-fns/locale';
 import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
 import Toast from '../components/Toast';
@@ -41,6 +44,20 @@ export default function EventDetail() {
   // P4: ref que siempre apunta al seats más reciente sin necesitar estar en deps de useCallback
   const seatsRef = useRef({});
 
+  // ── Estado de comentarios ──────────────────────────────────────────────────
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [commentRating, setCommentRating] = useState(0);   // 0 = sin selección
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentError, setCommentError] = useState(null);
+  const [hoverRating, setHoverRating] = useState(0);
+  // userId del organizador del evento (para R4 en el frontend)
+  const [eventOrganizerUserId, setEventOrganizerUserId] = useState(null);
+
+  // Ref con los ratingIds ya presentes para evitar duplicados al recibir WS
+  const commentIdsRef = useRef(new Set());
+
   useEffect(() => {
     const userId = localStorage.getItem('userID');
     setCurrentUserId(userId ? parseInt(userId) : null);
@@ -53,6 +70,8 @@ export default function EventDetail() {
     ])
       .then(async ([eventRes, mediaRes, layoutRes, sectionsRes]) => {
         setEvent(eventRes.data);
+        // Guardar el userId del organizador para la lógica R4 del frontend
+        setEventOrganizerUserId(eventRes.data?.userId ?? null);
         setMedia(mediaRes.data ?? []);
         setSections(sectionsRes.data ?? []);
 
@@ -86,6 +105,52 @@ export default function EventDetail() {
   useEffect(() => {
     seatsRef.current = seats;
   }, [seats]);
+
+  // ── Carga inicial de comentarios por REST ──────────────────────────────────
+  useEffect(() => {
+    if (!eventId || isLoading) return;
+
+    setCommentsLoading(true);
+    getEventComments(eventId)
+      .then((res) => {
+        const list = res.data ?? [];
+        // Filtrar solo visibles (cortesía defensiva; el backend ya filtra)
+        const visible = list.filter((c) => c.isVisible !== false);
+        setComments(visible);
+        commentIdsRef.current = new Set(visible.map((c) => c.ratingId));
+      })
+      .catch((err) => console.error('[EventDetail] Error cargando comentarios:', err.message))
+      .finally(() => setCommentsLoading(false));
+  }, [eventId, isLoading]);
+
+  // ── Suscripción WebSocket a nuevos comentarios ─────────────────────────────
+  useEffect(() => {
+    if (!eventId || isLoading) return;
+
+    const destination = `/topic/events/${eventId}/comments`;
+    const key = `comments-event-${eventId}`;
+
+    const unsubscribe = subscribe(
+      destination,
+      (incoming) => {
+        // Solo comentarios visibles
+        if (incoming.isVisible === false) return;
+        // Evitar duplicado: si ya está (por el POST propio), no agregar de nuevo
+        if (commentIdsRef.current.has(incoming.ratingId)) return;
+
+        commentIdsRef.current.add(incoming.ratingId);
+        setComments((prev) => [incoming, ...prev]);
+      },
+      key
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [eventId, isLoading, subscribe]);
+
+  // ── Suscripción WebSocket a comentarios eliminados — solo en rama delete ───
+  // (se añade en feat/event-comments-delete)
 
   // WebSocket: Suscripción dinámica a actualizaciones de sillas del evento
   useEffect(() => {
@@ -236,6 +301,64 @@ export default function EventDetail() {
       };
     });
   }, [showToast]);
+
+  // ── Helpers de comentarios ────────────────────────────────────────────────
+  /**
+   * ¿El usuario actual es el organizador del evento? (R4)
+   * Se compara con eventOrganizerUserId cargado al montar el evento.
+   */
+  const currentUserIsOrganizer = eventOrganizerUserId != null && currentUserId != null
+    && Number(eventOrganizerUserId) === Number(currentUserId);
+
+  /**
+   * ¿Necesita el selector de estrellas?
+   * Sí: si el usuario es autenticado, NO es el organizador (R4),
+   * y no tiene todavía ningún comentario con rating (R3).
+   */
+  const needsRatingSelector = !currentUserIsOrganizer &&
+    !comments.some((c) => Number(c.userId) === Number(currentUserId) && c.rating != null);
+
+  // ── Envío de comentario ────────────────────────────────────────────────────
+  const handleCommentSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    // Si necesita estrellas, el botón ya está deshabilitado si rating===0;
+    // esta guardia es defensiva para el caso de submit por teclado.
+    if (needsRatingSelector && commentRating === 0) return;
+
+    const trimmed = commentText.trim();
+    setCommentSubmitting(true);
+    setCommentError(null);
+
+    // Determinar el rating a enviar: solo si aplica (R3/R4)
+    const ratingToSend = needsRatingSelector && commentRating > 0 ? commentRating : undefined;
+
+    try {
+      const res = await addEventComment(eventId, { rating: ratingToSend, comment: trimmed });
+      const saved = res.data;
+
+      // Agregar localmente de inmediato y registrar el ratingId para filtrar el WS
+      commentIdsRef.current.add(saved.ratingId);
+      setComments((prev) => [saved, ...prev]);
+      setCommentText('');
+      setCommentRating(0);
+      setHoverRating(0);
+    } catch (err) {
+      const code = err.code || '';
+      const msg  = err.message || '';
+      if (msg.includes('SESSION_EXPIRED') || msg.includes('401')) {
+        setCommentError('Tu sesión expiró. Inicia sesión de nuevo para comentar.');
+      } else if (msg.includes('403') || msg.includes('Access denied') || msg.includes('Forbidden')) {
+        setCommentError('No tienes permiso para comentar en este evento.');
+      } else if (code === 'COMMENT_RATE_LIMITED' || msg.includes('COMMENT_RATE_LIMITED')) {
+        setCommentError('Espera unos segundos antes de volver a comentar.');
+      } else {
+        setCommentError(msg || 'No se pudo publicar el comentario.');
+      }
+    } finally {
+      setCommentSubmitting(false);
+    }
+  }, [eventId, commentText, commentRating, needsRatingSelector]);
 
   const prev = () => setActiveImage((i) => (i - 1 + media.length) % media.length);
   const next = () => setActiveImage((i) => (i + 1) % media.length);
@@ -426,8 +549,184 @@ export default function EventDetail() {
             eventTitle={event?.title ?? event?.name ?? ''}
           />
         )}
+
+        {/* ── Comentarios ───────────────────────────────────────────────── */}
+        <section
+          aria-label="Comentarios del evento"
+          className="mt-12"
+          style={{ borderTop: '1px solid rgba(167,139,250,0.15)', paddingTop: '2rem' }}
+        >
+          <h2 className="text-lg font-semibold mb-6" style={{ color: '#e9d5ff' }}>
+            Comentarios {comments.length > 0 && (
+              <span className="text-sm font-normal ml-2" style={{ color: 'rgba(196,181,253,0.5)' }}>
+                ({comments.length})
+              </span>
+            )}
+          </h2>
+
+          {/* Formulario — cualquier usuario autenticado (R1) */}
+          {localStorage.getItem('token') ? (
+            <form
+              id="comment-form"
+              onSubmit={handleCommentSubmit}
+              className="mb-8 p-4 rounded-xl"
+              style={{ background: 'rgba(109,40,217,0.1)', border: '1px solid rgba(167,139,250,0.15)' }}
+            >
+              {/* Selector de estrellas — solo si aplica (R3/R4) */}
+              {needsRatingSelector && (
+                <fieldset className="border-0 p-0 m-0 mb-3" aria-label="Calificación del evento (obligatoria para tu primer comentario)">
+                  <legend className="text-xs mb-1" style={{ color: 'rgba(196,181,253,0.6)' }}>
+                    Calificación <span aria-hidden="true">*</span>
+                  </legend>
+                  <div className="flex items-center gap-1" role="group" aria-label="Selecciona entre 1 y 5 estrellas">
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const active = star <= (hoverRating || commentRating);
+                      return (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setCommentRating(star)}
+                          onMouseEnter={() => setHoverRating(star)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          aria-label={`${star} estrella${star > 1 ? 's' : ''}`}
+                          aria-pressed={star <= commentRating}
+                          className="transition-colors cursor-pointer"
+                        >
+                          <Star
+                            className="w-5 h-5 pointer-events-none"
+                            style={{ color: active ? '#f59e0b' : 'rgba(196,181,253,0.3)' }}
+                            fill={active ? '#f59e0b' : 'none'}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              )}
+
+              {/* Textarea + botón enviar */}
+              <div className="flex gap-3 items-start">
+                <label htmlFor="comment-textarea" className="sr-only">Texto del comentario</label>
+                <textarea
+                  id="comment-textarea"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Escribe tu comentario sobre el evento…"
+                  maxLength={500}
+                  rows={3}
+                  className="flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
+                  style={{
+                    background: 'rgba(15,10,30,0.6)',
+                    border: '1px solid rgba(167,139,250,0.2)',
+                    color: '#e9d5ff',
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={
+                    commentSubmitting ||
+                    !commentText.trim() ||
+                    (needsRatingSelector && commentRating === 0)
+                  }
+                  aria-label={commentSubmitting ? 'Enviando comentario…' : 'Publicar comentario'}
+                  className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-40"
+                  style={{ background: 'rgba(109,40,217,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
+                >
+                  {commentSubmitting
+                    ? <span className="text-xs" style={{ color: '#e9d5ff' }}>…</span>
+                    : <Send className="w-4 h-4 pointer-events-none" style={{ color: '#e9d5ff' }} />
+                  }
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>
+                  {commentText.length}/500
+                </span>
+                {commentError && (
+                  <span role="alert" className="text-xs text-red-400">{commentError}</span>
+                )}
+              </div>
+            </form>
+          ) : (
+            <p className="text-sm mb-6 text-center" style={{ color: 'rgba(196,181,253,0.5)' }}>
+              <a href="/login" style={{ color: '#a78bfa', textDecoration: 'underline' }}>
+                Inicia sesión
+              </a>{' '}para dejar un comentario.
+            </p>
+          )}
+
+          {/* Lista de comentarios */}
+          {commentsLoading ? (
+            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>
+              Cargando comentarios…
+            </p>
+          ) : comments.length === 0 ? (
+            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>
+              Todavía no hay comentarios. ¡Sé el primero!
+            </p>
+          ) : (
+            <ul className="space-y-4" aria-label="Lista de comentarios">
+              {comments.map((c) => {
+                const isOwn = currentUserId != null && Number(c.userId) === Number(currentUserId);
+                return (
+                  <li
+                    key={c.ratingId}
+                    className="p-4 rounded-xl"
+                    style={{ background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(167,139,250,0.12)' }}
+                  >
+                    {/* Cabecera: nombre + etiquetas + estrellas + botón eliminar */}
+                    <div className="flex items-start justify-between mb-1 gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium" style={{ color: '#c4b5fd' }}>
+                          {c.authorName || 'Usuario'}
+                        </span>
+                        {isOwn && (
+                          <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>
+                            Tú
+                          </span>
+                        )}
+                        {c.isOrganizer && (
+                          <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
+                            Organizador
+                          </span>
+                        )}
+                        {/* Estrellas — solo si rating no es null */}
+                        {c.rating != null && (
+                          <div className="flex items-center gap-0.5" aria-label={`${c.rating} de 5 estrellas`}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className="w-3.5 h-3.5"
+                                style={{ color: star <= c.rating ? '#f59e0b' : 'rgba(196,181,253,0.2)' }}
+                                fill={star <= c.rating ? '#f59e0b' : 'none'}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Texto del comentario */}
+                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>
+                      {c.comment}
+                    </p>
+
+                    {/* Tiempo relativo con date-fns */}
+                    {c.createdAt && (
+                      <time dateTime={c.createdAt} className="text-xs mt-1 block" style={{ color: 'rgba(196,181,253,0.35)' }}>
+                        {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: dateFnsEs })}
+                      </time>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
       </div>
-      
+
       {/* Toast de alertas */}
       <Toast toast={toast} onHide={hideToast} />
     </div>
