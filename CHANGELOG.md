@@ -4,7 +4,58 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Added — feat(event-comments-delete): borrado de comentario propio con WebSocket
+### Added — feat(event-comments-replies-edit): respuestas y edición de comentarios
+
+**Reglas de negocio nuevas**
+
+- **A — Respuestas**: un solo nivel; el padre debe ser principal (sin `parentRatingId`), del mismo evento y existir. Respuestas llevan `rating = null` siempre. No cuentan para la regla del primer comentario con estrellas (R3).
+- **B — Edición**: solo el autor, solo el texto, solo durante 2 h desde `createdAt` (reloj inyectable). `COMMENT_EDIT_WINDOW_EXPIRED` si pasó el tiempo. Editar no activa el antispam R5.
+- **C — Borrado en cascada**: al borrar un comentario principal se borran también sus respuestas directas en la misma transacción. Borrar una respuesta no afecta al padre.
+
+**Backend — respuestas (Commit 1)**
+
+- **Migración 088**: columna `parent_rating_id` nullable con FK auto-referencial `ON DELETE CASCADE` e índice `idx_event_rating_parent`.
+- **`AddEventRatingRequest`**: campo `parentRatingId` opcional.
+- **`EventRatingResponse`**: campos `parentRatingId` (nullable) y `editedAt` (nullable).
+- **`EventRating` / `EventRatingEntity`**: campos `parentRatingId` y `editedAt`.
+- **`EventRatingRepository`**: `deleteAllByParentRatingId`, `findByParentRatingId`.
+- **`EventRatingJpaRepository`**: `existsRatedComment` filtra `parent IS NULL` (solo principales cuentan para R3).
+- **`AddEventRatingService`**: valida padre (existencia, mismo evento, que sea principal); respuestas fuerzan `rating = null`; no consulta `existsRatedComment` para respuestas.
+- **`DeleteEventRatingService`**: borra respuestas antes del principal; orden garantizado.
+- **`EventRatingAddedEvent`**: campo `parentRatingId`.
+- **`EventCommentWebSocketListener`**: emite `parentRatingId` en el payload.
+- **`EventRatingController`** GET: incluye `parentRatingId` en cada elemento (lista plana).
+
+**Backend — edición (Commit 2)**
+
+- **Migración 089**: columna `edited_at` nullable.
+- **`EditEventRatingUseCase`** + **`EditEventRatingService`**: valida ownership, ventana de 2 h (Clock inyectable), trim, máx 500 chars; guarda `editedAt = now`; no activa antispam.
+- **`EditEventRatingRequest`**: `{ comment }`.
+- **`EventRatingUpdatedEvent`** + **`EventCommentUpdatedWebSocketListener`** `AFTER_COMMIT`: publica `{ ratingId, comment, editedAt, parentRatingId }` en `/topic/events/{eventId}/comments/updated`.
+- **`EventRatingController`**: `PATCH /{ratingId}` → `authenticated()`.
+- **`SecurityConfig`**: `PATCH /events/*/ratings/*` → `authenticated()` insertado antes de `PATCH /events/**` → `ORGANIZER`. CORS ya incluía PATCH.
+
+**Frontend**
+
+- **`EventCommentService.js`**: `editEventComment(eventId, ratingId, comment)` nuevo; `addEventComment` acepta `parentRatingId`.
+- **`EventDetail.jsx`**:
+  - Agrupación: principales (más recientes primero) con respuestas bajo el padre (más antiguas primero, sangría izquierda).
+  - Contador muestra total de principales + respuestas.
+  - Botón "Responder" solo en comentarios principales, solo con sesión, abre textarea sin estrellas.
+  - Respuestas del WS se insertan bajo el padre; si el padre no existe, recarga REST.
+  - Al borrar un principal: quita localmente el principal y sus respuestas (Regla C).
+  - WS `/comments/deleted` quita también hijos (`c.parentRatingId === id`).
+  - Botón "Editar" (lápiz) solo para el dueño, solo si han pasado menos de 2 h (comparación en cliente; el backend es fuente de verdad, COMMENT_EDIT_WINDOW_EXPIRED oculta el botón y muestra mensaje).
+  - Edición inline: textarea pre-relleno, contador x/500, botones Guardar/Cancelar, estado "Guardando…".
+  - WS `/comments/updated` reemplaza el comentario por ratingId de forma idempotente.
+  - `(editado)` junto a la hora relativa.
+  - Todos los botones tienen `aria-label`; no aparecen sin sesión.
+
+**Tests nuevos**
+
+- **`AddEventRatingServiceTest`**: +6 casos Regla A (respuesta OK, responder a respuesta, padre otro evento, padre inexistente, no cuenta para R3, listener publica parentRatingId).
+- **`DeleteEventRatingServiceTest`**: +2 casos (borrar principal borra respuestas; borrar respuesta no borra padre; orden de operaciones).
+- **`EditEventRatingServiceTest`**: 8 casos (dentro ventana, exactamente 2 h rechazado, no autor 403, inexistente 404, texto vacío, >500, listener publica editedAt, editar no activa antispam).
 
 **Reglas de negocio (R1-R5 + borrado)**
 
