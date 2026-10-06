@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.language.infrastructure.persistence.reposi
 import com.capysoft.tuevento.modules.language.domain.model.EventCommentReplyTranslation;
 import com.capysoft.tuevento.modules.language.domain.repository.EventCommentReplyTranslationRepository;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper.EventCommentReplyTranslationMapper;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -18,6 +19,46 @@ public class EventCommentReplyTranslationRepositoryImpl implements EventCommentR
     private final EventCommentReplyTranslationMapper mapper;
 
     @Override
+    public Optional<EventCommentReplyTranslation> findByReplyAndLanguage(Long replyId, Long languageId) {
+        return jpaRepository.findByReplyIdAndLanguageId(replyId.intValue(), languageId.intValue())
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public List<EventCommentReplyTranslation> findByReply(Long replyId) {
+        return jpaRepository.findByReplyId(replyId.intValue())
+                .stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<EventCommentReplyTranslation> findByLanguage(Long languageId) {
+        return jpaRepository.findByLanguageId(languageId.intValue())
+                .stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<EventCommentReplyTranslation> findByStatus(TranslationStatus status) {
+        return jpaRepository.findAll()
+                .stream()
+                .map(mapper::toDomain)
+                .filter(translation -> translation.getStatus().equals(status))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<EventCommentReplyTranslation> findByReplyAndStatus(Long replyId, TranslationStatus status) {
+        return jpaRepository.findByReplyId(replyId.intValue())
+                .stream()
+                .map(mapper::toDomain)
+                .filter(translation -> translation.getStatus().equals(status))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public EventCommentReplyTranslation save(EventCommentReplyTranslation translation) {
         var entity = mapper.toEntity(translation);
         var savedEntity = jpaRepository.save(entity);
@@ -25,29 +66,12 @@ public class EventCommentReplyTranslationRepositoryImpl implements EventCommentR
     }
 
     @Override
-    public Optional<EventCommentReplyTranslation> findById(Integer id) {
-        return jpaRepository.findById(id)
-                .map(mapper::toDomain);
-    }
-
-    @Override
-    public List<EventCommentReplyTranslation> findByReplyId(Integer replyId) {
-        return jpaRepository.findByReplyId(replyId)
-                .stream()
-                .map(mapper::toDomain)
+    public List<EventCommentReplyTranslation> saveAll(List<EventCommentReplyTranslation> translations) {
+        var entities = translations.stream()
+                .map(mapper::toEntity)
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public Optional<EventCommentReplyTranslation> findByReplyIdAndLanguageId(Integer replyId, Integer languageId) {
-        return jpaRepository.findByReplyIdAndLanguageId(replyId, languageId)
-                .map(mapper::toDomain);
-    }
-
-    @Override
-    public List<EventCommentReplyTranslation> findByLanguageId(Integer languageId) {
-        return jpaRepository.findByLanguageId(languageId)
-                .stream()
+        var savedEntities = jpaRepository.saveAll(entities);
+        return savedEntities.stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -59,20 +83,14 @@ public class EventCommentReplyTranslationRepositoryImpl implements EventCommentR
     }
 
     @Override
-    public void deleteById(Integer id) {
-        jpaRepository.deleteById(id);
+    public void deleteByReply(Long replyId) {
+        var entities = jpaRepository.findByReplyId(replyId.intValue());
+        jpaRepository.deleteAll(entities);
     }
 
     @Override
-    public boolean existsById(Integer id) {
-        return jpaRepository.existsById(id);
-    }
-
-    @Override
-    public List<EventCommentReplyTranslation> findAll() {
-        return jpaRepository.findAll()
-                .stream()
-                .map(mapper::toDomain)
-                .collect(Collectors.toList());
+    public boolean existsByReplyAndLanguage(Long replyId, Long languageId) {
+        return jpaRepository.findByReplyIdAndLanguageId(replyId.intValue(), languageId.intValue())
+                .isPresent();
     }
 }

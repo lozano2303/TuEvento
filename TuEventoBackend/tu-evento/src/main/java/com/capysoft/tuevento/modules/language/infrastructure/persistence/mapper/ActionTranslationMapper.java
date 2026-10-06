@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper;
 
-import com.capysoft.tuevento.modules.language.domain.enums.TranslationSource;
-import com.capysoft.tuevento.modules.language.domain.enums.TranslationStatus;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import com.capysoft.tuevento.modules.language.domain.model.ActionTranslation;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.ActionTranslationEntity;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.TranslationStatusEnum;
@@ -16,9 +16,9 @@ public class ActionTranslationMapper {
         }
 
         return ActionTranslationEntity.builder()
-                .translationId(domain.getTranslationId())
+                .translationId(domain.getTranslationId() != null ? domain.getTranslationId().intValue() : null)
                 .action(domain.getAction())
-                .languageId(domain.getLanguageId())
+                .languageId(domain.getLanguageId() != null ? domain.getLanguageId().intValue() : null)
                 .translatedDescription(domain.getTranslatedDescription())
                 .source(toEntitySource(domain.getSource()))
                 .status(toEntityStatus(domain.getStatus()))
@@ -30,14 +30,14 @@ public class ActionTranslationMapper {
             return null;
         }
 
-        return ActionTranslation.builder()
-                .translationId(entity.getTranslationId())
-                .action(entity.getAction())
-                .languageId(entity.getLanguageId())
-                .translatedDescription(entity.getTranslatedDescription())
-                .source(toDomainSource(entity.getSource()))
-                .status(toDomainStatus(entity.getStatus()))
-                .build();
+        ActionTranslation domain = new ActionTranslation();
+        domain.setTranslationId(entity.getTranslationId() != null ? entity.getTranslationId().longValue() : null);
+        domain.setAction(entity.getAction());
+        domain.setLanguageId(entity.getLanguageId() != null ? entity.getLanguageId().longValue() : null);
+        domain.setTranslatedDescription(entity.getTranslatedDescription());
+        domain.setSource(toDomainSource(entity.getSource()));
+        domain.setStatus(toDomainStatus(entity.getStatus()));
+        return domain;
     }
 
     private String toEntitySource(TranslationSource source) {

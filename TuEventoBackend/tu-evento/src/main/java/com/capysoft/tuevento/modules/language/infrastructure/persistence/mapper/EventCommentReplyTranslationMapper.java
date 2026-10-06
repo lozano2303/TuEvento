@@ -1,6 +1,6 @@
 package com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper;
 
-import com.capysoft.tuevento.modules.language.domain.enums.TranslationStatus;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import com.capysoft.tuevento.modules.language.domain.model.EventCommentReplyTranslation;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.EventCommentReplyTranslationEntity;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.TranslationStatusEnum;
@@ -15,9 +15,9 @@ public class EventCommentReplyTranslationMapper {
         }
 
         return EventCommentReplyTranslationEntity.builder()
-                .translationId(domain.getTranslationId())
-                .replyId(domain.getReplyId())
-                .languageId(domain.getLanguageId())
+                .translationId(domain.getTranslationId() != null ? domain.getTranslationId().intValue() : null)
+                .replyId(domain.getReplyId() != null ? domain.getReplyId().intValue() : null)
+                .languageId(domain.getLanguageId() != null ? domain.getLanguageId().intValue() : null)
                 .translatedReplyText(domain.getTranslatedReplyText())
                 .status(toEntityStatus(domain.getStatus()))
                 .build();
@@ -28,13 +28,13 @@ public class EventCommentReplyTranslationMapper {
             return null;
         }
 
-        return EventCommentReplyTranslation.builder()
-                .translationId(entity.getTranslationId())
-                .replyId(entity.getReplyId())
-                .languageId(entity.getLanguageId())
-                .translatedReplyText(entity.getTranslatedReplyText())
-                .status(toDomainStatus(entity.getStatus()))
-                .build();
+        EventCommentReplyTranslation domain = new EventCommentReplyTranslation();
+        domain.setTranslationId(entity.getTranslationId() != null ? entity.getTranslationId().longValue() : null);
+        domain.setReplyId(entity.getReplyId() != null ? entity.getReplyId().longValue() : null);
+        domain.setLanguageId(entity.getLanguageId() != null ? entity.getLanguageId().longValue() : null);
+        domain.setTranslatedReplyText(entity.getTranslatedReplyText());
+        domain.setStatus(toDomainStatus(entity.getStatus()));
+        return domain;
     }
 
     private TranslationStatusEnum toEntityStatus(TranslationStatus status) {

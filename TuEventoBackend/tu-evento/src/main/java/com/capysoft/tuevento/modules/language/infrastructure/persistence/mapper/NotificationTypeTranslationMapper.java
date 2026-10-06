@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper;
 
-import com.capysoft.tuevento.modules.language.domain.enums.TranslationSource;
-import com.capysoft.tuevento.modules.language.domain.enums.TranslationStatus;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import com.capysoft.tuevento.modules.language.domain.model.NotificationTypeTranslation;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.NotificationTypeTranslationEntity;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.TranslationStatusEnum;
@@ -16,9 +16,9 @@ public class NotificationTypeTranslationMapper {
         }
 
         return NotificationTypeTranslationEntity.builder()
-                .translationId(domain.getTranslationId())
-                .notificationTypeId(domain.getNotificationTypeId())
-                .languageId(domain.getLanguageId())
+                .translationId(domain.getTranslationId() != null ? domain.getTranslationId().intValue() : null)
+                .notificationTypeId(domain.getNotificationTypeId() != null ? domain.getNotificationTypeId().intValue() : null)
+                .languageId(domain.getLanguageId() != null ? domain.getLanguageId().intValue() : null)
                 .translatedName(domain.getTranslatedName())
                 .translatedDescription(domain.getTranslatedDescription())
                 .source(toEntitySource(domain.getSource()))
@@ -31,15 +31,15 @@ public class NotificationTypeTranslationMapper {
             return null;
         }
 
-        return NotificationTypeTranslation.builder()
-                .translationId(entity.getTranslationId())
-                .notificationTypeId(entity.getNotificationTypeId())
-                .languageId(entity.getLanguageId())
-                .translatedName(entity.getTranslatedName())
-                .translatedDescription(entity.getTranslatedDescription())
-                .source(toDomainSource(entity.getSource()))
-                .status(toDomainStatus(entity.getStatus()))
-                .build();
+        NotificationTypeTranslation domain = new NotificationTypeTranslation();
+        domain.setTranslationId(entity.getTranslationId() != null ? entity.getTranslationId().longValue() : null);
+        domain.setNotificationTypeId(entity.getNotificationTypeId() != null ? entity.getNotificationTypeId().longValue() : null);
+        domain.setLanguageId(entity.getLanguageId() != null ? entity.getLanguageId().longValue() : null);
+        domain.setTranslatedName(entity.getTranslatedName());
+        domain.setTranslatedDescription(entity.getTranslatedDescription());
+        domain.setSource(toDomainSource(entity.getSource()));
+        domain.setStatus(toDomainStatus(entity.getStatus()));
+        return domain;
     }
 
     private String toEntitySource(TranslationSource source) {

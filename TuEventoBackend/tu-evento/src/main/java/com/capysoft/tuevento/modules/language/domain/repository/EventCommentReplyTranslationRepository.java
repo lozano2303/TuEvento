@@ -1,27 +1,63 @@
 package com.capysoft.tuevento.modules.language.domain.repository;
 
 import com.capysoft.tuevento.modules.language.domain.model.EventCommentReplyTranslation;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repositorio de dominio para EventCommentReplyTranslation.
+ */
 public interface EventCommentReplyTranslationRepository {
 
+    /**
+     * Busca una traducción específica por reply y idioma.
+     */
+    Optional<EventCommentReplyTranslation> findByReplyAndLanguage(Long replyId, Long languageId);
+
+    /**
+     * Busca todas las traducciones de un reply.
+     */
+    List<EventCommentReplyTranslation> findByReply(Long replyId);
+
+    /**
+     * Busca todas las traducciones en un idioma específico.
+     */
+    List<EventCommentReplyTranslation> findByLanguage(Long languageId);
+
+    /**
+     * Busca traducciones por estado.
+     */
+    List<EventCommentReplyTranslation> findByStatus(TranslationStatus status);
+
+    /**
+     * Busca traducciones por reply y estado.
+     */
+    List<EventCommentReplyTranslation> findByReplyAndStatus(Long replyId, TranslationStatus status);
+
+    /**
+     * Guarda una traducción.
+     */
     EventCommentReplyTranslation save(EventCommentReplyTranslation translation);
 
-    Optional<EventCommentReplyTranslation> findById(Integer id);
+    /**
+     * Guarda múltiples traducciones.
+     */
+    List<EventCommentReplyTranslation> saveAll(List<EventCommentReplyTranslation> translations);
 
-    List<EventCommentReplyTranslation> findByReplyId(Integer replyId);
-
-    Optional<EventCommentReplyTranslation> findByReplyIdAndLanguageId(Integer replyId, Integer languageId);
-
-    List<EventCommentReplyTranslation> findByLanguageId(Integer languageId);
-
+    /**
+     * Elimina una traducción.
+     */
     void delete(EventCommentReplyTranslation translation);
 
-    void deleteById(Integer id);
+    /**
+     * Elimina todas las traducciones de un reply.
+     */
+    void deleteByReply(Long replyId);
 
-    boolean existsById(Integer id);
-
-    List<EventCommentReplyTranslation> findAll();
+    /**
+     * Verifica si existe una traducción para reply y idioma específicos.
+     */
+    boolean existsByReplyAndLanguage(Long replyId, Long languageId);
 }

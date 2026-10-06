@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper;
 
-import com.capysoft.tuevento.modules.language.domain.enums.TranslationSource;
-import com.capysoft.tuevento.modules.language.domain.enums.TranslationStatus;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import com.capysoft.tuevento.modules.language.domain.model.SectionTypeTranslation;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.SectionTypeTranslationEntity;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.TranslationStatusEnum;
@@ -16,9 +16,9 @@ public class SectionTypeTranslationMapper {
         }
 
         return SectionTypeTranslationEntity.builder()
-                .translationId(domain.getTranslationId())
-                .sectionTypeId(domain.getSectionTypeId())
-                .languageId(domain.getLanguageId())
+                .translationId(domain.getTranslationId() != null ? domain.getTranslationId().intValue() : null)
+                .sectionTypeId(domain.getSectionTypeId() != null ? domain.getSectionTypeId().intValue() : null)
+                .languageId(domain.getLanguageId() != null ? domain.getLanguageId().intValue() : null)
                 .translatedName(domain.getTranslatedName())
                 .source(toEntitySource(domain.getSource()))
                 .status(toEntityStatus(domain.getStatus()))
@@ -30,14 +30,14 @@ public class SectionTypeTranslationMapper {
             return null;
         }
 
-        return SectionTypeTranslation.builder()
-                .translationId(entity.getTranslationId())
-                .sectionTypeId(entity.getSectionTypeId())
-                .languageId(entity.getLanguageId())
-                .translatedName(entity.getTranslatedName())
-                .source(toDomainSource(entity.getSource()))
-                .status(toDomainStatus(entity.getStatus()))
-                .build();
+        SectionTypeTranslation domain = new SectionTypeTranslation();
+        domain.setTranslationId(entity.getTranslationId() != null ? entity.getTranslationId().longValue() : null);
+        domain.setSectionTypeId(entity.getSectionTypeId() != null ? entity.getSectionTypeId().longValue() : null);
+        domain.setLanguageId(entity.getLanguageId() != null ? entity.getLanguageId().longValue() : null);
+        domain.setTranslatedName(entity.getTranslatedName());
+        domain.setSource(toDomainSource(entity.getSource()));
+        domain.setStatus(toDomainStatus(entity.getStatus()));
+        return domain;
     }
 
     private String toEntitySource(TranslationSource source) {
