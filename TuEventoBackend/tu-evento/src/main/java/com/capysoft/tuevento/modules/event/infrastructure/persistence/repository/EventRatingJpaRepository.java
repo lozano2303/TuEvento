@@ -13,7 +13,6 @@ public interface EventRatingJpaRepository extends JpaRepository<EventRatingEntit
     /** Lista todos los comentarios de un evento, ordenados más recientes primero. */
     List<EventRatingEntity> findByEventIdOrderByCreatedAtDescRatingIdDesc(Long eventId);
 
-    /** Para la vista sigue existiendo, pero el service ya no la necesita para duplicados. */
     boolean existsByEventIdAndUserId(Long eventId, Long userId);
 
     /**
@@ -23,11 +22,18 @@ public interface EventRatingJpaRepository extends JpaRepository<EventRatingEntit
     Optional<EventRatingEntity> findTop1ByEventIdAndUserIdOrderByCreatedAtDesc(Long eventId, Long userId);
 
     /**
-     * ¿Tiene ya el usuario un comentario con rating != null en este evento?
-     * Usado para R3: determinar si el próximo comentario debe llevar calificación.
+     * ¿Tiene ya el usuario un comentario PRINCIPAL con rating != null en este evento?
+     * Solo comentarios principales (parent_rating_id IS NULL) cuentan para R3.
      */
     @Query("SELECT COUNT(r) > 0 FROM EventRatingEntity r " +
-           "WHERE r.eventId = :eventId AND r.userId = :userId AND r.rating IS NOT NULL")
+           "WHERE r.eventId = :eventId AND r.userId = :userId " +
+           "AND r.rating IS NOT NULL AND r.parentRatingId IS NULL")
     boolean existsRatedCommentByEventIdAndUserId(@Param("eventId") Long eventId,
                                                   @Param("userId")  Long userId);
+
+    /** Respuestas directas de un comentario principal, orden cronológico. */
+    List<EventRatingEntity> findByParentRatingIdOrderByCreatedAtAscRatingIdAsc(Long parentRatingId);
+
+    /** Borra todas las respuestas directas de un comentario principal. */
+    void deleteAllByParentRatingId(Long parentRatingId);
 }

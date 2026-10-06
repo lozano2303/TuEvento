@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.event.application.usecase;
 
+import com.capysoft.tuevento.modules.event.application.port.in.DeleteEventRatingUseCase;
 import com.capysoft.tuevento.modules.event.domain.event.EventRatingDeletedEvent;
 import com.capysoft.tuevento.modules.event.domain.model.EventRating;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
@@ -22,108 +23,128 @@ import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DeleteEventRatingService")
 class DeleteEventRatingServiceTest {
 
-    @Mock private EventRatingRepository    ratingRepository;
+    @Mock private EventRatingRepository     ratingRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
-    @Mock private Clock                    clock;
+    @Mock private Clock                     clock;
 
-    @InjectMocks
-    private DeleteEventRatingService service;
+    @InjectMocks private DeleteEventRatingService service;
 
     private static final Long EVENT_ID  = 10L;
     private static final Long RATING_ID = 42L;
-    private static final Long OWNER_ID  = 7L;
-    private static final Long OTHER_ID  = 99L;
+    private static final Long USER_ID   = 7L;
+    private static final Long OTHER_USER = 8L;
 
-    @SuppressWarnings("all")
-    private void setupClock() {
-        when(clock.instant()).thenReturn(Instant.parse("2026-10-05T14:00:00Z"));
-        when(clock.getZone()).thenReturn(ZoneId.of("America/Bogota"));
+    private static final Instant FIXED_NOW = Instant.parse("2026-10-05T14:30:00Z");
+    private static final ZoneId  BOGOTA    = ZoneId.of("America/Bogota");
+
+    private void givenClock() {
+        when(clock.instant()).thenReturn(FIXED_NOW);
+        when(clock.getZone()).thenReturn(BOGOTA);
     }
 
-    private EventRating ownerRating(Integer rating) {
+    private EventRating principalRating() {
         return EventRating.builder()
-                .ratingId(RATING_ID).eventId(EVENT_ID).userId(OWNER_ID)
-                .rating(rating).comment("Buen evento").isVisible(true)
+                .ratingId(RATING_ID).eventId(EVENT_ID).userId(USER_ID)
+                .rating(4).comment("ok").isVisible(true)
                 .createdAt(LocalDateTime.now())
+                .parentRatingId(null)   // principal
                 .build();
     }
 
-    @Nested
-    @DisplayName("Happy path")
-    class HappyPath {
-
-        @Test
-        @DisplayName("dueño borra su comentario con rating → deleteById + EventRatingDeletedEvent")
-        void owner_deletes_rated_comment() {
-            setupClock();
-            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(ownerRating(4)));
-
-            service.execute(EVENT_ID, RATING_ID, OWNER_ID);
-
-            verify(ratingRepository).deleteById(RATING_ID);
-            ArgumentCaptor<EventRatingDeletedEvent> cap = ArgumentCaptor.forClass(EventRatingDeletedEvent.class);
-            verify(eventPublisher).publishEvent(cap.capture());
-            assertThat(cap.getValue().getRatingId()).isEqualTo(RATING_ID);
-            assertThat(cap.getValue().getEventId()).isEqualTo(EVENT_ID);
-            assertThat(cap.getValue().getUserId()).isEqualTo(OWNER_ID);
-        }
-
-        @Test
-        @DisplayName("dueño borra su comentario sin rating (null) → también permitido")
-        void owner_deletes_unrated_comment() {
-            setupClock();
-            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(ownerRating(null)));
-
-            assertThatNoException().isThrownBy(() ->
-                    service.execute(EVENT_ID, RATING_ID, OWNER_ID));
-            verify(ratingRepository).deleteById(RATING_ID);
-        }
+    private EventRating replyRating() {
+        return EventRating.builder()
+                .ratingId(RATING_ID).eventId(EVENT_ID).userId(USER_ID)
+                .rating(null).comment("reply").isVisible(true)
+                .createdAt(LocalDateTime.now())
+                .parentRatingId(99L)   // respuesta
+                .build();
     }
 
-    @Nested
-    @DisplayName("Validaciones")
-    class Validations {
+    @Test @DisplayName("borrar comentario principal borra también sus respuestas")
+    void delete_principal_also_deletes_replies() {
+        givenClock();
+        when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(principalRating()));
 
-        @Test
-        @DisplayName("rating no encontrado → NotFoundException RATING_NOT_FOUND")
-        void not_found_throws() {
-            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.empty());
+        service.execute(EVENT_ID, RATING_ID, USER_ID);
 
-            assertThatThrownBy(() -> service.execute(EVENT_ID, RATING_ID, OWNER_ID))
-                    .isInstanceOf(NotFoundException.class)
-                    .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("RATING_NOT_FOUND"));
-            verify(ratingRepository, never()).deleteById(anyLong());
-        }
+        verify(ratingRepository).deleteAllByParentRatingId(RATING_ID);
+        verify(ratingRepository).deleteById(RATING_ID);
+    }
 
-        @Test
-        @DisplayName("rating de otro evento → NotFoundException RATING_NOT_FOUND")
-        void wrong_event_throws() {
-            EventRating otherEvent = EventRating.builder()
-                    .ratingId(RATING_ID).eventId(999L).userId(OWNER_ID)
-                    .rating(3).comment("x").isVisible(true).createdAt(LocalDateTime.now()).build();
-            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(otherEvent));
+    @Test @DisplayName("borrar una respuesta NO borra el comentario padre")
+    void delete_reply_does_not_delete_parent() {
+        givenClock();
+        when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(replyRating()));
 
-            assertThatThrownBy(() -> service.execute(EVENT_ID, RATING_ID, OWNER_ID))
-                    .isInstanceOf(NotFoundException.class)
-                    .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("RATING_NOT_FOUND"));
-        }
+        service.execute(EVENT_ID, RATING_ID, USER_ID);
 
-        @Test
-        @DisplayName("rating de otra persona → BusinessException RATING_ACCESS_DENIED")
-        void non_owner_throws() {
-            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(ownerRating(4)));
+        verify(ratingRepository, never()).deleteAllByParentRatingId(any());
+        verify(ratingRepository).deleteById(RATING_ID);
+    }
 
-            assertThatThrownBy(() -> service.execute(EVENT_ID, RATING_ID, OTHER_ID))
-                    .isInstanceOf(BusinessException.class)
-                    .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("RATING_ACCESS_DENIED"));
-            verify(ratingRepository, never()).deleteById(anyLong());
+    @Test @DisplayName("rating no encontrado → NotFoundException RATING_NOT_FOUND")
+    void rating_not_found() {
+        when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.execute(EVENT_ID, RATING_ID, USER_ID))
+                .isInstanceOf(NotFoundException.class)
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("RATING_NOT_FOUND"));
+    }
+
+    @Test @DisplayName("rating de otro evento → NotFoundException RATING_NOT_FOUND")
+    void rating_different_event() {
+        EventRating wrongEvent = EventRating.builder()
+                .ratingId(RATING_ID).eventId(99L).userId(USER_ID)
+                .rating(3).comment("otro").isVisible(true).createdAt(LocalDateTime.now())
+                .build();
+        when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(wrongEvent));
+        assertThatThrownBy(() -> service.execute(EVENT_ID, RATING_ID, USER_ID))
+                .isInstanceOf(NotFoundException.class)
+                .satisfies(ex -> assertThat(((NotFoundException) ex).getCode()).isEqualTo("RATING_NOT_FOUND"));
+    }
+
+    @Test @DisplayName("otro usuario intenta borrar → BusinessException RATING_ACCESS_DENIED")
+    void other_user_cannot_delete() {
+        when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(principalRating()));
+        assertThatThrownBy(() -> service.execute(EVENT_ID, RATING_ID, OTHER_USER))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getCode()).isEqualTo("RATING_ACCESS_DENIED"));
+        verify(ratingRepository, never()).deleteById(any());
+    }
+
+    @Test @DisplayName("evento de dominio publicado con datos correctos")
+    void domain_event_published() {
+        givenClock();
+        when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(principalRating()));
+
+        service.execute(EVENT_ID, RATING_ID, USER_ID);
+
+        ArgumentCaptor<EventRatingDeletedEvent> captor = ArgumentCaptor.forClass(EventRatingDeletedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().getRatingId()).isEqualTo(RATING_ID);
+        assertThat(captor.getValue().getEventId()).isEqualTo(EVENT_ID);
+        assertThat(captor.getValue().getUserId()).isEqualTo(USER_ID);
+    }
+
+    @Nested @DisplayName("Orden de operaciones")
+    class OrderOfOperations {
+
+        @Test @DisplayName("respuestas se borran ANTES del comentario principal (FK constraint)")
+        void replies_deleted_before_principal() {
+            givenClock();
+            when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(principalRating()));
+
+            service.execute(EVENT_ID, RATING_ID, USER_ID);
+
+            // Verificar que deleteAll se invocó antes que deleteById
+            var inOrder = inOrder(ratingRepository);
+            inOrder.verify(ratingRepository).deleteAllByParentRatingId(RATING_ID);
+            inOrder.verify(ratingRepository).deleteById(RATING_ID);
         }
     }
 }

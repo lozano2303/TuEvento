@@ -21,17 +21,20 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 
 /**
- * Crea un comentario/rating de evento aplicando las reglas de negocio R1-R5.
+ * Crea un comentario/rating de evento aplicando las reglas de negocio R1-R5
+ * y la regla de respuestas (A).
  *
  * <ul>
- *   <li>R1: Cualquier usuario autenticado puede comentar.</li>
+ *   <li>R1: Cualquier usuario autenticado puede comentar o responder.</li>
  *   <li>R2: Múltiples comentarios por persona y evento.</li>
- *   <li>R3: El primer comentario CON rating en el evento lleva calificación;
- *       los siguientes se guardan con rating = null.</li>
- *   <li>R4: El organizador del evento (event.userId == userId) siempre
- *       guarda rating = null, sin importar lo que envíe el cliente.</li>
- *   <li>R5: Antispam — máximo 1 comentario cada 10 segundos por
- *       persona/evento (COMMENT_RATE_LIMITED → 400).</li>
+ *   <li>R3: El primer comentario PRINCIPAL con rating lleva calificación;
+ *       los siguientes se guardan con rating = null. Las respuestas siempre null.</li>
+ *   <li>R4: El organizador del evento siempre rating = null.</li>
+ *   <li>R5: Antispam — máximo 1 comentario/respuesta cada 10 segundos
+ *       por persona/evento (COMMENT_RATE_LIMITED → 400).</li>
+ *   <li>A:  Si hay parentRatingId, el padre debe existir, ser del mismo evento
+ *       y ser un comentario principal (parent_rating_id IS NULL en el padre).
+ *       Si el padre es una respuesta → COMMENT_PARENT_INVALID.</li>
  * </ul>
  */
 @Service
@@ -40,17 +43,17 @@ public class AddEventRatingService implements AddEventRatingUseCase {
 
     private static final int ANTISPAM_SECONDS = 10;
 
-    private final EventRepository          eventRepository;
-    private final EventRatingRepository    ratingRepository;
+    private final EventRepository           eventRepository;
+    private final EventRatingRepository     ratingRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final ProfileJpaRepository     profileJpaRepository;
-    private final Clock                    clock;
+    private final ProfileJpaRepository      profileJpaRepository;
+    private final Clock                     clock;
 
     @Override
     @Transactional
     public EventRatingResponse execute(Long eventId, AddEventRatingRequest request, Long userId) {
 
-        // ── Carga y validaciones de evento ──────────────────────────────────
+        // ── Carga y validaciones del evento ─────────────────────────────────
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("EVENT_NOT_FOUND",
                         "Event not found with id: " + eventId));
@@ -59,13 +62,28 @@ public class AddEventRatingService implements AddEventRatingUseCase {
             throw new BusinessException("EVENT_RATING_NOT_ALLOWED",
                     "Comments are only allowed for PUBLISHED or COMPLETED events");
         }
-
         if (!Boolean.TRUE.equals(event.getIsPublic())) {
             throw new BusinessException("EVENT_RATING_NOT_ALLOWED",
                     "Comments are not allowed for private events");
         }
 
-        // ── R5: antispam ────────────────────────────────────────────────────
+        // ── Regla A: validación del padre ────────────────────────────────────
+        Long parentRatingId = request.getParentRatingId();
+        if (parentRatingId != null) {
+            EventRating parent = ratingRepository.findById(parentRatingId)
+                    .orElseThrow(() -> new NotFoundException("RATING_NOT_FOUND",
+                            "Parent rating not found with id: " + parentRatingId));
+            if (!parent.getEventId().equals(eventId)) {
+                throw new BusinessException("COMMENT_PARENT_INVALID",
+                        "Parent comment does not belong to this event");
+            }
+            if (parent.getParentRatingId() != null) {
+                throw new BusinessException("COMMENT_PARENT_INVALID",
+                        "Cannot reply to a reply — only one level of nesting is allowed");
+            }
+        }
+
+        // ── R5: antispam ─────────────────────────────────────────────────────
         LocalDateTime now = LocalDateTime.now(clock);
         ratingRepository.findLastByEventIdAndUserId(eventId, userId).ifPresent(last -> {
             long secondsSinceLast = java.time.Duration.between(last.getCreatedAt(), now).getSeconds();
@@ -76,11 +94,10 @@ public class AddEventRatingService implements AddEventRatingUseCase {
             }
         });
 
-        // ── Trim y validación de texto ───────────────────────────────────────
+        // ── Trim y validación del texto ──────────────────────────────────────
         String trimmedComment = request.getComment() == null ? null : request.getComment().trim();
         if (trimmedComment == null || trimmedComment.isEmpty()) {
-            throw new BusinessException("COMMENT_BLANK",
-                    "Comment text must not be blank");
+            throw new BusinessException("COMMENT_BLANK", "Comment text must not be blank");
         }
         if (trimmedComment.length() > 500) {
             throw new BusinessException("COMMENT_TOO_LONG",
@@ -90,15 +107,16 @@ public class AddEventRatingService implements AddEventRatingUseCase {
         // ── R4: el organizador nunca califica ────────────────────────────────
         boolean isOrganizer = event.getUserId().equals(userId);
 
-        // ── R3: calificación solo si es el primero en tenerla ────────────────
-        // Si es organizador → null. Si ya tiene uno con rating → null. Si no → usar lo enviado.
+        // ── R3 + regla A: las respuestas siempre llevan rating null ──────────
+        // Un comentario principal lleva rating solo si el usuario no es el
+        // organizador y aún no tiene un comentario principal con rating.
         Integer effectiveRating = null;
-        if (!isOrganizer) {
-            boolean alreadyHasRating = ratingRepository.existsRatedCommentByEventIdAndUserId(eventId, userId);
+        if (parentRatingId == null && !isOrganizer) {
+            boolean alreadyHasRating =
+                    ratingRepository.existsRatedCommentByEventIdAndUserId(eventId, userId);
             if (!alreadyHasRating) {
                 effectiveRating = request.getRating(); // puede ser null si el cliente no lo envió
             }
-            // Si alreadyHasRating == true → effectiveRating permanece null (ignoramos lo enviado)
         }
 
         // ── Guardar ──────────────────────────────────────────────────────────
@@ -109,6 +127,7 @@ public class AddEventRatingService implements AddEventRatingUseCase {
                 .comment(trimmedComment)
                 .isVisible(true)
                 .createdAt(now)
+                .parentRatingId(parentRatingId)
                 .build());
 
         // ── Resolver nombre del autor ────────────────────────────────────────
@@ -116,7 +135,7 @@ public class AddEventRatingService implements AddEventRatingUseCase {
                 .map(p -> p.getFullName())
                 .orElse("Usuario");
 
-        // ── Publicar evento de dominio (AFTER_COMMIT lo enviará al WS) ───────
+        // ── Publicar evento de dominio (AFTER_COMMIT → WebSocket) ────────────
         eventPublisher.publishEvent(EventRatingAddedEvent.builder()
                 .ratingId(saved.getRatingId())
                 .eventId(eventId)
@@ -125,6 +144,7 @@ public class AddEventRatingService implements AddEventRatingUseCase {
                 .comment(saved.getComment())
                 .isVisible(saved.getIsVisible())
                 .isOrganizer(isOrganizer)
+                .parentRatingId(parentRatingId)
                 .occurredAt(saved.getCreatedAt())
                 .build());
 
@@ -137,6 +157,9 @@ public class AddEventRatingService implements AddEventRatingUseCase {
                 .isVisible(saved.getIsVisible())
                 .isOrganizer(isOrganizer)
                 .createdAt(saved.getCreatedAt())
+                .parentRatingId(saved.getParentRatingId())
+                .editableUntil(saved.getCreatedAt() != null
+                        ? saved.getCreatedAt().plusHours(2) : null)
                 .build();
     }
 }

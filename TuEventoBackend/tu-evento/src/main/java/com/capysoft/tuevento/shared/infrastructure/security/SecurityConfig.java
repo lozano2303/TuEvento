@@ -153,9 +153,11 @@ public class SecurityConfig {
                         // Sin estas reglas explícitas, los verbos restantes caerían en anyRequest()
                         // y @PreAuthorize podría bloquearse antes de llegar al use case (403 de Spring,
                         // no el error de negocio del use case).
-                        // ── Ratings: cualquier usuario autenticado puede comentar/borrar (R1) ──
-                        // DELETE /ratings/* va ANTES de DELETE /events/** (que exige ORGANIZER).
+                        // ── Ratings: cualquier usuario autenticado puede comentar/borrar/editar (R1) ──
+                        // DELETE y PATCH /ratings/* van ANTES de DELETE/PATCH /events/** (ORGANIZER).
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE,
+                                "/api/v1/events/*/ratings/*").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH,
                                 "/api/v1/events/*/ratings/*").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.POST,
                                 "/api/v1/events/*/ratings").authenticated()

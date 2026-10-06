@@ -1,31 +1,40 @@
 /**
- * EventCommentService — gestión de comentarios/ratings de eventos.
+ * EventCommentService — gestión de comentarios/ratings y respuestas de eventos.
  *
  * Endpoints:
- *   GET    /events/{eventId}/ratings              — lista pública (sin auth)
- *   POST   /events/{eventId}/ratings              — crear comentario (cualquier usuario autenticado, R1)
- *   DELETE /events/{eventId}/ratings/{ratingId}   — borrar comentario propio (cualquier usuario autenticado, R1)
+ *   GET    /events/{eventId}/ratings                       — lista pública plana con parentRatingId
+ *   POST   /events/{eventId}/ratings                       — crear comentario o respuesta (R1)
+ *   PATCH  /events/{eventId}/ratings/{ratingId}            — editar texto propio (R1, ventana 2 h)
+ *   DELETE /events/{eventId}/ratings/{ratingId}            — borrar propio (R1)
  *
- * Reglas de negocio aplicadas en el backend:
- *   R1 — Cualquier usuario autenticado puede comentar y borrar sus propios comentarios.
+ * Reglas de negocio:
+ *   R1 — Cualquier usuario autenticado puede comentar, responder, editar y borrar los suyos.
  *   R2 — Múltiples comentarios por persona y evento.
- *   R3 — El primer comentario con rating en el evento lleva calificación; los siguientes no.
+ *   R3 — El primer comentario PRINCIPAL con rating lleva calificación; los siguientes no.
  *   R4 — El organizador del evento nunca lleva calificación.
- *   R5 — Antispam: máximo 1 comentario cada 10 segundos por persona/evento.
+ *   R5 — Antispam: máximo 1 comentario/respuesta cada 10 s por persona/evento.
+ *   A  — Respuestas: un solo nivel (no se responde a una respuesta).
+ *   B  — Edición: solo el texto, solo durante 2 h desde createdAt.
+ *   C  — Borrar un principal borra sus respuestas.
  *
- * El payload de GET y POST tiene la misma forma:
- *   { ratingId, userId, authorName, rating (nullable), comment, isVisible, isOrganizer, createdAt }
+ * Payload del GET (lista plana):
+ *   { ratingId, userId, authorName, rating (nullable), comment, isVisible,
+ *     isOrganizer, createdAt, editedAt (nullable), parentRatingId (nullable) }
  */
 import { httpRequest } from './httpClient.js';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
+/** Lanza un Error enriquecido con err.code del backend. */
+function buildError(body, fallback) {
+  const err = new Error(body.message || fallback);
+  err.code = body.code || null;
+  return err;
+}
+
 /**
- * Obtiene todos los comentarios/ratings visibles de un evento.
+ * Obtiene todos los comentarios/ratings visibles de un evento (lista plana).
  * Endpoint público — no requiere autenticación.
- *
- * @param {string|number} eventId
- * @returns {Promise<{ data: Array }>}
  */
 export const getEventComments = async (eventId) => {
   const res = await fetch(`${API_URL}/events/${eventId}/ratings`);
@@ -34,14 +43,11 @@ export const getEventComments = async (eventId) => {
 };
 
 /**
- * Publica un nuevo comentario/rating en un evento.
- * Requiere autenticación — cualquier rol puede comentar (R1).
+ * Publica un nuevo comentario/rating o una respuesta en un evento.
+ * Requiere autenticación (R1).
  *
  * @param {string|number} eventId
- * @param {{ rating?: number, comment: string }} payload
- *   - rating: entero entre 1 y 5, opcional (R3/R4 deciden si aplica)
- *   - comment: texto no vacío, máximo 500 caracteres
- * @returns {Promise<{ data: object }>}
+ * @param {{ rating?: number, comment: string, parentRatingId?: number }} payload
  */
 export const addEventComment = async (eventId, payload) => {
   const res = await httpRequest(`${API_URL}/events/${eventId}/ratings`, {
@@ -50,35 +56,41 @@ export const addEventComment = async (eventId, payload) => {
     body: JSON.stringify(payload),
   });
   const body = await res.json();
-  if (!res.ok) {
-    // Propagar el code del backend (e.g. COMMENT_RATE_LIMITED) junto al mensaje
-    // para que el caller pueda distinguir errores sin depender de substrings del mensaje.
-    const err = new Error(body.message || 'Error al publicar el comentario');
-    err.code = body.code || null;
-    throw err;
-  }
+  if (!res.ok) throw buildError(body, 'Error al publicar el comentario');
+  return body;
+};
+
+/**
+ * Edita el texto de un comentario propio (solo texto, solo dentro de 2 h).
+ *
+ * @param {string|number} eventId
+ * @param {string|number} ratingId
+ * @param {string} comment  Nuevo texto (no vacío, máx 500)
+ */
+export const editEventComment = async (eventId, ratingId, comment) => {
+  const res = await httpRequest(
+    `${API_URL}/events/${eventId}/ratings/${ratingId}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment }),
+    }
+  );
+  const body = await res.json();
+  if (!res.ok) throw buildError(body, 'Error al editar el comentario');
   return body;
 };
 
 /**
  * Elimina de forma permanente un comentario/rating propio.
- * El backend valida que el comentario pertenezca al usuario autenticado
- * (ownership extraído del JWT, nunca del body).
- *
- * @param {string|number} eventId
- * @param {string|number} ratingId
- * @returns {Promise<{ data: null }>}
- * @throws Error con mensaje del backend en caso de 403 (no propietario) o 404 (no existe)
+ * Al borrar un principal, el backend elimina también sus respuestas.
  */
 export const deleteEventComment = async (eventId, ratingId) => {
-  const res = await httpRequest(`${API_URL}/events/${eventId}/ratings/${ratingId}`, {
-    method: 'DELETE',
-  });
+  const res = await httpRequest(
+    `${API_URL}/events/${eventId}/ratings/${ratingId}`,
+    { method: 'DELETE' }
+  );
   const body = await res.json();
-  if (!res.ok) {
-    const err = new Error(body.message || 'Error al eliminar el comentario');
-    err.code = body.code || null;
-    throw err;
-  }
+  if (!res.ok) throw buildError(body, 'Error al eliminar el comentario');
   return body;
 };

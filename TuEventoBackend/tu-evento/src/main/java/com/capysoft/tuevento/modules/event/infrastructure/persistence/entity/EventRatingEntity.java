@@ -36,4 +36,16 @@ public class EventRatingEntity {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    /** Nullable. Se rellena al editar el comentario (commit 2). */
+    @Column(name = "edited_at")
+    private LocalDateTime editedAt;
+
+    /**
+     * Nullable. Si es null, es un comentario principal.
+     * Si tiene valor, es una respuesta al comentario con ese ratingId.
+     * FK auto-referencial con ON DELETE CASCADE (migración 088).
+     */
+    @Column(name = "parent_rating_id")
+    private Long parentRatingId;
 }

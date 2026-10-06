@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 089-event-rating-add-edited-at
+      author: capysoft
+      comment: >
+        Añade columna edited_at nullable a event_rating para registrar
+        cuándo fue editado por última vez un comentario.
+        Null significa que el comentario nunca ha sido editado.
+      changes:
+        - addColumn:
+            tableName: event_rating
+            columns:
+              - column:
+                  name: edited_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: true

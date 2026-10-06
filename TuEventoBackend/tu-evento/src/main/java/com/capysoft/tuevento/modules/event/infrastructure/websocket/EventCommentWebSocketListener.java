@@ -18,16 +18,9 @@ import java.util.Map;
  *
  * <p>Canal: {@code /topic/events/{eventId}/comments}
  *
- * <p>Reglas:
- * <ul>
- *   <li>Solo publica comentarios visibles ({@code isVisible = true}).
- *   <li>El payload tiene la misma forma que cada elemento del GET /ratings:
- *       ratingId, userId, authorName, rating (nullable), comment,
- *       isVisible, isOrganizer, createdAt.
- *   <li>Usa {@code AFTER_COMMIT} para garantizar que la BD ya tiene el registro
- *       antes de notificar a los clientes.
- *   <li>El fallo del push WebSocket es no-bloqueante.
- * </ul>
+ * <p>El payload tiene la MISMA forma que cada elemento del GET /ratings:
+ * ratingId, userId, authorName, rating (nullable), comment,
+ * isVisible, isOrganizer, parentRatingId (nullable), createdAt.
  */
 @Slf4j
 @Component
@@ -52,20 +45,21 @@ public class EventCommentWebSocketListener {
                     .orElse("Usuario");
 
             Map<String, Object> payload = new HashMap<>();
-            payload.put("ratingId",    event.getRatingId());
-            payload.put("userId",      event.getUserId());
-            payload.put("authorName",  authorName);
-            payload.put("rating",      event.getRating());       // nullable
-            payload.put("comment",     event.getComment());
-            payload.put("isVisible",   event.getIsVisible());
-            payload.put("isOrganizer", Boolean.TRUE.equals(event.getIsOrganizer()));
-            payload.put("createdAt",   event.getOccurredAt() != null
+            payload.put("ratingId",      event.getRatingId());
+            payload.put("userId",        event.getUserId());
+            payload.put("authorName",    authorName);
+            payload.put("rating",        event.getRating());       // nullable
+            payload.put("comment",       event.getComment());
+            payload.put("isVisible",     event.getIsVisible());
+            payload.put("isOrganizer",   Boolean.TRUE.equals(event.getIsOrganizer()));
+            payload.put("parentRatingId", event.getParentRatingId()); // nullable
+            payload.put("createdAt",     event.getOccurredAt() != null
                     ? event.getOccurredAt().toString() : null);
 
             messagingTemplate.convertAndSend(topic, payload);
 
-            log.debug("[EventComment] Comment broadcast to {}: ratingId={}, userId={}, isOrganizer={}",
-                    topic, event.getRatingId(), event.getUserId(), event.getIsOrganizer());
+            log.debug("[EventComment] Comment broadcast to {}: ratingId={}, userId={}, parentRatingId={}",
+                    topic, event.getRatingId(), event.getUserId(), event.getParentRatingId());
 
         } catch (Exception e) {
             log.error("[EventComment] WebSocket push failed (non-breaking): ratingId={}, error={}",
