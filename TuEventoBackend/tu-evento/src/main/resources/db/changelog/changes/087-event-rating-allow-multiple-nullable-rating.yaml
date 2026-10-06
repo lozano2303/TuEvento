@@ -1,0 +1,47 @@
+databaseChangeLog:
+  - changeSet:
+      id: 087-event-rating-allow-multiple-nullable-rating
+      author: capysoft
+      comment: >
+        Adapta event_rating para permitir múltiples comentarios por usuario/evento
+        (se elimina la restricción única si existiera), hace rating nullable
+        (solo el primer comentario con calificación la lleva) y actualiza el CHECK.
+        También agrega un índice compuesto (event_id, created_at DESC) para ordenar
+        comentarios eficientemente en el GET y comparar la fecha del último comentario
+        en el antispam.
+
+      changes:
+        # 1. Quitar el CHECK original (rating NOT NULL BETWEEN 1 AND 5)
+        - sql:
+            sql: >
+              ALTER TABLE event_rating
+              DROP CONSTRAINT IF EXISTS chk_event_rating_value;
+
+        # 2. Hacer rating nullable
+        - modifyDataType:
+            tableName: event_rating
+            columnName: rating
+            newDataType: INT
+
+        - sql:
+            sql: >
+              ALTER TABLE event_rating
+              ALTER COLUMN rating DROP NOT NULL;
+
+        # 3. Nuevo CHECK: NULL permitido, o valor entre 1 y 5
+        - sql:
+            sql: >
+              ALTER TABLE event_rating
+              ADD CONSTRAINT chk_event_rating_value
+              CHECK (rating IS NULL OR rating BETWEEN 1 AND 5);
+
+        # 4. Índice compuesto para el GET ordenado y el antispam
+        - createIndex:
+            tableName: event_rating
+            indexName: idx_event_rating_event_created
+            columns:
+              - column:
+                  name: event_id
+              - column:
+                  name: created_at
+                  descending: true
