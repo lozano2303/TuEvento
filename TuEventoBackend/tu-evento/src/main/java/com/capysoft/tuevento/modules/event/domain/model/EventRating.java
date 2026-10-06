@@ -13,7 +13,7 @@ public class EventRating {
     private Long ratingId;
     private Long eventId;
     private Long userId;
-    private int rating;
+    private Integer rating;
     private String comment;
     private Boolean isVisible;
     private LocalDateTime createdAt;

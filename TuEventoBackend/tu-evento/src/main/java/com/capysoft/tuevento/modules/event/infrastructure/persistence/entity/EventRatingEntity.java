@@ -25,8 +25,8 @@ public class EventRatingEntity {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "rating", nullable = false)
-    private int rating;
+    @Column(name = "rating")
+    private Integer rating;
 
     @Column(name = "comment", nullable = false)
     private String comment;
