@@ -1,27 +1,63 @@
 package com.capysoft.tuevento.modules.language.domain.repository;
 
 import com.capysoft.tuevento.modules.language.domain.model.NotificationTypeTranslation;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repositorio de dominio para NotificationTypeTranslation.
+ */
 public interface NotificationTypeTranslationRepository {
 
+    /**
+     * Busca una traducción específica por notification type y idioma.
+     */
+    Optional<NotificationTypeTranslation> findByNotificationTypeAndLanguage(Long notificationTypeId, Long languageId);
+
+    /**
+     * Busca todas las traducciones de un notification type.
+     */
+    List<NotificationTypeTranslation> findByNotificationType(Long notificationTypeId);
+
+    /**
+     * Busca todas las traducciones en un idioma específico.
+     */
+    List<NotificationTypeTranslation> findByLanguage(Long languageId);
+
+    /**
+     * Busca traducciones por estado.
+     */
+    List<NotificationTypeTranslation> findByStatus(TranslationStatus status);
+
+    /**
+     * Busca traducciones por notification type y estado.
+     */
+    List<NotificationTypeTranslation> findByNotificationTypeAndStatus(Long notificationTypeId, TranslationStatus status);
+
+    /**
+     * Guarda una traducción.
+     */
     NotificationTypeTranslation save(NotificationTypeTranslation translation);
 
-    Optional<NotificationTypeTranslation> findById(Integer id);
+    /**
+     * Guarda múltiples traducciones.
+     */
+    List<NotificationTypeTranslation> saveAll(List<NotificationTypeTranslation> translations);
 
-    List<NotificationTypeTranslation> findByNotificationTypeId(Integer notificationTypeId);
-
-    Optional<NotificationTypeTranslation> findByNotificationTypeIdAndLanguageId(Integer notificationTypeId, Integer languageId);
-
-    List<NotificationTypeTranslation> findByLanguageId(Integer languageId);
-
+    /**
+     * Elimina una traducción.
+     */
     void delete(NotificationTypeTranslation translation);
 
-    void deleteById(Integer id);
+    /**
+     * Elimina todas las traducciones de un notification type.
+     */
+    void deleteByNotificationType(Long notificationTypeId);
 
-    boolean existsById(Integer id);
-
-    List<NotificationTypeTranslation> findAll();
+    /**
+     * Verifica si existe una traducción para notification type y idioma específicos.
+     */
+    boolean existsByNotificationTypeAndLanguage(Long notificationTypeId, Long languageId);
 }

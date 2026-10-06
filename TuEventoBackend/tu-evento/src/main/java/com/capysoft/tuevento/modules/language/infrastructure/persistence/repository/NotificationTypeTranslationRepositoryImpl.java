@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.language.infrastructure.persistence.reposi
 import com.capysoft.tuevento.modules.language.domain.model.NotificationTypeTranslation;
 import com.capysoft.tuevento.modules.language.domain.repository.NotificationTypeTranslationRepository;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper.NotificationTypeTranslationMapper;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -18,6 +19,46 @@ public class NotificationTypeTranslationRepositoryImpl implements NotificationTy
     private final NotificationTypeTranslationMapper mapper;
 
     @Override
+    public Optional<NotificationTypeTranslation> findByNotificationTypeAndLanguage(Long notificationTypeId, Long languageId) {
+        return jpaRepository.findByNotificationTypeIdAndLanguageId(notificationTypeId.intValue(), languageId.intValue())
+                .map(mapper::toDomain);
+    }
+
+    @Override
+    public List<NotificationTypeTranslation> findByNotificationType(Long notificationTypeId) {
+        return jpaRepository.findByNotificationTypeId(notificationTypeId.intValue())
+                .stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<NotificationTypeTranslation> findByLanguage(Long languageId) {
+        return jpaRepository.findByLanguageId(languageId.intValue())
+                .stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<NotificationTypeTranslation> findByStatus(TranslationStatus status) {
+        return jpaRepository.findAll()
+                .stream()
+                .map(mapper::toDomain)
+                .filter(translation -> translation.getStatus().equals(status))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<NotificationTypeTranslation> findByNotificationTypeAndStatus(Long notificationTypeId, TranslationStatus status) {
+        return jpaRepository.findByNotificationTypeId(notificationTypeId.intValue())
+                .stream()
+                .map(mapper::toDomain)
+                .filter(translation -> translation.getStatus().equals(status))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public NotificationTypeTranslation save(NotificationTypeTranslation translation) {
         var entity = mapper.toEntity(translation);
         var savedEntity = jpaRepository.save(entity);
@@ -25,29 +66,12 @@ public class NotificationTypeTranslationRepositoryImpl implements NotificationTy
     }
 
     @Override
-    public Optional<NotificationTypeTranslation> findById(Integer id) {
-        return jpaRepository.findById(id)
-                .map(mapper::toDomain);
-    }
-
-    @Override
-    public List<NotificationTypeTranslation> findByNotificationTypeId(Integer notificationTypeId) {
-        return jpaRepository.findByNotificationTypeId(notificationTypeId)
-                .stream()
-                .map(mapper::toDomain)
+    public List<NotificationTypeTranslation> saveAll(List<NotificationTypeTranslation> translations) {
+        var entities = translations.stream()
+                .map(mapper::toEntity)
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public Optional<NotificationTypeTranslation> findByNotificationTypeIdAndLanguageId(Integer notificationTypeId, Integer languageId) {
-        return jpaRepository.findByNotificationTypeIdAndLanguageId(notificationTypeId, languageId)
-                .map(mapper::toDomain);
-    }
-
-    @Override
-    public List<NotificationTypeTranslation> findByLanguageId(Integer languageId) {
-        return jpaRepository.findByLanguageId(languageId)
-                .stream()
+        var savedEntities = jpaRepository.saveAll(entities);
+        return savedEntities.stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -59,20 +83,14 @@ public class NotificationTypeTranslationRepositoryImpl implements NotificationTy
     }
 
     @Override
-    public void deleteById(Integer id) {
-        jpaRepository.deleteById(id);
+    public void deleteByNotificationType(Long notificationTypeId) {
+        var entities = jpaRepository.findByNotificationTypeId(notificationTypeId.intValue());
+        jpaRepository.deleteAll(entities);
     }
 
     @Override
-    public boolean existsById(Integer id) {
-        return jpaRepository.existsById(id);
-    }
-
-    @Override
-    public List<NotificationTypeTranslation> findAll() {
-        return jpaRepository.findAll()
-                .stream()
-                .map(mapper::toDomain)
-                .collect(Collectors.toList());
+    public boolean existsByNotificationTypeAndLanguage(Long notificationTypeId, Long languageId) {
+        return jpaRepository.findByNotificationTypeIdAndLanguageId(notificationTypeId.intValue(), languageId.intValue())
+                .isPresent();
     }
 }

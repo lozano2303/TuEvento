@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.language.infrastructure.persistence.reposi
 import com.capysoft.tuevento.modules.language.domain.model.ModuleTranslation;
 import com.capysoft.tuevento.modules.language.domain.repository.ModuleTranslationRepository;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper.ModuleTranslationMapper;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -18,15 +19,8 @@ public class ModuleTranslationRepositoryImpl implements ModuleTranslationReposit
     private final ModuleTranslationMapper mapper;
 
     @Override
-    public ModuleTranslation save(ModuleTranslation translation) {
-        var entity = mapper.toEntity(translation);
-        var savedEntity = jpaRepository.save(entity);
-        return mapper.toDomain(savedEntity);
-    }
-
-    @Override
-    public Optional<ModuleTranslation> findById(Integer id) {
-        return jpaRepository.findById(id)
+    public Optional<ModuleTranslation> findByModuleAndLanguage(String module, Long languageId) {
+        return jpaRepository.findByModuleAndLanguageId(module, languageId.intValue())
                 .map(mapper::toDomain);
     }
 
@@ -39,15 +33,45 @@ public class ModuleTranslationRepositoryImpl implements ModuleTranslationReposit
     }
 
     @Override
-    public Optional<ModuleTranslation> findByModuleAndLanguageId(String module, Integer languageId) {
-        return jpaRepository.findByModuleAndLanguageId(module, languageId)
-                .map(mapper::toDomain);
+    public List<ModuleTranslation> findByLanguage(Long languageId) {
+        return jpaRepository.findByLanguageId(languageId.intValue())
+                .stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<ModuleTranslation> findByLanguageId(Integer languageId) {
-        return jpaRepository.findByLanguageId(languageId)
+    public List<ModuleTranslation> findByStatus(TranslationStatus status) {
+        return jpaRepository.findAll()
                 .stream()
+                .map(mapper::toDomain)
+                .filter(translation -> translation.getStatus().equals(status))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ModuleTranslation> findByModuleAndStatus(String module, TranslationStatus status) {
+        return jpaRepository.findByModule(module)
+                .stream()
+                .map(mapper::toDomain)
+                .filter(translation -> translation.getStatus().equals(status))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public ModuleTranslation save(ModuleTranslation translation) {
+        var entity = mapper.toEntity(translation);
+        var savedEntity = jpaRepository.save(entity);
+        return mapper.toDomain(savedEntity);
+    }
+
+    @Override
+    public List<ModuleTranslation> saveAll(List<ModuleTranslation> translations) {
+        var entities = translations.stream()
+                .map(mapper::toEntity)
+                .collect(Collectors.toList());
+        var savedEntities = jpaRepository.saveAll(entities);
+        return savedEntities.stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
@@ -59,20 +83,14 @@ public class ModuleTranslationRepositoryImpl implements ModuleTranslationReposit
     }
 
     @Override
-    public void deleteById(Integer id) {
-        jpaRepository.deleteById(id);
+    public void deleteByModule(String module) {
+        var entities = jpaRepository.findByModule(module);
+        jpaRepository.deleteAll(entities);
     }
 
     @Override
-    public boolean existsById(Integer id) {
-        return jpaRepository.existsById(id);
-    }
-
-    @Override
-    public List<ModuleTranslation> findAll() {
-        return jpaRepository.findAll()
-                .stream()
-                .map(mapper::toDomain)
-                .collect(Collectors.toList());
+    public boolean existsByModuleAndLanguage(String module, Long languageId) {
+        return jpaRepository.findByModuleAndLanguageId(module, languageId.intValue())
+                .isPresent();
     }
 }
