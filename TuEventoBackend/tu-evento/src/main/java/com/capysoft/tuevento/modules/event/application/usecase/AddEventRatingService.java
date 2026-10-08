@@ -110,13 +110,54 @@ public class AddEventRatingService implements AddEventRatingUseCase {
         // ── R3 + regla A: las respuestas siempre llevan rating null ──────────
         // Un comentario principal lleva rating solo si el usuario no es el
         // organizador y aún no tiene un comentario principal con rating.
+        // En ese caso la calificación es OBLIGATORIA (1-5).
+        // Si es una respuesta, el rating se ignora completamente → null.
         Integer effectiveRating = null;
         if (parentRatingId == null && !isOrganizer) {
             boolean alreadyHasRating =
                     ratingRepository.existsRatedCommentByEventIdAndUserId(eventId, userId);
             if (!alreadyHasRating) {
-                effectiveRating = request.getRating(); // puede ser null si el cliente no lo envió
+                Integer providedRating = request.getRating();
+                if (providedRating == null) {
+                    throw new BusinessException("COMMENT_RATING_REQUIRED",
+                            "A rating between 1 and 5 is required for your first comment on this event");
+                }
+                if (providedRating < 1 || providedRating > 5) {
+                    throw new BusinessException("COMMENT_RATING_INVALID",
+                            "Rating must be between 1 and 5");
+                }
+                effectiveRating = providedRating;
             }
+            // Si ya tiene un comentario principal con rating, el nuevo se guarda sin calificación (R3).
+        }
+        // Respuestas: el rating enviado se ignora, siempre null (regla A).
+
+        // ── Mención: resolver replyToUserId y replyToUserName ────────────────
+        Long replyToUserId = request.getReplyToUserId();
+        String replyToUserName = null;
+        
+        // Solo procesar mención si es una respuesta y el replyToUserId no es el mismo usuario
+        if (parentRatingId != null && replyToUserId != null && !replyToUserId.equals(userId)) {
+            // Captura final para uso dentro del lambda
+            final Long replyToUserIdFinal = replyToUserId;
+            // Validar que el usuario mencionado existe y tiene un comentario en este hilo
+            boolean replyToUserExistsInThread = ratingRepository.findByEventIdOrderByCreatedAtDesc(eventId)
+                    .stream()
+                    .anyMatch(r -> r.getUserId().equals(replyToUserIdFinal) && 
+                                 (r.getRatingId().equals(parentRatingId) || 
+                                  (r.getParentRatingId() != null && r.getParentRatingId().equals(parentRatingId))));
+            
+            if (replyToUserExistsInThread) {
+                replyToUserName = profileJpaRepository.findByUserId(replyToUserId.intValue())
+                        .map(p -> p.getFullName())
+                        .orElse(null);
+            } else {
+                // Si no existe en el hilo, ignorar la mención
+                replyToUserId = null;
+            }
+        } else if (replyToUserId != null && replyToUserId.equals(userId)) {
+            // No permitir mención a sí mismo
+            replyToUserId = null;
         }
 
         // ── Guardar ──────────────────────────────────────────────────────────
@@ -128,6 +169,8 @@ public class AddEventRatingService implements AddEventRatingUseCase {
                 .isVisible(true)
                 .createdAt(now)
                 .parentRatingId(parentRatingId)
+                .replyToUserId(replyToUserId)
+                .replyToUserName(replyToUserName)
                 .build());
 
         // ── Resolver nombre del autor ────────────────────────────────────────
@@ -145,6 +188,8 @@ public class AddEventRatingService implements AddEventRatingUseCase {
                 .isVisible(saved.getIsVisible())
                 .isOrganizer(isOrganizer)
                 .parentRatingId(parentRatingId)
+                .replyToUserId(saved.getReplyToUserId())
+                .replyToUserName(saved.getReplyToUserName())
                 .occurredAt(saved.getCreatedAt())
                 .build());
 
@@ -160,6 +205,8 @@ public class AddEventRatingService implements AddEventRatingUseCase {
                 .parentRatingId(saved.getParentRatingId())
                 .editableUntil(saved.getCreatedAt() != null
                         ? saved.getCreatedAt().plusHours(2) : null)
+                .replyToUserId(saved.getReplyToUserId())
+                .replyToUserName(saved.getReplyToUserName())
                 .build();
     }
 }

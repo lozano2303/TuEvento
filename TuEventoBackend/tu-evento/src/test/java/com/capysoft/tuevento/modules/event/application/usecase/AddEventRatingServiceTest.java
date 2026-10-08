@@ -134,17 +134,61 @@ class AddEventRatingServiceTest {
             assertThat(captor.getValue().getRating()).isEqualTo(4);
         }
 
-        @Test @DisplayName("primer comentario pero sin rating enviado → se guarda con rating null")
-        void first_comment_no_rating_sent_saves_null() {
+        @Test @DisplayName("primer comentario sin rating enviado → COMMENT_RATING_REQUIRED (nueva regla)")
+        void first_comment_no_rating_sent_throws_required() {
             givenClock();
             when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(publishedPublicEvent()));
             when(ratingRepository.findLastByEventIdAndUserId(EVENT_ID, USER_A)).thenReturn(Optional.empty());
             when(ratingRepository.existsRatedCommentByEventIdAndUserId(EVENT_ID, USER_A)).thenReturn(false);
-            when(ratingRepository.save(any())).thenReturn(savedRatingWith(USER_A, null, "Interesante", now()));
+
+            assertThatThrownBy(() -> service.execute(EVENT_ID, requestWith(null, "Interesante"), USER_A))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                            .isEqualTo("COMMENT_RATING_REQUIRED"));
+            verify(ratingRepository, never()).save(any());
+        }
+
+        @Test @DisplayName("primer comentario con rating fuera de rango (0) → COMMENT_RATING_INVALID")
+        void first_comment_rating_out_of_range_throws_invalid() {
+            givenClock();
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(publishedPublicEvent()));
+            when(ratingRepository.findLastByEventIdAndUserId(EVENT_ID, USER_A)).thenReturn(Optional.empty());
+            when(ratingRepository.existsRatedCommentByEventIdAndUserId(EVENT_ID, USER_A)).thenReturn(false);
+
+            AddEventRatingRequest req = AddEventRatingRequest.builder()
+                    .rating(0).comment("Malo").build();
+            assertThatThrownBy(() -> service.execute(EVENT_ID, req, USER_A))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(ex -> assertThat(((BusinessException) ex).getCode())
+                            .isEqualTo("COMMENT_RATING_INVALID"));
+            verify(ratingRepository, never()).save(any());
+        }
+
+        @Test @DisplayName("segundo comentario del mismo usuario sin rating → se guarda (R3, no es el primero)")
+        void second_comment_no_rating_is_fine() {
+            givenClock();
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(publishedPublicEvent()));
+            LocalDateTime prevTime = now().minusSeconds(30);
+            when(ratingRepository.findLastByEventIdAndUserId(EVENT_ID, USER_A))
+                    .thenReturn(Optional.of(savedRatingWith(USER_A, 4, "Anterior", prevTime)));
+            when(ratingRepository.existsRatedCommentByEventIdAndUserId(EVENT_ID, USER_A)).thenReturn(true);
+            when(ratingRepository.save(any())).thenReturn(savedRatingWith(USER_A, null, "Comentario extra", now()));
             stubProfile(USER_A, "Ana");
 
-            EventRatingResponse res = service.execute(EVENT_ID, requestWith(null, "Interesante"), USER_A);
-            assertThat(res.getRating()).isNull();
+            assertThatNoException().isThrownBy(() ->
+                    service.execute(EVENT_ID, requestWith(null, "Comentario extra"), USER_A));
+        }
+
+        @Test @DisplayName("organizador sin rating en primer comentario → se guarda null (R4, exento de RATING_REQUIRED)")
+        void organizer_first_comment_no_rating_required() {
+            givenClock();
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(publishedPublicEvent()));
+            when(ratingRepository.findLastByEventIdAndUserId(EVENT_ID, ORGANIZER)).thenReturn(Optional.empty());
+            when(ratingRepository.save(any())).thenReturn(savedRatingWith(ORGANIZER, null, "Bienvenidos", now()));
+            stubProfile(ORGANIZER, "Org");
+
+            assertThatNoException().isThrownBy(() ->
+                    service.execute(EVENT_ID, requestWith(null, "Bienvenidos"), ORGANIZER));
         }
 
         @Test @DisplayName("segundo comentario (ya tiene uno con rating) → se guarda con rating null aunque envíe 5")
@@ -329,11 +373,12 @@ class AddEventRatingServiceTest {
                     service.execute(EVENT_ID, requestWith(4, "Bien"), ORGANIZER_USER));
         }
 
-        @Test @DisplayName("usuario con rol ADMIN puede comentar")
+        @Test @DisplayName("usuario con rol ADMIN puede comentar con rating")
         void admin_can_comment() {
             stubHappyPath(ADMIN_USER);
+            when(ratingRepository.save(any())).thenReturn(savedRatingWith(ADMIN_USER, 3, "Buen evento", now()));
             assertThatNoException().isThrownBy(() ->
-                    service.execute(EVENT_ID, requestWith(null, "Buen evento"), ADMIN_USER));
+                    service.execute(EVENT_ID, requestWith(3, "Buen evento"), ADMIN_USER));
         }
     }
 
