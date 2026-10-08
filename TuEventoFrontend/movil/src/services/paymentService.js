@@ -13,14 +13,15 @@ async function authHeaders() {
 /**
  * Inicia un pago para una orden.
  * POST /api/v1/payments
- * @param {{ orderId: number, paymentMethod?: string }} params
- * @returns {Promise<Object>} PaymentResponse — contiene paymentId y gatewayTransactionId
+ * @param {{ orderId: number, paymentMethod?: string, applyWalletCredit?: boolean }} params
+ * @returns {Promise<Object>} PaymentResponse — contiene paymentId, gatewayTransactionId,
+ *   walletAmountApplied y amountToPayViaGateway
  */
-export const createPayment = async ({ orderId, paymentMethod = "QR" }) => {
+export const createPayment = async ({ orderId, paymentMethod = "QR", applyWalletCredit = false }) => {
   const response = await fetch(`${BASE_URL}/payments`, {
     method: "POST",
     headers: await authHeaders(),
-    body: JSON.stringify({ orderId, paymentMethod }),
+    body: JSON.stringify({ orderId, paymentMethod, applyWalletCredit }),
   });
   // PaymentController retorna el objeto directo, sin wrapper ApiResponse
   const json = await response.json();

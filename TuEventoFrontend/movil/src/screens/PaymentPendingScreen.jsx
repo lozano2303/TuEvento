@@ -41,6 +41,9 @@ export default function PaymentPendingScreen() {
   const [gatewayTxId, setGatewayTxId] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [browserOpen, setBrowserOpen] = useState(false);
+  const [walletOnly, setWalletOnly] = useState(
+    route.params?.walletOnly === true
+  );
   // 'rejected' | 'failed' | 'cancelled' | null
   const [failReason, setFailReason] = useState(null);
 
@@ -262,8 +265,9 @@ export default function PaymentPendingScreen() {
       try {
         const payment = await getPayment(paymentId);
 
-        // Abrir gateway automáticamente cuando tengamos gatewayTransactionId
-        if (payment.gatewayTransactionId && !gatewayOpenedRef.current) {
+        // Abrir gateway automáticamente — pero NO para pagos wallet_only_
+        const isWalletOnly = payment.gatewayTransactionId?.startsWith("wallet_only_");
+        if (payment.gatewayTransactionId && !gatewayOpenedRef.current && !isWalletOnly) {
           setGatewayTxId(payment.gatewayTransactionId);
           openGateway(payment.gatewayTransactionId);
         }
@@ -280,8 +284,6 @@ export default function PaymentPendingScreen() {
           applyTerminalStatus("REJECTED", "rejected");
         } else if (s === "ERROR") {
           stopPolling();
-          // Si llegó ERROR por polling sin que el browser lo haya manejado
-          // asumir fallo técnico (no cancelación por usuario)
           if (!failReason) applyTerminalStatus("ERROR", "failed");
         }
       } catch (err) {
@@ -307,7 +309,9 @@ export default function PaymentPendingScreen() {
 
           <Text style={styles.title}>Procesando tu pago</Text>
           <Text style={styles.subtitle}>
-            {browserOpen
+            {walletOnly
+              ? "Confirmando tu pago con cartera…"
+              : browserOpen
               ? "Completá el pago en la ventana que se abrió."
               : "Abriendo la ventana de pago…"}
           </Text>
@@ -323,8 +327,8 @@ export default function PaymentPendingScreen() {
             </View>
           </View>
 
-          {/* Re-abrir si el browser fue cerrado manualmente */}
-          {!browserOpen && gatewayOpenedRef.current && gatewayTxId && (
+          {/* Re-abrir si el browser fue cerrado manualmente — no aplica en wallet_only */}
+          {!walletOnly && !browserOpen && gatewayOpenedRef.current && gatewayTxId && (
             <TouchableOpacity
               onPress={() => { gatewayOpenedRef.current = false; openGateway(gatewayTxId); }}
               activeOpacity={0.75}
