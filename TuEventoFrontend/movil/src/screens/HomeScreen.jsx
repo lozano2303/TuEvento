@@ -12,6 +12,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { getFileUrl } from "../services/storageService";
 import { getPublishedEvents } from "../services/eventService";
+import { useNotifications } from "../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
 
@@ -35,6 +36,7 @@ function getInitial(fullName) {
 export default function HomeScreen() {
   const { colors, syncTheme } = useTheme();
   const { user } = useAuth();
+  const { unreadCount } = useNotifications();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const styles = createStyles(colors);
@@ -191,32 +193,58 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* Avatar */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Perfil")}
-          activeOpacity={0.75}
-          style={{
-            width: 38, height: 38, borderRadius: 19,
-            backgroundColor: colors.primary + "40",
-            borderWidth: 2, borderColor: colors.accent + "80",
-            alignItems: "center", justifyContent: "center",
-            overflow: "hidden",
-          }}
-        >
-          {avatarLoading ? (
-            <ActivityIndicator color={colors.textPrimary} size="small" />
-          ) : avatarUrl ? (
-            <Image
-              source={{ uri: avatarUrl }}
-              style={{ width: "100%", height: "100%" }}
-              resizeMode="cover"
-            />
-          ) : (
-            <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "800" }}>
-              {getInitial(user?.fullName)}
-            </Text>
-          )}
-        </TouchableOpacity>
+        {/* Campana + Avatar */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          {/* Campana de notificaciones */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Notifications")}
+            activeOpacity={0.75}
+            style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
+            {unreadCount > 0 && (
+              <View style={{
+                position: "absolute", top: 0, right: 0,
+                backgroundColor: colors.error,
+                borderRadius: 9, minWidth: 18, height: 18,
+                alignItems: "center", justifyContent: "center",
+                paddingHorizontal: 4,
+                borderWidth: 1.5, borderColor: colors.background,
+              }}>
+                <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800" }}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* Avatar */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Perfil")}
+            activeOpacity={0.75}
+            style={{
+              width: 38, height: 38, borderRadius: 19,
+              backgroundColor: colors.primary + "40",
+              borderWidth: 2, borderColor: colors.accent + "80",
+              alignItems: "center", justifyContent: "center",
+              overflow: "hidden",
+            }}
+          >
+            {avatarLoading ? (
+              <ActivityIndicator color={colors.textPrimary} size="small" />
+            ) : avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "800" }}>
+                {getInitial(user?.fullName)}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
