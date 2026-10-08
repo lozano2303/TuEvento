@@ -29,4 +29,8 @@ public class EventRatingUpdatedEvent {
     private LocalDateTime editedAt;
     /** Null para comentarios principales; ratingId del padre para respuestas. */
     private Long          parentRatingId;
+    /** ID del usuario al que se responde directamente (para menciones). */
+    private Long          replyToUserId;
+    /** Nombre del usuario al que se responde. */
+    private String        replyToUserName;
 }

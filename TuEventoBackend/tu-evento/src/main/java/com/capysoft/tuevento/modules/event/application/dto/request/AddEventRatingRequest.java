@@ -35,4 +35,7 @@ public class AddEventRatingRequest {
 
     /** Nullable. Si se envía, este comentario es una respuesta al comentario con este id. */
     private Long parentRatingId;
+    
+    /** Nullable. ID del usuario al que se responde directamente (para menciones). */
+    private Long replyToUserId;
 }

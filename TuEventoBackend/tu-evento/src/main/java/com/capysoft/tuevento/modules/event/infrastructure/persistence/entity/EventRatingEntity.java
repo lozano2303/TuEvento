@@ -48,4 +48,16 @@ public class EventRatingEntity {
      */
     @Column(name = "parent_rating_id")
     private Long parentRatingId;
+
+    /**
+     * Nullable. ID del usuario al que se responde directamente (para menciones estilo TikTok).
+     */
+    @Column(name = "reply_to_user_id")
+    private Long replyToUserId;
+
+    /**
+     * Nullable. Nombre del usuario al que se responde (para mostrar @Nombre).
+     */
+    @Column(name = "reply_to_user_name")
+    private String replyToUserName;
 }

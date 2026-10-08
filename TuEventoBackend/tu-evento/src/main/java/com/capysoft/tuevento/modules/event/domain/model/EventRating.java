@@ -25,4 +25,13 @@ public class EventRating {
      * Si tiene valor, es una respuesta al comentario con ese ratingId.
      */
     private Long parentRatingId;
+    /**
+     * Nullable. ID del usuario al que se está respondiendo directamente (para menciones).
+     * Se usa cuando se responde a una respuesta específica dentro del hilo.
+     */
+    private Long replyToUserId;
+    /**
+     * Nullable. Nombre del usuario al que se está respondiendo (para mostrar @Nombre).
+     */
+    private String replyToUserName;
 }

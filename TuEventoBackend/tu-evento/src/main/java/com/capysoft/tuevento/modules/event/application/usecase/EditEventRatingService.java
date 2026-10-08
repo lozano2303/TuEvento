@@ -118,6 +118,8 @@ public class EditEventRatingService implements EditEventRatingUseCase {
                 .createdAt(updated.getCreatedAt())
                 .editedAt(updated.getEditedAt())
                 .parentRatingId(updated.getParentRatingId())
+                .replyToUserId(updated.getReplyToUserId())
+                .replyToUserName(updated.getReplyToUserName())
                 .build());
 
         return EventRatingResponse.builder()
@@ -133,6 +135,8 @@ public class EditEventRatingService implements EditEventRatingUseCase {
                 .parentRatingId(updated.getParentRatingId())
                 .editableUntil(updated.getCreatedAt() != null
                         ? updated.getCreatedAt().plusHours(EDIT_WINDOW_HOURS) : null)
+                .replyToUserId(updated.getReplyToUserId())
+                .replyToUserName(updated.getReplyToUserName())
                 .build();
     }
 }
