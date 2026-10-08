@@ -33,8 +33,9 @@ function getInitial(fullName) {
 // ─── Opciones del menú de perfil ─────────────────────────────────────────────
 const MENU_OPTIONS = [
   { icon: "person-outline",        label: "Editar perfil",    sub: "Actualiza tu información",  route: "EditProfile" },
-  { icon: "notifications-outline", label: "Notificaciones",   sub: "Gestiona tus alertas",       route: null },
-  { icon: "settings-outline",      label: "Configuración",    sub: "Preferencias de la app",     route: "Settings" },
+  { icon: "wallet-outline",        label: "Cartera",          sub: "Saldo y movimientos",        route: "Wallet"      },
+  { icon: "notifications-outline", label: "Notificaciones",   sub: "Gestiona tus alertas",       route: null          },
+  { icon: "settings-outline",      label: "Configuración",    sub: "Preferencias de la app",     route: "Settings"    },
 ];
 
 export default function ProfileScreen() {

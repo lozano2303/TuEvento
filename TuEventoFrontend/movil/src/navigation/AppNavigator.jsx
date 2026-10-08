@@ -25,6 +25,7 @@ import OrganizerRequestsScreen    from "../screens/OrganizerRequestsScreen";
 import OrganizerRequestDetailScreen from "../screens/OrganizerRequestDetailScreen";
 import CheckoutScreen              from "../screens/CheckoutScreen";
 import PaymentPendingScreen        from "../screens/PaymentPendingScreen";
+import WalletScreen                from "../screens/WalletScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -213,6 +214,7 @@ export default function AppNavigator() {
         <Stack.Screen name="OrganizerRequestDetail"  component={OrganizerRequestDetailScreen} />
         <Stack.Screen name="Checkout"                component={CheckoutScreen} />
         <Stack.Screen name="PaymentPending"          component={PaymentPendingScreen} />
+        <Stack.Screen name="Wallet"                  component={WalletScreen} />
         <Stack.Screen
           name="Main"
           component={MainTabs}
