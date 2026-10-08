@@ -60,3 +60,51 @@ export const rejectOrganizerRequest = async (petitionId, accessToken) => {
   const json = await response.json();
   return json.data;
 };
+
+/**
+ * Lista todos los eventos para revisión/gestión de admin.
+ * GET /api/v1/admin/events?status=XXX
+ * @param {string|null} status - Filtrar por estado (null = todos)
+ * @returns {Promise<Array>}
+ */
+export const getAdminEvents = async (status = null) => {
+  const token = await import("@react-native-async-storage/async-storage").then(
+    (m) => m.default.getItem("accessToken")
+  );
+  const url = status
+    ? `${BASE_URL}/admin/events?status=${status}`
+    : `${BASE_URL}/admin/events`;
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error(`Error fetching admin events: ${response.status}`);
+  const json = await response.json();
+  return json.data ?? [];
+};
+
+/**
+ * Cambia el estado de un evento (publicar, rechazar, cancelar, finalizar).
+ * PATCH /api/v1/admin/events/{eventId}/status
+ * @param {number} eventId
+ * @param {string} newStatus - 'PUBLISHED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED'
+ * @param {string|null} reason - Motivo (obligatorio para REJECTED)
+ */
+export const adminChangeEventStatus = async (eventId, newStatus, reason = null) => {
+  const token = await import("@react-native-async-storage/async-storage").then(
+    (m) => m.default.getItem("accessToken")
+  );
+  const body = { newStatus, ...(reason ? { reason } : {}) };
+  const response = await fetch(`${BASE_URL}/admin/events/${eventId}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || `Error changing event status: ${response.status}`);
+  }
+  return response.json();
+};

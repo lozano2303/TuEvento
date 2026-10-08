@@ -1,12 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  StatusBar,
-  StyleSheet,
+  View, Text, ScrollView, TouchableOpacity,
+  ActivityIndicator, StatusBar, StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -17,10 +12,6 @@ import { getOrganizerRequests } from "../services/adminService";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Formatea una fecha ISO a "DD/MM/YYYY HH:mm" sin librerías externas.
- * applicationDate llega como string ISO desde el backend (LocalDateTime serializado).
- */
 function formatDate(isoString) {
   if (!isoString) return "—";
   const d = new Date(isoString);
@@ -28,6 +19,15 @@ function formatDate(isoString) {
   const pad = (n) => String(n).padStart(2, "0");
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+// ─── Filtros ──────────────────────────────────────────────────────────────────
+
+const FILTERS = [
+  { key: "ALL",      label: "Todas",     icon: "list-outline"           },
+  { key: "PENDING",  label: "Pendientes",icon: "time-outline"           },
+  { key: "APPROVED", label: "Aprobadas", icon: "checkmark-circle-outline" },
+  { key: "REJECTED", label: "Rechazadas",icon: "close-circle-outline"  },
+];
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
@@ -37,112 +37,65 @@ export default function OrganizerRequestsScreen() {
   const insets = useSafeAreaInsets();
 
   const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
+  const [filter, setFilter]     = useState("ALL");
 
-  // StyleSheet dentro del componente para acceder a colors del tema
   const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
+    container: { flex: 1, backgroundColor: colors.background },
     header: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingTop: insets.top + 16,
-      paddingBottom: 16,
+      flexDirection: "row", alignItems: "center",
+      paddingTop: insets.top + 16, paddingBottom: 16,
       paddingHorizontal: 20,
       backgroundColor: colors.surface,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.primary + "30",
+      borderBottomWidth: 1, borderBottomColor: colors.primary + "30",
       gap: 12,
     },
     backButton: {
-      width: 38,
-      height: 38,
-      borderRadius: 12,
+      width: 38, height: 38, borderRadius: 12,
       backgroundColor: colors.primary + "28",
-      borderWidth: 1,
-      borderColor: colors.primary + "40",
-      alignItems: "center",
-      justifyContent: "center",
+      borderWidth: 1, borderColor: colors.primary + "40",
+      alignItems: "center", justifyContent: "center",
     },
-    headerTitle: {
-      color: colors.textPrimary,
-      fontSize: 18,
-      fontWeight: "800",
-      flex: 1,
+    headerTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "800", flex: 1 },
+    // ── Filtros ──
+    filtersRow: {
+      flexDirection: "row", paddingHorizontal: 20,
+      paddingTop: 14, paddingBottom: 6, gap: 8,
     },
-    centered: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: 32,
+    chip: {
+      flex: 1, flexDirection: "row", alignItems: "center",
+      justifyContent: "center", gap: 5,
+      paddingVertical: 9, borderRadius: 12, borderWidth: 1,
     },
-    emptyText: {
-      color: colors.textSecondary,
-      fontSize: 15,
-      textAlign: "center",
-      marginTop: 12,
-    },
-    errorText: {
-      color: colors.error,
-      fontSize: 14,
-      textAlign: "center",
-      marginTop: 8,
-    },
-    list: {
-      paddingHorizontal: 20,
-      paddingTop: 20,
-      paddingBottom: insets.bottom + 32,
-    },
+    chipText: { fontSize: 11, fontWeight: "700" },
+    // ── Lista ──
+    centered: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, gap: 12 },
+    emptyText: { color: colors.textSecondary, fontSize: 15, textAlign: "center", marginTop: 12 },
+    errorText: { color: colors.error, fontSize: 14, textAlign: "center", marginTop: 8 },
+    list: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: insets.bottom + 32, gap: 10 },
     card: {
       backgroundColor: colors.surface + "CC",
-      borderRadius: 14,
-      borderWidth: 1,
+      borderRadius: 14, borderWidth: 1,
       borderColor: colors.primary + "30",
-      padding: 16,
-      marginBottom: 12,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 14,
+      padding: 16, flexDirection: "row",
+      alignItems: "center", gap: 14,
     },
     cardIconWrap: {
-      width: 44,
-      height: 44,
-      borderRadius: 12,
+      width: 44, height: 44, borderRadius: 12,
       backgroundColor: colors.primary + "28",
-      borderWidth: 1,
-      borderColor: colors.primary + "40",
-      alignItems: "center",
-      justifyContent: "center",
+      borderWidth: 1, borderColor: colors.primary + "40",
+      alignItems: "center", justifyContent: "center",
     },
-    cardBody: {
-      flex: 1,
-    },
-    cardAlias: {
-      color: colors.textPrimary,
-      fontSize: 15,
-      fontWeight: "700",
-    },
-    cardDate: {
-      color: colors.textMuted,
-      fontSize: 12,
-      marginTop: 3,
-    },
-    cardFooter: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 8,
-      gap: 8,
-    },
+    cardBody: { flex: 1 },
+    cardAlias: { color: colors.textPrimary, fontSize: 15, fontWeight: "700" },
+    cardDate: { color: colors.textMuted, fontSize: 12, marginTop: 3 },
+    cardFooter: { flexDirection: "row", alignItems: "center", marginTop: 8, gap: 8 },
   });
 
-  // Badge de estado — colores semánticos
   const getBadgeStyle = (status) => {
     if (status === "APPROVED") return { bg: colors.success + "22", border: colors.success + "55", text: colors.success, label: "Aprobada" };
     if (status === "REJECTED") return { bg: colors.error + "22",   border: colors.error + "55",   text: colors.error,   label: "Rechazada" };
-    // PENDING y cualquier otro
     return { bg: "#F59E0B22", border: "#F59E0B55", text: "#F59E0B", label: "Pendiente" };
   };
 
@@ -160,19 +113,28 @@ export default function OrganizerRequestsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadRequests();
-  }, [loadRequests]);
+  useEffect(() => { loadRequests(); }, [loadRequests]);
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // Filtrado local (sin re-fetch — la API devuelve todo)
+  const filtered = requests.filter((r) => {
+    if (filter === "ALL")      return true;
+    if (filter === "PENDING")  return r.status === "PENDING";
+    if (filter === "APPROVED") return r.status === "APPROVED";
+    if (filter === "REJECTED") return r.status === "REJECTED";
+    return true;
+  });
+
+  // Contadores para los chips
+  const counts = {
+    ALL:      requests.length,
+    PENDING:  requests.filter((r) => r.status === "PENDING").length,
+    APPROVED: requests.filter((r) => r.status === "APPROVED").length,
+    REJECTED: requests.filter((r) => r.status === "REJECTED").length,
+  };
 
   const renderContent = () => {
     if (loading) {
-      return (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      );
+      return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
     }
 
     if (error) {
@@ -181,39 +143,29 @@ export default function OrganizerRequestsScreen() {
           <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity
-            onPress={loadRequests}
-            activeOpacity={0.75}
-            style={{
-              marginTop: 16,
-              backgroundColor: colors.primary,
-              borderRadius: 12,
-              paddingHorizontal: 24,
-              paddingVertical: 10,
-            }}
+            onPress={loadRequests} activeOpacity={0.75}
+            style={{ marginTop: 16, backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 10 }}
           >
-            <Text style={{ color: colors.textPrimary, fontWeight: "700", fontSize: 14 }}>
-              Reintentar
-            </Text>
+            <Text style={{ color: colors.textPrimary, fontWeight: "700", fontSize: 14 }}>Reintentar</Text>
           </TouchableOpacity>
         </View>
       );
     }
 
-    if (requests.length === 0) {
+    if (filtered.length === 0) {
       return (
         <View style={styles.centered}>
           <Ionicons name="people-outline" size={52} color={colors.textMuted} />
-          <Text style={styles.emptyText}>No hay solicitudes pendientes</Text>
+          <Text style={styles.emptyText}>
+            {filter === "ALL" ? "No hay solicitudes" : `No hay solicitudes ${FILTERS.find(f => f.key === filter)?.label.toLowerCase()}`}
+          </Text>
         </View>
       );
     }
 
     return (
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.list}
-      >
-        {requests.map((item) => {
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
+        {filtered.map((item) => {
           const badge = getBadgeStyle(item.status);
           return (
             <TouchableOpacity
@@ -230,34 +182,25 @@ export default function OrganizerRequestsScreen() {
                 })
               }
             >
-              {/* Ícono */}
               <View style={styles.cardIconWrap}>
                 <Ionicons name="person-outline" size={22} color={colors.accent} />
               </View>
 
-              {/* Cuerpo */}
               <View style={styles.cardBody}>
                 <Text style={styles.cardAlias}>{item.alias}</Text>
                 <Text style={styles.cardDate}>{formatDate(item.applicationDate)}</Text>
 
-                {/* Badge de estado */}
                 <View style={styles.cardFooter}>
                   <View style={{
-                    backgroundColor: badge.bg,
-                    borderRadius: 20,
-                    paddingHorizontal: 10,
-                    paddingVertical: 3,
-                    borderWidth: 1,
-                    borderColor: badge.border,
+                    backgroundColor: badge.bg, borderRadius: 20,
+                    paddingHorizontal: 10, paddingVertical: 3,
+                    borderWidth: 1, borderColor: badge.border,
                   }}>
-                    <Text style={{ color: badge.text, fontSize: 11, fontWeight: "700" }}>
-                      {badge.label}
-                    </Text>
+                    <Text style={{ color: badge.text, fontSize: 11, fontWeight: "700" }}>{badge.label}</Text>
                   </View>
                 </View>
               </View>
 
-              {/* Chevron */}
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
           );
@@ -272,15 +215,65 @@ export default function OrganizerRequestsScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.75}
-          style={styles.backButton}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.75} style={styles.backButton}>
           <Ionicons name="arrow-back" size={20} color={colors.accent} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Solicitudes de organizador</Text>
+        {counts.PENDING > 0 && (
+          <View style={{
+            backgroundColor: "#f59e0b", borderRadius: 10,
+            minWidth: 22, height: 22, alignItems: "center",
+            justifyContent: "center", paddingHorizontal: 5,
+          }}>
+            <Text style={{ color: "#fff", fontSize: 11, fontWeight: "800" }}>{counts.PENDING}</Text>
+          </View>
+        )}
       </View>
+
+      {/* ── Chips de filtro ── */}
+      {!loading && !error && (
+        <View style={styles.filtersRow}>
+          {FILTERS.map(({ key, label, icon }) => {
+            const active = filter === key;
+            const count = counts[key];
+
+            // Color de acento por tipo
+            const accentColor =
+              key === "APPROVED" ? colors.success :
+              key === "REJECTED" ? colors.error :
+              key === "PENDING"  ? "#f59e0b" :
+              colors.primary;
+
+            return (
+              <TouchableOpacity
+                key={key}
+                onPress={() => setFilter(key)}
+                activeOpacity={0.8}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: active ? accentColor + "22" : colors.surface + "CC",
+                    borderColor: active ? accentColor + "66" : colors.primary + "25",
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={icon}
+                  size={13}
+                  color={active ? accentColor : colors.textMuted}
+                />
+                <Text style={[
+                  styles.chipText,
+                  { color: active ? accentColor : colors.textSecondary },
+                ]}>
+                  {label}
+                  {count > 0 ? ` (${count})` : ""}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
 
       {renderContent()}
     </View>
