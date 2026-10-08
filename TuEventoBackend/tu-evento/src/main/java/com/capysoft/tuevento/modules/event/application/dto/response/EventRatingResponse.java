@@ -40,4 +40,8 @@ public class EventRatingResponse {
     private final Long          parentRatingId;
     /** Instante hasta el que el autor puede editar este comentario (createdAt + 2 h, zona servidor). */
     private final LocalDateTime editableUntil;
+    /** ID del usuario al que se responde directamente (para menciones estilo TikTok). */
+    private final Long          replyToUserId;
+    /** Nombre del usuario al que se responde (para mostrar @Nombre). */
+    private final String        replyToUserName;
 }

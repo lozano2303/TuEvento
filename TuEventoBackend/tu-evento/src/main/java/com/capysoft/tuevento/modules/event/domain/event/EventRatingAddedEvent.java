@@ -23,5 +23,9 @@ public class EventRatingAddedEvent {
      * Nullable. Si tiene valor, este es una respuesta al comentario con ese ratingId.
      */
     private Long parentRatingId;
+    /** ID del usuario al que se responde directamente (para menciones). */
+    private Long replyToUserId;
+    /** Nombre del usuario al que se responde. */
+    private String replyToUserName;
     private LocalDateTime occurredAt;
 }

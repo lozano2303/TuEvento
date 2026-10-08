@@ -47,7 +47,7 @@ export const getEventComments = async (eventId) => {
  * Requiere autenticación (R1).
  *
  * @param {string|number} eventId
- * @param {{ rating?: number, comment: string, parentRatingId?: number }} payload
+ * @param {{ rating?: number, comment: string, parentRatingId?: number, replyToUserId?: number }} payload
  */
 export const addEventComment = async (eventId, payload) => {
   const res = await httpRequest(`${API_URL}/events/${eventId}/ratings`, {
