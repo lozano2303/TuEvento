@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 088-event-rating-add-parent-id
+      author: capysoft
+      comment: >
+        Añade columna parent_rating_id nullable a event_rating para soportar
+        respuestas a comentarios principales (un solo nivel).
+        FK con ON DELETE CASCADE: al borrar un comentario principal, sus
+        respuestas se borran automáticamente en la BD.
+        Índice por parent_rating_id para el query findByParentId.
+      changes:
+        - addColumn:
+            tableName: event_rating
+            columns:
+              - column:
+                  name: parent_rating_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+        - addForeignKeyConstraint:
+            baseTableName: event_rating
+            baseColumnNames: parent_rating_id
+            referencedTableName: event_rating
+            referencedColumnNames: rating_id
+            constraintName: fk_event_rating_parent
+            onDelete: CASCADE
+        - createIndex:
+            tableName: event_rating
+            indexName: idx_event_rating_parent
+            columns:
+              - column:
+                  name: parent_rating_id
