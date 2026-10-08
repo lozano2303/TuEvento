@@ -13,6 +13,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es as dateFnsEs } from 'date-fns/locale';
 import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
+import StarRatingInput from '../components/common/StarRatingInput';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
@@ -51,15 +52,20 @@ export default function EventDetail() {
   const [commentRating, setCommentRating] = useState(0);   // 0 = sin selección
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentError, setCommentError] = useState(null);
-  const [hoverRating, setHoverRating] = useState(0);
   const [deletingCommentId, setDeletingCommentId] = useState(null);
   const [deleteCommentError, setDeleteCommentError] = useState(null);
   // userId del organizador del evento (para R4 en el frontend)
   const [eventOrganizerUserId, setEventOrganizerUserId] = useState(null);
 
   // ── Estado de respuestas ───────────────────────────────────────────────────
-  // replyingToId: ratingId del comentario principal al que se está respondiendo
+  // replyingToId: ratingId del comentario al que se está respondiendo (puede ser principal o respuesta)
   const [replyingToId, setReplyingToId] = useState(null);
+  // replyToUserId: userId del autor del comentario al que se responde (para mención)
+  const [replyToUserId, setReplyToUserId] = useState(null);
+  // replyToUserName: nombre del usuario al que se responde (para mostrar @Nombre)
+  const [replyToUserName, setReplyToUserName] = useState(null);
+  // parentRatingId: ratingId del comentario principal (raíz del hilo)
+  const [replyParentId, setReplyParentId] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [replyError, setReplyError] = useState(null);
@@ -151,7 +157,7 @@ export default function EventDetail() {
       (incoming) => {
         // Solo comentarios visibles
         if (incoming.isVisible === false) return;
-        // Evitar duplicado: si ya está (por el POST propio), no agregar de nuevo
+        // Evitar duplicado: si ya está en el ref (POST propio o mensaje previo), no agregar.
         if (commentIdsRef.current.has(incoming.ratingId)) return;
 
         commentIdsRef.current.add(incoming.ratingId);
@@ -160,12 +166,21 @@ export default function EventDetail() {
           // Es una respuesta. Insertarla solo si el padre ya está cargado.
           // Si el padre no existe en la lista, recargar por REST para no perder el hilo.
           setComments((prev) => {
+            // Segunda guardia dentro del updater: evita duplicados si prev ya lo tiene
+            // (puede ocurrir si el POST respondió antes que este updater se ejecute).
+            if (prev.some((c) => c.ratingId === incoming.ratingId)) return prev;
+
             const parentExists = prev.some((c) => c.ratingId === incoming.parentRatingId);
             if (!parentExists) {
-              // Recarga diferida para obtener el padre y la respuesta juntos
+              // Recarga diferida para obtener el padre y la respuesta juntos.
+              // Usamos merge en lugar de reemplazar para no perder ids ya registrados.
               getEventComments(eventId).then((res) => {
                 const list = (res.data ?? []).filter((c) => c.isVisible !== false);
-                commentIdsRef.current = new Set(list.map((c) => c.ratingId));
+                // Merge: actualizar el ref con la unión de lo que ya había y lo que llegó
+                commentIdsRef.current = new Set([
+                  ...commentIdsRef.current,
+                  ...list.map((c) => c.ratingId),
+                ]);
                 setComments(list);
               }).catch(() => {});
               return prev; // Sin cambio hasta que llegue la recarga
@@ -173,8 +188,10 @@ export default function EventDetail() {
             return [...prev, incoming];
           });
         } else {
-          // Es un comentario principal: prependear
-          setComments((prev) => [incoming, ...prev]);
+          // Es un comentario principal: prependear (defensivo dentro del updater).
+          setComments((prev) =>
+            prev.some((c) => c.ratingId === incoming.ratingId) ? prev : [incoming, ...prev]
+          );
         }
       },
       key
@@ -424,8 +441,8 @@ export default function EventDetail() {
     }
   }, [eventId]);
 
-  // ── Enviar respuesta a un comentario principal ────────────────────────────
-  const handleReplySubmit = useCallback(async (e, parentRatingId) => {
+  // ── Enviar respuesta a un comentario ──────────────────────────────────────
+  const handleReplySubmit = useCallback(async (e) => {
     e.preventDefault();
     const trimmed = replyText.trim();
     if (!trimmed) return;
@@ -433,13 +450,33 @@ export default function EventDetail() {
     setReplySubmitting(true);
     setReplyError(null);
 
+    // Construir el comentario final: solo el texto del usuario.
+    // La mención viaja por separado en replyToUserId; el render la antepone al mostrar la respuesta.
+    const finalComment = trimmed;
+
     try {
-      const res = await addEventComment(eventId, { comment: trimmed, parentRatingId });
+      const payload = {
+        comment: finalComment,
+        parentRatingId: replyParentId,  // Siempre responder al comentario raíz
+      };
+
+      // Enviar replyToUserId solo si se responde a otro usuario (no a sí mismo)
+      if (replyToUserId && Number(replyToUserId) !== Number(currentUserId)) {
+        payload.replyToUserId = replyToUserId;
+      }
+
+      const res = await addEventComment(eventId, payload);
       const saved = res.data;
       commentIdsRef.current.add(saved.ratingId);
-      setComments((prev) => [...prev, saved]);
+      // Append defensivo: si el WS llegó antes que el POST respondiera, ya está en el array.
+      setComments((prev) =>
+        prev.some((c) => c.ratingId === saved.ratingId) ? prev : [...prev, saved]
+      );
       setReplyText('');
       setReplyingToId(null);
+      setReplyToUserId(null);
+      setReplyToUserName(null);
+      setReplyParentId(null);
     } catch (err) {
       const code = err.code || '';
       const msg  = err.message || '';
@@ -455,7 +492,7 @@ export default function EventDetail() {
     } finally {
       setReplySubmitting(false);
     }
-  }, [eventId, replyText]);
+  }, [eventId, replyText, replyParentId, replyToUserId, replyToUserName, currentUserId]);
 
   // ── Editar comentario propio ──────────────────────────────────────────────
   const handleEditSubmit = useCallback(async (e, ratingId) => {
@@ -540,7 +577,10 @@ export default function EventDetail() {
   const handleCommentSubmit = useCallback(async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-    if (needsRatingSelector && commentRating === 0) return;
+    if (needsRatingSelector && commentRating === 0) {
+      setCommentError('Selecciona una calificación de 1 a 5 estrellas antes de publicar.');
+      return;
+    }
 
     const trimmed = commentText.trim();
     setCommentSubmitting(true);
@@ -553,10 +593,12 @@ export default function EventDetail() {
       const saved = res.data;
 
       commentIdsRef.current.add(saved.ratingId);
-      setComments((prev) => [saved, ...prev]);
+      // Append defensivo: si el WS llegó antes que el POST respondiera, ya está en el array.
+      setComments((prev) =>
+        prev.some((c) => c.ratingId === saved.ratingId) ? prev : [saved, ...prev]
+      );
       setCommentText('');
       setCommentRating(0);
-      setHoverRating(0);
     } catch (err) {
       const code = err.code || '';
       const msg  = err.message || '';
@@ -566,6 +608,8 @@ export default function EventDetail() {
         setCommentError('No tienes permiso para comentar en este evento.');
       } else if (code === 'COMMENT_RATE_LIMITED' || msg.includes('COMMENT_RATE_LIMITED')) {
         setCommentError('Espera unos segundos antes de volver a comentar.');
+      } else if (code === 'COMMENT_RATING_REQUIRED' || code === 'COMMENT_RATING_INVALID') {
+        setCommentError('Selecciona una calificación de 1 a 5 estrellas antes de publicar.');
       } else {
         setCommentError(msg || 'No se pudo publicar el comentario.');
       }
@@ -786,36 +830,16 @@ export default function EventDetail() {
               className="mb-8 p-4 rounded-xl"
               style={{ background: 'rgba(109,40,217,0.1)', border: '1px solid rgba(167,139,250,0.15)' }}
             >
-              {/* Selector de estrellas — solo si aplica (R3/R4) */}
+              {/* Selector de estrellas — solo en comentarios principales (no en respuestas) */}
               {needsRatingSelector && (
-                <fieldset className="border-0 p-0 m-0 mb-3" aria-label="Calificación del evento (obligatoria para tu primer comentario)">
-                  <legend className="text-xs mb-1" style={{ color: 'rgba(196,181,253,0.6)' }}>
-                    Calificación <span aria-hidden="true">*</span>
-                  </legend>
-                  <div className="flex items-center gap-1" role="group" aria-label="Selecciona entre 1 y 5 estrellas">
-                    {[1, 2, 3, 4, 5].map((star) => {
-                      const active = star <= (hoverRating || commentRating);
-                      return (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setCommentRating(star)}
-                          onMouseEnter={() => setHoverRating(star)}
-                          onMouseLeave={() => setHoverRating(0)}
-                          aria-label={`${star} estrella${star > 1 ? 's' : ''}`}
-                          aria-pressed={star <= commentRating}
-                          className="transition-colors cursor-pointer"
-                        >
-                          <Star
-                            className="w-5 h-5 pointer-events-none"
-                            style={{ color: active ? '#f59e0b' : 'rgba(196,181,253,0.3)' }}
-                            fill={active ? '#f59e0b' : 'none'}
-                          />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </fieldset>
+                <StarRatingInput
+                  value={commentRating}
+                  onChange={(star) => {
+                    setCommentRating(star);
+                    setCommentError(null);
+                  }}
+                  disabled={commentSubmitting}
+                />
               )}
               <div className="flex gap-3 items-start">
                 <label htmlFor="comment-textarea" className="sr-only">Texto del comentario</label>
@@ -957,10 +981,17 @@ export default function EventDetail() {
                         </div>
 
                         {/* Botón Responder — solo en principales, solo con sesión */}
-                        {localStorage.getItem('token') && replyingToId !== c.ratingId && (
+                        {localStorage.getItem('token') && replyParentId !== c.ratingId && (
                           <button
                             type="button"
-                            onClick={() => { setReplyingToId(c.ratingId); setReplyText(''); setReplyError(null); }}
+                            onClick={() => { 
+                              setReplyingToId(c.ratingId); 
+                              setReplyParentId(c.ratingId);  // El comentario principal es el parent
+                              setReplyToUserId(c.userId);    // Responder al autor del principal
+                              setReplyToUserName(c.authorName);
+                              setReplyText('');
+                              setReplyError(null); 
+                            }}
                             aria-label={`Responder al comentario de ${c.authorName || 'Usuario'}`}
                             className="mt-2 flex items-center gap-1 text-xs cursor-pointer transition-opacity"
                             style={{ color: 'rgba(167,139,250,0.6)' }}
@@ -970,22 +1001,52 @@ export default function EventDetail() {
                           </button>
                         )}
 
-                        {/* Formulario de respuesta inline */}
-                        {replyingToId === c.ratingId && (
-                          <form onSubmit={(e) => handleReplySubmit(e, c.ratingId)} className="mt-3">
-                            <label htmlFor={`reply-textarea-${c.ratingId}`} className="sr-only">Escribe tu respuesta</label>
+                        {/* Formulario de respuesta inline —
+                            Se muestra cuando replyParentId apunta a este comentario principal,
+                            ya sea que se responda al principal directamente o a cualquier respuesta del hilo. */}
+                        {replyParentId === c.ratingId && replyingToId !== null && (
+                          <form onSubmit={handleReplySubmit} className="mt-3">
+                            {/* ── Área de input: mención fija + textarea ── */}
+                            <label htmlFor={`reply-textarea-${c.ratingId}`} className="sr-only">
+                              {replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId)
+                                ? `Respuesta a @${replyToUserName}. Escribe tu mensaje a continuación.`
+                                : 'Escribe tu respuesta'}
+                            </label>
                             <div className="flex gap-2 items-start">
-                              <textarea
-                                id={`reply-textarea-${c.ratingId}`}
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                placeholder="Escribe tu respuesta…"
-                                maxLength={500}
-                                rows={2}
-                                autoFocus
-                                className="flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
-                                style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.2)', color: '#e9d5ff' }}
-                              />
+                              {/* Contenedor del campo de texto con mención prefijada */}
+                              <div
+                                className="flex-1 flex items-start rounded-lg text-sm overflow-hidden"
+                                style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.2)' }}
+                              >
+                                {/* Mención fija — solo visible cuando aplica */}
+                                {replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId) && (
+                                  <span
+                                    aria-hidden="true"
+                                    className="shrink-0 pl-3 pt-2 pb-2 text-sm font-medium select-none"
+                                    style={{ color: '#a78bfa', lineHeight: '1.5rem' }}
+                                  >
+                                    @{replyToUserName}
+                                  </span>
+                                )}
+                                <textarea
+                                  id={`reply-textarea-${c.ratingId}`}
+                                  value={replyText}
+                                  onChange={(e) => {
+                                    if (e.target.value.length <= 500) {
+                                      setReplyText(e.target.value);
+                                    }
+                                  }}
+                                  placeholder={
+                                    replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId)
+                                      ? ' escribe aquí…'
+                                      : 'Escribe tu respuesta…'
+                                  }
+                                  rows={2}
+                                  autoFocus
+                                  className="flex-1 resize-none bg-transparent px-2 py-2 outline-none"
+                                  style={{ color: '#e9d5ff', minWidth: 0 }}
+                                />
+                              </div>
                               <div className="flex flex-col gap-1">
                                 <button
                                   type="submit"
@@ -998,7 +1059,14 @@ export default function EventDetail() {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => { setReplyingToId(null); setReplyError(null); }}
+                                  onClick={() => {
+                                    setReplyingToId(null);
+                                    setReplyToUserId(null);
+                                    setReplyToUserName(null);
+                                    setReplyParentId(null);
+                                    setReplyText('');
+                                    setReplyError(null);
+                                  }}
                                   aria-label="Cancelar respuesta"
                                   className="w-8 h-8 rounded flex items-center justify-center"
                                   style={{ color: 'rgba(196,181,253,0.5)' }}
@@ -1007,8 +1075,11 @@ export default function EventDetail() {
                                 </button>
                               </div>
                             </div>
+                            {/* Contador: solo el texto que escribe el usuario (500 caracteres máx) */}
                             <div className="flex items-center justify-between mt-1">
-                              <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{replyText.length}/500</span>
+                              <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>
+                                {replyText.length}/500
+                              </span>
                               {replyError && <span role="alert" className="text-xs text-red-400">{replyError}</span>}
                             </div>
                           </form>
@@ -1031,10 +1102,22 @@ export default function EventDetail() {
                                   </div>
                                   {replyIsOwn && localStorage.getItem('token') && (
                                     <div className="flex items-center gap-2 shrink-0">
-                                      {canEdit(r) && !isEditingReply && (
+                                      {canEdit(r) && !isEditingReply && editingId !== c.ratingId && (
                                         <button
                                           type="button"
-                                          onClick={() => { setEditingId(r.ratingId); setEditText(r.comment); setEditError(null); }}
+                                          onClick={() => {
+                                            // Quitar prefijo @Nombre si viene de datos guardados con el bug anterior
+                                            const hasMention = r.replyToUserName
+                                              && r.replyToUserId
+                                              && Number(r.replyToUserId) !== Number(r.userId);
+                                            const prefix = hasMention ? `@${r.replyToUserName} ` : '';
+                                            const textOnly = (hasMention && r.comment.startsWith(prefix))
+                                              ? r.comment.slice(prefix.length)
+                                              : r.comment;
+                                            setEditingId(r.ratingId);
+                                            setEditText(textOnly);
+                                            setEditError(null);
+                                          }}
                                           aria-label="Editar mi respuesta"
                                           className="transition-opacity cursor-pointer"
                                           style={{ color: 'rgba(167,139,250,0.7)' }}
@@ -1057,30 +1140,79 @@ export default function EventDetail() {
                                 </div>
 
                                 {isEditingReply ? (
-                                  <form onSubmit={(e) => handleEditSubmit(e, r.ratingId)} className="mt-1">
-                                    <label htmlFor={`edit-textarea-${r.ratingId}`} className="sr-only">Editar respuesta</label>
-                                    <textarea
-                                      id={`edit-textarea-${r.ratingId}`}
-                                      value={editText}
-                                      onChange={(e) => setEditText(e.target.value)}
-                                      maxLength={500}
-                                      rows={2}
-                                      className="w-full resize-none rounded-lg px-3 py-2 text-xs outline-none"
-                                      style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.3)', color: '#e9d5ff' }}
-                                    />
-                                    <div className="flex items-center justify-between mt-1">
-                                      <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{editText.length}/500</span>
-                                      <div className="flex gap-2">
-                                        <button type="button" onClick={() => { setEditingId(null); setEditError(null); }} className="text-xs px-2 py-0.5 rounded" style={{ color: 'rgba(196,181,253,0.6)' }}>Cancelar</button>
-                                        <button type="submit" disabled={editSubmitting || !editText.trim()} aria-label={editSubmitting ? 'Guardando…' : 'Guardar'} className="text-xs px-3 py-0.5 rounded disabled:opacity-40" style={{ background: 'rgba(109,40,217,0.6)', color: '#e9d5ff' }}>
-                                          {editSubmitting ? 'Guardando…' : 'Guardar'}
-                                        </button>
-                                      </div>
-                                    </div>
-                                    {editError && editingId === r.ratingId && <p role="alert" className="text-xs text-red-400 mt-1">{editError}</p>}
-                                  </form>
+                                  // ── Formulario de edición de respuesta ──
+                                  // La mención es un span fijo; editText contiene solo el texto del usuario.
+                                  (() => {
+                                    const hasMention = r.replyToUserName
+                                      && r.replyToUserId
+                                      && Number(r.replyToUserId) !== Number(r.userId);
+                                    return (
+                                      <form onSubmit={(e) => handleEditSubmit(e, r.ratingId)} className="mt-1">
+                                        <label htmlFor={`edit-textarea-${r.ratingId}`} className="sr-only">
+                                          {hasMention
+                                            ? `Editar respuesta a @${r.replyToUserName}. Escribe solo tu mensaje.`
+                                            : 'Editar respuesta'}
+                                        </label>
+                                        <div
+                                          className="flex items-start rounded-lg text-xs overflow-hidden"
+                                          style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
+                                        >
+                                          {/* Mención fija — no editable */}
+                                          {hasMention && (
+                                            <span
+                                              aria-hidden="true"
+                                              className="shrink-0 pl-3 pt-2 pb-2 text-xs font-medium select-none"
+                                              style={{ color: '#a78bfa', lineHeight: '1.5rem' }}
+                                            >
+                                              @{r.replyToUserName}
+                                            </span>
+                                          )}
+                                          <textarea
+                                            id={`edit-textarea-${r.ratingId}`}
+                                            value={editText}
+                                            onChange={(e) => {
+                                              if (e.target.value.length <= 500) setEditText(e.target.value);
+                                            }}
+                                            rows={2}
+                                            autoFocus
+                                            className="flex-1 resize-none bg-transparent px-2 py-2 outline-none"
+                                            style={{ color: '#e9d5ff', minWidth: 0 }}
+                                          />
+                                        </div>
+                                        <div className="flex items-center justify-between mt-1">
+                                          <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{editText.length}/500</span>
+                                          <div className="flex gap-2">
+                                            <button type="button" onClick={() => { setEditingId(null); setEditError(null); }} className="text-xs px-2 py-0.5 rounded" style={{ color: 'rgba(196,181,253,0.6)' }}>Cancelar</button>
+                                            <button type="submit" disabled={editSubmitting || !editText.trim()} aria-label={editSubmitting ? 'Guardando…' : 'Guardar'} className="text-xs px-3 py-0.5 rounded disabled:opacity-40" style={{ background: 'rgba(109,40,217,0.6)', color: '#e9d5ff' }}>
+                                              {editSubmitting ? 'Guardando…' : 'Guardar'}
+                                            </button>
+                                          </div>
+                                        </div>
+                                        {editError && editingId === r.ratingId && <p role="alert" className="text-xs text-red-400 mt-1">{editError}</p>}
+                                      </form>
+                                    );
+                                  })()
                                 ) : (
-                                  <p className="text-xs leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>{r.comment}</p>
+                                  // ── Visualización de la respuesta publicada ──
+                                  // Si r.comment empieza con "@Nombre " (datos guardados con el bug anterior),
+                                  // lo eliminamos para que el render no lo duplique.
+                                  (() => {
+                                    const hasMention = r.replyToUserName
+                                      && r.replyToUserId
+                                      && Number(r.replyToUserId) !== Number(r.userId);
+                                    const prefix = hasMention ? `@${r.replyToUserName} ` : '';
+                                    const bodyText = (hasMention && r.comment.startsWith(prefix))
+                                      ? r.comment.slice(prefix.length)
+                                      : r.comment;
+                                    return (
+                                      <p className="text-xs leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>
+                                        {hasMention && (
+                                          <span style={{ color: '#a78bfa', fontWeight: '500' }}>@{r.replyToUserName}{' '}</span>
+                                        )}
+                                        {bodyText}
+                                      </p>
+                                    );
+                                  })()
                                 )}
 
                                 <div className="flex items-center gap-2 mt-0.5">
@@ -1091,6 +1223,27 @@ export default function EventDetail() {
                                   )}
                                   {r.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>(editado)</span>}
                                 </div>
+
+                                {/* Botón Responder en respuestas */}
+                                {localStorage.getItem('token') && replyParentId !== c.ratingId && !isEditingReply && (
+                                  <button
+                                    type="button"
+                                    onClick={() => { 
+                                      setReplyingToId(r.ratingId); 
+                                      setReplyParentId(c.ratingId);  // El parent sigue siendo el comentario principal
+                                      setReplyToUserId(r.userId);    // Responder al autor de esta respuesta
+                                      setReplyToUserName(r.authorName);
+                                      setReplyText('');
+                                      setReplyError(null); 
+                                    }}
+                                    aria-label={`Responder a ${r.authorName || 'Usuario'}`}
+                                    className="mt-1 flex items-center gap-1 text-xs cursor-pointer transition-opacity"
+                                    style={{ color: 'rgba(167,139,250,0.6)' }}
+                                  >
+                                    <CornerDownLeft className="w-3 h-3 pointer-events-none" />
+                                    Responder
+                                  </button>
+                                )}
                               </li>
                             );
                           })}
