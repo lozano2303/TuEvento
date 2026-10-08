@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send, CornerDownLeft, Pencil } from 'lucide-react';
 import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
 import Konva from 'konva';
 import { getEventById } from '../services/EventService';
@@ -8,11 +8,12 @@ import { getEventMedia } from '../services/EventMediaService';
 import * as LayoutService from '../services/LayoutService';
 import * as SeatService from '../services/SeatService';
 import * as EventSectionService from '../services/EventSectionService';
-import { getEventComments, addEventComment, deleteEventComment } from '../services/EventCommentService';
+import { getEventComments, addEventComment, editEventComment, deleteEventComment } from '../services/EventCommentService';
 import { formatDistanceToNow } from 'date-fns';
 import { es as dateFnsEs } from 'date-fns/locale';
 import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
+import StarRatingInput from '../components/common/StarRatingInput';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
@@ -51,11 +52,30 @@ export default function EventDetail() {
   const [commentRating, setCommentRating] = useState(0);   // 0 = sin selección
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentError, setCommentError] = useState(null);
-  const [hoverRating, setHoverRating] = useState(0);
   const [deletingCommentId, setDeletingCommentId] = useState(null);
   const [deleteCommentError, setDeleteCommentError] = useState(null);
   // userId del organizador del evento (para R4 en el frontend)
   const [eventOrganizerUserId, setEventOrganizerUserId] = useState(null);
+
+  // ── Estado de respuestas ───────────────────────────────────────────────────
+  // replyingToId: ratingId del comentario al que se está respondiendo (puede ser principal o respuesta)
+  const [replyingToId, setReplyingToId] = useState(null);
+  // replyToUserId: userId del autor del comentario al que se responde (para mención)
+  const [replyToUserId, setReplyToUserId] = useState(null);
+  // replyToUserName: nombre del usuario al que se responde (para mostrar @Nombre)
+  const [replyToUserName, setReplyToUserName] = useState(null);
+  // parentRatingId: ratingId del comentario principal (raíz del hilo)
+  const [replyParentId, setReplyParentId] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [replySubmitting, setReplySubmitting] = useState(false);
+  const [replyError, setReplyError] = useState(null);
+
+  // ── Estado de edición ─────────────────────────────────────────────────────
+  // editingId: ratingId del comentario que se está editando (null = ninguno)
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState(null);
 
   // Ref con los ratingIds ya presentes para evitar duplicados al recibir WS
   const commentIdsRef = useRef(new Set());
@@ -137,11 +157,42 @@ export default function EventDetail() {
       (incoming) => {
         // Solo comentarios visibles
         if (incoming.isVisible === false) return;
-        // Evitar duplicado: si ya está (por el POST propio), no agregar de nuevo
+        // Evitar duplicado: si ya está en el ref (POST propio o mensaje previo), no agregar.
         if (commentIdsRef.current.has(incoming.ratingId)) return;
 
         commentIdsRef.current.add(incoming.ratingId);
-        setComments((prev) => [incoming, ...prev]);
+
+        if (incoming.parentRatingId != null) {
+          // Es una respuesta. Insertarla solo si el padre ya está cargado.
+          // Si el padre no existe en la lista, recargar por REST para no perder el hilo.
+          setComments((prev) => {
+            // Segunda guardia dentro del updater: evita duplicados si prev ya lo tiene
+            // (puede ocurrir si el POST respondió antes que este updater se ejecute).
+            if (prev.some((c) => c.ratingId === incoming.ratingId)) return prev;
+
+            const parentExists = prev.some((c) => c.ratingId === incoming.parentRatingId);
+            if (!parentExists) {
+              // Recarga diferida para obtener el padre y la respuesta juntos.
+              // Usamos merge en lugar de reemplazar para no perder ids ya registrados.
+              getEventComments(eventId).then((res) => {
+                const list = (res.data ?? []).filter((c) => c.isVisible !== false);
+                // Merge: actualizar el ref con la unión de lo que ya había y lo que llegó
+                commentIdsRef.current = new Set([
+                  ...commentIdsRef.current,
+                  ...list.map((c) => c.ratingId),
+                ]);
+                setComments(list);
+              }).catch(() => {});
+              return prev; // Sin cambio hasta que llegue la recarga
+            }
+            return [...prev, incoming];
+          });
+        } else {
+          // Es un comentario principal: prependear (defensivo dentro del updater).
+          setComments((prev) =>
+            prev.some((c) => c.ratingId === incoming.ratingId) ? prev : [incoming, ...prev]
+          );
+        }
       },
       key
     );
@@ -163,9 +214,19 @@ export default function EventDetail() {
       (incoming) => {
         const id = incoming.ratingId;
         if (!id) return;
-        // Idempotente: quitar por ratingId aunque ya se hubiera quitado localmente
+        // Al borrar un principal, quitar también sus respuestas (Regla C)
         commentIdsRef.current.delete(id);
-        setComments((prev) => prev.filter((c) => c.ratingId !== id));
+        setComments((prev) => {
+          // Quitar el comentario borrado y todas sus respuestas directas
+          const filtered = prev.filter((c) => c.ratingId !== id && c.parentRatingId !== id);
+          // Limpiar el ref de ids de lo eliminado
+          prev.forEach((c) => {
+            if (c.ratingId === id || c.parentRatingId === id) {
+              commentIdsRef.current.delete(c.ratingId);
+            }
+          });
+          return filtered;
+        });
       },
       key
     );
@@ -173,6 +234,28 @@ export default function EventDetail() {
     return () => {
       unsubscribe();
     };
+  }, [eventId, isLoading, subscribe]);
+
+  // ── Suscripción WebSocket a comentarios editados ──────────────────────────
+  useEffect(() => {
+    if (!eventId || isLoading) return;
+
+    const destination = `/topic/events/${eventId}/comments/updated`;
+    const key = `comments-updated-event-${eventId}`;
+
+    const unsubscribe = subscribe(
+      destination,
+      (incoming) => {
+        if (!incoming.ratingId) return;
+        // Reemplazar el comentario por ratingId, de forma idempotente
+        setComments((prev) =>
+          prev.map((c) => (c.ratingId === incoming.ratingId ? { ...c, ...incoming } : c))
+        );
+      },
+      key
+    );
+
+    return () => { unsubscribe(); };
   }, [eventId, isLoading, subscribe]);
 
   // WebSocket: Suscripción dinámica a actualizaciones de sillas del evento
@@ -334,9 +417,14 @@ export default function EventDetail() {
 
     try {
       await deleteEventComment(eventId, ratingId);
-      // Quitar localmente y limpiar el ref de ids para que el WS no lo duplique
+      // Quitar localmente: el comentario y sus respuestas (Regla C)
       commentIdsRef.current.delete(ratingId);
-      setComments((prev) => prev.filter((c) => c.ratingId !== ratingId));
+      setComments((prev) => {
+        const toRemove = new Set([ratingId]);
+        prev.forEach((c) => { if (c.parentRatingId === ratingId) toRemove.add(c.ratingId); });
+        toRemove.forEach((id) => commentIdsRef.current.delete(id));
+        return prev.filter((c) => !toRemove.has(c.ratingId));
+      });
     } catch (err) {
       const msg = err.message || '';
       if (msg.includes('SESSION_EXPIRED') || msg.includes('401')) {
@@ -353,47 +441,164 @@ export default function EventDetail() {
     }
   }, [eventId]);
 
+  // ── Enviar respuesta a un comentario ──────────────────────────────────────
+  const handleReplySubmit = useCallback(async (e) => {
+    e.preventDefault();
+    const trimmed = replyText.trim();
+    if (!trimmed) return;
+
+    setReplySubmitting(true);
+    setReplyError(null);
+
+    // Construir el comentario final: solo el texto del usuario.
+    // La mención viaja por separado en replyToUserId; el render la antepone al mostrar la respuesta.
+    const finalComment = trimmed;
+
+    try {
+      const payload = {
+        comment: finalComment,
+        parentRatingId: replyParentId,  // Siempre responder al comentario raíz
+      };
+
+      // Enviar replyToUserId solo si se responde a otro usuario (no a sí mismo)
+      if (replyToUserId && Number(replyToUserId) !== Number(currentUserId)) {
+        payload.replyToUserId = replyToUserId;
+      }
+
+      const res = await addEventComment(eventId, payload);
+      const saved = res.data;
+      commentIdsRef.current.add(saved.ratingId);
+      // Append defensivo: si el WS llegó antes que el POST respondiera, ya está en el array.
+      setComments((prev) =>
+        prev.some((c) => c.ratingId === saved.ratingId) ? prev : [...prev, saved]
+      );
+      setReplyText('');
+      setReplyingToId(null);
+      setReplyToUserId(null);
+      setReplyToUserName(null);
+      setReplyParentId(null);
+    } catch (err) {
+      const code = err.code || '';
+      const msg  = err.message || '';
+      if (msg.includes('401') || msg.includes('SESSION_EXPIRED')) {
+        setReplyError('Tu sesión expiró. Inicia sesión de nuevo.');
+      } else if (code === 'COMMENT_RATE_LIMITED' || msg.includes('COMMENT_RATE_LIMITED')) {
+        setReplyError('Espera unos segundos antes de volver a responder.');
+      } else if (code === 'COMMENT_PARENT_INVALID') {
+        setReplyError('Este comentario no puede recibir respuestas.');
+      } else {
+        setReplyError(msg || 'No se pudo enviar la respuesta.');
+      }
+    } finally {
+      setReplySubmitting(false);
+    }
+  }, [eventId, replyText, replyParentId, replyToUserId, replyToUserName, currentUserId]);
+
+  // ── Editar comentario propio ──────────────────────────────────────────────
+  const handleEditSubmit = useCallback(async (e, ratingId) => {
+    e.preventDefault();
+    const trimmed = editText.trim();
+    if (!trimmed) return;
+
+    setEditSubmitting(true);
+    setEditError(null);
+
+    try {
+      const res = await editEventComment(eventId, ratingId, trimmed);
+      const updated = res.data;
+      setComments((prev) =>
+        prev.map((c) => (c.ratingId === ratingId
+          ? { ...c, comment: updated.comment, editedAt: updated.editedAt, editableUntil: updated.editableUntil }
+          : c))
+      );
+      setEditingId(null);
+      setEditText('');
+    } catch (err) {
+      const code = err.code || '';
+      const msg  = err.message || '';
+      if (msg.includes('401') || msg.includes('SESSION_EXPIRED')) {
+        setEditError('Tu sesión expiró. Inicia sesión de nuevo.');
+      } else if (msg.includes('403')) {
+        setEditError('No tienes permiso para editar este comentario.');
+      } else if (code === 'COMMENT_EDIT_WINDOW_EXPIRED') {
+        // El backend confirmó que expiró: ocultar el botón actualizar el estado localmente
+        setComments((prev) =>
+          prev.map((c) => (c.ratingId === ratingId ? { ...c, _editExpired: true } : c))
+        );
+        setEditingId(null);
+        setEditError('El tiempo para editar este comentario ha expirado.');
+      } else {
+        setEditError(msg || 'No se pudo editar el comentario.');
+      }
+    } finally {
+      setEditSubmitting(false);
+    }
+  }, [eventId, editText]);
+
   // ── Helpers de comentarios ────────────────────────────────────────────────
   /**
    * ¿El usuario actual es el organizador del evento? (R4)
-   * Se compara con eventOrganizerUserId cargado al montar el evento.
    */
   const currentUserIsOrganizer = eventOrganizerUserId != null && currentUserId != null
     && Number(eventOrganizerUserId) === Number(currentUserId);
 
   /**
    * ¿Necesita el selector de estrellas?
-   * Sí: si el usuario es autenticado, NO es el organizador (R4),
-   * y no tiene todavía ningún comentario con rating (R3).
+   * Solo si no es el organizador (R4) y no tiene aún comentario principal con rating (R3).
    */
   const needsRatingSelector = !currentUserIsOrganizer &&
-    !comments.some((c) => Number(c.userId) === Number(currentUserId) && c.rating != null);
+    !comments.some((c) =>
+      c.parentRatingId == null &&
+      Number(c.userId) === Number(currentUserId) &&
+      c.rating != null
+    );
+
+  /**
+   * ¿Puede editar el comentario c?
+   * Usa editableUntil calculado por el servidor (createdAt + 2 h, zona America/Bogota)
+   * para evitar errores de zona horaria del navegador.
+   * Si editableUntil no está presente (comentarios legacy), no muestra el botón.
+   * El backend sigue siendo fuente de verdad: si responde COMMENT_EDIT_WINDOW_EXPIRED,
+   * handleEditSubmit marca _editExpired=true y oculta el botón.
+   */
+  const canEdit = useCallback((c) => {
+    if (!currentUserId || Number(c.userId) !== Number(currentUserId)) return false;
+    if (c._editExpired) return false;
+    if (!c.editableUntil) return false;
+    // editableUntil viene como string ISO local sin zona (ej. "2026-10-05T11:30:00").
+    // new Date() lo interpreta en zona local del navegador, pero la comparación es
+    // relativa (mayor que ahora), así que el único riesgo es mostrar el botón unos
+    // minutos de más o de menos en zonas muy alejadas de Bogotá (UTC-5). El backend
+    // rechaza con COMMENT_EDIT_WINDOW_EXPIRED si la ventana ya expiró.
+    return new Date(c.editableUntil).getTime() > Date.now();
+  }, [currentUserId]);
 
   // ── Envío de comentario ────────────────────────────────────────────────────
   const handleCommentSubmit = useCallback(async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-    // Si necesita estrellas, el botón ya está deshabilitado si rating===0;
-    // esta guardia es defensiva para el caso de submit por teclado.
-    if (needsRatingSelector && commentRating === 0) return;
+    if (needsRatingSelector && commentRating === 0) {
+      setCommentError('Selecciona una calificación de 1 a 5 estrellas antes de publicar.');
+      return;
+    }
 
     const trimmed = commentText.trim();
     setCommentSubmitting(true);
     setCommentError(null);
 
-    // Determinar el rating a enviar: solo si aplica (R3/R4)
     const ratingToSend = needsRatingSelector && commentRating > 0 ? commentRating : undefined;
 
     try {
       const res = await addEventComment(eventId, { rating: ratingToSend, comment: trimmed });
       const saved = res.data;
 
-      // Agregar localmente de inmediato y registrar el ratingId para filtrar el WS
       commentIdsRef.current.add(saved.ratingId);
-      setComments((prev) => [saved, ...prev]);
+      // Append defensivo: si el WS llegó antes que el POST respondiera, ya está en el array.
+      setComments((prev) =>
+        prev.some((c) => c.ratingId === saved.ratingId) ? prev : [saved, ...prev]
+      );
       setCommentText('');
       setCommentRating(0);
-      setHoverRating(0);
     } catch (err) {
       const code = err.code || '';
       const msg  = err.message || '';
@@ -403,6 +608,8 @@ export default function EventDetail() {
         setCommentError('No tienes permiso para comentar en este evento.');
       } else if (code === 'COMMENT_RATE_LIMITED' || msg.includes('COMMENT_RATE_LIMITED')) {
         setCommentError('Espera unos segundos antes de volver a comentar.');
+      } else if (code === 'COMMENT_RATING_REQUIRED' || code === 'COMMENT_RATING_INVALID') {
+        setCommentError('Selecciona una calificación de 1 a 5 estrellas antes de publicar.');
       } else {
         setCommentError(msg || 'No se pudo publicar el comentario.');
       }
@@ -615,7 +822,7 @@ export default function EventDetail() {
             )}
           </h2>
 
-          {/* Formulario — cualquier usuario autenticado (R1) */}
+          {/* Formulario principal — cualquier usuario autenticado (R1) */}
           {localStorage.getItem('token') ? (
             <form
               id="comment-form"
@@ -623,39 +830,17 @@ export default function EventDetail() {
               className="mb-8 p-4 rounded-xl"
               style={{ background: 'rgba(109,40,217,0.1)', border: '1px solid rgba(167,139,250,0.15)' }}
             >
-              {/* Selector de estrellas — solo si aplica (R3/R4) */}
+              {/* Selector de estrellas — solo en comentarios principales (no en respuestas) */}
               {needsRatingSelector && (
-                <fieldset className="border-0 p-0 m-0 mb-3" aria-label="Calificación del evento (obligatoria para tu primer comentario)">
-                  <legend className="text-xs mb-1" style={{ color: 'rgba(196,181,253,0.6)' }}>
-                    Calificación <span aria-hidden="true">*</span>
-                  </legend>
-                  <div className="flex items-center gap-1" role="group" aria-label="Selecciona entre 1 y 5 estrellas">
-                    {[1, 2, 3, 4, 5].map((star) => {
-                      const active = star <= (hoverRating || commentRating);
-                      return (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setCommentRating(star)}
-                          onMouseEnter={() => setHoverRating(star)}
-                          onMouseLeave={() => setHoverRating(0)}
-                          aria-label={`${star} estrella${star > 1 ? 's' : ''}`}
-                          aria-pressed={star <= commentRating}
-                          className="transition-colors cursor-pointer"
-                        >
-                          <Star
-                            className="w-5 h-5 pointer-events-none"
-                            style={{ color: active ? '#f59e0b' : 'rgba(196,181,253,0.3)' }}
-                            fill={active ? '#f59e0b' : 'none'}
-                          />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </fieldset>
+                <StarRatingInput
+                  value={commentRating}
+                  onChange={(star) => {
+                    setCommentRating(star);
+                    setCommentError(null);
+                  }}
+                  disabled={commentSubmitting}
+                />
               )}
-
-              {/* Textarea + botón enviar */}
               <div className="flex gap-3 items-start">
                 <label htmlFor="comment-textarea" className="sr-only">Texto del comentario</label>
                 <textarea
@@ -666,127 +851,410 @@ export default function EventDetail() {
                   maxLength={500}
                   rows={3}
                   className="flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
-                  style={{
-                    background: 'rgba(15,10,30,0.6)',
-                    border: '1px solid rgba(167,139,250,0.2)',
-                    color: '#e9d5ff',
-                  }}
+                  style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.2)', color: '#e9d5ff' }}
                 />
                 <button
                   type="submit"
-                  disabled={
-                    commentSubmitting ||
-                    !commentText.trim() ||
-                    (needsRatingSelector && commentRating === 0)
-                  }
+                  disabled={commentSubmitting || !commentText.trim() || (needsRatingSelector && commentRating === 0)}
                   aria-label={commentSubmitting ? 'Enviando comentario…' : 'Publicar comentario'}
                   className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-40"
                   style={{ background: 'rgba(109,40,217,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
                 >
-                  {commentSubmitting
-                    ? <span className="text-xs" style={{ color: '#e9d5ff' }}>…</span>
-                    : <Send className="w-4 h-4 pointer-events-none" style={{ color: '#e9d5ff' }} />
-                  }
+                  {commentSubmitting ? <span className="text-xs" style={{ color: '#e9d5ff' }}>…</span> : <Send className="w-4 h-4 pointer-events-none" style={{ color: '#e9d5ff' }} />}
                 </button>
               </div>
-
               <div className="flex items-center justify-between mt-1">
-                <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>
-                  {commentText.length}/500
-                </span>
-                {commentError && (
-                  <span role="alert" className="text-xs text-red-400">{commentError}</span>
-                )}
+                <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{commentText.length}/500</span>
+                {commentError && <span role="alert" className="text-xs text-red-400">{commentError}</span>}
               </div>
             </form>
           ) : (
             <p className="text-sm mb-6 text-center" style={{ color: 'rgba(196,181,253,0.5)' }}>
-              <a href="/login" style={{ color: '#a78bfa', textDecoration: 'underline' }}>
-                Inicia sesión
-              </a>{' '}para dejar un comentario.
+              <a href="/login" style={{ color: '#a78bfa', textDecoration: 'underline' }}>Inicia sesión</a>{' '}para dejar un comentario.
             </p>
           )}
 
-          {/* Lista de comentarios */}
+          {/* Lista de comentarios agrupados */}
           {commentsLoading ? (
-            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>
-              Cargando comentarios…
-            </p>
-          ) : comments.length === 0 ? (
-            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>
-              Todavía no hay comentarios. ¡Sé el primero!
-            </p>
+            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>Cargando comentarios…</p>
+          ) : comments.filter((c) => c.parentRatingId == null).length === 0 ? (
+            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>Todavía no hay comentarios. ¡Sé el primero!</p>
           ) : (
             <ul className="space-y-4" aria-label="Lista de comentarios">
-              {comments.map((c) => {
-                const isOwn = currentUserId != null && Number(c.userId) === Number(currentUserId);
-                return (
-                  <li
-                    key={c.ratingId}
-                    className="p-4 rounded-xl"
-                    style={{ background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(167,139,250,0.12)' }}
-                  >
-                    {/* Cabecera: nombre + etiquetas + estrellas + botón eliminar */}
-                    <div className="flex items-start justify-between mb-1 gap-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium" style={{ color: '#c4b5fd' }}>
-                          {c.authorName || 'Usuario'}
-                        </span>
-                        {isOwn && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>
-                            Tú
-                          </span>
-                        )}
-                        {c.isOrganizer && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
-                            Organizador
-                          </span>
-                        )}
-                        {/* Estrellas — solo si rating no es null */}
-                        {c.rating != null && (
-                          <div className="flex items-center gap-0.5" aria-label={`${c.rating} de 5 estrellas`}>
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className="w-3.5 h-3.5"
-                                style={{ color: star <= c.rating ? '#f59e0b' : 'rgba(196,181,253,0.2)' }}
-                                fill={star <= c.rating ? '#f59e0b' : 'none'}
-                              />
-                            ))}
+              {comments
+                .filter((c) => c.parentRatingId == null)
+                .map((c) => {
+                  const isOwn = currentUserId != null && Number(c.userId) === Number(currentUserId);
+                  const replies = comments
+                    .filter((r) => r.parentRatingId === c.ratingId)
+                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                  const isEditingThis = editingId === c.ratingId;
+
+                  return (
+                    <li key={c.ratingId} className="rounded-xl" style={{ background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(167,139,250,0.12)' }}>
+                      {/* ── Comentario principal ── */}
+                      <div className="p-4">
+                        {/* Cabecera */}
+                        <div className="flex items-start justify-between mb-1 gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium" style={{ color: '#c4b5fd' }}>{c.authorName || 'Usuario'}</span>
+                            {isOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>Tú</span>}
+                            {c.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>Organizador</span>}
+                            {c.rating != null && (
+                              <div className="flex items-center gap-0.5" aria-label={`${c.rating} de 5 estrellas`}>
+                                {[1,2,3,4,5].map((star) => (
+                                  <Star key={star} className="w-3.5 h-3.5" style={{ color: star <= c.rating ? '#f59e0b' : 'rgba(196,181,253,0.2)' }} fill={star <= c.rating ? '#f59e0b' : 'none'} />
+                                ))}
+                              </div>
+                            )}
                           </div>
+                          {/* Botones Editar + Eliminar — solo para el dueño, solo con sesión */}
+                          {isOwn && localStorage.getItem('token') && (
+                            <div className="flex items-center gap-2 shrink-0">
+                              {canEdit(c) && !isEditingThis && (
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingId(c.ratingId); setEditText(c.comment); setEditError(null); }}
+                                  aria-label="Editar mi comentario"
+                                  className="transition-opacity cursor-pointer"
+                                  style={{ color: 'rgba(167,139,250,0.7)' }}
+                                >
+                                  <Pencil className="w-3.5 h-3.5 pointer-events-none" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteComment(c.ratingId)}
+                                disabled={deletingCommentId === c.ratingId}
+                                aria-label="Eliminar mi comentario"
+                                className="transition-opacity disabled:opacity-40 cursor-pointer"
+                                style={{ color: 'rgba(248,113,113,0.7)' }}
+                              >
+                                <X className="w-3.5 h-3.5 pointer-events-none" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Texto o formulario de edición inline */}
+                        {isEditingThis ? (
+                          <form onSubmit={(e) => handleEditSubmit(e, c.ratingId)} className="mt-2">
+                            <label htmlFor={`edit-textarea-${c.ratingId}`} className="sr-only">Editar comentario</label>
+                            <textarea
+                              id={`edit-textarea-${c.ratingId}`}
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              maxLength={500}
+                              rows={3}
+                              className="w-full resize-none rounded-lg px-3 py-2 text-sm outline-none"
+                              style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.3)', color: '#e9d5ff' }}
+                            />
+                            <div className="flex items-center justify-between mt-1">
+                              <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{editText.length}/500</span>
+                              <div className="flex gap-2">
+                                <button type="button" onClick={() => { setEditingId(null); setEditError(null); }} className="text-xs px-2 py-1 rounded" style={{ color: 'rgba(196,181,253,0.6)' }}>Cancelar</button>
+                                <button
+                                  type="submit"
+                                  disabled={editSubmitting || !editText.trim()}
+                                  aria-label={editSubmitting ? 'Guardando…' : 'Guardar edición'}
+                                  className="text-xs px-3 py-1 rounded transition-opacity disabled:opacity-40"
+                                  style={{ background: 'rgba(109,40,217,0.6)', color: '#e9d5ff' }}
+                                >
+                                  {editSubmitting ? 'Guardando…' : 'Guardar'}
+                                </button>
+                              </div>
+                            </div>
+                            {editError && <p role="alert" className="text-xs text-red-400 mt-1">{editError}</p>}
+                          </form>
+                        ) : (
+                          <p className="text-sm leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>{c.comment}</p>
+                        )}
+
+                        {/* Tiempo + (editado) */}
+                        <div className="flex items-center gap-2 mt-1">
+                          {c.createdAt && (
+                            <time dateTime={c.createdAt} className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>
+                              {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: dateFnsEs })}
+                            </time>
+                          )}
+                          {c.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>(editado)</span>}
+                        </div>
+
+                        {/* Botón Responder — solo en principales, solo con sesión */}
+                        {localStorage.getItem('token') && replyParentId !== c.ratingId && (
+                          <button
+                            type="button"
+                            onClick={() => { 
+                              setReplyingToId(c.ratingId); 
+                              setReplyParentId(c.ratingId);  // El comentario principal es el parent
+                              setReplyToUserId(c.userId);    // Responder al autor del principal
+                              setReplyToUserName(c.authorName);
+                              setReplyText('');
+                              setReplyError(null); 
+                            }}
+                            aria-label={`Responder al comentario de ${c.authorName || 'Usuario'}`}
+                            className="mt-2 flex items-center gap-1 text-xs cursor-pointer transition-opacity"
+                            style={{ color: 'rgba(167,139,250,0.6)' }}
+                          >
+                            <CornerDownLeft className="w-3 h-3 pointer-events-none" />
+                            Responder
+                          </button>
+                        )}
+
+                        {/* Formulario de respuesta inline —
+                            Se muestra cuando replyParentId apunta a este comentario principal,
+                            ya sea que se responda al principal directamente o a cualquier respuesta del hilo. */}
+                        {replyParentId === c.ratingId && replyingToId !== null && (
+                          <form onSubmit={handleReplySubmit} className="mt-3">
+                            {/* ── Área de input: mención fija + textarea ── */}
+                            <label htmlFor={`reply-textarea-${c.ratingId}`} className="sr-only">
+                              {replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId)
+                                ? `Respuesta a @${replyToUserName}. Escribe tu mensaje a continuación.`
+                                : 'Escribe tu respuesta'}
+                            </label>
+                            <div className="flex gap-2 items-start">
+                              {/* Contenedor del campo de texto con mención prefijada */}
+                              <div
+                                className="flex-1 flex items-start rounded-lg text-sm overflow-hidden"
+                                style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.2)' }}
+                              >
+                                {/* Mención fija — solo visible cuando aplica */}
+                                {replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId) && (
+                                  <span
+                                    aria-hidden="true"
+                                    className="shrink-0 pl-3 pt-2 pb-2 text-sm font-medium select-none"
+                                    style={{ color: '#a78bfa', lineHeight: '1.5rem' }}
+                                  >
+                                    @{replyToUserName}
+                                  </span>
+                                )}
+                                <textarea
+                                  id={`reply-textarea-${c.ratingId}`}
+                                  value={replyText}
+                                  onChange={(e) => {
+                                    if (e.target.value.length <= 500) {
+                                      setReplyText(e.target.value);
+                                    }
+                                  }}
+                                  placeholder={
+                                    replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId)
+                                      ? ' escribe aquí…'
+                                      : 'Escribe tu respuesta…'
+                                  }
+                                  rows={2}
+                                  autoFocus
+                                  className="flex-1 resize-none bg-transparent px-2 py-2 outline-none"
+                                  style={{ color: '#e9d5ff', minWidth: 0 }}
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <button
+                                  type="submit"
+                                  disabled={replySubmitting || !replyText.trim()}
+                                  aria-label={replySubmitting ? 'Enviando respuesta…' : 'Enviar respuesta'}
+                                  className="w-8 h-8 rounded flex items-center justify-center transition-opacity disabled:opacity-40"
+                                  style={{ background: 'rgba(109,40,217,0.6)' }}
+                                >
+                                  {replySubmitting ? <span className="text-xs" style={{ color: '#e9d5ff' }}>…</span> : <Send className="w-3.5 h-3.5 pointer-events-none" style={{ color: '#e9d5ff' }} />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReplyingToId(null);
+                                    setReplyToUserId(null);
+                                    setReplyToUserName(null);
+                                    setReplyParentId(null);
+                                    setReplyText('');
+                                    setReplyError(null);
+                                  }}
+                                  aria-label="Cancelar respuesta"
+                                  className="w-8 h-8 rounded flex items-center justify-center"
+                                  style={{ color: 'rgba(196,181,253,0.5)' }}
+                                >
+                                  <X className="w-3.5 h-3.5 pointer-events-none" />
+                                </button>
+                              </div>
+                            </div>
+                            {/* Contador: solo el texto que escribe el usuario (500 caracteres máx) */}
+                            <div className="flex items-center justify-between mt-1">
+                              <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>
+                                {replyText.length}/500
+                              </span>
+                              {replyError && <span role="alert" className="text-xs text-red-400">{replyError}</span>}
+                            </div>
+                          </form>
                         )}
                       </div>
-                      {/* Botón eliminar — solo para el dueño del comentario */}
-                      {isOwn && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteComment(c.ratingId)}
-                          disabled={deletingCommentId === c.ratingId}
-                          aria-label="Eliminar mi comentario"
-                          className="shrink-0 transition-opacity disabled:opacity-40 cursor-pointer"
-                          style={{ color: 'rgba(248,113,113,0.7)' }}
-                        >
-                          <X className="w-3.5 h-3.5 pointer-events-none" />
-                        </button>
+
+                      {/* ── Respuestas ── */}
+                      {replies.length > 0 && (
+                        <ul className="border-t px-4 pb-3 pt-2 space-y-3" style={{ borderColor: 'rgba(167,139,250,0.08)' }} aria-label={`Respuestas al comentario de ${c.authorName || 'Usuario'}`}>
+                          {replies.map((r) => {
+                            const replyIsOwn = currentUserId != null && Number(r.userId) === Number(currentUserId);
+                            const isEditingReply = editingId === r.ratingId;
+                            return (
+                              <li key={r.ratingId} className="pl-4" style={{ borderLeft: '2px solid rgba(167,139,250,0.15)' }}>
+                                <div className="flex items-start justify-between gap-2 mb-0.5">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs font-medium" style={{ color: '#c4b5fd' }}>{r.authorName || 'Usuario'}</span>
+                                    {replyIsOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>Tú</span>}
+                                    {r.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>Organizador</span>}
+                                  </div>
+                                  {replyIsOwn && localStorage.getItem('token') && (
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      {canEdit(r) && !isEditingReply && editingId !== c.ratingId && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            // Quitar prefijo @Nombre si viene de datos guardados con el bug anterior
+                                            const hasMention = r.replyToUserName
+                                              && r.replyToUserId
+                                              && Number(r.replyToUserId) !== Number(r.userId);
+                                            const prefix = hasMention ? `@${r.replyToUserName} ` : '';
+                                            const textOnly = (hasMention && r.comment.startsWith(prefix))
+                                              ? r.comment.slice(prefix.length)
+                                              : r.comment;
+                                            setEditingId(r.ratingId);
+                                            setEditText(textOnly);
+                                            setEditError(null);
+                                          }}
+                                          aria-label="Editar mi respuesta"
+                                          className="transition-opacity cursor-pointer"
+                                          style={{ color: 'rgba(167,139,250,0.7)' }}
+                                        >
+                                          <Pencil className="w-3 h-3 pointer-events-none" />
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteComment(r.ratingId)}
+                                        disabled={deletingCommentId === r.ratingId}
+                                        aria-label="Eliminar mi respuesta"
+                                        className="transition-opacity disabled:opacity-40 cursor-pointer"
+                                        style={{ color: 'rgba(248,113,113,0.7)' }}
+                                      >
+                                        <X className="w-3 h-3 pointer-events-none" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {isEditingReply ? (
+                                  // ── Formulario de edición de respuesta ──
+                                  // La mención es un span fijo; editText contiene solo el texto del usuario.
+                                  (() => {
+                                    const hasMention = r.replyToUserName
+                                      && r.replyToUserId
+                                      && Number(r.replyToUserId) !== Number(r.userId);
+                                    return (
+                                      <form onSubmit={(e) => handleEditSubmit(e, r.ratingId)} className="mt-1">
+                                        <label htmlFor={`edit-textarea-${r.ratingId}`} className="sr-only">
+                                          {hasMention
+                                            ? `Editar respuesta a @${r.replyToUserName}. Escribe solo tu mensaje.`
+                                            : 'Editar respuesta'}
+                                        </label>
+                                        <div
+                                          className="flex items-start rounded-lg text-xs overflow-hidden"
+                                          style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
+                                        >
+                                          {/* Mención fija — no editable */}
+                                          {hasMention && (
+                                            <span
+                                              aria-hidden="true"
+                                              className="shrink-0 pl-3 pt-2 pb-2 text-xs font-medium select-none"
+                                              style={{ color: '#a78bfa', lineHeight: '1.5rem' }}
+                                            >
+                                              @{r.replyToUserName}
+                                            </span>
+                                          )}
+                                          <textarea
+                                            id={`edit-textarea-${r.ratingId}`}
+                                            value={editText}
+                                            onChange={(e) => {
+                                              if (e.target.value.length <= 500) setEditText(e.target.value);
+                                            }}
+                                            rows={2}
+                                            autoFocus
+                                            className="flex-1 resize-none bg-transparent px-2 py-2 outline-none"
+                                            style={{ color: '#e9d5ff', minWidth: 0 }}
+                                          />
+                                        </div>
+                                        <div className="flex items-center justify-between mt-1">
+                                          <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{editText.length}/500</span>
+                                          <div className="flex gap-2">
+                                            <button type="button" onClick={() => { setEditingId(null); setEditError(null); }} className="text-xs px-2 py-0.5 rounded" style={{ color: 'rgba(196,181,253,0.6)' }}>Cancelar</button>
+                                            <button type="submit" disabled={editSubmitting || !editText.trim()} aria-label={editSubmitting ? 'Guardando…' : 'Guardar'} className="text-xs px-3 py-0.5 rounded disabled:opacity-40" style={{ background: 'rgba(109,40,217,0.6)', color: '#e9d5ff' }}>
+                                              {editSubmitting ? 'Guardando…' : 'Guardar'}
+                                            </button>
+                                          </div>
+                                        </div>
+                                        {editError && editingId === r.ratingId && <p role="alert" className="text-xs text-red-400 mt-1">{editError}</p>}
+                                      </form>
+                                    );
+                                  })()
+                                ) : (
+                                  // ── Visualización de la respuesta publicada ──
+                                  // Si r.comment empieza con "@Nombre " (datos guardados con el bug anterior),
+                                  // lo eliminamos para que el render no lo duplique.
+                                  (() => {
+                                    const hasMention = r.replyToUserName
+                                      && r.replyToUserId
+                                      && Number(r.replyToUserId) !== Number(r.userId);
+                                    const prefix = hasMention ? `@${r.replyToUserName} ` : '';
+                                    const bodyText = (hasMention && r.comment.startsWith(prefix))
+                                      ? r.comment.slice(prefix.length)
+                                      : r.comment;
+                                    return (
+                                      <p className="text-xs leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>
+                                        {hasMention && (
+                                          <span style={{ color: '#a78bfa', fontWeight: '500' }}>@{r.replyToUserName}{' '}</span>
+                                        )}
+                                        {bodyText}
+                                      </p>
+                                    );
+                                  })()
+                                )}
+
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  {r.createdAt && (
+                                    <time dateTime={r.createdAt} className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>
+                                      {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true, locale: dateFnsEs })}
+                                    </time>
+                                  )}
+                                  {r.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>(editado)</span>}
+                                </div>
+
+                                {/* Botón Responder en respuestas */}
+                                {localStorage.getItem('token') && replyParentId !== c.ratingId && !isEditingReply && (
+                                  <button
+                                    type="button"
+                                    onClick={() => { 
+                                      setReplyingToId(r.ratingId); 
+                                      setReplyParentId(c.ratingId);  // El parent sigue siendo el comentario principal
+                                      setReplyToUserId(r.userId);    // Responder al autor de esta respuesta
+                                      setReplyToUserName(r.authorName);
+                                      setReplyText('');
+                                      setReplyError(null); 
+                                    }}
+                                    aria-label={`Responder a ${r.authorName || 'Usuario'}`}
+                                    className="mt-1 flex items-center gap-1 text-xs cursor-pointer transition-opacity"
+                                    style={{ color: 'rgba(167,139,250,0.6)' }}
+                                  >
+                                    <CornerDownLeft className="w-3 h-3 pointer-events-none" />
+                                    Responder
+                                  </button>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
                       )}
-                    </div>
-
-                    {/* Texto del comentario */}
-                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>
-                      {c.comment}
-                    </p>
-
-                    {/* Tiempo relativo con date-fns */}
-                    {c.createdAt && (
-                      <time dateTime={c.createdAt} className="text-xs mt-1 block" style={{ color: 'rgba(196,181,253,0.35)' }}>
-                        {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: dateFnsEs })}
-                      </time>
-                    )}
-                  </li>
-                );
-              })}
+                    </li>
+                  );
+                })}
             </ul>
           )}
+
           {deleteCommentError && (
             <p role="alert" className="text-xs text-red-400 mt-3 text-center">{deleteCommentError}</p>
           )}

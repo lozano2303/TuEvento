@@ -14,7 +14,7 @@ import java.util.Optional;
 public class EventRatingRepositoryImpl implements EventRatingRepository {
 
     private final EventRatingJpaRepository jpaRepository;
-    private final EventRatingEntityMapper mapper;
+    private final EventRatingEntityMapper  mapper;
 
     @Override
     public EventRating save(EventRating rating) {
@@ -46,5 +46,16 @@ public class EventRatingRepositoryImpl implements EventRatingRepository {
     @Override
     public void deleteById(Long ratingId) {
         jpaRepository.deleteById(ratingId);
+    }
+
+    @Override
+    public void deleteAllByParentRatingId(Long parentRatingId) {
+        jpaRepository.deleteAllByParentRatingId(parentRatingId);
+    }
+
+    @Override
+    public List<EventRating> findByParentRatingId(Long parentRatingId) {
+        return jpaRepository.findByParentRatingIdOrderByCreatedAtAscRatingIdAsc(parentRatingId)
+                .stream().map(mapper::toDomain).toList();
     }
 }

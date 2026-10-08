@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 090-event-rating-add-reply-to-fields
+      author: system
+      comment: "Agregar campos reply_to_user_id y reply_to_user_name para menciones estilo TikTok en respuestas"
+      changes:
+        - addColumn:
+            tableName: event_rating
+            columns:
+              - column:
+                  name: reply_to_user_id
+                  type: BIGINT
+                  remarks: "ID del usuario al que se responde directamente (para menciones)"
+              - column:
+                  name: reply_to_user_name
+                  type: VARCHAR(100)
+                  remarks: "Nombre del usuario al que se responde (para mostrar @Nombre)"
+      rollback:
+        - dropColumn:
+            tableName: event_rating
+            columnName: reply_to_user_id
+        - dropColumn:
+            tableName: event_rating
+            columnName: reply_to_user_name
