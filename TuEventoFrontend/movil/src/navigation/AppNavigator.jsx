@@ -27,6 +27,7 @@ import CheckoutScreen              from "../screens/CheckoutScreen";
 import PaymentPendingScreen        from "../screens/PaymentPendingScreen";
 import WalletScreen                from "../screens/WalletScreen";
 import NotificationsScreen         from "../screens/NotificationsScreen";
+import AdminEventsScreen           from "../screens/AdminEventsScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -217,6 +218,7 @@ export default function AppNavigator() {
         <Stack.Screen name="PaymentPending"          component={PaymentPendingScreen} />
         <Stack.Screen name="Wallet"                  component={WalletScreen} />
         <Stack.Screen name="Notifications"           component={NotificationsScreen} />
+        <Stack.Screen name="AdminEvents"             component={AdminEventsScreen} />
         <Stack.Screen
           name="Main"
           component={MainTabs}

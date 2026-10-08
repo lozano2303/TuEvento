@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StatusBar, Animated, Image, ActivityIndicator,
+  StatusBar, Animated, Image, ActivityIndicator, LayoutAnimation,
+  Platform, UIManager,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,6 +12,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { getFileUrl } from "../services/storageService";
+
+// Habilitar LayoutAnimation en Android
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getDisplayName(fullName) {
@@ -56,8 +62,51 @@ export default function ProfileScreen() {
   const menuAnim = useRef(new Animated.Value(0)).current;
 
   // Estado del avatar
-  const [avatarUrl, setAvatarUrl]       = useState(null);
+  const [avatarUrl, setAvatarUrl]         = useState(null);
   const [avatarLoading, setAvatarLoading] = useState(true);
+
+  // Estado del accordion de administración
+  const [adminExpanded, setAdminExpanded] = useState(false);
+
+  // Ítems del panel de administración (espejo del sidebar web)
+  const ADMIN_ITEMS = [
+    {
+      icon: "grid-outline",
+      label: "Dashboard",
+      sub: "Vista general",
+      route: null,         // pendiente de implementar
+    },
+    {
+      icon: "card-outline",
+      label: "Control Financiero",
+      sub: "Pagos y reembolsos",
+      route: null,
+    },
+    {
+      icon: "calendar-outline",
+      label: "Eventos",
+      sub: "Gestionar y revisar eventos",
+      route: "AdminEvents",
+    },
+    {
+      icon: "bar-chart-outline",
+      label: "Reportes",
+      sub: "Estadísticas de la plataforma",
+      route: null,
+    },
+    {
+      icon: "refresh-circle-outline",
+      label: "Reembolsos",
+      sub: "Gestionar reembolsos",
+      route: null,
+    },
+    {
+      icon: "people-outline",
+      label: "Solicitudes",
+      sub: "Solicitudes de organizador",
+      route: "OrganizerRequests",
+    },
+  ];
 
   useEffect(() => {
     const loadAvatar = async () => {
@@ -211,41 +260,112 @@ export default function ProfileScreen() {
                 Administración
               </Text>
 
+              {/* ── Accordion trigger ── */}
               <TouchableOpacity
                 activeOpacity={0.75}
-                onPress={() => navigation.navigate("OrganizerRequests")}
+                onPress={() => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setAdminExpanded((v) => !v);
+                }}
                 style={{
                   flexDirection: "row", alignItems: "center",
                   backgroundColor: colors.surface + "CC",
                   borderRadius: 14, borderWidth: 1,
-                  borderColor: colors.primary + "30",
-                  padding: 16, marginBottom: 24,
+                  borderColor: colors.primary + "40",
+                  padding: 16,
+                  marginBottom: adminExpanded ? 2 : 24,
                 }}
               >
-                {/* Ícono */}
                 <View style={{
                   width: 40, height: 40, borderRadius: 12,
-                  backgroundColor: colors.primary + "28",
-                  borderWidth: 1, borderColor: colors.primary + "40",
+                  backgroundColor: colors.error + "22",
+                  borderWidth: 1, borderColor: colors.error + "40",
                   alignItems: "center", justifyContent: "center",
                   marginRight: 14,
                 }}>
-                  <Ionicons name="people-outline" size={20} color={colors.accent} />
+                  <Ionicons name="shield-outline" size={20} color={colors.error} />
                 </View>
-
-                {/* Texto */}
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "600" }}>
-                    Solicitudes de organizador
+                    Panel de administración
                   </Text>
                   <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>
-                    Revisar y gestionar solicitudes
+                    Gestión de la plataforma
                   </Text>
                 </View>
-
-                {/* Chevron */}
-                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                <Ionicons
+                  name={adminExpanded ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color={colors.textMuted}
+                />
               </TouchableOpacity>
+
+              {/* ── Ítems del accordion ── */}
+              {adminExpanded && (
+                <View style={{
+                  backgroundColor: colors.surface + "88",
+                  borderRadius: 14, borderWidth: 1,
+                  borderColor: colors.primary + "25",
+                  marginBottom: 24,
+                  overflow: "hidden",
+                }}>
+                  {ADMIN_ITEMS.map((item, idx) => {
+                    const isLast = idx === ADMIN_ITEMS.length - 1;
+                    const disabled = !item.route;
+                    return (
+                      <TouchableOpacity
+                        key={idx}
+                        activeOpacity={disabled ? 1 : 0.75}
+                        onPress={() => {
+                          if (!item.route) return;
+                          navigation.navigate(item.route);
+                        }}
+                        style={{
+                          flexDirection: "row", alignItems: "center",
+                          paddingHorizontal: 16, paddingVertical: 13,
+                          borderBottomWidth: isLast ? 0 : 1,
+                          borderBottomColor: colors.primary + "18",
+                          opacity: disabled ? 0.45 : 1,
+                        }}
+                      >
+                        {/* Ícono */}
+                        <View style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          backgroundColor: colors.primary + "22",
+                          alignItems: "center", justifyContent: "center",
+                          marginRight: 13,
+                        }}>
+                          <Ionicons name={item.icon} size={18} color={colors.accent} />
+                        </View>
+
+                        {/* Texto */}
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "600" }}>
+                            {item.label}
+                          </Text>
+                          <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }}>
+                            {disabled ? "Próximamente" : item.sub}
+                          </Text>
+                        </View>
+
+                        {/* Chevron o badge "Próximamente" */}
+                        {disabled ? (
+                          <View style={{
+                            backgroundColor: colors.primary + "22",
+                            borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3,
+                          }}>
+                            <Text style={{ color: colors.textMuted, fontSize: 9, fontWeight: "700" }}>
+                              PRONTO
+                            </Text>
+                          </View>
+                        ) : (
+                          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
             </>
           )}
 
