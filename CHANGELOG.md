@@ -4,7 +4,177 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Added — feat(event-comments-delete): borrado de comentario propio con WebSocket
+### Added — feat(comments): star rating, fixed mention prefix, WS/POST race condition fix
+
+**Star rating on first top-level comment**
+
+- `StarRatingInput` reusable component: 1–5 stars with hover, click, `aria-label`, `aria-pressed`, `disabled` prop, theme CSS variables.
+- Star selector shown only in the main comment form (`needsRatingSelector`), never in reply forms.
+- Frontend validation: submitting a top-level comment without selecting a star shows "Selecciona una calificación de 1 a 5 estrellas antes de publicar."
+- Backend (`AddEventRatingService`): first top-level comment by a non-organizer user now requires a rating 1–5; throws `COMMENT_RATING_REQUIRED` (400) if missing, `COMMENT_RATING_INVALID` if out of range. Organizer (R4) and replies are exempt. No DB migration needed — `rating` column was already nullable.
+- `AddEventRatingServiceTest` updated: replaced obsolete `first_comment_no_rating_sent_saves_null` with `first_comment_no_rating_sent_throws_required`; added `COMMENT_RATING_INVALID`, second-comment-no-rating (R3), organizer-exempt (R4), and ADMIN-with-rating tests.
+
+**Fixed mention prefix in replies and edit form**
+
+- `handleReplySubmit` now sends only the user text in `comment`; the mention travels via `replyToUserId` (separate field). The render always prepends `@Name` from `replyToUserName`.
+- Backward compatibility: replies already stored with `@Name ` at the start of `comment` (saved by previous bug) are stripped on display and when opening the edit form.
+- Reply input redesigned: non-editable `@Name` span + plain textarea (user text only), no mention in `replyText` state.
+- Reply edit form: same non-editable span + textarea with text stripped of prefix; `onClick` handler strips before `setEditText`.
+- Double-form bug: reply pencil button now hidden when the parent comment is in edit mode (`editingId !== c.ratingId`).
+- Reply form visibility fixed: condition changed from `replyingToId === c.ratingId` to `replyParentId === c.ratingId && replyingToId !== null` so the form renders correctly when replying from inside a reply.
+
+**Fix duplicated comments from WebSocket/POST race condition**
+
+- Root cause: when the WS message arrives before `await addEventComment` resolves, `commentIdsRef` does not yet contain the new `ratingId`, so the WS handler inserts the reply into `comments`. When the POST then resolves, `setComments([...prev, saved])` inserts it a second time — two `<li>` with the same `key` → two edit forms open simultaneously.
+- Fix: all `setComments` appends (`handleReplySubmit`, `handleCommentSubmit`) now check `prev.some(c => c.ratingId === saved.ratingId)` before inserting.
+- WS handler: added a second idempotency guard inside the `setState` updater for replies and top-level comments.
+- REST reload (triggered when parent is missing): `commentIdsRef` is now merged (union) instead of replaced, preserving IDs registered by a concurrent POST.
+
+**Liquibase**
+
+- Migration `090-event-rating-add-reply-to-fields`: adds `reply_to_user_id` and `reply_to_user_name` columns to `event_rating` (was untracked).
+
+---
+
+### Added — feat(event-comments-mentions): Sistema de menciones estilo TikTok en respuestas + corrección de calificaciones
+
+**Funcionalidad de menciones en respuestas**
+
+- **Mención estilo TikTok**: Ahora es posible responder tanto a comentarios principales como a respuestas específicas dentro de un hilo. Al responder a una respuesta, se agrega automáticamente una mención `@NombreDeUsuario` al inicio del texto.
+- **Un solo nivel de hilo**: Todas las respuestas se mantienen bajo el comentario principal (sin anidación profunda), pero cada respuesta puede mencionar a un usuario específico para mantener el contexto de la conversación.
+- **Indicador visual**: Al pulsar "Responder" en una respuesta, el formulario muestra "Respondiendo a @NombreDeUsuario" y pre-llena el textarea con la mención.
+- **Display de menciones**: Las menciones se muestran en color morado claro (#a78bfa) destacando al usuario mencionado.
+- **Validación**: No se permite responder a sí mismo con mención (si respondo a mi propio comentario, no se antepone @).
+- **Persistencia**: Se guardan `replyToUserId` y `replyToUserName` en la base de datos para mantener las menciones al recargar.
+
+**Restricción de calificaciones**
+
+- **Estrellas solo en comentarios principales**: El selector de estrellas (1-5) ahora solo aparece cuando se crea un comentario principal nuevo. Las respuestas NO muestran estrellas ni permiten enviar calificación.
+- **Validación frontend**: El formulario principal detecta cuando se está respondiendo (`replyingToId !== null`) y oculta el selector de estrellas, sin requerir calificación para enviar.
+- **Validación backend**: El servicio `AddEventRatingService` ahora ignora completamente el campo `rating` cuando `parentRatingId` está presente, asegurando que las respuestas siempre se guarden con `rating = null`.
+- **Edición**: Al editar una respuesta no se muestran estrellas; al editar un comentario principal se mantiene su calificación existente.
+
+**Corrección de duplicación (preventiva)**
+
+- **Análisis del código**: Se verificó que no existe bug real de duplicación en la lógica actual. Tanto `handleEditSubmit` como la suscripción WebSocket a `/comments/updated` usan `map()` correctamente para reemplazar el comentario existente por `ratingId`.
+- **Robustez**: Se mantiene la idempotencia en todas las operaciones de edición y actualización por WebSocket.
+
+**Backend — Base de datos**
+
+- **Migración 090**: Agregadas columnas `reply_to_user_id` (BIGINT nullable) y `reply_to_user_name` (VARCHAR(100) nullable) a la tabla `event_rating` para soportar menciones.
+
+**Backend — Dominio y DTOs**
+
+- **`EventRating` / `EventRatingEntity`**: Campos `replyToUserId` y `replyToUserName` agregados.
+- **`EventRatingResponse`**: Campos `replyToUserId` y `replyToUserName` incluidos en todas las respuestas.
+- **`AddEventRatingRequest`**: Campo `replyToUserId` opcional para indicar mención.
+- **`EventRatingAddedEvent`** y **`EventRatingUpdatedEvent`**: Incluyen `replyToUserId` y `replyToUserName` en los payloads para WebSocket.
+
+**Backend — Servicios**
+
+- **`AddEventRatingService`**:
+  - Procesa `replyToUserId` del request y resuelve `replyToUserName` desde el perfil.
+  - Valida que el usuario mencionado exista en el hilo del evento.
+  - Ignora la mención si el usuario intenta mencionarse a sí mismo.
+  - **Validación de rating**: Fuerza `rating = null` cuando `parentRatingId != null`, ignorando el campo del request para respuestas.
+- **`EditEventRatingService`**: Incluye `replyToUserId` y `replyToUserName` en la respuesta y evento WebSocket.
+- **`EventRatingController` GET**: Incluye los nuevos campos en la lista de comentarios.
+
+**Frontend — Servicio**
+
+- **`EventCommentService.js`**: `addEventComment` actualizado para aceptar `replyToUserId` en el payload.
+
+**Frontend — Componente**
+
+- **`EventDetail.jsx`**:
+  - **Estado ampliado**: Agregados `replyToUserId`, `replyToUserName`, y `replyParentId` para gestionar menciones.
+  - **Botón "Responder" en respuestas**: Ahora cada respuesta tiene su propio botón "Responder" que abre el formulario con la mención correspondiente.
+  - **Formulario de respuesta mejorado**:
+    - Muestra indicador visual "Respondiendo a @NombreDeUsuario" cuando hay mención.
+    - Pre-llena el textarea con `@NombreDeUsuario ` y posiciona el cursor al final.
+    - El campo mantiene el contexto correcto: `parentRatingId` siempre apunta al comentario principal (raíz), mientras `replyToUserId` identifica al usuario específico mencionado.
+  - **Display de menciones**: Las respuestas con mención muestran `@NombreDeUsuario` en color morado antes del texto.
+  - **Estrellas condicionales**:
+    - El selector de estrellas solo aparece si `needsRatingSelector && !replyingToId`.
+    - El botón de enviar del formulario principal solo requiere rating cuando `needsRatingSelector && !replyingToId && commentRating === 0`.
+    - Las respuestas existentes nunca muestran estrellas (filtradas por `r.rating != null`).
+  - **Contador y límites**: Se verificó que el contador "Comentarios (N)" usa `comments.length` correctamente y no cambia al editar. Todos los textareas tienen `maxLength={500}` y contadores X/500.
+
+**Tests pendientes**
+
+- Se recomienda agregar tests para:
+  - Crear respuesta con mención a usuario existente en el hilo
+  - Intentar mención a usuario inexistente (debe ignorarse)
+  - Intentar mención a sí mismo (debe ignorarse)
+  - Verificar que respuestas no incluyan rating incluso si el cliente lo envía
+  - Editar comentario mantiene campos de mención intactos
+
+**Notas de limpieza**
+
+- Si existen comentarios duplicados en la base de datos por ediciones anteriores al fix, se puede ejecutar:
+  ```sql
+  -- Identificar duplicados (mismo event_id, user_id, comment, parent_rating_id)
+  SELECT event_id, user_id, comment, parent_rating_id, COUNT(*) 
+  FROM event_rating 
+  WHERE edited_at IS NOT NULL 
+  GROUP BY event_id, user_id, comment, parent_rating_id 
+  HAVING COUNT(*) > 1;
+  
+  -- Revisar manualmente antes de borrar (mantener el más reciente por created_at)
+  ```
+
+### Added — feat(event-comments-replies-edit): respuestas y edición de comentarios
+
+**Reglas de negocio nuevas**
+
+- **A — Respuestas**: un solo nivel; el padre debe ser principal (sin `parentRatingId`), del mismo evento y existir. Respuestas llevan `rating = null` siempre. No cuentan para la regla del primer comentario con estrellas (R3).
+- **B — Edición**: solo el autor, solo el texto, solo durante 2 h desde `createdAt` (reloj inyectable). `COMMENT_EDIT_WINDOW_EXPIRED` si pasó el tiempo. Editar no activa el antispam R5.
+- **C — Borrado en cascada**: al borrar un comentario principal se borran también sus respuestas directas en la misma transacción. Borrar una respuesta no afecta al padre.
+
+**Backend — respuestas (Commit 1)**
+
+- **Migración 088**: columna `parent_rating_id` nullable con FK auto-referencial `ON DELETE CASCADE` e índice `idx_event_rating_parent`.
+- **`AddEventRatingRequest`**: campo `parentRatingId` opcional.
+- **`EventRatingResponse`**: campos `parentRatingId` (nullable) y `editedAt` (nullable).
+- **`EventRating` / `EventRatingEntity`**: campos `parentRatingId` y `editedAt`.
+- **`EventRatingRepository`**: `deleteAllByParentRatingId`, `findByParentRatingId`.
+- **`EventRatingJpaRepository`**: `existsRatedComment` filtra `parent IS NULL` (solo principales cuentan para R3).
+- **`AddEventRatingService`**: valida padre (existencia, mismo evento, que sea principal); respuestas fuerzan `rating = null`; no consulta `existsRatedComment` para respuestas.
+- **`DeleteEventRatingService`**: borra respuestas antes del principal; orden garantizado.
+- **`EventRatingAddedEvent`**: campo `parentRatingId`.
+- **`EventCommentWebSocketListener`**: emite `parentRatingId` en el payload.
+- **`EventRatingController`** GET: incluye `parentRatingId` en cada elemento (lista plana).
+
+**Backend — edición (Commit 2)**
+
+- **Migración 089**: columna `edited_at` nullable.
+- **`EditEventRatingUseCase`** + **`EditEventRatingService`**: valida ownership, ventana de 2 h (Clock inyectable), trim, máx 500 chars; guarda `editedAt = now`; no activa antispam.
+- **`EditEventRatingRequest`**: `{ comment }`.
+- **`EventRatingUpdatedEvent`** + **`EventCommentUpdatedWebSocketListener`** `AFTER_COMMIT`: publica `{ ratingId, comment, editedAt, parentRatingId }` en `/topic/events/{eventId}/comments/updated`.
+- **`EventRatingController`**: `PATCH /{ratingId}` → `authenticated()`.
+- **`SecurityConfig`**: `PATCH /events/*/ratings/*` → `authenticated()` insertado antes de `PATCH /events/**` → `ORGANIZER`. CORS ya incluía PATCH.
+
+**Frontend**
+
+- **`EventCommentService.js`**: `editEventComment(eventId, ratingId, comment)` nuevo; `addEventComment` acepta `parentRatingId`.
+- **`EventDetail.jsx`**:
+  - Agrupación: principales (más recientes primero) con respuestas bajo el padre (más antiguas primero, sangría izquierda).
+  - Contador muestra total de principales + respuestas.
+  - Botón "Responder" solo en comentarios principales, solo con sesión, abre textarea sin estrellas.
+  - Respuestas del WS se insertan bajo el padre; si el padre no existe, recarga REST.
+  - Al borrar un principal: quita localmente el principal y sus respuestas (Regla C).
+  - WS `/comments/deleted` quita también hijos (`c.parentRatingId === id`).
+  - Botón "Editar" (lápiz) solo para el dueño, solo si han pasado menos de 2 h (comparación en cliente; el backend es fuente de verdad, COMMENT_EDIT_WINDOW_EXPIRED oculta el botón y muestra mensaje).
+  - Edición inline: textarea pre-relleno, contador x/500, botones Guardar/Cancelar, estado "Guardando…".
+  - WS `/comments/updated` reemplaza el comentario por ratingId de forma idempotente.
+  - `(editado)` junto a la hora relativa.
+  - Todos los botones tienen `aria-label`; no aparecen sin sesión.
+
+**Tests nuevos**
+
+- **`AddEventRatingServiceTest`**: +6 casos Regla A (respuesta OK, responder a respuesta, padre otro evento, padre inexistente, no cuenta para R3, listener publica parentRatingId).
+- **`DeleteEventRatingServiceTest`**: +2 casos (borrar principal borra respuestas; borrar respuesta no borra padre; orden de operaciones).
+- **`EditEventRatingServiceTest`**: 8 casos (dentro ventana, exactamente 2 h rechazado, no autor 403, inexistente 404, texto vacío, >500, listener publica editedAt, editar no activa antispam).
 
 **Reglas de negocio (R1-R5 + borrado)**
 
@@ -95,7 +265,6 @@ All notable changes to this project will be documented in this file.
 
 ### Changed — chore(notification)
 
-- **Notification Module**: Removidos logs temporales de debug de `SendNotificationUseCase` y `PaymentEventListener`, limpieza de imports no utilizados.
 
 ### Added — feat(wallet)
 
