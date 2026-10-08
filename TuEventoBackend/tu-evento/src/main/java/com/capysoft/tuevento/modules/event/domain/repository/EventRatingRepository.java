@@ -17,6 +17,14 @@ public interface EventRatingRepository {
     /** Último comentario del usuario en el evento (para antispam R5). */
     Optional<EventRating> findLastByEventIdAndUserId(Long eventId, Long userId);
 
-    /** ¿Tiene ya el usuario un comentario con rating != null en este evento? (R3) */
+    /** ¿Tiene ya el usuario un comentario principal con rating != null en este evento? (R3) */
     boolean existsRatedCommentByEventIdAndUserId(Long eventId, Long userId);
+
+    void deleteById(Long ratingId);
+
+    /** Borra todas las respuestas directas del comentario principal indicado. */
+    void deleteAllByParentRatingId(Long parentRatingId);
+
+    /** Lista todas las respuestas directas de un comentario principal. */
+    List<EventRating> findByParentRatingId(Long parentRatingId);
 }
