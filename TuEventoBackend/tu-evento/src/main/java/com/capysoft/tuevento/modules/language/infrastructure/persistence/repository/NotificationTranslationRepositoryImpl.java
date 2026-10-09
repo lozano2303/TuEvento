@@ -26,7 +26,7 @@ public class NotificationTranslationRepositoryImpl implements NotificationTransl
 
     @Override
     public Optional<NotificationTranslation> findByNotificationAndLanguage(Long notificationId, Long languageId) {
-        return jpaRepository.findByNotificationIdAndLanguageId(notificationId, languageId)
+        return jpaRepository.findByNotificationIdAndLanguageId(notificationId, languageId.intValue())
                 .map(mapper::toDomain);
     }
 
@@ -95,6 +95,6 @@ public class NotificationTranslationRepositoryImpl implements NotificationTransl
 
     @Override
     public boolean existsByNotificationAndLanguage(Long notificationId, Long languageId) {
-        return jpaRepository.findByNotificationIdAndLanguageId(notificationId, languageId).isPresent();
+        return jpaRepository.findByNotificationIdAndLanguageId(notificationId, languageId.intValue()).isPresent();
     }
 }

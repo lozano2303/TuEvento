@@ -16,7 +16,7 @@ public class SeatBlockTranslationMapper {
         SeatBlockTranslation domain = new SeatBlockTranslation();
         domain.setTranslationId(entity.getTranslationId());
         domain.setSeatBlockId(entity.getSeatBlockId());
-        domain.setLanguageId(entity.getLanguage().getLanguageId());
+        domain.setLanguageId(entity.getLanguageId());
         domain.setTranslatedName(entity.getTranslatedName());
         domain.setSource(entity.getSource());
         domain.setStatus(entity.getStatus());
@@ -32,11 +32,7 @@ public class SeatBlockTranslationMapper {
         SeatBlockTranslationEntity entity = new SeatBlockTranslationEntity();
         entity.setTranslationId(domain.getTranslationId());
         entity.setSeatBlockId(domain.getSeatBlockId());
-        
-        // Create a reference to LanguageEntity - will be managed by repository
-        LanguageEntity languageEntity = new LanguageEntity();
-        languageEntity.setLanguageId(domain.getLanguageId());
-        entity.setLanguage(languageEntity);
+        entity.setLanguageId(domain.getLanguageId());
         
         entity.setTranslatedName(domain.getTranslatedName());
         entity.setSource(domain.getSource());

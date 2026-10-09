@@ -16,9 +16,9 @@ public class ModuleTranslationMapper {
         }
 
         return ModuleTranslationEntity.builder()
-                .translationId(domain.getTranslationId() != null ? domain.getTranslationId().intValue() : null)
+                .translationId(domain.getTranslationId())
                 .module(domain.getModule())
-                .languageId(domain.getLanguageId() != null ? domain.getLanguageId().intValue() : null)
+                .languageId(domain.getLanguageId())
                 .translatedName(domain.getTranslatedName())
                 .source(toEntitySource(domain.getSource()))
                 .status(toEntityStatus(domain.getStatus()))
@@ -31,9 +31,9 @@ public class ModuleTranslationMapper {
         }
 
         ModuleTranslation domain = new ModuleTranslation();
-        domain.setTranslationId(entity.getTranslationId() != null ? entity.getTranslationId().longValue() : null);
+        domain.setTranslationId(entity.getTranslationId());
         domain.setModule(entity.getModule());
-        domain.setLanguageId(entity.getLanguageId() != null ? entity.getLanguageId().longValue() : null);
+        domain.setLanguageId(entity.getLanguageId());
         domain.setTranslatedName(entity.getTranslatedName());
         domain.setSource(toDomainSource(entity.getSource()));
         domain.setStatus(toDomainStatus(entity.getStatus()));

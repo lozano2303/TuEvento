@@ -11,17 +11,17 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface CategoryTranslationJpaRepository extends JpaRepository<CategoryTranslationEntity, Long> {
+public interface CategoryTranslationJpaRepository extends JpaRepository<CategoryTranslationEntity, Integer> {
 
     @Query("SELECT ct FROM CategoryTranslationEntity ct WHERE ct.categoryId = :categoryId")
     List<CategoryTranslationEntity> findByCategoryId(@Param("categoryId") Integer categoryId);
 
-    @Query("SELECT ct FROM CategoryTranslationEntity ct WHERE ct.categoryId = :categoryId AND ct.language.languageId = :languageId")
+    @Query("SELECT ct FROM CategoryTranslationEntity ct WHERE ct.categoryId = :categoryId AND ct.languageId = :languageId")
     Optional<CategoryTranslationEntity> findByCategoryIdAndLanguageId(@Param("categoryId") Integer categoryId, 
-                                                                     @Param("languageId") Long languageId);
+                                                                     @Param("languageId") Integer languageId);
 
-    @Query("SELECT ct FROM CategoryTranslationEntity ct WHERE ct.language.languageId = :languageId")
-    List<CategoryTranslationEntity> findByLanguageId(@Param("languageId") Long languageId);
+    @Query("SELECT ct FROM CategoryTranslationEntity ct WHERE ct.languageId = :languageId")
+    List<CategoryTranslationEntity> findByLanguageId(@Param("languageId") Integer languageId);
 
     @Query("SELECT ct FROM CategoryTranslationEntity ct WHERE ct.status = :status")
     List<CategoryTranslationEntity> findByStatus(@Param("status") String status);
@@ -36,6 +36,6 @@ public interface CategoryTranslationJpaRepository extends JpaRepository<Category
     @Query("DELETE FROM CategoryTranslationEntity ct WHERE ct.categoryId = :categoryId")
     void deleteByCategoryId(@Param("categoryId") Integer categoryId);
 
-    @Query("SELECT COUNT(ct) > 0 FROM CategoryTranslationEntity ct WHERE ct.categoryId = :categoryId AND ct.language.languageId = :languageId")
-    boolean existsByCategoryIdAndLanguageId(@Param("categoryId") Integer categoryId, @Param("languageId") Long languageId);
+    @Query("SELECT COUNT(ct) > 0 FROM CategoryTranslationEntity ct WHERE ct.categoryId = :categoryId AND ct.languageId = :languageId")
+    boolean existsByCategoryIdAndLanguageId(@Param("categoryId") Integer categoryId, @Param("languageId") Integer languageId);
 }

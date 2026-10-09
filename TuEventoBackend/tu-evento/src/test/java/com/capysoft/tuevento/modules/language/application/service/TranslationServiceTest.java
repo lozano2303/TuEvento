@@ -40,14 +40,15 @@ class TranslationServiceTest {
 
     @BeforeEach
     void setUp() {
-        Map<String, TranslatableContentHandler> handlerRegistry = Map.of("test_entity", mockHandler);
-        
         translationService = new TranslationService(
                 translationJobRepository,
                 languageRepository,
-                translationProcessor,
-                handlerRegistry
+                translationProcessor
         );
+        
+        // Inject handler registry via reflection
+        Map<String, TranslatableContentHandler> handlerRegistry = Map.of("test_entity", mockHandler);
+        ReflectionTestUtils.setField(translationService, "handlerRegistry", handlerRegistry);
         
         ReflectionTestUtils.setField(translationService, "defaultProvider", "libretranslate");
     }

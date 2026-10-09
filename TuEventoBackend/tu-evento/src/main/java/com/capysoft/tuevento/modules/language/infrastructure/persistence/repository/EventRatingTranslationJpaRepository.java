@@ -11,17 +11,17 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface EventRatingTranslationJpaRepository extends JpaRepository<EventRatingTranslationEntity, Long> {
+public interface EventRatingTranslationJpaRepository extends JpaRepository<EventRatingTranslationEntity, Integer> {
 
     @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId")
     List<EventRatingTranslationEntity> findByRatingId(@Param("ratingId") Long ratingId);
 
-    @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId AND ert.language.languageId = :languageId")
+    @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId AND ert.languageId = :languageId")
     Optional<EventRatingTranslationEntity> findByRatingIdAndLanguageId(@Param("ratingId") Long ratingId, 
-                                                                       @Param("languageId") Long languageId);
+                                                                       @Param("languageId") Integer languageId);
 
-    @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.language.languageId = :languageId")
-    List<EventRatingTranslationEntity> findByLanguageId(@Param("languageId") Long languageId);
+    @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.languageId = :languageId")
+    List<EventRatingTranslationEntity> findByLanguageId(@Param("languageId") Integer languageId);
 
     @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.status = :status")
     List<EventRatingTranslationEntity> findByStatus(@Param("status") String status);
@@ -33,6 +33,6 @@ public interface EventRatingTranslationJpaRepository extends JpaRepository<Event
     @Query("DELETE FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId")
     void deleteByRatingId(@Param("ratingId") Long ratingId);
 
-    @Query("SELECT COUNT(ert) > 0 FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId AND ert.language.languageId = :languageId")
-    boolean existsByRatingIdAndLanguageId(@Param("ratingId") Long ratingId, @Param("languageId") Long languageId);
+    @Query("SELECT COUNT(ert) > 0 FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId AND ert.languageId = :languageId")
+    boolean existsByRatingIdAndLanguageId(@Param("ratingId") Long ratingId, @Param("languageId") Integer languageId);
 }

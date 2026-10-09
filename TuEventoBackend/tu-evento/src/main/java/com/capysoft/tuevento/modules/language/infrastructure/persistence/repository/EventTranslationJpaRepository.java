@@ -11,17 +11,17 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface EventTranslationJpaRepository extends JpaRepository<EventTranslationEntity, Long> {
+public interface EventTranslationJpaRepository extends JpaRepository<EventTranslationEntity, Integer> {
 
     @Query("SELECT et FROM EventTranslationEntity et WHERE et.eventId = :eventId")
     List<EventTranslationEntity> findByEventId(@Param("eventId") Long eventId);
 
-    @Query("SELECT et FROM EventTranslationEntity et WHERE et.eventId = :eventId AND et.language.languageId = :languageId")
+    @Query("SELECT et FROM EventTranslationEntity et WHERE et.eventId = :eventId AND et.languageId = :languageId")
     Optional<EventTranslationEntity> findByEventIdAndLanguageId(@Param("eventId") Long eventId, 
-                                                               @Param("languageId") Long languageId);
+                                                               @Param("languageId") Integer languageId);
 
-    @Query("SELECT et FROM EventTranslationEntity et WHERE et.language.languageId = :languageId")
-    List<EventTranslationEntity> findByLanguageId(@Param("languageId") Long languageId);
+    @Query("SELECT et FROM EventTranslationEntity et WHERE et.languageId = :languageId")
+    List<EventTranslationEntity> findByLanguageId(@Param("languageId") Integer languageId);
 
     @Query("SELECT et FROM EventTranslationEntity et WHERE et.status = :status")
     List<EventTranslationEntity> findByStatus(@Param("status") String status);
@@ -36,6 +36,6 @@ public interface EventTranslationJpaRepository extends JpaRepository<EventTransl
     @Query("DELETE FROM EventTranslationEntity et WHERE et.eventId = :eventId")
     void deleteByEventId(@Param("eventId") Long eventId);
 
-    @Query("SELECT COUNT(et) > 0 FROM EventTranslationEntity et WHERE et.eventId = :eventId AND et.language.languageId = :languageId")
-    boolean existsByEventIdAndLanguageId(@Param("eventId") Long eventId, @Param("languageId") Long languageId);
+    @Query("SELECT COUNT(et) > 0 FROM EventTranslationEntity et WHERE et.eventId = :eventId AND et.languageId = :languageId")
+    boolean existsByEventIdAndLanguageId(@Param("eventId") Long eventId, @Param("languageId") Integer languageId);
 }

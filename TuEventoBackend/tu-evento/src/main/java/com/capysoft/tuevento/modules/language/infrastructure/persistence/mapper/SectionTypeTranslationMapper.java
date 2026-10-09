@@ -16,9 +16,9 @@ public class SectionTypeTranslationMapper {
         }
 
         return SectionTypeTranslationEntity.builder()
-                .translationId(domain.getTranslationId() != null ? domain.getTranslationId().intValue() : null)
-                .sectionTypeId(domain.getSectionTypeId() != null ? domain.getSectionTypeId().intValue() : null)
-                .languageId(domain.getLanguageId() != null ? domain.getLanguageId().intValue() : null)
+                .translationId(domain.getTranslationId())
+                .sectionTypeId(domain.getSectionTypeId())
+                .languageId(domain.getLanguageId())
                 .translatedName(domain.getTranslatedName())
                 .source(toEntitySource(domain.getSource()))
                 .status(toEntityStatus(domain.getStatus()))
@@ -31,9 +31,9 @@ public class SectionTypeTranslationMapper {
         }
 
         SectionTypeTranslation domain = new SectionTypeTranslation();
-        domain.setTranslationId(entity.getTranslationId() != null ? entity.getTranslationId().longValue() : null);
-        domain.setSectionTypeId(entity.getSectionTypeId() != null ? entity.getSectionTypeId().longValue() : null);
-        domain.setLanguageId(entity.getLanguageId() != null ? entity.getLanguageId().longValue() : null);
+        domain.setTranslationId(entity.getTranslationId());
+        domain.setSectionTypeId(entity.getSectionTypeId());
+        domain.setLanguageId(entity.getLanguageId());
         domain.setTranslatedName(entity.getTranslatedName());
         domain.setSource(toDomainSource(entity.getSource()));
         domain.setStatus(toDomainStatus(entity.getStatus()));

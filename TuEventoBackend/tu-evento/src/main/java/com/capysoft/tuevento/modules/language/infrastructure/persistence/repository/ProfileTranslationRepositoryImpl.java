@@ -26,7 +26,7 @@ public class ProfileTranslationRepositoryImpl implements ProfileTranslationRepos
 
     @Override
     public Optional<ProfileTranslation> findByProfileAndLanguage(Long profileId, Long languageId) {
-        return jpaRepository.findByProfileIdAndLanguageId(profileId, languageId)
+        return jpaRepository.findByProfileIdAndLanguageId(profileId, languageId.intValue())
                 .map(mapper::toDomain);
     }
 
@@ -95,6 +95,6 @@ public class ProfileTranslationRepositoryImpl implements ProfileTranslationRepos
 
     @Override
     public boolean existsByProfileAndLanguage(Long profileId, Long languageId) {
-        return jpaRepository.findByProfileIdAndLanguageId(profileId, languageId).isPresent();
+        return jpaRepository.findByProfileIdAndLanguageId(profileId, languageId.intValue()).isPresent();
     }
 }

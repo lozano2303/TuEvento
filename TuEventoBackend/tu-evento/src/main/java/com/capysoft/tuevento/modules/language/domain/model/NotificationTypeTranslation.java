@@ -6,9 +6,9 @@ import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import java.util.Objects;
 
 public class NotificationTypeTranslation {
-    private Long translationId;
-    private Long notificationTypeId;
-    private Long languageId;
+    private Integer translationId;
+    private Integer notificationTypeId;
+    private Integer languageId;
     private String translatedName;
     private String translatedDescription;
     private TranslationSource source;
@@ -16,7 +16,7 @@ public class NotificationTypeTranslation {
 
     public NotificationTypeTranslation() {}
 
-    public NotificationTypeTranslation(Long notificationTypeId, Long languageId, String translatedName, 
+    public NotificationTypeTranslation(Integer notificationTypeId, Integer languageId, String translatedName, 
                                      String translatedDescription, TranslationSource source, 
                                      TranslationStatus status) {
         this.notificationTypeId = notificationTypeId;
@@ -69,27 +69,27 @@ public class NotificationTypeTranslation {
     }
 
     // Getters and Setters
-    public Long getTranslationId() {
+    public Integer getTranslationId() {
         return translationId;
     }
 
-    public void setTranslationId(Long translationId) {
+    public void setTranslationId(Integer translationId) {
         this.translationId = translationId;
     }
 
-    public Long getNotificationTypeId() {
+    public Integer getNotificationTypeId() {
         return notificationTypeId;
     }
 
-    public void setNotificationTypeId(Long notificationTypeId) {
+    public void setNotificationTypeId(Integer notificationTypeId) {
         this.notificationTypeId = notificationTypeId;
     }
 
-    public Long getLanguageId() {
+    public Integer getLanguageId() {
         return languageId;
     }
 
-    public void setLanguageId(Long languageId) {
+    public void setLanguageId(Integer languageId) {
         this.languageId = languageId;
     }
 

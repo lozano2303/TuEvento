@@ -22,22 +22,18 @@ public class EventTranslationMapper {
         return EventTranslation.builder()
                 .translationId(entity.getTranslationId())
                 .eventId(entity.getEventId())
-                .languageId(entity.getLanguage().getLanguageId())
+                .languageId(entity.getLanguageId())
                 .translatedName(entity.getTranslatedName())
                 .translatedDescription(entity.getTranslatedDescription())
                 .source(entity.getSource())
                 .status(entity.getStatus())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
-                .createdBy(entity.getCreatedBy())
-                .updatedBy(entity.getUpdatedBy())
                 .build();
     }
 
     /**
      * Convierte de modelo de dominio a entidad JPA.
      */
-    public EventTranslationEntity toEntity(EventTranslation domain, LanguageEntity languageEntity) {
+    public EventTranslationEntity toEntity(EventTranslation domain) {
         if (domain == null) {
             return null;
         }
@@ -45,7 +41,7 @@ public class EventTranslationMapper {
         return EventTranslationEntity.builder()
                 .translationId(domain.getTranslationId())
                 .eventId(domain.getEventId())
-                .language(languageEntity)
+                .languageId(domain.getLanguageId())
                 .translatedName(domain.getTranslatedName())
                 .translatedDescription(domain.getTranslatedDescription())
                 .source(domain.getSource())

@@ -5,15 +5,15 @@ import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import java.util.Objects;
 
 public class EventRatingTranslation {
-    private Long translationId;
-    private Long ratingId;
-    private Long languageId;
+    private Integer translationId;
+    private Integer ratingId;
+    private Integer languageId;
     private String translatedComment;
     private TranslationStatus status;
 
     public EventRatingTranslation() {}
 
-    public EventRatingTranslation(Long ratingId, Long languageId, String translatedComment, 
+    public EventRatingTranslation(Integer ratingId, Integer languageId, String translatedComment, 
                                 TranslationStatus status) {
         this.ratingId = ratingId;
         this.languageId = languageId;
@@ -49,27 +49,27 @@ public class EventRatingTranslation {
     }
 
     // Getters and Setters
-    public Long getTranslationId() {
+    public Integer getTranslationId() {
         return translationId;
     }
 
-    public void setTranslationId(Long translationId) {
+    public void setTranslationId(Integer translationId) {
         this.translationId = translationId;
     }
 
-    public Long getRatingId() {
+    public Integer getRatingId() {
         return ratingId;
     }
 
-    public void setRatingId(Long ratingId) {
+    public void setRatingId(Integer ratingId) {
         this.ratingId = ratingId;
     }
 
-    public Long getLanguageId() {
+    public Integer getLanguageId() {
         return languageId;
     }
 
-    public void setLanguageId(Long languageId) {
+    public void setLanguageId(Integer languageId) {
         this.languageId = languageId;
     }
 

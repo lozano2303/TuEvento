@@ -6,16 +6,16 @@ import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import java.util.Objects;
 
 public class SeatBlockTranslation {
-    private Long translationId;
-    private Long seatBlockId;
-    private Long languageId;
+    private Integer translationId;
+    private Integer seatBlockId;
+    private Integer languageId;
     private String translatedName;
     private TranslationSource source;
     private TranslationStatus status;
 
     public SeatBlockTranslation() {}
 
-    public SeatBlockTranslation(Long seatBlockId, Long languageId, String translatedName, 
+    public SeatBlockTranslation(Integer seatBlockId, Integer languageId, String translatedName, 
                                TranslationSource source, TranslationStatus status) {
         this.seatBlockId = seatBlockId;
         this.languageId = languageId;
@@ -52,27 +52,27 @@ public class SeatBlockTranslation {
     }
 
     // Getters and Setters
-    public Long getTranslationId() {
+    public Integer getTranslationId() {
         return translationId;
     }
 
-    public void setTranslationId(Long translationId) {
+    public void setTranslationId(Integer translationId) {
         this.translationId = translationId;
     }
 
-    public Long getSeatBlockId() {
+    public Integer getSeatBlockId() {
         return seatBlockId;
     }
 
-    public void setSeatBlockId(Long seatBlockId) {
+    public void setSeatBlockId(Integer seatBlockId) {
         this.seatBlockId = seatBlockId;
     }
 
-    public Long getLanguageId() {
+    public Integer getLanguageId() {
         return languageId;
     }
 
-    public void setLanguageId(Long languageId) {
+    public void setLanguageId(Integer languageId) {
         this.languageId = languageId;
     }
 

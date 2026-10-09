@@ -6,16 +6,16 @@ import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import java.util.Objects;
 
 public class SectionTypeTranslation {
-    private Long translationId;
-    private Long sectionTypeId;
-    private Long languageId;
+    private Integer translationId;
+    private Integer sectionTypeId;
+    private Integer languageId;
     private String translatedName;
     private TranslationSource source;
     private TranslationStatus status;
 
     public SectionTypeTranslation() {}
 
-    public SectionTypeTranslation(Long sectionTypeId, Long languageId, String translatedName, 
+    public SectionTypeTranslation(Integer sectionTypeId, Integer languageId, String translatedName, 
                                 TranslationSource source, TranslationStatus status) {
         this.sectionTypeId = sectionTypeId;
         this.languageId = languageId;
@@ -60,27 +60,27 @@ public class SectionTypeTranslation {
     }
 
     // Getters and Setters
-    public Long getTranslationId() {
+    public Integer getTranslationId() {
         return translationId;
     }
 
-    public void setTranslationId(Long translationId) {
+    public void setTranslationId(Integer translationId) {
         this.translationId = translationId;
     }
 
-    public Long getSectionTypeId() {
+    public Integer getSectionTypeId() {
         return sectionTypeId;
     }
 
-    public void setSectionTypeId(Long sectionTypeId) {
+    public void setSectionTypeId(Integer sectionTypeId) {
         this.sectionTypeId = sectionTypeId;
     }
 
-    public Long getLanguageId() {
+    public Integer getLanguageId() {
         return languageId;
     }
 
-    public void setLanguageId(Long languageId) {
+    public void setLanguageId(Integer languageId) {
         this.languageId = languageId;
     }
 

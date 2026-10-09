@@ -15,9 +15,9 @@ public class EventCommentReplyTranslationMapper {
         }
 
         return EventCommentReplyTranslationEntity.builder()
-                .translationId(domain.getTranslationId() != null ? domain.getTranslationId().intValue() : null)
-                .replyId(domain.getReplyId() != null ? domain.getReplyId().intValue() : null)
-                .languageId(domain.getLanguageId() != null ? domain.getLanguageId().intValue() : null)
+                .translationId(domain.getTranslationId())
+                .replyId(domain.getReplyId())
+                .languageId(domain.getLanguageId())
                 .translatedReplyText(domain.getTranslatedReplyText())
                 .status(toEntityStatus(domain.getStatus()))
                 .build();
@@ -29,9 +29,9 @@ public class EventCommentReplyTranslationMapper {
         }
 
         EventCommentReplyTranslation domain = new EventCommentReplyTranslation();
-        domain.setTranslationId(entity.getTranslationId() != null ? entity.getTranslationId().longValue() : null);
-        domain.setReplyId(entity.getReplyId() != null ? entity.getReplyId().longValue() : null);
-        domain.setLanguageId(entity.getLanguageId() != null ? entity.getLanguageId().longValue() : null);
+        domain.setTranslationId(entity.getTranslationId());
+        domain.setReplyId(entity.getReplyId());
+        domain.setLanguageId(entity.getLanguageId());
         domain.setTranslatedReplyText(entity.getTranslatedReplyText());
         domain.setStatus(toDomainStatus(entity.getStatus()));
         return domain;

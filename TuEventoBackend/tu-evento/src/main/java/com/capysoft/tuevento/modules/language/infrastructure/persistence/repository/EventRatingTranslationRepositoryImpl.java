@@ -20,13 +20,13 @@ public class EventRatingTranslationRepositoryImpl implements EventRatingTranslat
 
     @Override
     public Optional<EventRatingTranslation> findByRatingAndLanguage(Long ratingId, Long languageId) {
-        return jpaRepository.findByRatingIdAndLanguageId(ratingId.intValue(), languageId.intValue())
+        return jpaRepository.findByRatingIdAndLanguageId(ratingId, languageId.intValue())
                 .map(mapper::toDomain);
     }
 
     @Override
     public List<EventRatingTranslation> findByRating(Long ratingId) {
-        return jpaRepository.findByRatingId(ratingId.intValue())
+        return jpaRepository.findByRatingId(ratingId)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -34,7 +34,7 @@ public class EventRatingTranslationRepositoryImpl implements EventRatingTranslat
 
     @Override
     public List<EventRatingTranslation> findByLanguage(Long languageId) {
-        return jpaRepository.findByLanguageId(languageId.intValue())
+        return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -83,12 +83,12 @@ public class EventRatingTranslationRepositoryImpl implements EventRatingTranslat
 
     @Override
     public void deleteByRating(Long ratingId) {
-        var entities = jpaRepository.findByRatingId(ratingId.intValue());
+        var entities = jpaRepository.findByRatingId(ratingId);
         jpaRepository.deleteAll(entities);
     }
 
     @Override
     public boolean existsByRatingAndLanguage(Long ratingId, Long languageId) {
-        return jpaRepository.findByRatingIdAndLanguageId(ratingId.intValue(), languageId.intValue()).isPresent();
+        return jpaRepository.findByRatingIdAndLanguageId(ratingId, languageId.intValue()).isPresent();
     }
 }

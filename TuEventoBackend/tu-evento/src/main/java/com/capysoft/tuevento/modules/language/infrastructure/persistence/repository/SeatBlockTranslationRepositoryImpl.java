@@ -34,7 +34,7 @@ public class SeatBlockTranslationRepositoryImpl implements SeatBlockTranslationR
 
     @Override
     public List<SeatBlockTranslation> findByLanguage(Long languageId) {
-        return jpaRepository.findByLanguageId(languageId.intValue())
+        return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());

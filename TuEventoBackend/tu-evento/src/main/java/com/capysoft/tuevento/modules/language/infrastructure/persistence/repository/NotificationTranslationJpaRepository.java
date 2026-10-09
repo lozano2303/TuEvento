@@ -10,17 +10,17 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface NotificationTranslationJpaRepository extends JpaRepository<NotificationTranslationEntity, Long> {
+public interface NotificationTranslationJpaRepository extends JpaRepository<NotificationTranslationEntity, Integer> {
 
     @Query("SELECT nt FROM NotificationTranslationEntity nt WHERE nt.notificationId = :notificationId")
     List<NotificationTranslationEntity> findByNotificationId(@Param("notificationId") Long notificationId);
 
-    @Query("SELECT nt FROM NotificationTranslationEntity nt WHERE nt.notificationId = :notificationId AND nt.language.languageId = :languageId")
+    @Query("SELECT nt FROM NotificationTranslationEntity nt WHERE nt.notificationId = :notificationId AND nt.languageId = :languageId")
     Optional<NotificationTranslationEntity> findByNotificationIdAndLanguageId(@Param("notificationId") Long notificationId, 
-                                                                              @Param("languageId") Long languageId);
+                                                                              @Param("languageId") Integer languageId);
 
-    @Query("SELECT nt FROM NotificationTranslationEntity nt WHERE nt.language.languageId = :languageId")
-    List<NotificationTranslationEntity> findByLanguageId(@Param("languageId") Long languageId);
+    @Query("SELECT nt FROM NotificationTranslationEntity nt WHERE nt.languageId = :languageId")
+    List<NotificationTranslationEntity> findByLanguageId(@Param("languageId") Integer languageId);
 
     @Query("SELECT nt FROM NotificationTranslationEntity nt WHERE nt.status = :status")
     List<NotificationTranslationEntity> findByStatus(@Param("status") String status);

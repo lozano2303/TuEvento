@@ -6,16 +6,16 @@ import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import java.util.Objects;
 
 public class ReviewTranslation {
-    private Long translationId;
-    private Long reviewId;
-    private Long languageId;
+    private Integer translationId;
+    private Integer reviewId;
+    private Integer languageId;
     private String translatedComment;
     private TranslationSource source;
     private TranslationStatus status;
 
     public ReviewTranslation() {}
 
-    public ReviewTranslation(Long reviewId, Long languageId, String translatedComment, 
+    public ReviewTranslation(Integer reviewId, Integer languageId, String translatedComment, 
                             TranslationSource source, TranslationStatus status) {
         this.reviewId = reviewId;
         this.languageId = languageId;
@@ -52,27 +52,27 @@ public class ReviewTranslation {
     }
 
     // Getters and Setters
-    public Long getTranslationId() {
+    public Integer getTranslationId() {
         return translationId;
     }
 
-    public void setTranslationId(Long translationId) {
+    public void setTranslationId(Integer translationId) {
         this.translationId = translationId;
     }
 
-    public Long getReviewId() {
+    public Integer getReviewId() {
         return reviewId;
     }
 
-    public void setReviewId(Long reviewId) {
+    public void setReviewId(Integer reviewId) {
         this.reviewId = reviewId;
     }
 
-    public Long getLanguageId() {
+    public Integer getLanguageId() {
         return languageId;
     }
 
-    public void setLanguageId(Long languageId) {
+    public void setLanguageId(Integer languageId) {
         this.languageId = languageId;
     }
 

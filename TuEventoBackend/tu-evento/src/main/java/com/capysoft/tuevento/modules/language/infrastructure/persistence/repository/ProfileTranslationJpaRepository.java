@@ -10,17 +10,17 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ProfileTranslationJpaRepository extends JpaRepository<ProfileTranslationEntity, Long> {
+public interface ProfileTranslationJpaRepository extends JpaRepository<ProfileTranslationEntity, Integer> {
 
     @Query("SELECT pt FROM ProfileTranslationEntity pt WHERE pt.profileId = :profileId")
     List<ProfileTranslationEntity> findByProfileId(@Param("profileId") Long profileId);
 
-    @Query("SELECT pt FROM ProfileTranslationEntity pt WHERE pt.profileId = :profileId AND pt.language.languageId = :languageId")
+    @Query("SELECT pt FROM ProfileTranslationEntity pt WHERE pt.profileId = :profileId AND pt.languageId = :languageId")
     Optional<ProfileTranslationEntity> findByProfileIdAndLanguageId(@Param("profileId") Long profileId, 
-                                                                    @Param("languageId") Long languageId);
+                                                                    @Param("languageId") Integer languageId);
 
-    @Query("SELECT pt FROM ProfileTranslationEntity pt WHERE pt.language.languageId = :languageId")
-    List<ProfileTranslationEntity> findByLanguageId(@Param("languageId") Long languageId);
+    @Query("SELECT pt FROM ProfileTranslationEntity pt WHERE pt.languageId = :languageId")
+    List<ProfileTranslationEntity> findByLanguageId(@Param("languageId") Integer languageId);
 
     @Query("SELECT pt FROM ProfileTranslationEntity pt WHERE pt.status = :status")
     List<ProfileTranslationEntity> findByStatus(@Param("status") String status);

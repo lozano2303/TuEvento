@@ -16,7 +16,7 @@ public class EventRatingTranslationMapper {
         EventRatingTranslation domain = new EventRatingTranslation();
         domain.setTranslationId(entity.getTranslationId());
         domain.setRatingId(entity.getRatingId());
-        domain.setLanguageId(entity.getLanguage().getLanguageId());
+        domain.setLanguageId(entity.getLanguageId());
         domain.setTranslatedComment(entity.getTranslatedComment());
         domain.setStatus(entity.getStatus());
 
@@ -31,11 +31,7 @@ public class EventRatingTranslationMapper {
         EventRatingTranslationEntity entity = new EventRatingTranslationEntity();
         entity.setTranslationId(domain.getTranslationId());
         entity.setRatingId(domain.getRatingId());
-        
-        // Create a reference to LanguageEntity - will be managed by repository
-        LanguageEntity languageEntity = new LanguageEntity();
-        languageEntity.setLanguageId(domain.getLanguageId());
-        entity.setLanguage(languageEntity);
+        entity.setLanguageId(domain.getLanguageId());
         
         entity.setTranslatedComment(domain.getTranslatedComment());
         entity.setStatus(domain.getStatus());

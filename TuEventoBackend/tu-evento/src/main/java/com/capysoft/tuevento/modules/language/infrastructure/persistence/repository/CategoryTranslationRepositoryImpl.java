@@ -28,7 +28,7 @@ public class CategoryTranslationRepositoryImpl implements CategoryTranslationRep
 
     @Override
     public Optional<CategoryTranslation> findByCategoryAndLanguage(Integer categoryId, Long languageId) {
-        return jpaRepository.findByCategoryIdAndLanguageId(categoryId, languageId)
+        return jpaRepository.findByCategoryIdAndLanguageId(categoryId, languageId.intValue())
                 .map(mapper::toDomain);
     }
 
@@ -67,9 +67,6 @@ public class CategoryTranslationRepositoryImpl implements CategoryTranslationRep
     @Override
     @Transactional
     public CategoryTranslation save(CategoryTranslation translation) {
-        LanguageEntity languageEntity = languageJpaRepository.findById(translation.getLanguageId())
-                .orElseThrow(() -> new IllegalArgumentException("Language not found: " + translation.getLanguageId()));
-
         CategoryTranslationEntity entity;
         if (translation.getTranslationId() != null) {
             // Actualizar entidad existente
@@ -78,7 +75,7 @@ public class CategoryTranslationRepositoryImpl implements CategoryTranslationRep
             mapper.updateEntity(entity, translation);
         } else {
             // Crear nueva entidad
-            entity = mapper.toEntity(translation, languageEntity);
+            entity = mapper.toEntity(translation);
         }
 
         CategoryTranslationEntity savedEntity = jpaRepository.save(entity);
