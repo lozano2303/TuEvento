@@ -14,7 +14,7 @@ public interface ProfileTranslationRepository {
     /**
      * Busca una traducción específica por perfil y idioma.
      */
-    Optional<ProfileTranslation> findByProfileAndLanguage(Long profileId, Long languageId);
+    Optional<ProfileTranslation> findByProfileAndLanguage(Long profileId, Integer languageId);
 
     /**
      * Busca todas las traducciones de un perfil.
@@ -24,7 +24,7 @@ public interface ProfileTranslationRepository {
     /**
      * Busca todas las traducciones en un idioma específico.
      */
-    List<ProfileTranslation> findByLanguage(Long languageId);
+    List<ProfileTranslation> findByLanguage(Integer languageId);
 
     /**
      * Busca traducciones por estado.
@@ -59,5 +59,5 @@ public interface ProfileTranslationRepository {
     /**
      * Verifica si existe una traducción para perfil y idioma específicos.
      */
-    boolean existsByProfileAndLanguage(Long profileId, Long languageId);
+    boolean existsByProfileAndLanguage(Long profileId, Integer languageId);
 }

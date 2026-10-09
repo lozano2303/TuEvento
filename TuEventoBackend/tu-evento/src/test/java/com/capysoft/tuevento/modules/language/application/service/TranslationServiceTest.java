@@ -63,13 +63,13 @@ class TranslationServiceTest {
         Map<String, String> sourceTexts = Map.of("title", "Test Title", "description", "Test Description");
         
         Language sourceLanguage = Language.builder()
-                .languageId(1L)
+                .languageId(1)
                 .code("es")
                 .name("Español")
                 .build();
                 
         Language targetLanguage = Language.builder()
-                .languageId(2L)
+                .languageId(2)
                 .code("en")
                 .name("English")
                 .build();
@@ -77,7 +77,7 @@ class TranslationServiceTest {
         when(mockHandler.loadSourceTexts(entityId)).thenReturn(sourceTexts);
         when(languageRepository.findByCode(sourceLanguageCode)).thenReturn(Optional.of(sourceLanguage));
         when(languageRepository.findAllActive()).thenReturn(List.of(sourceLanguage, targetLanguage));
-        when(translationJobRepository.findByEntityAndTargetLanguage(anyString(), anyLong(), anyLong()))
+        when(translationJobRepository.findByEntityAndTargetLanguage(eq(entityType), eq(1), eq(2)))
                 .thenReturn(Optional.empty());
         when(translationJobRepository.saveAll(anyList())).thenReturn(List.of());
 
@@ -105,19 +105,19 @@ class TranslationServiceTest {
         String newHash = "new_hash";
         
         Language sourceLanguage = Language.builder()
-                .languageId(1L)
+                .languageId(1)
                 .code("es")
                 .build();
                 
         Language targetLanguage = Language.builder()
-                .languageId(2L)
+                .languageId(2)
                 .code("en")
                 .build();
         
         TranslationJob existingJob = TranslationJob.builder()
-                .jobId(1L)
+                .jobId(1)
                 .entityType(entityType)
-                .entityId(entityId)
+                .entityId(entityId.intValue())
                 .sourceHash("old_hash") // Different hash
                 .status(TranslationJobStatus.COMPLETED)
                 .build();
@@ -125,7 +125,7 @@ class TranslationServiceTest {
         when(mockHandler.loadSourceTexts(entityId)).thenReturn(sourceTexts);
         when(languageRepository.findByCode(sourceLanguageCode)).thenReturn(Optional.of(sourceLanguage));
         when(languageRepository.findAllActive()).thenReturn(List.of(sourceLanguage, targetLanguage));
-        when(translationJobRepository.findByEntityAndTargetLanguage(anyString(), anyLong(), anyLong()))
+        when(translationJobRepository.findByEntityAndTargetLanguage(eq(entityType), eq(1), eq(2)))
                 .thenReturn(Optional.of(existingJob));
         when(translationJobRepository.saveAll(anyList())).thenReturn(List.of());
 
@@ -182,19 +182,19 @@ class TranslationServiceTest {
         Map<String, String> sourceTexts = Map.of("title", "Test Title");
         
         Language sourceLanguage = Language.builder()
-                .languageId(1L)
+                .languageId(1)
                 .code("es")
                 .build();
                 
         Language targetLanguage = Language.builder()
-                .languageId(2L)
+                .languageId(2)
                 .code("en")
                 .build();
         
         when(mockHandler.loadSourceTexts(entityId)).thenReturn(sourceTexts);
         when(languageRepository.findByCode(sourceLanguageCode)).thenReturn(Optional.of(sourceLanguage));
         when(languageRepository.findAllActive()).thenReturn(List.of(sourceLanguage, targetLanguage));
-        when(translationJobRepository.findByEntityAndTargetLanguage(anyString(), anyLong(), anyLong()))
+        when(translationJobRepository.findByEntityAndTargetLanguage(eq(entityType), eq(1), eq(2)))
                 .thenReturn(Optional.empty());
         when(translationJobRepository.saveAll(anyList())).thenReturn(List.of());
         

@@ -27,21 +27,21 @@ public class EventTranslationRepositoryImpl implements EventTranslationRepositor
     private final EventTranslationMapper mapper;
 
     @Override
-    public Optional<EventTranslation> findByEventAndLanguage(Long eventId, Long languageId) {
-        return jpaRepository.findByEventIdAndLanguageId(eventId, languageId.intValue())
+    public Optional<EventTranslation> findByEventAndLanguage(Integer eventId, Integer languageId) {
+        return jpaRepository.findByEventIdAndLanguageId(eventId.longValue(), languageId)
                 .map(mapper::toDomain);
     }
 
     @Override
-    public List<EventTranslation> findByEvent(Long eventId) {
-        return jpaRepository.findByEventId(eventId)
+    public List<EventTranslation> findByEvent(Integer eventId) {
+        return jpaRepository.findByEventId(eventId.longValue())
                 .stream()
                 .map(mapper::toDomain)
                 .toList();
     }
 
     @Override
-    public List<EventTranslation> findByLanguage(Long languageId) {
+    public List<EventTranslation> findByLanguage(Integer languageId) {
         return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
@@ -57,8 +57,8 @@ public class EventTranslationRepositoryImpl implements EventTranslationRepositor
     }
 
     @Override
-    public List<EventTranslation> findByEventAndStatus(Long eventId, TranslationStatus status) {
-        return jpaRepository.findByEventIdAndStatus(eventId, status.name().toLowerCase())
+    public List<EventTranslation> findByEventAndStatus(Integer eventId, TranslationStatus status) {
+        return jpaRepository.findByEventIdAndStatus(eventId.longValue(), status.name().toLowerCase())
                 .stream()
                 .map(mapper::toDomain)
                 .toList();
@@ -100,12 +100,12 @@ public class EventTranslationRepositoryImpl implements EventTranslationRepositor
 
     @Override
     @Transactional
-    public void deleteByEvent(Long eventId) {
-        jpaRepository.deleteByEventId(eventId);
+    public void deleteByEvent(Integer eventId) {
+        jpaRepository.deleteByEventId(eventId.longValue());
     }
 
     @Override
-    public boolean existsByEventAndLanguage(Long eventId, Long languageId) {
-        return jpaRepository.existsByEventIdAndLanguageId(eventId, languageId);
+    public boolean existsByEventAndLanguage(Integer eventId, Integer languageId) {
+        return jpaRepository.existsByEventIdAndLanguageId(eventId.longValue(), languageId);
     }
 }

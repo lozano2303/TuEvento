@@ -14,7 +14,7 @@ public interface ActionTranslationRepository {
     /**
      * Busca una traducción específica por action y idioma.
      */
-    Optional<ActionTranslation> findByActionAndLanguage(String action, Long languageId);
+    Optional<ActionTranslation> findByActionAndLanguage(String action, Integer languageId);
 
     /**
      * Busca todas las traducciones de un action.
@@ -24,7 +24,7 @@ public interface ActionTranslationRepository {
     /**
      * Busca todas las traducciones en un idioma específico.
      */
-    List<ActionTranslation> findByLanguage(Long languageId);
+    List<ActionTranslation> findByLanguage(Integer languageId);
 
     /**
      * Busca traducciones por estado.
@@ -59,5 +59,5 @@ public interface ActionTranslationRepository {
     /**
      * Verifica si existe una traducción para action y idioma específicos.
      */
-    boolean existsByActionAndLanguage(String action, Long languageId);
+    boolean existsByActionAndLanguage(String action, Integer languageId);
 }

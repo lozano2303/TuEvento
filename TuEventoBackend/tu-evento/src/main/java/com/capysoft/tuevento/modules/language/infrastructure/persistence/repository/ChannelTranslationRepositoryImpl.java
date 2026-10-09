@@ -19,8 +19,8 @@ public class ChannelTranslationRepositoryImpl implements ChannelTranslationRepos
     private final ChannelTranslationMapper mapper;
 
     @Override
-    public Optional<ChannelTranslation> findByChannelAndLanguage(Long channelId, Long languageId) {
-        return jpaRepository.findByChannelIdAndLanguageId(channelId.intValue(), languageId.intValue())
+    public Optional<ChannelTranslation> findByChannelAndLanguage(Long channelId, Integer languageId) {
+        return jpaRepository.findByChannelIdAndLanguageId(channelId.intValue(), languageId)
                 .map(mapper::toDomain);
     }
 
@@ -33,8 +33,8 @@ public class ChannelTranslationRepositoryImpl implements ChannelTranslationRepos
     }
 
     @Override
-    public List<ChannelTranslation> findByLanguage(Long languageId) {
-        return jpaRepository.findByLanguageId(languageId.intValue())
+    public List<ChannelTranslation> findByLanguage(Integer languageId) {
+        return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -89,8 +89,8 @@ public class ChannelTranslationRepositoryImpl implements ChannelTranslationRepos
     }
 
     @Override
-    public boolean existsByChannelAndLanguage(Long channelId, Long languageId) {
-        return jpaRepository.findByChannelIdAndLanguageId(channelId.intValue(), languageId.intValue())
+    public boolean existsByChannelAndLanguage(Long channelId, Integer languageId) {
+        return jpaRepository.findByChannelIdAndLanguageId(channelId.intValue(), languageId)
                 .isPresent();
     }
 }

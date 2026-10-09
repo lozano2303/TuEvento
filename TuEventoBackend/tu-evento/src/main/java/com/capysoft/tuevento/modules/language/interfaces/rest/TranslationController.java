@@ -37,13 +37,13 @@ public class TranslationController {
             @RequestParam String entityType,
             
             @Parameter(description = "Entity ID") 
-            @RequestParam Long entityId,
+            @RequestParam Integer entityId,
             
             @Parameter(description = "Source language code", example = "es")
             @RequestParam(defaultValue = "es") String sourceLanguageCode) {
         
         try {
-            translationService.requestTranslation(entityType, entityId, sourceLanguageCode);
+            translationService.requestTranslation(entityType, entityId.longValue(), sourceLanguageCode);
             return ResponseEntity.ok("Translation requested successfully for " + entityType + " " + entityId);
         } catch (Exception e) {
             log.error("Failed to request translation", e);
@@ -60,7 +60,7 @@ public class TranslationController {
             @PathVariable String entityType,
             
             @Parameter(description = "Entity ID")
-            @PathVariable Long entityId) {
+            @PathVariable Integer entityId) {
         
         List<TranslationJob> jobs = translationJobRepository.findByEntityAndStatus(entityType, entityId, null);
         return ResponseEntity.ok(jobs);
@@ -75,7 +75,7 @@ public class TranslationController {
             @RequestParam(required = false) String entityType,
             
             @Parameter(description = "Entity ID filter")
-            @RequestParam(required = false) Long entityId) {
+            @RequestParam(required = false) Integer entityId) {
         
         List<TranslationJob> jobs;
         

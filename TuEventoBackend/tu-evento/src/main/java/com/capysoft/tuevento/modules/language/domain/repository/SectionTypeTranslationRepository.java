@@ -14,7 +14,7 @@ public interface SectionTypeTranslationRepository {
     /**
      * Busca una traducción específica por section type y idioma.
      */
-    Optional<SectionTypeTranslation> findBySectionTypeAndLanguage(Long sectionTypeId, Long languageId);
+    Optional<SectionTypeTranslation> findBySectionTypeAndLanguage(Long sectionTypeId, Integer languageId);
 
     /**
      * Busca todas las traducciones de un section type.
@@ -24,7 +24,7 @@ public interface SectionTypeTranslationRepository {
     /**
      * Busca todas las traducciones en un idioma específico.
      */
-    List<SectionTypeTranslation> findByLanguage(Long languageId);
+    List<SectionTypeTranslation> findByLanguage(Integer languageId);
 
     /**
      * Busca traducciones por estado.
@@ -59,5 +59,5 @@ public interface SectionTypeTranslationRepository {
     /**
      * Verifica si existe una traducción para section type y idioma específicos.
      */
-    boolean existsBySectionTypeAndLanguage(Long sectionTypeId, Long languageId);
+    boolean existsBySectionTypeAndLanguage(Long sectionTypeId, Integer languageId);
 }

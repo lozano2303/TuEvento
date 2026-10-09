@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Language {
 
-    private Long languageId;
+    private Integer languageId;
     private String code;
     private String name;
     private Boolean isActive;

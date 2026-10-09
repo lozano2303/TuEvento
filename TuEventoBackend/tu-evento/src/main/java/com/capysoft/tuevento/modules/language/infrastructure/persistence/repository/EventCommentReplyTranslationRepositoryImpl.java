@@ -19,8 +19,8 @@ public class EventCommentReplyTranslationRepositoryImpl implements EventCommentR
     private final EventCommentReplyTranslationMapper mapper;
 
     @Override
-    public Optional<EventCommentReplyTranslation> findByReplyAndLanguage(Long replyId, Long languageId) {
-        return jpaRepository.findByReplyIdAndLanguageId(replyId.intValue(), languageId.intValue())
+    public Optional<EventCommentReplyTranslation> findByReplyAndLanguage(Long replyId, Integer languageId) {
+        return jpaRepository.findByReplyIdAndLanguageId(replyId.intValue(), languageId)
                 .map(mapper::toDomain);
     }
 
@@ -33,8 +33,8 @@ public class EventCommentReplyTranslationRepositoryImpl implements EventCommentR
     }
 
     @Override
-    public List<EventCommentReplyTranslation> findByLanguage(Long languageId) {
-        return jpaRepository.findByLanguageId(languageId.intValue())
+    public List<EventCommentReplyTranslation> findByLanguage(Integer languageId) {
+        return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -89,8 +89,8 @@ public class EventCommentReplyTranslationRepositoryImpl implements EventCommentR
     }
 
     @Override
-    public boolean existsByReplyAndLanguage(Long replyId, Long languageId) {
-        return jpaRepository.findByReplyIdAndLanguageId(replyId.intValue(), languageId.intValue())
+    public boolean existsByReplyAndLanguage(Long replyId, Integer languageId) {
+        return jpaRepository.findByReplyIdAndLanguageId(replyId.intValue(), languageId)
                 .isPresent();
     }
 }

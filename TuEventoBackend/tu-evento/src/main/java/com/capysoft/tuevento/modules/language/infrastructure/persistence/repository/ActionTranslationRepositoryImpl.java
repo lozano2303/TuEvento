@@ -19,8 +19,8 @@ public class ActionTranslationRepositoryImpl implements ActionTranslationReposit
     private final ActionTranslationMapper mapper;
 
     @Override
-    public Optional<ActionTranslation> findByActionAndLanguage(String action, Long languageId) {
-        return jpaRepository.findByActionAndLanguageId(action, languageId.intValue())
+    public Optional<ActionTranslation> findByActionAndLanguage(String action, Integer languageId) {
+        return jpaRepository.findByActionAndLanguageId(action, languageId)
                 .map(mapper::toDomain);
     }
 
@@ -33,8 +33,8 @@ public class ActionTranslationRepositoryImpl implements ActionTranslationReposit
     }
 
     @Override
-    public List<ActionTranslation> findByLanguage(Long languageId) {
-        return jpaRepository.findByLanguageId(languageId.intValue())
+    public List<ActionTranslation> findByLanguage(Integer languageId) {
+        return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -89,8 +89,8 @@ public class ActionTranslationRepositoryImpl implements ActionTranslationReposit
     }
 
     @Override
-    public boolean existsByActionAndLanguage(String action, Long languageId) {
-        return jpaRepository.findByActionAndLanguageId(action, languageId.intValue())
+    public boolean existsByActionAndLanguage(String action, Integer languageId) {
+        return jpaRepository.findByActionAndLanguageId(action, languageId)
                 .isPresent();
     }
 }

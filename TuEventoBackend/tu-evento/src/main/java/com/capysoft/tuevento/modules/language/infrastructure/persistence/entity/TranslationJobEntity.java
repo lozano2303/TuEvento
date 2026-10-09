@@ -26,13 +26,13 @@ public class TranslationJobEntity extends JpaAuditingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "job_id")
-    private Long jobId;
+    private Integer jobId;
 
     @Column(name = "entity_type", nullable = false, length = 50)
     private String entityType;
 
     @Column(name = "entity_id", nullable = false)
-    private Long entityId;
+    private Integer entityId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_language_id", nullable = false)

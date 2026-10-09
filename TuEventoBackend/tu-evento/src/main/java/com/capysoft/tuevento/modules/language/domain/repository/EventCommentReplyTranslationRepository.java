@@ -14,7 +14,7 @@ public interface EventCommentReplyTranslationRepository {
     /**
      * Busca una traducción específica por reply y idioma.
      */
-    Optional<EventCommentReplyTranslation> findByReplyAndLanguage(Long replyId, Long languageId);
+    Optional<EventCommentReplyTranslation> findByReplyAndLanguage(Long replyId, Integer languageId);
 
     /**
      * Busca todas las traducciones de un reply.
@@ -24,7 +24,7 @@ public interface EventCommentReplyTranslationRepository {
     /**
      * Busca todas las traducciones en un idioma específico.
      */
-    List<EventCommentReplyTranslation> findByLanguage(Long languageId);
+    List<EventCommentReplyTranslation> findByLanguage(Integer languageId);
 
     /**
      * Busca traducciones por estado.
@@ -59,5 +59,5 @@ public interface EventCommentReplyTranslationRepository {
     /**
      * Verifica si existe una traducción para reply y idioma específicos.
      */
-    boolean existsByReplyAndLanguage(Long replyId, Long languageId);
+    boolean existsByReplyAndLanguage(Long replyId, Integer languageId);
 }

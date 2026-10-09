@@ -91,7 +91,7 @@ public class TranslationService {
         
         for (Language targetLanguage : targetLanguages) {
             Optional<TranslationJob> existingJob = translationJobRepository
-                    .findByEntityAndTargetLanguage(entityType, entityId, targetLanguage.getLanguageId());
+                    .findByEntityAndTargetLanguage(entityType, entityId.intValue(), targetLanguage.getLanguageId());
                     
             if (existingJob.isPresent()) {
                 TranslationJob job = existingJob.get();
@@ -111,7 +111,7 @@ public class TranslationService {
                 // Crear nuevo job
                 TranslationJob newJob = TranslationJob.builder()
                         .entityType(entityType)
-                        .entityId(entityId)
+                        .entityId(entityId.intValue())
                         .sourceLanguageId(sourceLanguage.get().getLanguageId())
                         .targetLanguageId(targetLanguage.getLanguageId())
                         .sourceHash(sourceHash)

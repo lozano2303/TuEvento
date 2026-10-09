@@ -27,8 +27,8 @@ public class CategoryTranslationRepositoryImpl implements CategoryTranslationRep
     private final CategoryTranslationMapper mapper;
 
     @Override
-    public Optional<CategoryTranslation> findByCategoryAndLanguage(Integer categoryId, Long languageId) {
-        return jpaRepository.findByCategoryIdAndLanguageId(categoryId, languageId.intValue())
+    public Optional<CategoryTranslation> findByCategoryAndLanguage(Integer categoryId, Integer languageId) {
+        return jpaRepository.findByCategoryIdAndLanguageId(categoryId, languageId)
                 .map(mapper::toDomain);
     }
 
@@ -41,7 +41,7 @@ public class CategoryTranslationRepositoryImpl implements CategoryTranslationRep
     }
 
     @Override
-    public List<CategoryTranslation> findByLanguage(Long languageId) {
+    public List<CategoryTranslation> findByLanguage(Integer languageId) {
         return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
@@ -105,7 +105,7 @@ public class CategoryTranslationRepositoryImpl implements CategoryTranslationRep
     }
 
     @Override
-    public boolean existsByCategoryAndLanguage(Integer categoryId, Long languageId) {
+    public boolean existsByCategoryAndLanguage(Integer categoryId, Integer languageId) {
         return jpaRepository.existsByCategoryIdAndLanguageId(categoryId, languageId);
     }
 }

@@ -19,8 +19,8 @@ public class SeatBlockTranslationRepositoryImpl implements SeatBlockTranslationR
     private final SeatBlockTranslationMapper mapper;
 
     @Override
-    public Optional<SeatBlockTranslation> findBySeatBlockAndLanguage(Long seatBlockId, Long languageId) {
-        return jpaRepository.findBySeatBlockIdAndLanguageId(seatBlockId.intValue(), languageId.intValue())
+    public Optional<SeatBlockTranslation> findBySeatBlockAndLanguage(Long seatBlockId, Integer languageId) {
+        return jpaRepository.findBySeatBlockIdAndLanguageId(seatBlockId.intValue(), languageId)
                 .map(mapper::toDomain);
     }
 
@@ -33,7 +33,7 @@ public class SeatBlockTranslationRepositoryImpl implements SeatBlockTranslationR
     }
 
     @Override
-    public List<SeatBlockTranslation> findByLanguage(Long languageId) {
+    public List<SeatBlockTranslation> findByLanguage(Integer languageId) {
         return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
@@ -88,7 +88,7 @@ public class SeatBlockTranslationRepositoryImpl implements SeatBlockTranslationR
     }
 
     @Override
-    public boolean existsBySeatBlockAndLanguage(Long seatBlockId, Long languageId) {
-        return jpaRepository.findBySeatBlockIdAndLanguageId(seatBlockId.intValue(), languageId.intValue()).isPresent();
+    public boolean existsBySeatBlockAndLanguage(Long seatBlockId, Integer languageId) {
+        return jpaRepository.findBySeatBlockIdAndLanguageId(seatBlockId.intValue(), languageId).isPresent();
     }
 }

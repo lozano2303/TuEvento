@@ -14,7 +14,7 @@ public interface NotificationTranslationRepository {
     /**
      * Busca una traducción específica por notificación y idioma.
      */
-    Optional<NotificationTranslation> findByNotificationAndLanguage(Long notificationId, Long languageId);
+    Optional<NotificationTranslation> findByNotificationAndLanguage(Long notificationId, Integer languageId);
 
     /**
      * Busca todas las traducciones de una notificación.
@@ -24,7 +24,7 @@ public interface NotificationTranslationRepository {
     /**
      * Busca todas las traducciones en un idioma específico.
      */
-    List<NotificationTranslation> findByLanguage(Long languageId);
+    List<NotificationTranslation> findByLanguage(Integer languageId);
 
     /**
      * Busca traducciones por estado.
@@ -59,5 +59,5 @@ public interface NotificationTranslationRepository {
     /**
      * Verifica si existe una traducción para notificación y idioma específicos.
      */
-    boolean existsByNotificationAndLanguage(Long notificationId, Long languageId);
+    boolean existsByNotificationAndLanguage(Long notificationId, Integer languageId);
 }

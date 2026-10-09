@@ -8,14 +8,14 @@ import com.capysoft.tuevento.modules.language.application.dto.response.LanguageR
  */
 public interface UpdateLanguageUseCase {
     
-    LanguageResponse updateLanguage(Long languageId, UpdateLanguageRequest request);
+    LanguageResponse updateLanguage(Integer languageId, UpdateLanguageRequest request);
     
-    LanguageResponse activateLanguage(Long languageId);
+    LanguageResponse activateLanguage(Integer languageId);
     
-    LanguageResponse deactivateLanguage(Long languageId);
+    LanguageResponse deactivateLanguage(Integer languageId);
 
     /**
      * Establece un idioma como el por defecto.
      */
-    LanguageResponse setDefaultLanguage(Long languageId);
+    LanguageResponse setDefaultLanguage(Integer languageId);
 }

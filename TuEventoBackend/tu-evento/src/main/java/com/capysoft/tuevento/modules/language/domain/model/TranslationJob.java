@@ -17,11 +17,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class TranslationJob {
 
-    private Long jobId;
+    private Integer jobId;
     private String entityType;
-    private Long entityId;
-    private Long sourceLanguageId;
-    private Long targetLanguageId;
+    private Integer entityId;
+    private Integer sourceLanguageId;
+    private Integer targetLanguageId;
     private String sourceHash;
     private TranslationJobStatus status;
     private String provider;

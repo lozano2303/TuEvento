@@ -14,17 +14,17 @@ public interface EventTranslationRepository {
     /**
      * Busca una traducción específica por evento y idioma.
      */
-    Optional<EventTranslation> findByEventAndLanguage(Long eventId, Long languageId);
+    Optional<EventTranslation> findByEventAndLanguage(Integer eventId, Integer languageId);
 
     /**
      * Busca todas las traducciones de un evento.
      */
-    List<EventTranslation> findByEvent(Long eventId);
+    List<EventTranslation> findByEvent(Integer eventId);
 
     /**
      * Busca todas las traducciones en un idioma específico.
      */
-    List<EventTranslation> findByLanguage(Long languageId);
+    List<EventTranslation> findByLanguage(Integer languageId);
 
     /**
      * Busca traducciones por estado.
@@ -34,7 +34,7 @@ public interface EventTranslationRepository {
     /**
      * Busca traducciones por evento y estado.
      */
-    List<EventTranslation> findByEventAndStatus(Long eventId, TranslationStatus status);
+    List<EventTranslation> findByEventAndStatus(Integer eventId, TranslationStatus status);
 
     /**
      * Guarda una traducción.
@@ -54,10 +54,10 @@ public interface EventTranslationRepository {
     /**
      * Elimina todas las traducciones de un evento.
      */
-    void deleteByEvent(Long eventId);
+    void deleteByEvent(Integer eventId);
 
     /**
      * Verifica si existe una traducción para evento y idioma específicos.
      */
-    boolean existsByEventAndLanguage(Long eventId, Long languageId);
+    boolean existsByEventAndLanguage(Integer eventId, Integer languageId);
 }

@@ -14,7 +14,7 @@ public interface ThemeTranslationRepository {
     /**
      * Busca una traducción específica por tema y idioma.
      */
-    Optional<ThemeTranslation> findByThemeAndLanguage(Integer themeId, Long languageId);
+    Optional<ThemeTranslation> findByThemeAndLanguage(Integer themeId, Integer languageId);
 
     /**
      * Busca todas las traducciones de un tema.
@@ -24,7 +24,7 @@ public interface ThemeTranslationRepository {
     /**
      * Busca todas las traducciones en un idioma específico.
      */
-    List<ThemeTranslation> findByLanguage(Long languageId);
+    List<ThemeTranslation> findByLanguage(Integer languageId);
 
     /**
      * Busca traducciones por estado.
@@ -59,5 +59,5 @@ public interface ThemeTranslationRepository {
     /**
      * Verifica si existe una traducción para tema y idioma específicos.
      */
-    boolean existsByThemeAndLanguage(Integer themeId, Long languageId);
+    boolean existsByThemeAndLanguage(Integer themeId, Integer languageId);
 }

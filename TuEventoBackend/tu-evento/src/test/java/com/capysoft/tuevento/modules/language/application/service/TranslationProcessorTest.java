@@ -65,15 +65,15 @@ class TranslationProcessorTest {
     @Test
     void testTranslationExistingInReviewedState() throws Exception {
         // Given
-        TranslationJob job = createMockJob(1L, "event", 100L, 1L, 2L);
-        Language sourceLanguage = createMockLanguage(1L, "es");
-        Language targetLanguage = createMockLanguage(2L, "en");
+        TranslationJob job = createMockJob(1, "event", 100, 1, 2);
+        Language sourceLanguage = createMockLanguage(1, "es");
+        Language targetLanguage = createMockLanguage(2, "en");
         
-        when(translationJobRepository.findByEntityAndStatus("event", 100L, TranslationJobStatus.PENDING))
+        when(translationJobRepository.findByEntityAndStatus("event", 100, TranslationJobStatus.PENDING))
                 .thenReturn(List.of(job));
-        when(translationJobRepository.claimJob(1L)).thenReturn(true);
-        when(languageRepository.findById(1L)).thenReturn(Optional.of(sourceLanguage));
-        when(languageRepository.findById(2L)).thenReturn(Optional.of(targetLanguage));
+        when(translationJobRepository.claimJob(1)).thenReturn(true);
+        when(languageRepository.findById(1)).thenReturn(Optional.of(sourceLanguage));
+        when(languageRepository.findById(2)).thenReturn(Optional.of(targetLanguage));
         when(contentHandler.findTranslationStatus(100L, "en"))
                 .thenReturn(Optional.of(TranslationStatus.PUBLISHED));
 
@@ -81,7 +81,7 @@ class TranslationProcessorTest {
         translationProcessor.processTranslationJobs("event", 100L);
 
         // Then
-        verify(translationJobRepository).claimJob(1L);
+        verify(translationJobRepository).claimJob(1);
         verify(contentHandler).findTranslationStatus(100L, "en");
         verify(contentHandler, never()).saveTranslation(anyLong(), anyString(), anyMap(), any(), any());
         verify(translationPort, never()).translate(anyString(), anyString(), anyString());
@@ -92,18 +92,18 @@ class TranslationProcessorTest {
     @Test
     void testAtomicClaimReturnsZeroRows() throws Exception {
         // Given
-        TranslationJob job = createMockJob(1L, "event", 100L, 1L, 2L);
+        TranslationJob job = createMockJob(1, "event", 100, 1, 2);
         
-        when(translationJobRepository.findByEntityAndStatus("event", 100L, TranslationJobStatus.PENDING))
+        when(translationJobRepository.findByEntityAndStatus("event", 100, TranslationJobStatus.PENDING))
                 .thenReturn(List.of(job));
-        when(translationJobRepository.claimJob(1L)).thenReturn(false); // Claim failed
+        when(translationJobRepository.claimJob(1)).thenReturn(false); // Claim failed
 
         // When
         translationProcessor.processTranslationJobs("event", 100L);
 
         // Then
-        verify(translationJobRepository).claimJob(1L);
-        verify(languageRepository, never()).findById(anyLong());
+        verify(translationJobRepository).claimJob(1);
+        verify(languageRepository, never()).findById(any());
         verify(contentHandler, never()).loadSourceTexts(anyLong());
         verify(translationPort, never()).translate(anyString(), anyString(), anyString());
         verify(contentHandler, never()).saveTranslation(anyLong(), anyString(), anyMap(), any(), any());
@@ -113,9 +113,9 @@ class TranslationProcessorTest {
     @Test
     void testMissingPlaceholderAfterTranslation() throws Exception {
         // Given
-        TranslationJob job = createMockJob(1L, "event", 100L, 1L, 2L);
-        Language sourceLanguage = createMockLanguage(1L, "es");
-        Language targetLanguage = createMockLanguage(2L, "en");
+        TranslationJob job = createMockJob(1, "event", 100, 1, 2);
+        Language sourceLanguage = createMockLanguage(1, "es");
+        Language targetLanguage = createMockLanguage(2, "en");
         
         Map<String, String> sourceTexts = new HashMap<>();
         sourceTexts.put("title", "Welcome to Tu Evento, {name}!");
@@ -126,11 +126,11 @@ class TranslationProcessorTest {
                 Map.of("{{V_1}}", "{name}")
         );
 
-        when(translationJobRepository.findByEntityAndStatus("event", 100L, TranslationJobStatus.PENDING))
+        when(translationJobRepository.findByEntityAndStatus("event", 100, TranslationJobStatus.PENDING))
                 .thenReturn(List.of(job));
-        when(translationJobRepository.claimJob(1L)).thenReturn(true);
-        when(languageRepository.findById(1L)).thenReturn(Optional.of(sourceLanguage));
-        when(languageRepository.findById(2L)).thenReturn(Optional.of(targetLanguage));
+        when(translationJobRepository.claimJob(1)).thenReturn(true);
+        when(languageRepository.findById(1)).thenReturn(Optional.of(sourceLanguage));
+        when(languageRepository.findById(2)).thenReturn(Optional.of(targetLanguage));
         when(contentHandler.findTranslationStatus(100L, "en"))
                 .thenReturn(Optional.empty());
         when(contentHandler.loadSourceTexts(100L)).thenReturn(sourceTexts);
@@ -145,7 +145,7 @@ class TranslationProcessorTest {
         translationProcessor.processTranslationJobs("event", 100L);
 
         // Then
-        verify(translationJobRepository).claimJob(1L);
+        verify(translationJobRepository).claimJob(1);
         verify(contentHandler).loadSourceTexts(100L);
         verify(translationPort).translate("Welcome to {{T_1}}, {{V_1}}!", "es", "en");
         verify(maskingService).unmaskText("Bienvenido", 
@@ -156,8 +156,8 @@ class TranslationProcessorTest {
         verify(translationJobRepository).save(job);
     }
 
-    private TranslationJob createMockJob(Long jobId, String entityType, Long entityId, 
-                                       Long sourceLanguageId, Long targetLanguageId) {
+    private TranslationJob createMockJob(Integer jobId, String entityType, Integer entityId, 
+                                       Integer sourceLanguageId, Integer targetLanguageId) {
         TranslationJob job = mock(TranslationJob.class);
         when(job.getJobId()).thenReturn(jobId);
         when(job.getEntityType()).thenReturn(entityType);
@@ -167,7 +167,7 @@ class TranslationProcessorTest {
         return job;
     }
 
-    private Language createMockLanguage(Long id, String code) {
+    private Language createMockLanguage(Integer id, String code) {
         Language language = mock(Language.class);
         when(language.getLanguageId()).thenReturn(id);
         when(language.getCode()).thenReturn(code);

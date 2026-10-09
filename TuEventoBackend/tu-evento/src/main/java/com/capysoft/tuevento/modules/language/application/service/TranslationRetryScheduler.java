@@ -50,7 +50,7 @@ public class TranslationRetryScheduler {
                     translationJobRepository.save(job);
                     
                     // Dispatch processing
-                    translationProcessor.processTranslationJobs(job.getEntityType(), job.getEntityId());
+                    translationProcessor.processTranslationJobs(job.getEntityType(), job.getEntityId().longValue());
                     
                 } catch (TaskRejectedException e) {
                     log.warn("Executor full, job {} will retry later", job.getJobId());
