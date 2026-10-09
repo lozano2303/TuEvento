@@ -19,8 +19,8 @@ public class SectionTypeTranslationRepositoryImpl implements SectionTypeTranslat
     private final SectionTypeTranslationMapper mapper;
 
     @Override
-    public Optional<SectionTypeTranslation> findBySectionTypeAndLanguage(Long sectionTypeId, Long languageId) {
-        return jpaRepository.findBySectionTypeIdAndLanguageId(sectionTypeId.intValue(), languageId.intValue())
+    public Optional<SectionTypeTranslation> findBySectionTypeAndLanguage(Long sectionTypeId, Integer languageId) {
+        return jpaRepository.findBySectionTypeIdAndLanguageId(sectionTypeId.intValue(), languageId)
                 .map(mapper::toDomain);
     }
 
@@ -33,8 +33,8 @@ public class SectionTypeTranslationRepositoryImpl implements SectionTypeTranslat
     }
 
     @Override
-    public List<SectionTypeTranslation> findByLanguage(Long languageId) {
-        return jpaRepository.findByLanguageId(languageId.intValue())
+    public List<SectionTypeTranslation> findByLanguage(Integer languageId) {
+        return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -89,8 +89,8 @@ public class SectionTypeTranslationRepositoryImpl implements SectionTypeTranslat
     }
 
     @Override
-    public boolean existsBySectionTypeAndLanguage(Long sectionTypeId, Long languageId) {
-        return jpaRepository.findBySectionTypeIdAndLanguageId(sectionTypeId.intValue(), languageId.intValue())
+    public boolean existsBySectionTypeAndLanguage(Long sectionTypeId, Integer languageId) {
+        return jpaRepository.findBySectionTypeIdAndLanguageId(sectionTypeId.intValue(), languageId)
                 .isPresent();
     }
 }

@@ -19,8 +19,8 @@ public class NotificationTypeTranslationRepositoryImpl implements NotificationTy
     private final NotificationTypeTranslationMapper mapper;
 
     @Override
-    public Optional<NotificationTypeTranslation> findByNotificationTypeAndLanguage(Long notificationTypeId, Long languageId) {
-        return jpaRepository.findByNotificationTypeIdAndLanguageId(notificationTypeId.intValue(), languageId.intValue())
+    public Optional<NotificationTypeTranslation> findByNotificationTypeAndLanguage(Long notificationTypeId, Integer languageId) {
+        return jpaRepository.findByNotificationTypeIdAndLanguageId(notificationTypeId.intValue(), languageId)
                 .map(mapper::toDomain);
     }
 
@@ -33,8 +33,8 @@ public class NotificationTypeTranslationRepositoryImpl implements NotificationTy
     }
 
     @Override
-    public List<NotificationTypeTranslation> findByLanguage(Long languageId) {
-        return jpaRepository.findByLanguageId(languageId.intValue())
+    public List<NotificationTypeTranslation> findByLanguage(Integer languageId) {
+        return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -89,8 +89,8 @@ public class NotificationTypeTranslationRepositoryImpl implements NotificationTy
     }
 
     @Override
-    public boolean existsByNotificationTypeAndLanguage(Long notificationTypeId, Long languageId) {
-        return jpaRepository.findByNotificationTypeIdAndLanguageId(notificationTypeId.intValue(), languageId.intValue())
+    public boolean existsByNotificationTypeAndLanguage(Long notificationTypeId, Integer languageId) {
+        return jpaRepository.findByNotificationTypeIdAndLanguageId(notificationTypeId.intValue(), languageId)
                 .isPresent();
     }
 }

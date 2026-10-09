@@ -62,7 +62,7 @@ public class TranslationProcessor {
         
         // Buscar jobs PENDING para esta entidad
         List<TranslationJob> pendingJobs = translationJobRepository
-                .findByEntityAndStatus(entityType, entityId, TranslationJobStatus.PENDING);
+                .findByEntityAndStatus(entityType, entityId.intValue(), TranslationJobStatus.PENDING);
                 
         TranslatableContentHandler handler = handlerRegistry.get(entityType);
         if (handler == null) {
@@ -99,7 +99,7 @@ public class TranslationProcessor {
 
             // 3. Verificar si ya existe traducción REVIEWED
             Optional<TranslationStatus> existingStatus = handler.findTranslationStatus(
-                    job.getEntityId(), targetLanguage.get().getCode());
+                    job.getEntityId().longValue(), targetLanguage.get().getCode());
                     
             if (existingStatus.isPresent() && existingStatus.get() == TranslationStatus.PUBLISHED) {
                 log.info("Skipping translation save - content is PUBLISHED: {}/{}/{}", 
@@ -110,7 +110,7 @@ public class TranslationProcessor {
             }
 
             // 4. Cargar textos fuente
-            Map<String, String> sourceTexts = handler.loadSourceTexts(job.getEntityId());
+            Map<String, String> sourceTexts = handler.loadSourceTexts(job.getEntityId().longValue());
             if (sourceTexts.isEmpty()) {
                 job.markCompleted(); // No hay nada que traducir
                 translationJobRepository.save(job);
@@ -142,7 +142,7 @@ public class TranslationProcessor {
             }
 
             // 6. Guardar traducción
-            handler.saveTranslation(job.getEntityId(), targetLanguage.get().getCode(), 
+            handler.saveTranslation(job.getEntityId().longValue(), targetLanguage.get().getCode(), 
                     translatedTexts, TranslationSource.MACHINE, TranslationStatus.DRAFT);
             
             // 7. Marcar job como completado

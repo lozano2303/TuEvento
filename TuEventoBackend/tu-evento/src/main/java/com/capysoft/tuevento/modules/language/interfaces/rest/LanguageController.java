@@ -45,7 +45,7 @@ public class LanguageController {
      */
     @GetMapping("/api/v1/languages/{id}")
     @Operation(summary = "Get language by ID", description = "Returns a language by its ID")
-    public ResponseEntity<ApiResponse<LanguageResponse>> getLanguageById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<LanguageResponse>> getLanguageById(@PathVariable Integer id) {
         LanguageResponse language = getLanguagesUseCase.getLanguageById(id)
                 .orElseThrow(() -> new NotFoundException("LANGUAGE_NOT_FOUND", "Language not found with id: " + id));
         
@@ -78,7 +78,7 @@ public class LanguageController {
     @PutMapping("/api/v1/admin/languages/{id}")
     @Operation(summary = "Update language", description = "Updates a language - Admin only")
     public ResponseEntity<ApiResponse<LanguageResponse>> updateLanguage(
-            @PathVariable Long id,
+            @PathVariable Integer id,
             @Valid @RequestBody UpdateLanguageRequest request) {
         LanguageResponse language = updateLanguageUseCase.updateLanguage(id, request);
         return ResponseEntity.ok(ApiResponse.ok("Language updated successfully", language));
@@ -89,7 +89,7 @@ public class LanguageController {
      */
     @PatchMapping("/api/v1/admin/languages/{id}/activate")
     @Operation(summary = "Activate language", description = "Activates a language - Admin only")
-    public ResponseEntity<ApiResponse<LanguageResponse>> activateLanguage(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<LanguageResponse>> activateLanguage(@PathVariable Integer id) {
         LanguageResponse language = updateLanguageUseCase.activateLanguage(id);
         return ResponseEntity.ok(ApiResponse.ok("Language activated successfully", language));
     }
@@ -99,7 +99,7 @@ public class LanguageController {
      */
     @PatchMapping("/api/v1/admin/languages/{id}/deactivate")
     @Operation(summary = "Deactivate language", description = "Deactivates a language - Admin only")
-    public ResponseEntity<ApiResponse<LanguageResponse>> deactivateLanguage(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<LanguageResponse>> deactivateLanguage(@PathVariable Integer id) {
         LanguageResponse language = updateLanguageUseCase.deactivateLanguage(id);
         return ResponseEntity.ok(ApiResponse.ok("Language deactivated successfully", language));
     }
@@ -109,7 +109,7 @@ public class LanguageController {
      */
     @PostMapping("/api/v1/admin/languages/{id}/set-default")
     @Operation(summary = "Set default language", description = "Sets a language as the default language - Admin only")
-    public ResponseEntity<ApiResponse<LanguageResponse>> setDefaultLanguage(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<LanguageResponse>> setDefaultLanguage(@PathVariable Integer id) {
         LanguageResponse language = updateLanguageUseCase.setDefaultLanguage(id);
         return ResponseEntity.ok(ApiResponse.ok("Default language set successfully", language));
     }

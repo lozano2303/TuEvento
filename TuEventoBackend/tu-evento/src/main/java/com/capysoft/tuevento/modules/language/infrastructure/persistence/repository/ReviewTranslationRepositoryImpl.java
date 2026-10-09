@@ -19,8 +19,8 @@ public class ReviewTranslationRepositoryImpl implements ReviewTranslationReposit
     private final ReviewTranslationMapper mapper;
 
     @Override
-    public Optional<ReviewTranslation> findByReviewAndLanguage(Long reviewId, Long languageId) {
-        return jpaRepository.findByReviewIdAndLanguageId(reviewId.intValue(), languageId.intValue())
+    public Optional<ReviewTranslation> findByReviewAndLanguage(Long reviewId, Integer languageId) {
+        return jpaRepository.findByReviewIdAndLanguageId(reviewId.intValue(), languageId)
                 .map(mapper::toDomain);
     }
 
@@ -33,8 +33,8 @@ public class ReviewTranslationRepositoryImpl implements ReviewTranslationReposit
     }
 
     @Override
-    public List<ReviewTranslation> findByLanguage(Long languageId) {
-        return jpaRepository.findByLanguageId(languageId.intValue())
+    public List<ReviewTranslation> findByLanguage(Integer languageId) {
+        return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -88,7 +88,7 @@ public class ReviewTranslationRepositoryImpl implements ReviewTranslationReposit
     }
 
     @Override
-    public boolean existsByReviewAndLanguage(Long reviewId, Long languageId) {
-        return jpaRepository.findByReviewIdAndLanguageId(reviewId.intValue(), languageId.intValue()).isPresent();
+    public boolean existsByReviewAndLanguage(Long reviewId, Integer languageId) {
+        return jpaRepository.findByReviewIdAndLanguageId(reviewId.intValue(), languageId).isPresent();
     }
 }

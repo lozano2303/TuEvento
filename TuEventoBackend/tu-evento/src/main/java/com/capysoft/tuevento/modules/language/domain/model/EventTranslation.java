@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 public class EventTranslation {
 
     private Integer translationId;
-    private Long eventId;
+    private Integer eventId;
     private Integer languageId;
     private String translatedName;
     private String translatedDescription;

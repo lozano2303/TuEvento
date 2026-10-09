@@ -73,11 +73,11 @@ public class EventTranslatableContentHandler implements TranslatableContentHandl
             return;
         }
         
-        Long languageId = language.get().getLanguageId();
+        Integer languageId = language.get().getLanguageId();
         
         // 2. Buscar traducción existente o crear nueva
         Optional<EventTranslation> existingTranslation = 
-                eventTranslationRepository.findByEventAndLanguage(entityId, languageId);
+                eventTranslationRepository.findByEventAndLanguage(entityId.intValue(), languageId);
         
         EventTranslation translation;
         if (existingTranslation.isPresent()) {
@@ -88,8 +88,8 @@ public class EventTranslatableContentHandler implements TranslatableContentHandl
         } else {
             // Crear nueva traducción
             translation = EventTranslation.builder()
-                    .eventId(entityId)
-                    .languageId(languageId.intValue())
+                    .eventId(entityId.intValue())
+                    .languageId(languageId)
                     .source(source)
                     .status(status)
                     .build();
@@ -137,7 +137,7 @@ public class EventTranslatableContentHandler implements TranslatableContentHandl
         }
         
         return eventTranslationRepository
-                .findByEventAndLanguage(entityId, language.get().getLanguageId())
+                .findByEventAndLanguage(entityId.intValue(), language.get().getLanguageId())
                 .map(EventTranslation::getStatus);
     }
 }

@@ -14,7 +14,7 @@ public interface ReviewTranslationRepository {
     /**
      * Busca una traducción específica por review y idioma.
      */
-    Optional<ReviewTranslation> findByReviewAndLanguage(Long reviewId, Long languageId);
+    Optional<ReviewTranslation> findByReviewAndLanguage(Long reviewId, Integer languageId);
 
     /**
      * Busca todas las traducciones de un review.
@@ -24,7 +24,7 @@ public interface ReviewTranslationRepository {
     /**
      * Busca todas las traducciones en un idioma específico.
      */
-    List<ReviewTranslation> findByLanguage(Long languageId);
+    List<ReviewTranslation> findByLanguage(Integer languageId);
 
     /**
      * Busca traducciones por estado.
@@ -59,5 +59,5 @@ public interface ReviewTranslationRepository {
     /**
      * Verifica si existe una traducción para review y idioma específicos.
      */
-    boolean existsByReviewAndLanguage(Long reviewId, Long languageId);
+    boolean existsByReviewAndLanguage(Long reviewId, Integer languageId);
 }

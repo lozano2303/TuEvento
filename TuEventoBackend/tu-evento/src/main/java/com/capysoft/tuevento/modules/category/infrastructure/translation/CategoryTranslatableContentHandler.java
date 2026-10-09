@@ -75,7 +75,7 @@ public class CategoryTranslatableContentHandler implements TranslatableContentHa
             return;
         }
         
-        Long languageId = language.get().getLanguageId();
+        Integer languageId = language.get().getLanguageId();
         Integer categoryIdInt = Math.toIntExact(entityId);
         
         // 2. Buscar traducción existente o crear nueva

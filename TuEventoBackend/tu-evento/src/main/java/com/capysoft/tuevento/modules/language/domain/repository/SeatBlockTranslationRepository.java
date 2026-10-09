@@ -14,7 +14,7 @@ public interface SeatBlockTranslationRepository {
     /**
      * Busca una traducción específica por seat block y idioma.
      */
-    Optional<SeatBlockTranslation> findBySeatBlockAndLanguage(Long seatBlockId, Long languageId);
+    Optional<SeatBlockTranslation> findBySeatBlockAndLanguage(Long seatBlockId, Integer languageId);
 
     /**
      * Busca todas las traducciones de un seat block.
@@ -24,7 +24,7 @@ public interface SeatBlockTranslationRepository {
     /**
      * Busca todas las traducciones en un idioma específico.
      */
-    List<SeatBlockTranslation> findByLanguage(Long languageId);
+    List<SeatBlockTranslation> findByLanguage(Integer languageId);
 
     /**
      * Busca traducciones por estado.
@@ -59,5 +59,5 @@ public interface SeatBlockTranslationRepository {
     /**
      * Verifica si existe una traducción para seat block y idioma específicos.
      */
-    boolean existsBySeatBlockAndLanguage(Long seatBlockId, Long languageId);
+    boolean existsBySeatBlockAndLanguage(Long seatBlockId, Integer languageId);
 }

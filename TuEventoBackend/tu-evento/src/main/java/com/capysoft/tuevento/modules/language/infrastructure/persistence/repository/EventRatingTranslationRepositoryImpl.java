@@ -19,8 +19,8 @@ public class EventRatingTranslationRepositoryImpl implements EventRatingTranslat
     private final EventRatingTranslationMapper mapper;
 
     @Override
-    public Optional<EventRatingTranslation> findByRatingAndLanguage(Long ratingId, Long languageId) {
-        return jpaRepository.findByRatingIdAndLanguageId(ratingId, languageId.intValue())
+    public Optional<EventRatingTranslation> findByRatingAndLanguage(Long ratingId, Integer languageId) {
+        return jpaRepository.findByRatingIdAndLanguageId(ratingId, languageId)
                 .map(mapper::toDomain);
     }
 
@@ -33,7 +33,7 @@ public class EventRatingTranslationRepositoryImpl implements EventRatingTranslat
     }
 
     @Override
-    public List<EventRatingTranslation> findByLanguage(Long languageId) {
+    public List<EventRatingTranslation> findByLanguage(Integer languageId) {
         return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
@@ -88,7 +88,7 @@ public class EventRatingTranslationRepositoryImpl implements EventRatingTranslat
     }
 
     @Override
-    public boolean existsByRatingAndLanguage(Long ratingId, Long languageId) {
-        return jpaRepository.findByRatingIdAndLanguageId(ratingId, languageId.intValue()).isPresent();
+    public boolean existsByRatingAndLanguage(Long ratingId, Integer languageId) {
+        return jpaRepository.findByRatingIdAndLanguageId(ratingId, languageId).isPresent();
     }
 }

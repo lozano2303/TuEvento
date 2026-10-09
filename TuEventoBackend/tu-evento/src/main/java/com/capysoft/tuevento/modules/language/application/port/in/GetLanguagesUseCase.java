@@ -14,5 +14,5 @@ public interface GetLanguagesUseCase {
     
     List<LanguageResponse> getAllLanguages();
     
-    Optional<LanguageResponse> getLanguageById(Long languageId);
+    Optional<LanguageResponse> getLanguageById(Integer languageId);
 }

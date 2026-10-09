@@ -14,7 +14,7 @@ public interface CategoryTranslationRepository {
     /**
      * Busca una traducción específica por categoría y idioma.
      */
-    Optional<CategoryTranslation> findByCategoryAndLanguage(Integer categoryId, Long languageId);
+    Optional<CategoryTranslation> findByCategoryAndLanguage(Integer categoryId, Integer languageId);
 
     /**
      * Busca todas las traducciones de una categoría.
@@ -24,7 +24,7 @@ public interface CategoryTranslationRepository {
     /**
      * Busca todas las traducciones en un idioma específico.
      */
-    List<CategoryTranslation> findByLanguage(Long languageId);
+    List<CategoryTranslation> findByLanguage(Integer languageId);
 
     /**
      * Busca traducciones por estado.
@@ -59,5 +59,5 @@ public interface CategoryTranslationRepository {
     /**
      * Verifica si existe una traducción para categoría y idioma específicos.
      */
-    boolean existsByCategoryAndLanguage(Integer categoryId, Long languageId);
+    boolean existsByCategoryAndLanguage(Integer categoryId, Integer languageId);
 }

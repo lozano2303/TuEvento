@@ -14,7 +14,7 @@ public interface ChannelTranslationRepository {
     /**
      * Busca una traducción específica por channel y idioma.
      */
-    Optional<ChannelTranslation> findByChannelAndLanguage(Long channelId, Long languageId);
+    Optional<ChannelTranslation> findByChannelAndLanguage(Long channelId, Integer languageId);
 
     /**
      * Busca todas las traducciones de un channel.
@@ -24,7 +24,7 @@ public interface ChannelTranslationRepository {
     /**
      * Busca todas las traducciones en un idioma específico.
      */
-    List<ChannelTranslation> findByLanguage(Long languageId);
+    List<ChannelTranslation> findByLanguage(Integer languageId);
 
     /**
      * Busca traducciones por estado.
@@ -59,5 +59,5 @@ public interface ChannelTranslationRepository {
     /**
      * Verifica si existe una traducción para channel y idioma específicos.
      */
-    boolean existsByChannelAndLanguage(Long channelId, Long languageId);
+    boolean existsByChannelAndLanguage(Long channelId, Integer languageId);
 }

@@ -18,17 +18,17 @@ public interface TranslationJobJpaRepository extends JpaRepository<TranslationJo
     List<TranslationJobEntity> findByStatus(@Param("status") String status);
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.sourceLanguage.languageId = :sourceLanguageId")
-    List<TranslationJobEntity> findBySourceLanguageId(@Param("sourceLanguageId") Long sourceLanguageId);
+    List<TranslationJobEntity> findBySourceLanguageId(@Param("sourceLanguageId") Integer sourceLanguageId);
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.targetLanguage.languageId = :targetLanguageId")
-    List<TranslationJobEntity> findByTargetLanguageId(@Param("targetLanguageId") Long targetLanguageId);
+    List<TranslationJobEntity> findByTargetLanguageId(@Param("targetLanguageId") Integer targetLanguageId);
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.entityType = :entityType")
     List<TranslationJobEntity> findByEntityType(@Param("entityType") String entityType);
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.entityType = :entityType AND tj.entityId = :entityId")
     List<TranslationJobEntity> findByEntityTypeAndEntityId(@Param("entityType") String entityType, 
-                                                           @Param("entityId") Long entityId);
+                                                           @Param("entityId") Integer entityId);
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.createdAt BETWEEN :startDate AND :endDate")
     List<TranslationJobEntity> findByCreatedAtBetween(@Param("startDate") LocalDateTime startDate, 
@@ -36,14 +36,14 @@ public interface TranslationJobJpaRepository extends JpaRepository<TranslationJo
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.status = :status AND tj.targetLanguage.languageId = :targetLanguageId ORDER BY tj.createdAt ASC")
     List<TranslationJobEntity> findPendingJobsByTargetLanguage(@Param("status") String status, 
-                                                               @Param("targetLanguageId") Long targetLanguageId);
+                                                               @Param("targetLanguageId") Integer targetLanguageId);
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.entityType = :entityType AND tj.entityId = :entityId AND tj.status = :status")
     List<TranslationJobEntity> findByEntityAndStatus(@Param("entityType") String entityType, 
-                                                     @Param("entityId") Long entityId, 
+                                                     @Param("entityId") Integer entityId, 
                                                      @Param("status") String status);
 
-    @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.createdAt < :cutoffTime AND tj.retryCount < :maxRetryCount AND tj.status IN ('FAILED', 'TIMEOUT') ORDER BY tj.createdAt ASC")
+    @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.createdAt < :cutoffTime AND tj.attempts < :maxRetryCount AND tj.status IN ('FAILED', 'TIMEOUT') ORDER BY tj.createdAt ASC")
     List<TranslationJobEntity> findJobsForRetry(@Param("cutoffTime") LocalDateTime cutoffTime, 
                                                @Param("maxRetryCount") int maxRetryCount);
 
@@ -52,13 +52,13 @@ public interface TranslationJobJpaRepository extends JpaRepository<TranslationJo
 
     @Modifying
     @Query("UPDATE TranslationJobEntity tj SET tj.status = :newStatus, tj.updatedAt = CURRENT_TIMESTAMP WHERE tj.jobId = :jobId AND tj.status IN (:currentStatus1, :currentStatus2)")
-    int claimJob(@Param("jobId") Long jobId, 
+    int claimJob(@Param("jobId") Integer jobId, 
                 @Param("newStatus") String newStatus,
                 @Param("currentStatus1") String currentStatus1, 
                 @Param("currentStatus2") String currentStatus2);
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.entityType = :entityType AND tj.entityId = :entityId AND tj.targetLanguage.languageId = :targetLanguageId")
     List<TranslationJobEntity> findByEntityAndTargetLanguage(@Param("entityType") String entityType, 
-                                                            @Param("entityId") Long entityId, 
-                                                            @Param("targetLanguageId") Long targetLanguageId);
+                                                            @Param("entityId") Integer entityId, 
+                                                            @Param("targetLanguageId") Integer targetLanguageId);
 }

@@ -25,8 +25,8 @@ public class ProfileTranslationRepositoryImpl implements ProfileTranslationRepos
     }
 
     @Override
-    public Optional<ProfileTranslation> findByProfileAndLanguage(Long profileId, Long languageId) {
-        return jpaRepository.findByProfileIdAndLanguageId(profileId, languageId.intValue())
+    public Optional<ProfileTranslation> findByProfileAndLanguage(Long profileId, Integer languageId) {
+        return jpaRepository.findByProfileIdAndLanguageId(profileId, languageId)
                 .map(mapper::toDomain);
     }
 
@@ -39,7 +39,7 @@ public class ProfileTranslationRepositoryImpl implements ProfileTranslationRepos
     }
 
     @Override
-    public List<ProfileTranslation> findByLanguage(Long languageId) {
+    public List<ProfileTranslation> findByLanguage(Integer languageId) {
         return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
@@ -94,7 +94,7 @@ public class ProfileTranslationRepositoryImpl implements ProfileTranslationRepos
     }
 
     @Override
-    public boolean existsByProfileAndLanguage(Long profileId, Long languageId) {
-        return jpaRepository.findByProfileIdAndLanguageId(profileId, languageId.intValue()).isPresent();
+    public boolean existsByProfileAndLanguage(Long profileId, Integer languageId) {
+        return jpaRepository.findByProfileIdAndLanguageId(profileId, languageId).isPresent();
     }
 }

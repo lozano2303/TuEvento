@@ -27,7 +27,7 @@ public class EventTranslationEntity  {
     private Integer translationId;
 
     @Column(name = "event_id", nullable = false)
-    private Long eventId;
+    private Integer eventId;
 
     @Column(name = "language_id", nullable = false)
     private Integer languageId;

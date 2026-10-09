@@ -9,6 +9,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class DefaultLanguageChangedEvent {
-    private final Long previousDefaultId;
-    private final Long newDefaultId;
+    private final Integer previousDefaultId;
+    private final Integer newDefaultId;
 }

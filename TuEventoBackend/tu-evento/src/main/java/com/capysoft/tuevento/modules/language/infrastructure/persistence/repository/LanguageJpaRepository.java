@@ -12,7 +12,7 @@ import java.util.Optional;
  * Repositorio JPA para LanguageEntity.
  */
 @Repository
-public interface LanguageJpaRepository extends JpaRepository<LanguageEntity, Long> {
+public interface LanguageJpaRepository extends JpaRepository<LanguageEntity, Integer> {
 
     /**
      * Busca un idioma por su código.

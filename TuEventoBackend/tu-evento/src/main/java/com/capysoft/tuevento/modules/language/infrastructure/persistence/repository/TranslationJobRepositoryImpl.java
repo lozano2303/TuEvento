@@ -27,13 +27,13 @@ public class TranslationJobRepositoryImpl implements TranslationJobRepository {
     private final TranslationJobMapper mapper;
 
     @Override
-    public Optional<TranslationJob> findById(Long jobId) {
-        return jpaRepository.findById(jobId)
+    public Optional<TranslationJob> findById(Integer jobId) {
+        return jpaRepository.findById(jobId.longValue())
                 .map(mapper::toDomain);
     }
 
     @Override
-    public List<TranslationJob> findByEntityAndStatus(String entityType, Long entityId, TranslationJobStatus status) {
+    public List<TranslationJob> findByEntityAndStatus(String entityType, Integer entityId, TranslationJobStatus status) {
         return jpaRepository.findByEntityAndStatus(entityType, entityId, status.name().toLowerCase())
                 .stream()
                 .map(mapper::toDomain)
@@ -57,7 +57,7 @@ public class TranslationJobRepositoryImpl implements TranslationJobRepository {
     }
 
     @Override
-    public boolean claimJob(Long jobId) {
+    public boolean claimJob(Integer jobId) {
         return jpaRepository.claimJob(jobId, 
                                      TranslationJobStatus.PROCESSING.name().toLowerCase(),
                                      TranslationJobStatus.PENDING.name().toLowerCase(), 
@@ -65,7 +65,7 @@ public class TranslationJobRepositoryImpl implements TranslationJobRepository {
     }
 
     @Override
-    public Optional<TranslationJob> findByEntityAndTargetLanguage(String entityType, Long entityId, Long targetLanguageId) {
+    public Optional<TranslationJob> findByEntityAndTargetLanguage(String entityType, Integer entityId, Integer targetLanguageId) {
         return jpaRepository.findByEntityAndTargetLanguage(entityType, entityId, targetLanguageId)
                 .stream()
                 .findFirst()

@@ -19,8 +19,8 @@ public class ModuleTranslationRepositoryImpl implements ModuleTranslationReposit
     private final ModuleTranslationMapper mapper;
 
     @Override
-    public Optional<ModuleTranslation> findByModuleAndLanguage(String module, Long languageId) {
-        return jpaRepository.findByModuleAndLanguageId(module, languageId.intValue())
+    public Optional<ModuleTranslation> findByModuleAndLanguage(String module, Integer languageId) {
+        return jpaRepository.findByModuleAndLanguageId(module, languageId)
                 .map(mapper::toDomain);
     }
 
@@ -33,8 +33,8 @@ public class ModuleTranslationRepositoryImpl implements ModuleTranslationReposit
     }
 
     @Override
-    public List<ModuleTranslation> findByLanguage(Long languageId) {
-        return jpaRepository.findByLanguageId(languageId.intValue())
+    public List<ModuleTranslation> findByLanguage(Integer languageId) {
+        return jpaRepository.findByLanguageId(languageId)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -89,8 +89,8 @@ public class ModuleTranslationRepositoryImpl implements ModuleTranslationReposit
     }
 
     @Override
-    public boolean existsByModuleAndLanguage(String module, Long languageId) {
-        return jpaRepository.findByModuleAndLanguageId(module, languageId.intValue())
+    public boolean existsByModuleAndLanguage(String module, Integer languageId) {
+        return jpaRepository.findByModuleAndLanguageId(module, languageId)
                 .isPresent();
     }
 }

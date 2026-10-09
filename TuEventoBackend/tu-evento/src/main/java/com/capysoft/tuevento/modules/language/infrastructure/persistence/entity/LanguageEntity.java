@@ -19,7 +19,7 @@ public class LanguageEntity extends JpaAuditingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "language_id")
-    private Long languageId;
+    private Integer languageId;
 
     @Column(name = "code", nullable = false, unique = true, length = 10)
     private String code;
