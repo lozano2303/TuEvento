@@ -6,16 +6,16 @@ import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import java.util.Objects;
 
 public class ProfileTranslation {
-    private Long translationId;
-    private Long profileId;
-    private Long languageId;
+    private Integer translationId;
+    private Integer profileId;
+    private Integer languageId;
     private String translatedBio;
     private TranslationSource source;
     private TranslationStatus status;
 
     public ProfileTranslation() {}
 
-    public ProfileTranslation(Long profileId, Long languageId, String translatedBio, 
+    public ProfileTranslation(Integer profileId, Integer languageId, String translatedBio, 
                              TranslationSource source, TranslationStatus status) {
         this.profileId = profileId;
         this.languageId = languageId;
@@ -52,27 +52,27 @@ public class ProfileTranslation {
     }
 
     // Getters and Setters
-    public Long getTranslationId() {
+    public Integer getTranslationId() {
         return translationId;
     }
 
-    public void setTranslationId(Long translationId) {
+    public void setTranslationId(Integer translationId) {
         this.translationId = translationId;
     }
 
-    public Long getProfileId() {
+    public Integer getProfileId() {
         return profileId;
     }
 
-    public void setProfileId(Long profileId) {
+    public void setProfileId(Integer profileId) {
         this.profileId = profileId;
     }
 
-    public Long getLanguageId() {
+    public Integer getLanguageId() {
         return languageId;
     }
 
-    public void setLanguageId(Long languageId) {
+    public void setLanguageId(Integer languageId) {
         this.languageId = languageId;
     }
 

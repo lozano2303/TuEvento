@@ -6,9 +6,9 @@ import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import java.util.Objects;
 
 public class ThemeTranslation {
-    private Long translationId;
+    private Integer translationId;
     private Integer themeId;  // Changed from Long to Integer to match database
-    private Long languageId;
+    private Integer languageId;
     private String translatedName;
     private String translatedDescription;
     private TranslationSource source;
@@ -16,7 +16,7 @@ public class ThemeTranslation {
 
     public ThemeTranslation() {}
 
-    public ThemeTranslation(Integer themeId, Long languageId, String translatedName, 
+    public ThemeTranslation(Integer themeId, Integer languageId, String translatedName, 
                            String translatedDescription, TranslationSource source, TranslationStatus status) {
         this.themeId = themeId;
         this.languageId = languageId;
@@ -60,11 +60,11 @@ public class ThemeTranslation {
     }
 
     // Getters and Setters
-    public Long getTranslationId() {
+    public Integer getTranslationId() {
         return translationId;
     }
 
-    public void setTranslationId(Long translationId) {
+    public void setTranslationId(Integer translationId) {
         this.translationId = translationId;
     }
 
@@ -76,11 +76,11 @@ public class ThemeTranslation {
         this.themeId = themeId;
     }
 
-    public Long getLanguageId() {
+    public Integer getLanguageId() {
         return languageId;
     }
 
-    public void setLanguageId(Long languageId) {
+    public void setLanguageId(Integer languageId) {
         this.languageId = languageId;
     }
 

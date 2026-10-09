@@ -16,7 +16,7 @@ public class ReviewTranslationMapper {
         ReviewTranslation domain = new ReviewTranslation();
         domain.setTranslationId(entity.getTranslationId());
         domain.setReviewId(entity.getReviewId());
-        domain.setLanguageId(entity.getLanguage().getLanguageId());
+        domain.setLanguageId(entity.getLanguageId());
         domain.setTranslatedComment(entity.getTranslatedComment());
         domain.setSource(entity.getSource());
         domain.setStatus(entity.getStatus());
@@ -32,11 +32,7 @@ public class ReviewTranslationMapper {
         ReviewTranslationEntity entity = new ReviewTranslationEntity();
         entity.setTranslationId(domain.getTranslationId());
         entity.setReviewId(domain.getReviewId());
-        
-        // Create a reference to LanguageEntity - will be managed by repository
-        LanguageEntity languageEntity = new LanguageEntity();
-        languageEntity.setLanguageId(domain.getLanguageId());
-        entity.setLanguage(languageEntity);
+        entity.setLanguageId(domain.getLanguageId());
         
         entity.setTranslatedComment(domain.getTranslatedComment());
         entity.setSource(domain.getSource());

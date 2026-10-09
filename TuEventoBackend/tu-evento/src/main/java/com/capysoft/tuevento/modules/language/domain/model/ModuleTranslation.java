@@ -6,16 +6,16 @@ import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import java.util.Objects;
 
 public class ModuleTranslation {
-    private Long translationId;
+    private Integer translationId;
     private String module;
-    private Long languageId;
+    private Integer languageId;
     private String translatedName;
     private TranslationSource source;
     private TranslationStatus status;
 
     public ModuleTranslation() {}
 
-    public ModuleTranslation(String module, Long languageId, String translatedName, 
+    public ModuleTranslation(String module, Integer languageId, String translatedName, 
                            TranslationSource source, TranslationStatus status) {
         this.module = module;
         this.languageId = languageId;
@@ -66,11 +66,11 @@ public class ModuleTranslation {
     }
 
     // Getters and Setters
-    public Long getTranslationId() {
+    public Integer getTranslationId() {
         return translationId;
     }
 
-    public void setTranslationId(Long translationId) {
+    public void setTranslationId(Integer translationId) {
         this.translationId = translationId;
     }
 
@@ -82,11 +82,11 @@ public class ModuleTranslation {
         this.module = module;
     }
 
-    public Long getLanguageId() {
+    public Integer getLanguageId() {
         return languageId;
     }
 
-    public void setLanguageId(Long languageId) {
+    public void setLanguageId(Integer languageId) {
         this.languageId = languageId;
     }
 

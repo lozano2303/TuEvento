@@ -89,10 +89,9 @@ public class EventTranslatableContentHandler implements TranslatableContentHandl
             // Crear nueva traducción
             translation = EventTranslation.builder()
                     .eventId(entityId)
-                    .languageId(languageId)
+                    .languageId(languageId.intValue())
                     .source(source)
                     .status(status)
-                    .createdAt(LocalDateTime.now())
                     .build();
             log.debug("Creating new translation for event {}/{}", entityId, languageCode);
         }
@@ -119,7 +118,6 @@ public class EventTranslatableContentHandler implements TranslatableContentHandl
         if (updated) {
             translation.setSource(source);
             translation.setStatus(status);
-            translation.setUpdatedAt(LocalDateTime.now());
             
             EventTranslation savedTranslation = eventTranslationRepository.save(translation);
             log.info("Saved translation {} for event {} in language {}", 

@@ -16,9 +16,9 @@ public class ChannelTranslationMapper {
         }
 
         return ChannelTranslationEntity.builder()
-                .translationId(domain.getTranslationId() != null ? domain.getTranslationId().intValue() : null)
-                .channelId(domain.getChannelId() != null ? domain.getChannelId().intValue() : null)
-                .languageId(domain.getLanguageId() != null ? domain.getLanguageId().intValue() : null)
+                .translationId(domain.getTranslationId())
+                .channelId(domain.getChannelId())
+                .languageId(domain.getLanguageId())
                 .translatedName(domain.getTranslatedName())
                 .translatedDescription(domain.getTranslatedDescription())
                 .source(toEntitySource(domain.getSource()))
@@ -32,9 +32,9 @@ public class ChannelTranslationMapper {
         }
 
         ChannelTranslation domain = new ChannelTranslation();
-        domain.setTranslationId(entity.getTranslationId() != null ? entity.getTranslationId().longValue() : null);
-        domain.setChannelId(entity.getChannelId() != null ? entity.getChannelId().longValue() : null);
-        domain.setLanguageId(entity.getLanguageId() != null ? entity.getLanguageId().longValue() : null);
+        domain.setTranslationId(entity.getTranslationId());
+        domain.setChannelId(entity.getChannelId());
+        domain.setLanguageId(entity.getLanguageId());
         domain.setTranslatedName(entity.getTranslatedName());
         domain.setTranslatedDescription(entity.getTranslatedDescription());
         domain.setSource(toDomainSource(entity.getSource()));

@@ -7,8 +7,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 /**
  * Representa una traducción de categoría en el dominio.
  * Almacena las versiones traducidas de los campos de una categoría.
@@ -19,24 +17,19 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class CategoryTranslation {
 
-    private Long translationId;
+    private Integer translationId;
     private Integer categoryId;
-    private Long languageId;
+    private Integer languageId;
     private String translatedName;
     private String translatedDescription;
     private TranslationSource source;
     private TranslationStatus status;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private String createdBy;
-    private String updatedBy;
 
     /**
      * Marca la traducción como publicada.
      */
     public void publish() {
         this.status = TranslationStatus.PUBLISHED;
-        this.updatedAt = LocalDateTime.now();
     }
 
     /**
@@ -44,7 +37,6 @@ public class CategoryTranslation {
      */
     public void markForReview() {
         this.status = TranslationStatus.PENDING_REVIEW;
-        this.updatedAt = LocalDateTime.now();
     }
 
     /**

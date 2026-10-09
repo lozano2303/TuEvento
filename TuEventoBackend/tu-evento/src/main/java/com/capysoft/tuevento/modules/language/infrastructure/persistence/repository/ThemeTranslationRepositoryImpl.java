@@ -26,7 +26,7 @@ public class ThemeTranslationRepositoryImpl implements ThemeTranslationRepositor
 
     @Override
     public Optional<ThemeTranslation> findByThemeAndLanguage(Integer themeId, Long languageId) {
-        return jpaRepository.findByThemeIdAndLanguageId(themeId, languageId)
+        return jpaRepository.findByThemeIdAndLanguageId(themeId, languageId.intValue())
                 .map(mapper::toDomain);
     }
 
@@ -95,6 +95,6 @@ public class ThemeTranslationRepositoryImpl implements ThemeTranslationRepositor
 
     @Override
     public boolean existsByThemeAndLanguage(Integer themeId, Long languageId) {
-        return jpaRepository.findByThemeIdAndLanguageId(themeId, languageId).isPresent();
+        return jpaRepository.findByThemeIdAndLanguageId(themeId, languageId.intValue()).isPresent();
     }
 }

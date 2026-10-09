@@ -92,10 +92,9 @@ public class CategoryTranslatableContentHandler implements TranslatableContentHa
             // Crear nueva traducción
             translation = CategoryTranslation.builder()
                     .categoryId(categoryIdInt)
-                    .languageId(languageId)
+                    .languageId(languageId.intValue())
                     .source(source)
                     .status(status)
-                    .createdAt(LocalDateTime.now())
                     .build();
             log.debug("Creating new translation for category {}/{}", entityId, languageCode);
         }
@@ -122,7 +121,6 @@ public class CategoryTranslatableContentHandler implements TranslatableContentHa
         if (updated) {
             translation.setSource(source);
             translation.setStatus(status);
-            translation.setUpdatedAt(LocalDateTime.now());
             
             CategoryTranslation savedTranslation = categoryTranslationRepository.save(translation);
             log.info("Saved translation {} for category {} in language {}", 

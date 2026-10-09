@@ -6,9 +6,9 @@ import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import java.util.Objects;
 
 public class ChannelTranslation {
-    private Long translationId;
-    private Long channelId;
-    private Long languageId;
+    private Integer translationId;
+    private Integer channelId;
+    private Integer languageId;
     private String translatedName;
     private String translatedDescription;
     private TranslationSource source;
@@ -16,7 +16,7 @@ public class ChannelTranslation {
 
     public ChannelTranslation() {}
 
-    public ChannelTranslation(Long channelId, Long languageId, String translatedName, 
+    public ChannelTranslation(Integer channelId, Integer languageId, String translatedName, 
                             String translatedDescription, TranslationSource source, 
                             TranslationStatus status) {
         this.channelId = channelId;
@@ -66,27 +66,27 @@ public class ChannelTranslation {
     }
 
     // Getters and Setters
-    public Long getTranslationId() {
+    public Integer getTranslationId() {
         return translationId;
     }
 
-    public void setTranslationId(Long translationId) {
+    public void setTranslationId(Integer translationId) {
         this.translationId = translationId;
     }
 
-    public Long getChannelId() {
+    public Integer getChannelId() {
         return channelId;
     }
 
-    public void setChannelId(Long channelId) {
+    public void setChannelId(Integer channelId) {
         this.channelId = channelId;
     }
 
-    public Long getLanguageId() {
+    public Integer getLanguageId() {
         return languageId;
     }
 
-    public void setLanguageId(Long languageId) {
+    public void setLanguageId(Integer languageId) {
         this.languageId = languageId;
     }
 

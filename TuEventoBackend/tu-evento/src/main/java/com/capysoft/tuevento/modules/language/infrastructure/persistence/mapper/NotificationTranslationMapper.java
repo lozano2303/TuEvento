@@ -16,7 +16,7 @@ public class NotificationTranslationMapper {
         NotificationTranslation domain = new NotificationTranslation();
         domain.setTranslationId(entity.getTranslationId());
         domain.setNotificationId(entity.getNotificationId());
-        domain.setLanguageId(entity.getLanguage().getLanguageId());
+        domain.setLanguageId(entity.getLanguageId());
         domain.setTranslatedSubject(entity.getTranslatedSubject());
         domain.setTranslatedBody(entity.getTranslatedBody());
         domain.setSource(entity.getSource());
@@ -33,12 +33,7 @@ public class NotificationTranslationMapper {
         NotificationTranslationEntity entity = new NotificationTranslationEntity();
         entity.setTranslationId(domain.getTranslationId());
         entity.setNotificationId(domain.getNotificationId());
-        
-        // Create a reference to LanguageEntity - will be managed by repository
-        LanguageEntity languageEntity = new LanguageEntity();
-        languageEntity.setLanguageId(domain.getLanguageId());
-        entity.setLanguage(languageEntity);
-        
+        entity.setLanguageId(domain.getLanguageId());
         entity.setTranslatedSubject(domain.getTranslatedSubject());
         entity.setTranslatedBody(domain.getTranslatedBody());
         entity.setSource(domain.getSource());

@@ -22,22 +22,18 @@ public class CategoryTranslationMapper {
         return CategoryTranslation.builder()
                 .translationId(entity.getTranslationId())
                 .categoryId(entity.getCategoryId())
-                .languageId(entity.getLanguage().getLanguageId())
+                .languageId(entity.getLanguageId())
                 .translatedName(entity.getTranslatedName())
                 .translatedDescription(entity.getTranslatedDescription())
                 .source(entity.getSource())
                 .status(entity.getStatus())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
-                .createdBy(entity.getCreatedBy())
-                .updatedBy(entity.getUpdatedBy())
                 .build();
     }
 
     /**
      * Convierte de modelo de dominio a entidad JPA.
      */
-    public CategoryTranslationEntity toEntity(CategoryTranslation domain, LanguageEntity languageEntity) {
+    public CategoryTranslationEntity toEntity(CategoryTranslation domain) {
         if (domain == null) {
             return null;
         }
@@ -45,7 +41,7 @@ public class CategoryTranslationMapper {
         return CategoryTranslationEntity.builder()
                 .translationId(domain.getTranslationId())
                 .categoryId(domain.getCategoryId())
-                .language(languageEntity)
+                .languageId(domain.getLanguageId())
                 .translatedName(domain.getTranslatedName())
                 .translatedDescription(domain.getTranslatedDescription())
                 .source(domain.getSource())

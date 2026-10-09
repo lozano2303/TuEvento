@@ -16,7 +16,7 @@ public class ProfileTranslationMapper {
         ProfileTranslation domain = new ProfileTranslation();
         domain.setTranslationId(entity.getTranslationId());
         domain.setProfileId(entity.getProfileId());
-        domain.setLanguageId(entity.getLanguage().getLanguageId());
+        domain.setLanguageId(entity.getLanguageId());
         domain.setTranslatedBio(entity.getTranslatedBio());
         domain.setSource(entity.getSource());
         domain.setStatus(entity.getStatus());
@@ -32,11 +32,7 @@ public class ProfileTranslationMapper {
         ProfileTranslationEntity entity = new ProfileTranslationEntity();
         entity.setTranslationId(domain.getTranslationId());
         entity.setProfileId(domain.getProfileId());
-        
-        // Create a reference to LanguageEntity - will be managed by repository
-        LanguageEntity languageEntity = new LanguageEntity();
-        languageEntity.setLanguageId(domain.getLanguageId());
-        entity.setLanguage(languageEntity);
+        entity.setLanguageId(domain.getLanguageId());
         
         entity.setTranslatedBio(domain.getTranslatedBio());
         entity.setSource(domain.getSource());

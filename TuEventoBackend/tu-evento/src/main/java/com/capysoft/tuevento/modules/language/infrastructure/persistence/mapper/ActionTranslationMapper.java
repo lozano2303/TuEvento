@@ -16,9 +16,9 @@ public class ActionTranslationMapper {
         }
 
         return ActionTranslationEntity.builder()
-                .translationId(domain.getTranslationId() != null ? domain.getTranslationId().intValue() : null)
+                .translationId(domain.getTranslationId())
                 .action(domain.getAction())
-                .languageId(domain.getLanguageId() != null ? domain.getLanguageId().intValue() : null)
+                .languageId(domain.getLanguageId())
                 .translatedDescription(domain.getTranslatedDescription())
                 .source(toEntitySource(domain.getSource()))
                 .status(toEntityStatus(domain.getStatus()))
@@ -31,9 +31,9 @@ public class ActionTranslationMapper {
         }
 
         ActionTranslation domain = new ActionTranslation();
-        domain.setTranslationId(entity.getTranslationId() != null ? entity.getTranslationId().longValue() : null);
+        domain.setTranslationId(entity.getTranslationId());
         domain.setAction(entity.getAction());
-        domain.setLanguageId(entity.getLanguageId() != null ? entity.getLanguageId().longValue() : null);
+        domain.setLanguageId(entity.getLanguageId());
         domain.setTranslatedDescription(entity.getTranslatedDescription());
         domain.setSource(toDomainSource(entity.getSource()));
         domain.setStatus(toDomainStatus(entity.getStatus()));

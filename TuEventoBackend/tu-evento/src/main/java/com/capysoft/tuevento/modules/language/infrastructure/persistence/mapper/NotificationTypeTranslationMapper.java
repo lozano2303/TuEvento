@@ -16,9 +16,9 @@ public class NotificationTypeTranslationMapper {
         }
 
         return NotificationTypeTranslationEntity.builder()
-                .translationId(domain.getTranslationId() != null ? domain.getTranslationId().intValue() : null)
-                .notificationTypeId(domain.getNotificationTypeId() != null ? domain.getNotificationTypeId().intValue() : null)
-                .languageId(domain.getLanguageId() != null ? domain.getLanguageId().intValue() : null)
+                .translationId(domain.getTranslationId())
+                .notificationTypeId(domain.getNotificationTypeId())
+                .languageId(domain.getLanguageId())
                 .translatedName(domain.getTranslatedName())
                 .translatedDescription(domain.getTranslatedDescription())
                 .source(toEntitySource(domain.getSource()))
@@ -32,9 +32,9 @@ public class NotificationTypeTranslationMapper {
         }
 
         NotificationTypeTranslation domain = new NotificationTypeTranslation();
-        domain.setTranslationId(entity.getTranslationId() != null ? entity.getTranslationId().longValue() : null);
-        domain.setNotificationTypeId(entity.getNotificationTypeId() != null ? entity.getNotificationTypeId().longValue() : null);
-        domain.setLanguageId(entity.getLanguageId() != null ? entity.getLanguageId().longValue() : null);
+        domain.setTranslationId(entity.getTranslationId());
+        domain.setNotificationTypeId(entity.getNotificationTypeId());
+        domain.setLanguageId(entity.getLanguageId());
         domain.setTranslatedName(entity.getTranslatedName());
         domain.setTranslatedDescription(entity.getTranslatedDescription());
         domain.setSource(toDomainSource(entity.getSource()));

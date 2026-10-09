@@ -46,16 +46,17 @@ class TranslationProcessorTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         
-        Map<String, TranslatableContentHandler> handlerRegistry = new HashMap<>();
-        handlerRegistry.put("event", contentHandler);
-        
         translationProcessor = new TranslationProcessor(
                 translationJobRepository,
                 languageRepository,
                 translationPort,
-                maskingService,
-                handlerRegistry
+                maskingService
         );
+        
+        // Inject handler registry via reflection
+        Map<String, TranslatableContentHandler> handlerRegistry = new HashMap<>();
+        handlerRegistry.put("event", contentHandler);
+        ReflectionTestUtils.setField(translationProcessor, "handlerRegistry", handlerRegistry);
         
         // Set maxBackoffMinutes via reflection
         ReflectionTestUtils.setField(translationProcessor, "maxBackoffMinutes", 60);

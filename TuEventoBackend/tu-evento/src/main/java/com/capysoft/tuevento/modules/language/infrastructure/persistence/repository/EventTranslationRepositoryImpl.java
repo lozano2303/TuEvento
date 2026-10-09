@@ -28,7 +28,7 @@ public class EventTranslationRepositoryImpl implements EventTranslationRepositor
 
     @Override
     public Optional<EventTranslation> findByEventAndLanguage(Long eventId, Long languageId) {
-        return jpaRepository.findByEventIdAndLanguageId(eventId, languageId)
+        return jpaRepository.findByEventIdAndLanguageId(eventId, languageId.intValue())
                 .map(mapper::toDomain);
     }
 
@@ -67,9 +67,6 @@ public class EventTranslationRepositoryImpl implements EventTranslationRepositor
     @Override
     @Transactional
     public EventTranslation save(EventTranslation translation) {
-        LanguageEntity languageEntity = languageJpaRepository.findById(translation.getLanguageId())
-                .orElseThrow(() -> new IllegalArgumentException("Language not found: " + translation.getLanguageId()));
-
         EventTranslationEntity entity;
         if (translation.getTranslationId() != null) {
             // Actualizar entidad existente
@@ -78,7 +75,7 @@ public class EventTranslationRepositoryImpl implements EventTranslationRepositor
             mapper.updateEntity(entity, translation);
         } else {
             // Crear nueva entidad
-            entity = mapper.toEntity(translation, languageEntity);
+            entity = mapper.toEntity(translation);
         }
 
         EventTranslationEntity savedEntity = jpaRepository.save(entity);

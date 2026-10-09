@@ -10,17 +10,17 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ThemeTranslationJpaRepository extends JpaRepository<ThemeTranslationEntity, Long> {
+public interface ThemeTranslationJpaRepository extends JpaRepository<ThemeTranslationEntity, Integer> {
 
     @Query("SELECT tt FROM ThemeTranslationEntity tt WHERE tt.themeId = :themeId")
     List<ThemeTranslationEntity> findByThemeId(@Param("themeId") Integer themeId);
 
-    @Query("SELECT tt FROM ThemeTranslationEntity tt WHERE tt.themeId = :themeId AND tt.language.languageId = :languageId")
+    @Query("SELECT tt FROM ThemeTranslationEntity tt WHERE tt.themeId = :themeId AND tt.languageId = :languageId")
     Optional<ThemeTranslationEntity> findByThemeIdAndLanguageId(@Param("themeId") Integer themeId, 
-                                                               @Param("languageId") Long languageId);
+                                                               @Param("languageId") Integer languageId);
 
-    @Query("SELECT tt FROM ThemeTranslationEntity tt WHERE tt.language.languageId = :languageId")
-    List<ThemeTranslationEntity> findByLanguageId(@Param("languageId") Long languageId);
+    @Query("SELECT tt FROM ThemeTranslationEntity tt WHERE tt.languageId = :languageId")
+    List<ThemeTranslationEntity> findByLanguageId(@Param("languageId") Integer languageId);
 
     @Query("SELECT tt FROM ThemeTranslationEntity tt WHERE tt.status = :status")
     List<ThemeTranslationEntity> findByStatus(@Param("status") String status);

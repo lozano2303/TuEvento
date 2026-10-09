@@ -16,7 +16,7 @@ public class ThemeTranslationMapper {
         ThemeTranslation domain = new ThemeTranslation();
         domain.setTranslationId(entity.getTranslationId());
         domain.setThemeId(entity.getThemeId()); // Both are Integer now
-        domain.setLanguageId(entity.getLanguage().getLanguageId());
+        domain.setLanguageId(entity.getLanguageId());
         domain.setTranslatedName(entity.getTranslatedName());
         domain.setTranslatedDescription(entity.getTranslatedDescription());
         domain.setSource(entity.getSource());
@@ -33,11 +33,7 @@ public class ThemeTranslationMapper {
         ThemeTranslationEntity entity = new ThemeTranslationEntity();
         entity.setTranslationId(domain.getTranslationId());
         entity.setThemeId(domain.getThemeId()); // Both are Integer now
-        
-        // Create a reference to LanguageEntity - will be managed by repository
-        LanguageEntity languageEntity = new LanguageEntity();
-        languageEntity.setLanguageId(domain.getLanguageId());
-        entity.setLanguage(languageEntity);
+        entity.setLanguageId(domain.getLanguageId());
         
         entity.setTranslatedName(domain.getTranslatedName());
         entity.setTranslatedDescription(domain.getTranslatedDescription());
