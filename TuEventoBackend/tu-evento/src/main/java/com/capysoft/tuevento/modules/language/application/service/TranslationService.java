@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -55,8 +56,9 @@ public class TranslationService {
 
     /**
      * Solicita la traducción de una entidad.
+     * REQUIRES_NEW: Se ejecuta en una transacción independiente para asegurar el commit.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void requestTranslation(String entityType, Long entityId, String sourceLanguageCode) {
         // 1. Validar que existe un handler para la entidad
         TranslatableContentHandler handler = handlerRegistry.get(entityType);

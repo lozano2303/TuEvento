@@ -23,6 +23,12 @@ public class EventResponse {
     private final Boolean isPublic;
     private final int availableSeats;
     private final Integer categoryId;
+    
+    // Translation fields - populated if language parameter is provided
+    private final String translatedName;
+    private final String translatedDescription;
+    private final String languageCode;
+    
     /** Populated when status is REJECTED; null otherwise. */
     private final String rejectionReason;
     private final LocalDateTime createdAt;

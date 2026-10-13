@@ -10,13 +10,13 @@ import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRe
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,8 +27,8 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Procesador asíncrono de jobs de traducción.
  */
-@Component
 @Slf4j
+@Component
 public class TranslationProcessor {
 
     private final TranslationJobRepository translationJobRepository;
@@ -58,26 +58,34 @@ public class TranslationProcessor {
      */
     @Async("translationExecutor")
     public CompletableFuture<Void> processTranslationJobs(String entityType, Long entityId) {
-        log.debug("Processing translation jobs for {}/{}", entityType, entityId);
-        
-        // Buscar jobs PENDING para esta entidad
-        List<TranslationJob> pendingJobs = translationJobRepository
-                .findByEntityAndStatus(entityType, entityId.intValue(), TranslationJobStatus.PENDING);
-                
-        TranslatableContentHandler handler = handlerRegistry.get(entityType);
-        if (handler == null) {
-            log.error("No handler found for entity type: {}", entityType);
+        try {
+            log.debug("Processing translation jobs for {}/{}", entityType, entityId);
+            
+            // Buscar jobs PENDING para esta entidad
+            List<TranslationJob> pendingJobs = translationJobRepository
+                    .findByEntityAndStatus(entityType, entityId.intValue(), TranslationJobStatus.PENDING);
+            
+            log.info("Found {} pending jobs for {}/{}", pendingJobs.size(), entityType, entityId);
+                    
+            TranslatableContentHandler handler = handlerRegistry.get(entityType);
+            if (handler == null) {
+                log.error("No handler found for entity type: {}", entityType);
+                return CompletableFuture.completedFuture(null);
+            }
+            
+            for (TranslationJob job : pendingJobs) {
+                processJob(job, handler);
+            }
+            
+            log.debug("Completed processing {} jobs for {}/{}", pendingJobs.size(), entityType, entityId);
             return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("CRITICAL ERROR in processTranslationJobs for {}/{}: {}", entityType, entityId, e.getMessage(), e);
+            throw e;
         }
-        
-        for (TranslationJob job : pendingJobs) {
-            processJob(job, handler);
-        }
-        
-        log.debug("Completed processing {} jobs for {}/{}", pendingJobs.size(), entityType, entityId);
-        return CompletableFuture.completedFuture(null);
     }
 
+    @Transactional
     private void processJob(TranslationJob job, TranslatableContentHandler handler) {
         // 1. Reclamar job atómicamente
         boolean claimed = translationJobRepository.claimJob(job.getJobId());

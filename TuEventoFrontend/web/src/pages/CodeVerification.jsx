@@ -17,10 +17,6 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
   const [activationEmail, setActivationEmail] = useState(propUserEmail || "");
 
   useEffect(() => {
-    console.log('CodeVerification mounted');
-    console.log('propUserEmail:', propUserEmail);
-    console.log('propUserID:', propUserID);
-    
     if (propUserEmail) {
       setActivationEmail(propUserEmail);
       setNoUserID(false);
@@ -31,10 +27,6 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
       // Leer email de la URL
       const urlParams = new URLSearchParams(window.location.search);
       const urlEmail = urlParams.get('email');
-      
-      console.log('URL email:', urlEmail);
-      console.log('Stored email:', storedEmail);
-      console.log('Stored userID:', storedUserID);
       
       if (urlEmail) {
         setActivationEmail(urlEmail);
@@ -136,10 +128,6 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
     e.preventDefault();
     setError("");
     setLoading(true);
-    console.log('=== FRONTEND SUBMIT ===');
-    console.log('Email:', activationEmail || userID);
-    console.log('Code:', code);
-    console.log('Code length:', code.length);
     try {
       const result = await verifyActivationCode(activationEmail || userID, code);
       if (result.success) {

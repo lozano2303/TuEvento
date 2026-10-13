@@ -9,6 +9,7 @@ import com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper.
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,7 +35,7 @@ public class TranslationJobRepositoryImpl implements TranslationJobRepository {
 
     @Override
     public List<TranslationJob> findByEntityAndStatus(String entityType, Integer entityId, TranslationJobStatus status) {
-        return jpaRepository.findByEntityAndStatus(entityType, entityId, status.name().toLowerCase())
+        return jpaRepository.findByEntityAndStatus(entityType, entityId, status)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -57,11 +58,12 @@ public class TranslationJobRepositoryImpl implements TranslationJobRepository {
     }
 
     @Override
+    @Transactional
     public boolean claimJob(Integer jobId) {
         return jpaRepository.claimJob(jobId, 
-                                     TranslationJobStatus.PROCESSING.name().toLowerCase(),
-                                     TranslationJobStatus.PENDING.name().toLowerCase(), 
-                                     TranslationJobStatus.FAILED.name().toLowerCase()) > 0;
+                                     TranslationJobStatus.PROCESSING,
+                                     TranslationJobStatus.PENDING, 
+                                     TranslationJobStatus.FAILED) > 0;
     }
 
     @Override

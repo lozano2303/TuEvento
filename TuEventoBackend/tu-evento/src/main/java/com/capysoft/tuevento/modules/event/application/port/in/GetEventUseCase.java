@@ -10,6 +10,7 @@ import java.util.List;
 public interface GetEventUseCase {
 
     EventResponse findById(Long eventId);
+    EventResponse findById(Long eventId, String languageCode);
     List<EventSummaryResponse> findByUser(Long userId);
     List<EventSummaryResponse> findByStatus(EventStatus status);
 
