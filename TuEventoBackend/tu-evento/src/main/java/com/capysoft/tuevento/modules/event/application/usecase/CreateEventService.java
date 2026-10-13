@@ -113,15 +113,6 @@ public class CreateEventService implements CreateEventUseCase {
                 .occurredAt(LocalDateTime.now())
                 .build());
 
-        // Request translation to all available languages (async)
-        try {
-            translationService.requestTranslation("event", event.getEventId(), "es");
-            log.debug("Translation requested for new event {}", event.getEventId());
-        } catch (Exception e) {
-            log.warn("Failed to request translation for event {}: {}", event.getEventId(), e.getMessage());
-            // Non-blocking: continue even if translation fails
-        }
-
         return toResponse(event, request.getCategoryId());
     }
 

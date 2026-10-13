@@ -3,6 +3,7 @@ import Footer from '../layouts/Footer';
 import { useTheme } from '../context/ThemeContext';
 import { getThemes, activateTheme } from '../services/themeService';
 import { getProfileByUserId, getProfilePictureUrl, updateProfile, uploadProfilePicture } from '../services/ProfileService';
+import { getActiveLanguages } from '../services/LanguageService';
 import { performLogout } from '../services/httpClient';
 import {
   AlertCircle, Camera, CheckCircle, Info, Loader2,
@@ -41,7 +42,8 @@ const ProfilePage = () => {
   const { refreshPalette, activeThemeId } = useTheme();
 
   // ── Estado ─────────────────────────────────────────────────────────────────
-  const [selectedLanguage, setSelectedLanguage] = useState('es');
+  const [languages, setLanguages] = useState([]);
+  const [selectedLanguage, setSelectedLanguage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [customizePanelOpen, setCustomizePanelOpen] = useState(false);
   const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
@@ -90,6 +92,13 @@ const ProfilePage = () => {
       .catch(err => console.error('[ProfilePage] Error cargando temas:', err));
   }, []);
 
+  // ── Carga idiomas ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    getActiveLanguages()
+      .then(langs => setLanguages(langs))
+      .catch(err => console.error('[ProfilePage] Error cargando idiomas:', err));
+  }, []);
+
   // Sincronizar carrusel con el tema activo
   useEffect(() => {
     if (!themes.length || !activeThemeId) return;
@@ -115,6 +124,10 @@ const ProfilePage = () => {
         }
         if (profile.bio) {
           setFormData(prev => ({ ...prev, bio: profile.bio }));
+        }
+        // Cargar idioma preferido
+        if (profile.preferredLanguageId) {
+          setSelectedLanguage(profile.preferredLanguageId);
         }
         if (profile.storedFileId) {
           try {
@@ -181,6 +194,7 @@ const ProfilePage = () => {
       await updateProfile(profileId, {
         fullName: formData.nombreCompleto,
         bio: formData.bio,
+        preferredLanguageId: selectedLanguage,
       });
       localStorage.setItem('name', formData.nombreCompleto);
     } catch (err) {
@@ -229,13 +243,6 @@ const ProfilePage = () => {
       setUploadingAvatar(false);
     }
   };
-
-  const languages = [
-    { id: 'es', label: 'Español (ES)' },
-    { id: 'en', label: 'English (EN)' },
-    { id: 'fr', label: 'Français (FR)' },
-    { id: 'pt', label: 'Português (PT)' },
-  ];
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -481,39 +488,43 @@ const ProfilePage = () => {
 
             {/* Idioma */}
             <section className="theme-profile-section rounded-2xl p-6">
-              <h3 className="text-base font-bold text-textPrimary mb-4">Idioma</h3>
-              <div className="space-y-2">
-                {languages.map(lang => (
-                  <button
-                    key={lang.id}
-                    onClick={() => setSelectedLanguage(lang.id)}
-                    className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition-all text-left ${
-                      selectedLanguage === lang.id
-                        ? 'bg-primary/10 border border-primary/40'
-                        : 'bg-surface border border-surfaceAlt hover:border-primary/30'
-                    }`}
-                  >
-                    <span className={`text-sm font-medium ${
-                      selectedLanguage === lang.id ? 'text-textPrimary' : 'text-textSecondary'
-                    }`}>
-                      {lang.label}
-                    </span>
-
-                    {/* Radio button — borde siempre visible, relleno primary cuando activo */}
-                    <span
-                      className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
-                      style={{
-                        border: `2px solid ${selectedLanguage === lang.id ? 'var(--color-primary)' : 'var(--color-surfaceAlt)'}`,
-                        background: selectedLanguage === lang.id ? 'var(--color-primary)' : 'transparent',
-                      }}
+              <h3 className="text-base font-bold text-textPrimary mb-4">Idioma Preferido</h3>
+              {languages.length === 0 ? (
+                <p className="text-textMuted text-sm text-center py-4">Cargando idiomas…</p>
+              ) : (
+                <div className="space-y-2">
+                  {languages.map(lang => (
+                    <button
+                      key={lang.languageId}
+                      onClick={() => setSelectedLanguage(lang.languageId)}
+                      className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition-all text-left ${
+                        selectedLanguage === lang.languageId
+                          ? 'bg-primary/10 border border-primary/40'
+                          : 'bg-surface border border-surfaceAlt hover:border-primary/30'
+                      }`}
                     >
-                      {selectedLanguage === lang.id && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-textPrimary block" />
-                      )}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                      <span className={`text-sm font-medium ${
+                        selectedLanguage === lang.languageId ? 'text-textPrimary' : 'text-textSecondary'
+                      }`}>
+                        {lang.name} ({lang.code.toUpperCase()})
+                      </span>
+
+                      {/* Radio button — borde siempre visible, relleno primary cuando activo */}
+                      <span
+                        className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
+                        style={{
+                          border: `2px solid ${selectedLanguage === lang.languageId ? 'var(--color-primary)' : 'var(--color-surfaceAlt)'}`,
+                          background: selectedLanguage === lang.languageId ? 'var(--color-primary)' : 'transparent',
+                        }}
+                      >
+                        {selectedLanguage === lang.languageId && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-textPrimary block" />
+                        )}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </section>
 
             {/* Tema Visual — carrusel compacto */}

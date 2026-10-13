@@ -18,4 +18,6 @@ public class UpdateProfileRequest {
 
     @Size(max = 255)
     private String bio;
+
+    private Long preferredLanguageId;
 }

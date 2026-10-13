@@ -17,6 +17,7 @@ public class ProfileResponse {
     private final Integer storedFileId;
     private final String fullName;
     private final String bio;
+    private final Long preferredLanguageId;
     /**
      * Timestamp of the last accepted full-name change.
      * Null means the user has never changed their name (no restriction applies).

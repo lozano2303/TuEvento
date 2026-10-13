@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.language.infrastructure.persistence.repository;
 
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.TranslationJobEntity;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,7 +16,7 @@ import java.util.Optional;
 public interface TranslationJobJpaRepository extends JpaRepository<TranslationJobEntity, Long> {
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.status = :status")
-    List<TranslationJobEntity> findByStatus(@Param("status") String status);
+    List<TranslationJobEntity> findByStatus(@Param("status") TranslationJobStatus status);
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.sourceLanguage.languageId = :sourceLanguageId")
     List<TranslationJobEntity> findBySourceLanguageId(@Param("sourceLanguageId") Integer sourceLanguageId);
@@ -35,13 +36,13 @@ public interface TranslationJobJpaRepository extends JpaRepository<TranslationJo
                                                       @Param("endDate") LocalDateTime endDate);
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.status = :status AND tj.targetLanguage.languageId = :targetLanguageId ORDER BY tj.createdAt ASC")
-    List<TranslationJobEntity> findPendingJobsByTargetLanguage(@Param("status") String status, 
+    List<TranslationJobEntity> findPendingJobsByTargetLanguage(@Param("status") TranslationJobStatus status, 
                                                                @Param("targetLanguageId") Integer targetLanguageId);
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.entityType = :entityType AND tj.entityId = :entityId AND tj.status = :status")
     List<TranslationJobEntity> findByEntityAndStatus(@Param("entityType") String entityType, 
                                                      @Param("entityId") Integer entityId, 
-                                                     @Param("status") String status);
+                                                     @Param("status") TranslationJobStatus status);
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.createdAt < :cutoffTime AND tj.attempts < :maxRetryCount AND tj.status IN ('FAILED', 'TIMEOUT') ORDER BY tj.createdAt ASC")
     List<TranslationJobEntity> findJobsForRetry(@Param("cutoffTime") LocalDateTime cutoffTime, 
@@ -53,9 +54,9 @@ public interface TranslationJobJpaRepository extends JpaRepository<TranslationJo
     @Modifying
     @Query("UPDATE TranslationJobEntity tj SET tj.status = :newStatus, tj.updatedAt = CURRENT_TIMESTAMP WHERE tj.jobId = :jobId AND tj.status IN (:currentStatus1, :currentStatus2)")
     int claimJob(@Param("jobId") Integer jobId, 
-                @Param("newStatus") String newStatus,
-                @Param("currentStatus1") String currentStatus1, 
-                @Param("currentStatus2") String currentStatus2);
+                @Param("newStatus") TranslationJobStatus newStatus,
+                @Param("currentStatus1") TranslationJobStatus currentStatus1, 
+                @Param("currentStatus2") TranslationJobStatus currentStatus2);
 
     @Query("SELECT tj FROM TranslationJobEntity tj WHERE tj.entityType = :entityType AND tj.entityId = :entityId AND tj.targetLanguage.languageId = :targetLanguageId")
     List<TranslationJobEntity> findByEntityAndTargetLanguage(@Param("entityType") String entityType, 

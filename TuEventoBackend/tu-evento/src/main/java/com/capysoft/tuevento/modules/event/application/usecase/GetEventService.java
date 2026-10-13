@@ -29,14 +29,23 @@ public class GetEventService implements GetEventUseCase {
     private final GetSitePort          getSitePort;
     private final EventMediaRepository eventMediaRepository;
 
+    // Translation support
+    private final com.capysoft.tuevento.modules.language.domain.repository.EventTranslationRepository eventTranslationRepository;
+    private final com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository languageRepository;
+
     // ─── Authenticated queries ────────────────────────────────────────────────
 
     @Override
     public EventResponse findById(Long eventId) {
+        return findById(eventId, null);
+    }
+
+    @Override
+    public EventResponse findById(Long eventId, String languageCode) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("EVENT_NOT_FOUND",
                         "Event not found with id: " + eventId));
-        return toResponse(event);
+        return toResponse(event, languageCode);
     }
 
     @Override
@@ -90,6 +99,10 @@ public class GetEventService implements GetEventUseCase {
     // ─── Mappers ──────────────────────────────────────────────────────────────
 
     private EventResponse toResponse(Event e) {
+        return toResponse(e, null);
+    }
+
+    private EventResponse toResponse(Event e, String languageCode) {
         Integer categoryId = null;
         try {
             List<CategoryResponse> cats = categoryEventUseCase.getCategoriesByEvent(
@@ -106,6 +119,29 @@ public class GetEventService implements GetEventUseCase {
             log.warn("Could not resolve siteName for event {}: {}", e.getEventId(), ex.getMessage());
         }
 
+        // Translation support
+        String translatedName = null;
+        String translatedDescription = null;
+        String actualLanguageCode = null;
+
+        if (languageCode != null && !languageCode.isBlank()) {
+            try {
+                var language = languageRepository.findByCode(languageCode);
+                if (language.isPresent()) {
+                    var translation = eventTranslationRepository.findByEventAndLanguage(
+                            Math.toIntExact(e.getEventId()), language.get().getLanguageId());
+                    if (translation.isPresent() && translation.get().isPublished()) {
+                        translatedName = translation.get().getTranslatedName();
+                        translatedDescription = translation.get().getTranslatedDescription();
+                        actualLanguageCode = languageCode;
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("Could not resolve translation for event {} language {}: {}",
+                        e.getEventId(), languageCode, ex.getMessage());
+            }
+        }
+
         return EventResponse.builder()
                 .eventId(e.getEventId())
                 .userId(e.getUserId())
@@ -119,6 +155,9 @@ public class GetEventService implements GetEventUseCase {
                 .isPublic(e.getIsPublic())
                 .availableSeats(e.getAvailableSeats())
                 .categoryId(categoryId)
+                .translatedName(translatedName)
+                .translatedDescription(translatedDescription)
+                .languageCode(actualLanguageCode)
                 .rejectionReason(e.getRejectionReason())
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())

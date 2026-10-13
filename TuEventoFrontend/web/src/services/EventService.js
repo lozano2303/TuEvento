@@ -26,9 +26,16 @@ export const getEventsByUser = async (userId) => {
   return res.json();
 };
 
-/** Obtener evento por ID — GET /events/{eventId}, sin auth. */
-export const getEventById = async (eventId) => {
-  const response = await fetch(`${API_URL}/events/${eventId}`);
+/** 
+ * Obtener evento por ID — GET /events/{eventId}, sin auth.
+ * @param {string|number} eventId - ID del evento
+ * @param {string} [languageCode] - Código de idioma opcional (ej: "en", "es")
+ */
+export const getEventById = async (eventId, languageCode = null) => {
+  const url = languageCode 
+    ? `${API_URL}/events/${eventId}?language=${languageCode}`
+    : `${API_URL}/events/${eventId}`;
+  const response = await fetch(url);
   if (!response.ok) throw new Error('Error al obtener evento');
   return response.json();
 };

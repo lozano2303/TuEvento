@@ -54,9 +54,10 @@ public class EventController {
     @Operation(summary = "Get event by ID")
     @GetMapping("/{eventId}")
     public ResponseEntity<ApiResponse<EventResponse>> getEvent(
-            @PathVariable Long eventId) {
+            @PathVariable Long eventId,
+            @RequestParam(required = false) String language) {
         return ResponseEntity.ok(ApiResponse.ok("Event retrieved successfully",
-                getEventUseCase.findById(eventId)));
+                getEventUseCase.findById(eventId, language)));
     }
 
     @Operation(summary = "Get events by user")
