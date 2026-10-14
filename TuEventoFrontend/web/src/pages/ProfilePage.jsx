@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { changeUILanguage } from '../i18n';
 import Footer from '../layouts/Footer';
 import { useTheme } from '../context/ThemeContext';
 import { getThemes, activateTheme } from '../services/themeService';
@@ -39,6 +41,7 @@ const inputCls =
   '[color-scheme:dark]';
 
 const ProfilePage = () => {
+  const { t } = useTranslation();
   const { refreshPalette, activeThemeId } = useTheme();
 
   // ── Estado ─────────────────────────────────────────────────────────────────
@@ -134,12 +137,19 @@ const ProfilePage = () => {
         if (profile.preferredLanguageId) {
           setSelectedLanguage(profile.preferredLanguageId);
           setInitialLanguage(profile.preferredLanguageId);
+          
+          // Sincronizar i18next con el idioma del backend
+          const lang = languages.find(l => l.languageId === profile.preferredLanguageId);
+          if (lang) {
+            changeUILanguage(lang.code);
+          }
         } else {
           // Si no tiene idioma, pre-seleccionar español (language_id = 1)
           const spanishLang = languages.find(l => l.code === 'es');
           if (spanishLang) {
             setSelectedLanguage(spanishLang.languageId);
             setInitialLanguage(spanishLang.languageId);
+            changeUILanguage('es');
           }
         }
         if (profile.storedFileId) {
@@ -206,6 +216,13 @@ const ProfilePage = () => {
         preferredLanguageId: selectedLanguage,
       });
       setInitialLanguage(selectedLanguage);
+      
+      // Sincronizar i18next cuando el usuario cambia el idioma
+      const lang = languages.find(l => l.languageId === selectedLanguage);
+      if (lang) {
+        changeUILanguage(lang.code);
+      }
+      
       setLanguageSaveMessage({ type: 'success', text: 'Idioma actualizado correctamente' });
       
       // Auto-hide success message after 3 seconds

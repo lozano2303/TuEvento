@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added — feat(i18n): implement i18next for UI internationalization
+
+- **i18next setup**: Complete i18next integration with react-i18next and language detector
+  - Translation files for 4 languages: Spanish (es), English (en), French (fr), Portuguese (pt)
+  - Auto-detection from localStorage and browser settings
+  - Fallback to Spanish as default language
+- **Language synchronization**: UI language automatically syncs with user's `preferredLanguageId` from backend
+  - `changeUILanguage()` function to programmatically change UI language
+  - Synchronized in ProfilePage when user loads or changes preferred language
+- **Two-layer translation system**:
+  - **i18next** (frontend): Static UI texts (buttons, labels, messages, placeholders)
+  - **Backend + LibreTranslate**: Dynamic database content (event names, descriptions, categories)
+- **EventDetail translations**: Applied i18next to key UI elements
+  - Loading states, error messages, translation status badges
+  - Available seats counter with pluralization support
+  - Back button labels
+- **Translation namespaces**: Organized by domain (common, auth, events, seats, profile, comments, cart, payment)
+- **Dependencies**: `i18next`, `react-i18next`, `i18next-browser-languagedetector`
+
 ### Fixed — fix(translation): translation system saving and lazy loading
 
 - **TranslationConfiguration**: Changed rejection policy from `AbortPolicy` to `CallerRunsPolicy` to prevent job loss when thread pool queue is full
