@@ -151,6 +151,8 @@ services:
       - "127.0.0.1:5001:5000"
     environment:
       - LT_LOAD_ONLY=es,en,fr,pt
+      - LT_THREADS=4
+      - LT_UPDATE_MODELS=false
     volumes:
       - libretranslate-models:/home/libretranslate/.local:rw
     healthcheck:

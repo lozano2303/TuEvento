@@ -29,6 +29,9 @@ public class EventResponse {
     private final String translatedDescription;
     private final String languageCode;
     
+    /** Indicates if translation is being generated (lazy loading) */
+    private final Boolean translationGenerating;
+    
     /** Populated when status is REJECTED; null otherwise. */
     private final String rejectionReason;
     private final LocalDateTime createdAt;
