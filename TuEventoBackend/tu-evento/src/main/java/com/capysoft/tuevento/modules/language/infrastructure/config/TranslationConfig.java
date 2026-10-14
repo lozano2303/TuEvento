@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.language.infrastructure.config;
 
 import com.capysoft.tuevento.modules.category.infrastructure.translation.CategoryTranslatableContentHandler;
 import com.capysoft.tuevento.modules.event.infrastructure.translation.EventTranslatableContentHandler;
+import com.capysoft.tuevento.modules.profile.infrastructure.translation.ProfileTranslatableContentHandler;
 import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ public class TranslationConfig {
 
     private final EventTranslatableContentHandler eventHandler;
     private final CategoryTranslatableContentHandler categoryHandler;
+    private final ProfileTranslatableContentHandler profileHandler;
 
     /**
      * Registry de handlers por tipo de entidad.
@@ -36,6 +38,9 @@ public class TranslationConfig {
         
         // Registrar handler de categorías
         registry.put("category", categoryHandler);
+        
+        // Registrar handler de perfiles
+        registry.put("profile", profileHandler);
         
         // TODO: Agregar handlers para otras entidades (sites, etc.)
         // registry.put("site", siteHandler);

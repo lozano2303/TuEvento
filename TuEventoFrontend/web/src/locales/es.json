@@ -89,7 +89,21 @@
     "language": "Idioma preferido",
     "preferences": "Preferencias",
     "updateSuccess": "Perfil actualizado exitosamente",
-    "updateError": "No se pudo actualizar el perfil"
+    "updateError": "No se pudo actualizar el perfil",
+    "translation": {
+      "translated": "Traducido ({{lang}})",
+      "generating": "Generando traducción de biografía..."
+    }
+  },
+  "categories": {
+    "title": "Categorías",
+    "allCategories": "Todas las categorías",
+    "selectCategory": "Selecciona una categoría",
+    "noCategories": "No hay categorías disponibles",
+    "translation": {
+      "translated": "Traducido ({{lang}})",
+      "generating": "Generando traducción..."
+    }
   },
   "comments": {
     "title": "Comentarios",

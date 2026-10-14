@@ -17,8 +17,11 @@ const normalizeUploadError = (message) => {
   return normalized || 'Error al subir foto de perfil';
 };
 
-export const getProfileByUserId = async (userId) => {
-  const response = await httpRequest(`${API_URL}/profiles/user/${userId}`, {
+export const getProfileByUserId = async (userId, languageCode = null) => {
+  const url = languageCode 
+    ? `${API_URL}/profiles/user/${userId}?language=${languageCode}`
+    : `${API_URL}/profiles/user/${userId}`;
+  const response = await httpRequest(url, {
     headers: {
       'Content-Type': 'application/json',
     },
