@@ -9,16 +9,49 @@ export const getCategoriesByEvent = async (eventId) => {
   return response.json();
 };
 
-export const getAllCategories = async () => {
-  const response = await fetch(`${API_URL}/categories`);
+export const getAllCategories = async (languageCode = null) => {
+  const url = languageCode 
+    ? `${API_URL}/categories?language=${languageCode}`
+    : `${API_URL}/categories`;
+  const response = await fetch(url);
   if (!response.ok) throw new Error('Error al obtener categorías');
   return response.json();
 };
 
-export const getActiveCategories = async () => {
-  const response = await fetch(`${API_URL}/categories/active`);
+export const getActiveCategories = async (languageCode = null) => {
+  const url = languageCode 
+    ? `${API_URL}/categories/active?language=${languageCode}`
+    : `${API_URL}/categories/active`;
+  const response = await fetch(url);
   if (!response.ok) throw new Error('Error al obtener categorías activas');
   return response.json(); // ApiResponse<List<CategoryResponse>>
+};
+
+export const getCategoryById = async (categoryId, languageCode = null) => {
+  const url = languageCode 
+    ? `${API_URL}/categories/${categoryId}?language=${languageCode}`
+    : `${API_URL}/categories/${categoryId}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Error al obtener categoría');
+  return response.json();
+};
+
+export const getRootCategories = async (languageCode = null) => {
+  const url = languageCode 
+    ? `${API_URL}/categories/root?language=${languageCode}`
+    : `${API_URL}/categories/root`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Error al obtener categorías raíz');
+  return response.json();
+};
+
+export const getSubcategories = async (parentId, languageCode = null) => {
+  const url = languageCode 
+    ? `${API_URL}/categories/${parentId}/subcategories?language=${languageCode}`
+    : `${API_URL}/categories/${parentId}/subcategories`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Error al obtener subcategorías');
+  return response.json();
 };
 
 // Endpoints con auth - ORGANIZER/ADMIN

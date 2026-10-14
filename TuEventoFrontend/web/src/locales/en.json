@@ -89,7 +89,21 @@
     "language": "Preferred language",
     "preferences": "Preferences",
     "updateSuccess": "Profile updated successfully",
-    "updateError": "Could not update profile"
+    "updateError": "Could not update profile",
+    "translation": {
+      "translated": "Translated ({{lang}})",
+      "generating": "Generating bio translation..."
+    }
+  },
+  "categories": {
+    "title": "Categories",
+    "allCategories": "All categories",
+    "selectCategory": "Select a category",
+    "noCategories": "No categories available",
+    "translation": {
+      "translated": "Translated ({{lang}})",
+      "generating": "Generating translation..."
+    }
   },
   "comments": {
     "title": "Comments",

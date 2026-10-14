@@ -7,9 +7,10 @@ import { getThemes, activateTheme } from '../services/themeService';
 import { getProfileByUserId, getProfilePictureUrl, updateProfile, uploadProfilePicture } from '../services/ProfileService';
 import { getActiveLanguages } from '../services/LanguageService';
 import { performLogout } from '../services/httpClient';
+import { useLanguageSync } from '../hooks/useLanguageSync';
 import {
   AlertCircle, Camera, CheckCircle, Info, Loader2,
-  Palette, ChevronLeft, ChevronRight, LogOut,
+  Palette, ChevronLeft, ChevronRight, LogOut, Clock,
 } from 'lucide-react';
 import Tooltip from '../components/common/Tooltip';
 import ThemeCustomizePanel from '../components/theme/ThemeCustomizePanel';
@@ -43,8 +44,10 @@ const inputCls =
 const ProfilePage = () => {
   const { t } = useTranslation();
   const { refreshPalette, activeThemeId } = useTheme();
+  const currentLanguage = useLanguageSync(); // Sincroniza automáticamente con el idioma preferido
 
   // ── Estado ─────────────────────────────────────────────────────────────────
+  const [profile, setProfile] = useState(null); // Estado completo del perfil con traducciones
   const [languages, setLanguages] = useState([]);
   const [selectedLanguage, setSelectedLanguage] = useState(null);
   const [initialLanguage, setInitialLanguage] = useState(null); // Para detectar cambios
@@ -89,6 +92,17 @@ const ProfilePage = () => {
     bio: '',
   });
 
+  // Auto-reload cuando se detecta que la traducción está generándose
+  useEffect(() => {
+    if (profile?.translationGenerating) {
+      const timer = setTimeout(() => {
+        window.location.reload();
+      }, 20000); // 20 segundos (dar tiempo a que complete la traducción)
+
+      return () => clearTimeout(timer);
+    }
+  }, [profile?.translationGenerating]);
+
   // ── Carga temas ────────────────────────────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -116,30 +130,56 @@ const ProfilePage = () => {
   useEffect(() => {
     if (languages.length === 0) return; // Esperar a que los idiomas se carguen
     
-    const load = async () => {
+    const loadProfileWithUserLanguage = async () => {
       const token = localStorage.getItem('token');
       const userId = localStorage.getItem('userID');
       if (!token || !userId) return;
+      
       setAvatarLoading(true);
+      let userLanguageCode = null;
+
+      // Si hay usuario autenticado, cargar su idioma preferido
+      if (userId) {
+        try {
+          const profileRes = await getProfileByUserId(userId);
+          const preferredLangId = profileRes?.data?.preferredLanguageId;
+          if (preferredLangId) {
+            const langs = languages;
+            const preferredLang = langs.find(l => l.languageId === preferredLangId);
+            if (preferredLang) {
+              userLanguageCode = preferredLang.code;
+            }
+          }
+        } catch (err) {
+          console.warn('[ProfilePage] No se pudo cargar idioma preferido del usuario:', err);
+        }
+      }
+
       try {
-        const result = await getProfileByUserId(userId);
-        const profile = result?.data;
-        if (!profile) return;
-        setProfileId(profile.profileId);
-        if (profile.fullName) {
-          localStorage.setItem('name', profile.fullName);
-          setFormData(prev => ({ ...prev, nombreCompleto: profile.fullName }));
+        // Cargar perfil con el idioma del usuario (si lo tiene)
+        const result = await getProfileByUserId(userId, userLanguageCode);
+        const profileData = result?.data;
+        if (!profileData) return;
+        
+        setProfile(profileData); // Guardar perfil completo con traducciones
+        setProfileId(profileData.profileId);
+        
+        if (profileData.fullName) {
+          localStorage.setItem('name', profileData.fullName);
+          setFormData(prev => ({ ...prev, nombreCompleto: profileData.fullName }));
         }
-        if (profile.bio) {
-          setFormData(prev => ({ ...prev, bio: profile.bio }));
-        }
+        
+        // Usar biografía traducida si está disponible, sino la original
+        const bioToShow = profileData.translatedBio || profileData.bio || '';
+        setFormData(prev => ({ ...prev, bio: bioToShow }));
+        
         // Cargar idioma preferido
-        if (profile.preferredLanguageId) {
-          setSelectedLanguage(profile.preferredLanguageId);
-          setInitialLanguage(profile.preferredLanguageId);
+        if (profileData.preferredLanguageId) {
+          setSelectedLanguage(profileData.preferredLanguageId);
+          setInitialLanguage(profileData.preferredLanguageId);
           
           // Sincronizar i18next con el idioma del backend
-          const lang = languages.find(l => l.languageId === profile.preferredLanguageId);
+          const lang = languages.find(l => l.languageId === profileData.preferredLanguageId);
           if (lang) {
             changeUILanguage(lang.code);
           }
@@ -152,9 +192,10 @@ const ProfilePage = () => {
             changeUILanguage('es');
           }
         }
-        if (profile.storedFileId) {
+        
+        if (profileData.storedFileId) {
           try {
-            const url = await getProfilePictureUrl(profile.storedFileId);
+            const url = await getProfilePictureUrl(profileData.storedFileId);
             if (url) setAvatarUrl(url);
             else setAvatarMessage({ type: 'error', text: 'No se pudo cargar tu foto.' });
           } catch {
@@ -163,11 +204,13 @@ const ProfilePage = () => {
         }
       } catch (err) {
         // Error silenciado
+        console.error('[ProfilePage] Error loading profile:', err);
       } finally {
         setAvatarLoading(false);
       }
     };
-    load();
+    
+    loadProfileWithUserLanguage();
   }, [languages]); // Depende de languages
 
   useEffect(() => {
@@ -221,6 +264,22 @@ const ProfilePage = () => {
       const lang = languages.find(l => l.languageId === selectedLanguage);
       if (lang) {
         changeUILanguage(lang.code);
+        
+        // Recargar el perfil con el nuevo idioma para obtener traducciones
+        const userId = localStorage.getItem('userID');
+        if (userId) {
+          try {
+            const result = await getProfileByUserId(userId, lang.code);
+            if (result?.data) {
+              setProfile(result.data);
+              // Actualizar la biografía mostrada con la traducida si está disponible
+              const bioToShow = result.data.translatedBio || result.data.bio || '';
+              setFormData(prev => ({ ...prev, bio: bioToShow }));
+            }
+          } catch (err) {
+            console.warn('No se pudo recargar perfil con nuevo idioma:', err);
+          }
+        }
       }
       
       setLanguageSaveMessage({ type: 'success', text: 'Idioma actualizado correctamente' });
@@ -465,32 +524,64 @@ const ProfilePage = () => {
                   />
                 </div>
 
-                {/* Biografía */}
+                {/* Biografía con traducción dinámica */}
                 <div>
                   <label className="block text-xs font-semibold text-textMuted uppercase tracking-wider mb-2">
                     Biografía
+                    {profile?.languageCode && !profile?.translationGenerating && (
+                      <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-primary/20 border border-primary/40 text-accent">
+                        {t('profile.translation.translated', { lang: profile.languageCode.toUpperCase() })}
+                      </span>
+                    )}
                   </label>
                   <textarea
-                    className={`${inputCls} resize-none`}
+                    className={`${inputCls} resize-none ${profile?.translatedBio ? 'opacity-75' : ''}`}
                     name="bio"
                     rows={3}
                     value={formData.bio}
                     onChange={handleInputChange}
                     placeholder="Cuéntanos algo sobre ti…"
                     maxLength={255}
+                    readOnly={!!profile?.translatedBio} // Solo lectura si está traducida
                   />
-                  <p className="text-xs text-textMuted mt-1 text-right">{formData.bio.length}/255</p>
+                  <div className="flex justify-between items-center mt-1">
+                    <p className="text-xs text-textMuted">{formData.bio.length}/255</p>
+                    {profile?.translatedBio && (
+                      <p className="text-[10px] text-textMuted italic">
+                        Biografía traducida automáticamente
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Indicador de traducción generándose */}
+                  {profile?.translationGenerating && (
+                    <div className="mt-2 flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400">
+                      <Clock className="w-3.5 h-3.5 animate-spin" />
+                      <span>
+                        {t('profile.translation.generating')}
+                        <span className="block text-[10px] mt-0.5 opacity-75">
+                          La página se recargará automáticamente.
+                        </span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <button
                 onClick={handleSave}
-                disabled={loading}
-                className="mt-6 px-6 py-2.5 rounded-xl text-sm font-bold bg-primary hover:bg-primaryDark text-textPrimary transition-all disabled:opacity-50"
+                disabled={loading || !!profile?.translatedBio}
+                className="mt-6 px-6 py-2.5 rounded-xl text-sm font-bold bg-primary hover:bg-primaryDark text-textPrimary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ boxShadow: 'color-mix(in srgb, var(--color-primary) 30%, transparent) 0 2px 12px' }}
               >
                 {loading ? 'Guardando…' : 'Guardar cambios'}
               </button>
+              
+              {profile?.translatedBio && (
+                <p className="mt-2 text-xs text-textMuted">
+                  No puedes editar una biografía traducida. Cambia el idioma a español para editarla.
+                </p>
+              )}
             </section>
 
             {/* Seguridad */}

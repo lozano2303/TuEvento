@@ -86,6 +86,7 @@ export default function AdminPanel() {
     { icon: Calendar,        label: 'Eventos',    href: '/admin-events' },
     { icon: BarChart2,       label: 'Reportes' },
     { icon: RefreshCcw,      label: 'Reembolsos' },
+    { icon: Settings,        label: 'Categorías', href: '/admin-categories' },
     { icon: Users,           label: 'Solicitudes', active: true },
   ];
 

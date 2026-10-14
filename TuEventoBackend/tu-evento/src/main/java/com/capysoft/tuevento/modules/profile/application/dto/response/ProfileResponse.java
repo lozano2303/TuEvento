@@ -24,4 +24,9 @@ public class ProfileResponse {
      * The next allowed change date is nameChangedAt + 14 days.
      */
     private final LocalDateTime nameChangedAt;
+    
+    // Translation fields
+    private final String translatedBio;
+    private final String languageCode;
+    private final Boolean translationGenerating;
 }

@@ -56,8 +56,9 @@ public class ProfileController {
     @Operation(summary = "Get profile by user ID")
     @GetMapping("/user/{userId}")
     public ResponseEntity<ApiResponse<ProfileResponse>> getByUserId(
-            @PathVariable Integer userId) {
+            @PathVariable Integer userId,
+            @RequestParam(required = false) String language) {
         return ResponseEntity.ok(ApiResponse.ok("Profile retrieved successfully",
-                getProfileByUserIdPort.getByUserId(userId)));
+                getProfileByUserIdPort.getByUserId(userId, language)));
     }
 }

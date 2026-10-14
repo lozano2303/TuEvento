@@ -1,0 +1,700 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLanguageSync } from '../hooks/useLanguageSync';
+import { 
+  Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, 
+  User, Settings, ChevronDown, X, Plus, Edit2, Trash2, Save, Clock, Tag, 
+  CheckCircle, AlertCircle, Languages, ChevronRight
+} from 'lucide-react';
+import { performLogout } from '../services/httpClient';
+import { useNavigate } from 'react-router-dom';
+import { getAllCategories, getCategoryById, getRootCategories } from '../services/CategoryService';
+import { httpRequest } from '../services/httpClient';
+import ConfirmModal from '../components/common/ConfirmModal';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+export default function AdminCategoryManagement() {
+  const { t } = useTranslation();
+  const currentLanguage = useLanguageSync();
+  const navigate = useNavigate();
+  
+  const [categories, setCategories] = useState([]);
+  const [rootCategories, setRootCategories] = useState([]); // Para el selector de categoría padre
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(null);
+  const [languageFilter, setLanguageFilter] = useState('all');
+
+  // Form data
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    dadId: null
+  });
+
+  // Helper function to get parent category name
+  const getParentCategoryName = (dadId) => {
+    const parentCategory = categories.find(cat => cat.categoryId === dadId);
+    return parentCategory ? (parentCategory.translatedName || parentCategory.name) : 'Desconocida';
+  };
+
+  const userData = {
+    name: localStorage.getItem('name') || localStorage.getItem('fullName') || 'Usuario',
+    email: localStorage.getItem('userEmail') || '',
+    role: localStorage.getItem('role') === 'ADMIN' ? 'Super Admin' : 'Admin',
+  };
+
+  const handleLogout = async () => {
+    await performLogout();
+    window.location.href = '/login';
+  };
+
+  const handleMenuClick = (action) => {
+    setShowUserMenu(false);
+    if (action === 'profile') navigate('/profile');
+    if (action === 'settings') navigate('/settings');
+    if (action === 'logout') handleLogout();
+  };
+
+  // Auto-reload cuando se detectan traducciones generándose
+  useEffect(() => {
+    const hasGeneratingTranslations = categories.some(cat => cat.translationGenerating);
+    if (hasGeneratingTranslations) {
+      const timer = setTimeout(() => {
+        fetchCategories();
+      }, 20000); // 20 segundos
+
+      return () => clearTimeout(timer);
+    }
+  }, [categories]);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchRootCategories(); // Cargar categorías principales para el selector
+  }, [currentLanguage]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showUserMenu && !e.target.closest('.user-menu-container')) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showUserMenu]);
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Cargar categorías con el idioma actual para ver traducciones
+      const response = await getAllCategories(currentLanguage);
+      setCategories(response.data || []);
+    } catch (err) {
+      setError('Error al cargar categorías: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRootCategories = async () => {
+    try {
+      // Cargar categorías principales siempre en español para el selector
+      const response = await getRootCategories('es');
+      setRootCategories(response.data || []);
+    } catch (err) {
+      console.warn('Error al cargar categorías principales:', err.message);
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (!formData.name.trim()) return;
+    
+    setActionLoading(true);
+    try {
+      const response = await httpRequest(`${API_URL}/categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          description: formData.description.trim() || null,
+          dadId: formData.dadId || null
+        }),
+      });
+      
+      if (response.ok) {
+        setShowCreateModal(false);
+        resetForm();
+        await fetchCategories();
+        await fetchRootCategories(); // Actualizar también las categorías principales
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || 'Error al crear categoría');
+      }
+    } catch (err) {
+      setError('Error al crear categoría: ' + err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleEditCategory = async () => {
+    if (!selectedCategory || !formData.name.trim()) return;
+    
+    setActionLoading(true);
+    try {
+      const response = await httpRequest(`${API_URL}/categories/${selectedCategory.categoryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          description: formData.description.trim() || null,
+          dadId: formData.dadId || null
+        }),
+      });
+      
+      if (response.ok) {
+        setShowEditModal(false);
+        setSelectedCategory(null);
+        resetForm();
+        await fetchCategories();
+        await fetchRootCategories(); // Actualizar también las categorías principales
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || 'Error al actualizar categoría');
+      }
+    } catch (err) {
+      setError('Error al actualizar categoría: ' + err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleToggleActive = async (category) => {
+    setActionLoading(true);
+    try {
+      const endpoint = category.active ? 'deactivate' : 'activate';
+      const response = await httpRequest(`${API_URL}/categories/${category.categoryId}/${endpoint}`, {
+        method: 'PUT',
+      });
+      
+      if (response.ok) {
+        await fetchCategories();
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || `Error al ${category.active ? 'desactivar' : 'activar'} categoría`);
+      }
+    } catch (err) {
+      setError(`Error al ${category.active ? 'desactivar' : 'activar'} categoría: ` + err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setShowCreateModal(true);
+  };
+
+  const openEditModal = (category) => {
+    setSelectedCategory(category);
+    setFormData({
+      name: category.name || '',
+      description: category.description || '',
+      dadId: category.dadId || null
+    });
+    setShowEditModal(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      dadId: null
+    });
+  };
+
+  const navItems = [
+    { icon: LayoutDashboard, label: 'Dashboard' },
+    { icon: CreditCard,      label: 'Control Financiero' },
+    { icon: Calendar,        label: 'Eventos',    href: '/admin-events' },
+    { icon: BarChart2,       label: 'Reportes' },
+    { icon: RefreshCcw,      label: 'Reembolsos' },
+    { icon: Users,           label: 'Solicitudes', href: '/admin' },
+    { icon: Settings,        label: 'Categorías', active: true },
+  ];
+
+  const getStatusStyle = (category) => {
+    if (category.translationGenerating) {
+      return { bg: 'bg-yellow-500', label: 'Generando traducción...', icon: Clock };
+    }
+    if (category.languageCode && !category.translationGenerating) {
+      return { bg: 'bg-blue-500', label: `Traducido (${category.languageCode.toUpperCase()})`, icon: Languages };
+    }
+    if (category.active) {
+      return { bg: 'bg-emerald-500', label: 'Activa', icon: CheckCircle };
+    }
+    return { bg: 'bg-slate-500', label: 'Inactiva', icon: AlertCircle };
+  };
+
+  const filteredCategories = categories.filter(cat => {
+    if (languageFilter === 'all') return true;
+    if (languageFilter === 'translated') return cat.languageCode && !cat.translationGenerating;
+    if (languageFilter === 'generating') return cat.translationGenerating;
+    if (languageFilter === 'original') return !cat.languageCode && !cat.translationGenerating;
+    if (languageFilter === 'parents') return !cat.dadId; // Categorías principales (sin padre)
+    if (languageFilter === 'subcategories') return cat.dadId; // Subcategorías (con padre)
+    return true;
+  });
+
+  return (
+    <div className="min-h-screen flex bg-background text-textPrimary font-sans">
+
+      {/* Sidebar */}
+      <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-background border-r border-surfaceAlt/30 h-screen sticky top-0">
+        <nav className="flex flex-col gap-0.5">
+          {navItems.map((item, idx) => (
+            <a
+              key={idx}
+              href={item.href || '#'}
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-full text-sm font-medium transition-colors
+                ${item.active
+                  ? 'bg-primary text-textPrimary'
+                  : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt/50'
+                }`}
+            >
+              <item.icon className="w-4 h-4 flex-shrink-0" />
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
+        {/* User Profile Card */}
+        <div className="pt-4 border-t border-surfaceAlt/40 relative user-menu-container flex-shrink-0">
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-surfaceAlt/40 transition-all group"
+          >
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primaryDark flex items-center justify-center text-textPrimary font-bold text-sm flex-shrink-0">
+              {userData.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <p className="text-sm font-semibold text-textPrimary truncate">{userData.name}</p>
+              <p className="text-xs text-textMuted truncate">{userData.role}</p>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-textMuted transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Dropdown Menu */}
+          {showUserMenu && (
+            <div className="absolute bottom-full left-0 right-0 mb-2 mx-2 bg-surface border border-surfaceAlt rounded-xl overflow-hidden shadow-xl z-50 user-menu-container">
+              <button
+                onClick={() => handleMenuClick('profile')}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-textSecondary hover:bg-surfaceAlt/40 hover:text-textPrimary transition-colors"
+              >
+                <User className="w-4 h-4" />
+                Perfil
+              </button>
+              <button
+                onClick={() => handleMenuClick('settings')}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-textSecondary hover:bg-surfaceAlt/40 hover:text-textPrimary transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+                Configuración
+              </button>
+              <div className="border-t border-surfaceAlt/40">
+                <button
+                  onClick={() => handleMenuClick('logout')}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Cerrar sesión
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* Main */}
+      <main className="flex-1 overflow-y-auto bg-background">
+        <div className="p-8 max-w-6xl mx-auto w-full">
+
+          {/* Page header */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-black uppercase tracking-wide text-textPrimary mb-1">
+                  {t('categories.title')} de Eventos
+                </h1>
+                <p className="text-textSecondary text-sm leading-relaxed max-w-xl">
+                  Gestiona las categorías de eventos. Las traducciones se generan automáticamente cuando los usuarios cambian de idioma.
+                </p>
+              </div>
+              <button
+                onClick={openCreateModal}
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primaryDark text-textPrimary font-semibold rounded-xl transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                Nueva Categoría
+              </button>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="flex items-center gap-2 mb-6">
+            {[
+              { key: 'all', label: 'Todas' },
+              { key: 'translated', label: 'Traducidas' },
+              { key: 'generating', label: 'Generando' },
+              { key: 'original', label: 'Originales' },
+              { key: 'parents', label: 'Categorías Principales' },
+              { key: 'subcategories', label: 'Subcategorías' }
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setLanguageFilter(key)}
+                className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all
+                  ${languageFilter === key
+                    ? 'bg-primary text-textPrimary'
+                    : 'bg-surfaceAlt/60 text-textSecondary hover:bg-surfaceAlt'
+                  }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Error Alert */}
+          {error && (
+            <div className="mb-6 p-4 bg-error/10 border border-error/30 text-error rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm">{error}</span>
+              <button 
+                onClick={() => setError(null)}
+                className="ml-auto p-1 hover:bg-error/20 rounded-full"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
+          {/* Categories Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {loading ? (
+              // Loading skeletons
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-surface border border-surfaceAlt rounded-xl p-4 animate-pulse">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-surfaceAlt rounded-lg"></div>
+                      <div className="w-24 h-4 bg-surfaceAlt rounded"></div>
+                    </div>
+                    <div className="w-16 h-6 bg-surfaceAlt rounded-full"></div>
+                  </div>
+                  <div className="w-full h-3 bg-surfaceAlt rounded mb-3"></div>
+                  <div className="w-3/4 h-3 bg-surfaceAlt rounded"></div>
+                </div>
+              ))
+            ) : filteredCategories.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-textMuted">
+                <Tag className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No hay categorías para mostrar</p>
+              </div>
+            ) : (
+              filteredCategories.map((category) => {
+                const status = getStatusStyle(category);
+                const StatusIcon = status.icon;
+                
+                return (
+                  <div
+                    key={category.categoryId}
+                    className="bg-surface border border-surfaceAlt rounded-xl p-4 hover:border-primary/40 transition-all group"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Tag className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-textPrimary truncate flex items-center">
+                            {category.dadId && (
+                              <span className="text-textMuted text-sm mr-2 flex items-center">
+                                <ChevronRight className="w-3 h-3 mr-1" />
+                              </span>
+                            )}
+                            {category.translatedName || category.name}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            {category.languageCode && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/20 text-accent font-bold uppercase">
+                                {t('categories.translation.translated', { lang: category.languageCode.toUpperCase() })}
+                              </span>
+                            )}
+                            {category.dadId && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 flex items-center gap-1">
+                                <ChevronRight className="w-2.5 h-2.5" />
+                                Subcategoría
+                              </span>
+                            )}
+                            {!category.dadId && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">
+                                Categoría Principal
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <StatusIcon className={`w-3 h-3 ${status.bg.includes('yellow') ? 'animate-spin' : ''}`} style={{ 
+                          color: status.bg.includes('emerald') ? '#10b981' : 
+                                status.bg.includes('yellow') ? '#eab308' : 
+                                status.bg.includes('blue') ? '#3b82f6' : '#6b7280' 
+                        }} />
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    {(category.translatedDescription || category.description) && (
+                      <p className="text-xs text-textSecondary mb-3 line-clamp-2">
+                        {category.translatedDescription || category.description}
+                      </p>
+                    )}
+
+                    {/* Parent-Child Relationship Info */}
+                    {category.dadId && (
+                      <div className="mb-3 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <div className="flex items-center gap-1 text-xs text-amber-400">
+                          <ChevronRight className="w-3 h-3" />
+                          <span className="font-semibold">Subcategoría de:</span>
+                          <span>{getParentCategoryName(category.dadId)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Translation generating indicator */}
+                    {category.translationGenerating && (
+                      <div className="mb-3 flex items-center gap-2 text-xs px-2 py-1 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400">
+                        <Clock className="w-3 h-3 animate-spin" />
+                        <span>{t('categories.translation.generating')}</span>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openEditModal(category)}
+                        className="p-2 hover:bg-primary/20 rounded-lg transition-colors text-primary"
+                        title="Editar categoría"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(category)}
+                        disabled={actionLoading}
+                        className={`p-2 rounded-lg transition-colors ${
+                          category.active 
+                            ? 'hover:bg-red-500/20 text-red-400' 
+                            : 'hover:bg-emerald-500/20 text-emerald-400'
+                        }`}
+                        title={category.active ? 'Desactivar' : 'Activar'}
+                      >
+                        {category.active ? 
+                          <Trash2 className="w-3.5 h-3.5" /> : 
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        }
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+        </div>
+      </main>
+
+      {/* Create Category Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl max-w-md w-full">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-surfaceAlt">
+              <h2 className="text-lg font-bold text-textPrimary">Nueva Categoría</h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="p-1.5 hover:bg-surfaceAlt rounded-full transition-colors text-textMuted"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-textPrimary mb-2">
+                  Nombre *
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Nombre de la categoría"
+                  className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-textPrimary mb-2">
+                  Descripción
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Descripción opcional"
+                  rows={3}
+                  className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-textPrimary mb-2">
+                  Categoría Principal
+                  <span className="text-xs text-textMuted ml-2">(Opcional - dejar vacío para categoría raíz)</span>
+                </label>
+                <select
+                  value={formData.dadId || ''}
+                  onChange={(e) => setFormData({ ...formData, dadId: e.target.value ? parseInt(e.target.value) : null })}
+                  className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary focus:border-primary focus:outline-none"
+                >
+                  <option value="">-- Ninguna (Categoría Principal) --</option>
+                  {rootCategories.map((category) => (
+                    <option key={category.categoryId} value={category.categoryId}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-textMuted mt-1">
+                  Si seleccionas una categoría principal, esta nueva categoría será una subcategoría.
+                  Por ejemplo: Música → Rock, Jazz, Clásica
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 px-6 py-4 border-t border-surfaceAlt">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 py-2 px-4 border border-surfaceAlt rounded-lg text-textSecondary hover:bg-surfaceAlt transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateCategory}
+                disabled={!formData.name.trim() || actionLoading}
+                className="flex-1 py-2 px-4 bg-primary hover:bg-primaryDark text-textPrimary rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {actionLoading ? 'Creando...' : 'Crear'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Category Modal */}
+      {showEditModal && selectedCategory && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl max-w-md w-full">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-surfaceAlt">
+              <h2 className="text-lg font-bold text-textPrimary">Editar Categoría</h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="p-1.5 hover:bg-surfaceAlt rounded-full transition-colors text-textMuted"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-textPrimary mb-2">
+                  Nombre *
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Nombre de la categoría"
+                  className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-textPrimary mb-2">
+                  Descripción
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Descripción opcional"
+                  rows={3}
+                  className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-textPrimary mb-2">
+                  Categoría Principal
+                  <span className="text-xs text-textMuted ml-2">(Opcional - dejar vacío para categoría raíz)</span>
+                </label>
+                <select
+                  value={formData.dadId || ''}
+                  onChange={(e) => setFormData({ ...formData, dadId: e.target.value ? parseInt(e.target.value) : null })}
+                  className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary focus:border-primary focus:outline-none"
+                >
+                  <option value="">-- Ninguna (Categoría Principal) --</option>
+                  {rootCategories
+                    .filter(category => category.categoryId !== selectedCategory?.categoryId) // Evitar que se seleccione a sí misma
+                    .map((category) => (
+                      <option key={category.categoryId} value={category.categoryId}>
+                        {category.name}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-textMuted mt-1">
+                  Si seleccionas una categoría principal, esta categoría será una subcategoría.
+                  {selectedCategory?.dadId && (
+                    <span className="block mt-1 text-yellow-400">
+                      ⚠️ Actualmente es subcategoría de: {getParentCategoryName(selectedCategory.dadId)}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 px-6 py-4 border-t border-surfaceAlt">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="flex-1 py-2 px-4 border border-surfaceAlt rounded-lg text-textSecondary hover:bg-surfaceAlt transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEditCategory}
+                disabled={!formData.name.trim() || actionLoading}
+                className="flex-1 py-2 px-4 bg-primary hover:bg-primaryDark text-textPrimary rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {actionLoading ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
