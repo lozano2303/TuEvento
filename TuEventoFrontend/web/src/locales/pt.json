@@ -1,0 +1,138 @@
+{
+  "common": {
+    "loading": "Carregando…",
+    "error": "Erro",
+    "success": "Sucesso",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "save": "Salvar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "close": "Fechar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "noResults": "Nenhum resultado encontrado",
+    "tryAgain": "Tentar novamente"
+  },
+  "auth": {
+    "login": "Entrar",
+    "logout": "Sair",
+    "register": "Cadastrar-se",
+    "email": "E-mail",
+    "password": "Senha",
+    "confirmPassword": "Confirmar senha",
+    "forgotPassword": "Esqueceu sua senha?",
+    "rememberMe": "Lembrar de mim",
+    "noAccount": "Não tem uma conta?",
+    "hasAccount": "Já tem uma conta?",
+    "sessionExpired": "Sua sessão expirou, faça login novamente"
+  },
+  "events": {
+    "title": "Eventos",
+    "noEvents": "Nenhum evento disponível",
+    "createEvent": "Criar evento",
+    "editEvent": "Editar evento",
+    "eventDetails": "Detalhes do evento",
+    "eventName": "Nome do evento",
+    "description": "Descrição",
+    "startDate": "Data de início",
+    "endDate": "Data de término",
+    "location": "Localização",
+    "availableSeats": "{{count}} lugares disponíveis",
+    "backToEvents": "Voltar aos eventos",
+    "noImages": "Este evento ainda não tem imagens",
+    "status": {
+      "draft": "Rascunho",
+      "published": "Publicado",
+      "cancelled": "Cancelado",
+      "completed": "Concluído"
+    },
+    "translation": {
+      "translated": "Traduzido ({{lang}})",
+      "generating": "Gerando tradução...",
+      "autoReload": "A página será recarregada automaticamente."
+    }
+  },
+  "seats": {
+    "selectSeats": "Selecione seus Lugares",
+    "availableSeats": "Lugares disponíveis",
+    "reservedSeats": "Lugares reservados",
+    "soldSeats": "Lugares vendidos",
+    "myReservations": "Minhas reservas",
+    "quantity": "Quantidade",
+    "howMany": "Quantos lugares você quer?",
+    "selected": "{{count}} de {{total}} selecionados",
+    "sections": "Seções",
+    "seatMap": "Mapa de Lugares",
+    "myCart": "Seu Carrinho",
+    "noSeatsSelected": "Você não selecionou nenhum lugar",
+    "section": "Seção",
+    "price": "Preço",
+    "reserve": "Reservar",
+    "release": "Liberar",
+    "expired": "Sua reserva expirou e o lugar foi liberado",
+    "alreadyTaken": "Este lugar já foi reservado por outra pessoa",
+    "loginRequired": "Faça login para reservar lugares",
+    "eventUnavailable": "Este evento não aceita mais reservas"
+  },
+  "profile": {
+    "myProfile": "Meu perfil",
+    "editProfile": "Editar perfil",
+    "personalInfo": "Informações pessoais",
+    "firstName": "Nome",
+    "lastName": "Sobrenome",
+    "phone": "Telefone",
+    "city": "Cidade",
+    "language": "Idioma preferido",
+    "preferences": "Preferências",
+    "updateSuccess": "Perfil atualizado com sucesso",
+    "updateError": "Não foi possível atualizar o perfil"
+  },
+  "comments": {
+    "title": "Comentários",
+    "writeComment": "Escreva seu comentário sobre o evento…",
+    "rating": "Avaliação",
+    "ratingRequired": "Avaliação obrigatória para seu primeiro comentário",
+    "publish": "Publicar",
+    "publishComment": "Publicar comentário",
+    "sending": "Enviando comentário…",
+    "organizer": "Organizador",
+    "you": "Você",
+    "noComments": "Ainda não há comentários. Seja o primeiro!",
+    "loginToComment": "Faça login para comentar",
+    "errors": {
+      "rateLimited": "Aguarde alguns segundos antes de comentar novamente.",
+      "sessionExpired": "Sua sessão expirou. Faça login novamente para comentar.",
+      "forbidden": "Você não tem permissão para comentar neste evento.",
+      "generic": "Não foi possível publicar o comentário."
+    }
+  },
+  "cart": {
+    "myCart": "Meu carrinho",
+    "emptyCart": "Seu carrinho está vazio",
+    "total": "Total",
+    "checkout": "Finalizar compra",
+    "continueShopping": "Continuar comprando"
+  },
+  "payment": {
+    "paymentMethod": "Método de pagamento",
+    "card": "Cartão",
+    "cash": "Dinheiro",
+    "processing": "Processando pagamento…",
+    "success": "Pagamento bem-sucedido",
+    "failed": "O pagamento falhou",
+    "pending": "Pagamento pendente"
+  },
+  "navigation": {
+    "home": "Início",
+    "about": "Sobre Nós",
+    "events": "Eventos",
+    "myEvents": "Meus Eventos",
+    "createEvent": "Criar Evento",
+    "profile": "Perfil",
+    "viewAll": "Ver todos"
+  }
+}

@@ -1,12 +1,14 @@
 import { Calendar, User, Plus, Wallet, Menu, X, Bell } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import ChangePassword from "../pages/ChangePassword.jsx";
 import { getEventsByUser } from "../services/EventService.js";
 import NotificationBell from "../components/common/NotificationBell.jsx";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [userData, setUserData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -99,15 +101,15 @@ const displayName = (() => {
 
           {/* Links centrales — solo desktop */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium flex-1 justify-center">
-            <Link to="/" className="text-textSecondary hover:text-accent transition-colors">Inicio</Link>
-            <Link to="/nosotros" className="text-textSecondary hover:text-accent transition-colors">Nosotros</Link>
-            <Link to="/events" className="text-textSecondary hover:text-accent transition-colors">Eventos</Link>
+            <Link to="/" className="text-textSecondary hover:text-accent transition-colors">{t('navigation.home')}</Link>
+            <Link to="/nosotros" className="text-textSecondary hover:text-accent transition-colors">{t('navigation.about')}</Link>
+            <Link to="/events" className="text-textSecondary hover:text-accent transition-colors">{t('navigation.events')}</Link>
             {userData && isOrganizer && (
               <button
                 onClick={() => navigate(hasEvents ? '/events/manage' : '/events/create')}
                 className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
-                <Plus className="w-4 h-4" /> {hasEvents ? 'Mis Eventos' : 'Crear Evento'}
+                <Plus className="w-4 h-4" /> {hasEvents ? t('navigation.myEvents') : t('navigation.createEvent')}
               </button>
             )}
             {userData && !isAdmin && !isOrganizer && (
@@ -235,20 +237,20 @@ const displayName = (() => {
           <div className="md:hidden bg-surface border-t border-surfaceAlt px-4 py-3 flex flex-col gap-1">
             <Link to="/" onClick={() => setIsMobileMenuOpen(false)}
               className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
-              Inicio
+              {t('navigation.home')}
             </Link>
             <Link to="/nosotros" onClick={() => setIsMobileMenuOpen(false)}
               className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
-              Nosotros
+              {t('navigation.about')}
             </Link>
             <Link to="/events" onClick={() => setIsMobileMenuOpen(false)}
               className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
-              Eventos
+              {t('navigation.events')}
             </Link>
             {userData && isOrganizer && (
               <button onClick={() => handleNavClick(hasEvents ? '/events/manage' : '/events/create')}
                 className="flex items-center gap-2 text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer">
-                <Plus className="w-4 h-4" /> {hasEvents ? 'Mis Eventos' : 'Crear Evento'}
+                <Plus className="w-4 h-4" /> {hasEvents ? t('navigation.myEvents') : t('navigation.createEvent')}
               </button>
             )}
             {userData && !isAdmin && !isOrganizer && (

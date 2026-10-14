@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send } from 'lucide-react';
 import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
 import Konva from 'konva';
@@ -12,17 +13,20 @@ import * as SeatService from '../services/SeatService';
 import * as EventSectionService from '../services/EventSectionService';
 import { getEventComments, addEventComment } from '../services/EventCommentService';
 import { formatDistanceToNow } from 'date-fns';
-import { es as dateFnsEs } from 'date-fns/locale';
+import { es as dateFnsEs, enUS as dateFnsEn, fr as dateFnsFr, pt as dateFnsPt } from 'date-fns/locale';
 import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
+import { useLanguageSync } from '../hooks/useLanguageSync';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
 import { useNotifications } from '../context/NotificationContext';
 
 export default function EventDetail() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const currentLanguage = useLanguageSync(); // Sincroniza automáticamente
   const { toast, showToast, hideToast } = useToast();
   const { subscribe } = useNotifications(); // Hook para suscripciones WebSocket
   
@@ -31,6 +35,15 @@ export default function EventDetail() {
   const [activeImage, setActiveImage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Mapeo de códigos de idioma a locales de date-fns
+  const dateFnsLocales = {
+    es: dateFnsEs,
+    en: dateFnsEn,
+    fr: dateFnsFr,
+    pt: dateFnsPt,
+  };
+  const currentDateLocale = dateFnsLocales[i18n.language] || dateFnsEs;
 
   // Estado de selección de sillas
   const [layoutElements, setLayoutElements] = useState([]);
@@ -246,14 +259,14 @@ export default function EventDetail() {
     // CASO 9: Usuario anónimo intenta reservar
     const token = localStorage.getItem('token');
     if (!token) {
-      showToast('auth-required', 'Iniciá sesión para reservar sillas', 'warning');
+      showToast('auth-required', t('seats.loginRequired'), 'warning');
       setTimeout(() => navigate('/login'), 2000);
       return;
     }
 
     // CASO 11: Evento ya no disponible (COMPLETED/CANCELLED)
     if (event.status === 'COMPLETED' || event.status === 'CANCELLED') {
-      showToast('event-unavailable', 'Este evento ya no acepta reservas', 'error');
+      showToast('event-unavailable', t('seats.eventUnavailable'), 'error');
       return;
     }
 
@@ -265,12 +278,12 @@ export default function EventDetail() {
     } catch (err) {
       // CASO 10: Token expirado (401)
       if (err.response?.status === 401 || err.message?.includes('401')) {
-        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
+        showToast('token-expired', t('auth.sessionExpired'), 'error');
         setTimeout(() => navigate('/login'), 2000);
       }
       // CASO 3: Silla ya reservada por otro (condición de carrera)
       else if (err.message?.includes('SEAT_NOT_AVAILABLE') || err.message?.includes('no está disponible')) {
-        showToast('seat-taken', 'Esta silla ya fue reservada por otra persona', 'warning');
+        showToast('seat-taken', t('seats.alreadyTaken'), 'warning');
       }
       // CASO 7: Error genérico
       else {
@@ -306,7 +319,7 @@ export default function EventDetail() {
     } catch (err) {
       // CASO 10: Token expirado (401)
       if (err.response?.status === 401 || err.message?.includes('401')) {
-        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
+        showToast('token-expired', t('auth.sessionExpired'), 'error');
         setTimeout(() => navigate('/login'), 2000);
       }
       // CASO 7: Error genérico al liberar
@@ -326,7 +339,7 @@ export default function EventDetail() {
   // El scheduler del backend se encargará de liberar la silla en su próximo ciclo (cada 10s)
   const handleSeatExpire = useCallback((seatId) => {
     // CASO 4: Silla expirada
-    showToast('seat-expired', 'Tu reserva expiró y la silla se liberó', 'info');
+    showToast('seat-expired', t('seats.expired'), 'info');
     
     setSeats((prev) => {
       if (!prev[seatId]) return prev;
@@ -388,13 +401,13 @@ export default function EventDetail() {
       const code = err.code || '';
       const msg  = err.message || '';
       if (msg.includes('SESSION_EXPIRED') || msg.includes('401')) {
-        setCommentError('Tu sesión expiró. Inicia sesión de nuevo para comentar.');
+        setCommentError(t('comments.errors.sessionExpired'));
       } else if (msg.includes('403') || msg.includes('Access denied') || msg.includes('Forbidden')) {
-        setCommentError('No tienes permiso para comentar en este evento.');
+        setCommentError(t('comments.errors.forbidden'));
       } else if (code === 'COMMENT_RATE_LIMITED' || msg.includes('COMMENT_RATE_LIMITED')) {
-        setCommentError('Espera unos segundos antes de volver a comentar.');
+        setCommentError(t('comments.errors.rateLimited'));
       } else {
-        setCommentError(msg || 'No se pudo publicar el comentario.');
+        setCommentError(msg || t('comments.errors.generic'));
       }
     } finally {
       setCommentSubmitting(false);
@@ -408,7 +421,7 @@ export default function EventDetail() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}>
-        <p className="text-sm" style={{ color: 'rgba(196,181,253,0.6)' }}>Cargando evento…</p>
+        <p className="text-sm" style={{ color: 'rgba(196,181,253,0.6)' }}>{t('common.loading')}</p>
       </div>
     );
   }
@@ -416,8 +429,8 @@ export default function EventDetail() {
   if (error || !event) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}>
-        <p className="text-sm text-red-400">{error ?? 'Evento no encontrado'}</p>
-        <BackButton fallback="/events" label="Volver a eventos" />
+        <p className="text-sm text-red-400">{error ?? t('events.noEvents')}</p>
+        <BackButton fallback="/events" label={t('events.backToEvents')} />
       </div>
     );
   }
@@ -431,7 +444,7 @@ export default function EventDetail() {
 
         {/* Back */}
         <div className="mb-6">
-          <BackButton fallback="/events" label="Volver a eventos" />
+          <BackButton fallback="/events" label={t('events.backToEvents')} />
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 mb-12">
@@ -522,7 +535,7 @@ export default function EventDetail() {
               {/* Translation status badge */}
               {event.languageCode && !event.translationGenerating && (
                 <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(109,40,217,0.2)', color: 'rgba(167,139,250,0.8)', border: '1px solid rgba(167,139,250,0.2)' }}>
-                  Traducido ({event.languageCode.toUpperCase()})
+                  {t('events.translation.translated', { lang: event.languageCode.toUpperCase() })}
                 </span>
               )}
               
@@ -531,9 +544,9 @@ export default function EventDetail() {
                 <div className="mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: 'rgba(251,191,36,0.9)' }}>
                   <Clock className="w-3.5 h-3.5 animate-spin" />
                   <span>
-                    Generando traducción...
+                    {t('events.translation.generating')}
                     <span className="block text-[10px] mt-0.5 opacity-75">
-                      La página se recargará automáticamente.
+                      {t('events.translation.autoReload')}
                     </span>
                   </span>
                 </div>
@@ -564,7 +577,7 @@ export default function EventDetail() {
               {event.availableSeats > 0 && (
                 <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(233,213,255,0.8)' }}>
                   <Users className="w-4 h-4 shrink-0" style={{ color: 'rgba(167,139,250,0.7)' }} />
-                  <span>{event.availableSeats.toLocaleString()} sillas disponibles</span>
+                  <span>{t('events.availableSeats', { count: event.availableSeats })}</span>
                 </div>
               )}
             </div>
@@ -613,12 +626,12 @@ export default function EventDetail() {
 
         {/* ── Comentarios ───────────────────────────────────────────────── */}
         <section
-          aria-label="Comentarios del evento"
+          aria-label={t('comments.title')}
           className="mt-12"
           style={{ borderTop: '1px solid rgba(167,139,250,0.15)', paddingTop: '2rem' }}
         >
           <h2 className="text-lg font-semibold mb-6" style={{ color: '#e9d5ff' }}>
-            Comentarios {comments.length > 0 && (
+            {t('comments.title')} {comments.length > 0 && (
               <span className="text-sm font-normal ml-2" style={{ color: 'rgba(196,181,253,0.5)' }}>
                 ({comments.length})
               </span>
@@ -635,11 +648,11 @@ export default function EventDetail() {
             >
               {/* Selector de estrellas — solo si aplica (R3/R4) */}
               {needsRatingSelector && (
-                <fieldset className="border-0 p-0 m-0 mb-3" aria-label="Calificación del evento (obligatoria para tu primer comentario)">
+                <fieldset className="border-0 p-0 m-0 mb-3" aria-label={t('comments.ratingRequired')}>
                   <legend className="text-xs mb-1" style={{ color: 'rgba(196,181,253,0.6)' }}>
-                    Calificación <span aria-hidden="true">*</span>
+                    {t('comments.rating')} <span aria-hidden="true">*</span>
                   </legend>
-                  <div className="flex items-center gap-1" role="group" aria-label="Selecciona entre 1 y 5 estrellas">
+                  <div className="flex items-center gap-1" role="group" aria-label={t('comments.ratingRequired')}>
                     {[1, 2, 3, 4, 5].map((star) => {
                       const active = star <= (hoverRating || commentRating);
                       return (
@@ -649,7 +662,7 @@ export default function EventDetail() {
                           onClick={() => setCommentRating(star)}
                           onMouseEnter={() => setHoverRating(star)}
                           onMouseLeave={() => setHoverRating(0)}
-                          aria-label={`${star} estrella${star > 1 ? 's' : ''}`}
+                          aria-label={`${star} ${star > 1 ? 'stars' : 'star'}`}
                           aria-pressed={star <= commentRating}
                           className="transition-colors cursor-pointer"
                         >
@@ -667,12 +680,12 @@ export default function EventDetail() {
 
               {/* Textarea + botón enviar */}
               <div className="flex gap-3 items-start">
-                <label htmlFor="comment-textarea" className="sr-only">Texto del comentario</label>
+                <label htmlFor="comment-textarea" className="sr-only">{t('comments.writeComment')}</label>
                 <textarea
                   id="comment-textarea"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Escribe tu comentario sobre el evento…"
+                  placeholder={t('comments.writeComment')}
                   maxLength={500}
                   rows={3}
                   className="flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
@@ -689,7 +702,7 @@ export default function EventDetail() {
                     !commentText.trim() ||
                     (needsRatingSelector && commentRating === 0)
                   }
-                  aria-label={commentSubmitting ? 'Enviando comentario…' : 'Publicar comentario'}
+                  aria-label={commentSubmitting ? t('comments.sending') : t('comments.publishComment')}
                   className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-40"
                   style={{ background: 'rgba(109,40,217,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
                 >
@@ -720,11 +733,14 @@ export default function EventDetail() {
           {/* Lista de comentarios */}
           {commentsLoading ? (
             <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>
-              Cargando comentarios…
+              {t('common.loading')}
             </p>
           ) : comments.length === 0 ? (
             <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>
-              Todavía no hay comentarios. ¡Sé el primero!
+              {localStorage.getItem('token') ? 
+                t('comments.noComments') : 
+                t('comments.loginToComment')
+              }
             </p>
           ) : (
             <ul className="space-y-4" aria-label="Lista de comentarios">
@@ -744,12 +760,12 @@ export default function EventDetail() {
                         </span>
                         {isOwn && (
                           <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>
-                            Tú
+                            {t('comments.you')}
                           </span>
                         )}
                         {c.isOrganizer && (
                           <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
-                            Organizador
+                            {t('comments.organizer')}
                           </span>
                         )}
                         {/* Estrellas — solo si rating no es null */}
@@ -828,6 +844,7 @@ function SeatSelectorSection({
   eventId,
   eventTitle,
 }) {
+  const { t } = useTranslation();
   const maxQuantity = 10;
   const stageRef = useRef();
   const containerRef = useRef();
@@ -1350,13 +1367,13 @@ function SeatSelectorSection({
       }}
     >
       <h2 className="text-xl font-bold mb-6" style={{ color: '#e9d5ff' }}>
-        Selecciona tus Sillas
+        {t('seats.selectSeats')}
       </h2>
 
       {/* Selector de cantidad estilo cine */}
       <div className="flex items-center gap-6 mb-6">
         <span className="text-sm" style={{ color: 'rgba(196,181,253,0.75)' }}>
-          ¿Cuántas sillas querés?
+          {t('seats.howMany')}
         </span>
         <div className="flex items-center gap-3">
           <button
@@ -1396,7 +1413,7 @@ function SeatSelectorSection({
           </button>
         </div>
         <span className="text-xs ml-auto" style={{ color: 'rgba(196,181,253,0.5)' }}>
-          {cart.length} de {selectedQuantity} seleccionadas
+          {t('seats.selected', { count: cart.length, total: selectedQuantity })}
         </span>
       </div>
 
@@ -1416,7 +1433,7 @@ function SeatSelectorSection({
         <div className="flex-1 rounded-xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', minWidth: 0 }}>
           <div className="flex items-center justify-between p-2 border-b" style={{ borderColor: 'rgba(167,139,250,0.15)' }}>
             <span className="text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
-              Mapa de Sillas
+              {t('seats.seatMap')}
             </span>
             {/* Controles de navegación entre sub-secciones */}
             {selectedSectionFilter && hasMultipleSubSections && (
@@ -1575,6 +1592,7 @@ function SeatSelectorSection({
  * Click en una sección activa el filtro (solo esa sección es seleccionable).
  */
 function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelectedSectionFilter, seats, showToast }) {
+  const { t } = useTranslation();
   // Mapear eventSectionId de la sección backend con los elementos de layout
   const sectionsWithLayout = sections.filter((sec) =>
     layoutElements.some((el) => el.backendSectionId === sec.eventSectionId)
@@ -1590,7 +1608,7 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
     >
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
-          Secciones
+          {t('seats.sections')}
         </h3>
         {selectedSectionFilter && (
           <button
@@ -1601,7 +1619,7 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
               color: '#c4b5fd',
             }}
           >
-            Ver todas
+            {t('navigation.viewAll')}
           </button>
         )}
       </div>
@@ -2029,6 +2047,7 @@ const SeatCircle = React.memo(function SeatCircle({
  * Panel lateral con el carrito de sillas reservadas.
  */
 function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eventId, eventTitle }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const totalPrice = cart.reduce((sum, seat) => {
@@ -2068,11 +2087,11 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
         <div className="flex items-center gap-2 mb-3">
           <ShoppingCart className="w-4 h-4" style={{ color: '#a78bfa' }} />
           <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
-            Tu Carrito
+            {t('seats.myCart')}
           </h3>
         </div>
         <p className="text-xs text-center py-6" style={{ color: 'rgba(196,181,253,0.5)' }}>
-          No has seleccionado ninguna silla
+          {t('seats.noSeatsSelected')}
         </p>
       </div>
     );
@@ -2089,7 +2108,7 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
       <div className="flex items-center gap-2 mb-3">
         <ShoppingCart className="w-4 h-4" style={{ color: '#a78bfa' }} />
         <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
-          Tu Carrito
+          {t('seats.myCart')}
         </h3>
         <span className="ml-auto text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
           ({cart.length})

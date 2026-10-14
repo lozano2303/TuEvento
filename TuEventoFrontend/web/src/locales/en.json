@@ -1,0 +1,138 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "noResults": "No results found",
+    "tryAgain": "Try again"
+  },
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "register": "Sign up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "forgotPassword": "Forgot your password?",
+    "rememberMe": "Remember me",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "sessionExpired": "Your session expired, please log in again"
+  },
+  "events": {
+    "title": "Events",
+    "noEvents": "No events available",
+    "createEvent": "Create event",
+    "editEvent": "Edit event",
+    "eventDetails": "Event details",
+    "eventName": "Event name",
+    "description": "Description",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "location": "Location",
+    "availableSeats": "{{count}} seats available",
+    "backToEvents": "Back to events",
+    "noImages": "This event has no images yet",
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "cancelled": "Cancelled",
+      "completed": "Completed"
+    },
+    "translation": {
+      "translated": "Translated ({{lang}})",
+      "generating": "Generating translation...",
+      "autoReload": "The page will reload automatically."
+    }
+  },
+  "seats": {
+    "selectSeats": "Select your Seats",
+    "availableSeats": "Available seats",
+    "reservedSeats": "Reserved seats",
+    "soldSeats": "Sold seats",
+    "myReservations": "My reservations",
+    "quantity": "Quantity",
+    "howMany": "How many seats do you want?",
+    "selected": "{{count}} of {{total}} selected",
+    "sections": "Sections",
+    "seatMap": "Seat Map",
+    "myCart": "Your Cart",
+    "noSeatsSelected": "You haven't selected any seats",
+    "section": "Section",
+    "price": "Price",
+    "reserve": "Reserve",
+    "release": "Release",
+    "expired": "Your reservation expired and the seat was released",
+    "alreadyTaken": "This seat was already reserved by someone else",
+    "loginRequired": "Log in to reserve seats",
+    "eventUnavailable": "This event no longer accepts reservations"
+  },
+  "profile": {
+    "myProfile": "My profile",
+    "editProfile": "Edit profile",
+    "personalInfo": "Personal information",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phone": "Phone",
+    "city": "City",
+    "language": "Preferred language",
+    "preferences": "Preferences",
+    "updateSuccess": "Profile updated successfully",
+    "updateError": "Could not update profile"
+  },
+  "comments": {
+    "title": "Comments",
+    "writeComment": "Write your comment about the event…",
+    "rating": "Rating",
+    "ratingRequired": "Rating required for your first comment",
+    "publish": "Publish",
+    "publishComment": "Publish comment",
+    "sending": "Sending comment…",
+    "organizer": "Organizer",
+    "you": "You",
+    "noComments": "No comments yet. Be the first!",
+    "loginToComment": "Log in to comment",
+    "errors": {
+      "rateLimited": "Wait a few seconds before commenting again.",
+      "sessionExpired": "Your session expired. Log in again to comment.",
+      "forbidden": "You don't have permission to comment on this event.",
+      "generic": "Could not publish the comment."
+    }
+  },
+  "cart": {
+    "myCart": "My cart",
+    "emptyCart": "Your cart is empty",
+    "total": "Total",
+    "checkout": "Proceed to checkout",
+    "continueShopping": "Continue shopping"
+  },
+  "payment": {
+    "paymentMethod": "Payment method",
+    "card": "Card",
+    "cash": "Cash",
+    "processing": "Processing payment…",
+    "success": "Payment successful",
+    "failed": "Payment failed",
+    "pending": "Payment pending"
+  },
+  "navigation": {
+    "home": "Home",
+    "about": "About",
+    "events": "Events",
+    "myEvents": "My Events",
+    "createEvent": "Create Event",
+    "profile": "Profile",
+    "viewAll": "View all"
+  }
+}

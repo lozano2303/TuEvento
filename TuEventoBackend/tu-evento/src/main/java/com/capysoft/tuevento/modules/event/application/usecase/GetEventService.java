@@ -129,37 +129,45 @@ public class GetEventService implements GetEventUseCase {
 
         if (languageCode != null && !languageCode.isBlank()) {
             try {
-                var language = languageRepository.findByCode(languageCode);
-                if (language.isPresent()) {
-                    var translation = eventTranslationRepository.findByEventAndLanguage(
-                            Math.toIntExact(e.getEventId()), language.get().getLanguageId());
-                    
-                    // Mostrar traducción si existe (DRAFT o PUBLISHED)
-                    if (translation.isPresent()) {
-                        translatedName = translation.get().getTranslatedName();
-                        translatedDescription = translation.get().getTranslatedDescription();
-                        actualLanguageCode = languageCode;
-                    } else {
-                        // Translation doesn't exist - trigger lazy loading
-                        log.info("Translation not found for event {} language {} - triggering lazy loading",
-                                e.getEventId(), languageCode);
+                // IMPORTANT: Don't translate if requested language is the same as source language (Spanish)
+                // Events are created in Spanish by default
+                if ("es".equalsIgnoreCase(languageCode)) {
+                    // Return original content without translation for Spanish
+                    log.debug("Requested language is Spanish (source language) - no translation needed for event {}", 
+                            e.getEventId());
+                } else {
+                    var language = languageRepository.findByCode(languageCode);
+                    if (language.isPresent()) {
+                        var translation = eventTranslationRepository.findByEventAndLanguage(
+                                Math.toIntExact(e.getEventId()), language.get().getLanguageId());
                         
-                        // Check if job already exists
-                        var existingJob = translationJobRepository.findByEntityAndTargetLanguage(
-                                "event", Math.toIntExact(e.getEventId()), language.get().getLanguageId());
-                        
-                        if (existingJob.isEmpty() || 
-                            existingJob.get().getStatus() == com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus.FAILED) {
-                            // No job exists or previous job failed - create new translation job
-                            translationService.requestTranslation("event", e.getEventId(), "es");
-                            translationGenerating = true;
-                            log.info("Lazy loading translation job created for event {} -> {}", 
-                                    e.getEventId(), languageCode);
+                        // Mostrar traducción si existe (DRAFT o PUBLISHED)
+                        if (translation.isPresent()) {
+                            translatedName = translation.get().getTranslatedName();
+                            translatedDescription = translation.get().getTranslatedDescription();
+                            actualLanguageCode = languageCode;
                         } else {
-                            // Job exists and is PENDING or PROCESSING
-                            translationGenerating = true;
-                            log.info("Translation job already in progress for event {} -> {}", 
+                            // Translation doesn't exist - trigger lazy loading
+                            log.info("Translation not found for event {} language {} - triggering lazy loading",
                                     e.getEventId(), languageCode);
+                            
+                            // Check if job already exists
+                            var existingJob = translationJobRepository.findByEntityAndTargetLanguage(
+                                    "event", Math.toIntExact(e.getEventId()), language.get().getLanguageId());
+                            
+                            if (existingJob.isEmpty() || 
+                                existingJob.get().getStatus() == com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus.FAILED) {
+                                // No job exists or previous job failed - create new translation job
+                                translationService.requestTranslation("event", e.getEventId(), "es");
+                                translationGenerating = true;
+                                log.info("Lazy loading translation job created for event {} -> {}", 
+                                        e.getEventId(), languageCode);
+                            } else {
+                                // Job exists and is PENDING or PROCESSING
+                                translationGenerating = true;
+                                log.info("Translation job already in progress for event {} -> {}", 
+                                        e.getEventId(), languageCode);
+                            }
                         }
                     }
                 }
