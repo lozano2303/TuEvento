@@ -12,6 +12,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * Listener que solicita traducciones automáticamente cuando se crea un evento.
  * Se ejecuta DESPUÉS de que la transacción de creación se complete exitosamente,
  * evitando problemas de transacciones anidadas.
+ * 
+ * NOTA: DESHABILITADO para implementar lazy loading.
+ * Las traducciones ahora se generan on-demand cuando un usuario solicita un idioma específico.
  */
 @Slf4j
 @Component
@@ -20,7 +23,8 @@ public class EventTranslationListener {
 
     private final TranslationService translationService;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    // DISABLED: Lazy loading - translations are now generated on-demand
+    // @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onEventCreated(EventCreatedEvent event) {
         try {
             log.debug("[EventTranslationListener] Event {} created, requesting translations", event.getEventId());

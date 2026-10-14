@@ -21,6 +21,7 @@ public class LibreTranslateAdapter implements TranslationPort {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final Duration readTimeout;
     
     public LibreTranslateAdapter(
             @Value("${translation.libretranslate.base-url:http://localhost:5001}") String baseUrl,
@@ -29,11 +30,13 @@ public class LibreTranslateAdapter implements TranslationPort {
             ObjectMapper objectMapper) {
         
         this.objectMapper = objectMapper;
+        this.readTimeout = readTimeout;
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();
                 
-        log.info("LibreTranslate adapter configured with base URL: {}", baseUrl);
+        log.info("LibreTranslate adapter configured with base URL: {}, readTimeout: {}s", 
+                baseUrl, readTimeout.toSeconds());
     }
 
     @Override
@@ -41,6 +44,9 @@ public class LibreTranslateAdapter implements TranslationPort {
         if (sourceText == null || sourceText.trim().isEmpty()) {
             return sourceText;
         }
+
+        log.debug("Translating text ({}->{}): {}", sourceLang, targetLang, 
+                sourceText.substring(0, Math.min(50, sourceText.length())));
 
         try {
             Map<String, String> request = Map.of(
@@ -50,6 +56,9 @@ public class LibreTranslateAdapter implements TranslationPort {
                 "format", "text"
             );
 
+            log.debug("Sending request to LibreTranslate: {}", request);
+            long startTime = System.currentTimeMillis();
+
             String response = restClient.post()
                     .uri("/translate")
                     .header("Content-Type", "application/json")
@@ -57,13 +66,17 @@ public class LibreTranslateAdapter implements TranslationPort {
                     .retrieve()
                     .body(String.class);
 
+            long duration = System.currentTimeMillis() - startTime;
+            log.debug("LibreTranslate response received in {}ms", duration);
+
             // Parse JSON response
             JsonNode jsonResponse = objectMapper.readTree(response);
             String translatedText = jsonResponse.get("translatedText").asText();
             
-            log.debug("Translation successful: {} -> {} ({}->{})", 
-                sourceText.substring(0, Math.min(50, sourceText.length())), 
-                translatedText.substring(0, Math.min(50, translatedText.length())),
+            log.info("Translation successful in {}ms: {} -> {} ({}->{})", 
+                duration,
+                sourceText.substring(0, Math.min(30, sourceText.length())), 
+                translatedText.substring(0, Math.min(30, translatedText.length())),
                 sourceLang, targetLang);
                 
             return translatedText;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send, Languages } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send } from 'lucide-react';
 import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
 import Konva from 'konva';
 import { getEventById } from '../services/EventService';
@@ -31,11 +31,6 @@ export default function EventDetail() {
   const [activeImage, setActiveImage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Idioma
-  const [languages, setLanguages] = useState([]);
-  const [selectedLanguageCode, setSelectedLanguageCode] = useState(null);
-  const [languageSelectorOpen, setLanguageSelectorOpen] = useState(false);
 
   // Estado de selección de sillas
   const [layoutElements, setLayoutElements] = useState([]);
@@ -69,43 +64,38 @@ export default function EventDetail() {
     const userId = localStorage.getItem('userID');
     setCurrentUserId(userId ? parseInt(userId) : null);
 
-    // Cargar idiomas disponibles y perfil del usuario para idioma preferido
-    const loadLanguagesAndProfile = async () => {
-      try {
-        const langs = await getActiveLanguages();
-        setLanguages(langs);
-        
-        // Si hay usuario autenticado, cargar su idioma preferido
-        if (userId) {
-          try {
-            const profileRes = await getProfileByUserId(userId);
-            const preferredLangId = profileRes?.data?.preferredLanguageId;
-            if (preferredLangId) {
-              const preferredLang = langs.find(l => l.languageId === preferredLangId);
-              if (preferredLang) {
-                setSelectedLanguageCode(preferredLang.code);
-              }
+    // Cargar idioma preferido del usuario y luego el evento
+    const loadEventWithUserLanguage = async () => {
+      setIsLoading(true);
+      let userLanguageCode = null;
+
+      // Si hay usuario autenticado, cargar su idioma preferido
+      if (userId) {
+        try {
+          const profileRes = await getProfileByUserId(userId);
+          const preferredLangId = profileRes?.data?.preferredLanguageId;
+          if (preferredLangId) {
+            const langs = await getActiveLanguages();
+            const preferredLang = langs.find(l => l.languageId === preferredLangId);
+            if (preferredLang) {
+              userLanguageCode = preferredLang.code;
             }
-          } catch (err) {
-            console.warn('[EventDetail] No se pudo cargar idioma preferido:', err);
           }
+        } catch (err) {
+          console.warn('[EventDetail] No se pudo cargar idioma preferido del usuario:', err);
         }
-      } catch (err) {
-        console.error('[EventDetail] Error cargando idiomas:', err);
       }
-    };
 
-    loadLanguagesAndProfile();
+      // Cargar evento con el idioma del usuario (si lo tiene)
+      try {
+        const [eventRes, mediaRes, layoutRes, sectionsRes] = await Promise.all([
+          getEventById(eventId, userLanguageCode),
+          getEventMedia(eventId),
+          LayoutService.getLayout(eventId),
+          EventSectionService.getByEvent(eventId),
+        ]);
 
-    Promise.all([
-      getEventById(eventId, selectedLanguageCode),
-      getEventMedia(eventId),
-      LayoutService.getLayout(eventId),
-      EventSectionService.getByEvent(eventId),
-    ])
-      .then(async ([eventRes, mediaRes, layoutRes, sectionsRes]) => {
         setEvent(eventRes.data);
-        // Guardar el userId del organizador para la lógica R4 del frontend
         setEventOrganizerUserId(eventRes.data?.userId ?? null);
         setMedia(mediaRes.data ?? []);
         setSections(sectionsRes.data ?? []);
@@ -131,10 +121,15 @@ export default function EventDetail() {
           }
           setSeats(seatMap);
         }
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setIsLoading(false));
-  }, [eventId, selectedLanguageCode]);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadEventWithUserLanguage();
+  }, [eventId]);
 
   // P4: mantener seatsRef sincronizado con el estado seats
   useEffect(() => {
@@ -503,55 +498,6 @@ export default function EventDetail() {
 
           {/* ── Info del evento ────────────────────────────────────────────── */}
           <div className="flex flex-col gap-5">
-            {/* Selector de idioma */}
-            {languages.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={() => setLanguageSelectorOpen(!languageSelectorOpen)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-xs font-medium"
-                  style={{
-                    background: 'rgba(109,40,217,0.15)',
-                    border: '1px solid rgba(167,139,250,0.25)',
-                    color: 'rgba(233,213,255,0.9)'
-                  }}
-                >
-                  <Languages className="w-3.5 h-3.5" style={{ color: 'rgba(167,139,250,0.7)' }} />
-                  {selectedLanguageCode 
-                    ? languages.find(l => l.code === selectedLanguageCode)?.name || 'Idioma'
-                    : 'Seleccionar idioma'}
-                </button>
-                
-                {languageSelectorOpen && (
-                  <div
-                    className="absolute top-full left-0 mt-2 w-48 rounded-lg overflow-hidden z-50 shadow-xl"
-                    style={{ background: 'rgba(15,10,30,0.95)', border: '1px solid rgba(167,139,250,0.2)' }}
-                  >
-                    {languages.map(lang => (
-                      <button
-                        key={lang.languageId}
-                        onClick={() => {
-                          setSelectedLanguageCode(lang.code);
-                          setLanguageSelectorOpen(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-sm transition-all"
-                        style={{
-                          background: selectedLanguageCode === lang.code 
-                            ? 'rgba(109,40,217,0.3)' 
-                            : 'transparent',
-                          color: selectedLanguageCode === lang.code 
-                            ? '#e9d5ff' 
-                            : 'rgba(196,181,253,0.75)',
-                          borderBottom: '1px solid rgba(167,139,250,0.1)'
-                        }}
-                      >
-                        {lang.name} ({lang.code.toUpperCase()})
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
             <div>
               <h1 className="text-2xl font-bold" style={{ color: '#e9d5ff' }}>
                 {event.translatedName || event.eventName}
@@ -561,10 +507,25 @@ export default function EventDetail() {
                   {event.translatedDescription || event.description}
                 </p>
               )}
-              {event.languageCode && (
+              
+              {/* Translation status badge */}
+              {event.languageCode && !event.translationGenerating && (
                 <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(109,40,217,0.2)', color: 'rgba(167,139,250,0.8)', border: '1px solid rgba(167,139,250,0.2)' }}>
-                  Traducido al {languages.find(l => l.code === event.languageCode)?.name || event.languageCode}
+                  Traducido ({event.languageCode.toUpperCase()})
                 </span>
+              )}
+              
+              {/* Translation generating indicator (lazy loading) */}
+              {event.translationGenerating && (
+                <div className="mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: 'rgba(251,191,36,0.9)' }}>
+                  <Clock className="w-3.5 h-3.5 animate-spin" />
+                  <span>
+                    Generando traducción...
+                    <span className="block text-[10px] mt-0.5 opacity-75">
+                      Actualizá la página en un momento.
+                    </span>
+                  </span>
+                </div>
               )}
             </div>
 

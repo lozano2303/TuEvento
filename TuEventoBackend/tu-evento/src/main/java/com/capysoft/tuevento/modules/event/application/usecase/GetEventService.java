@@ -32,6 +32,8 @@ public class GetEventService implements GetEventUseCase {
     // Translation support
     private final com.capysoft.tuevento.modules.language.domain.repository.EventTranslationRepository eventTranslationRepository;
     private final com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository languageRepository;
+    private final com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository translationJobRepository;
+    private final com.capysoft.tuevento.modules.language.application.service.TranslationService translationService;
 
     // ─── Authenticated queries ────────────────────────────────────────────────
 
@@ -119,10 +121,11 @@ public class GetEventService implements GetEventUseCase {
             log.warn("Could not resolve siteName for event {}: {}", e.getEventId(), ex.getMessage());
         }
 
-        // Translation support
+        // Translation support with LAZY LOADING
         String translatedName = null;
         String translatedDescription = null;
         String actualLanguageCode = null;
+        Boolean translationGenerating = false;
 
         if (languageCode != null && !languageCode.isBlank()) {
             try {
@@ -130,10 +133,34 @@ public class GetEventService implements GetEventUseCase {
                 if (language.isPresent()) {
                     var translation = eventTranslationRepository.findByEventAndLanguage(
                             Math.toIntExact(e.getEventId()), language.get().getLanguageId());
+                    
                     if (translation.isPresent() && translation.get().isPublished()) {
+                        // Translation exists and is published - return it
                         translatedName = translation.get().getTranslatedName();
                         translatedDescription = translation.get().getTranslatedDescription();
                         actualLanguageCode = languageCode;
+                    } else {
+                        // Translation doesn't exist - trigger lazy loading
+                        log.info("Translation not found for event {} language {} - triggering lazy loading",
+                                e.getEventId(), languageCode);
+                        
+                        // Check if job already exists
+                        var existingJob = translationJobRepository.findByEntityAndTargetLanguage(
+                                "event", Math.toIntExact(e.getEventId()), language.get().getLanguageId());
+                        
+                        if (existingJob.isEmpty() || 
+                            existingJob.get().getStatus() == com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus.FAILED) {
+                            // No job exists or previous job failed - create new translation job
+                            translationService.requestTranslation("event", e.getEventId(), "es");
+                            translationGenerating = true;
+                            log.info("Lazy loading translation job created for event {} -> {}", 
+                                    e.getEventId(), languageCode);
+                        } else {
+                            // Job exists and is PENDING or PROCESSING
+                            translationGenerating = true;
+                            log.info("Translation job already in progress for event {} -> {}", 
+                                    e.getEventId(), languageCode);
+                        }
                     }
                 }
             } catch (Exception ex) {
@@ -158,6 +185,7 @@ public class GetEventService implements GetEventUseCase {
                 .translatedName(translatedName)
                 .translatedDescription(translatedDescription)
                 .languageCode(actualLanguageCode)
+                .translationGenerating(translationGenerating)
                 .rejectionReason(e.getRejectionReason())
                 .createdAt(e.getCreatedAt())
                 .updatedAt(e.getUpdatedAt())

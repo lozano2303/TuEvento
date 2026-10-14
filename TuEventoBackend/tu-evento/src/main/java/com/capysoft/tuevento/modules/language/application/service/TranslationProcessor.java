@@ -73,9 +73,14 @@ public class TranslationProcessor {
                 return CompletableFuture.completedFuture(null);
             }
             
-            for (TranslationJob job : pendingJobs) {
-                processJob(job, handler);
-            }
+            // Procesar jobs en paralelo para mejorar rendimiento
+            pendingJobs.parallelStream().forEach(job -> {
+                try {
+                    processJob(job, handler);
+                } catch (Exception e) {
+                    log.error("Error processing job {} in parallel: {}", job.getJobId(), e.getMessage(), e);
+                }
+            });
             
             log.debug("Completed processing {} jobs for {}/{}", pendingJobs.size(), entityType, entityId);
             return CompletableFuture.completedFuture(null);
