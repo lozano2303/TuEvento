@@ -33,6 +33,8 @@ public class GetProfileByUserIdUseCase implements GetProfileByUserIdPort {
                 .storedFileId(p.getStoredFileId())
                 .fullName(p.getFullName())
                 .bio(p.getBio())
+                .preferredLanguageId(p.getPreferredLanguageId())
+                .nameChangedAt(p.getNameChangedAt())
                 .build();
     }
 }

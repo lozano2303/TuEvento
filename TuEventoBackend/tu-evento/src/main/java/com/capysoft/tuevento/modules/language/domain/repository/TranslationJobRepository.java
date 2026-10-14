@@ -23,6 +23,11 @@ public interface TranslationJobRepository {
     List<TranslationJob> findByEntityAndStatus(String entityType, Integer entityId, TranslationJobStatus status);
 
     /**
+     * Busca todos los jobs con un estado específico.
+     */
+    List<TranslationJob> findByStatus(TranslationJobStatus status);
+
+    /**
      * Busca jobs para reintento.
      */
     List<TranslationJob> findJobsForRetry(LocalDateTime now, int maxAttempts);
