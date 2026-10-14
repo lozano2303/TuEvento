@@ -64,16 +64,17 @@ public class EventTranslatableContentHandler implements TranslatableContentHandl
     @Override
     public void saveTranslation(Long entityId, String languageCode, Map<String, String> translatedTexts, 
                                TranslationSource source, TranslationStatus status) {
-        log.debug("Saving translation for event {} in language {}: {}", entityId, languageCode, translatedTexts);
+        log.info("=== SAVETR ANSLATION START === Event: {}, Lang: {}, Texts: {}", entityId, languageCode, translatedTexts);
         
         // 1. Buscar el idioma por código
         var language = languageRepository.findByCode(languageCode);
         if (language.isEmpty()) {
-            log.warn("Language {} not found for saving translation", languageCode);
+            log.error("CRITICAL: Language {} not found for saving translation", languageCode);
             return;
         }
         
         Integer languageId = language.get().getLanguageId();
+        log.info("Language found: {} -> ID: {}", languageCode, languageId);
         
         // 2. Buscar traducción existente o crear nueva
         Optional<EventTranslation> existingTranslation = 
@@ -83,7 +84,7 @@ public class EventTranslatableContentHandler implements TranslatableContentHandl
         if (existingTranslation.isPresent()) {
             // Actualizar traducción existente
             translation = existingTranslation.get();
-            log.debug("Updating existing translation {} for event {}/{}", 
+            log.info("Updating existing translation {} for event {}/{}", 
                      translation.getTranslationId(), entityId, languageCode);
         } else {
             // Crear nueva traducción
@@ -93,7 +94,7 @@ public class EventTranslatableContentHandler implements TranslatableContentHandl
                     .source(source)
                     .status(status)
                     .build();
-            log.debug("Creating new translation for event {}/{}", entityId, languageCode);
+            log.info("Creating NEW translation for event {}/{}", entityId, languageCode);
         }
         
         // 3. Actualizar contenido traducido
@@ -101,30 +102,39 @@ public class EventTranslatableContentHandler implements TranslatableContentHandl
         
         if (translatedTexts.containsKey("event_name")) {
             String translatedName = translatedTexts.get("event_name");
+            log.info("Processing event_name: '{}'", translatedName);
             if (translatedName != null && !translatedName.trim().isEmpty()) {
                 translation.setTranslatedName(translatedName);
+                log.info("Set translatedName: '{}'", translatedName);
                 updated = true;
             }
         }
         
         if (translatedTexts.containsKey("description")) {
             String translatedDescription = translatedTexts.get("description");
+            log.info("Processing description: '{}'", translatedDescription);
             if (translatedDescription != null && !translatedDescription.trim().isEmpty()) {
                 translation.setTranslatedDescription(translatedDescription);
+                log.info("Set translatedDescription: '{}'", translatedDescription);
                 updated = true;
             }
         }
+        
+        log.info("Updated flag: {}, Source: {}, Status: {}", updated, source, status);
         
         if (updated) {
             translation.setSource(source);
             translation.setStatus(status);
             
+            log.info("CALLING eventTranslationRepository.save()...");
             EventTranslation savedTranslation = eventTranslationRepository.save(translation);
-            log.info("Saved translation {} for event {} in language {}", 
+            log.info("✅ SAVED SUCCESSFULLY - Translation ID: {} for event {} in language {}", 
                     savedTranslation.getTranslationId(), entityId, languageCode);
         } else {
-            log.debug("No translations applied to event {}", entityId);
+            log.warn("❌ NO UPDATES - No translations applied to event {}", entityId);
         }
+        
+        log.info("=== SAVETRANSLATION END ===");
     }
 
     @Override

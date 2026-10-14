@@ -136,6 +136,17 @@ export default function EventDetail() {
     seatsRef.current = seats;
   }, [seats]);
 
+  // Auto-reload cuando se detecta que la traducción está generándose
+  useEffect(() => {
+    if (event?.translationGenerating) {
+      const timer = setTimeout(() => {
+        window.location.reload();
+      }, 20000); // 20 segundos (dar tiempo a que complete la traducción)
+
+      return () => clearTimeout(timer);
+    }
+  }, [event?.translationGenerating]);
+
   // ── Carga inicial de comentarios por REST ──────────────────────────────────
   useEffect(() => {
     if (!eventId || isLoading) return;
@@ -515,14 +526,14 @@ export default function EventDetail() {
                 </span>
               )}
               
-              {/* Translation generating indicator (lazy loading) */}
+              {/* Translation generating indicator (lazy loading con auto-reload) */}
               {event.translationGenerating && (
                 <div className="mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: 'rgba(251,191,36,0.9)' }}>
                   <Clock className="w-3.5 h-3.5 animate-spin" />
                   <span>
                     Generando traducción...
                     <span className="block text-[10px] mt-0.5 opacity-75">
-                      Actualizá la página en un momento.
+                      La página se recargará automáticamente.
                     </span>
                   </span>
                 </div>

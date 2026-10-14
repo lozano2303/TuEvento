@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed — fix(translation): translation system saving and lazy loading
+
+- **TranslationConfiguration**: Changed rejection policy from `AbortPolicy` to `CallerRunsPolicy` to prevent job loss when thread pool queue is full
+- **GetEventService**: Added lazy loading to auto-generate translations when requested language doesn't exist
+  - Checks if translation exists before creating job
+  - Prevents duplicate job creation
+  - Returns `translationGenerating: true` flag during processing
+- **EventTranslatableContentHandler**: Added detailed logging to `saveTranslation()` for debugging
+- **Frontend**: Translation status indicator and auto-reload when generation completes
+- **Result**: Translations now save correctly to `event_translation` table and display in frontend for all supported languages (en, fr, pt)
+
 ### Added — feat(event-comments-websocket): comentarios de eventos en tiempo real, R1-R5
 
 **Reglas de negocio (R1-R5)**

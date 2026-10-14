@@ -42,6 +42,14 @@ public class TranslationJobRepositoryImpl implements TranslationJobRepository {
     }
 
     @Override
+    public List<TranslationJob> findByStatus(TranslationJobStatus status) {
+        return jpaRepository.findByStatus(status)
+                .stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<TranslationJob> findJobsForRetry(LocalDateTime now, int maxAttempts) {
         return jpaRepository.findJobsForRetry(now, maxAttempts)
                 .stream()

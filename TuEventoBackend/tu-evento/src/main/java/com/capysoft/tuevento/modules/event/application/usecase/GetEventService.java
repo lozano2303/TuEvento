@@ -134,8 +134,8 @@ public class GetEventService implements GetEventUseCase {
                     var translation = eventTranslationRepository.findByEventAndLanguage(
                             Math.toIntExact(e.getEventId()), language.get().getLanguageId());
                     
-                    if (translation.isPresent() && translation.get().isPublished()) {
-                        // Translation exists and is published - return it
+                    // Mostrar traducción si existe (DRAFT o PUBLISHED)
+                    if (translation.isPresent()) {
                         translatedName = translation.get().getTranslatedName();
                         translatedDescription = translation.get().getTranslatedDescription();
                         actualLanguageCode = languageCode;

@@ -53,7 +53,6 @@ export function NotificationProvider({ children }) {
       const unread = notificationList.filter(n => !n.readAt).length;
       setUnreadCount(unread);
     } catch (err) {
-      console.error('[NotificationContext] Error loading notifications:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -80,7 +79,7 @@ export function NotificationProvider({ children }) {
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
     } catch (err) {
-      console.error('[NotificationContext] Error marking notification as read:', err);
+      // Error silenciado
     }
   }, []);
 
@@ -96,7 +95,7 @@ export function NotificationProvider({ children }) {
       
       setUnreadCount(0);
     } catch (err) {
-      console.error('[NotificationContext] Error marking all as read:', err);
+      // Error silenciado
     }
   }, []);
 
@@ -109,7 +108,6 @@ export function NotificationProvider({ children }) {
    */
   const subscribe = useCallback((destination, callback, key) => {
     if (!wsClientRef.current || !wsClientRef.current.connected) {
-      console.warn('[WebSocket] Cannot subscribe, client not connected');
       return () => {};
     }
 
@@ -123,7 +121,7 @@ export function NotificationProvider({ children }) {
         const data = JSON.parse(message.body);
         callback(data);
       } catch (err) {
-        console.error(`[WebSocket] Error parsing message from ${destination}:`, err);
+        // Error parsing message
       }
     });
 
@@ -156,8 +154,6 @@ export function NotificationProvider({ children }) {
       webSocketFactory: () => new SockJS(`${WS_BASE_URL}/ws?token=${newToken}`),
 
       onConnect: () => {
-        console.log('[WebSocket] Reconnected successfully');
-        
         const notificationDest = `/topic/notifications/${userId}`;
         
         const notifSubscription = client.subscribe(notificationDest, (message) => {
@@ -165,7 +161,7 @@ export function NotificationProvider({ children }) {
             const notification = JSON.parse(message.body);
             handleNewNotification(notification);
           } catch (err) {
-            console.error('[WebSocket] Error parsing notification:', err);
+            // Error parsing notification
           }
         });
 
@@ -173,17 +169,14 @@ export function NotificationProvider({ children }) {
       },
 
       onStompError: (frame) => {
-        console.error('[WebSocket] STOMP error:', frame.headers['message']);
         setError('WebSocket connection error');
       },
 
       onWebSocketError: (event) => {
-        console.error('[WebSocket] WebSocket error:', event);
         setError('WebSocket network error');
       },
 
       onDisconnect: () => {
-        console.info('[WebSocket] Disconnected');
         subscriptionsRef.current.clear();
       },
 
@@ -208,14 +201,12 @@ export function NotificationProvider({ children }) {
 
     const token = localStorage.getItem('token');
     if (!token) {
-      console.info('[WebSocket] No token found, skipping WebSocket initialization');
       setLoading(false);
       return;
     }
 
     const userId = localStorage.getItem('userID');
     if (!userId) {
-      console.warn('[WebSocket] No userID found');
       setLoading(false);
       return;
     }
@@ -243,7 +234,7 @@ export function NotificationProvider({ children }) {
             const notification = JSON.parse(message.body);
             handleNewNotification(notification);
           } catch (err) {
-            console.error('[WebSocket] Error parsing notification:', err);
+            // Error parsing notification
           }
         });
 
@@ -251,17 +242,14 @@ export function NotificationProvider({ children }) {
       },
 
       onStompError: (frame) => {
-        console.error('[WebSocket] STOMP error:', frame.headers['message']);
         setError('WebSocket connection error');
       },
 
       onWebSocketError: (event) => {
-        console.error('[WebSocket] WebSocket error:', event);
         setError('WebSocket network error');
       },
 
       onDisconnect: () => {
-        console.info('[WebSocket] Disconnected');
         subscriptionsRef.current.clear();
       },
 

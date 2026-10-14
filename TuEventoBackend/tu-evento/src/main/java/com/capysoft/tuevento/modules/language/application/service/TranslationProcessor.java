@@ -154,9 +154,9 @@ public class TranslationProcessor {
                 }
             }
 
-            // 6. Guardar traducción
+            // 6. Guardar traducción como PUBLISHED (auto-aprobada)
             handler.saveTranslation(job.getEntityId().longValue(), targetLanguage.get().getCode(), 
-                    translatedTexts, TranslationSource.MACHINE, TranslationStatus.DRAFT);
+                    translatedTexts, TranslationSource.MACHINE, TranslationStatus.PUBLISHED);
             
             // 7. Marcar job como completado
             job.markCompleted();

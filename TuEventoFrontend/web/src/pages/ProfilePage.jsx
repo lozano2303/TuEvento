@@ -44,7 +44,10 @@ const ProfilePage = () => {
   // ── Estado ─────────────────────────────────────────────────────────────────
   const [languages, setLanguages] = useState([]);
   const [selectedLanguage, setSelectedLanguage] = useState(null);
+  const [initialLanguage, setInitialLanguage] = useState(null); // Para detectar cambios
   const [loading, setLoading] = useState(false);
+  const [savingLanguage, setSavingLanguage] = useState(false); // Loading específico para idioma
+  const [languageSaveMessage, setLanguageSaveMessage] = useState(null); // { type: 'success' | 'error', text: string }
   const [customizePanelOpen, setCustomizePanelOpen] = useState(false);
   const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
 
@@ -89,14 +92,14 @@ const ProfilePage = () => {
     if (!token) return;
     getThemes()
       .then(data => setThemes(data || []))
-      .catch(err => console.error('[ProfilePage] Error cargando temas:', err));
+      .catch(() => {});
   }, []);
 
-  // ── Carga idiomas ──────────────────────────────────────────────────────────
+  // ── Carga idiomas primero ─────────────────────────────────────────────────
   useEffect(() => {
     getActiveLanguages()
       .then(langs => setLanguages(langs))
-      .catch(err => console.error('[ProfilePage] Error cargando idiomas:', err));
+      .catch(() => {});
   }, []);
 
   // Sincronizar carrusel con el tema activo
@@ -106,8 +109,10 @@ const ProfilePage = () => {
     if (idx >= 0) setCarouselIdx(idx);
   }, [themes, activeThemeId]);
 
-  // ── Carga perfil ───────────────────────────────────────────────────────────
+  // ── Carga perfil después de que los idiomas estén cargados ────────────────
   useEffect(() => {
+    if (languages.length === 0) return; // Esperar a que los idiomas se carguen
+    
     const load = async () => {
       const token = localStorage.getItem('token');
       const userId = localStorage.getItem('userID');
@@ -128,6 +133,14 @@ const ProfilePage = () => {
         // Cargar idioma preferido
         if (profile.preferredLanguageId) {
           setSelectedLanguage(profile.preferredLanguageId);
+          setInitialLanguage(profile.preferredLanguageId);
+        } else {
+          // Si no tiene idioma, pre-seleccionar español (language_id = 1)
+          const spanishLang = languages.find(l => l.code === 'es');
+          if (spanishLang) {
+            setSelectedLanguage(spanishLang.languageId);
+            setInitialLanguage(spanishLang.languageId);
+          }
         }
         if (profile.storedFileId) {
           try {
@@ -139,13 +152,13 @@ const ProfilePage = () => {
           }
         }
       } catch (err) {
-        console.error('[ProfilePage] Error:', err);
+        // Error silenciado
       } finally {
         setAvatarLoading(false);
       }
     };
     load();
-  }, []);
+  }, [languages]); // Depende de languages
 
   useEffect(() => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
@@ -175,9 +188,32 @@ const ProfilePage = () => {
       await activateTheme(themeId);
       await refreshPalette();
     } catch (err) {
-      console.error('[ProfilePage] Error activando tema:', err);
+      // Error silenciado
     } finally {
       setLoadingTheme(false);
+    }
+  };
+
+  // ── Guardar idioma independientemente ──────────────────────────────────────
+  const handleSaveLanguage = async () => {
+    if (!profileId || selectedLanguage === initialLanguage) return;
+    
+    setSavingLanguage(true);
+    setLanguageSaveMessage(null);
+    
+    try {
+      await updateProfile(profileId, {
+        preferredLanguageId: selectedLanguage,
+      });
+      setInitialLanguage(selectedLanguage);
+      setLanguageSaveMessage({ type: 'success', text: 'Idioma actualizado correctamente' });
+      
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => setLanguageSaveMessage(null), 3000);
+    } catch (err) {
+      setLanguageSaveMessage({ type: 'error', text: 'No se pudo actualizar el idioma' });
+    } finally {
+      setSavingLanguage(false);
     }
   };
 
@@ -197,8 +233,9 @@ const ProfilePage = () => {
         preferredLanguageId: selectedLanguage,
       });
       localStorage.setItem('name', formData.nombreCompleto);
+      setInitialLanguage(selectedLanguage);
     } catch (err) {
-      console.error('[ProfilePage] Error guardando perfil:', err);
+      alert('Error al guardar el perfil');
     } finally {
       setLoading(false);
     }
@@ -492,38 +529,86 @@ const ProfilePage = () => {
               {languages.length === 0 ? (
                 <p className="text-textMuted text-sm text-center py-4">Cargando idiomas…</p>
               ) : (
-                <div className="space-y-2">
-                  {languages.map(lang => (
-                    <button
-                      key={lang.languageId}
-                      onClick={() => setSelectedLanguage(lang.languageId)}
-                      className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition-all text-left ${
-                        selectedLanguage === lang.languageId
-                          ? 'bg-primary/10 border border-primary/40'
-                          : 'bg-surface border border-surfaceAlt hover:border-primary/30'
-                      }`}
-                    >
-                      <span className={`text-sm font-medium ${
-                        selectedLanguage === lang.languageId ? 'text-textPrimary' : 'text-textSecondary'
-                      }`}>
-                        {lang.name} ({lang.code.toUpperCase()})
-                      </span>
-
-                      {/* Radio button — borde siempre visible, relleno primary cuando activo */}
-                      <span
-                        className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
-                        style={{
-                          border: `2px solid ${selectedLanguage === lang.languageId ? 'var(--color-primary)' : 'var(--color-surfaceAlt)'}`,
-                          background: selectedLanguage === lang.languageId ? 'var(--color-primary)' : 'transparent',
-                        }}
+                <>
+                  <div className="space-y-2">
+                    {languages.map(lang => (
+                      <button
+                        key={lang.languageId}
+                        onClick={() => setSelectedLanguage(lang.languageId)}
+                        disabled={savingLanguage}
+                        className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition-all text-left ${
+                          selectedLanguage === lang.languageId
+                            ? 'bg-primary/10 border border-primary/40'
+                            : 'bg-surface border border-surfaceAlt hover:border-primary/30'
+                        } ${savingLanguage ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        {selectedLanguage === lang.languageId && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-textPrimary block" />
-                        )}
-                      </span>
+                        <span className={`text-sm font-medium ${
+                          selectedLanguage === lang.languageId ? 'text-textPrimary' : 'text-textSecondary'
+                        }`}>
+                          {lang.name} ({lang.code.toUpperCase()})
+                        </span>
+
+                        {/* Radio button */}
+                        <span
+                          className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
+                          style={{
+                            border: `2px solid ${selectedLanguage === lang.languageId ? 'var(--color-primary)' : 'var(--color-surfaceAlt)'}`,
+                            background: selectedLanguage === lang.languageId ? 'var(--color-primary)' : 'transparent',
+                          }}
+                        >
+                          {selectedLanguage === lang.languageId && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-textPrimary block" />
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Indicador de cambios sin guardar */}
+                  {selectedLanguage !== initialLanguage && !languageSaveMessage && (
+                    <div className="mt-3 flex items-start gap-2 text-xs px-3 py-2 rounded-lg bg-accent/10 border border-accent/30 text-accent">
+                      <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      <span>Guardá los cambios para aplicar el nuevo idioma</span>
+                    </div>
+                  )}
+                  
+                  {/* Mensaje de éxito/error */}
+                  {languageSaveMessage && (
+                    <div className={`mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
+                      languageSaveMessage.type === 'success'
+                        ? 'bg-green-500/10 border border-green-500/30 text-green-400'
+                        : 'bg-red-500/10 border border-red-500/30 text-red-400'
+                    }`}>
+                      {languageSaveMessage.type === 'success' ? (
+                        <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                      )}
+                      <span>{languageSaveMessage.text}</span>
+                    </div>
+                  )}
+                  
+                  {/* Botón Guardar */}
+                  {selectedLanguage !== initialLanguage && (
+                    <button
+                      onClick={handleSaveLanguage}
+                      disabled={savingLanguage}
+                      className="mt-3 w-full px-4 py-2.5 rounded-xl text-sm font-bold bg-primary hover:bg-primaryDark text-textPrimary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ boxShadow: 'color-mix(in srgb, var(--color-primary) 30%, transparent) 0 2px 12px' }}
+                    >
+                      {savingLanguage ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Guardando…
+                        </span>
+                      ) : (
+                        'Guardar idioma'
+                      )}
                     </button>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </section>
 
