@@ -251,8 +251,8 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
                             translatedDescription = translation.get().getTranslatedDescription();
                             actualLanguageCode = languageCode;
                         } else {
-                            // Translation doesn't exist - trigger lazy loading
-                            log.info("Translation not found for category {} language {} - triggering lazy loading",
+                            // Translation doesn't exist - check job status before creating
+                            log.info("Translation not found for category {} language {} - checking job status",
                                     category.getCategoryId(), languageCode);
                             
                             // Check if job already exists
@@ -266,10 +266,22 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
                                 log.info("Lazy loading translation job created for category {} -> {}", 
                                         category.getCategoryId(), languageCode);
                             } else {
-                                // Job exists and is PENDING or PROCESSING
-                                translationGenerating = true;
-                                log.info("Translation job already in progress for category {} -> {}", 
-                                        category.getCategoryId(), languageCode);
+                                // Job exists - check its status
+                                var jobStatus = existingJob.get().getStatus();
+                                if (jobStatus.name().equals("PENDING") || jobStatus.name().equals("PROCESSING")) {
+                                    translationGenerating = true;
+                                    log.info("Translation job in progress ({}) for category {} -> {}", 
+                                            jobStatus, category.getCategoryId(), languageCode);
+                                } else if (jobStatus.name().equals("COMPLETED")) {
+                                    // Job completed but no PUBLISHED translation found - this shouldn't happen
+                                    // but let's handle it gracefully by not showing generating indicator
+                                    log.warn("Translation job COMPLETED but no PUBLISHED translation found for category {} -> {}", 
+                                            category.getCategoryId(), languageCode);
+                                } else if (jobStatus.name().equals("FAILED")) {
+                                    // Job failed - could retry or show error, for now don't show generating
+                                    log.warn("Translation job FAILED for category {} -> {}", 
+                                            category.getCategoryId(), languageCode);
+                                }
                             }
                         }
                     }
