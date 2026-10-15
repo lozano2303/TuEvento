@@ -15,6 +15,7 @@ public interface GetEventUseCase {
     List<EventSummaryResponse> findByStatus(EventStatus status);
 
     List<EventSummaryResponse> getPublishedEvents();
+    List<EventResponse> getPublishedEventsWithTranslations(String languageCode);
     List<EventSummaryResponse> getPublishedEventsByCityId(Long cityId);
     List<EventSummaryResponse> getPublishedEventsByCategoryId(Integer categoryId);
     List<EventSummaryResponse> getPublishedEventsByDateRange(LocalDate from, LocalDate to);

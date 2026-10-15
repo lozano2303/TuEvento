@@ -13,8 +13,11 @@ import { httpRequest } from './httpClient.js';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 /** Listado público de eventos publicados — GET /events/public, sin auth. */
-export const getAllEvents = async () => {
-  const response = await fetch(`${API_URL}/events/public`);
+export const getAllEvents = async (languageCode = null) => {
+  const url = languageCode 
+    ? `${API_URL}/events/public?language=${languageCode}`
+    : `${API_URL}/events/public`;
+  const response = await fetch(url);
   if (!response.ok) throw new Error('Error al obtener eventos');
   return response.json();
 };

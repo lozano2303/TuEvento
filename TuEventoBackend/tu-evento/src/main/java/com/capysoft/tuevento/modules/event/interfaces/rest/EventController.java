@@ -112,9 +112,10 @@ public class EventController {
 
     @Operation(summary = "List all published public events — no auth required")
     @GetMapping("/public")
-    public ResponseEntity<ApiResponse<List<EventSummaryResponse>>> getPublishedEvents() {
+    public ResponseEntity<ApiResponse<List<EventResponse>>> getPublishedEvents(
+            @RequestParam(required = false) String language) {
         return ResponseEntity.ok(ApiResponse.ok("Published events retrieved",
-                getEventUseCase.getPublishedEvents()));
+                getEventUseCase.getPublishedEventsWithTranslations(language)));
     }
 
     @Operation(summary = "List published public events by city — no auth required")

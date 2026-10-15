@@ -149,16 +149,78 @@ export default function EventDetail() {
     seatsRef.current = seats;
   }, [seats]);
 
-  // Auto-reload cuando se detecta que la traducción está generándose
-  useEffect(() => {
-    if (event?.translationGenerating) {
-      const timer = setTimeout(() => {
-        window.location.reload();
-      }, 20000); // 20 segundos (dar tiempo a que complete la traducción)
+  // Auto-reload cuando se detecta que la traducción está generándose - Reemplazado por polling
+  // useEffect(() => {
+  //   if (event?.translationGenerating) {
+  //     const timer = setTimeout(() => {
+  //       window.location.reload();
+  //     }, 20000); // 20 segundos (dar tiempo a que complete la traducción)
 
-      return () => clearTimeout(timer);
-    }
-  }, [event?.translationGenerating]);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [event?.translationGenerating]);
+
+  // Polling para verificar si la traducción del evento está lista (sin recargar la página)
+  useEffect(() => {
+    if (!event?.translationGenerating) return;
+    
+    let pollCount = 0;
+    const maxPolls = 20; // Máximo 20 intentos (1 minuto)
+    
+    const checkTranslation = async () => {
+      try {
+        const userId = localStorage.getItem('userID');
+        let userLanguageCode = null;
+
+        // Obtener idioma del usuario si está autenticado
+        if (userId) {
+          try {
+            const profileRes = await getProfileByUserId(userId);
+            const preferredLangId = profileRes?.data?.preferredLanguageId;
+            if (preferredLangId) {
+              const langs = await getActiveLanguages();
+              const preferredLang = langs.find(l => l.languageId === preferredLangId);
+              if (preferredLang) {
+                userLanguageCode = preferredLang.code;
+              }
+            }
+          } catch (err) {
+            console.warn('[EventDetail] No se pudo cargar idioma preferido del usuario:', err);
+          }
+        }
+        
+        const result = await getEventById(eventId, userLanguageCode);
+        const eventData = result?.data;
+        
+        // Si la traducción ya está disponible, actualizar
+        if (eventData && !eventData.translationGenerating) {
+          setEvent(eventData);
+          return true; // Indicar que se completó
+        }
+        
+        pollCount++;
+        if (pollCount >= maxPolls) {
+          console.warn('[EventDetail] Translation polling timeout after 1 minute');
+          return true; // Detener el polling
+        }
+        
+        return false; // Continuar polling
+      } catch (err) {
+        console.warn('[EventDetail] Error checking translation status:', err);
+        return false;
+      }
+    };
+    
+    // Verificar cada 3 segundos
+    const pollInterval = setInterval(async () => {
+      const shouldStop = await checkTranslation();
+      if (shouldStop) {
+        clearInterval(pollInterval);
+      }
+    }, 3000);
+    
+    return () => clearInterval(pollInterval);
+  }, [event?.translationGenerating, eventId]);
 
   // ── Carga inicial de comentarios por REST ──────────────────────────────────
   useEffect(() => {
