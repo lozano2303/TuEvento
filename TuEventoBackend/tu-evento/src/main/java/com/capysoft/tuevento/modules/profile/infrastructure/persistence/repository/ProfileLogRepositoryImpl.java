@@ -6,6 +6,7 @@ import com.capysoft.tuevento.modules.profile.domain.repository.ProfileLogReposit
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -23,5 +24,10 @@ public class ProfileLogRepositoryImpl implements ProfileLogRepository {
     @Override
     public List<ProfileLog> findByProfileId(Long profileId) {
         return jpaRepository.findByProfileId(profileId).stream().map(mapper::toDomain).toList();
+    }
+    
+    @Override
+    public boolean existsByProfileIdAndActionAndOccurredAtBetween(Long profileId, String action, LocalDateTime start, LocalDateTime end) {
+        return jpaRepository.existsByProfileIdAndActionAndOccurredAtBetween(profileId, action, start, end);
     }
 }

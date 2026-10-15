@@ -97,7 +97,8 @@ const ProfilePage = () => {
 
   // Polling para verificar si la traducción está lista (sin recargar la página)
   useEffect(() => {
-    if (!profile?.translationGenerating) return;
+    // Solo hacer polling si está generando traducción Y no hay traducción existente
+    if (!profile?.translationGenerating || profile?.translatedBio) return;
     
     let pollCount = 0;
     const maxPolls = 20; // Máximo 20 intentos (1 minuto)
@@ -135,7 +136,7 @@ const ProfilePage = () => {
     const pollInterval = setInterval(checkTranslation, 3000);
     
     return () => clearInterval(pollInterval);
-  }, [profile?.translationGenerating, selectedLanguage, languages]);
+  }, [profile?.translationGenerating, profile?.translatedBio, selectedLanguage, languages]);
 
   // ── Carga temas ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -617,8 +618,8 @@ const ProfilePage = () => {
                     )}
                   </div>
                   
-                  {/* Indicador de traducción generándose */}
-                  {profile?.translationGenerating && (
+                  {/* Indicador de traducción generándose - solo si no hay traducción existente */}
+                  {profile?.translationGenerating && !profile?.translatedBio && (
                     <div className="mt-2 flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400">
                       <Clock className="w-3.5 h-3.5 animate-spin" />
                       <span>
