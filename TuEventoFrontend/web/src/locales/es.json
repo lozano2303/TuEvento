@@ -17,6 +17,60 @@
     "noResults": "No hay resultados",
     "tryAgain": "Intentar de nuevo"
   },
+  "landing": {
+    "hero": {
+      "greeting": "¡Hola, {{name}}!",
+      "greetingFallback": "¡Hola, {{alias}}!",
+      "welcomeBack": "Bienvenido de vuelta.",
+      "mainTitle": "Visualiza el evento",
+      "subtitle": "ideal.",
+      "description": "Diseña, planifica y vive experiencias únicas que marquen la diferencia. Cada detalle cuenta y nuestro kit de asistencia lo hace realidad.",
+      "startNow": "Comenzar ahora"
+    },
+    "features": {
+      "section1": {
+        "title": "Organiza, diseña y vive eventos",
+        "titleAccent": "sin límites.",
+        "description": "Construye eventos memorables con nuestro creador de planos interactivos en línea. Diseña espacios personalizados, gestiona asistentes y visualiza cada detalle de tu evento en tiempo real, todo en una sola plataforma."
+      },
+      "section2": {
+        "title": "Solicitud de",
+        "titleAccent": "Eventos excepcionales.",
+        "description": "Si buscas nuevas experiencias, revisa nuestra lista de eventos disponibles. Explora todas las opciones y encuentra el plan perfecto para ti.",
+        "button": "Revisa los eventos disponibles"
+      }
+    },
+    "benefits": {
+      "title": "¿Por qué deberías elegirnos?",
+      "items": {
+        "timesSaving": {
+          "title": "Ahorra tiempo en colas",
+          "description": "Dale a tus clientes un proceso de planificación de eventos, reduciendo el procesamiento con ayudantes expertos y elimina las filas."
+        },
+        "findEvents": {
+          "title": "Encuentra eventos fácilmente",
+          "description": "Nuestro sistema te permite encontrar el asistente desde una interfaz accesible, útil que te permitirá confirmar detalles de su evento tan rápido como lo desees sin complicaciones."
+        },
+        "free": {
+          "title": "Totalmente gratuito.",
+          "description": "Acceso a las funciones básicas de nuestro plano gratis que te convierte en un agente accesible tanto para pequeños negocios como para grandes compañías."
+        }
+      }
+    },
+    "compatibility": {
+      "title": "Dispositivos con compatibilidad.",
+      "web": "WEB",
+      "android": "ANDROID",
+      "downloadApk": "Descargar APK"
+    },
+    "apkModal": {
+      "title": "Aplicación Móvil TuEvento",
+      "subtitle": "Disponible para dispositivos Android",
+      "description": "Descarga la aplicación móvil para acceder a todas las funciones de TuEvento desde tu dispositivo Android.",
+      "download": "Descargar APK",
+      "cancel": "Cancelar"
+    }
+  },
   "auth": {
     "login": "Iniciar sesión",
     "logout": "Cerrar sesión",
