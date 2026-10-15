@@ -71,6 +71,88 @@
       "cancel": "Cancelar"
     }
   },
+  "about": {
+    "hero": {
+      "badge": "Plataforma de Eventos Innovadora",
+      "title": "Sobre",
+      "titleAccent": "Nosotros", 
+      "description": "En \"Tu Evento\" transformamos ideas en experiencias inolvidables. Somos una plataforma especializada en la maquetación virtual de espacios para eventos, permitiendo a organizadores planificar visualmente la disposición de sus lugares: mesas, escenarios, pistas de baile, áreas VIP y más.",
+      "features": {
+        "visualization": "Visualización 2D",
+        "planning": "Planificación Precisa", 
+        "experiences": "Experiencias Únicas"
+      }
+    },
+    "story": {
+      "badge": "Nuestra Trayectoria",
+      "title": "Nuestra Historia",
+      "description": "Todo comenzó con una simple idea: hacer que la organización de eventos sea más fácil, eficiente y accesible para todos. Desde nuestros inicios, hemos trabajado incansablemente para crear una plataforma que combine tecnología innovadora con una experiencia de usuario excepcional.",
+      "vision": {
+        "title": "Nuestra Visión",
+        "description": "Ser la plataforma líder en gestión de eventos, facilitando conexiones significativas entre organizadores y asistentes, impulsando la industria del entretenimiento y fortaleciendo comunidades a través de experiencias inolvidables.",
+        "feature": "Innovación Constante"
+      },
+      "mission": {
+        "title": "Nuestra Misión", 
+        "description": "Proporcionar herramientas intuitivas y poderosas que permitan a organizadores crear eventos excepcionales y a asistentes descubrir experiencias que enriquezcan sus vidas, todo mientras mantenemos los más altos estándares de calidad y seguridad.",
+        "feature": "Pasión por Eventos"
+      }
+    },
+    "values": {
+      "badge": "Lo que nos define",
+      "title": "Nuestros Valores",
+      "items": {
+        "excellence": {
+          "title": "Excelencia",
+          "description": "Nos comprometemos con la más alta calidad en todo lo que hacemos, desde el desarrollo de software hasta el soporte al cliente."
+        },
+        "collaboration": {
+          "title": "Colaboración", 
+          "description": "Creemos en el poder del trabajo en equipo y la colaboración para lograr objetivos comunes y crear valor para todos."
+        },
+        "integrity": {
+          "title": "Integridad",
+          "description": "Operamos con honestidad, transparencia y ética en todas nuestras interacciones y decisiones."
+        }
+      }
+    },
+    "organize": {
+      "title": "Organiza tus eventos",
+      "description": "Organiza tus eventos en minutos, no en horas. Con nuestras herramientas virtuales, simplifica la planificación y enfócate en lo importante.",
+      "features": {
+        "saveTime": {
+          "title": "Ahorra tiempo",
+          "description": "Planifica en minutos con nuestras herramientas intuitivas"
+        },
+        "virtualTools": {
+          "title": "Herramientas virtuales",
+          "description": "Maquetación 2D y visualización en tiempo real"
+        },
+        "focus": {
+          "title": "Enfoque en lo importante",
+          "description": "Dedica más tiempo a crear experiencias memorables"
+        }
+      }
+    },
+    "team": {
+      "badge": "Conoce al equipo",
+      "title": "Nuestro Equipo",
+      "description": "Un equipo apasionado de 5 profesionales dedicados a hacer que cada evento sea memorable.",
+      "counter": "{{current}} de {{total}}",
+      "members": {
+        "cristofer": {
+          "name": "Cristofer David Lozano Contreras",
+          "role": "Desarrollador de Software",
+          "description": "Encargado de vigilar el seguimiento del equipo, desarrollador del Backend, diseñador de la base de datos, apoyo en la visualización móvil y documentación."
+        },
+        "jhampier": {
+          "name": "Jhampier Santos Ortiz", 
+          "role": "Desarrollador de Software",
+          "description": "Responsable de implementar la lógica del sistema, creación de interfaces gráficas web y móviles, además de la elaboración de la documentación del proyecto."
+        }
+      }
+    }
+  },
   "auth": {
     "login": "Iniciar sesión",
     "logout": "Cerrar sesión",

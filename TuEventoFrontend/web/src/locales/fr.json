@@ -71,6 +71,88 @@
       "cancel": "Annuler"
     }
   },
+  "about": {
+    "hero": {
+      "badge": "Plateforme d'Événements Innovante",
+      "title": "À propos de",
+      "titleAccent": "Nous",
+      "description": "Chez \"Tu Evento\" nous transformons les idées en expériences inoubliables. Nous sommes une plateforme spécialisée dans la mise en page virtuelle d'espaces pour événements, permettant aux organisateurs de planifier visuellement la disposition de leurs lieux : tables, scènes, pistes de danse, zones VIP et plus.",
+      "features": {
+        "visualization": "Visualisation 2D",
+        "planning": "Planification Précise",
+        "experiences": "Expériences Uniques"
+      }
+    },
+    "story": {
+      "badge": "Notre Parcours",
+      "title": "Notre Histoire",
+      "description": "Tout a commencé avec une idée simple : rendre l'organisation d'événements plus facile, efficace et accessible à tous. Depuis nos débuts, nous avons travaillé sans relâche pour créer une plateforme qui combine technologie innovante avec une expérience utilisateur exceptionnelle.",
+      "vision": {
+        "title": "Notre Vision",
+        "description": "Être la plateforme leader en gestion d'événements, facilitant les connexions significatives entre organisateurs et participants, propulsant l'industrie du divertissement et renforçant les communautés à travers des expériences inoubliables.",
+        "feature": "Innovation Constante"
+      },
+      "mission": {
+        "title": "Notre Mission",
+        "description": "Fournir des outils intuitifs et puissants qui permettent aux organisateurs de créer des événements exceptionnels et aux participants de découvrir des expériences qui enrichissent leurs vies, tout en maintenant les plus hauts standards de qualité et sécurité.",
+        "feature": "Passion pour les Événements"
+      }
+    },
+    "values": {
+      "badge": "Ce qui nous définit",
+      "title": "Nos Valeurs",
+      "items": {
+        "excellence": {
+          "title": "Excellence",
+          "description": "Nous nous engageons à la plus haute qualité dans tout ce que nous faisons, du développement logiciel au support client."
+        },
+        "collaboration": {
+          "title": "Collaboration",
+          "description": "Nous croyons au pouvoir du travail d'équipe et de la collaboration pour atteindre des objectifs communs et créer de la valeur pour tous."
+        },
+        "integrity": {
+          "title": "Intégrité",
+          "description": "Nous opérons avec honnêteté, transparence et éthique dans toutes nos interactions et décisions."
+        }
+      }
+    },
+    "organize": {
+      "title": "Organisez vos événements",
+      "description": "Organisez vos événements en minutes, pas en heures. Avec nos outils virtuels, simplifiez la planification et concentrez-vous sur l'important.",
+      "features": {
+        "saveTime": {
+          "title": "Économisez du temps",
+          "description": "Planifiez en minutes avec nos outils intuitifs"
+        },
+        "virtualTools": {
+          "title": "Outils virtuels",
+          "description": "Mise en page 2D et visualisation en temps réel"
+        },
+        "focus": {
+          "title": "Concentrez-vous sur l'essentiel",
+          "description": "Consacrez plus de temps à créer des expériences mémorables"
+        }
+      }
+    },
+    "team": {
+      "badge": "Rencontrez l'équipe",
+      "title": "Notre Équipe",
+      "description": "Une équipe passionnée de 5 professionnels dédiés à rendre chaque événement mémorable.",
+      "counter": "{{current}} de {{total}}",
+      "members": {
+        "cristofer": {
+          "name": "Cristofer David Lozano Contreras",
+          "role": "Développeur Logiciel",
+          "description": "Chargé de surveiller le suivi de l'équipe, développeur Backend, concepteur de base de données, support pour la visualisation mobile et documentation."
+        },
+        "jhampier": {
+          "name": "Jhampier Santos Ortiz",
+          "role": "Développeur Logiciel", 
+          "description": "Responsable de l'implémentation de la logique système, création d'interfaces graphiques web et mobiles, et élaboration de la documentation du projet."
+        }
+      }
+    }
+  },
   "auth": {
     "login": "Se connecter",
     "logout": "Se déconnecter",

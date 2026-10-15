@@ -71,6 +71,88 @@
       "cancel": "Cancel"
     }
   },
+  "about": {
+    "hero": {
+      "badge": "Innovative Event Platform",
+      "title": "About",
+      "titleAccent": "Us",
+      "description": "At \"Tu Evento\" we transform ideas into unforgettable experiences. We are a platform specialized in virtual space layout for events, allowing organizers to visually plan the layout of their venues: tables, stages, dance floors, VIP areas and more.",
+      "features": {
+        "visualization": "2D Visualization",
+        "planning": "Precise Planning",
+        "experiences": "Unique Experiences"
+      }
+    },
+    "story": {
+      "badge": "Our Journey",
+      "title": "Our Story",
+      "description": "It all started with a simple idea: make event organization easier, more efficient and accessible to everyone. Since our beginnings, we have worked tirelessly to create a platform that combines innovative technology with an exceptional user experience.",
+      "vision": {
+        "title": "Our Vision",
+        "description": "To be the leading platform in event management, facilitating meaningful connections between organizers and attendees, driving the entertainment industry and strengthening communities through unforgettable experiences.",
+        "feature": "Constant Innovation"
+      },
+      "mission": {
+        "title": "Our Mission",
+        "description": "To provide intuitive and powerful tools that allow organizers to create exceptional events and attendees to discover experiences that enrich their lives, all while maintaining the highest standards of quality and security.",
+        "feature": "Passion for Events"
+      }
+    },
+    "values": {
+      "badge": "What defines us",
+      "title": "Our Values",
+      "items": {
+        "excellence": {
+          "title": "Excellence",
+          "description": "We commit to the highest quality in everything we do, from software development to customer support."
+        },
+        "collaboration": {
+          "title": "Collaboration",
+          "description": "We believe in the power of teamwork and collaboration to achieve common goals and create value for everyone."
+        },
+        "integrity": {
+          "title": "Integrity", 
+          "description": "We operate with honesty, transparency and ethics in all our interactions and decisions."
+        }
+      }
+    },
+    "organize": {
+      "title": "Organize your events",
+      "description": "Organize your events in minutes, not hours. With our virtual tools, simplify planning and focus on what matters.",
+      "features": {
+        "saveTime": {
+          "title": "Save time",
+          "description": "Plan in minutes with our intuitive tools"
+        },
+        "virtualTools": {
+          "title": "Virtual tools",
+          "description": "2D layout and real-time visualization"
+        },
+        "focus": {
+          "title": "Focus on what matters",
+          "description": "Spend more time creating memorable experiences"
+        }
+      }
+    },
+    "team": {
+      "badge": "Meet the team",
+      "title": "Our Team",
+      "description": "A passionate team of 5 professionals dedicated to making every event memorable.",
+      "counter": "{{current}} of {{total}}",
+      "members": {
+        "cristofer": {
+          "name": "Cristofer David Lozano Contreras",
+          "role": "Software Developer",
+          "description": "In charge of team monitoring, backend developer, database designer, mobile visualization support and documentation."
+        },
+        "jhampier": {
+          "name": "Jhampier Santos Ortiz",
+          "role": "Software Developer",
+          "description": "Responsible for implementing system logic, creating web and mobile graphical interfaces, and project documentation."
+        }
+      }
+    }
+  },
   "auth": {
     "login": "Log in",
     "logout": "Log out",
