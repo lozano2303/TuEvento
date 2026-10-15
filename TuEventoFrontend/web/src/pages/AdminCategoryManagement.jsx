@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useLanguageSync } from '../hooks/useLanguageSync';
 import { 
   Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, 
-  User, Settings, ChevronDown, X, Plus, Edit2, Trash2, Save, Clock, Tag, 
-  CheckCircle, AlertCircle, Languages, ChevronRight
+  User, Settings, ChevronDown, X, Plus, Edit2, Trash2, Save, Tag, 
+  CheckCircle, AlertCircle, ChevronRight
 } from 'lucide-react';
 import { performLogout } from '../services/httpClient';
 import { useNavigate } from 'react-router-dom';
@@ -15,8 +13,6 @@ import ConfirmModal from '../components/common/ConfirmModal';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export default function AdminCategoryManagement() {
-  const { t } = useTranslation();
-  const currentLanguage = useLanguageSync();
   const navigate = useNavigate();
   
   const [categories, setCategories] = useState([]);
@@ -29,7 +25,7 @@ export default function AdminCategoryManagement() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
-  const [languageFilter, setLanguageFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
 
   // Form data
   const [formData, setFormData] = useState({
@@ -41,7 +37,7 @@ export default function AdminCategoryManagement() {
   // Helper function to get parent category name
   const getParentCategoryName = (dadId) => {
     const parentCategory = categories.find(cat => cat.categoryId === dadId);
-    return parentCategory ? (parentCategory.translatedName || parentCategory.name) : 'Desconocida';
+    return parentCategory ? parentCategory.name : 'Desconocida';
   };
 
   const userData = {
@@ -62,22 +58,12 @@ export default function AdminCategoryManagement() {
     if (action === 'logout') handleLogout();
   };
 
-  // Auto-reload cuando se detectan traducciones generándose
-  useEffect(() => {
-    const hasGeneratingTranslations = categories.some(cat => cat.translationGenerating);
-    if (hasGeneratingTranslations) {
-      const timer = setTimeout(() => {
-        fetchCategories();
-      }, 20000); // 20 segundos
-
-      return () => clearTimeout(timer);
-    }
-  }, [categories]);
+  // Auto-reload removed - no translations to monitor
 
   useEffect(() => {
     fetchCategories();
     fetchRootCategories(); // Cargar categorías principales para el selector
-  }, [currentLanguage]);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -94,8 +80,8 @@ export default function AdminCategoryManagement() {
       setLoading(true);
       setError(null);
       
-      // Cargar categorías con el idioma actual para ver traducciones
-      const response = await getAllCategories(currentLanguage);
+      // Cargar categorías siempre en español (sin traducciones)
+      const response = await getAllCategories('es');
       setCategories(response.data || []);
     } catch (err) {
       setError('Error al cargar categorías: ' + err.message);
@@ -106,7 +92,7 @@ export default function AdminCategoryManagement() {
 
   const fetchRootCategories = async () => {
     try {
-      // Cargar categorías principales siempre en español para el selector
+      // Cargar categorías principales siempre en español
       const response = await getRootCategories('es');
       setRootCategories(response.data || []);
     } catch (err) {
@@ -136,10 +122,10 @@ export default function AdminCategoryManagement() {
         await fetchRootCategories(); // Actualizar también las categorías principales
       } else {
         const errorData = await response.json();
-        setError(errorData.message || t('categories.errors.create'));
+        setError(errorData.message || 'Error al crear categoría');
       }
     } catch (err) {
-      setError(t('categories.errors.create') + ': ' + err.message);
+      setError('Error al crear categoría: ' + err.message);
     } finally {
       setActionLoading(false);
     }
@@ -232,12 +218,6 @@ export default function AdminCategoryManagement() {
   ];
 
   const getStatusStyle = (category) => {
-    if (category.translationGenerating) {
-      return { bg: 'bg-yellow-500', label: 'Generando traducción...', icon: Clock };
-    }
-    if (category.languageCode && !category.translationGenerating) {
-      return { bg: 'bg-blue-500', label: `Traducido (${category.languageCode.toUpperCase()})`, icon: Languages };
-    }
     if (category.active) {
       return { bg: 'bg-emerald-500', label: 'Activa', icon: CheckCircle };
     }
@@ -245,12 +225,11 @@ export default function AdminCategoryManagement() {
   };
 
   const filteredCategories = categories.filter(cat => {
-    if (languageFilter === 'all') return true;
-    if (languageFilter === 'translated') return cat.languageCode && !cat.translationGenerating;
-    if (languageFilter === 'generating') return cat.translationGenerating;
-    if (languageFilter === 'original') return !cat.languageCode && !cat.translationGenerating;
-    if (languageFilter === 'parents') return !cat.dadId; // Categorías principales (sin padre)
-    if (languageFilter === 'subcategories') return cat.dadId; // Subcategorías (con padre)
+    if (categoryFilter === 'all') return true;
+    if (categoryFilter === 'active') return cat.active;
+    if (categoryFilter === 'inactive') return !cat.active;
+    if (categoryFilter === 'parents') return !cat.dadId; // Categorías principales (sin padre)
+    if (categoryFilter === 'subcategories') return cat.dadId; // Subcategorías (con padre)
     return true;
   });
 
@@ -332,10 +311,10 @@ export default function AdminCategoryManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-black uppercase tracking-wide text-textPrimary mb-1">
-                  {t('categories.title')}
+                  Gestión de Categorías
                 </h1>
                 <p className="text-textSecondary text-sm leading-relaxed max-w-xl">
-                  Gestiona las categorías de eventos. Las traducciones se generan automáticamente cuando los usuarios cambian de idioma.
+                  Gestiona las categorías de eventos del sistema. Crea categorías principales y subcategorías para organizar mejor los eventos.
                 </p>
               </div>
               <button
@@ -351,18 +330,17 @@ export default function AdminCategoryManagement() {
           {/* Filters */}
           <div className="flex items-center gap-2 mb-6">
             {[
-              { key: 'all', label: 'Todas' },
-              { key: 'translated', label: 'Traducidas' },
-              { key: 'generating', label: 'Generando' },
-              { key: 'original', label: 'Originales' },
+              { key: 'all', label: 'Todas las Categorías' },
+              { key: 'active', label: 'Activas' },
+              { key: 'inactive', label: 'Inactivas' },
               { key: 'parents', label: 'Categorías Principales' },
               { key: 'subcategories', label: 'Subcategorías' }
             ].map(({ key, label }) => (
               <button
                 key={key}
-                onClick={() => setLanguageFilter(key)}
+                onClick={() => setCategoryFilter(key)}
                 className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all
-                  ${languageFilter === key
+                  ${categoryFilter === key
                     ? 'bg-primary text-textPrimary'
                     : 'bg-surfaceAlt/60 text-textSecondary hover:bg-surfaceAlt'
                   }`}
@@ -430,14 +408,9 @@ export default function AdminCategoryManagement() {
                                 <ChevronRight className="w-3 h-3 mr-1" />
                               </span>
                             )}
-                            {category.translatedName || category.name}
+                            {category.name}
                           </h3>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
-                            {category.languageCode && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/20 text-accent font-bold uppercase">
-                                {t('categories.translation.translated', { lang: category.languageCode.toUpperCase() })}
-                              </span>
-                            )}
                             {category.dadId && (
                               <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 flex items-center gap-1">
                                 <ChevronRight className="w-2.5 h-2.5" />
@@ -462,9 +435,9 @@ export default function AdminCategoryManagement() {
                     </div>
 
                     {/* Description */}
-                    {(category.translatedDescription || category.description) && (
+                    {category.description && (
                       <p className="text-xs text-textSecondary mb-3 line-clamp-2">
-                        {category.translatedDescription || category.description}
+                        {category.description}
                       </p>
                     )}
 
@@ -479,20 +452,12 @@ export default function AdminCategoryManagement() {
                       </div>
                     )}
 
-                    {/* Translation generating indicator */}
-                    {category.translationGenerating && (
-                      <div className="mb-3 flex items-center gap-2 text-xs px-2 py-1 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400">
-                        <Clock className="w-3 h-3 animate-spin" />
-                        <span>{t('categories.translation.generating')}</span>
-                      </div>
-                    )}
-
                     {/* Actions */}
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => openEditModal(category)}
                         className="p-2 hover:bg-primary/20 rounded-lg transition-colors text-primary"
-                        title={t('categories.editCategory')}
+                        title="Editar categoría"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -526,7 +491,7 @@ export default function AdminCategoryManagement() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl max-w-md w-full">
             <div className="flex items-center justify-between px-6 py-4 border-b border-surfaceAlt">
-              <h2 className="text-lg font-bold text-textPrimary">{t('categories.createCategory')}</h2>
+              <h2 className="text-lg font-bold text-textPrimary">Crear Nueva Categoría</h2>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="p-1.5 hover:bg-surfaceAlt rounded-full transition-colors text-textMuted"
@@ -538,25 +503,25 @@ export default function AdminCategoryManagement() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  {t('categories.name')} *
+                  Nombre de la Categoría *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder={t('categories.namePlaceholder')}
+                  placeholder="Ej: Música, Deportes, Arte..."
                   className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  {t('categories.description')}
+                  Descripción
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder={t('categories.descriptionPlaceholder')}
+                  placeholder="Descripción opcional de la categoría..."
                   rows={3}
                   className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none resize-none"
                 />
@@ -564,15 +529,15 @@ export default function AdminCategoryManagement() {
 
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  {t('categories.parentCategory')}
-                  <span className="text-xs text-textMuted ml-2">({t('categories.selectParent')})</span>
+                  Categoría Padre
+                  <span className="text-xs text-textMuted ml-2">(Opcional - para crear subcategorías)</span>
                 </label>
                 <select
                   value={formData.dadId || ''}
                   onChange={(e) => setFormData({ ...formData, dadId: e.target.value ? parseInt(e.target.value) : null })}
                   className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary focus:border-primary focus:outline-none"
                 >
-                  <option value="">-- {t('categories.noParent')} --</option>
+                  <option value="">-- Categoría Principal (sin padre) --</option>
                   {rootCategories.map((category) => (
                     <option key={category.categoryId} value={category.categoryId}>
                       {category.name}
@@ -587,14 +552,14 @@ export default function AdminCategoryManagement() {
                 onClick={() => setShowCreateModal(false)}
                 className="flex-1 py-2 px-4 border border-surfaceAlt rounded-lg text-textSecondary hover:bg-surfaceAlt transition-colors"
               >
-                {t('common.cancel')}
+                Cancelar
               </button>
               <button
                 onClick={handleCreateCategory}
                 disabled={!formData.name.trim() || actionLoading}
                 className="flex-1 py-2 px-4 bg-primary hover:bg-primaryDark text-textPrimary rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {actionLoading ? t('categories.creating') : t('common.save')}
+                {actionLoading ? 'Creando...' : 'Guardar Categoría'}
               </button>
             </div>
           </div>
@@ -606,7 +571,7 @@ export default function AdminCategoryManagement() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl max-w-md w-full">
             <div className="flex items-center justify-between px-6 py-4 border-b border-surfaceAlt">
-              <h2 className="text-lg font-bold text-textPrimary">{t('categories.editCategory')}</h2>
+              <h2 className="text-lg font-bold text-textPrimary">Editar Categoría</h2>
               <button
                 onClick={() => setShowEditModal(false)}
                 className="p-1.5 hover:bg-surfaceAlt rounded-full transition-colors text-textMuted"
@@ -618,25 +583,25 @@ export default function AdminCategoryManagement() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  {t('categories.name')} *
+                  Nombre de la Categoría *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder={t('categories.namePlaceholder')}
+                  placeholder="Ej: Música, Deportes, Arte..."
                   className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  {t('categories.description')}
+                  Descripción
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder={t('categories.descriptionPlaceholder')}
+                  placeholder="Descripción opcional de la categoría..."
                   rows={3}
                   className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none resize-none"
                 />
@@ -644,15 +609,15 @@ export default function AdminCategoryManagement() {
 
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  {t('categories.parentCategory')}
-                  <span className="text-xs text-textMuted ml-2">({t('categories.selectParent')})</span>
+                  Categoría Padre
+                  <span className="text-xs text-textMuted ml-2">(Opcional - para crear subcategorías)</span>
                 </label>
                 <select
                   value={formData.dadId || ''}
                   onChange={(e) => setFormData({ ...formData, dadId: e.target.value ? parseInt(e.target.value) : null })}
                   className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary focus:border-primary focus:outline-none"
                 >
-                  <option value="">-- {t('categories.noParent')} --</option>
+                  <option value="">-- Categoría Principal (sin padre) --</option>
                   {rootCategories
                     .filter(category => category.categoryId !== selectedCategory?.categoryId)
                     .map((category) => (
@@ -669,14 +634,14 @@ export default function AdminCategoryManagement() {
                 onClick={() => setShowEditModal(false)}
                 className="flex-1 py-2 px-4 border border-surfaceAlt rounded-lg text-textSecondary hover:bg-surfaceAlt transition-colors"
               >
-                {t('common.cancel')}
+                Cancelar
               </button>
               <button
                 onClick={handleEditCategory}
                 disabled={!formData.name.trim() || actionLoading}
                 className="flex-1 py-2 px-4 bg-primary hover:bg-primaryDark text-textPrimary rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {actionLoading ? t('categories.saving') : t('common.save')}
+                {actionLoading ? 'Actualizando...' : 'Guardar Cambios'}
               </button>
             </div>
           </div>
