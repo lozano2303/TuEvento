@@ -17,6 +17,60 @@
     "noResults": "Aucun résultat",
     "tryAgain": "Réessayer"
   },
+  "landing": {
+    "hero": {
+      "greeting": "Salut, {{name}}!",
+      "greetingFallback": "Salut, {{alias}}!",
+      "welcomeBack": "Bon retour.",
+      "mainTitle": "Visualisez l'événement",
+      "subtitle": "parfait.",
+      "description": "Concevez, planifiez et vivez des expériences uniques qui font la différence. Chaque détail compte et notre kit d'assistance le rend réel.",
+      "startNow": "Commencer maintenant"
+    },
+    "features": {
+      "section1": {
+        "title": "Organisez, concevez et vivez des événements",
+        "titleAccent": "sans limites.",
+        "description": "Construisez des événements mémorables avec notre créateur de plans interactifs en ligne. Concevez des espaces personnalisés, gérez les participants et visualisez chaque détail de votre événement en temps réel, le tout sur une seule plateforme."
+      },
+      "section2": {
+        "title": "Demande d'",
+        "titleAccent": "Événements exceptionnels.",
+        "description": "Si vous cherchez de nouvelles expériences, consultez notre liste d'événements disponibles. Explorez toutes les options et trouvez le plan parfait pour vous.",
+        "button": "Consultez les événements disponibles"
+      }
+    },
+    "benefits": {
+      "title": "Pourquoi nous choisir?",
+      "items": {
+        "timesSaving": {
+          "title": "Économisez du temps dans les files",
+          "description": "Offrez à vos clients un processus de planification d'événements, réduisant le traitement avec des assistants experts et éliminez les files d'attente."
+        },
+        "findEvents": {
+          "title": "Trouvez facilement des événements",
+          "description": "Notre système vous permet de trouver l'assistant depuis une interface accessible et utile qui vous permettra de confirmer les détails de votre événement aussi rapidement que vous le souhaitez sans complications."
+        },
+        "free": {
+          "title": "Totalement gratuit.",
+          "description": "Accès aux fonctions de base de notre plan gratuit qui vous rend accessible tant aux petites entreprises qu'aux grandes compagnies."
+        }
+      }
+    },
+    "compatibility": {
+      "title": "Compatibilité des appareils.",
+      "web": "WEB",
+      "android": "ANDROID",
+      "downloadApk": "Télécharger APK"
+    },
+    "apkModal": {
+      "title": "Application Mobile TuEvento",
+      "subtitle": "Disponible pour appareils Android",
+      "description": "Téléchargez l'application mobile pour accéder à toutes les fonctions de TuEvento depuis votre appareil Android.",
+      "download": "Télécharger APK",
+      "cancel": "Annuler"
+    }
+  },
   "auth": {
     "login": "Se connecter",
     "logout": "Se déconnecter",

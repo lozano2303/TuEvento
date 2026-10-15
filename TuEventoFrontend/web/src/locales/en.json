@@ -17,6 +17,60 @@
     "noResults": "No results found",
     "tryAgain": "Try again"
   },
+  "landing": {
+    "hero": {
+      "greeting": "Hello, {{name}}!",
+      "greetingFallback": "Hello, {{alias}}!",
+      "welcomeBack": "Welcome back.",
+      "mainTitle": "Visualize the perfect",
+      "subtitle": "event.",
+      "description": "Design, plan and live unique experiences that make a difference. Every detail matters and our assistance kit makes it a reality.",
+      "startNow": "Get started now"
+    },
+    "features": {
+      "section1": {
+        "title": "Organize, design and live events",
+        "titleAccent": "without limits.",
+        "description": "Build memorable events with our online interactive floor plan creator. Design custom spaces, manage attendees and visualize every detail of your event in real time, all on one platform."
+      },
+      "section2": {
+        "title": "Request for",
+        "titleAccent": "Exceptional events.",
+        "description": "If you're looking for new experiences, check out our list of available events. Explore all options and find the perfect plan for you.",
+        "button": "Check out available events"
+      }
+    },
+    "benefits": {
+      "title": "Why should you choose us?",
+      "items": {
+        "timesSaving": {
+          "title": "Save time in queues",
+          "description": "Give your customers an event planning process, reducing processing with expert assistants and eliminate lines."
+        },
+        "findEvents": {
+          "title": "Find events easily",
+          "description": "Our system allows you to find the assistant from an accessible, useful interface that will allow you to confirm details of your event as quickly as you want without complications."
+        },
+        "free": {
+          "title": "Completely free.",
+          "description": "Access to the basic functions of our free plan that makes you an accessible agent for both small businesses and large companies."
+        }
+      }
+    },
+    "compatibility": {
+      "title": "Device compatibility.",
+      "web": "WEB",
+      "android": "ANDROID",
+      "downloadApk": "Download APK"
+    },
+    "apkModal": {
+      "title": "TuEvento Mobile App",
+      "subtitle": "Available for Android devices",
+      "description": "Download the mobile app to access all TuEvento features from your Android device.",
+      "download": "Download APK",
+      "cancel": "Cancel"
+    }
+  },
   "auth": {
     "login": "Log in",
     "logout": "Log out",

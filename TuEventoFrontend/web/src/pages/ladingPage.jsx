@@ -1,12 +1,14 @@
 import { Users, Gift, Smartphone, Globe, CheckCircle, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Footer from '../layouts/Footer';
 import BaseModal from '../components/common/BaseModal';
 
 
 export default function LadingPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [userData, setUserData] = useState(null);
   const [showApkModal, setShowApkModal] = useState(false);
 
@@ -51,26 +53,25 @@ export default function LadingPage() {
             <div className="space-y-6 pt-8">
               <h1 className="text-4xl md:text-6xl font-bold leading-tight hero-section-title">
                 {userData ? (() => {
-                  if (!userData?.fullName) return `¡Hola, ${userData.alias}!`;
+                  if (!userData?.fullName) return t('landing.hero.greetingFallback', { alias: userData.alias });
                   const name = userData.fullName;
                   const parts = name.split(' ').filter(part => part.trim().length > 0);
-                  if (parts.length === 0) return `¡Hola, ${userData.alias}!`;
-                  if (parts.length === 1) return `¡Hola, ${parts[0]}!`;
+                  if (parts.length === 0) return t('landing.hero.greetingFallback', { alias: userData.alias });
+                  if (parts.length === 1) return t('landing.hero.greeting', { name: parts[0] });
                   const firstName = parts[0];
                   const lastName = parts[1];
-                  if (firstName.length <= 3) return `¡Hola, ${firstName} ${lastName}!`;
-                  return `¡Hola, ${firstName}!`;
-                })() : 'Visualiza el evento'}
+                  if (firstName.length <= 3) return t('landing.hero.greeting', { name: `${firstName} ${lastName}` });
+                  return t('landing.hero.greeting', { name: firstName });
+                })() : t('landing.hero.mainTitle')}
                 {/* Antes: text-accent → lavanda #A78BFA sobre primary #7C3AED ≈ 2.4:1 (falla WCAG AA).
                     Ahora: hero-section-accent-text → onPrimary 90% ≥ 4.5:1 en todos los temas. */}
                 <span className="block hero-section-accent-text">
-                  {userData ? 'Bienvenido de vuelta.' : 'ideal.'}
+                  {userData ? t('landing.hero.welcomeBack') : t('landing.hero.subtitle')}
                 </span>
               </h1>
               {/* Párrafo: onPrimary 78% — mismo ratio que welcome-modal-header-sub */}
               <p className="text-lg hero-section-subtitle">
-                Diseña, planifica y vive experiencias únicas que marquen la diferencia.
-                Cada detalle cuenta y nuestro kit de asistencia lo hace realidad.
+                {t('landing.hero.description')}
               </p>
               {/* Botón: gradiente accent→primary idéntico a welcome-modal-btn / modal-btn-cta */}
               {!userData && (
@@ -78,7 +79,7 @@ export default function LadingPage() {
                   className="hero-section-btn"
                   onClick={() => navigate('/login')}
                 >
-                  Comenzar ahora
+                  {t('landing.hero.startNow')}
                 </button>
               )}
             </div>
@@ -136,13 +137,11 @@ export default function LadingPage() {
           <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
             <div className="space-y-6">
               <h2 className="text-3xl md:text-4xl font-bold text-textPrimary leading-tight">
-                Organiza, diseña y vive eventos
-                <span className="block">sin límites.</span>
+                {t('landing.features.section1.title')}
+                <span className="block">{t('landing.features.section1.titleAccent')}</span>
               </h2>
               <p className="text-lg text-textSecondary">
-                Construye eventos memorables con nuestro creador de planos interactivos en línea.
-                Diseña espacios personalizados, gestiona asistentes y visualiza cada detalle de tu
-                evento en tiempo real, todo en una sola plataforma.
+                {t('landing.features.section1.description')}
               </p>
             </div>
 
@@ -200,19 +199,18 @@ export default function LadingPage() {
 
             <div className="space-y-6 order-1 md:order-2">
               <h3 className="text-3xl md:text-4xl font-bold text-textPrimary leading-tight">
-                Solicitud de
-                <span className="block">Eventos excepcionales.</span>
+                {t('landing.features.section2.title')}
+                <span className="block">{t('landing.features.section2.titleAccent')}</span>
               </h3>
               <p className="text-textSecondary text-lg">
-                Si buscas nuevas experiencias, revisa nuestra lista de eventos disponibles.
-                Explora todas las opciones y encuentra el plan perfecto para ti.
+                {t('landing.features.section2.description')}
               </p>
               <button
                 onClick={() => navigate('/events')}
                 className="px-8 py-3 rounded-full font-semibold transition-all duration-300 shadow-lg hover:shadow-xl text-textPrimary"
                 style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-primary))' }}
               >
-                Revisa los eventos disponibles
+                {t('landing.features.section2.button')}
               </button>
             </div>
           </div>
@@ -224,22 +222,34 @@ export default function LadingPage() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-textPrimary mb-8">
-              ¿Por qué deberías elegirnos?
+              {t('landing.benefits.title')}
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { icon: CheckCircle, title: 'Ahorra tiempo en colas', text: 'Dale a tus clientes un proceso de planificación de eventos, reduciendo el procesamiento con ayudantes expertos y elimina las filas.' },
-              { icon: Users,       title: 'Encuentra eventos fácilmente', text: 'Nuestro sistema te permite encontrar el asistente desde una interfaz accesible, útil que te permitirá confirmar detalles de su evento tan rápido como lo desees sin complicaciones.' },
-              { icon: Gift,        title: 'Totalmente gratuito.', text: 'Acceso a las funciones básicas de nuestro plano gratis que te convierte en un agente accesible tanto para pequeños negocios como para grandes compañías.' },
-            ].map(({ icon: Icon, title, text }) => (
-              <div key={title} className="text-center space-y-4">
+              { 
+                icon: CheckCircle, 
+                titleKey: 'landing.benefits.items.timesSaving.title', 
+                textKey: 'landing.benefits.items.timesSaving.description'
+              },
+              { 
+                icon: Users, 
+                titleKey: 'landing.benefits.items.findEvents.title', 
+                textKey: 'landing.benefits.items.findEvents.description'
+              },
+              { 
+                icon: Gift, 
+                titleKey: 'landing.benefits.items.free.title', 
+                textKey: 'landing.benefits.items.free.description'
+              },
+            ].map(({ icon: Icon, titleKey, textKey }) => (
+              <div key={titleKey} className="text-center space-y-4">
                 <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto">
                   <Icon className="w-8 h-8 text-textPrimary" />
                 </div>
-                <h3 className="text-xl font-semibold text-textPrimary">{title}</h3>
-                <p className="text-textMuted text-sm">{text}</p>
+                <h3 className="text-xl font-semibold text-textPrimary">{t(titleKey)}</h3>
+                <p className="text-textMuted text-sm">{t(textKey)}</p>
               </div>
             ))}
           </div>
@@ -250,7 +260,7 @@ export default function LadingPage() {
       <section className="py-20 bg-surface">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-textPrimary mb-12">
-            Dispositivos con compatibilidad.
+            {t('landing.compatibility.title')}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 justify-items-center">
@@ -258,19 +268,19 @@ export default function LadingPage() {
               <div className="w-20 h-20 bg-surfaceAlt rounded-2xl flex items-center justify-center mx-auto">
                 <Globe className="w-10 h-10 text-textPrimary" />
               </div>
-              <h3 className="text-xl font-semibold text-textPrimary">WEB</h3>
+              <h3 className="text-xl font-semibold text-textPrimary">{t('landing.compatibility.web')}</h3>
             </div>
 
             <div className="space-y-4">
               <div className="w-20 h-20 bg-surfaceAlt rounded-2xl flex items-center justify-center mx-auto">
                 <Smartphone className="w-10 h-10 text-textPrimary" />
               </div>
-              <h3 className="text-xl font-semibold text-textPrimary">ANDROID</h3>
+              <h3 className="text-xl font-semibold text-textPrimary">{t('landing.compatibility.android')}</h3>
               <button
                 onClick={() => setShowApkModal(true)}
                 className="bg-primary hover:bg-primaryDark text-textPrimary px-6 py-2 rounded-lg font-semibold transition-colors"
               >
-                Descargar APK
+                {t('landing.compatibility.downloadApk')}
               </button>
             </div>
           </div>
@@ -285,11 +295,11 @@ export default function LadingPage() {
         onClose={() => setShowApkModal(false)}
         variant="info"
         icon={<Download className="w-8 h-8" />}
-        title="Aplicación Móvil TuEvento"
-        subtitle="Disponible para dispositivos Android"
+        title={t('landing.apkModal.title')}
+        subtitle={t('landing.apkModal.subtitle')}
         actions={[
           {
-            label: 'Descargar APK',
+            label: t('landing.apkModal.download'),
             icon: <Download className="w-4 h-4" />,
             variant: 'primary',
             onClick: () => {
@@ -302,15 +312,14 @@ export default function LadingPage() {
             },
           },
           {
-            label: 'Cancelar',
+            label: t('landing.apkModal.cancel'),
             variant: 'secondary',
             onClick: () => setShowApkModal(false),
           },
         ]}
       >
         <p className="bm-hint text-center text-sm leading-relaxed">
-          Descarga la aplicación móvil para acceder a todas las funciones de TuEvento
-          desde tu dispositivo Android.
+          {t('landing.apkModal.description')}
         </p>
       </BaseModal>
 
