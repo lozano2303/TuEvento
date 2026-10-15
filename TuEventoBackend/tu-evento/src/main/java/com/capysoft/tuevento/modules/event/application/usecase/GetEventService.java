@@ -74,6 +74,13 @@ public class GetEventService implements GetEventUseCase {
     }
 
     @Override
+    public List<EventResponse> getPublishedEventsWithTranslations(String languageCode) {
+        return eventRepository.findAllPublished().stream()
+                .map(event -> toResponse(event, languageCode))
+                .toList();
+    }
+
+    @Override
     public List<EventSummaryResponse> getPublishedEventsByCityId(Long cityId) {
         return eventRepository.findByCityId(cityId).stream()
                 .map(this::toSummary)
@@ -119,6 +126,17 @@ public class GetEventService implements GetEventUseCase {
             siteName = getSitePort.getSite(Math.toIntExact(e.getSiteId())).getName();
         } catch (Exception ex) {
             log.warn("Could not resolve siteName for event {}: {}", e.getEventId(), ex.getMessage());
+        }
+
+        // Primera imagen del evento (media_id más bajo) — portada del listado público.
+        // null si el evento aún no tiene imágenes (datos legacy o borrador).
+        String coverUrl = null;
+        try {
+            coverUrl = eventMediaRepository.findFirstByEventId(e.getEventId())
+                    .map(media -> media.getImgUrl())
+                    .orElse(null);
+        } catch (Exception ex) {
+            log.warn("Could not resolve coverUrl for event {}: {}", e.getEventId(), ex.getMessage());
         }
 
         // Translation support with LAZY LOADING
@@ -203,6 +221,7 @@ public class GetEventService implements GetEventUseCase {
                 .isPublic(e.getIsPublic())
                 .availableSeats(e.getAvailableSeats())
                 .categoryId(categoryId)
+                .coverUrl(coverUrl)
                 .translatedName(translatedName)
                 .translatedDescription(translatedDescription)
                 .languageCode(actualLanguageCode)
