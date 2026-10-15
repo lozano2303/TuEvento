@@ -63,25 +63,32 @@ public class GetProfileByUserIdUseCase implements GetProfileByUserIdPort {
                             translatedBio = translation.get().getTranslatedBio();
                             actualLanguageCode = languageCode;
                         } else {
-                            // Translation doesn't exist - trigger lazy loading
-                            log.info("Translation not found for profile {} language {} - triggering lazy loading",
-                                    p.getProfileId(), languageCode);
+                            // Only trigger translation if there's content to translate
+                            boolean hasBio = p.getBio() != null && !p.getBio().trim().isEmpty();
                             
-                            // Check if job already exists
-                            var existingJob = translationJobRepository.findByEntityAndTargetLanguage(
-                                    "profile", p.getProfileId().intValue(), language.get().getLanguageId());
-                            
-                            if (existingJob.isEmpty()) {
-                                // Create translation job
-                                translationService.requestTranslation("profile", p.getProfileId(), "es");
-                                translationGenerating = true;
-                                log.info("Lazy loading translation job created for profile {} -> {}", 
+                            if (hasBio) {
+                                // Translation doesn't exist - trigger lazy loading
+                                log.info("Translation not found for profile {} language {} - triggering lazy loading",
                                         p.getProfileId(), languageCode);
+                                
+                                // Check if job already exists
+                                var existingJob = translationJobRepository.findByEntityAndTargetLanguage(
+                                        "profile", p.getProfileId().intValue(), language.get().getLanguageId());
+                                
+                                if (existingJob.isEmpty()) {
+                                    // Create translation job
+                                    translationService.requestTranslation("profile", p.getProfileId(), "es");
+                                    translationGenerating = true;
+                                    log.info("Lazy loading translation job created for profile {} -> {}", 
+                                            p.getProfileId(), languageCode);
+                                } else {
+                                    // Job exists and is PENDING or PROCESSING
+                                    translationGenerating = true;
+                                    log.info("Translation job already in progress for profile {} -> {}", 
+                                            p.getProfileId(), languageCode);
+                                }
                             } else {
-                                // Job exists and is PENDING or PROCESSING
-                                translationGenerating = true;
-                                log.info("Translation job already in progress for profile {} -> {}", 
-                                        p.getProfileId(), languageCode);
+                                log.debug("Profile {} has no bio - skipping translation", p.getProfileId());
                             }
                         }
                     }

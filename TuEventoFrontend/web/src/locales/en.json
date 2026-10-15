@@ -81,28 +81,84 @@
   "profile": {
     "myProfile": "My profile",
     "editProfile": "Edit profile",
-    "personalInfo": "Personal information",
+    "personalInfo": "Personal Information",
     "firstName": "First name",
     "lastName": "Last name",
+    "fullName": "Full Name",
     "phone": "Phone",
     "city": "City",
+    "bio": "Biography",
+    "bioPlaceholder": "Tell us something about yourself…",
     "language": "Preferred language",
+    "languagePreferred": "Preferred Language",
     "preferences": "Preferences",
+    "theme": "Visual Theme",
+    "saveChanges": "Save changes",
+    "saving": "Saving...",
     "updateSuccess": "Profile updated successfully",
     "updateError": "Could not update profile",
+    "accountSecurity": "Account Security",
+    "logout": "Logout",
+    "logoutDescription": "Sign out of this device.",
+    "dangerZone": "Danger Zone",
+    "deactivateWarning": "Once you deactivate your account, you cannot reverse this action.",
+    "deactivateAccount": "Deactivate Account",
+    "roles": {
+      "admin": "Administrator",
+      "organizer": "Organizer",
+      "user": "User"
+    },
     "translation": {
       "translated": "Translated ({{lang}})",
-      "generating": "Generating bio translation..."
-    }
+      "generating": "Generating bio translation...",
+      "autoUpdate": "It will update automatically when ready."
+    },
+    "biographyTranslatedAutomatically": "Biography translated automatically",
+    "cannotEditTranslated": "You cannot edit a translated biography. Change the language to Spanish to edit it.",
+    "fullNamePlaceholder": "Your full name",
+    "loadingLanguages": "Loading languages…",
+    "languageUpdated": "Language updated successfully",
+    "languageUpdateError": "Could not update language",
+    "photoUpdateError": "Could not update photo.",
+    "photoUpdated": "Photo updated.",
+    "profileNotFound": "Your profile was not found.",
+    "photoLoadError": "Could not load your photo.",
+    "saveError": "Error saving profile",
+    "profileSaved": "Profile saved successfully",
+    "onlyImageFormats": "Only JPG, PNG or WEBP.",
+    "maxFileSize": "Max. {{size}} MB.",
+    "imageRequirements": "Only JPG, PNG or WEBP. Max. {{size}} MB. No adult content.",
+    "imageRequirementsLabel": "Image requirements"
   },
   "categories": {
     "title": "Categories",
     "allCategories": "All categories",
     "selectCategory": "Select a category",
     "noCategories": "No categories available",
+    "createCategory": "Create Category",
+    "editCategory": "Edit Category",
+    "deleteCategory": "Delete Category",
+    "name": "Name",
+    "description": "Description",
+    "namePlaceholder": "Category name",
+    "descriptionPlaceholder": "Optional description",
+    "parentCategory": "Parent category",
+    "selectParent": "Select parent category (optional)",
+    "noParent": "No parent category",
+    "rootCategory": "Root category",
+    "creating": "Creating...",
+    "saving": "Saving...",
+    "deleting": "Deleting...",
+    "required": "required",
     "translation": {
       "translated": "Translated ({{lang}})",
       "generating": "Generating translation..."
+    },
+    "errors": {
+      "create": "Failed to create category",
+      "update": "Failed to update category",
+      "delete": "Failed to delete category",
+      "load": "Failed to load categories"
     }
   },
   "comments": {
@@ -148,5 +204,14 @@
     "createEvent": "Create Event",
     "profile": "Profile",
     "viewAll": "View all"
+  },
+  "footer": {
+    "tagline": "The platform to discover, create, and manage live events easily and professionally.",
+    "navigation": "Navigation",
+    "legal": "Legal",
+    "termsOfService": "Terms of Service",
+    "privacy": "Privacy",
+    "copyright": "© {{year}} Tu Evento · All rights reserved",
+    "madeWith": "Made with ♥ by CapySoft"
   }
 }

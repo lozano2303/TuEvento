@@ -81,28 +81,84 @@
   "profile": {
     "myProfile": "Mi perfil",
     "editProfile": "Editar perfil",
-    "personalInfo": "Información personal",
+    "personalInfo": "Información Personal",
     "firstName": "Nombre",
     "lastName": "Apellido",
+    "fullName": "Nombre Completo",
     "phone": "Teléfono",
     "city": "Ciudad",
+    "bio": "Biografía",
+    "bioPlaceholder": "Cuéntanos algo sobre ti…",
     "language": "Idioma preferido",
+    "languagePreferred": "Idioma Preferido",
     "preferences": "Preferencias",
+    "theme": "Tema Visual",
+    "saveChanges": "Guardar cambios",
+    "saving": "Guardando...",
     "updateSuccess": "Perfil actualizado exitosamente",
     "updateError": "No se pudo actualizar el perfil",
+    "accountSecurity": "Seguridad de la Cuenta",
+    "logout": "Cerrar sesión",
+    "logoutDescription": "Salir de la cuenta en este dispositivo.",
+    "dangerZone": "Zona de Peligro",
+    "deactivateWarning": "Una vez que desactives tu cuenta, no podrás revertir esta acción.",
+    "deactivateAccount": "Desactivar Cuenta",
+    "roles": {
+      "admin": "Administrador",
+      "organizer": "Organizador",
+      "user": "Usuario"
+    },
     "translation": {
       "translated": "Traducido ({{lang}})",
-      "generating": "Generando traducción de biografía..."
-    }
+      "generating": "Generando traducción de biografía...",
+      "autoUpdate": "Se actualizará automáticamente cuando esté lista."
+    },
+    "biographyTranslatedAutomatically": "Biografía traducida automáticamente",
+    "cannotEditTranslated": "No puedes editar una biografía traducida. Cambia el idioma a español para editarla.",
+    "fullNamePlaceholder": "Tu nombre completo",
+    "loadingLanguages": "Cargando idiomas…",
+    "languageUpdated": "Idioma actualizado correctamente",
+    "languageUpdateError": "No se pudo actualizar el idioma",
+    "photoUpdateError": "No se pudo actualizar la foto.",
+    "photoUpdated": "Foto actualizada.",
+    "profileNotFound": "No se encontró tu perfil.",
+    "photoLoadError": "No se pudo cargar tu foto.",
+    "saveError": "Error al guardar el perfil",
+    "profileSaved": "Perfil guardado correctamente",
+    "onlyImageFormats": "Solo JPG, PNG o WEBP.",
+    "maxFileSize": "Máx. {{size}} MB.",
+    "imageRequirements": "Solo JPG, PNG o WEBP. Máx. {{size}} MB. Sin contenido adulto.",
+    "imageRequirementsLabel": "Requisitos de imagen"
   },
   "categories": {
     "title": "Categorías",
     "allCategories": "Todas las categorías",
     "selectCategory": "Selecciona una categoría",
     "noCategories": "No hay categorías disponibles",
+    "createCategory": "Crear Categoría",
+    "editCategory": "Editar Categoría",
+    "deleteCategory": "Eliminar Categoría",
+    "name": "Nombre",
+    "description": "Descripción",
+    "namePlaceholder": "Nombre de la categoría",
+    "descriptionPlaceholder": "Descripción opcional",
+    "parentCategory": "Categoría padre",
+    "selectParent": "Seleccionar categoría padre (opcional)",
+    "noParent": "Sin categoría padre",
+    "rootCategory": "Categoría raíz",
+    "creating": "Creando...",
+    "saving": "Guardando...",
+    "deleting": "Eliminando...",
+    "required": "requerido",
     "translation": {
       "translated": "Traducido ({{lang}})",
       "generating": "Generando traducción..."
+    },
+    "errors": {
+      "create": "Error al crear categoría",
+      "update": "Error al actualizar categoría",
+      "delete": "Error al eliminar categoría",
+      "load": "Error al cargar categorías"
     }
   },
   "comments": {
@@ -148,5 +204,14 @@
     "createEvent": "Crear Evento",
     "profile": "Perfil",
     "viewAll": "Ver todas"
+  },
+  "footer": {
+    "tagline": "La plataforma para descubrir, crear y gestionar eventos en vivo de forma sencilla y profesional.",
+    "navigation": "Navegación",
+    "legal": "Legal",
+    "termsOfService": "Términos de uso",
+    "privacy": "Privacidad",
+    "copyright": "© {{year}} Tu Evento · Todos los derechos reservados",
+    "madeWith": "Hecho con ♥ por CapySoft"
   }
 }

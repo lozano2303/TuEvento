@@ -59,4 +59,13 @@ public interface TranslationJobRepository {
      * Guarda múltiples jobs.
      */
     List<TranslationJob> saveAll(List<TranslationJob> jobs);
+
+    /**
+     * Elimina todos los jobs de una entidad específica.
+     * 
+     * @param entityType Tipo de entidad (ej: "profile", "event", "category")
+     * @param entityId ID de la entidad
+     * @return Cantidad de jobs eliminados
+     */
+    int deleteByEntity(String entityType, Integer entityId);
 }

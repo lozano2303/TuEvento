@@ -136,10 +136,10 @@ export default function AdminCategoryManagement() {
         await fetchRootCategories(); // Actualizar también las categorías principales
       } else {
         const errorData = await response.json();
-        setError(errorData.message || 'Error al crear categoría');
+        setError(errorData.message || t('categories.errors.create'));
       }
     } catch (err) {
-      setError('Error al crear categoría: ' + err.message);
+      setError(t('categories.errors.create') + ': ' + err.message);
     } finally {
       setActionLoading(false);
     }
@@ -332,7 +332,7 @@ export default function AdminCategoryManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-black uppercase tracking-wide text-textPrimary mb-1">
-                  {t('categories.title')} de Eventos
+                  {t('categories.title')}
                 </h1>
                 <p className="text-textSecondary text-sm leading-relaxed max-w-xl">
                   Gestiona las categorías de eventos. Las traducciones se generan automáticamente cuando los usuarios cambian de idioma.
@@ -492,7 +492,7 @@ export default function AdminCategoryManagement() {
                       <button
                         onClick={() => openEditModal(category)}
                         className="p-2 hover:bg-primary/20 rounded-lg transition-colors text-primary"
-                        title="Editar categoría"
+                        title={t('categories.editCategory')}
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -526,7 +526,7 @@ export default function AdminCategoryManagement() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl max-w-md w-full">
             <div className="flex items-center justify-between px-6 py-4 border-b border-surfaceAlt">
-              <h2 className="text-lg font-bold text-textPrimary">Nueva Categoría</h2>
+              <h2 className="text-lg font-bold text-textPrimary">{t('categories.createCategory')}</h2>
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="p-1.5 hover:bg-surfaceAlt rounded-full transition-colors text-textMuted"
@@ -538,25 +538,25 @@ export default function AdminCategoryManagement() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Nombre *
+                  {t('categories.name')} *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Nombre de la categoría"
+                  placeholder={t('categories.namePlaceholder')}
                   className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Descripción
+                  {t('categories.description')}
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Descripción opcional"
+                  placeholder={t('categories.descriptionPlaceholder')}
                   rows={3}
                   className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none resize-none"
                 />
@@ -564,25 +564,21 @@ export default function AdminCategoryManagement() {
 
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Categoría Principal
-                  <span className="text-xs text-textMuted ml-2">(Opcional - dejar vacío para categoría raíz)</span>
+                  {t('categories.parentCategory')}
+                  <span className="text-xs text-textMuted ml-2">({t('categories.selectParent')})</span>
                 </label>
                 <select
                   value={formData.dadId || ''}
                   onChange={(e) => setFormData({ ...formData, dadId: e.target.value ? parseInt(e.target.value) : null })}
                   className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary focus:border-primary focus:outline-none"
                 >
-                  <option value="">-- Ninguna (Categoría Principal) --</option>
+                  <option value="">-- {t('categories.noParent')} --</option>
                   {rootCategories.map((category) => (
                     <option key={category.categoryId} value={category.categoryId}>
                       {category.name}
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-textMuted mt-1">
-                  Si seleccionas una categoría principal, esta nueva categoría será una subcategoría.
-                  Por ejemplo: Música → Rock, Jazz, Clásica
-                </p>
               </div>
             </div>
             
@@ -591,14 +587,14 @@ export default function AdminCategoryManagement() {
                 onClick={() => setShowCreateModal(false)}
                 className="flex-1 py-2 px-4 border border-surfaceAlt rounded-lg text-textSecondary hover:bg-surfaceAlt transition-colors"
               >
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleCreateCategory}
                 disabled={!formData.name.trim() || actionLoading}
                 className="flex-1 py-2 px-4 bg-primary hover:bg-primaryDark text-textPrimary rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {actionLoading ? 'Creando...' : 'Crear'}
+                {actionLoading ? t('categories.creating') : t('common.save')}
               </button>
             </div>
           </div>
@@ -610,7 +606,7 @@ export default function AdminCategoryManagement() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl max-w-md w-full">
             <div className="flex items-center justify-between px-6 py-4 border-b border-surfaceAlt">
-              <h2 className="text-lg font-bold text-textPrimary">Editar Categoría</h2>
+              <h2 className="text-lg font-bold text-textPrimary">{t('categories.editCategory')}</h2>
               <button
                 onClick={() => setShowEditModal(false)}
                 className="p-1.5 hover:bg-surfaceAlt rounded-full transition-colors text-textMuted"
@@ -622,25 +618,25 @@ export default function AdminCategoryManagement() {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Nombre *
+                  {t('categories.name')} *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Nombre de la categoría"
+                  placeholder={t('categories.namePlaceholder')}
                   className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Descripción
+                  {t('categories.description')}
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Descripción opcional"
+                  placeholder={t('categories.descriptionPlaceholder')}
                   rows={3}
                   className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none resize-none"
                 />
@@ -648,31 +644,23 @@ export default function AdminCategoryManagement() {
 
               <div>
                 <label className="block text-sm font-medium text-textPrimary mb-2">
-                  Categoría Principal
-                  <span className="text-xs text-textMuted ml-2">(Opcional - dejar vacío para categoría raíz)</span>
+                  {t('categories.parentCategory')}
+                  <span className="text-xs text-textMuted ml-2">({t('categories.selectParent')})</span>
                 </label>
                 <select
                   value={formData.dadId || ''}
                   onChange={(e) => setFormData({ ...formData, dadId: e.target.value ? parseInt(e.target.value) : null })}
                   className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary focus:border-primary focus:outline-none"
                 >
-                  <option value="">-- Ninguna (Categoría Principal) --</option>
+                  <option value="">-- {t('categories.noParent')} --</option>
                   {rootCategories
-                    .filter(category => category.categoryId !== selectedCategory?.categoryId) // Evitar que se seleccione a sí misma
+                    .filter(category => category.categoryId !== selectedCategory?.categoryId)
                     .map((category) => (
                       <option key={category.categoryId} value={category.categoryId}>
                         {category.name}
                       </option>
                     ))}
                 </select>
-                <p className="text-xs text-textMuted mt-1">
-                  Si seleccionas una categoría principal, esta categoría será una subcategoría.
-                  {selectedCategory?.dadId && (
-                    <span className="block mt-1 text-yellow-400">
-                      ⚠️ Actualmente es subcategoría de: {getParentCategoryName(selectedCategory.dadId)}
-                    </span>
-                  )}
-                </p>
               </div>
             </div>
             
@@ -681,14 +669,14 @@ export default function AdminCategoryManagement() {
                 onClick={() => setShowEditModal(false)}
                 className="flex-1 py-2 px-4 border border-surfaceAlt rounded-lg text-textSecondary hover:bg-surfaceAlt transition-colors"
               >
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleEditCategory}
                 disabled={!formData.name.trim() || actionLoading}
                 className="flex-1 py-2 px-4 bg-primary hover:bg-primaryDark text-textPrimary rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {actionLoading ? 'Guardando...' : 'Guardar'}
+                {actionLoading ? t('categories.saving') : t('common.save')}
               </button>
             </div>
           </div>
