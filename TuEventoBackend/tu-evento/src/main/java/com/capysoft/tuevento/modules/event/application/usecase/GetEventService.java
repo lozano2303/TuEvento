@@ -147,8 +147,8 @@ public class GetEventService implements GetEventUseCase {
                             translatedDescription = translation.get().getTranslatedDescription();
                             actualLanguageCode = languageCode;
                         } else {
-                            // Translation doesn't exist - trigger lazy loading
-                            log.info("Translation not found for event {} language {} - triggering lazy loading",
+                            // Translation doesn't exist - check job status before creating
+                            log.info("Translation not found for event {} language {} - checking job status",
                                     e.getEventId(), languageCode);
                             
                             // Check if job already exists
@@ -163,10 +163,23 @@ public class GetEventService implements GetEventUseCase {
                                 log.info("Lazy loading translation job created for event {} -> {}", 
                                         e.getEventId(), languageCode);
                             } else {
-                                // Job exists and is PENDING or PROCESSING
-                                translationGenerating = true;
-                                log.info("Translation job already in progress for event {} -> {}", 
-                                        e.getEventId(), languageCode);
+                                // Job exists - check its status
+                                var jobStatus = existingJob.get().getStatus();
+                                if (jobStatus == com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus.PENDING || 
+                                    jobStatus == com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus.PROCESSING) {
+                                    translationGenerating = true;
+                                    log.info("Translation job in progress ({}) for event {} -> {}", 
+                                            jobStatus, e.getEventId(), languageCode);
+                                } else if (jobStatus == com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus.COMPLETED) {
+                                    // Job completed but no PUBLISHED translation found - this shouldn't happen
+                                    // but let's handle it gracefully by not showing generating indicator
+                                    log.warn("Translation job COMPLETED but no PUBLISHED translation found for event {} -> {}", 
+                                            e.getEventId(), languageCode);
+                                } else {
+                                    // Other status (like FAILED is already handled above)
+                                    log.warn("Translation job status {} for event {} -> {}", 
+                                            jobStatus, e.getEventId(), languageCode);
+                                }
                             }
                         }
                     }

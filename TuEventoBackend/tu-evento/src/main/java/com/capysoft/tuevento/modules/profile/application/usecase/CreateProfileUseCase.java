@@ -53,7 +53,9 @@ public class CreateProfileUseCase implements CreateProfilePort {
                 .storedFileId(request.isStoredFileIdSet()
                         ? request.getStoredFileId()
                         : defaultAvatarStoredFileId)
-                .preferredLanguageId(defaultLanguageId)
+                .preferredLanguageId(request.getPreferredLanguageId() != null 
+                        ? request.getPreferredLanguageId().longValue() 
+                        : defaultLanguageId)
                 .build());
 
         profileLogRepository.save(ProfileLog.builder()
