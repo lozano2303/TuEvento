@@ -8,8 +8,11 @@ import com.capysoft.tuevento.modules.event.application.dto.request.UpdateEventRe
 import com.capysoft.tuevento.modules.event.application.dto.response.EventResponse;
 import com.capysoft.tuevento.modules.event.application.port.in.UpdateEventUseCase;
 import com.capysoft.tuevento.modules.event.application.validator.EventDateValidator;
+import com.capysoft.tuevento.modules.event.domain.event.EventUpdatedEvent;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
+import com.capysoft.tuevento.modules.event.domain.model.EventLog;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
+import com.capysoft.tuevento.modules.event.domain.repository.EventLogRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.geolocation.application.dto.response.SiteResponse;
 import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort;
@@ -18,10 +21,12 @@ import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -30,11 +35,13 @@ import java.util.List;
 public class UpdateEventService implements UpdateEventUseCase {
 
     private final EventRepository      eventRepository;
+    private final EventLogRepository   eventLogRepository;
     private final GetSitePort          getSitePort;
     private final CategoryUseCase      categoryUseCase;
     private final CategoryEventUseCase categoryEventUseCase;
     private final EventDateValidator   eventDateValidator;
     private final TranslationService   translationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -118,6 +125,21 @@ public class UpdateEventService implements UpdateEventUseCase {
                 .rejectionReason(event.getRejectionReason())
                 .build());
 
+        // Log de cambios en campos traducibles
+        if (!eventName.equals(event.getEventName())) {
+            log(updated.getEventId(), "EVENT_NAME_CHANGED", event.getEventName(), eventName);
+        }
+        if (!description.equals(event.getDescription())) {
+            log(updated.getEventId(), "DESCRIPTION_CHANGED", event.getDescription(), description);
+        }
+
+        // Publicar evento de actualización
+        eventPublisher.publishEvent(EventUpdatedEvent.builder()
+                .eventId(updated.getEventId())
+                .userId(updated.getUserId().intValue())
+                .occurredAt(LocalDateTime.now())
+                .build());
+
         // Request translation if content changed (name or description)
         boolean contentChanged = !eventName.equals(event.getEventName()) || 
                                 !description.equals(event.getDescription());
@@ -162,5 +184,15 @@ public class UpdateEventService implements UpdateEventUseCase {
                 .createdBy(updated.getCreatedBy())
                 .updatedBy(updated.getUpdatedBy())
                 .build();
+    }
+
+    private void log(Long eventId, String action, String oldValue, String newValue) {
+        eventLogRepository.save(EventLog.builder()
+                .eventId(eventId)
+                .action(action)
+                .oldValue(oldValue)
+                .newValue(newValue)
+                .occurredAt(LocalDateTime.now())
+                .build());
     }
 }
