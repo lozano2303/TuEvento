@@ -71,6 +71,88 @@
       "cancel": "Cancelar"
     }
   },
+  "about": {
+    "hero": {
+      "badge": "Plataforma de Eventos Inovadora",
+      "title": "Sobre",
+      "titleAccent": "Nós",
+      "description": "Na \"Tu Evento\" transformamos ideias em experiências inesquecíveis. Somos uma plataforma especializada no layout virtual de espaços para eventos, permitindo que organizadores planejem visualmente a disposição de seus locais: mesas, palcos, pistas de dança, áreas VIP e mais.",
+      "features": {
+        "visualization": "Visualização 2D",
+        "planning": "Planejamento Preciso",
+        "experiences": "Experiências Únicas"
+      }
+    },
+    "story": {
+      "badge": "Nossa Trajetória",
+      "title": "Nossa História",
+      "description": "Tudo começou com uma ideia simples: tornar a organização de eventos mais fácil, eficiente e acessível para todos. Desde nossos inícios, trabalhamos incansavelmente para criar uma plataforma que combine tecnologia inovadora com uma experiência de usuário excepcional.",
+      "vision": {
+        "title": "Nossa Visão",
+        "description": "Ser a plataforma líder em gestão de eventos, facilitando conexões significativas entre organizadores e participantes, impulsionando a indústria do entretenimento e fortalecendo comunidades através de experiências inesquecíveis.",
+        "feature": "Inovação Constante"
+      },
+      "mission": {
+        "title": "Nossa Missão",
+        "description": "Fornecer ferramentas intuitivas e poderosas que permitam aos organizadores criar eventos excepcionais e aos participantes descobrir experiências que enriqueçam suas vidas, tudo mantendo os mais altos padrões de qualidade e segurança.",
+        "feature": "Paixão por Eventos"
+      }
+    },
+    "values": {
+      "badge": "O que nos define",
+      "title": "Nossos Valores",
+      "items": {
+        "excellence": {
+          "title": "Excelência",
+          "description": "Nos comprometemos com a mais alta qualidade em tudo que fazemos, desde o desenvolvimento de software até o suporte ao cliente."
+        },
+        "collaboration": {
+          "title": "Colaboração",
+          "description": "Acreditamos no poder do trabalho em equipe e colaboração para alcançar objetivos comuns e criar valor para todos."
+        },
+        "integrity": {
+          "title": "Integridade",
+          "description": "Operamos com honestidade, transparência e ética em todas as nossas interações e decisões."
+        }
+      }
+    },
+    "organize": {
+      "title": "Organize seus eventos",
+      "description": "Organize seus eventos em minutos, não em horas. Com nossas ferramentas virtuais, simplifique o planejamento e foque no que importa.",
+      "features": {
+        "saveTime": {
+          "title": "Economize tempo",
+          "description": "Planeje em minutos com nossas ferramentas intuitivas"
+        },
+        "virtualTools": {
+          "title": "Ferramentas virtuais",
+          "description": "Layout 2D e visualização em tempo real"
+        },
+        "focus": {
+          "title": "Foque no que importa",
+          "description": "Dedique mais tempo criando experiências memoráveis"
+        }
+      }
+    },
+    "team": {
+      "badge": "Conheça a equipe",
+      "title": "Nossa Equipe",
+      "description": "Uma equipe apaixonada de 5 profissionais dedicados a tornar cada evento memorável.",
+      "counter": "{{current}} de {{total}}",
+      "members": {
+        "cristofer": {
+          "name": "Cristofer David Lozano Contreras",
+          "role": "Desenvolvedor de Software",
+          "description": "Encarregado de supervisionar o acompanhamento da equipe, desenvolvedor Backend, designer de banco de dados, apoio na visualização móvel e documentação."
+        },
+        "jhampier": {
+          "name": "Jhampier Santos Ortiz",
+          "role": "Desenvolvedor de Software",
+          "description": "Responsável por implementar a lógica do sistema, criação de interfaces gráficas web e móveis, além da elaboração da documentação do projeto."
+        }
+      }
+    }
+  },
   "auth": {
     "login": "Entrar",
     "logout": "Sair",
