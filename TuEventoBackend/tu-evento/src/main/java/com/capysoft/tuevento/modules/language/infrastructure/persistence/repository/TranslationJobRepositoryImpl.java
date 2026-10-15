@@ -119,4 +119,10 @@ public class TranslationJobRepositoryImpl implements TranslationJobRepository {
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional
+    public int deleteByEntity(String entityType, Integer entityId) {
+        return jpaRepository.deleteByEntityTypeAndEntityId(entityType, entityId);
+    }
 }

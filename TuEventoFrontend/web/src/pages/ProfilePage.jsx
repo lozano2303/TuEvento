@@ -68,6 +68,7 @@ const ProfilePage = () => {
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarMessage, setAvatarMessage] = useState(null);
+  const [saveMessage, setSaveMessage] = useState(null); // Mensaje de guardado de perfil
   const avatarInputRef = useRef(null);
 
   const userEmail = localStorage.getItem('userEmail') || 'francisco@tuevento.com';
@@ -83,25 +84,58 @@ const ProfilePage = () => {
   };
 
   const displayName = getDisplayName(storedName);
-  const roleLabel =
-    userRole === 'ADMIN' ? 'Administrador' :
-    userRole === 'ORGANIZER' ? 'Organizador' : 'Usuario';
+  const roleLabel = userRole === 'ADMIN'
+    ? t('profile.roles.admin')
+    : userRole === 'ORGANIZER'
+    ? t('profile.roles.organizer')
+    : t('profile.roles.user');
 
   const [formData, setFormData] = useState({
     nombreCompleto: storedName || '',
     bio: '',
   });
 
-  // Auto-reload cuando se detecta que la traducción está generándose
+  // Polling para verificar si la traducción está lista (sin recargar la página)
   useEffect(() => {
-    if (profile?.translationGenerating) {
-      const timer = setTimeout(() => {
-        window.location.reload();
-      }, 20000); // 20 segundos (dar tiempo a que complete la traducción)
-
-      return () => clearTimeout(timer);
-    }
-  }, [profile?.translationGenerating]);
+    if (!profile?.translationGenerating) return;
+    
+    let pollCount = 0;
+    const maxPolls = 20; // Máximo 20 intentos (1 minuto)
+    
+    const checkTranslation = async () => {
+      try {
+        const userId = localStorage.getItem('userID');
+        const lang = languages.find(l => l.languageId === selectedLanguage);
+        
+        if (!userId || !lang) return;
+        
+        const result = await getProfileByUserId(userId, lang.code);
+        const profileData = result?.data;
+        
+        // Si la traducción ya está disponible, actualizar
+        if (profileData && !profileData.translationGenerating && profileData.translatedBio) {
+          setProfile(profileData);
+          const bioToShow = profileData.translatedBio || profileData.bio || '';
+          setFormData(prev => ({ ...prev, bio: bioToShow }));
+          clearInterval(pollInterval);
+        }
+        
+        pollCount++;
+        if (pollCount >= maxPolls) {
+          clearInterval(pollInterval);
+          // Si después de 1 minuto no está lista, recargar la página como fallback
+          window.location.reload();
+        }
+      } catch (err) {
+        console.warn('Error checking translation status:', err);
+      }
+    };
+    
+    // Verificar cada 3 segundos
+    const pollInterval = setInterval(checkTranslation, 3000);
+    
+    return () => clearInterval(pollInterval);
+  }, [profile?.translationGenerating, selectedLanguage, languages]);
 
   // ── Carga temas ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -197,9 +231,9 @@ const ProfilePage = () => {
           try {
             const url = await getProfilePictureUrl(profileData.storedFileId);
             if (url) setAvatarUrl(url);
-            else setAvatarMessage({ type: 'error', text: 'No se pudo cargar tu foto.' });
+            else setAvatarMessage({ type: 'error', text: t('profile.photoLoadError') });
           } catch {
-            setAvatarMessage({ type: 'error', text: 'No se pudo cargar tu foto.' });
+            setAvatarMessage({ type: 'error', text: t('profile.photoLoadError') });
           }
         }
       } catch (err) {
@@ -282,12 +316,12 @@ const ProfilePage = () => {
         }
       }
       
-      setLanguageSaveMessage({ type: 'success', text: 'Idioma actualizado correctamente' });
+      setLanguageSaveMessage({ type: 'success', text: t('profile.languageUpdated') });
       
       // Auto-hide success message after 3 seconds
       setTimeout(() => setLanguageSaveMessage(null), 3000);
     } catch (err) {
-      setLanguageSaveMessage({ type: 'error', text: 'No se pudo actualizar el idioma' });
+      setLanguageSaveMessage({ type: 'error', text: t('profile.languageUpdateError') });
     } finally {
       setSavingLanguage(false);
     }
@@ -302,6 +336,7 @@ const ProfilePage = () => {
   const handleSave = async () => {
     if (!profileId) return;
     setLoading(true);
+    setSaveMessage(null);
     try {
       await updateProfile(profileId, {
         fullName: formData.nombreCompleto,
@@ -310,8 +345,37 @@ const ProfilePage = () => {
       });
       localStorage.setItem('name', formData.nombreCompleto);
       setInitialLanguage(selectedLanguage);
+      setSaveMessage({ type: 'success', text: t('profile.profileSaved') });
+      
+      // Si el idioma seleccionado NO es español y hay biografía, recargar perfil
+      // para obtener el estado de traducción (se disparará polling automático)
+      const selectedLang = languages.find(l => l.languageId === selectedLanguage);
+      const bioChanged = formData.bio !== profile?.bio;
+      
+      if (selectedLang && selectedLang.code !== 'es' && formData.bio && bioChanged) {
+        // Recargar perfil con el idioma actual para verificar estado de traducción
+        const userId = localStorage.getItem('userID');
+        if (userId) {
+          try {
+            const result = await getProfileByUserId(userId, selectedLang.code);
+            if (result?.data) {
+              setProfile(result.data);
+              // Si está generando traducción, no actualizar el bio traducido
+              if (!result.data.translationGenerating) {
+                const bioToShow = result.data.translatedBio || result.data.bio || '';
+                setFormData(prev => ({ ...prev, bio: bioToShow }));
+              }
+            }
+          } catch (err) {
+            console.warn('No se pudo recargar perfil después de guardar:', err);
+          }
+        }
+      }
+      
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => setSaveMessage(null), 3000);
     } catch (err) {
-      alert('Error al guardar el perfil');
+      setSaveMessage({ type: 'error', text: t('profile.saveError') });
     } finally {
       setLoading(false);
     }
@@ -329,15 +393,15 @@ const ProfilePage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     const ok = ALLOWED_AVATAR_TYPES.includes(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
-    if (!ok) { setAvatarMessage({ type: 'error', text: 'Solo JPG, PNG o WEBP.' }); e.target.value = ''; return; }
-    if (file.size > MAX_AVATAR_SIZE_MB * 1024 * 1024) { setAvatarMessage({ type: 'error', text: `Máx. ${MAX_AVATAR_SIZE_MB} MB.` }); e.target.value = ''; return; }
+    if (!ok) { setAvatarMessage({ type: 'error', text: t('profile.onlyImageFormats') }); e.target.value = ''; return; }
+    if (file.size > MAX_AVATAR_SIZE_MB * 1024 * 1024) { setAvatarMessage({ type: 'error', text: t('profile.maxFileSize', { size: MAX_AVATAR_SIZE_MB }) }); e.target.value = ''; return; }
     setPreviewUrl(URL.createObjectURL(file));
     await uploadAvatar(file);
     e.target.value = '';
   };
 
   const uploadAvatar = async (file) => {
-    if (!profileId) { setAvatarMessage({ type: 'error', text: 'No se encontró tu perfil.' }); return; }
+    if (!profileId) { setAvatarMessage({ type: 'error', text: t('profile.profileNotFound') }); return; }
     setUploadingAvatar(true);
     setAvatarMessage(null);
     try {
@@ -348,10 +412,10 @@ const ProfilePage = () => {
       const newUrl = await getProfilePictureUrl(newId);
       setAvatarUrl(newUrl || null);
       setPreviewUrl(null);
-      setAvatarMessage({ type: 'success', text: 'Foto actualizada.' });
+      setAvatarMessage({ type: 'success', text: t('profile.photoUpdated') });
     } catch (err) {
       setPreviewUrl(null);
-      setAvatarMessage({ type: 'error', text: err.message || 'No se pudo actualizar la foto.' });
+      setAvatarMessage({ type: 'error', text: err.message || t('profile.photoUpdateError') });
     } finally {
       setUploadingAvatar(false);
     }
@@ -433,12 +497,12 @@ const ProfilePage = () => {
               {/* Botón info */}
               <div className="absolute -bottom-2 -left-2 z-20">
                 <Tooltip
-                  content={`Solo JPG, PNG o WEBP. Máx. ${MAX_AVATAR_SIZE_MB} MB. Sin contenido adulto.`}
+                  content={t('profile.imageRequirements', { size: MAX_AVATAR_SIZE_MB })}
                   position="right"
                 >
                   <button
                     type="button"
-                    aria-label="Requisitos de imagen"
+                    aria-label={t('profile.imageRequirementsLabel')}
                     onClick={e => e.stopPropagation()}
                     className="w-7 h-7 rounded-full bg-surfaceAlt text-textMuted flex items-center justify-center border-2"
                     style={{ borderColor: 'var(--color-background)' }}
@@ -505,14 +569,14 @@ const ProfilePage = () => {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--color-primary)">
                   <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
-                Información Personal
+                {t('profile.personalInfo')}
               </h3>
 
               <div className="space-y-5">
                 {/* Nombre completo */}
                 <div>
                   <label className="block text-xs font-semibold text-textMuted uppercase tracking-wider mb-2">
-                    Nombre Completo
+                    {t('profile.fullName')}
                   </label>
                   <input
                     className={inputCls}
@@ -520,14 +584,14 @@ const ProfilePage = () => {
                     name="nombreCompleto"
                     value={formData.nombreCompleto}
                     onChange={handleInputChange}
-                    placeholder="Tu nombre completo"
+                    placeholder={t('profile.fullNamePlaceholder')}
                   />
                 </div>
 
                 {/* Biografía con traducción dinámica */}
                 <div>
                   <label className="block text-xs font-semibold text-textMuted uppercase tracking-wider mb-2">
-                    Biografía
+                    {t('profile.bio')}
                     {profile?.languageCode && !profile?.translationGenerating && (
                       <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-primary/20 border border-primary/40 text-accent">
                         {t('profile.translation.translated', { lang: profile.languageCode.toUpperCase() })}
@@ -540,7 +604,7 @@ const ProfilePage = () => {
                     rows={3}
                     value={formData.bio}
                     onChange={handleInputChange}
-                    placeholder="Cuéntanos algo sobre ti…"
+                    placeholder={t('profile.bioPlaceholder')}
                     maxLength={255}
                     readOnly={!!profile?.translatedBio} // Solo lectura si está traducida
                   />
@@ -548,7 +612,7 @@ const ProfilePage = () => {
                     <p className="text-xs text-textMuted">{formData.bio.length}/255</p>
                     {profile?.translatedBio && (
                       <p className="text-[10px] text-textMuted italic">
-                        Biografía traducida automáticamente
+                        {t('profile.biographyTranslatedAutomatically')}
                       </p>
                     )}
                   </div>
@@ -560,7 +624,7 @@ const ProfilePage = () => {
                       <span>
                         {t('profile.translation.generating')}
                         <span className="block text-[10px] mt-0.5 opacity-75">
-                          La página se recargará automáticamente.
+                          {t('profile.translation.autoUpdate')}
                         </span>
                       </span>
                     </div>
@@ -574,12 +638,27 @@ const ProfilePage = () => {
                 className="mt-6 px-6 py-2.5 rounded-xl text-sm font-bold bg-primary hover:bg-primaryDark text-textPrimary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ boxShadow: 'color-mix(in srgb, var(--color-primary) 30%, transparent) 0 2px 12px' }}
               >
-                {loading ? 'Guardando…' : 'Guardar cambios'}
+                {loading ? t('profile.saving') : t('profile.saveChanges')}
               </button>
+              
+              {/* Mensaje de guardado */}
+              {saveMessage && (
+                <div className={`mt-3 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold border ${
+                  saveMessage.type === 'success'
+                    ? 'badge-success-fixed'
+                    : 'bg-error/10 text-error border-error/20'
+                }`}>
+                  {saveMessage.type === 'success'
+                    ? <CheckCircle className="w-3.5 h-3.5" />
+                    : <AlertCircle className="w-3.5 h-3.5" />
+                  }
+                  {saveMessage.text}
+                </div>
+              )}
               
               {profile?.translatedBio && (
                 <p className="mt-2 text-xs text-textMuted">
-                  No puedes editar una biografía traducida. Cambia el idioma a español para editarla.
+                  {t('profile.cannotEditTranslated')}
                 </p>
               )}
             </section>
@@ -590,21 +669,21 @@ const ProfilePage = () => {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--color-primary)">
                   <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
                 </svg>
-                Seguridad de la Cuenta
+                {t('profile.accountSecurity')}
               </h3>
 
               {/* Cerrar sesión — acción neutra, outline primary */}
               <div className="flex items-center justify-between py-4 border-b border-surfaceAlt">
                 <div>
-                  <p className="text-sm font-semibold text-textPrimary">Cerrar sesión</p>
-                  <p className="text-xs text-textSecondary mt-0.5">Salir de la cuenta en este dispositivo.</p>
+                  <p className="text-sm font-semibold text-textPrimary">{t('profile.logout')}</p>
+                  <p className="text-xs text-textSecondary mt-0.5">{t('profile.logoutDescription')}</p>
                 </div>
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-accent border border-primary/30 hover:bg-primary/10 hover:border-primary/50 transition-all"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  Cerrar sesión
+                  {t('profile.logout')}
                 </button>
               </div>
 
@@ -612,16 +691,16 @@ const ProfilePage = () => {
               <div className="mt-5 rounded-xl p-5 bg-error/[0.04] border border-error/25">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm font-bold text-error">Zona de Peligro</p>
+                    <p className="text-sm font-bold text-error">{t('profile.dangerZone')}</p>
                     <p className="text-xs text-textSecondary mt-0.5">
-                      Una vez que desactives tu cuenta, no podrás revertir esta acción.
+                      {t('profile.deactivateWarning')}
                     </p>
                   </div>
                   <button
                     onClick={() => setDeactivateModalOpen(true)}
                     className="flex-shrink-0 px-4 py-2 rounded-xl text-sm font-bold text-error border border-error/35 hover:bg-error/10 transition-all"
                   >
-                    Desactivar Cuenta
+                    {t('profile.deactivateAccount')}
                   </button>
                 </div>
               </div>
@@ -633,9 +712,9 @@ const ProfilePage = () => {
 
             {/* Idioma */}
             <section className="theme-profile-section rounded-2xl p-6">
-              <h3 className="text-base font-bold text-textPrimary mb-4">Idioma Preferido</h3>
+              <h3 className="text-base font-bold text-textPrimary mb-4">{t('profile.languagePreferred')}</h3>
               {languages.length === 0 ? (
-                <p className="text-textMuted text-sm text-center py-4">Cargando idiomas…</p>
+                <p className="text-textMuted text-sm text-center py-4">{t('profile.loadingLanguages')}</p>
               ) : (
                 <>
                   <div className="space-y-2">
@@ -722,7 +801,7 @@ const ProfilePage = () => {
 
             {/* Tema Visual — carrusel compacto */}
             <section className="theme-profile-section rounded-2xl p-6">
-              <h3 className="text-base font-bold text-textPrimary mb-4">Tema Visual</h3>
+              <h3 className="text-base font-bold text-textPrimary mb-4">{t('profile.theme')}</h3>
 
               {themes.length === 0 ? (
                 <p className="text-textMuted text-sm text-center py-6">Cargando temas…</p>

@@ -81,28 +81,84 @@
   "profile": {
     "myProfile": "Mon profil",
     "editProfile": "Modifier le profil",
-    "personalInfo": "Informations personnelles",
+    "personalInfo": "Informations Personnelles",
     "firstName": "Prénom",
     "lastName": "Nom",
+    "fullName": "Nom Complet",
     "phone": "Téléphone",
     "city": "Ville",
+    "bio": "Biographie",
+    "bioPlaceholder": "Parlez-nous de vous…",
     "language": "Langue préférée",
+    "languagePreferred": "Langue Préférée",
     "preferences": "Préférences",
+    "theme": "Thème Visuel",
+    "saveChanges": "Enregistrer les modifications",
+    "saving": "Enregistrement...",
     "updateSuccess": "Profil mis à jour avec succès",
     "updateError": "Impossible de mettre à jour le profil",
+    "accountSecurity": "Sécurité du Compte",
+    "logout": "Déconnexion",
+    "logoutDescription": "Se déconnecter de cet appareil.",
+    "dangerZone": "Zone de Danger",
+    "deactivateWarning": "Une fois que vous désactivez votre compte, vous ne pouvez pas annuler cette action.",
+    "deactivateAccount": "Désactiver le Compte",
+    "roles": {
+      "admin": "Administrateur",
+      "organizer": "Organisateur",
+      "user": "Utilisateur"
+    },
     "translation": {
       "translated": "Traduit ({{lang}})",
-      "generating": "Génération de la traduction de la biographie..."
-    }
+      "generating": "Génération de la traduction de la biographie...",
+      "autoUpdate": "Elle se mettra à jour automatiquement une fois prête."
+    },
+    "biographyTranslatedAutomatically": "Biographie traduite automatiquement",
+    "cannotEditTranslated": "Vous ne pouvez pas modifier une biographie traduite. Changez la langue en espagnol pour la modifier.",
+    "fullNamePlaceholder": "Votre nom complet",
+    "loadingLanguages": "Chargement des langues…",
+    "languageUpdated": "Langue mise à jour avec succès",
+    "languageUpdateError": "Impossible de mettre à jour la langue",
+    "photoUpdateError": "Impossible de mettre à jour la photo.",
+    "photoUpdated": "Photo mise à jour.",
+    "profileNotFound": "Votre profil est introuvable.",
+    "photoLoadError": "Impossible de charger votre photo.",
+    "saveError": "Erreur lors de l'enregistrement du profil",
+    "profileSaved": "Profil enregistré avec succès",
+    "onlyImageFormats": "Seulement JPG, PNG ou WEBP.",
+    "maxFileSize": "Max. {{size}} Mo.",
+    "imageRequirements": "Seulement JPG, PNG ou WEBP. Max. {{size}} Mo. Pas de contenu adulte.",
+    "imageRequirementsLabel": "Exigences d'image"
   },
   "categories": {
     "title": "Catégories",
     "allCategories": "Toutes les catégories",
     "selectCategory": "Sélectionnez une catégorie",
     "noCategories": "Aucune catégorie disponible",
+    "createCategory": "Créer une Catégorie",
+    "editCategory": "Modifier la Catégorie",
+    "deleteCategory": "Supprimer la Catégorie",
+    "name": "Nom",
+    "description": "Description",
+    "namePlaceholder": "Nom de la catégorie",
+    "descriptionPlaceholder": "Description optionnelle",
+    "parentCategory": "Catégorie parent",
+    "selectParent": "Sélectionner catégorie parent (optionnel)",
+    "noParent": "Sans catégorie parent",
+    "rootCategory": "Catégorie racine",
+    "creating": "Création...",
+    "saving": "Enregistrement...",
+    "deleting": "Suppression...",
+    "required": "requis",
     "translation": {
       "translated": "Traduit ({{lang}})",
       "generating": "Génération de la traduction..."
+    },
+    "errors": {
+      "create": "Échec de la création de la catégorie",
+      "update": "Échec de la mise à jour de la catégorie",
+      "delete": "Échec de la suppression de la catégorie",
+      "load": "Échec du chargement des catégories"
     }
   },
   "comments": {
@@ -148,5 +204,14 @@
     "createEvent": "Créer un Événement",
     "profile": "Profil",
     "viewAll": "Voir tout"
+  },
+  "footer": {
+    "tagline": "La plateforme pour découvrir, créer et gérer des événements en direct de manière simple et professionnelle.",
+    "navigation": "Navigation",
+    "legal": "Légal",
+    "termsOfService": "Conditions d'utilisation",
+    "privacy": "Confidentialité",
+    "copyright": "© {{year}} Tu Evento · Tous droits réservés",
+    "madeWith": "Fait avec ♥ par CapySoft"
   }
 }

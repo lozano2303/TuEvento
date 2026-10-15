@@ -62,4 +62,9 @@ public interface TranslationJobJpaRepository extends JpaRepository<TranslationJo
     List<TranslationJobEntity> findByEntityAndTargetLanguage(@Param("entityType") String entityType, 
                                                             @Param("entityId") Integer entityId, 
                                                             @Param("targetLanguageId") Integer targetLanguageId);
+
+    @Modifying
+    @Query("DELETE FROM TranslationJobEntity tj WHERE tj.entityType = :entityType AND tj.entityId = :entityId")
+    int deleteByEntityTypeAndEntityId(@Param("entityType") String entityType, 
+                                      @Param("entityId") Integer entityId);
 }
