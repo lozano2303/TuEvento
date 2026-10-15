@@ -204,6 +204,46 @@
       "autoReload": "La página se recargará automáticamente."
     }
   },
+  "myEvents": {
+    "title": "Mis Eventos",
+    "subtitle": "Gestiona y edita tus eventos",
+    "createNew": "Crear nuevo evento",
+    "createFirst": "Crear primer evento",
+    "loading": "Cargando eventos…",
+    "noEvents": {
+      "title": "Aún no tienes eventos",
+      "subtitle": "Crea tu primer evento para empezar"
+    },
+    "editRestriction": "Para crear y editar eventos, cambia el idioma a español en tu perfil",
+    "filters": {
+      "all": "Todos"
+    },
+    "table": {
+      "headers": {
+        "event": "Evento",
+        "status": "Estado",
+        "dates": "Fechas", 
+        "seats": "Sillas",
+        "actions": "Acciones"
+      },
+      "noEventsInStatus": "No hay eventos en estado \"{status}\"."
+    },
+    "actions": {
+      "viewDetail": "Ver detalle del evento",
+      "editLayout": "Editar layout del evento",
+      "editLayoutRestricted": "El layout solo se puede editar en estado Borrador",
+      "editInfo": "Editar información del evento", 
+      "editInfoRestricted": "La información solo se puede editar en estado Borrador",
+      "manageImages": "Gestionar imágenes del evento",
+      "manageImagesRestricted": "Las imágenes solo se pueden modificar en estado Borrador",
+      "deleteEvent": "Eliminar evento",
+      "deleteEventRestricted": "Solo se pueden eliminar eventos en estado Borrador"
+    },
+    "status": {
+      "pendingReview": "En espera de aprobación",
+      "rejected": "Rechazado — revisa el motivo"
+    }
+  },
   "seats": {
     "selectSeats": "Selecciona tus Sillas",
     "availableSeats": "Sillas disponibles",

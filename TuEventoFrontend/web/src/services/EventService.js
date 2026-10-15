@@ -29,6 +29,28 @@ export const getEventsByUser = async (userId) => {
   return res.json();
 };
 
+/** Eventos de un usuario específico con traducción — GET /events/user/{userId}?language={lang}, auth requerida. */
+export const getEventsByUserWithLanguage = async (userId, languageCode = null) => {
+  const url = languageCode 
+    ? `${API_URL}/events/user/${userId}?language=${languageCode}`
+    : `${API_URL}/events/user/${userId}`;
+  const res = await httpRequest(url);
+  if (!res.ok) throw new Error('Error al obtener tus eventos');
+  return res.json();
+};
+
+/** 
+ * Obtener evento por ID con traducción específica — GET /events/{eventId}?language={lang}
+ * @param {string|number} eventId - ID del evento
+ * @param {string} languageCode - Código de idioma (ej: "en", "es")
+ */
+export const getEventByIdWithLanguage = async (eventId, languageCode) => {
+  const url = `${API_URL}/events/${eventId}?language=${languageCode}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Error al obtener evento con traducción');
+  return response.json();
+};
+
 /** 
  * Obtener evento por ID — GET /events/{eventId}, sin auth.
  * @param {string|number} eventId - ID del evento

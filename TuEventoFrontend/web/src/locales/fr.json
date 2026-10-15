@@ -204,6 +204,46 @@
       "autoReload": "La page se rechargera automatiquement."
     }
   },
+  "myEvents": {
+    "title": "Mes Événements",
+    "subtitle": "Gérez et modifiez vos événements",
+    "createNew": "Créer un nouvel événement",
+    "createFirst": "Créer le premier événement",
+    "loading": "Chargement des événements…",
+    "noEvents": {
+      "title": "Vous n'avez pas encore d'événements",
+      "subtitle": "Créez votre premier événement pour commencer"
+    },
+    "editRestriction": "Pour créer et modifier des événements, changez la langue en espagnol dans votre profil",
+    "filters": {
+      "all": "Tous"
+    },
+    "table": {
+      "headers": {
+        "event": "Événement",
+        "status": "Statut",
+        "dates": "Dates", 
+        "seats": "Places",
+        "actions": "Actions"
+      },
+      "noEventsInStatus": "Aucun événement avec le statut \"{status}\"."
+    },
+    "actions": {
+      "viewDetail": "Voir les détails de l'événement",
+      "editLayout": "Modifier la disposition de l'événement",
+      "editLayoutRestricted": "La disposition ne peut être modifiée qu'en statut Brouillon",
+      "editInfo": "Modifier les informations de l'événement", 
+      "editInfoRestricted": "Les informations ne peuvent être modifiées qu'en statut Brouillon",
+      "manageImages": "Gérer les images de l'événement",
+      "manageImagesRestricted": "Les images ne peuvent être modifiées qu'en statut Brouillon",
+      "deleteEvent": "Supprimer l'événement",
+      "deleteEventRestricted": "Seuls les événements en Brouillon peuvent être supprimés"
+    },
+    "status": {
+      "pendingReview": "En attente d'approbation",
+      "rejected": "Rejeté — vérifiez la raison"
+    }
+  },
   "seats": {
     "selectSeats": "Sélectionnez vos Places",
     "availableSeats": "Places disponibles",

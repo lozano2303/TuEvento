@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useLanguageSync } from '../hooks/useLanguageSync';
+import { useEventTranslation } from '../hooks/useEventTranslation';
 import {
   Plus, LayoutDashboard, Pencil, Trash2, AlertTriangle, ImagePlus,
   Eye, Calendar, Tag, Globe, Lock, Rocket, ChevronLeft, ChevronRight,
@@ -79,8 +82,23 @@ const labelClass = 'block text-xs font-semibold text-textMuted uppercase trackin
 export default function EventManage() {
   const navigate  = useNavigate();
   const userId    = localStorage.getItem('userID');
+  const { t } = useTranslation();
+  
+  // Sincronización de idioma con el perfil del usuario
+  const { currentLanguage } = useLanguageSync();
+  
+  // Verificar si está en español para permitir edición
+  const isSpanishLanguage = currentLanguage === 'es';
 
-  const [events,     setEvents]     = useState([]);
+  // Hook personalizado para manejar eventos con traducción
+  const { 
+    events, 
+    setEvents, 
+    updateEvent, 
+    loadEventsWithTranslation, 
+    isPolling 
+  } = useEventTranslation([], currentLanguage);
+
   const [isLoading,  setIsLoading]  = useState(true);
   const [error,      setError]      = useState(null);
 
@@ -132,11 +150,14 @@ export default function EventManage() {
   // ── Carga inicial ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!userId) { setError('No hay sesión activa'); setIsLoading(false); return; }
-    EventService.getEventsByUser(userId)
-      .then((res) => setEvents(res.data ?? []))
-      .catch((err) => setError(err.message))
-      .finally(() => setIsLoading(false));
-  }, [userId]);
+    
+    loadEventsWithTranslation(userId)
+      .then(() => setIsLoading(false))
+      .catch((err) => {
+        setError(err.message);
+        setIsLoading(false);
+      });
+  }, [userId, loadEventsWithTranslation]);
 
   // Cargar categorías una sola vez para el modal de edición
   useEffect(() => {
@@ -436,7 +457,7 @@ export default function EventManage() {
 
   // Eventos filtrados por estado — frontend, sin llamada adicional al backend
   const FILTER_OPTIONS = [
-    { value: 'ALL',            label: 'Todos' },
+    { value: 'ALL',            label: t('myEvents.filters.all') },
     { value: 'DRAFT',          label: STATUS_BADGE.DRAFT.label },
     { value: 'PENDING_REVIEW', label: STATUS_BADGE.PENDING_REVIEW.label },
     { value: 'PUBLISHED',      label: STATUS_BADGE.PUBLISHED.label },
@@ -454,21 +475,35 @@ export default function EventManage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-textPrimary">Mis Eventos</h1>
-          <p className="text-sm text-textMuted mt-0.5">Gestiona y edita tus eventos</p>
+          <h1 className="text-2xl font-bold text-textPrimary">{t('myEvents.title')}</h1>
+          <p className="text-sm text-textMuted mt-0.5">{t('myEvents.subtitle')}</p>
         </div>
         <button
-          onClick={() => navigate('/events/create')}
-          className={`${btnBase} bg-primary text-white hover:bg-primaryDark`}
+          onClick={() => isSpanishLanguage && navigate('/events/create')}
+          disabled={!isSpanishLanguage}
+          className={`${btnBase} ${
+            isSpanishLanguage 
+              ? 'bg-primary text-white hover:bg-primaryDark cursor-pointer' 
+              : 'bg-surfaceAlt text-textMuted cursor-not-allowed opacity-60'
+          }`}
+          title={!isSpanishLanguage ? t('myEvents.editRestriction') : ''}
         >
-          <Plus className="w-4 h-4" /> Crear nuevo evento
+          <Plus className="w-4 h-4" /> {t('myEvents.createNew')}
         </button>
       </div>
+
+      {/* Restricción de edición cuando no está en español */}
+      {!isSpanishLanguage && (
+        <div className="flex items-center gap-3 bg-warning/10 border border-warning/30 text-warning rounded-xl px-4 py-3 text-sm mb-6">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          {t('myEvents.editRestriction')}
+        </div>
+      )}
 
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-24 text-textMuted text-sm">
-          Cargando eventos…
+          {t('myEvents.loading')}
         </div>
       )}
 
@@ -487,14 +522,20 @@ export default function EventManage() {
             <LayoutDashboard className="w-8 h-8 text-textMuted" />
           </div>
           <div>
-            <p className="text-textPrimary font-semibold text-lg">Aún no tienes eventos</p>
-            <p className="text-textMuted text-sm mt-1">Crea tu primer evento para empezar</p>
+            <p className="text-textPrimary font-semibold text-lg">{t('myEvents.noEvents.title')}</p>
+            <p className="text-textMuted text-sm mt-1">{t('myEvents.noEvents.subtitle')}</p>
           </div>
           <button
-            onClick={() => navigate('/events/create')}
-            className={`${btnBase} bg-primary text-white hover:bg-primaryDark px-5 py-2.5 text-sm`}
+            onClick={() => isSpanishLanguage && navigate('/events/create')}
+            disabled={!isSpanishLanguage}
+            className={`${btnBase} ${
+              isSpanishLanguage 
+                ? 'bg-primary text-white hover:bg-primaryDark cursor-pointer' 
+                : 'bg-surfaceAlt text-textMuted cursor-not-allowed opacity-60'
+            } px-5 py-2.5 text-sm`}
+            title={!isSpanishLanguage ? t('myEvents.editRestriction') : ''}
           >
-            <Plus className="w-4 h-4" /> Crear primer evento
+            <Plus className="w-4 h-4" /> {t('myEvents.createFirst')}
           </button>
         </div>
       )}
@@ -533,18 +574,18 @@ export default function EventManage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-surfaceAlt bg-surfaceAlt/50">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider">Evento</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider">Estado</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider hidden md:table-cell">Fechas</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider hidden lg:table-cell">Sillas</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-textMuted uppercase tracking-wider">Acciones</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider">{t('myEvents.table.headers.event')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider">{t('myEvents.table.headers.status')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider hidden md:table-cell">{t('myEvents.table.headers.dates')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider hidden lg:table-cell">{t('myEvents.table.headers.seats')}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-textMuted uppercase tracking-wider">{t('myEvents.table.headers.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {visibleEvents.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-10 text-center text-sm text-textMuted">
-                    No hay eventos en estado "{FILTER_OPTIONS.find(o => o.value === statusFilter)?.label}".
+                    {t('myEvents.table.noEventsInStatus', { status: FILTER_OPTIONS.find(o => o.value === statusFilter)?.label })}
                   </td>
                 </tr>
               ) : visibleEvents.map((event, idx) => {
@@ -558,20 +599,38 @@ export default function EventManage() {
                     {/* Nombre */}
                     <td className="px-4 py-3">
                       <p className="font-medium text-textPrimary truncate max-w-[200px]">
-                        {event.eventName}
+                        {/* Mostrar nombre traducido si está disponible, sino el original */}
+                        {event.translatedName || event.eventName}
                       </p>
-                      <p className="text-[11px] text-textMuted mt-0.5">#{event.eventId}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-[11px] text-textMuted">#{event.eventId}</p>
+                        {/* Indicador de traducción */}
+                        {currentLanguage !== 'es' && (
+                          <>
+                            {event.translationGenerating && !event.translatedName ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-accent/10 text-accent border border-accent/20">
+                                <span className="w-2 h-2 border border-accent/30 border-t-accent rounded-full animate-spin" />
+                                {t('events.translation.generating')}
+                              </span>
+                            ) : event.translatedName ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-success/10 text-success border border-success/20">
+                                ✓ {t('events.translation.translated', { lang: currentLanguage.toUpperCase() })}
+                              </span>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
                       {/* Inline status notices under the event name */}
                       {event.status === 'PENDING_REVIEW' && (
                         <p className="text-[10px] text-yellow-400 mt-0.5 flex items-center gap-1">
                           <Clock className="w-2.5 h-2.5 flex-shrink-0" />
-                          En espera de aprobación
+                          {t('myEvents.status.pendingReview')}
                         </p>
                       )}
                       {event.status === 'REJECTED' && (
                         <p className="text-[10px] text-red-400 mt-0.5 flex items-center gap-1">
                           <XCircle className="w-2.5 h-2.5 flex-shrink-0" />
-                          Rechazado — revisa el motivo
+                          {t('myEvents.status.rejected')}
                         </p>
                       )}
                     </td>
@@ -607,67 +666,83 @@ export default function EventManage() {
                         <button
                           onClick={() => openDetail(event)}
                           className="w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-accent hover:bg-accent/10 transition-colors"
-                          title="Ver detalle del evento"
+                          title={t('myEvents.actions.viewDetail')}
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Editar layout — solo disponible en DRAFT */}
+                        {/* Editar layout — solo disponible en DRAFT y si está en español */}
                         <button
-                          onClick={() => event.status === 'DRAFT' && navigate(`/events/${event.eventId}/layout`)}
-                          disabled={event.status !== 'DRAFT'}
+                          onClick={() => (event.status === 'DRAFT' && isSpanishLanguage) && navigate(`/events/${event.eventId}/layout`)}
+                          disabled={event.status !== 'DRAFT' || !isSpanishLanguage}
                           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
-                            ${event.status === 'DRAFT'
+                            ${(event.status === 'DRAFT' && isSpanishLanguage)
                               ? 'text-textMuted hover:text-accent hover:bg-accent/10 cursor-pointer'
                               : 'text-textMuted/30 cursor-not-allowed'}`}
-                          title={event.status === 'DRAFT'
-                            ? 'Editar layout del evento'
-                            : 'El layout solo se puede editar en estado Borrador'}
+                          title={
+                            event.status !== 'DRAFT' 
+                              ? t('myEvents.actions.editLayoutRestricted')
+                              : !isSpanishLanguage 
+                              ? t('myEvents.editRestriction')
+                              : t('myEvents.actions.editLayout')
+                          }
                         >
                           <LayoutDashboard className="w-3.5 h-3.5" />
                         </button>
 
                         {/* Editar info */}
                         <button
-                          onClick={() => event.status === 'DRAFT' && openEdit(event)}
-                          disabled={event.status !== 'DRAFT'}
+                          onClick={() => (event.status === 'DRAFT' && isSpanishLanguage) && openEdit(event)}
+                          disabled={event.status !== 'DRAFT' || !isSpanishLanguage}
                           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
-                            ${event.status === 'DRAFT'
+                            ${(event.status === 'DRAFT' && isSpanishLanguage)
                               ? 'text-textMuted hover:text-primary hover:bg-primary/10 cursor-pointer'
                               : 'text-textMuted/30 cursor-not-allowed'}`}
-                          title={event.status === 'DRAFT'
-                            ? 'Editar información del evento'
-                            : 'La información solo se puede editar en estado Borrador'}
+                          title={
+                            event.status !== 'DRAFT' 
+                              ? t('myEvents.actions.editInfoRestricted')
+                              : !isSpanishLanguage 
+                              ? t('myEvents.editRestriction')
+                              : t('myEvents.actions.editInfo')
+                          }
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Gestionar imágenes — solo disponible en DRAFT */}
+                        {/* Gestionar imágenes — solo disponible en DRAFT y si está en español */}
                         <button
-                          onClick={() => event.status === 'DRAFT' && openMedia(event)}
-                          disabled={event.status !== 'DRAFT'}
+                          onClick={() => (event.status === 'DRAFT' && isSpanishLanguage) && openMedia(event)}
+                          disabled={event.status !== 'DRAFT' || !isSpanishLanguage}
                           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
-                            ${event.status === 'DRAFT'
+                            ${(event.status === 'DRAFT' && isSpanishLanguage)
                               ? 'text-textMuted hover:text-accent hover:bg-accent/10 cursor-pointer'
                               : 'text-textMuted/30 cursor-not-allowed'}`}
-                          title={event.status === 'DRAFT'
-                            ? 'Gestionar imágenes del evento'
-                            : 'Las imágenes solo se pueden modificar en estado Borrador'}
+                          title={
+                            event.status !== 'DRAFT' 
+                              ? t('myEvents.actions.manageImagesRestricted')
+                              : !isSpanishLanguage 
+                              ? t('myEvents.editRestriction')
+                              : t('myEvents.actions.manageImages')
+                          }
                         >
                           <ImagePlus className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Eliminar — solo disponible en DRAFT (backend lo exige también) */}
+                        {/* Eliminar — solo disponible en DRAFT y si está en español */}
                         <button
-                          onClick={() => event.status === 'DRAFT' && setDeleteTarget(event)}
-                          disabled={event.status !== 'DRAFT'}
+                          onClick={() => (event.status === 'DRAFT' && isSpanishLanguage) && setDeleteTarget(event)}
+                          disabled={event.status !== 'DRAFT' || !isSpanishLanguage}
                           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
-                            ${event.status === 'DRAFT'
+                            ${(event.status === 'DRAFT' && isSpanishLanguage)
                               ? 'text-textMuted hover:text-error hover:bg-error/10 cursor-pointer'
                               : 'text-textMuted/30 cursor-not-allowed'}`}
-                          title={event.status === 'DRAFT'
-                            ? 'Eliminar evento'
-                            : 'Solo se pueden eliminar eventos en estado Borrador'}
+                          title={
+                            event.status !== 'DRAFT' 
+                              ? t('myEvents.actions.deleteEventRestricted')
+                              : !isSpanishLanguage 
+                              ? t('myEvents.editRestriction')
+                              : t('myEvents.actions.deleteEvent')
+                          }
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

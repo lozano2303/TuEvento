@@ -204,6 +204,46 @@
       "autoReload": "The page will reload automatically."
     }
   },
+  "myEvents": {
+    "title": "My Events",
+    "subtitle": "Manage and edit your events",
+    "createNew": "Create new event",
+    "createFirst": "Create first event",
+    "loading": "Loading events…",
+    "noEvents": {
+      "title": "You don't have any events yet",
+      "subtitle": "Create your first event to get started"
+    },
+    "editRestriction": "To create and edit events, change the language to Spanish in your profile",
+    "filters": {
+      "all": "All"
+    },
+    "table": {
+      "headers": {
+        "event": "Event",
+        "status": "Status",
+        "dates": "Dates", 
+        "seats": "Seats",
+        "actions": "Actions"
+      },
+      "noEventsInStatus": "No events in \"{status}\" status."
+    },
+    "actions": {
+      "viewDetail": "View event details",
+      "editLayout": "Edit event layout",
+      "editLayoutRestricted": "Layout can only be edited in Draft status",
+      "editInfo": "Edit event information", 
+      "editInfoRestricted": "Information can only be edited in Draft status",
+      "manageImages": "Manage event images",
+      "manageImagesRestricted": "Images can only be modified in Draft status",
+      "deleteEvent": "Delete event",
+      "deleteEventRestricted": "Only Draft events can be deleted"
+    },
+    "status": {
+      "pendingReview": "Waiting for approval",
+      "rejected": "Rejected — check the reason"
+    }
+  },
   "seats": {
     "selectSeats": "Select your Seats",
     "availableSeats": "Available seats",

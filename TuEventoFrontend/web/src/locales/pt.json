@@ -204,6 +204,46 @@
       "autoReload": "A página será recarregada automaticamente."
     }
   },
+  "myEvents": {
+    "title": "Meus Eventos",
+    "subtitle": "Gerencie e edite seus eventos",
+    "createNew": "Criar novo evento",
+    "createFirst": "Criar primeiro evento",
+    "loading": "Carregando eventos…",
+    "noEvents": {
+      "title": "Você ainda não tem eventos",
+      "subtitle": "Crie seu primeiro evento para começar"
+    },
+    "editRestriction": "Para criar e editar eventos, mude o idioma para espanhol no seu perfil",
+    "filters": {
+      "all": "Todos"
+    },
+    "table": {
+      "headers": {
+        "event": "Evento",
+        "status": "Status",
+        "dates": "Datas", 
+        "seats": "Lugares",
+        "actions": "Ações"
+      },
+      "noEventsInStatus": "Nenhum evento com status \"{status}\"."
+    },
+    "actions": {
+      "viewDetail": "Ver detalhes do evento",
+      "editLayout": "Editar layout do evento",
+      "editLayoutRestricted": "O layout só pode ser editado no status Rascunho",
+      "editInfo": "Editar informações do evento", 
+      "editInfoRestricted": "As informações só podem ser editadas no status Rascunho",
+      "manageImages": "Gerenciar imagens do evento",
+      "manageImagesRestricted": "As imagens só podem ser modificadas no status Rascunho",
+      "deleteEvent": "Excluir evento",
+      "deleteEventRestricted": "Apenas eventos em Rascunho podem ser excluídos"
+    },
+    "status": {
+      "pendingReview": "Aguardando aprovação",
+      "rejected": "Rejeitado — verifique o motivo"
+    }
+  },
   "seats": {
     "selectSeats": "Selecione seus Lugares",
     "availableSeats": "Lugares disponíveis",
