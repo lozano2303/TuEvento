@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.event.infrastructure.persistence.repositor
 
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.infrastructure.persistence.entity.EventEntity;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -48,4 +49,8 @@ public interface EventJpaRepository extends JpaRepository<EventEntity, Long> {
 
     /** PUBLISHED events (any visibility) whose finish_date < :date — used by auto-completion scheduler. */
     List<EventEntity> findByStatusAndFinishDateBefore(EventStatus status, LocalDate date);
+
+    /** Most recent N events ordered by updatedAt — used for admin activity feed. */
+    @Query("SELECT e FROM EventEntity e ORDER BY e.updatedAt DESC")
+    List<EventEntity> findTopByOrderByUpdatedAtDesc(Pageable pageable);
 }
