@@ -1,0 +1,45 @@
+databaseChangeLog:
+  - changeSet:
+      id: 091-seed-comment-notification-types
+      author: capysoft
+      comment: >
+        Seeds two notification types for the comment/rating flow:
+        NEW_COMMENT — sent to the event organizer when a user posts a top-level comment on their event.
+        NEW_REPLY   — sent to a user when someone replies to their comment or mentions them in a thread.
+      changes:
+        - insert:
+            tableName: notification_type
+            columns:
+              - column:
+                  name: name
+                  value: NEW_COMMENT
+              - column:
+                  name: description
+                  value: Alguien comentó en el evento del organizador
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()
+        - insert:
+            tableName: notification_type
+            columns:
+              - column:
+                  name: name
+                  value: NEW_REPLY
+              - column:
+                  name: description
+                  value: Alguien respondió o mencionó al usuario en un comentario
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()
