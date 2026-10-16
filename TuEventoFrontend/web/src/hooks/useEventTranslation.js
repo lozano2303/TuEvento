@@ -29,8 +29,33 @@ export function useEventTranslation(initialEvents = [], currentLanguage = 'es') 
   // Función para cargar eventos con traducción
   const loadEventsWithTranslation = useCallback(async (userId) => {
     try {
-      const response = await EventService.getEventsByUserWithLanguage(userId, currentLanguage);
-      const eventsData = response.data || [];
+      // Primero obtenemos los eventos del usuario (summary sin traducción)
+      const response = await EventService.getEventsByUser(userId);
+      let eventsData = response.data || [];
+      
+      // Si el idioma NO es español, consultar cada evento con traducción
+      if (currentLanguage !== 'es' && eventsData.length > 0) {
+        const translatedEvents = await Promise.all(
+          eventsData.map(async (event) => {
+            try {
+              const fullEventResponse = await EventService.getEventByIdWithLanguage(event.eventId, currentLanguage);
+              const fullEvent = fullEventResponse.data;
+              
+              return {
+                ...event,
+                translatedName: fullEvent?.translatedName || null,
+                translatedDescription: fullEvent?.translatedDescription || null,
+                translationGenerating: fullEvent?.translationGenerating || false
+              };
+            } catch (error) {
+              console.error(`Error getting translation for event ${event.eventId}:`, error);
+              return event; // Retornar evento original si falla
+            }
+          })
+        );
+        eventsData = translatedEvents;
+      }
+      
       setEvents(eventsData);
       return eventsData;
     } catch (error) {
