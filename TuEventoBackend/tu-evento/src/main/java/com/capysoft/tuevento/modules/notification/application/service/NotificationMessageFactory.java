@@ -24,6 +24,8 @@ public final class NotificationMessageFactory {
             case NotificationTypeNames.WELCOME          -> welcome(email, command);
             case NotificationTypeNames.EVENT_PUBLISHED  -> eventPublished(email, command);
             case NotificationTypeNames.EVENT_REJECTED   -> eventRejected(email, command);
+            case NotificationTypeNames.NEW_COMMENT      -> newComment(email, command);
+            case NotificationTypeNames.NEW_REPLY        -> newReply(email, command);
             default -> new MessageContent(
                     "Notificación",
                     email ? html("Tienes una nueva notificación en TuEvento.") : "Tienes una nueva notificación.");
@@ -120,6 +122,42 @@ public final class NotificationMessageFactory {
                 "Evento rechazado",
                 "Tu evento \"" + command.getEventName() + "\" fue rechazado. Motivo: " + plainReason
                 + " Corrígelo desde Mis eventos.");
+    }
+
+    // ── Comment / reply notifications ─────────────────────────────────────────
+
+    private static MessageContent newComment(boolean email, SendNotificationCommand command) {
+        String commenter = escapeHtml(command.getCommenterName() != null ? command.getCommenterName() : "Un usuario");
+        String event     = escapeHtml(command.getEventName()    != null ? command.getEventName()    : "tu evento");
+        String comment   = escapeHtml(command.getReason()       != null ? command.getReason()       : "");
+        if (email) {
+            return new MessageContent(
+                    "TuEvento — Nuevo comentario en tu evento",
+                    html(
+                        "<strong>" + commenter + "</strong> comentó en tu evento <strong>" + event + "</strong>.",
+                        comment.isBlank() ? null : "\"" + comment + "\""
+                    ));
+        }
+        String plain = commenter + " comentó en \"" + command.getEventName() + "\".";
+        if (!comment.isBlank()) plain += " \"" + comment + "\"";
+        return new MessageContent("Nuevo comentario en tu evento", plain);
+    }
+
+    private static MessageContent newReply(boolean email, SendNotificationCommand command) {
+        String commenter = escapeHtml(command.getCommenterName() != null ? command.getCommenterName() : "Un usuario");
+        String event     = escapeHtml(command.getEventName()    != null ? command.getEventName()    : "un evento");
+        String comment   = escapeHtml(command.getReason()       != null ? command.getReason()       : "");
+        if (email) {
+            return new MessageContent(
+                    "TuEvento — Te mencionaron en un comentario",
+                    html(
+                        "<strong>" + commenter + "</strong> respondió a tu comentario en el evento <strong>" + event + "</strong>.",
+                        comment.isBlank() ? null : "\"" + comment + "\""
+                    ));
+        }
+        String plain = commenter + " respondió tu comentario en \"" + command.getEventName() + "\".";
+        if (!comment.isBlank()) plain += " \"" + comment + "\"";
+        return new MessageContent("Te respondieron en un comentario", plain);
     }
 
     private static String paymentBreakdown(SendNotificationCommand command) {
