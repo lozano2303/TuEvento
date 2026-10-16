@@ -14,6 +14,7 @@ import { es as dateFnsEs } from 'date-fns/locale';
 import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
 import StarRatingInput from '../components/common/StarRatingInput';
+import ConfirmModal from '../components/common/ConfirmModal';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
@@ -54,6 +55,8 @@ export default function EventDetail() {
   const [commentError, setCommentError] = useState(null);
   const [deletingCommentId, setDeletingCommentId] = useState(null);
   const [deleteCommentError, setDeleteCommentError] = useState(null);
+  // Modal de confirmación para borrar comentario
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // ratingId pendiente de confirmar
   // userId del organizador del evento (para R4 en el frontend)
   const [eventOrganizerUserId, setEventOrganizerUserId] = useState(null);
 
@@ -409,9 +412,14 @@ export default function EventDetail() {
   }, [showToast]);
 
   // ── Borrado de comentario propio ──────────────────────────────────────────
-  const handleDeleteComment = useCallback(async (ratingId) => {
-    if (!window.confirm('Esta acción es permanente. ¿Seguro que quieres eliminar tu comentario?')) return;
+  const handleDeleteComment = useCallback((ratingId) => {
+    setDeleteConfirm(ratingId);
+  }, []);
 
+  const executeDeleteComment = useCallback(async () => {
+    const ratingId = deleteConfirm;
+    if (!ratingId) return;
+    setDeleteConfirm(null);
     setDeletingCommentId(ratingId);
     setDeleteCommentError(null);
 
@@ -439,7 +447,7 @@ export default function EventDetail() {
     } finally {
       setDeletingCommentId(null);
     }
-  }, [eventId]);
+  }, [deleteConfirm, eventId]);
 
   // ── Enviar respuesta a un comentario ──────────────────────────────────────
   const handleReplySubmit = useCallback(async (e) => {
@@ -1270,6 +1278,19 @@ export default function EventDetail() {
 
       {/* Toast de alertas */}
       <Toast toast={toast} onHide={hideToast} />
+
+      {/* Modal confirmación borrar comentario */}
+      <ConfirmModal
+        isOpen={deleteConfirm !== null}
+        title="¿Borrar este comentario?"
+        message="Una vez eliminado no hay vuelta atrás — el comentario y sus respuestas desaparecerán para siempre. ¿Seguimos?"
+        confirmLabel="Sí, eliminar"
+        cancelLabel="No, mejor no"
+        confirmStyle="danger"
+        loading={deletingCommentId !== null}
+        onConfirm={executeDeleteComment}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }
