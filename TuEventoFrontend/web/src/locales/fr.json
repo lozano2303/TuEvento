@@ -226,7 +226,8 @@
         "seats": "Places",
         "actions": "Actions"
       },
-      "noEventsInStatus": "Aucun événement avec le statut \"{status}\"."
+      "noEventsInStatus": "Aucun événement avec le statut {{status}}.",
+      "noEvents": "Aucun événement"
     },
     "actions": {
       "viewDetail": "Voir les détails de l'événement",
@@ -242,6 +243,76 @@
     "status": {
       "pendingReview": "En attente d'approbation",
       "rejected": "Rejeté — vérifiez la raison"
+    },
+    "eventStatus": {
+      "DRAFT": "Brouillon",
+      "PENDING_REVIEW": "En révision",
+      "PUBLISHED": "Publié",
+      "REJECTED": "Rejeté",
+      "CANCELLED": "Annulé",
+      "COMPLETED": "Terminé"
+    },
+    "statusActions": {
+      "backToDraft": "Retour au brouillon",
+      "submitReview": "Soumettre pour révision",
+      "publish": "Publier",
+      "reject": "Rejeter",
+      "cancel": "Annuler",
+      "markCompleted": "Marquer comme terminé"
+    },
+    "transitionConfirm": {
+      "PENDING_REVIEW": {
+        "title": "Soumettre cet événement pour révision?",
+        "body": "L'événement sera en attente d'approbation par un administrateur. Vous ne pourrez pas le modifier ni modifier les images pendant la révision. Vous pouvez le retirer à tout moment si vous devez apporter des modifications.",
+        "confirm": "Oui, soumettre pour révision"
+      },
+      "DRAFT": {
+        "title": "Retirer l'événement de la révision?",
+        "body": "L'événement retournera au statut Brouillon et vous pourrez le modifier à nouveau. Vous devrez le soumettre pour révision à nouveau lorsqu'il sera prêt.",
+        "confirm": "Oui, retirer la soumission",
+        "titleCorrect": "Corriger cet événement?",
+        "bodyCorrect": "L'événement retournera au statut Brouillon pour que vous puissiez le corriger et le soumettre à nouveau pour révision."
+      },
+      "CANCELLED": {
+        "title": "Annuler cet événement?",
+        "body": "L'événement ne sera plus disponible publiquement. Cette action ne peut pas être annulée. Si des billets ont déjà été vendus, le processus de remboursement devra être géré séparément.",
+        "confirm": "Oui, annuler l'événement"
+      },
+      "COMPLETED": {
+        "title": "Marquer cet événement comme terminé?",
+        "body": "Cela indique que l'événement est terminé. Vous ne pourrez plus le modifier ni changer son statut après cela.",
+        "confirm": "Oui, marquer comme terminé"
+      },
+      "cancel": "Annuler",
+      "changing": "Changement…"
+    },
+    "visibility": {
+      "public": "Public",
+      "private": "Privé",
+      "active": "Actif"
+    },
+    "detailModal": {
+      "close": "Fermer",
+      "active": "Actif",
+      "private": "Privé",
+      "loadingDetails": "Chargement des détails…",
+      "descriptionLabel": "Description de l'événement",
+      "fields": {
+        "startDate": "DATE ET HEURE DE DÉBUT",
+        "eventType": "TYPE D'ÉVÉNEMENT",
+        "city": "VILLE",
+        "finishDate": "DATE DE FIN",
+        "availableSeats": "PLACES DISPONIBLES",
+        "status": "STATUT",
+        "public": "Public",
+        "private": "Privé"
+      },
+      "banners": {
+        "pendingReview": "Votre événement est en cours de révision. Nous le publierons une fois que l'administrateur l'aura approuvé.",
+        "rejectedTitle": "Événement rejeté",
+        "rejectedAction": "Fermez ce panneau, corrigez l'événement et soumettez-le à nouveau pour révision."
+      },
+      "submitReview": "Soumettre pour révision"
     }
   },
   "seats": {

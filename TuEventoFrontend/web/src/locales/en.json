@@ -226,7 +226,8 @@
         "seats": "Seats",
         "actions": "Actions"
       },
-      "noEventsInStatus": "No events in \"{status}\" status."
+      "noEventsInStatus": "No events in {{status}} status.",
+      "noEvents": "No events"
     },
     "actions": {
       "viewDetail": "View event details",
@@ -242,6 +243,76 @@
     "status": {
       "pendingReview": "Waiting for approval",
       "rejected": "Rejected — check the reason"
+    },
+    "eventStatus": {
+      "DRAFT": "Draft",
+      "PENDING_REVIEW": "Under review",
+      "PUBLISHED": "Published",
+      "REJECTED": "Rejected",
+      "CANCELLED": "Cancelled",
+      "COMPLETED": "Completed"
+    },
+    "statusActions": {
+      "backToDraft": "Back to draft",
+      "submitReview": "Submit for review",
+      "publish": "Publish",
+      "reject": "Reject",
+      "cancel": "Cancel",
+      "markCompleted": "Mark as completed"
+    },
+    "transitionConfirm": {
+      "PENDING_REVIEW": {
+        "title": "Submit this event for review?",
+        "body": "The event will be pending administrator approval. You won't be able to edit it or modify images while under review. You can withdraw it at any time if you need to make changes.",
+        "confirm": "Yes, submit for review"
+      },
+      "DRAFT": {
+        "title": "Withdraw event from review?",
+        "body": "The event will return to Draft status and you'll be able to edit it again. You'll need to submit it for review again when ready.",
+        "confirm": "Yes, withdraw submission",
+        "titleCorrect": "Fix this event?",
+        "bodyCorrect": "The event will return to Draft status so you can fix it and submit it for review again."
+      },
+      "CANCELLED": {
+        "title": "Cancel this event?",
+        "body": "The event will no longer be publicly available. This action cannot be reversed. If tickets have already been sold, the refund process must be managed separately.",
+        "confirm": "Yes, cancel event"
+      },
+      "COMPLETED": {
+        "title": "Mark this event as completed?",
+        "body": "This indicates that the event has ended. You won't be able to modify it or change its status after this.",
+        "confirm": "Yes, mark as completed"
+      },
+      "cancel": "Cancel",
+      "changing": "Changing…"
+    },
+    "visibility": {
+      "public": "Public",
+      "private": "Private",
+      "active": "Active"
+    },
+    "detailModal": {
+      "close": "Close",
+      "active": "Active",
+      "private": "Private",
+      "loadingDetails": "Loading details…",
+      "descriptionLabel": "Event description",
+      "fields": {
+        "startDate": "START DATE & TIME",
+        "eventType": "EVENT TYPE",
+        "city": "CITY",
+        "finishDate": "END DATE",
+        "availableSeats": "AVAILABLE SEATS",
+        "status": "STATUS",
+        "public": "Public",
+        "private": "Private"
+      },
+      "banners": {
+        "pendingReview": "Your event is under review. We'll publish it once the administrator approves it.",
+        "rejectedTitle": "Event rejected",
+        "rejectedAction": "Close this panel, fix the event and submit it for review again."
+      },
+      "submitReview": "Submit for review"
     }
   },
   "seats": {
