@@ -1016,7 +1016,7 @@ export default function AdminEventManagement() {
                       : <p className="text-sm font-bold text-white">—</p>
                     }
                   </InfoCard>
-                  <InfoCard icon={MapPin} iconColor="text-rose-400" iconBg="bg-rose-500/15" label="Ciudad">
+                  <InfoCard icon={MapPin} iconColor="text-rose-400" iconBg="bg-rose-500/15" label="Sitio">
                     <p className="text-sm font-bold text-white">{modalData.siteName || '—'}</p>
                   </InfoCard>
                   <InfoCard icon={Users} iconColor="text-amber-400" iconBg="bg-amber-500/15" label="Modalidad">
