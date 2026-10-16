@@ -462,7 +462,8 @@
     "myEvents": "Mes Événements",
     "createEvent": "Créer un Événement",
     "profile": "Profil",
-    "viewAll": "Voir tout"
+    "viewAll": "Voir tout",
+    "organizerPetition": "Demande d'Organisateur"
   },
   "footer": {
     "tagline": "La plateforme pour découvrir, créer et gérer des événements en direct de manière simple et professionnelle.",
@@ -472,5 +473,50 @@
     "privacy": "Confidentialité",
     "copyright": "© {{year}} Tu Evento · Tous droits réservés",
     "madeWith": "Fait avec ♥ par CapySoft"
+  },
+  "organizerPetition": {
+    "title": "Demande d'Organisateur",
+    "subtitle": "Téléchargez un document d'identité pour vérifier votre compte et pouvoir créer des événements sur la plateforme.",
+    "status": {
+      "pending": "Votre demande est en cours d'examen",
+      "pendingSince": "Soumise le {{date}}",
+      "rejected": "Votre demande a été rejetée",
+      "rejectedRetry": "Vous pouvez réessayer",
+      "approved": "Document vérifié"
+    },
+    "fileUpload": {
+      "dragDrop": "Glissez et déposez votre document ici",
+      "clickSelect": "Ou cliquez pour sélectionner un fichier manuellement",
+      "selectFile": "Sélectionner un fichier",
+      "formatInfo": "PDF • Max 5 Mo",
+      "fileLoaded": "Fichier chargé",
+      "uploaded": "Téléchargé"
+    },
+    "buttons": {
+      "send": "Envoyer la demande",
+      "sending": "Envoi...",
+      "inReview": "En cours d'examen",
+      "approved": "Approuvé"
+    },
+    "documents": {
+      "title": "Documents requis",
+      "required": "Obligatoires",
+      "optional": "Optionnels",
+      "items": {
+        "idCard": "Carte d'identité / CNI",
+        "passport": "Passeport valide (Étrangers)",
+        "officialId": "Document d'identité officiel",
+        "backgroundCheck": "Certificat d'antécédents",
+        "courseCerts": "Certificats de cours",
+        "references": "Références professionnelles"
+      }
+    },
+    "info": {
+      "processingTime": "Vos informations seront traitées dans un délai de 24 à 48 heures ouvrables par notre équipe de sécurité."
+    },
+    "errors": {
+      "selectDocument": "Sélectionnez un document",
+      "submitError": "Erreur lors de l'envoi de la demande"
+    }
   }
 }

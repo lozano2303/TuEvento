@@ -462,7 +462,8 @@
     "myEvents": "Meus Eventos",
     "createEvent": "Criar Evento",
     "profile": "Perfil",
-    "viewAll": "Ver todos"
+    "viewAll": "Ver todos",
+    "organizerPetition": "Solicitação de Organizador"
   },
   "footer": {
     "tagline": "A plataforma para descobrir, criar e gerenciar eventos ao vivo de forma simples e profissional.",
@@ -472,5 +473,50 @@
     "privacy": "Privacidade",
     "copyright": "© {{year}} Tu Evento · Todos os direitos reservados",
     "madeWith": "Feito com ♥ por CapySoft"
+  },
+  "organizerPetition": {
+    "title": "Solicitação de Organizador",
+    "subtitle": "Envie um documento de identidade para verificar sua conta e poder criar eventos na plataforma.",
+    "status": {
+      "pending": "Sua solicitação está em revisão",
+      "pendingSince": "Enviada em {{date}}",
+      "rejected": "Sua solicitação foi rejeitada",
+      "rejectedRetry": "Você pode tentar novamente",
+      "approved": "Documento verificado"
+    },
+    "fileUpload": {
+      "dragDrop": "Arraste e solte seu documento aqui",
+      "clickSelect": "Ou clique para selecionar um arquivo manualmente",
+      "selectFile": "Selecionar arquivo",
+      "formatInfo": "PDF • Máx 5MB",
+      "fileLoaded": "Arquivo carregado",
+      "uploaded": "Enviado"
+    },
+    "buttons": {
+      "send": "Enviar solicitação",
+      "sending": "Enviando...",
+      "inReview": "Em revisão",
+      "approved": "Aprovado"
+    },
+    "documents": {
+      "title": "Documentos necessários",
+      "required": "Obrigatórios",
+      "optional": "Opcionais",
+      "items": {
+        "idCard": "RG / Documento de identidade",
+        "passport": "Passaporte válido (Estrangeiros)",
+        "officialId": "Documento de identidade oficial",
+        "backgroundCheck": "Certidão de antecedentes",
+        "courseCerts": "Certificados de cursos",
+        "references": "Referências profissionais"
+      }
+    },
+    "info": {
+      "processingTime": "Suas informações serão processadas em um prazo de 24 a 48 horas úteis por nossa equipe de segurança."
+    },
+    "errors": {
+      "selectDocument": "Selecione um documento",
+      "submitError": "Erro ao enviar a solicitação"
+    }
   }
 }

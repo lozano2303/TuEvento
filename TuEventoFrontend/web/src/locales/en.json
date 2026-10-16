@@ -462,7 +462,8 @@
     "myEvents": "My Events",
     "createEvent": "Create Event",
     "profile": "Profile",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "organizerPetition": "Organizer Application"
   },
   "footer": {
     "tagline": "The platform to discover, create, and manage live events easily and professionally.",
@@ -472,5 +473,50 @@
     "privacy": "Privacy",
     "copyright": "© {{year}} Tu Evento · All rights reserved",
     "madeWith": "Made with ♥ by CapySoft"
+  },
+  "organizerPetition": {
+    "title": "Organizer Application",
+    "subtitle": "Upload an identity document to verify your account and create events on the platform.",
+    "status": {
+      "pending": "Your application is under review",
+      "pendingSince": "Submitted on {{date}}",
+      "rejected": "Your application was rejected",
+      "rejectedRetry": "You can try again",
+      "approved": "Document verified"
+    },
+    "fileUpload": {
+      "dragDrop": "Drag and drop your document here",
+      "clickSelect": "Or click to select a file manually",
+      "selectFile": "Select file",
+      "formatInfo": "PDF • Max 5MB",
+      "fileLoaded": "File loaded",
+      "uploaded": "Uploaded"
+    },
+    "buttons": {
+      "send": "Submit application",
+      "sending": "Sending...",
+      "inReview": "Under review",
+      "approved": "Approved"
+    },
+    "documents": {
+      "title": "Required documents",
+      "required": "Required",
+      "optional": "Optional",
+      "items": {
+        "idCard": "Citizen ID / ID card",
+        "passport": "Valid passport (Foreigners)",
+        "officialId": "Official identity document",
+        "backgroundCheck": "Background check certificate",
+        "courseCerts": "Course certificates",
+        "references": "Work references"
+      }
+    },
+    "info": {
+      "processingTime": "Your information will be processed within 24 to 48 business hours by our security team."
+    },
+    "errors": {
+      "selectDocument": "Select a document",
+      "submitError": "Error submitting the application"
+    }
   }
 }

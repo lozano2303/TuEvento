@@ -117,7 +117,7 @@ const displayName = (() => {
                 onClick={() => navigate('/organizer-petition-form')}
                 className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
-                <Plus className="w-4 h-4" /> Solicitud Organizador
+                <Plus className="w-4 h-4" /> {t('navigation.organizerPetition')}
               </button>
             )}
           </div>
@@ -256,7 +256,7 @@ const displayName = (() => {
             {userData && !isAdmin && !isOrganizer && (
               <button onClick={() => handleNavClick('/organizer-petition-form')}
                 className="flex items-center gap-2 text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer">
-                <Plus className="w-4 h-4" /> Solicitud Organizador
+                <Plus className="w-4 h-4" /> {t('navigation.organizerPetition')}
               </button>
             )}
           </div>
