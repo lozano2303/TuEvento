@@ -654,7 +654,7 @@ export default function EventDetail() {
                   border:     `1px solid ${event.status === 'PUBLISHED' ? 'rgba(74,222,128,0.3)' : 'rgba(107,114,128,0.3)'}`,
                 }}
               >
-                {event.status === 'PUBLISHED' ? 'Publicado' : event.status}
+                {t(`myEvents.eventStatus.${event.status}`)}
               </span>
             </div>
           </div>

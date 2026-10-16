@@ -226,7 +226,8 @@
         "seats": "Sillas",
         "actions": "Acciones"
       },
-      "noEventsInStatus": "No hay eventos en estado \"{status}\"."
+      "noEventsInStatus": "No hay eventos en estado {{status}}.",
+      "noEvents": "No hay eventos"
     },
     "actions": {
       "viewDetail": "Ver detalle del evento",
@@ -242,6 +243,76 @@
     "status": {
       "pendingReview": "En espera de aprobación",
       "rejected": "Rechazado — revisa el motivo"
+    },
+    "eventStatus": {
+      "DRAFT": "Borrador",
+      "PENDING_REVIEW": "En revisión",
+      "PUBLISHED": "Publicado",
+      "REJECTED": "Rechazado",
+      "CANCELLED": "Cancelado",
+      "COMPLETED": "Finalizado"
+    },
+    "statusActions": {
+      "backToDraft": "Volver a borrador",
+      "submitReview": "Enviar a revisión",
+      "publish": "Publicar",
+      "reject": "Rechazar",
+      "cancel": "Cancelar",
+      "markCompleted": "Marcar finalizado"
+    },
+    "transitionConfirm": {
+      "PENDING_REVIEW": {
+        "title": "¿Enviar este evento a revisión?",
+        "body": "El evento quedará en espera de aprobación por un administrador. No podrás editarlo ni modificar las imágenes mientras esté en revisión. Puedes retirarlo en cualquier momento si necesitas hacer cambios.",
+        "confirm": "Sí, enviar a revisión"
+      },
+      "DRAFT": {
+        "title": "¿Retirar el evento de revisión?",
+        "body": "El evento volverá a estado Borrador y podrás editarlo de nuevo. Tendrás que enviarlo a revisión otra vez cuando esté listo.",
+        "confirm": "Sí, retirar envío",
+        "titleCorrect": "¿Corregir este evento?",
+        "bodyCorrect": "El evento volverá a estado Borrador para que puedas corregirlo y enviarlo a revisión nuevamente."
+      },
+      "CANCELLED": {
+        "title": "¿Cancelar este evento?",
+        "body": "El evento dejará de estar disponible públicamente. Esta acción no se puede revertir. Si ya existen tickets vendidos, el proceso de reembolso deberá gestionarse por separado.",
+        "confirm": "Sí, cancelar evento"
+      },
+      "COMPLETED": {
+        "title": "¿Marcar este evento como completado?",
+        "body": "Esto indica que el evento ya finalizó. No podrás modificarlo ni cambiar su estado después de esto.",
+        "confirm": "Sí, marcar como completado"
+      },
+      "cancel": "Cancelar",
+      "changing": "Cambiando…"
+    },
+    "visibility": {
+      "public": "Público",
+      "private": "Privado",
+      "active": "Activo"
+    },
+    "detailModal": {
+      "close": "Cerrar",
+      "active": "Activo",
+      "private": "Privado",
+      "loadingDetails": "Cargando detalles…",
+      "descriptionLabel": "Descripción del evento",
+      "fields": {
+        "startDate": "FECHA Y HORA",
+        "eventType": "TIPO DE EVENTO",
+        "city": "CIUDAD",
+        "finishDate": "FECHA DE FIN",
+        "availableSeats": "SILLAS DISPONIBLES",
+        "status": "ESTADO",
+        "public": "Público",
+        "private": "Privado"
+      },
+      "banners": {
+        "pendingReview": "Tu evento está en revisión. Te lo publicaremos cuando el administrador lo apruebe.",
+        "rejectedTitle": "Evento rechazado",
+        "rejectedAction": "Cierra este panel, corrige el evento y envíalo a revisión nuevamente."
+      },
+      "submitReview": "Enviar a revisión"
     }
   },
   "seats": {

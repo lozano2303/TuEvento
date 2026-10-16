@@ -85,7 +85,7 @@ export default function EventManage() {
   const { t } = useTranslation();
   
   // Sincronización de idioma con el perfil del usuario
-  const { currentLanguage } = useLanguageSync();
+  const currentLanguage = useLanguageSync();
   
   // Verificar si está en español para permitir edición
   const isSpanishLanguage = currentLanguage === 'es';
@@ -317,7 +317,7 @@ export default function EventManage() {
     setDetailLoading(true);
     try {
       const [detailRes, mediaRes] = await Promise.allSettled([
-        EventService.getEventById(event.eventId),
+        EventService.getEventById(event.eventId, currentLanguage), // Pasar el idioma para obtener traducción
         getEventMedia(event.eventId),
       ]);
       if (detailRes.status === 'fulfilled') setDetailFull(detailRes.value?.data ?? null);
@@ -458,12 +458,12 @@ export default function EventManage() {
   // Eventos filtrados por estado — frontend, sin llamada adicional al backend
   const FILTER_OPTIONS = [
     { value: 'ALL',            label: t('myEvents.filters.all') },
-    { value: 'DRAFT',          label: STATUS_BADGE.DRAFT.label },
-    { value: 'PENDING_REVIEW', label: STATUS_BADGE.PENDING_REVIEW.label },
-    { value: 'PUBLISHED',      label: STATUS_BADGE.PUBLISHED.label },
-    { value: 'REJECTED',       label: STATUS_BADGE.REJECTED.label },
-    { value: 'CANCELLED',      label: STATUS_BADGE.CANCELLED.label },
-    { value: 'COMPLETED',      label: STATUS_BADGE.COMPLETED.label },
+    { value: 'DRAFT',          label: t(STATUS_BADGE.DRAFT.labelKey) },
+    { value: 'PENDING_REVIEW', label: t(STATUS_BADGE.PENDING_REVIEW.labelKey) },
+    { value: 'PUBLISHED',      label: t(STATUS_BADGE.PUBLISHED.labelKey) },
+    { value: 'REJECTED',       label: t(STATUS_BADGE.REJECTED.labelKey) },
+    { value: 'CANCELLED',      label: t(STATUS_BADGE.CANCELLED.labelKey) },
+    { value: 'COMPLETED',      label: t(STATUS_BADGE.COMPLETED.labelKey) },
   ];
   const visibleEvents = statusFilter === 'ALL'
     ? events
@@ -585,7 +585,12 @@ export default function EventManage() {
               {visibleEvents.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-10 text-center text-sm text-textMuted">
-                    {t('myEvents.table.noEventsInStatus', { status: FILTER_OPTIONS.find(o => o.value === statusFilter)?.label })}
+                    {statusFilter === 'ALL' 
+                      ? t('myEvents.table.noEvents')
+                      : t('myEvents.table.noEventsInStatus', { 
+                          status: FILTER_OPTIONS.find(o => o.value === statusFilter)?.label 
+                        })
+                    }
                   </td>
                 </tr>
               ) : visibleEvents.map((event, idx) => {
@@ -769,39 +774,43 @@ export default function EventManage() {
           ? new Date(d + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
           : '—';
 
+        // Usar traducción si está disponible
+        const displayName = full?.translatedName || full?.eventName || ev.eventName;
+        const displayDescription = full?.translatedDescription || full?.description || ev.description;
+
         // Campos del grid
         const gridFields = [
           {
             icon: Calendar,
-            label: 'FECHA Y HORA',
+            label: t('myEvents.detailModal.fields.startDate'),
             value: fmtDate(ev.startDate),
             sub:   null,
           },
           {
             icon: Tag,
-            label: 'TIPO DE EVENTO',
+            label: t('myEvents.detailModal.fields.eventType'),
             value: full?.categoryName ?? ev.categoryName ?? null,
             pill:  true,
           },
           {
             icon: MapPin,
-            label: 'CIUDAD',
+            label: t('myEvents.detailModal.fields.city'),
             value: full?.siteName ?? ev.siteName ?? '—',
           },
           {
             icon: Calendar,
-            label: 'FECHA DE FIN',
+            label: t('myEvents.detailModal.fields.finishDate'),
             value: fmtDate(ev.finishDate),
           },
           {
             icon: Users,
-            label: 'SILLAS DISPONIBLES',
+            label: t('myEvents.detailModal.fields.availableSeats'),
             value: ev.availableSeats != null ? ev.availableSeats.toLocaleString('es-CO') : '—',
           },
           {
             icon: ev.isPublic ? Globe : Lock,
-            label: 'ESTADO',
-            value: ev.isPublic ? 'Público' : 'Privado',
+            label: t('myEvents.detailModal.fields.status'),
+            value: ev.isPublic ? t('myEvents.visibility.public') : t('myEvents.visibility.private'),
             accent: ev.isPublic,
           },
         ];
@@ -827,20 +836,20 @@ export default function EventManage() {
                   style={{ background: 'var(--color-surfaceAlt)' }}
                 >
                   <span className="text-base font-bold text-textSecondary select-none">
-                    {ev.eventName?.charAt(0).toUpperCase() ?? '?'}
+                    {displayName?.charAt(0).toUpperCase() ?? '?'}
                   </span>
                 </div>
 
                 {/* Nombre */}
                 <p id="detail-modal-title" className="flex-1 font-bold text-base text-textPrimary truncate min-w-0">
-                  {ev.eventName}
+                  {displayName}
                 </p>
 
                 {/* Badges */}
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {/* Badge estado del evento */}
                   <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badge.cls}`}>
-                    {badge.label}
+                    {t(badge.labelKey)}
                   </span>
                   {/* Badge visibilidad */}
                   {ev.isPublic != null && (
@@ -849,14 +858,14 @@ export default function EventManage() {
                         ? 'bg-success/10 text-success border-success/30'
                         : 'bg-surfaceAlt/60 text-textMuted border-surfaceAlt'}`}>
                       {ev.isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                      {ev.isPublic ? 'Activo' : 'Privado'}
+                      {ev.isPublic ? t('myEvents.visibility.active') : t('myEvents.visibility.private')}
                     </span>
                   )}
                   {/* Cerrar */}
                   <button
                     onClick={closeDetail}
                     className="ml-1 w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-textPrimary hover:bg-surfaceAlt transition-colors"
-                    aria-label="Cerrar"
+                    aria-label={t('myEvents.detailModal.close')}
                   >
                     ×
                   </button>
@@ -872,7 +881,7 @@ export default function EventManage() {
                   {/* Columna izquierda — título + meta + descripción corta */}
                   <div className="flex-1 min-w-0 flex flex-col gap-2">
                     <h2 className="text-xl font-bold text-textPrimary leading-tight">
-                      {ev.eventName}
+                      {displayName}
                     </h2>
 
                     {/* Meta en línea: fecha · hora · ciudad */}
@@ -892,16 +901,16 @@ export default function EventManage() {
                     </div>
 
                     {/* Descripción corta */}
-                    {(full?.description ?? ev.description) && (
+                    {displayDescription && (
                       <p className="text-sm text-textSecondary leading-relaxed line-clamp-3">
-                        {full?.description ?? ev.description}
+                        {displayDescription}
                       </p>
                     )}
 
                     {detailLoading && (
                       <div className="flex items-center gap-2 text-xs text-textMuted mt-1">
                         <span className="w-3 h-3 border border-accent/30 border-t-accent rounded-full animate-spin" />
-                        Cargando detalles…
+                        {t('myEvents.detailModal.loadingDetails')}
                       </div>
                     )}
                   </div>
@@ -916,7 +925,7 @@ export default function EventManage() {
                       {detailMedia.length > 0 ? (
                         <img
                           src={detailMedia[detailCarousel]}
-                          alt={`${ev.eventName} — ${detailCarousel + 1}`}
+                          alt={`${displayName} — ${detailCarousel + 1}`}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -960,7 +969,7 @@ export default function EventManage() {
                     style={{ background: 'color-mix(in srgb, var(--color-warning, #eab308) 8%, transparent)' }}>
                     <Clock className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-yellow-300 leading-snug">
-                      Tu evento está en revisión. Te lo publicaremos cuando el administrador lo apruebe.
+                      {t('myEvents.detailModal.banners.pendingReview')}
                     </p>
                   </div>
                 )}
@@ -969,18 +978,19 @@ export default function EventManage() {
                     style={{ background: 'color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent)' }}>
                     <XCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-red-400 mb-1">Evento rechazado</p>
+                      <p className="text-sm font-semibold text-red-400 mb-1">{t('myEvents.detailModal.banners.rejectedTitle')}</p>
                       {(full?.rejectionReason) && (
                         <p className="text-xs text-red-300 leading-snug">{full.rejectionReason}</p>
                       )}
                       <p className="text-xs text-red-300/70 mt-1 leading-snug">
-                        Cierra este panel, corrige el evento y envíalo a revisión nuevamente.
+                        {t('myEvents.detailModal.banners.rejectedAction')}
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* ── Descripción expandida con ícono ── */}                {(full?.description ?? ev.description) && (
+                {/* ── Descripción expandida con ícono ── */}
+                {displayDescription && (
                   <div
                     className="flex items-start gap-3 rounded-xl p-3.5 border"
                     style={{ background: 'var(--color-surfaceAlt)', borderColor: 'var(--color-surfaceAlt)' }}
@@ -993,10 +1003,10 @@ export default function EventManage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[9px] font-bold uppercase tracking-widest text-textMuted mb-1">
-                        Descripción del evento
+                        {t('myEvents.detailModal.descriptionLabel')}
                       </p>
                       <p className="text-sm text-textSecondary leading-relaxed whitespace-pre-wrap">
-                        {full?.description ?? ev.description}
+                        {displayDescription}
                       </p>
                     </div>
                   </div>
@@ -1049,7 +1059,7 @@ export default function EventManage() {
                     style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%)' }}
                   >
                     <Rocket className="w-4 h-4" />
-                    Enviar a revisión
+                    {t('myEvents.detailModal.submitReview')}
                   </button>
                 </div>
               )}
@@ -1249,14 +1259,25 @@ export default function EventManage() {
       </Modal>
       {/* ── Modal: confirmar transición de estado ──────────────────────── */}
       {pendingTransition && (() => {
-        const info = TRANSITION_INFO[pendingTransition.newStatus];
+        const status = pendingTransition.newStatus;
         // When reverting to DRAFT from REJECTED, show a more specific title
-        const title = (pendingTransition.newStatus === 'DRAFT' && pendingTransition.event?.status === 'REJECTED')
-          ? '¿Corregir este evento?'
-          : info.title;
-        const body = (pendingTransition.newStatus === 'DRAFT' && pendingTransition.event?.status === 'REJECTED')
-          ? 'El evento volverá a estado Borrador para que puedas corregirlo y enviarlo a revisión nuevamente.'
-          : info.body;
+        const isCorrection = status === 'DRAFT' && pendingTransition.event?.status === 'REJECTED';
+        const title = isCorrection
+          ? t('myEvents.transitionConfirm.DRAFT.titleCorrect')
+          : t(`myEvents.transitionConfirm.${status}.title`);
+        const body = isCorrection
+          ? t('myEvents.transitionConfirm.DRAFT.bodyCorrect')
+          : t(`myEvents.transitionConfirm.${status}.body`);
+        const confirmLabel = t(`myEvents.transitionConfirm.${status}.confirm`);
+        
+        // Clases de estilo por estado
+        const confirmClassMap = {
+          PENDING_REVIEW: 'bg-yellow-600 hover:bg-yellow-500 text-white',
+          DRAFT: 'bg-gray-600 hover:bg-gray-500 text-white',
+          CANCELLED: 'bg-red-600 hover:bg-red-500 text-white',
+          COMPLETED: 'bg-blue-600 hover:bg-blue-500 text-white',
+        };
+        
         return (
           <Modal
             isOpen
@@ -1271,14 +1292,14 @@ export default function EventManage() {
                   disabled={transitionBusy}
                   className="px-4 py-2 rounded-xl text-sm font-medium text-textSecondary bg-surfaceAlt hover:bg-surfaceAlt/80 transition-colors disabled:opacity-60"
                 >
-                  Cancelar
+                  {t('myEvents.transitionConfirm.cancel')}
                 </button>
                 <button
                   onClick={confirmTransition}
                   disabled={transitionBusy}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-60 ${info.confirmClass}`}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-60 ${confirmClassMap[status]}`}
                 >
-                  {transitionBusy ? 'Cambiando…' : info.confirmLabel}
+                  {transitionBusy ? t('myEvents.transitionConfirm.changing') : confirmLabel}
                 </button>
               </>
             }
