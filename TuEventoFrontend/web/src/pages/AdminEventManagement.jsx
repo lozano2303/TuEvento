@@ -165,7 +165,7 @@ export default function AdminEventManagement() {
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard',          href: '/admin-dashboard' },
-    { icon: CreditCard,      label: 'Control Financiero', href: '#'             },
+    { icon: CreditCard,      label: 'Control Financiero', href: '/admin-financial' },
     { icon: Calendar,        label: 'Eventos',            href: '/admin-events', active: true },
     { icon: BarChart2,       label: 'Reportes',           href: '#'             },
     { icon: RefreshCcw,      label: 'Reembolsos',         href: '#'             },

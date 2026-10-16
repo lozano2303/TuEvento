@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -20,4 +21,8 @@ public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, Long>
 
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM PaymentEntity p WHERE p.status = 'APPROVED'")
     BigDecimal sumApprovedRevenue();
+
+    /** Most recent N payments ordered by processedAt — used for admin activity feed. */
+    @Query("SELECT p FROM PaymentEntity p WHERE p.processedAt IS NOT NULL ORDER BY p.processedAt DESC")
+    List<PaymentEntity> findTopByOrderByProcessedAtDesc(Pageable pageable);
 }
