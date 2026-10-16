@@ -1,4 +1,4 @@
-import { CheckCircle2, DollarSign, Wallet, Info, AlertCircle, RefreshCw, Gift } from 'lucide-react';
+import { CheckCircle2, DollarSign, Wallet, Info, AlertCircle, RefreshCw, Gift, MessageSquare, Reply, Star, Calendar } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useState } from 'react';
@@ -8,11 +8,15 @@ import NotificationDetailModal from './NotificationDetailModal';
  * Iconos según el tipo de notificación
  */
 const NOTIFICATION_ICONS = {
-  PAYMENT_APPROVED: { Icon: CheckCircle2, color: 'text-success' },
-  PAYMENT_REFUNDED: { Icon: RefreshCw, color: 'text-warning' },
-  WALLET_CREDITED: { Icon: Wallet, color: 'text-info' },
-  WELCOME: { Icon: Gift, color: 'text-accent' },
-  DEFAULT: { Icon: Info, color: 'text-accent' },
+  PAYMENT_APPROVED: { Icon: CheckCircle2,   color: 'text-success'  },
+  PAYMENT_REFUNDED: { Icon: RefreshCw,      color: 'text-warning'  },
+  WALLET_CREDITED:  { Icon: Wallet,         color: 'text-info'     },
+  WELCOME:          { Icon: Gift,           color: 'text-accent'   },
+  EVENT_PUBLISHED:  { Icon: Calendar,       color: 'text-success'  },
+  EVENT_REJECTED:   { Icon: AlertCircle,    color: 'text-error'    },
+  NEW_COMMENT:      { Icon: MessageSquare,  color: 'text-accent'   },
+  NEW_REPLY:        { Icon: Reply,          color: 'text-info'     },
+  DEFAULT:          { Icon: Info,           color: 'text-accent'   },
 };
 
 /**
@@ -94,7 +98,7 @@ function NotificationItem({ notification, onMarkAsRead, onClose }) {
             
             {/* Timestamp */}
             <p className="text-[10px] text-textMuted mt-1.5">
-              {formatRelativeTime(notification.createdAt)}
+              {formatRelativeTime(notification.sentAt || notification.createdAt)}
             </p>
           </div>
         </div>
