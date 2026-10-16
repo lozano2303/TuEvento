@@ -79,7 +79,7 @@ export default function AdminPanel() {
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard',          href: '/admin-dashboard' },
-    { icon: CreditCard,      label: 'Control Financiero', href: '#'             },
+    { icon: CreditCard,      label: 'Control Financiero', href: '/admin-financial' },
     { icon: Calendar,        label: 'Eventos',            href: '/admin-events' },
     { icon: BarChart2,       label: 'Reportes' },
     { icon: RefreshCcw,      label: 'Reembolsos' },
