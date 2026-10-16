@@ -200,7 +200,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
           {notification.type === 'NEW_COMMENT' && (
             <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
               <p className="text-xs text-textMuted">
-                💬 <strong>Tip:</strong> Puedes responder directamente al comentario desde la página del evento.
+                💬 <strong>¡Tu evento está generando conversación!</strong> Entra y respóndele — los organizadores que interactúan con su comunidad marcan la diferencia.
               </p>
             </div>
           )}
@@ -208,7 +208,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
           {notification.type === 'NEW_REPLY' && (
             <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
               <p className="text-xs text-textMuted">
-                💬 <strong>Tip:</strong> Alguien respondió a tu comentario. Entra al evento para ver el hilo completo.
+                🗨️ <strong>¡Te respondieron!</strong> No los dejes hablando solos — entra al evento y continúa la conversación.
               </p>
             </div>
           )}

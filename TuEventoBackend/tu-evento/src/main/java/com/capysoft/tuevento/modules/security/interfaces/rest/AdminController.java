@@ -6,14 +6,22 @@ import com.capysoft.tuevento.modules.event.application.dto.response.EventStatusL
 import com.capysoft.tuevento.modules.event.application.port.in.AdminChangeEventStatusPort;
 import com.capysoft.tuevento.modules.event.application.port.in.GetAdminEventsPort;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
+import com.capysoft.tuevento.modules.event.infrastructure.persistence.repository.EventJpaRepository;
+import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.PaymentJpaRepository;
+import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.RefundJpaRepository;
+import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
+import com.capysoft.tuevento.modules.payment.domain.model.RefundStatus;
+import com.capysoft.tuevento.modules.security.application.dto.response.AdminDashboardStatsResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerRequestResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.ApproveOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizerRequestsPort;
 import com.capysoft.tuevento.modules.security.application.port.in.RejectOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
+import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
 import com.capysoft.tuevento.modules.storage.application.dto.response.PublicUrlResponse;
 import com.capysoft.tuevento.modules.storage.application.port.in.GeneratePublicUrlPort;
+import com.capysoft.tuevento.modules.ticket.infrastructure.persistence.repository.TicketJpaRepository;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
@@ -45,6 +53,44 @@ public class AdminController {
     // ── Events ────────────────────────────────────────────────────────────────
     private final GetAdminEventsPort          getAdminEventsPort;
     private final AdminChangeEventStatusPort  adminChangeEventStatusPort;
+
+    // ── Stats (JPA repos injected directly — read-only aggregates) ────────────
+    private final UserJpaRepository           userJpaRepository;
+    private final EventJpaRepository          eventJpaRepository;
+    private final TicketJpaRepository         ticketJpaRepository;
+    private final PaymentJpaRepository        paymentJpaRepository;
+    private final RefundJpaRepository         refundJpaRepository;
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Dashboard stats
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Operation(summary = "Get aggregated platform stats for the admin dashboard")
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<AdminDashboardStatsResponse>> getStats() {
+        var stats = AdminDashboardStatsResponse.builder()
+                // users
+                .totalUsers(userJpaRepository.count())
+                // events
+                .totalEvents(eventJpaRepository.count())
+                .publishedEvents(eventJpaRepository.countByStatus(EventStatus.PUBLISHED))
+                .pendingReviewEvents(eventJpaRepository.countByStatus(EventStatus.PENDING_REVIEW))
+                .rejectedEvents(eventJpaRepository.countByStatus(EventStatus.REJECTED))
+                .cancelledEvents(eventJpaRepository.countByStatus(EventStatus.CANCELLED))
+                .completedEvents(eventJpaRepository.countByStatus(EventStatus.COMPLETED))
+                .draftEvents(eventJpaRepository.countByStatus(EventStatus.DRAFT))
+                // tickets
+                .totalTickets(ticketJpaRepository.count())
+                // organizer requests
+                .pendingOrganizerRequests(organizerPetitionRepository.findByStatus("PENDING").size())
+                .approvedOrganizerRequests(organizerPetitionRepository.findByStatus("APPROVED").size())
+                // payments
+                .totalRevenue(paymentJpaRepository.sumApprovedRevenue())
+                .approvedPayments(paymentJpaRepository.countByStatus(PaymentStatus.APPROVED))
+                .pendingRefunds(refundJpaRepository.countByStatus(RefundStatus.REQUESTED))
+                .build();
+        return ResponseEntity.ok(ApiResponse.ok("Dashboard stats retrieved", stats));
+    }
 
     // ═════════════════════════════════════════════════════════════════════════
     // Organizer-request endpoints
