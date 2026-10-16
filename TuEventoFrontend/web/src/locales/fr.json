@@ -474,6 +474,51 @@
     "copyright": "© {{year}} Tu Evento · Tous droits réservés",
     "madeWith": "Fait avec ♥ par CapySoft"
   },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Restez à jour avec toutes vos notifications",
+    "filters": {
+      "all": "Toutes",
+      "unread": "Non lues"
+    },
+    "actions": {
+      "markAllRead": "Tout marquer comme lu"
+    },
+    "loading": "Chargement des notifications...",
+    "empty": {
+      "title": "Vous n'avez pas de notifications",
+      "subtitle": "Les notifications apparaîtront ici lorsque vous les recevrez",
+      "unreadTitle": "Vous n'avez pas de notifications non lues",
+      "unreadSubtitle": "Toutes vos notifications sont à jour"
+    },
+    "types": {
+      "PAYMENT_APPROVED": "Paiement approuvé",
+      "PAYMENT_REFUNDED": "Paiement remboursé",
+      "WALLET_CREDITED": "Portefeuille crédité",
+      "WELCOME": "Bienvenue",
+      "EVENT_PUBLISHED": "Événement publié",
+      "EVENT_REJECTED": "Événement rejeté"
+    },
+    "details": {
+      "close": "Fermer",
+      "readAt": "Lu",
+      "wallet": "Portefeuille",
+      "card": "Carte/QR",
+      "total": "Total",
+      "tips": {
+        "paymentApproved": "Vous pouvez voir vos billets dans votre profil",
+        "paymentRefunded": "Les fonds seront disponibles selon le mode de paiement d'origine",
+        "walletCredited": "Le solde est disponible immédiatement",
+        "welcomeTitle": "Que pouvez-vous faire sur TuEvento?",
+        "welcomeItem1": "Explorer et acheter des billets pour des événements",
+        "welcomeItem2": "Demander à devenir organisateur avec votre carte d'identité/passeport et documents supplémentaires"
+      }
+    },
+    "dropdown": {
+      "viewAll": "Voir toutes les notifications",
+      "noNotifications": "Vous n'avez pas de notifications"
+    }
+  },
   "organizerPetition": {
     "title": "Demande d'Organisateur",
     "subtitle": "Téléchargez un document d'identité pour vérifier votre compte et pouvoir créer des événements sur la plateforme.",

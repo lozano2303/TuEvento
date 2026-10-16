@@ -474,6 +474,51 @@
     "copyright": "© {{year}} Tu Evento · Todos os direitos reservados",
     "madeWith": "Feito com ♥ por CapySoft"
   },
+  "notifications": {
+    "title": "Notificações",
+    "subtitle": "Mantenha-se atualizado com todas as suas notificações",
+    "filters": {
+      "all": "Todas",
+      "unread": "Não lidas"
+    },
+    "actions": {
+      "markAllRead": "Marcar todas como lidas"
+    },
+    "loading": "Carregando notificações...",
+    "empty": {
+      "title": "Você não tem notificações",
+      "subtitle": "As notificações aparecerão aqui quando você as receber",
+      "unreadTitle": "Você não tem notificações não lidas",
+      "unreadSubtitle": "Todas as suas notificações estão atualizadas"
+    },
+    "types": {
+      "PAYMENT_APPROVED": "Pagamento aprovado",
+      "PAYMENT_REFUNDED": "Pagamento reembolsado",
+      "WALLET_CREDITED": "Carteira creditada",
+      "WELCOME": "Boas-vindas",
+      "EVENT_PUBLISHED": "Evento publicado",
+      "EVENT_REJECTED": "Evento rejeitado"
+    },
+    "details": {
+      "close": "Fechar",
+      "readAt": "Lida",
+      "wallet": "Carteira",
+      "card": "Cartão/QR",
+      "total": "Total",
+      "tips": {
+        "paymentApproved": "Você pode ver seus ingressos no seu perfil",
+        "paymentRefunded": "Os fundos estarão disponíveis de acordo com o método de pagamento original",
+        "walletCredited": "O saldo está disponível imediatamente",
+        "welcomeTitle": "O que você pode fazer no TuEvento?",
+        "welcomeItem1": "Explorar e comprar ingressos para eventos",
+        "welcomeItem2": "Solicitar ser organizador com seu RG/passaporte e documentos adicionais"
+      }
+    },
+    "dropdown": {
+      "viewAll": "Ver todas as notificações",
+      "noNotifications": "Você não tem notificações"
+    }
+  },
   "organizerPetition": {
     "title": "Solicitação de Organizador",
     "subtitle": "Envie um documento de identidade para verificar sua conta e poder criar eventos na plataforma.",

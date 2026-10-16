@@ -474,6 +474,51 @@
     "copyright": "© {{year}} Tu Evento · All rights reserved",
     "madeWith": "Made with ♥ by CapySoft"
   },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Stay up to date with all your notifications",
+    "filters": {
+      "all": "All",
+      "unread": "Unread"
+    },
+    "actions": {
+      "markAllRead": "Mark all as read"
+    },
+    "loading": "Loading notifications...",
+    "empty": {
+      "title": "You have no notifications",
+      "subtitle": "Notifications will appear here when you receive them",
+      "unreadTitle": "You have no unread notifications",
+      "unreadSubtitle": "All your notifications are up to date"
+    },
+    "types": {
+      "PAYMENT_APPROVED": "Payment approved",
+      "PAYMENT_REFUNDED": "Payment refunded",
+      "WALLET_CREDITED": "Wallet credited",
+      "WELCOME": "Welcome",
+      "EVENT_PUBLISHED": "Event published",
+      "EVENT_REJECTED": "Event rejected"
+    },
+    "details": {
+      "close": "Close",
+      "readAt": "Read",
+      "wallet": "Wallet",
+      "card": "Card/QR",
+      "total": "Total",
+      "tips": {
+        "paymentApproved": "You can view your tickets in your profile",
+        "paymentRefunded": "Funds will be available according to the original payment method",
+        "walletCredited": "Balance is available immediately",
+        "welcomeTitle": "What can you do on TuEvento?",
+        "welcomeItem1": "Explore and buy tickets for events",
+        "welcomeItem2": "Apply to be an organizer with your ID/passport and additional documents"
+      }
+    },
+    "dropdown": {
+      "viewAll": "View all notifications",
+      "noNotifications": "You have no notifications"
+    }
+  },
   "organizerPetition": {
     "title": "Organizer Application",
     "subtitle": "Upload an identity document to verify your account and create events on the platform.",
