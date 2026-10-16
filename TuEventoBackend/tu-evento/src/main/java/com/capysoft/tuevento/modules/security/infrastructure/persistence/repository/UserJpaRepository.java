@@ -1,7 +1,9 @@
 package com.capysoft.tuevento.modules.security.infrastructure.persistence.repository;
 
+import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -23,4 +25,8 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
 
     @Query("SELECT u.userStatus.code FROM UserEntity u WHERE u.userId = :userId")
     String findStatusCodeByUserId(@Param("userId") Integer userId);
+
+    /** Most recent N registered users — used for admin activity feed. */
+    @Query("SELECT u FROM UserEntity u ORDER BY u.createdAt DESC")
+    List<UserEntity> findTopByOrderByCreatedAtDesc(Pageable pageable);
 }

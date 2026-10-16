@@ -9,6 +9,7 @@ import { performLogout, httpRequest } from '../services/httpClient';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import ActivityHistoryModal from '../components/admin/ActivityHistoryModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -69,6 +70,7 @@ export default function AdminDashboard() {
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [error,         setError]         = useState(null);
   const [showUserMenu,  setShowUserMenu]  = useState(false);
+  const [showActivity,  setShowActivity]  = useState(false);
 
   const navigate = useNavigate();
 
@@ -363,12 +365,12 @@ export default function AdminDashboard() {
 
             <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
               <h2 className="text-sm font-bold text-textPrimary">Actividad reciente</h2>
-              <a
-                href="/admin-events"
+              <button
+                onClick={() => setShowActivity(true)}
                 className="text-xs font-semibold text-accent hover:text-textPrimary transition-colors"
               >
                 Ver todo
-              </a>
+              </button>
             </div>
 
             <div className="px-6 py-2">
@@ -393,6 +395,12 @@ export default function AdminDashboard() {
 
         </div>
       </main>
+
+      {/* ── Activity history modal ──────────────────────────────────────── */}
+      <ActivityHistoryModal
+        isOpen={showActivity}
+        onClose={() => setShowActivity(false)}
+      />
     </div>
   );
 }
