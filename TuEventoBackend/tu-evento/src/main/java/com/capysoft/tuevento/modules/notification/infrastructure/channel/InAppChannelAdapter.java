@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.notification.infrastructure.channel;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -30,6 +31,9 @@ public class InAppChannelAdapter implements NotificationChannelPort {
     private final NotificationUserRepository notificationUserRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final com.capysoft.tuevento.modules.notification.infrastructure.persistence.repository.JpaNotificationTypeRepository jpaNotificationTypeRepository;
+    private final com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository profileRepository;
+    private final com.capysoft.tuevento.modules.language.domain.repository.NotificationTranslationRepository notificationTranslationRepository;
+    private final com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository languageRepository;
 
     @Override
     public String channelName() {
@@ -57,14 +61,53 @@ public class InAppChannelAdapter implements NotificationChannelPort {
                         .map(entity -> entity.getName())
                         .orElse("UNKNOWN");
 
+                // Obtener el idioma preferido del usuario
+                String userLanguageCode = profileRepository.findByUserId(userId)
+                        .flatMap(profile -> {
+                            if (profile.getPreferredLanguageId() != null) {
+                                return languageRepository.findById(profile.getPreferredLanguageId().intValue());
+                            }
+                            return Optional.empty();
+                        })
+                        .map(lang -> lang.getCode())
+                        .orElse("es"); // Default a español si no tiene idioma preferido
+
+                // Obtener la traducción si existe
+                String translatedSubject = notification.getSubject();
+                String translatedBody = notification.getBody();
+                
+                // Solo buscar traducción si el idioma no es español (idioma fuente)
+                if (!"es".equals(userLanguageCode)) {
+                    var language = languageRepository.findByCode(userLanguageCode);
+                    if (language.isPresent()) {
+                        var translation = notificationTranslationRepository
+                                .findByNotificationAndLanguage(notification.getNotificationId().intValue(), language.get().getLanguageId());
+                        
+                        if (translation.isPresent()) {
+                            var trans = translation.get();
+                            if (trans.getTranslatedSubject() != null && !trans.getTranslatedSubject().trim().isEmpty()) {
+                                translatedSubject = trans.getTranslatedSubject();
+                            }
+                            if (trans.getTranslatedBody() != null && !trans.getTranslatedBody().trim().isEmpty()) {
+                                translatedBody = trans.getTranslatedBody();
+                            }
+                            log.debug("Using translation for notification {} in language {}", 
+                                    notification.getNotificationId(), userLanguageCode);
+                        } else {
+                            log.debug("No translation found for notification {} in language {}, using original", 
+                                    notification.getNotificationId(), userLanguageCode);
+                        }
+                    }
+                }
+
                 // Intentar push por WebSocket (nunca debe romper el guardado)
                 try {
                     // Usar HashMap en lugar de Map.of() porque Map.of() no permite valores null
                     Map<String, Object> message = new HashMap<>();
                     message.put("notificationUserId", saved.getNotificationUserId());
                     message.put("type", typeName);
-                    message.put("subject", notification.getSubject());
-                    message.put("body", notification.getBody());
+                    message.put("subject", translatedSubject);
+                    message.put("body", translatedBody);
                     message.put("entityType", notification.getEntityType() != null ? notification.getEntityType() : "");
                     message.put("entityId", notification.getEntityId() != null ? notification.getEntityId().longValue() : 0L);
                     message.put("sentAt", notification.getSentAt() != null ? notification.getSentAt().toString() : null);

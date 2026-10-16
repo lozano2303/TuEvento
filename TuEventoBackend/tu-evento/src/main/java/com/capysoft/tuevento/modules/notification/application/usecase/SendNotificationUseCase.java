@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.notification.application.usecase;
 
+import com.capysoft.tuevento.modules.language.application.service.TranslationService;
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
 import com.capysoft.tuevento.modules.notification.application.port.out.NotificationChannelPort;
 import com.capysoft.tuevento.modules.notification.application.service.NotificationMessageFactory;
@@ -29,6 +30,7 @@ public class SendNotificationUseCase {
     private final NotificationTypeRepository notificationTypeRepository;
     private final NotificationRepository notificationRepository;
     private final Map<String, NotificationChannelPort> channelsByName;
+    private final TranslationService translationService;
     private final boolean emailEnabled;
 
     public SendNotificationUseCase(
@@ -36,12 +38,14 @@ public class SendNotificationUseCase {
             NotificationTypeRepository notificationTypeRepository,
             NotificationRepository notificationRepository,
             List<NotificationChannelPort> channelPorts,
+            TranslationService translationService,
             @Value("${notification.email.enabled:true}") boolean emailEnabled) {
         this.channelRepository = channelRepository;
         this.notificationTypeRepository = notificationTypeRepository;
         this.notificationRepository = notificationRepository;
         this.channelsByName = channelPorts.stream()
                 .collect(Collectors.toMap(NotificationChannelPort::channelName, Function.identity()));
+        this.translationService = translationService;
         this.emailEnabled = emailEnabled;
     }
 
@@ -101,6 +105,14 @@ public class SendNotificationUseCase {
                     .sentAt(sentAt)
                     .idempotencyKey(idempotencyKey)
                     .build());
+
+            // Solicitar traducción de la notificación (español es el idioma fuente)
+            try {
+                translationService.requestTranslation("notification", saved.getNotificationId(), "es");
+                log.debug("Translation requested for notification {}", saved.getNotificationId());
+            } catch (Exception e) {
+                log.warn("Failed to request translation for notification {}: {}", saved.getNotificationId(), e.getMessage());
+            }
 
             try {
                 adapter.deliver(saved, command.getUserIds());
