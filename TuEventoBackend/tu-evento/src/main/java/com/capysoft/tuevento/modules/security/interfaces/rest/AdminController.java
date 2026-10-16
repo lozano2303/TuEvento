@@ -50,11 +50,12 @@ public class AdminController {
     // Organizer-request endpoints
     // ═════════════════════════════════════════════════════════════════════════
 
-    @Operation(summary = "List all pending organizer requests")
+    @Operation(summary = "List organizer requests. Pass ?status=PENDING|APPROVED|REJECTED to filter; omit for all.")
     @GetMapping("/organizer-requests")
-    public ResponseEntity<ApiResponse<List<OrganizerRequestResponse>>> getPendingRequests() {
-        return ResponseEntity.ok(ApiResponse.ok("Pending organizer requests retrieved",
-                getOrganizerRequestsPort.getPendingRequests()));
+    public ResponseEntity<ApiResponse<List<OrganizerRequestResponse>>> getOrganizerRequests(
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(ApiResponse.ok("Organizer requests retrieved",
+                getOrganizerRequestsPort.getRequests(status)));
     }
 
     @Operation(summary = "Approve an organizer request and assign ORGANIZER role to the user")
