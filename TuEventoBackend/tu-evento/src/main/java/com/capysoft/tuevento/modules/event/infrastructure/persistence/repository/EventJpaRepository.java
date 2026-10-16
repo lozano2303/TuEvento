@@ -14,6 +14,7 @@ public interface EventJpaRepository extends JpaRepository<EventEntity, Long> {
     List<EventEntity> findByUserId(Long userId);
     List<EventEntity> findBySiteId(Long siteId);
     List<EventEntity> findByStatus(EventStatus status);
+    long countByStatus(EventStatus status);
     boolean existsByEventNameAndStartDateAndSiteId(String eventName, LocalDate startDate, Long siteId);
 
     /** All published public events. */
