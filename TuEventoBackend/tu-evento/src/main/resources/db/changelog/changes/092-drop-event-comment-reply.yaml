@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 092-drop-event-comment-reply
+      author: capysoft
+      comment: >
+        Drop the event_comment_reply table — this was a legacy reply system replaced
+        by the parentRatingId field on event_rating. The EventCommentController and all
+        related Java classes have been removed; the table is no longer referenced.
+      changes:
+        - dropTable:
+            tableName: event_comment_reply
+            cascadeConstraints: true
