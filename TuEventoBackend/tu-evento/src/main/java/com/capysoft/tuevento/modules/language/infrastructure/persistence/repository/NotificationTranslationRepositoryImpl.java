@@ -25,8 +25,8 @@ public class NotificationTranslationRepositoryImpl implements NotificationTransl
     }
 
     @Override
-    public Optional<NotificationTranslation> findByNotificationAndLanguage(Long notificationId, Integer languageId) {
-        return jpaRepository.findByNotificationIdAndLanguageId(notificationId, languageId)
+    public Optional<NotificationTranslation> findByNotificationAndLanguage(Integer notificationId, Integer languageId) {
+        return jpaRepository.findByNotificationIdAndLanguageId(notificationId.longValue(), languageId)
                 .map(mapper::toDomain);
     }
 
@@ -64,6 +64,14 @@ public class NotificationTranslationRepositoryImpl implements NotificationTransl
     }
 
     @Override
+    public List<NotificationTranslation> findAll() {
+        return jpaRepository.findAll()
+                .stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public NotificationTranslation save(NotificationTranslation notificationTranslation) {
         var entity = mapper.toEntity(notificationTranslation);
         var savedEntity = jpaRepository.save(entity);
@@ -94,7 +102,7 @@ public class NotificationTranslationRepositoryImpl implements NotificationTransl
     }
 
     @Override
-    public boolean existsByNotificationAndLanguage(Long notificationId, Integer languageId) {
-        return jpaRepository.findByNotificationIdAndLanguageId(notificationId, languageId).isPresent();
+    public boolean existsByNotificationAndLanguage(Integer notificationId, Integer languageId) {
+        return jpaRepository.findByNotificationIdAndLanguageId(notificationId.longValue(), languageId).isPresent();
     }
 }
