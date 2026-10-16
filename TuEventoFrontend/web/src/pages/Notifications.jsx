@@ -1,9 +1,18 @@
 import { useState } from 'react';
 import { CheckCircle2, DollarSign, Wallet, Info, AlertCircle, RefreshCw, Gift, PartyPopper, Ban } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, enUS, fr, pt } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 import { useNotifications } from '../context/NotificationContext';
 import NotificationDetailModal from '../components/common/NotificationDetailModal';
+
+/**
+ * Obtiene el locale de date-fns según el idioma actual
+ */
+function getDateLocale(lang) {
+  const locales = { es, en: enUS, fr, pt };
+  return locales[lang] || es;
+}
 
 /**
  * Iconos según el tipo de notificación
@@ -23,10 +32,10 @@ function getNotificationIcon(notificationType) {
   return NOTIFICATION_ICONS[notificationType] || NOTIFICATION_ICONS.DEFAULT;
 }
 
-function formatRelativeTime(dateString) {
+function formatRelativeTime(dateString, locale) {
   if (!dateString) return '';
   try {
-    return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: es });
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale });
   } catch {
     return '';
   }
@@ -35,7 +44,8 @@ function formatRelativeTime(dateString) {
 /**
  * Card de notificación individual
  */
-function NotificationCard({ notification, onMarkAsRead }) {
+function NotificationCard({ notification, onMarkAsRead, locale }) {
+  const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
   const { Icon, color } = getNotificationIcon(notification.type);
   const isUnread = !notification.readAt;
@@ -85,9 +95,9 @@ function NotificationCard({ notification, onMarkAsRead }) {
             </p>
             
             <div className="flex items-center gap-3 text-xs text-textMuted">
-              <span>{formatRelativeTime(notification.sentAt)}</span>
+              <span>{formatRelativeTime(notification.sentAt, locale)}</span>
               <span>•</span>
-              <span className="capitalize">{notification.type?.replace('_', ' ').toLowerCase()}</span>
+              <span className="capitalize">{t(`notifications.types.${notification.type}`) || notification.type?.replace('_', ' ').toLowerCase()}</span>
             </div>
           </div>
         </div>
@@ -108,8 +118,10 @@ function NotificationCard({ notification, onMarkAsRead }) {
  * Página principal de notificaciones
  */
 export default function Notifications() {
+  const { t, i18n } = useTranslation();
   const { notifications, loading, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [filter, setFilter] = useState('all'); // 'all' | 'unread'
+  const locale = getDateLocale(i18n.language);
 
   const filteredNotifications = filter === 'unread'
     ? notifications.filter(n => !n.readAt)
@@ -122,10 +134,10 @@ export default function Notifications() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-textPrimary mb-2">
-            Notificaciones
+            {t('notifications.title')}
           </h1>
           <p className="text-textSecondary">
-            Mantente al día con todas tus notificaciones
+            {t('notifications.subtitle')}
           </p>
         </div>
 
@@ -143,7 +155,7 @@ export default function Notifications() {
                 }
               `}
             >
-              Todas ({notifications.length})
+              {t('notifications.filters.all')} ({notifications.length})
             </button>
             <button
               onClick={() => setFilter('unread')}
@@ -155,7 +167,7 @@ export default function Notifications() {
                 }
               `}
             >
-              No leídas ({unreadCount})
+              {t('notifications.filters.unread')} ({unreadCount})
             </button>
           </div>
 
@@ -165,7 +177,7 @@ export default function Notifications() {
               onClick={markAllAsRead}
               className="px-4 py-2 rounded-lg text-sm font-medium bg-accent text-white hover:bg-accentDark transition-colors"
             >
-              Marcar todas como leídas
+              {t('notifications.actions.markAllRead')}
             </button>
           )}
         </div>
@@ -174,7 +186,7 @@ export default function Notifications() {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-textMuted">Cargando notificaciones...</p>
+            <p className="text-textMuted">{t('notifications.loading')}</p>
           </div>
         ) : filteredNotifications.length === 0 ? (
           <div className="text-center py-12 theme-card rounded-xl">
@@ -182,12 +194,12 @@ export default function Notifications() {
               <Info className="w-8 h-8 text-textMuted" />
             </div>
             <h3 className="text-lg font-semibold text-textPrimary mb-2">
-              {filter === 'unread' ? 'No tienes notificaciones sin leer' : 'No tienes notificaciones'}
+              {filter === 'unread' ? t('notifications.empty.unreadTitle') : t('notifications.empty.title')}
             </h3>
             <p className="text-textMuted">
               {filter === 'unread'
-                ? 'Todas tus notificaciones están al día'
-                : 'Las notificaciones aparecerán aquí cuando las recibas'
+                ? t('notifications.empty.unreadSubtitle')
+                : t('notifications.empty.subtitle')
               }
             </p>
           </div>
@@ -198,6 +210,7 @@ export default function Notifications() {
                 key={notification.notificationUserId}
                 notification={notification}
                 onMarkAsRead={markAsRead}
+                locale={locale}
               />
             ))}
           </div>

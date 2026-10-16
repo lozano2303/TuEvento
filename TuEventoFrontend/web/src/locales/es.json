@@ -474,6 +474,51 @@
     "copyright": "© {{year}} Tu Evento · Todos los derechos reservados",
     "madeWith": "Hecho con ♥ por CapySoft"
   },
+  "notifications": {
+    "title": "Notificaciones",
+    "subtitle": "Mantente al día con todas tus notificaciones",
+    "filters": {
+      "all": "Todas",
+      "unread": "No leídas"
+    },
+    "actions": {
+      "markAllRead": "Marcar todas como leídas"
+    },
+    "loading": "Cargando notificaciones...",
+    "empty": {
+      "title": "No tienes notificaciones",
+      "subtitle": "Las notificaciones aparecerán aquí cuando las recibas",
+      "unreadTitle": "No tienes notificaciones sin leer",
+      "unreadSubtitle": "Todas tus notificaciones están al día"
+    },
+    "types": {
+      "PAYMENT_APPROVED": "Pago aprobado",
+      "PAYMENT_REFUNDED": "Pago reembolsado",
+      "WALLET_CREDITED": "Cartera acreditada",
+      "WELCOME": "Bienvenida",
+      "EVENT_PUBLISHED": "Evento publicado",
+      "EVENT_REJECTED": "Evento rechazado"
+    },
+    "details": {
+      "close": "Cerrar",
+      "readAt": "Leída",
+      "wallet": "Cartera",
+      "card": "Tarjeta/QR",
+      "total": "Total",
+      "tips": {
+        "paymentApproved": "Puedes ver tus tickets en tu perfil",
+        "paymentRefunded": "Los fondos estarán disponibles según el método de pago original",
+        "walletCredited": "El saldo está disponible inmediatamente",
+        "welcomeTitle": "¿Qué puedes hacer en TuEvento?",
+        "welcomeItem1": "Explora y compra tickets para eventos",
+        "welcomeItem2": "Solicita ser organizador con tu cédula/pasaporte y documentos adicionales"
+      }
+    },
+    "dropdown": {
+      "viewAll": "Ver todas las notificaciones",
+      "noNotifications": "No tienes notificaciones"
+    }
+  },
   "organizerPetition": {
     "title": "Solicitud de Organizador",
     "subtitle": "Sube un documento de identidad para verificar tu cuenta y poder crear eventos dentro de la plataforma.",

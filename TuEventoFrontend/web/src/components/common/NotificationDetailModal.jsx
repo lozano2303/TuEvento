@@ -1,6 +1,15 @@
 import { X, CheckCircle2, DollarSign, Wallet, CreditCard, RefreshCw, AlertCircle, Gift } from 'lucide-react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, enUS, fr, pt } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+
+/**
+ * Obtiene el locale de date-fns según el idioma actual
+ */
+function getDateLocale(lang) {
+  const locales = { es, en: enUS, fr, pt };
+  return locales[lang] || es;
+}
 
 /**
  * Configuración de iconos por tipo de notificación
@@ -20,10 +29,10 @@ function getNotificationIcon(type) {
 /**
  * Formatea una fecha a formato legible
  */
-function formatDate(dateString) {
+function formatDate(dateString, locale) {
   if (!dateString) return '';
   try {
-    return format(new Date(dateString), "d 'de' MMMM 'de' yyyy 'a las' HH:mm", { locale: es });
+    return format(new Date(dateString), "d 'de' MMMM 'de' yyyy 'a las' HH:mm", { locale });
   } catch {
     return dateString;
   }
@@ -32,7 +41,7 @@ function formatDate(dateString) {
 /**
  * Extrae información específica del body HTML
  */
-function parseNotificationBody(body) {
+function parseNotificationBody(body, t) {
   if (!body) return { text: '', details: [] };
   
   // Remover tags HTML
@@ -44,9 +53,9 @@ function parseNotificationBody(body) {
   const gatewayMatch = text.match(/(?:Tarjeta|QR|Gateway):\s*\$?([\d,.]+)/i);
   const totalMatch = text.match(/Total:\s*\$?([\d,.]+)/i);
   
-  if (walletMatch) details.push({ label: 'Cartera', value: `$${walletMatch[1]}`, icon: Wallet });
-  if (gatewayMatch) details.push({ label: 'Tarjeta/QR', value: `$${gatewayMatch[1]}`, icon: CreditCard });
-  if (totalMatch) details.push({ label: 'Total', value: `$${totalMatch[1]}`, icon: DollarSign });
+  if (walletMatch) details.push({ label: t('notifications.details.wallet'), value: `$${walletMatch[1]}`, icon: Wallet });
+  if (gatewayMatch) details.push({ label: t('notifications.details.card'), value: `$${gatewayMatch[1]}`, icon: CreditCard });
+  if (totalMatch) details.push({ label: t('notifications.details.total'), value: `$${totalMatch[1]}`, icon: DollarSign });
   
   return { text, details };
 }
@@ -55,8 +64,10 @@ function parseNotificationBody(body) {
  * Modal de detalle de notificación (simplificado y alineado al tema)
  */
 export default function NotificationDetailModal({ notification, onClose }) {
+  const { t, i18n } = useTranslation();
+  const locale = getDateLocale(i18n.language);
   const Icon = getNotificationIcon(notification.type);
-  const { text, details } = parseNotificationBody(notification.body);
+  const { text, details } = parseNotificationBody(notification.body, t);
   const isUnread = !notification.readAt;
 
   return (
@@ -87,7 +98,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
                 )}
               </div>
               <p className="text-xs text-textMuted">
-                {formatDate(notification.sentAt)}
+                {formatDate(notification.sentAt, locale)}
               </p>
             </div>
           </div>
@@ -138,7 +149,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
           {notification.type === 'PAYMENT_APPROVED' && (
             <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
               <p className="text-xs text-textMuted">
-                💡 <strong>Tip:</strong> Puedes ver tus tickets en tu perfil
+                💡 <strong>Tip:</strong> {t('notifications.details.tips.paymentApproved')}
               </p>
             </div>
           )}
@@ -146,7 +157,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
           {notification.type === 'PAYMENT_REFUNDED' && (
             <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
               <p className="text-xs text-textMuted">
-                💡 <strong>Tip:</strong> Los fondos estarán disponibles según el método de pago original
+                💡 <strong>Tip:</strong> {t('notifications.details.tips.paymentRefunded')}
               </p>
             </div>
           )}
@@ -154,7 +165,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
           {notification.type === 'WALLET_CREDITED' && (
             <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
               <p className="text-xs text-textMuted">
-                💡 <strong>Tip:</strong> El saldo está disponible inmediatamente
+                💡 <strong>Tip:</strong> {t('notifications.details.tips.walletCredited')}
               </p>
             </div>
           )}
@@ -162,16 +173,16 @@ export default function NotificationDetailModal({ notification, onClose }) {
           {notification.type === 'WELCOME' && (
             <div className="p-4 rounded-lg bg-surfaceAlt">
               <p className="text-xs text-textMuted mb-3">
-                <strong>¿Qué puedes hacer en TuEvento?</strong>
+                <strong>{t('notifications.details.tips.welcomeTitle')}</strong>
               </p>
               <ul className="text-xs text-textMuted space-y-2 ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
-                  <span>Explora y compra tickets para eventos</span>
+                  <span>{t('notifications.details.tips.welcomeItem1')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
-                  <span>Solicita ser organizador con tu cédula/pasaporte y documentos adicionales</span>
+                  <span>{t('notifications.details.tips.welcomeItem2')}</span>
                 </li>
               </ul>
             </div>
@@ -183,7 +194,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
               <span>ID: #{notification.notificationUserId}</span>
               {notification.readAt && (
                 <span>
-                  Leída: {format(new Date(notification.readAt), 'dd/MM/yy HH:mm')}
+                  {t('notifications.details.readAt')}: {format(new Date(notification.readAt), 'dd/MM/yy HH:mm')}
                 </span>
               )}
             </div>
@@ -196,7 +207,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
             onClick={onClose}
             className="px-5 py-2 bg-accent text-white rounded-lg font-medium hover:bg-accentDark transition-colors"
           >
-            Cerrar
+            {t('notifications.details.close')}
           </button>
         </div>
       </div>
