@@ -1006,6 +1006,12 @@ export default function EventDetail() {
                             ya sea que se responda al principal directamente o a cualquier respuesta del hilo. */}
                         {replyParentId === c.ratingId && replyingToId !== null && (
                           <form onSubmit={handleReplySubmit} className="mt-3">
+                            {/* ── Encabezado: a quién se responde ── */}
+                            <p className="text-xs mb-2" style={{ color: 'rgba(196,181,253,0.55)' }}>
+                              {replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId)
+                                ? <>Respondiendo a <span style={{ color: '#a78bfa', fontWeight: 500 }}>@{replyToUserName}</span></>
+                                : 'Escribe tu respuesta'}
+                            </p>
                             {/* ── Área de input: mención fija + textarea ── */}
                             <label htmlFor={`reply-textarea-${c.ratingId}`} className="sr-only">
                               {replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId)
