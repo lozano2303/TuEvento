@@ -8,6 +8,9 @@ import com.capysoft.tuevento.modules.event.application.port.in.GetAdminEventsPor
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.infrastructure.persistence.repository.EventJpaRepository;
 import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.PaymentJpaRepository;
+import com.capysoft.tuevento.modules.wallet.application.dto.BulkCreditWalletRequest;
+import com.capysoft.tuevento.modules.wallet.application.dto.BulkCreditWalletResponse;
+import com.capysoft.tuevento.modules.wallet.application.usecase.BulkCreditWalletUseCaseImpl;
 import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.RefundJpaRepository;
 import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
 import com.capysoft.tuevento.modules.payment.domain.model.RefundStatus;
@@ -69,6 +72,9 @@ public class AdminController {
     private final PaymentJpaRepository        paymentJpaRepository;
     private final RefundJpaRepository         refundJpaRepository;
     private final ProfileJpaRepository        profileJpaRepository;
+
+    // ── Wallet bulk credit ────────────────────────────────────────────────────
+    private final BulkCreditWalletUseCaseImpl bulkCreditWalletUseCase;
 
     // ═════════════════════════════════════════════════════════════════════════
     // Dashboard stats
@@ -253,5 +259,21 @@ public class AdminController {
                 .toList();
 
         return ResponseEntity.ok(ApiResponse.ok("Activity feed retrieved", sorted));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Bulk wallet credit
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Operation(summary = "Credit wallet balance to ALL platform users — idempotent via jobId")
+    @PostMapping("/wallet/credit-all")
+    public ResponseEntity<ApiResponse<BulkCreditWalletResponse>> bulkCreditAll(
+            @Valid @RequestBody BulkCreditWalletRequest request) {
+        BulkCreditWalletResponse result = bulkCreditWalletUseCase.execute(
+                request.getAmount(),
+                request.getReason(),
+                request.getJobId()
+        );
+        return ResponseEntity.ok(ApiResponse.ok("Bulk wallet credit completed", result));
     }
 }
