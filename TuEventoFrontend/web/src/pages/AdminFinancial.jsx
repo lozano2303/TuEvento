@@ -42,7 +42,7 @@ function FinCard({ icon: Icon, iconBg, iconColor, label, value, sub, loading, ac
             </p>
         }
         {sub && !loading && (
-          <p className="text-xs text-textMuted mt-1.5">{sub}</p>
+          <p className="text-[13px] mt-1.5" style={{ color: 'rgba(255,255,255,0.60)' }}>{sub}</p>
         )}
       </div>
     </div>
