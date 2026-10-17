@@ -465,6 +465,17 @@
     "viewAll": "Ver todas",
     "organizerPetition": "Solicitud Organizador"
   },
+  "userMenu": {
+    "profile": "Perfil",
+    "profileDesc": "Ver y editar tu cuenta",
+    "notifications": "Notificaciones",
+    "notificationsDesc": "Ver todas tus notificaciones",
+    "wallet": "Cartera",
+    "walletDesc": "Saldo y transacciones",
+    "adminPanel": "Panel de Gestión",
+    "adminPanelDesc": "Administrar plataforma",
+    "login": "Iniciar sesión"
+  },
   "footer": {
     "tagline": "La plataforma para descubrir, crear y gestionar eventos en vivo de forma sencilla y profesional.",
     "navigation": "Navegación",
@@ -618,5 +629,41 @@
     "ticketNumber": "Ticket #{{id}}",
     "ticketsEmail": "Tus tickets serán enviados a tu correo en breve.",
     "viewMoreEvents": "Ver más eventos"
+  },
+  "wallet": {
+    "noCredit": "Aún no tenés crédito acumulado",
+    "noCreditMessage": "Tu saldo de cartera se generará cuando canceles una compra o recibas un reembolso.",
+    "myBalance": "Mi Saldo",
+    "availableBalance": "Tu saldo disponible",
+    "description": "Llevá el control de tus fondos y disfrutá de una experiencia segura, rápida y sin complicaciones para tus compras en eventos.",
+    "currentBalance": "SALDO ACTUAL",
+    "pendingPurchases": "en compras pendientes",
+    "availableForPurchases": "Saldo disponible para usar en tus compras",
+    "protectedCredit": "Crédito interno protegido",
+    "useBalance": "Usar saldo en una compra",
+    "movementHistory": "Historial de movimientos",
+    "viewLess": "Ver menos",
+    "viewAll": "Ver todo",
+    "concept": "CONCEPTO",
+    "date": "FECHA",
+    "status": "ESTADO",
+    "amount": "MONTO",
+    "noMovements": "No hay movimientos registrados",
+    "statusCompleted": "Completado",
+    "statusPending": "Pendiente",
+    "statusFailed": "Fallido",
+    "howToUse": "¿Cómo usarlo?",
+    "howToUseText": "Utilizá tu saldo disponible para comprar tickets, servicios y más en nuestros eventos.",
+    "protectedBalance": "Saldo Protegido",
+    "protectedBalanceText": "Tu dinero está seguro con nuestra tecnología de encriptación y procesos verificados.",
+    "help": "¿Dudas?",
+    "helpText": "Si tenés preguntas sobre tu saldo o movimientos, contactá a nuestro equipo de soporte.",
+    "movements": {
+      "reversal": "Reversión",
+      "creditCancellation": "Crédito por cancelación",
+      "appliedToPurchase": "Aplicación en compra",
+      "adminAdjustment": "Ajuste administrativo",
+      "movement": "Movimiento"
+    }
   }
 }

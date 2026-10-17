@@ -157,8 +157,8 @@ const displayName = (() => {
                         <User className="w-[17px] h-[17px] text-accent" />
                       </div>
                       <div>
-                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">Perfil</p>
-                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">Ver y editar tu cuenta</p>
+                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.profile')}</p>
+                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.profileDesc')}</p>
                       </div>
                       <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                     </Link>
@@ -172,8 +172,8 @@ const displayName = (() => {
                         <Bell className="w-[17px] h-[17px] text-accent" />
                       </div>
                       <div>
-                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">Notificaciones</p>
-                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">Ver todas tus notificaciones</p>
+                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.notifications')}</p>
+                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.notificationsDesc')}</p>
                       </div>
                       <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                     </Link>
@@ -187,8 +187,8 @@ const displayName = (() => {
                         <Wallet className="w-[17px] h-[17px] text-accent" />
                       </div>
                       <div>
-                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">Cartera</p>
-                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">Saldo y transacciones</p>
+                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.wallet')}</p>
+                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.walletDesc')}</p>
                       </div>
                       <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                     </Link>
@@ -203,8 +203,8 @@ const displayName = (() => {
                           <Calendar className="w-[17px] h-[17px] text-error" />
                         </div>
                         <div>
-                          <p className="text-[14px] font-semibold text-textPrimary leading-tight">Panel de Gestión</p>
-                          <p className="text-[11px] text-textMuted leading-tight mt-0.5">Administrar plataforma</p>
+                          <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.adminPanel')}</p>
+                          <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.adminPanelDesc')}</p>
                         </div>
                         <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-error)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                       </Link>
@@ -218,7 +218,7 @@ const displayName = (() => {
                 to="/login"
                 className="bg-primary hover:bg-primaryDark text-textPrimary text-sm font-medium px-5 py-2 rounded-xl transition-colors"
               >
-                Iniciar sesión
+                {t('userMenu.login')}
               </Link>
             )}
 

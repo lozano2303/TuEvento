@@ -465,6 +465,17 @@
     "viewAll": "View all",
     "organizerPetition": "Organizer Application"
   },
+  "userMenu": {
+    "profile": "Profile",
+    "profileDesc": "View and edit your account",
+    "notifications": "Notifications",
+    "notificationsDesc": "View all your notifications",
+    "wallet": "Wallet",
+    "walletDesc": "Balance and transactions",
+    "adminPanel": "Management Panel",
+    "adminPanelDesc": "Manage platform",
+    "login": "Log in"
+  },
   "footer": {
     "tagline": "The platform to discover, create, and manage live events easily and professionally.",
     "navigation": "Navigation",
@@ -618,5 +629,41 @@
     "ticketNumber": "Ticket #{{id}}",
     "ticketsEmail": "Your tickets will be sent to your email shortly.",
     "viewMoreEvents": "View more events"
+  },
+  "wallet": {
+    "noCredit": "You don't have accumulated credit yet",
+    "noCreditMessage": "Your wallet balance will be generated when you cancel a purchase or receive a refund.",
+    "myBalance": "My Balance",
+    "availableBalance": "Your available balance",
+    "description": "Keep track of your funds and enjoy a secure, fast, and hassle-free experience for your event purchases.",
+    "currentBalance": "CURRENT BALANCE",
+    "pendingPurchases": "in pending purchases",
+    "availableForPurchases": "Balance available to use for your purchases",
+    "protectedCredit": "Protected internal credit",
+    "useBalance": "Use balance for a purchase",
+    "movementHistory": "Transaction history",
+    "viewLess": "View less",
+    "viewAll": "View all",
+    "concept": "CONCEPT",
+    "date": "DATE",
+    "status": "STATUS",
+    "amount": "AMOUNT",
+    "noMovements": "No transactions recorded",
+    "statusCompleted": "Completed",
+    "statusPending": "Pending",
+    "statusFailed": "Failed",
+    "howToUse": "How to use it?",
+    "howToUseText": "Use your available balance to buy tickets, services and more at our events.",
+    "protectedBalance": "Protected Balance",
+    "protectedBalanceText": "Your money is safe with our encryption technology and verified processes.",
+    "help": "Questions?",
+    "helpText": "If you have questions about your balance or transactions, contact our support team.",
+    "movements": {
+      "reversal": "Reversal",
+      "creditCancellation": "Credit from cancellation",
+      "appliedToPurchase": "Applied to purchase",
+      "adminAdjustment": "Administrative adjustment",
+      "movement": "Transaction"
+    }
   }
 }
