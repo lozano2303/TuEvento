@@ -563,5 +563,60 @@
       "selectDocument": "Sélectionnez un document",
       "submitError": "Erreur lors de l'envoi de la demande"
     }
+  },
+  "checkout": {
+    "title": "Confirmer l'achat",
+    "backToSelection": "Retour à la sélection",
+    "preparingOrder": "Préparation de votre commande…",
+    "orderCreateError": "Impossible de créer la commande",
+    "backToSeats": "Retour à la sélection des places",
+    "selectedSeats": "Places sélectionnées",
+    "seat": "place",
+    "seats": "places",
+    "total": "Total",
+    "wallet": "Portefeuille",
+    "available": "disponibles",
+    "normalPayment": "Paiement normal",
+    "useWallet": "Utiliser le portefeuille",
+    "orderTotal": "Total de la commande",
+    "walletDiscount": "Réduction portefeuille",
+    "remainingGateway": "Restant via passerelle",
+    "walletCoversAll": "À payer (le portefeuille couvre tout)",
+    "paymentMethod": "Méthode de paiement",
+    "qrCode": "Code QR",
+    "scanWithBank": "Scannez le QR avec votre application bancaire",
+    "pay": "Payer",
+    "payWithWallet": "Payer avec le portefeuille",
+    "processing": "Traitement…",
+    "reservationNote": "En confirmant, vos places seront réservées pendant le traitement du paiement."
+  },
+  "paymentPending": {
+    "title": "Traitement de votre paiement",
+    "completePaymentInWindow": "Complétez le paiement dans la fenêtre qui s'est ouverte.",
+    "confirmingWalletPayment": "Confirmation de votre paiement par portefeuille…",
+    "openingPaymentWindow": "Ouverture de la fenêtre de paiement…",
+    "event": "Événement",
+    "seats": "Places",
+    "reopenPaymentWindow": "Rouvrir la fenêtre de paiement",
+    "doNotCloseTab": "Ne fermez pas cet onglet pendant le traitement du paiement.",
+    "paymentCancelled": "Paiement annulé",
+    "paymentRejected": "Paiement refusé",
+    "paymentError": "Erreur de paiement",
+    "cancelledMessage": "Vous avez annulé la transaction. Vous pouvez réessayer quand vous voulez.",
+    "rejectedMessage": "Le paiement a été refusé. Vous pouvez réessayer.",
+    "errorMessage": "Une erreur s'est produite lors du traitement du paiement. Vous pouvez réessayer.",
+    "retry": "Réessayer",
+    "backToEvents": "Retour aux événements"
+  },
+  "eventDetail": {
+    "continueToPayment": "Continuer au paiement"
+  },
+  "paymentApproved": {
+    "title": "Paiement approuvé!",
+    "subtitle": "Votre achat a réussi. Voici vos billets.",
+    "yourTickets": "Vos billets",
+    "ticketNumber": "Billet #{{id}}",
+    "ticketsEmail": "Vos billets seront envoyés à votre e-mail sous peu.",
+    "viewMoreEvents": "Voir plus d'événements"
   }
 }

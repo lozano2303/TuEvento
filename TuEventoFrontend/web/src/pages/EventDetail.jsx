@@ -2211,7 +2211,7 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
           }}
           disabled={cart.length === 0}
         >
-          Continuar al Pago
+          {t('eventDetail.continueToPayment')}
         </button>
       </div>
     </div>
