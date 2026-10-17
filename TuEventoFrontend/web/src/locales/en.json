@@ -387,7 +387,92 @@
     "onlyImageFormats": "Only JPG, PNG or WEBP.",
     "maxFileSize": "Max. {{size}} MB.",
     "imageRequirements": "Only JPG, PNG or WEBP. Max. {{size}} MB. No adult content.",
-    "imageRequirementsLabel": "Image requirements"
+    "imageRequirementsLabel": "Image requirements",
+    "themeSection": {
+      "loadingThemes": "Loading themes…",
+      "active": "Active",
+      "applyTheme": "Apply theme",
+      "applying": "Applying…",
+      "previousTheme": "Previous theme",
+      "nextTheme": "Next theme",
+      "goToTheme": "Go to theme {{number}}",
+      "customizeColors": "Customize colors",
+      "activateToCustomize": "Activate this theme to customize it",
+      "unsavedChanges": "Save changes to apply the new language",
+      "saveLanguage": "Save language",
+      "savingLanguage": "Saving…"
+    },
+    "customizePanel": {
+      "officialThemeTitle": "Official Theme",
+      "officialThemeDesc": "The PRINCIPAL theme is the official identity of Tu Evento and cannot be customized.",
+      "customizeTheme": "Customize theme",
+      "resetAll": "Reset all",
+      "closePanel": "Close panel",
+      "closeEditor": "Close editor",
+      "groups": {
+        "backgrounds": "Backgrounds",
+        "primary": "Primary",
+        "texts": "Texts",
+        "states": "States"
+      },
+      "properties": {
+        "background": "Main background",
+        "surface": "Surface",
+        "surfaceAlt": "Alternative surface",
+        "primary": "Primary color",
+        "primaryDark": "Dark primary",
+        "accent": "Accent",
+        "textPrimary": "Primary text",
+        "textSecondary": "Secondary text",
+        "textMuted": "Muted text",
+        "error": "Error",
+        "errorBg": "Error background",
+        "success": "Success",
+        "successBg": "Success background"
+      },
+      "contrast": {
+        "ratio": "Contrast ratio: {{ratio}}:1",
+        "aaa": "AAA",
+        "aa": "AA",
+        "aaLarge": "AA Large",
+        "fail": "No contrast",
+        "lowContrast": "Low contrast",
+        "lowContrastWarning": "this color may be hard to read on the current background ({{ratio}}:1, minimum WCAG AA 4.5:1). You can save it anyway.",
+        "suggested": "Suggested:",
+        "useThis": "← use this",
+        "resetToBase": "Reset to base value"
+      },
+      "editor": {
+        "colorPicker": "Open color picker",
+        "colorPickerLabel": "Color picker for {{property}}",
+        "hexLabel": "Hexadecimal color value",
+        "hexPlaceholder": "#RRGGBB",
+        "invalidFormat": "Invalid format — use #RGB, #RRGGBB or rgba(…)",
+        "colorSwatch": "Color {{hex}}",
+        "cancel": "Cancel",
+        "apply": "Apply",
+        "saving": "Saving…",
+        "saveError": "Could not save. Try again."
+      },
+      "log": {
+        "title": "Change history",
+        "loading": "Loading history…",
+        "empty": "No changes recorded",
+        "resetAction": "Reset to base value",
+        "updateAction": "Updated"
+      },
+      "footer": {
+        "contrastInfo": "Contrast values follow the WCAG 2.1 AA standard (minimum 4.5:1 for normal text). Warnings are indicative — you can save any color."
+      },
+      "badges": {
+        "custom": "Custom",
+        "active": "Active"
+      },
+      "errors": {
+        "resetError": "Could not reset \"{{property}}\".",
+        "resetAllError": "Error resetting all colors."
+      }
+    }
   },
   "categories": {
     "title": "Categories",

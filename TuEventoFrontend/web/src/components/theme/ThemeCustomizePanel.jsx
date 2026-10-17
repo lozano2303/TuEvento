@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { X, RotateCcw, ChevronDown, Check, AlertCircle, Loader2, Info } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
 import {
   customizeTheme,
@@ -49,29 +50,15 @@ const THEME_SWATCHES = {
 };
 
 // ── Token groups ──────────────────────────────────────────────────────────────
-const PROPERTY_GROUPS = [
-  { label: 'Fondos',    icon: '▣', properties: ['background', 'surface', 'surfaceAlt'] },
-  { label: 'Primarios', icon: '◉', properties: ['primary', 'primaryDark', 'accent'] },
-  { label: 'Textos',    icon: 'T', properties: ['textPrimary', 'textSecondary', 'textMuted'] },
-  { label: 'Estados',   icon: '!', properties: ['error', 'errorBg', 'success', 'successBg'] },
+const getPropertyGroups = (t) => [
+  { label: t('profile.customizePanel.groups.backgrounds'), icon: '▣', properties: ['background', 'surface', 'surfaceAlt'] },
+  { label: t('profile.customizePanel.groups.primary'),     icon: '◉', properties: ['primary', 'primaryDark', 'accent'] },
+  { label: t('profile.customizePanel.groups.texts'),       icon: 'T', properties: ['textPrimary', 'textSecondary', 'textMuted'] },
+  { label: t('profile.customizePanel.groups.states'),      icon: '!', properties: ['error', 'errorBg', 'success', 'successBg'] },
 ];
 
-// ── Spanish labels ────────────────────────────────────────────────────────────
-const PROPERTY_LABELS = {
-  background:    'Fondo principal',
-  surface:       'Superficie',
-  surfaceAlt:    'Superficie alternativa',
-  primary:       'Color primario',
-  primaryDark:   'Primario oscuro',
-  accent:        'Acento',
-  textPrimary:   'Texto principal',
-  textSecondary: 'Texto secundario',
-  textMuted:     'Texto sutil',
-  error:         'Error',
-  errorBg:       'Fondo de error',
-  success:       'Éxito',
-  successBg:     'Fondo de éxito',
-};
+// ── Property labels helper ────────────────────────────────────────────────────
+const getPropertyLabel = (t, property) => t(`profile.customizePanel.properties.${property}`);
 
 /**
  * Pairs (foreground-token, background-token) that should meet WCAG AA.
@@ -201,7 +188,7 @@ function ContextPreview({ property, color }) {
 }
 
 // ── PropertyRow ───────────────────────────────────────────────────────────────
-function PropertyRow({ property, currentColor, isCustomized, contrastInfo, onEdit }) {
+function PropertyRow({ property, currentColor, isCustomized, contrastInfo, onEdit, t }) {
   const hasProblem = contrastInfo?.ratio !== null && contrastInfo?.ratio < WCAG_AA;
   return (
     <button onClick={() => onEdit(property)} className="tcp-token-row group">
@@ -213,14 +200,14 @@ function PropertyRow({ property, currentColor, isCustomized, contrastInfo, onEdi
       {/* Label + hex value */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-textPrimary truncate leading-tight">
-          {PROPERTY_LABELS[property] ?? property}
+          {getPropertyLabel(t, property)}
         </p>
         <p className="text-xs text-textMuted font-mono mt-0.5 leading-tight">{currentColor}</p>
       </div>
       {/* Contrast warning dot — only shown on collapsed rows */}
       {hasProblem && (
         <span
-          title={`Contraste bajo: ${contrastInfo.ratio.toFixed(2)}:1`}
+          title={t('profile.customizePanel.contrast.ratio', { ratio: contrastInfo.ratio.toFixed(2) })}
           className="w-4 h-4 rounded-full bg-amber-400/20 border border-amber-400/50
                      flex items-center justify-center flex-shrink-0"
         >
@@ -228,7 +215,7 @@ function PropertyRow({ property, currentColor, isCustomized, contrastInfo, onEdi
         </span>
       )}
       {/* Custom badge */}
-      {isCustomized && <span className="tcp-badge-custom">Custom</span>}
+      {isCustomized && <span className="tcp-badge-custom">{t('profile.customizePanel.badges.custom')}</span>}
       {/* Arrow */}
       <ChevronDown
         className="w-4 h-4 text-textMuted -rotate-90 flex-shrink-0
@@ -278,16 +265,17 @@ function LogEntry({ entry }) {
 // ║  ThemeCustomizePanel — main export                                       ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 export default function ThemeCustomizePanel({ themeName, onClose }) {
+  const { t } = useTranslation();
   const { palette, applyPalette, refreshPalette } = useTheme();
 
   if (themeName === 'PRINCIPAL') {
     return (
-      <PanelShell onClose={onClose}>
+      <PanelShell onClose={onClose} t={t}>
         <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
           <span className="text-5xl">⭐</span>
-          <h3 className="text-lg font-bold text-textPrimary">Tema Oficial</h3>
+          <h3 className="text-lg font-bold text-textPrimary">{t('profile.customizePanel.officialThemeTitle')}</h3>
           <p className="text-sm text-textSecondary max-w-xs">
-            El tema PRINCIPAL es la identidad oficial de Tu Evento y no puede ser personalizado.
+            {t('profile.customizePanel.officialThemeDesc')}
           </p>
         </div>
       </PanelShell>
@@ -469,13 +457,15 @@ export default function ThemeCustomizePanel({ themeName, onClose }) {
   // ─────────────────────────────────────────────────────────────────────────
   // RENDER
   // ─────────────────────────────────────────────────────────────────────────
+  const PROPERTY_GROUPS = getPropertyGroups(t);
+  
   return (
-    <PanelShell onClose={onClose}>
+    <PanelShell onClose={onClose} t={t}>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="tcp-header px-5 pt-5 pb-4 flex items-center justify-between flex-shrink-0 gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-bold text-textPrimary leading-tight">Personalizar tema</h2>
+          <h2 className="text-base font-bold text-textPrimary leading-tight">{t('profile.customizePanel.customizeTheme')}</h2>
           <p className="text-xs text-textMuted mt-0.5 font-medium tracking-wide uppercase">{themeName}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -490,10 +480,10 @@ export default function ThemeCustomizePanel({ themeName, onClose }) {
               {resetAllLoading
                 ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 : <RotateCcw className="w-3.5 h-3.5" />}
-              Restablecer todo
+              {t('profile.customizePanel.resetAll')}
             </button>
           )}
-          <button onClick={onClose} aria-label="Cerrar panel"
+          <button onClick={onClose} aria-label={t('profile.customizePanel.closePanel')}
             className="w-8 h-8 rounded-full flex items-center justify-center
                        bg-surfaceAlt hover:bg-primary/20 text-textMuted
                        hover:text-textPrimary transition-all flex-shrink-0">
@@ -537,6 +527,7 @@ export default function ThemeCustomizePanel({ themeName, onClose }) {
                             isCustomized={customizedProps.has(prop)}
                             contrastInfo={rowContrastMap[prop] ?? null}
                             onEdit={openEditor}
+                            t={t}
                           />
                         </div>
                         {customizedProps.has(prop) && (
@@ -712,7 +703,7 @@ export default function ThemeCustomizePanel({ themeName, onClose }) {
               ) : log.length === 0 ? (
                 <p className="text-xs text-textMuted text-center py-4">Sin cambios registrados</p>
               ) : (
-                log.map((entry, i) => <LogEntry key={entry.logId ?? i} entry={entry} />)
+                log.map((entry, i) => <LogEntry key={entry.logId ?? i} entry={entry} t={t} />)
               )}
             </div>
           </div>
