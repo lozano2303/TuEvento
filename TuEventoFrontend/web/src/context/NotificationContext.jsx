@@ -35,6 +35,9 @@ export function NotificationProvider({ children }) {
   // Map de subscripciones activas (para poder desuscribir)
   const subscriptionsRef = useRef(new Map());
   
+  // Polling para traducciones pendientes
+  const pollingIntervalRef = useRef(null);
+  
   // Actualizar ref cuando cambia el estado
   useEffect(() => {
     notificationsRef.current = notifications;
@@ -98,6 +101,110 @@ export function NotificationProvider({ children }) {
       // Error silenciado
     }
   }, []);
+
+  /**
+   * Verificar si una notificación necesita polling de traducción.
+   * Retorna true si:
+   * - El idioma preferido del usuario NO es español
+   * - No existe traducción PUBLISHED para ese idioma
+   * - La notificación es reciente (menos de 2 minutos)
+   */
+  const needsTranslationPolling = useCallback((notification) => {
+    const userLanguage = localStorage.getItem('i18nextLng') || 'es';
+    
+    // Si es español, no necesita traducción
+    if (userLanguage === 'es') {
+      return false;
+    }
+
+    // Si no tiene translations array, asumir que necesita
+    if (!notification.translations || notification.translations.length === 0) {
+      return true;
+    }
+
+    // Buscar traducción para el idioma actual
+    const translation = notification.translations.find(t => t.languageCode === userLanguage);
+    
+    // Si no existe o no está PUBLISHED, necesita polling
+    if (!translation || translation.status !== 'PUBLISHED') {
+      // Solo hacer polling si es reciente (últimos 2 minutos)
+      const notificationTime = new Date(notification.sentAt).getTime();
+      const now = Date.now();
+      const twoMinutes = 2 * 60 * 1000;
+      
+      return (now - notificationTime) < twoMinutes;
+    }
+
+    return false;
+  }, []);
+
+  /**
+   * Actualizar una notificación específica desde el backend.
+   */
+  const updateNotification = useCallback(async (notificationUserId) => {
+    try {
+      const response = await getUserNotifications();
+      const notificationList = response.data?.content || [];
+      
+      const updatedNotification = notificationList.find(
+        n => n.notificationUserId === notificationUserId
+      );
+
+      if (updatedNotification) {
+        setNotifications(prev => 
+          prev.map(n => 
+            n.notificationUserId === notificationUserId ? updatedNotification : n
+          )
+        );
+      }
+    } catch (err) {
+      // Error silenciado
+    }
+  }, []);
+
+  /**
+   * Iniciar polling para notificaciones que necesitan traducción.
+   */
+  useEffect(() => {
+    // Buscar notificaciones que necesitan polling
+    const notificationsNeedingPolling = notifications.filter(needsTranslationPolling);
+
+    if (notificationsNeedingPolling.length === 0) {
+      // No hay notificaciones pendientes, limpiar polling
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Iniciar polling cada 3 segundos
+    if (!pollingIntervalRef.current) {
+      pollingIntervalRef.current = setInterval(async () => {
+        const currentNotifications = notificationsRef.current;
+        const pendingNotifications = currentNotifications.filter(needsTranslationPolling);
+
+        if (pendingNotifications.length === 0) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+          return;
+        }
+
+        // Actualizar cada notificación pendiente
+        for (const notification of pendingNotifications) {
+          await updateNotification(notification.notificationUserId);
+        }
+      }, 3000);
+    }
+
+    // Cleanup
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [notifications, needsTranslationPolling, updateNotification]);
 
   /**
    * Suscribirse a un topic/queue dinámicamente.
