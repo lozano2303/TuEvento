@@ -1,5 +1,6 @@
 import { CheckCircle, Ticket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Componente reutilizable para mostrar el resumen de un pago aprobado con tickets.
@@ -12,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
  */
 export default function PaymentApprovedSummary({ tickets = [], onGoEvents, additionalInfo }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleGoEvents = () => {
     if (onGoEvents) {
@@ -35,10 +37,10 @@ export default function PaymentApprovedSummary({ tickets = [], onGoEvents, addit
 
       <div>
         <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
-          ¡Pago aprobado!
+          {t('paymentApproved.title')}
         </h1>
         <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-          Tu compra fue exitosa. Acá están tus tickets.
+          {t('paymentApproved.subtitle')}
         </p>
       </div>
 
@@ -48,7 +50,7 @@ export default function PaymentApprovedSummary({ tickets = [], onGoEvents, addit
             className="text-xs font-semibold uppercase tracking-wider text-left mb-3"
             style={{ color: 'var(--color-textMuted)' }}
           >
-            Tus tickets
+            {t('paymentApproved.yourTickets')}
           </h2>
           {tickets.map((ticket) => (
             <div
@@ -62,7 +64,7 @@ export default function PaymentApprovedSummary({ tickets = [], onGoEvents, addit
               <Ticket className="w-4 h-4 shrink-0" style={{ color: 'var(--color-success)' }} />
               <div className="flex-1 text-left">
                 <p className="text-sm font-semibold" style={{ color: 'var(--color-textPrimary)' }}>
-                  {ticket.code ?? `Ticket #${ticket.ticketId}`}
+                  {ticket.code ?? t('paymentApproved.ticketNumber', { id: ticket.ticketId })}
                 </p>
                 <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
                   {ticket.totalPrice?.toLocaleString('es-CO') ?? '0'} {ticket.currency ?? ''}
@@ -84,7 +86,7 @@ export default function PaymentApprovedSummary({ tickets = [], onGoEvents, addit
           className="w-full p-4 rounded-xl text-sm"
           style={{ background: 'rgba(5,150,105,0.08)', color: 'var(--color-textSecondary)' }}
         >
-          Tus tickets serán enviados a tu correo en breve.
+          {t('paymentApproved.ticketsEmail')}
         </div>
       )}
 
@@ -99,7 +101,7 @@ export default function PaymentApprovedSummary({ tickets = [], onGoEvents, addit
           color: 'var(--color-onPrimary)',
         }}
       >
-        Ver más eventos
+        {t('paymentApproved.viewMoreEvents')}
       </button>
     </div>
   );

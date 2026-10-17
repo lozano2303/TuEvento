@@ -563,5 +563,60 @@
       "selectDocument": "Selecciona un documento",
       "submitError": "Error al enviar la solicitud"
     }
+  },
+  "checkout": {
+    "title": "Confirmar compra",
+    "backToSelection": "Volver a selección",
+    "preparingOrder": "Preparando tu orden…",
+    "orderCreateError": "No se pudo crear la orden",
+    "backToSeats": "Volver a selección de sillas",
+    "selectedSeats": "Sillas seleccionadas",
+    "seat": "silla",
+    "seats": "sillas",
+    "total": "Total",
+    "wallet": "Cartera",
+    "available": "disponibles",
+    "normalPayment": "Pago normal",
+    "useWallet": "Usar cartera",
+    "orderTotal": "Total de la orden",
+    "walletDiscount": "Descuento cartera",
+    "remainingGateway": "Restante por pasarela",
+    "walletCoversAll": "A pagar (cartera cubre todo)",
+    "paymentMethod": "Método de pago",
+    "qrCode": "Código QR",
+    "scanWithBank": "Escanea el QR con tu app bancaria",
+    "pay": "Pagar",
+    "payWithWallet": "Pagar con cartera",
+    "processing": "Procesando…",
+    "reservationNote": "Al confirmar, tus sillas quedarán reservadas mientras se procesa el pago."
+  },
+  "paymentPending": {
+    "title": "Procesando tu pago",
+    "completePaymentInWindow": "Completá el pago en la ventana que se abrió.",
+    "confirmingWalletPayment": "Confirmando tu pago con cartera…",
+    "openingPaymentWindow": "Abriendo la ventana de pago…",
+    "event": "Evento",
+    "seats": "Sillas",
+    "reopenPaymentWindow": "Volver a abrir la ventana de pago",
+    "doNotCloseTab": "No cierres esta pestaña mientras se procesa el pago.",
+    "paymentCancelled": "Pago cancelado",
+    "paymentRejected": "Pago rechazado",
+    "paymentError": "Error en el pago",
+    "cancelledMessage": "Cancelaste la transacción. Podés volver a intentarlo cuando quieras.",
+    "rejectedMessage": "El pago fue rechazado. Podés volver a intentarlo.",
+    "errorMessage": "Ocurrió un error al procesar el pago. Podés intentarlo nuevamente.",
+    "retry": "Reintentar",
+    "backToEvents": "Volver a eventos"
+  },
+  "eventDetail": {
+    "continueToPayment": "Continuar al Pago"
+  },
+  "paymentApproved": {
+    "title": "¡Pago aprobado!",
+    "subtitle": "Tu compra fue exitosa. Acá están tus tickets.",
+    "yourTickets": "Tus tickets",
+    "ticketNumber": "Ticket #{{id}}",
+    "ticketsEmail": "Tus tickets serán enviados a tu correo en breve.",
+    "viewMoreEvents": "Ver más eventos"
   }
 }

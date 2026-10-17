@@ -563,5 +563,60 @@
       "selectDocument": "Select a document",
       "submitError": "Error submitting the application"
     }
+  },
+  "checkout": {
+    "title": "Confirm purchase",
+    "backToSelection": "Back to selection",
+    "preparingOrder": "Preparing your order…",
+    "orderCreateError": "Could not create order",
+    "backToSeats": "Back to seat selection",
+    "selectedSeats": "Selected seats",
+    "seat": "seat",
+    "seats": "seats",
+    "total": "Total",
+    "wallet": "Wallet",
+    "available": "available",
+    "normalPayment": "Normal payment",
+    "useWallet": "Use wallet",
+    "orderTotal": "Order total",
+    "walletDiscount": "Wallet discount",
+    "remainingGateway": "Remaining via gateway",
+    "walletCoversAll": "To pay (wallet covers all)",
+    "paymentMethod": "Payment method",
+    "qrCode": "QR Code",
+    "scanWithBank": "Scan the QR with your banking app",
+    "pay": "Pay",
+    "payWithWallet": "Pay with wallet",
+    "processing": "Processing…",
+    "reservationNote": "By confirming, your seats will be reserved while payment is processed."
+  },
+  "paymentPending": {
+    "title": "Processing your payment",
+    "completePaymentInWindow": "Complete the payment in the window that opened.",
+    "confirmingWalletPayment": "Confirming your wallet payment…",
+    "openingPaymentWindow": "Opening payment window…",
+    "event": "Event",
+    "seats": "Seats",
+    "reopenPaymentWindow": "Reopen payment window",
+    "doNotCloseTab": "Do not close this tab while payment is being processed.",
+    "paymentCancelled": "Payment cancelled",
+    "paymentRejected": "Payment rejected",
+    "paymentError": "Payment error",
+    "cancelledMessage": "You cancelled the transaction. You can try again whenever you want.",
+    "rejectedMessage": "Payment was rejected. You can try again.",
+    "errorMessage": "An error occurred while processing payment. You can try again.",
+    "retry": "Retry",
+    "backToEvents": "Back to events"
+  },
+  "eventDetail": {
+    "continueToPayment": "Continue to Payment"
+  },
+  "paymentApproved": {
+    "title": "Payment approved!",
+    "subtitle": "Your purchase was successful. Here are your tickets.",
+    "yourTickets": "Your tickets",
+    "ticketNumber": "Ticket #{{id}}",
+    "ticketsEmail": "Your tickets will be sent to your email shortly.",
+    "viewMoreEvents": "View more events"
   }
 }

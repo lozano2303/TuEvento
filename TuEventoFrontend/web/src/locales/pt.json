@@ -563,5 +563,60 @@
       "selectDocument": "Selecione um documento",
       "submitError": "Erro ao enviar a solicitação"
     }
+  },
+  "checkout": {
+    "title": "Confirmar compra",
+    "backToSelection": "Voltar à seleção",
+    "preparingOrder": "Preparando seu pedido…",
+    "orderCreateError": "Não foi possível criar o pedido",
+    "backToSeats": "Voltar à seleção de lugares",
+    "selectedSeats": "Lugares selecionados",
+    "seat": "lugar",
+    "seats": "lugares",
+    "total": "Total",
+    "wallet": "Carteira",
+    "available": "disponíveis",
+    "normalPayment": "Pagamento normal",
+    "useWallet": "Usar carteira",
+    "orderTotal": "Total do pedido",
+    "walletDiscount": "Desconto da carteira",
+    "remainingGateway": "Restante via gateway",
+    "walletCoversAll": "A pagar (carteira cobre tudo)",
+    "paymentMethod": "Método de pagamento",
+    "qrCode": "Código QR",
+    "scanWithBank": "Escaneie o QR com seu aplicativo bancário",
+    "pay": "Pagar",
+    "payWithWallet": "Pagar com carteira",
+    "processing": "Processando…",
+    "reservationNote": "Ao confirmar, seus lugares serão reservados enquanto o pagamento é processado."
+  },
+  "paymentPending": {
+    "title": "Processando seu pagamento",
+    "completePaymentInWindow": "Complete o pagamento na janela que foi aberta.",
+    "confirmingWalletPayment": "Confirmando seu pagamento com carteira…",
+    "openingPaymentWindow": "Abrindo janela de pagamento…",
+    "event": "Evento",
+    "seats": "Lugares",
+    "reopenPaymentWindow": "Reabrir janela de pagamento",
+    "doNotCloseTab": "Não feche esta aba enquanto o pagamento está sendo processado.",
+    "paymentCancelled": "Pagamento cancelado",
+    "paymentRejected": "Pagamento rejeitado",
+    "paymentError": "Erro no pagamento",
+    "cancelledMessage": "Você cancelou a transação. Pode tentar novamente quando quiser.",
+    "rejectedMessage": "O pagamento foi rejeitado. Você pode tentar novamente.",
+    "errorMessage": "Ocorreu um erro ao processar o pagamento. Você pode tentar novamente.",
+    "retry": "Tentar novamente",
+    "backToEvents": "Voltar aos eventos"
+  },
+  "eventDetail": {
+    "continueToPayment": "Continuar para o pagamento"
+  },
+  "paymentApproved": {
+    "title": "Pagamento aprovado!",
+    "subtitle": "Sua compra foi bem-sucedida. Aqui estão seus ingressos.",
+    "yourTickets": "Seus ingressos",
+    "ticketNumber": "Ingresso #{{id}}",
+    "ticketsEmail": "Seus ingressos serão enviados ao seu e-mail em breve.",
+    "viewMoreEvents": "Ver mais eventos"
   }
 }
