@@ -758,7 +758,7 @@ const ProfilePage = () => {
                       <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
-                      <span>Guardá los cambios para aplicar el nuevo idioma</span>
+                      <span>{t('profile.themeSection.unsavedChanges')}</span>
                     </div>
                   )}
                   
@@ -789,10 +789,10 @@ const ProfilePage = () => {
                       {savingLanguage ? (
                         <span className="flex items-center justify-center gap-2">
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Guardando…
+                          {t('profile.themeSection.savingLanguage')}
                         </span>
                       ) : (
-                        'Guardar idioma'
+                        t('profile.themeSection.saveLanguage')
                       )}
                     </button>
                   )}
@@ -805,7 +805,7 @@ const ProfilePage = () => {
               <h3 className="text-base font-bold text-textPrimary mb-4">{t('profile.theme')}</h3>
 
               {themes.length === 0 ? (
-                <p className="text-textMuted text-sm text-center py-6">Cargando temas…</p>
+                <p className="text-textMuted text-sm text-center py-6">{t('profile.themeSection.loadingThemes')}</p>
               ) : (() => {
                 const theme = themes[carouselIdx];
                 const preview = THEME_PREVIEWS[theme.name] ?? THEME_PREVIEWS.PRINCIPAL;
@@ -828,7 +828,7 @@ const ProfilePage = () => {
                         </span>
                         {isActive && (
                           <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm bg-primary/20 border border-primary/40 text-accent">
-                            Activo
+                            {t('profile.themeSection.active')}
                           </span>
                         )}
                       </div>
@@ -851,7 +851,7 @@ const ProfilePage = () => {
                           disabled={loadingTheme}
                           className="w-full py-2 rounded-lg text-xs font-bold bg-primary/10 border border-primary/30 text-accent hover:bg-primary/20 transition-all disabled:opacity-50"
                         >
-                          {loadingTheme ? 'Aplicando…' : 'Aplicar tema'}
+                          {loadingTheme ? t('profile.themeSection.applying') : t('profile.themeSection.applyTheme')}
                         </button>
                       )}
                     </div>
@@ -862,7 +862,7 @@ const ProfilePage = () => {
                         onClick={() => navigateCarousel(-1)}
                         disabled={loadingTheme}
                         className="w-8 h-8 rounded-lg bg-surface border border-surfaceAlt text-textSecondary hover:border-primary/40 hover:text-accent flex items-center justify-center transition-all disabled:opacity-40"
-                        aria-label="Tema anterior"
+                        aria-label={t('profile.themeSection.previousTheme')}
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
@@ -881,7 +881,7 @@ const ProfilePage = () => {
                                 ? 'var(--color-primary)'
                                 : 'var(--color-surfaceAlt)',
                             }}
-                            aria-label={`Ir a tema ${i + 1}`}
+                            aria-label={t('profile.themeSection.goToTheme', { number: i + 1 })}
                           />
                         ))}
                       </div>
@@ -890,7 +890,7 @@ const ProfilePage = () => {
                         onClick={() => navigateCarousel(1)}
                         disabled={loadingTheme}
                         className="w-8 h-8 rounded-lg bg-surface border border-surfaceAlt text-textSecondary hover:border-primary/40 hover:text-accent flex items-center justify-center transition-all disabled:opacity-40"
-                        aria-label="Tema siguiente"
+                        aria-label={t('profile.themeSection.nextTheme')}
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>
@@ -905,12 +905,12 @@ const ProfilePage = () => {
                           className="tcp-customize-btn mt-3"
                         >
                           <Palette className="w-3.5 h-3.5 flex-shrink-0" />
-                          Personalizar colores
+                          {t('profile.themeSection.customizeColors')}
                         </button>
                       ) : (
                         /* Tema no activo → indicación de que hay que activarlo primero */
                         <p className="text-xs text-textSecondary mt-3 text-center">
-                          Activa este tema para personalizarlo
+                          {t('profile.themeSection.activateToCustomize')}
                         </p>
                       )
                     )}

@@ -387,7 +387,92 @@
     "onlyImageFormats": "Seulement JPG, PNG ou WEBP.",
     "maxFileSize": "Max. {{size}} Mo.",
     "imageRequirements": "Seulement JPG, PNG ou WEBP. Max. {{size}} Mo. Pas de contenu adulte.",
-    "imageRequirementsLabel": "Exigences d'image"
+    "imageRequirementsLabel": "Exigences d'image",
+    "themeSection": {
+      "loadingThemes": "Chargement des thèmes…",
+      "active": "Actif",
+      "applyTheme": "Appliquer le thème",
+      "applying": "Application en cours…",
+      "previousTheme": "Thème précédent",
+      "nextTheme": "Thème suivant",
+      "goToTheme": "Aller au thème {{number}}",
+      "customizeColors": "Personnaliser les couleurs",
+      "activateToCustomize": "Activez ce thème pour le personnaliser",
+      "unsavedChanges": "Enregistrez les modifications pour appliquer la nouvelle langue",
+      "saveLanguage": "Enregistrer la langue",
+      "savingLanguage": "Enregistrement…"
+    },
+    "customizePanel": {
+      "officialThemeTitle": "Thème Officiel",
+      "officialThemeDesc": "Le thème PRINCIPAL est l'identité officielle de Tu Evento et ne peut pas être personnalisé.",
+      "customizeTheme": "Personnaliser le thème",
+      "resetAll": "Tout réinitialiser",
+      "closePanel": "Fermer le panneau",
+      "closeEditor": "Fermer l'éditeur",
+      "groups": {
+        "backgrounds": "Arrière-plans",
+        "primary": "Primaires",
+        "texts": "Textes",
+        "states": "États"
+      },
+      "properties": {
+        "background": "Arrière-plan principal",
+        "surface": "Surface",
+        "surfaceAlt": "Surface alternative",
+        "primary": "Couleur primaire",
+        "primaryDark": "Primaire foncé",
+        "accent": "Accent",
+        "textPrimary": "Texte principal",
+        "textSecondary": "Texte secondaire",
+        "textMuted": "Texte atténué",
+        "error": "Erreur",
+        "errorBg": "Arrière-plan d'erreur",
+        "success": "Succès",
+        "successBg": "Arrière-plan de succès"
+      },
+      "contrast": {
+        "ratio": "Rapport de contraste: {{ratio}}:1",
+        "aaa": "AAA",
+        "aa": "AA",
+        "aaLarge": "AA Large",
+        "fail": "Pas de contraste",
+        "lowContrast": "Faible contraste",
+        "lowContrastWarning": "cette couleur peut être difficile à lire sur l'arrière-plan actuel ({{ratio}}:1, minimum WCAG AA 4.5:1). Vous pouvez l'enregistrer quand même.",
+        "suggested": "Suggéré:",
+        "useThis": "← utiliser celui-ci",
+        "resetToBase": "Réinitialiser à la valeur de base"
+      },
+      "editor": {
+        "colorPicker": "Ouvrir le sélecteur de couleur",
+        "colorPickerLabel": "Sélecteur de couleur pour {{property}}",
+        "hexLabel": "Valeur hexadécimale de la couleur",
+        "hexPlaceholder": "#RRVVBB",
+        "invalidFormat": "Format invalide — utilisez #RVB, #RRVVBB ou rgba(…)",
+        "colorSwatch": "Couleur {{hex}}",
+        "cancel": "Annuler",
+        "apply": "Appliquer",
+        "saving": "Enregistrement…",
+        "saveError": "Impossible d'enregistrer. Réessayez."
+      },
+      "log": {
+        "title": "Historique des modifications",
+        "loading": "Chargement de l'historique…",
+        "empty": "Aucune modification enregistrée",
+        "resetAction": "Réinitialisé à la valeur de base",
+        "updateAction": "Mis à jour"
+      },
+      "footer": {
+        "contrastInfo": "Les valeurs de contraste suivent la norme WCAG 2.1 AA (minimum 4.5:1 pour le texte normal). Les avertissements sont indicatifs — vous pouvez enregistrer n'importe quelle couleur."
+      },
+      "badges": {
+        "custom": "Personnalisé",
+        "active": "Actif"
+      },
+      "errors": {
+        "resetError": "Impossible de réinitialiser \"{{property}}\".",
+        "resetAllError": "Erreur lors de la réinitialisation de toutes les couleurs."
+      }
+    }
   },
   "categories": {
     "title": "Catégories",
