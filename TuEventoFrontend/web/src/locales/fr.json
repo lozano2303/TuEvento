@@ -465,6 +465,17 @@
     "viewAll": "Voir tout",
     "organizerPetition": "Demande d'Organisateur"
   },
+  "userMenu": {
+    "profile": "Profil",
+    "profileDesc": "Voir et modifier votre compte",
+    "notifications": "Notifications",
+    "notificationsDesc": "Voir toutes vos notifications",
+    "wallet": "Portefeuille",
+    "walletDesc": "Solde et transactions",
+    "adminPanel": "Panneau de Gestion",
+    "adminPanelDesc": "Gérer la plateforme",
+    "login": "Se connecter"
+  },
   "footer": {
     "tagline": "La plateforme pour découvrir, créer et gérer des événements en direct de manière simple et professionnelle.",
     "navigation": "Navigation",
@@ -618,5 +629,41 @@
     "ticketNumber": "Billet #{{id}}",
     "ticketsEmail": "Vos billets seront envoyés à votre e-mail sous peu.",
     "viewMoreEvents": "Voir plus d'événements"
+  },
+  "wallet": {
+    "noCredit": "Vous n'avez pas encore de crédit accumulé",
+    "noCreditMessage": "Votre solde de portefeuille sera généré lorsque vous annulerez un achat ou recevrez un remboursement.",
+    "myBalance": "Mon Solde",
+    "availableBalance": "Votre solde disponible",
+    "description": "Gardez le contrôle de vos fonds et profitez d'une expérience sécurisée, rapide et sans complications pour vos achats d'événements.",
+    "currentBalance": "SOLDE ACTUEL",
+    "pendingPurchases": "en achats en attente",
+    "availableForPurchases": "Solde disponible pour vos achats",
+    "protectedCredit": "Crédit interne protégé",
+    "useBalance": "Utiliser le solde pour un achat",
+    "movementHistory": "Historique des transactions",
+    "viewLess": "Voir moins",
+    "viewAll": "Voir tout",
+    "concept": "CONCEPT",
+    "date": "DATE",
+    "status": "STATUT",
+    "amount": "MONTANT",
+    "noMovements": "Aucune transaction enregistrée",
+    "statusCompleted": "Terminé",
+    "statusPending": "En attente",
+    "statusFailed": "Échoué",
+    "howToUse": "Comment l'utiliser?",
+    "howToUseText": "Utilisez votre solde disponible pour acheter des billets, des services et plus lors de nos événements.",
+    "protectedBalance": "Solde Protégé",
+    "protectedBalanceText": "Votre argent est en sécurité avec notre technologie de cryptage et nos processus vérifiés.",
+    "help": "Des questions?",
+    "helpText": "Si vous avez des questions sur votre solde ou vos transactions, contactez notre équipe de support.",
+    "movements": {
+      "reversal": "Annulation",
+      "creditCancellation": "Crédit d'annulation",
+      "appliedToPurchase": "Appliqué à l'achat",
+      "adminAdjustment": "Ajustement administratif",
+      "movement": "Transaction"
+    }
   }
 }
