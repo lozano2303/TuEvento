@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight, PartyPopper, Sparkles, FileText } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 import loginHero from "../assets/images/tu-evento-login-hero-left.png";
 import { loginUser, registerUser, resendActivationCode, googleLogin } from "../services/Login.js";
 import { getProfileByUserId } from "../services/ProfileService.js";
@@ -9,6 +10,7 @@ import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 import BaseModal from "../components/common/BaseModal.jsx";
 import ReactivationModal from "../components/common/ReactivationModal.jsx";
+import LanguageSelector from "../components/common/LanguageSelector.jsx";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
@@ -64,6 +66,7 @@ function GoogleButton({ onSuccess, onError }) {
 
 export default function Login() {
   const { refreshPalette } = useTheme();
+  const { t } = useTranslation();
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [view, setView] = useState('login');
   const [userID, setUserID] = useState(null);
@@ -173,7 +176,7 @@ export default function Login() {
     return score;
   };
 
-  const strengthLabel = ['', 'Muy débil', 'Débil', 'Buena', 'Fuerte'];
+  const strengthLabel = ['', t('login.passwordStrength.veryWeak'), t('login.passwordStrength.weak'), t('login.passwordStrength.good'), t('login.passwordStrength.strong')];
   const strengthColor = ['', 'strength-text-1', 'strength-text-2', 'strength-text-3', 'strength-text-4'];
   const barColors = [
     '',
@@ -194,43 +197,43 @@ export default function Login() {
 
   // ─── Validaciones ────────────────────────────────────────────────────────
   const validateEmail = (email) => {
-    if (!email?.trim()) return "El correo electrónico es obligatorio";
-    if (email.trim().length > 255) return "Máximo 255 caracteres";
+    if (!email?.trim()) return t('login.validation.emailRequired');
+    if (email.trim().length > 255) return t('login.validation.emailMax');
     if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim()))
-      return "Formato de correo no válido";
+      return t('login.validation.emailInvalid');
     if (!email.trim().toLowerCase().endsWith('@gmail.com'))
-      return "Solo correos @gmail.com son aceptados";
+      return t('login.validation.emailGmailOnly');
     return "";
   };
 
   const validatePassword = (pw) => {
-    if (!pw?.trim()) return "La contraseña es obligatoria";
-    if (pw.length < 8) return "Mínimo 8 caracteres";
-    if (pw.length > 100) return "Máximo 100 caracteres";
+    if (!pw?.trim()) return t('login.validation.passwordRequired');
+    if (pw.length < 8) return t('login.validation.passwordMin');
+    if (pw.length > 100) return t('login.validation.passwordMax');
     if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(pw))
-      return "Debe contener minúscula, mayúscula, número y carácter especial (@$!%*?&)";
+      return t('login.validation.passwordWeak');
     return "";
   };
 
   const validateName = (name) => {
-    if (!name?.trim()) return "El nombre completo es obligatorio";
-    if (name.trim().length > 100) return "Máximo 100 caracteres";
+    if (!name?.trim()) return t('login.validation.nameRequired');
+    if (name.trim().length > 100) return t('login.validation.nameMax');
     if (!/^[a-zA-ZÀ-ÿ\s'-]+$/.test(name.trim()))
-      return "Solo letras, espacios y acentos";
+      return t('login.validation.nameLettersOnly');
     
     const words = name.trim().split(/\s+/);
-    if (words.length < 2) return "Ingresa nombre y apellido";
+    if (words.length < 2) return t('login.validation.nameFirstLast');
     
     // Validar que cada palabra tenga al menos 3 caracteres
     const invalidWord = words.find(word => word.length < 3);
-    if (invalidWord) return "Cada nombre y apellido debe tener al menos 3 caracteres";
+    if (invalidWord) return t('login.validation.nameMinPerWord');
     
     return "";
   };
 
   const validateConfirmPassword = (cp, pw) => {
-    if (!cp?.trim()) return "Confirmar contraseña es obligatorio";
-    if (cp !== pw) return "Las contraseñas no coinciden";
+    if (!cp?.trim()) return t('login.validation.confirmRequired');
+    if (cp !== pw) return t('login.validation.confirmMatch');
     return "";
   };
 
@@ -255,19 +258,19 @@ export default function Login() {
 
   const handleResendActivation = async () => {
     if (!formData.email || !formData.email.trim()) {
-      setError("Por favor, ingresa tu correo electrónico para reenviar el código de activación.");
+      setError(t('login.errors.enterEmailResend'));
       return;
     }
     try {
       await resendActivationCode(formData.email);
       setView('verification'); // redirigir directo a CodeVerification con código ya reenviado
     } catch (err) {
-      const errorMsg = err.message || "Error de conexión al reenviar código de activación";
+      const errorMsg = err.message || t('login.errors.resendError');
       // Traducir mensajes del backend
       if (errorMsg === "EMAIL_NOT_FOUND") {
-        setError("Este correo no está registrado en el sistema");
+        setError(t('login.errors.emailNotRegistered'));
       } else if (errorMsg === "This email is already activated. Please login with your credentials.") {
-        setError("Este correo ya está activado. Inicia sesión con tus credenciales.");
+        setError(t('login.errors.emailAlreadyRegistered'));
       } else {
         setError(errorMsg);
       }
@@ -326,7 +329,7 @@ export default function Login() {
       setShowLoginSuccessNotification(true);
       setTimeout(() => { window.location.href = '/'; }, 1500);
     } catch (err) {
-      setError(err.message || 'No se pudo iniciar sesión con Google. Intenta de nuevo.');
+      setError(err.message || t('login.errors.googleLoginError'));
     } finally {
       setLoading(false);
     }
@@ -423,26 +426,26 @@ export default function Login() {
             // Redirigir automáticamente a verificación y reenviar el código
             try { await resendActivationCode(formData.email); } catch (_) {}
             setView('verification');
-          } else setError(msg || "Error en login");
+          } else setError(msg || t('login.errors.loginError'));
         }
       } else {
         const result = await registerUser(formData.name, formData.email, formData.password);
         if (result.success) { setShowSuccessNotification(true); setUserID(result.data); }
-        else setError(result.message || "Error en registro");
+        else setError(result.message || t('login.errors.registerError'));
       }
     } catch (err) {
-      const errorMsg = err.message || "Error de conexión";
+      const errorMsg = err.message || t('login.errors.connectionError');
       // Traducir mensajes del backend
       if (errorMsg === "This email is not registered in the system") {
-        setError("Este correo no está registrado en el sistema");
+        setError(t('login.errors.emailNotRegistered'));
       } else if (errorMsg === "Invalid email or password") {
-        setError("Correo o contraseña incorrectos");
+        setError(t('login.errors.invalidCredentials'));
       } else if (errorMsg === "This email is already registered and activated. Please login with your credentials.") {
-        setError("Este correo ya está registrado y activado. Inicia sesión con tus credenciales.");
+        setError(t('login.errors.emailAlreadyRegistered'));
       } else if (errorMsg === "This email is already registered but not activated. If you want to activate your account, click on Resend activation email") {
-        setError("Este correo ya está registrado pero no activado. Si quieres activar tu cuenta, haz clic en Reenviar correo de activación");
+        setError(t('login.errors.emailNotActivated'));
       } else if (errorMsg === "Account is not activated") {
-        setError("Cuenta no activada");
+        setError(t('login.errors.accountNotActivated'));
       } else if (
         errorMsg.toLowerCase().includes("inactive") ||
         errorMsg.toLowerCase().includes("inactiva") ||
@@ -457,7 +460,7 @@ export default function Login() {
         errorMsg.toLowerCase().includes("bloqueada") ||
         errorMsg.toLowerCase().includes("account_blocked")
       ) {
-        setError("Tu cuenta ha sido bloqueada. Por favor contacta a soporte.");
+        setError(t('login.errors.accountBlocked'));
       } else {
         setError(errorMsg);
       }
@@ -485,15 +488,15 @@ export default function Login() {
         <div className="w-full bg-background flex items-center justify-center p-8">
           <div className="w-full max-w-sm space-y-6">
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-textPrimary">Perfil de Usuario</h1>
-              <p className="text-textMuted text-sm mt-1">Bienvenido de vuelta</p>
+              <h1 className="text-2xl font-bold text-textPrimary">{t('login.profile.title')}</h1>
+              <p className="text-textMuted text-sm mt-1">{t('login.profile.welcomeBack')}</p>
             </div>
             <div className="space-y-4">
               {[
-                ['Nombre', userData.fullName || 'No definido'],
-                ['Alias', userData.alias],
-                ['Correo', userData.email],
-                ['ID', userData.userId]
+                [t('login.profile.name'), userData.fullName || t('login.profile.notDefined')],
+                [t('login.profile.alias'), userData.alias],
+                [t('login.profile.email'), userData.email],
+                [t('login.profile.id'), userData.userId]
               ].map(([label, val]) => (
                 <div key={label}>
                   <label className="block text-textMuted text-sm mb-1">{label}</label>
@@ -502,7 +505,7 @@ export default function Login() {
               ))}
             </div>
             <button onClick={handleLogout} className="w-full bg-error hover:bg-error/80 text-textPrimary font-semibold py-3 rounded-lg transition-all text-sm">
-              Cerrar Sesión
+              {t('login.profile.logout')}
             </button>
           </div>
         </div>
@@ -512,6 +515,9 @@ export default function Login() {
   // ─── Vista principal Login / Registro ────────────────────────────────────
   return (
     <div className="login-root">
+      
+      {/* ── Selector de idioma (fixed top-right) ── */}
+      <LanguageSelector position="fixed-top-right" />
 
       {/* ── Imagen hero anclada a la izquierda (~65% ancho) ── */}
       <img
@@ -577,12 +583,12 @@ export default function Login() {
           <div className="login-card">
 
             {/* Encabezado */}
-            <p className="login-card-eyebrow">BIENVENIDO DE NUEVO</p>
+            <p className="login-card-eyebrow">{t('login.welcomeBack').toUpperCase()}</p>
             <h1 className="login-card-title">
-              {view === 'login' ? 'Iniciar Sesión' : 'Registrarse'}
+              {view === 'login' ? t('login.signIn') : t('login.signUp')}
             </h1>
             <p className="login-card-subtitle">
-              Ingresa tus datos personales para acceder a tu cuenta.
+              {t('login.enterDetails')}
             </p>
 
             {/* ── Formulario ── */}
@@ -598,7 +604,7 @@ export default function Login() {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      placeholder="Nombre completo"
+                      placeholder={t('login.fullName')}
                       className={`login-input${fieldErrors.name ? ' login-input-error' : ''}`}
                       required
                       autoComplete="name"
@@ -617,13 +623,13 @@ export default function Login() {
                       {formData.name.trim().split(/\s+/).length < 2 && (
                         <p className="login-field-error">
                           <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                          Nombre y apellido
+                          {t('login.validation.nameFirstLast')}
                         </p>
                       )}
                       {!formData.name.trim().split(/\s+/).every(w => w.length >= 3) && (
                         <p className="login-field-error">
                           <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                          Mínimo 3 caracteres por palabra
+                          {t('login.validation.nameMinPerWord')}
                         </p>
                       )}
                     </div>
@@ -640,7 +646,7 @@ export default function Login() {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="Correo electrónico"
+                    placeholder={t('login.email')}
                     className={`login-input${fieldErrors.email ? ' login-input-error' : ''}`}
                     required
                     autoComplete="email"
@@ -657,7 +663,7 @@ export default function Login() {
                 {formData.email && !fieldErrors.email && view !== 'login' && !formData.email.trim().toLowerCase().endsWith('@gmail.com') && (
                   <p className="login-field-error">
                     <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                    Debe ser @gmail.com
+                    {t('login.mustBeGmail')}
                   </p>
                 )}
               </div>
@@ -673,7 +679,7 @@ export default function Login() {
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    placeholder="Contraseña"
+                    placeholder={t('login.password')}
                     autoComplete="new-password"
                     className={`login-input${fieldErrors.password ? ' login-input-error' : ''}`}
                     required
@@ -684,7 +690,7 @@ export default function Login() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="login-input-eye"
-                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                   >
                     {showPassword ? <EyeOff width={18} height={18} /> : <Eye width={18} height={18} />}
                   </button>
@@ -713,15 +719,15 @@ export default function Login() {
                     </p>
                     {(() => {
                       const missing = [];
-                      if (formData.password.length < 8) missing.push('8 caracteres');
-                      if (!/[A-Z]/.test(formData.password)) missing.push('mayúscula');
-                      if (!/[a-z]/.test(formData.password)) missing.push('minúscula');
-                      if (!/\d/.test(formData.password)) missing.push('número');
-                      if (!/[@$!%*?&]/.test(formData.password)) missing.push('carácter especial (@$!%*?&)');
+                      if (formData.password.length < 8) missing.push(`8 ${t('login.passwordStrength.characters')}`);
+                      if (!/[A-Z]/.test(formData.password)) missing.push(t('login.passwordStrength.uppercase'));
+                      if (!/[a-z]/.test(formData.password)) missing.push(t('login.passwordStrength.lowercase'));
+                      if (!/\d/.test(formData.password)) missing.push(t('login.passwordStrength.number'));
+                      if (!/[@$!%*?&]/.test(formData.password)) missing.push(t('login.passwordStrength.specialChar'));
                       return missing.length > 0 ? (
                         <p className="login-field-error" style={{ marginTop: '0.2rem' }}>
                           <svg aria-hidden="true" fill="currentColor" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                          Debe contener {missing.join(', ')}
+                          {t('login.passwordStrength.mustContain')} {missing.join(', ')}
                         </p>
                       ) : null;
                     })()}
@@ -741,7 +747,7 @@ export default function Login() {
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      placeholder="Confirmar contraseña"
+                      placeholder={t('login.confirmPassword')}
                       autoComplete="new-password"
                       className={`login-input${fieldErrors.confirmPassword ? ' login-input-error' : ''}`}
                       required
@@ -787,21 +793,21 @@ export default function Login() {
                 className="login-btn-primary"
                 style={{ marginTop: '0.25rem' }}
               >
-                {loading ? 'Cargando...' : (view === 'login' ? 'INICIAR SESIÓN' : 'REGISTRARSE')}
+                {loading ? t('login.loading') : (view === 'login' ? t('login.signInButton') : t('login.signUpButton'))}
                 {!loading && <ArrowRight width={16} height={16} aria-hidden="true" />}
               </button>
 
               {/* Reenviar activación — solo registro */}
               {view !== 'login' && (
                 <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(196,181,253,0.65)' }}>
-                  ¿No has activado tu cuenta?{' '}
+                  {t('login.notActivated')}{' '}
                   <button
                     type="button"
                     onClick={handleResendActivation}
                     className="login-footer-link"
                     style={{ fontSize: '0.75rem' }}
                   >
-                    Reenviar correo de activación
+                    {t('login.resendActivation')}
                   </button>
                 </p>
               )}
@@ -811,14 +817,14 @@ export default function Login() {
                 <div className="login-separator">
                   <div className="login-separator-line" />
                   <span className="login-separator-text">
-                    ¿No recuerdas tu contraseña?{' '}
+                    {t('login.forgotPassword')}{' '}
                     <button
                       type="button"
                       onClick={() => setView('forgot')}
                       className="login-footer-link"
                       style={{ fontSize: '0.7rem', letterSpacing: '0.02em' }}
                     >
-                      Recupérala
+                      {t('login.recoverIt')}
                     </button>
                   </span>
                   <div className="login-separator-line" />
@@ -829,7 +835,7 @@ export default function Login() {
               {view !== 'login' && (
                 <div className="login-separator">
                   <div className="login-separator-line" />
-                  <span className="login-separator-text">o continúa con</span>
+                  <span className="login-separator-text">{t('login.orContinueWith')}</span>
                   <div className="login-separator-line" />
                 </div>
               )}
@@ -846,39 +852,39 @@ export default function Login() {
                   type="button"
                   onClick={handleFacebookLogin}
                   className="login-btn-social"
-                  title="Iniciar con Facebook"
-                  aria-label="Iniciar sesión con Facebook"
+                  title={t('login.signInWith') + ' Facebook'}
+                  aria-label={t('login.signInWith') + ' Facebook'}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <circle cx="12" cy="12" r="12" fill="#1877f2" />
                     <path fill="white" d="M16.3 8H14c-.3 0-.7.3-.7.8V10h3l-.4 2.5H13.3V19h-2.6v-6.5H9V10h1.7V8.6C10.7 6.6 12 5.5 13.9 5.5c.9 0 1.9.1 2.4.2V8z"/>
                   </svg>
-                  <span>Facebook</span>
+                  <span>{t('login.facebook')}</span>
                 </button>
               </div>
 
               {/* ¿Tienes cuenta? */}
               <div style={{ textAlign: 'center', paddingTop: '0.25rem' }}>
                 <p style={{ fontSize: '0.8rem', color: 'rgba(196,181,253,0.70)', marginBottom: '0.4rem' }}>
-                  {view === 'login' ? '¿No tienes una cuenta?' : '¿Ya tienes una cuenta?'}{' '}
+                  {view === 'login' ? t('login.noAccount') : t('login.hasAccount')}{' '}
                   <button
                     type="button"
                     onClick={() => { setView(view === 'login' ? 'register' : 'login'); setError(''); setFieldErrors({}); setPasswordStrength(0); }}
                     className="login-footer-link"
                     style={{ fontSize: '0.8rem' }}
                   >
-                    {view === 'login' ? 'Crear cuenta' : 'Inicia sesión'}
+                    {view === 'login' ? t('login.createAccount') : t('login.signInLink')}
                   </button>
                 </p>
                 <p style={{ fontSize: '0.68rem', color: 'rgba(196,181,253,0.40)' }}>
-                  {view === 'login' ? 'Al iniciar sesión, aceptas nuestros' : 'Al registrarte, aceptas nuestros'}{' '}
+                  {view === 'login' ? t('login.bySigningIn') : t('login.bySigningUp')}{' '}
                   <button
                     type="button"
                     onClick={() => setShowTermsModal(true)}
                     className="login-footer-link"
                     style={{ fontSize: '0.68rem' }}
                   >
-                    Términos y condiciones
+                    {t('login.termsAndConditions')}
                   </button>
                 </p>
               </div>
@@ -893,12 +899,12 @@ export default function Login() {
         isOpen={showTermsModal}
         onClose={() => setShowTermsModal(false)}
         compact
-        title="Términos y Condiciones de Uso"
+        title={t('login.modals.termsTitle')}
         maxWidth="max-w-2xl"
         scrollableBody
         actions={[
           {
-            label: 'Entendido',
+            label: t('login.modals.understood'),
             icon: <FileText className="w-4 h-4" />,
             variant: 'primary',
             onClick: () => setShowTermsModal(false),
@@ -906,54 +912,54 @@ export default function Login() {
         ]}
       >
         <div className="text-sm text-textSecondary space-y-4">
-          <p className="bm-hint"><strong className="text-textPrimary">Última actualización:</strong> 2/10/2025</p>
-          <h4 className="font-semibold text-textPrimary">1. Aceptación de los términos</h4>
-          <p>Al acceder, registrarse o utilizar la aplicación "Tu Evento" (en su versión web o Android), desarrollada por CapySoft, el usuario acepta expresamente los presentes Términos y Condiciones.</p>
-          <h4 className="font-semibold text-textPrimary">2. Definiciones</h4>
+          <p className="bm-hint"><strong className="text-textPrimary">{t('login.modals.lastUpdate')}</strong> 2/10/2025</p>
+          <h4 className="font-semibold text-textPrimary">{t('login.terms.section1Title')}</h4>
+          <p>{t('login.terms.section1Text')}</p>
+          <h4 className="font-semibold text-textPrimary">{t('login.terms.section2Title')}</h4>
           <ul className="list-disc pl-6 space-y-1">
-            <li><strong>Aplicación / Plataforma:</strong> "Tu Evento" en su versión web y móvil.</li>
-            <li><strong>Usuario:</strong> Persona que accede y utiliza la aplicación.</li>
-            <li><strong>Organizador:</strong> Usuario autorizado para crear y publicar eventos.</li>
-            <li><strong>Asistente:</strong> Usuario que reserva o participa en eventos.</li>
-            <li><strong>Administrador:</strong> Usuario con permisos especiales de gestión.</li>
+            <li><strong>{t('login.terms.app')}</strong> {t('login.terms.appDesc')}</li>
+            <li><strong>{t('login.terms.user')}</strong> {t('login.terms.userDesc')}</li>
+            <li><strong>{t('login.terms.organizer')}</strong> {t('login.terms.organizerDesc')}</li>
+            <li><strong>{t('login.terms.attendee')}</strong> {t('login.terms.attendeeDesc')}</li>
+            <li><strong>{t('login.terms.admin')}</strong> {t('login.terms.adminDesc')}</li>
           </ul>
-          <h4 className="font-semibold text-textPrimary">3. Uso de la plataforma</h4>
+          <h4 className="font-semibold text-textPrimary">{t('login.terms.section3Title')}</h4>
           <ul className="list-disc pl-6 space-y-1">
-            <li>Requiere conexión estable a Internet.</li>
-            <li>Los usuarios deben registrarse con datos verídicos.</li>
-            <li>El sistema no gestiona pagos en línea.</li>
+            <li>{t('login.terms.section3Item1')}</li>
+            <li>{t('login.terms.section3Item2')}</li>
+            <li>{t('login.terms.section3Item3')}</li>
           </ul>
-          <h4 className="font-semibold text-textPrimary">4. Registro y cuentas</h4>
+          <h4 className="font-semibold text-textPrimary">{t('login.terms.section4Title')}</h4>
           <ul className="list-disc pl-6 space-y-1">
-            <li>Cuenta con correo válido y contraseña segura.</li>
-            <li>Posible registro mediante Google/Facebook (OAuth).</li>
-            <li>El usuario es responsable de sus credenciales.</li>
+            <li>{t('login.terms.section4Item1')}</li>
+            <li>{t('login.terms.section4Item2')}</li>
+            <li>{t('login.terms.section4Item3')}</li>
           </ul>
-          <h4 className="font-semibold text-textPrimary">5. Reservas y tickets</h4>
+          <h4 className="font-semibold text-textPrimary">{t('login.terms.section5Title')}</h4>
           <ul className="list-disc pl-6 space-y-1">
-            <li>Reserva en estado pendiente hasta validación de pago.</li>
-            <li>Se genera un código QR único e intransferible al confirmar.</li>
-            <li>La falsificación de QR implica denegación de acceso.</li>
+            <li>{t('login.terms.section5Item1')}</li>
+            <li>{t('login.terms.section5Item2')}</li>
+            <li>{t('login.terms.section5Item3')}</li>
           </ul>
-          <h4 className="font-semibold text-textPrimary">6. Responsabilidades del usuario</h4>
+          <h4 className="font-semibold text-textPrimary">{t('login.terms.section6Title')}</h4>
           <ul className="list-disc pl-6 space-y-1">
-            <li>Uso correcto y lícito de la plataforma.</li>
-            <li>No difundir información falsa u ofensiva.</li>
-            <li>No vulnerar la seguridad del sistema.</li>
+            <li>{t('login.terms.section6Item1')}</li>
+            <li>{t('login.terms.section6Item2')}</li>
+            <li>{t('login.terms.section6Item3')}</li>
           </ul>
-          <h4 className="font-semibold text-textPrimary">7. Limitación de responsabilidades</h4>
-          <p>CapySoft no se hace responsable de fallas de conexión, información falsa de terceros ni cancelaciones ajenas al control de la plataforma.</p>
-          <h4 className="font-semibold text-textPrimary">8. Seguridad y privacidad</h4>
+          <h4 className="font-semibold text-textPrimary">{t('login.terms.section7Title')}</h4>
+          <p>{t('login.terms.section7Text')}</p>
+          <h4 className="font-semibold text-textPrimary">{t('login.terms.section8Title')}</h4>
           <ul className="list-disc pl-6 space-y-1">
-            <li>Autenticación de dos pasos en registro normal.</li>
-            <li>En OAuth, la seguridad depende del proveedor externo.</li>
+            <li>{t('login.terms.section8Item1')}</li>
+            <li>{t('login.terms.section8Item2')}</li>
           </ul>
-          <h4 className="font-semibold">9. Propiedad intelectual</h4>
-          <p>Prohibida la reproducción o modificación sin autorización expresa.</p>
-          <h4 className="font-semibold">10. Modificaciones</h4>
-          <p>CapySoft puede modificar estos Términos en cualquier momento.</p>
-          <h4 className="font-semibold">11. Legislación aplicable</h4>
-          <p>Regidos por las leyes vigentes en Colombia.</p>
+          <h4 className="font-semibold text-textPrimary">{t('login.terms.section9Title')}</h4>
+          <p>{t('login.terms.section9Text')}</p>
+          <h4 className="font-semibold text-textPrimary">{t('login.terms.section10Title')}</h4>
+          <p>{t('login.terms.section10Text')}</p>
+          <h4 className="font-semibold text-textPrimary">{t('login.terms.section11Title')}</h4>
+          <p>{t('login.terms.section11Text')}</p>
         </div>
       </BaseModal>
 
@@ -964,8 +970,8 @@ export default function Login() {
         hideOverlayClose
         variant="success"
         icon={<CheckCircle className="w-8 h-8" />}
-        title="¡Registro Exitoso!"
-        subtitle="Tu cuenta ha sido creada correctamente"
+        title={t('login.modals.successTitle')}
+        subtitle={t('login.modals.successSubtitle')}
         decorIcons={
           <>
             <PartyPopper aria-hidden="true" className="absolute top-3 left-3 w-5 h-5 -rotate-12" style={{ color: 'rgba(255,255,255,0.5)' }} />
@@ -975,7 +981,7 @@ export default function Login() {
         }
         actions={[
           {
-            label: 'Continuar a Verificación',
+            label: t('login.modals.continueVerification'),
             icon: <CheckCircle className="w-4 h-4" />,
             variant: 'primary',
             onClick: handleContinueToVerification,
@@ -988,10 +994,10 @@ export default function Login() {
               <Mail className="w-5 h-5 text-accent" />
             </div>
           </div>
-          <p className="bm-label font-medium">Revisa tu bandeja de entrada</p>
-          <p className="bm-hint mt-1">Te enviamos un código de activación a</p>
+          <p className="bm-label font-medium">{t('login.modals.checkInbox')}</p>
+          <p className="bm-hint mt-1">{t('login.modals.sentCodeTo')}</p>
           <p className="bm-accent-text mt-1">{formData.email}</p>
-          <p className="bm-hint mt-2">¿No lo encuentras? Revisa tu carpeta de spam</p>
+          <p className="bm-hint mt-2">{t('login.modals.checkSpam')}</p>
         </div>
       </BaseModal>
 
@@ -1002,8 +1008,8 @@ export default function Login() {
         hideOverlayClose
         variant="success"
         icon={<CheckCircle className="w-8 h-8" />}
-        title="¡Bienvenido de Vuelta!"
-        subtitle="Has iniciado sesión exitosamente"
+        title={t('login.modals.loginSuccessTitle')}
+        subtitle={t('login.modals.loginSuccessSubtitle')}
         decorIcons={
           <>
             <PartyPopper aria-hidden="true" className="absolute top-3 left-3 w-5 h-5 -rotate-12" style={{ color: 'rgba(255,255,255,0.5)' }} />
@@ -1013,7 +1019,7 @@ export default function Login() {
         }
         actions={[
           {
-            label: 'Ir a Inicio',
+            label: t('login.modals.goHome'),
             icon: <ArrowRight className="w-4 h-4" />,
             variant: 'primary',
             onClick: handleContinueToHome,
@@ -1026,9 +1032,9 @@ export default function Login() {
               <User className="w-5 h-5 text-accent" />
             </div>
           </div>
-          <p className="bm-label font-medium">Sesión iniciada</p>
-          <p className="bm-hint mt-1">Accede a todas las funcionalidades de TuEvento</p>
-          <p className="bm-accent-text mt-2">👋 ¡Hola, {(() => {
+          <p className="bm-label font-medium">{t('login.modals.sessionStarted')}</p>
+          <p className="bm-hint mt-1">{t('login.modals.accessAll')}</p>
+          <p className="bm-accent-text mt-2">👋 {t('login.modals.hello')}, {(() => {
             if (!userData?.fullName) return userData?.alias || formData.email;
             const parts = userData.fullName.split(' ').filter(p => p.trim().length > 0);
             if (parts.length === 0) return userData?.alias || formData.email;
