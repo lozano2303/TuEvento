@@ -940,5 +940,262 @@
       "p1": "To exercise your rights or resolve questions about the processing of your data:",
       "email": "soporte.capysoft@gmail.com"
     }
+  },
+  "login": {
+    "welcomeBack": "WELCOME BACK",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "enterDetails": "Enter your personal details to access your account.",
+    "fullName": "Full name",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "loading": "Loading...",
+    "signInButton": "SIGN IN",
+    "signUpButton": "SIGN UP",
+    "forgotPassword": "Don't remember your password?",
+    "recoverIt": "Recover it",
+    "orContinueWith": "or continue with",
+    "google": "Google",
+    "facebook": "Facebook",
+    "signInWith": "Sign in with",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "createAccount": "Create account",
+    "signInLink": "Sign in",
+    "bySigningIn": "By signing in, you accept our",
+    "bySigningUp": "By signing up, you accept our",
+    "termsAndConditions": "Terms and conditions",
+    "notActivated": "Haven't activated your account?",
+    "resendActivation": "Resend activation email",
+    "mustBeGmail": "Must be @gmail.com",
+    "passwordStrength": {
+      "veryWeak": "Very weak",
+      "weak": "Weak",
+      "good": "Good",
+      "strong": "Strong",
+      "mustContain": "Must contain",
+      "characters": "characters",
+      "uppercase": "uppercase",
+      "lowercase": "lowercase",
+      "number": "number",
+      "specialChar": "special character (@$!%*?&)"
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailMax": "Maximum 255 characters",
+      "emailInvalid": "Invalid email format",
+      "emailGmailOnly": "Only @gmail.com emails are accepted",
+      "passwordRequired": "Password is required",
+      "passwordMin": "Minimum 8 characters",
+      "passwordMax": "Maximum 100 characters",
+      "passwordWeak": "Must contain lowercase, uppercase, number and special character (@$!%*?&)",
+      "nameRequired": "Full name is required",
+      "nameMax": "Maximum 100 characters",
+      "nameLettersOnly": "Only letters, spaces and accents",
+      "nameFirstLast": "Enter first and last name",
+      "nameMinPerWord": "Each name must be at least 3 characters",
+      "confirmRequired": "Confirm password is required",
+      "confirmMatch": "Passwords don't match",
+      "passwordsNoMatch": "Passwords don't match"
+    },
+    "errors": {
+      "emailNotRegistered": "This email is not registered in the system",
+      "invalidCredentials": "Invalid email or password",
+      "emailAlreadyRegistered": "This email is already registered and activated. Sign in with your credentials.",
+      "emailNotActivated": "This email is already registered but not activated. If you want to activate your account, click Resend activation email",
+      "accountNotActivated": "Account not activated",
+      "accountInactive": "Your account is inactive. Do you want to reactivate it?",
+      "accountBlocked": "Your account has been blocked. Please contact support.",
+      "connectionError": "Connection error",
+      "loginError": "Login error",
+      "registerError": "Registration error",
+      "googleLoginError": "Could not sign in with Google. Try again.",
+      "resendError": "Connection error when resending activation code",
+      "enterEmailResend": "Please enter your email to resend the activation code."
+    },
+    "modals": {
+      "termsTitle": "Terms and Conditions of Use",
+      "understood": "Understood",
+      "lastUpdate": "Last update:",
+      "successTitle": "Registration Successful!",
+      "successSubtitle": "Your account has been created successfully",
+      "checkInbox": "Check your inbox",
+      "sentCodeTo": "We sent you an activation code to",
+      "checkSpam": "Can't find it? Check your spam folder",
+      "continueVerification": "Continue to Verification",
+      "loginSuccessTitle": "Welcome Back!",
+      "loginSuccessSubtitle": "You have successfully signed in",
+      "sessionStarted": "Session started",
+      "accessAll": "Access all TuEvento features",
+      "hello": "Hello",
+      "goHome": "Go to Home"
+    },
+    "profile": {
+      "title": "User Profile",
+      "welcomeBack": "Welcome back",
+      "name": "Name",
+      "alias": "Alias",
+      "email": "Email",
+      "id": "ID",
+      "notDefined": "Not defined",
+      "logout": "Log Out"
+    }
+  },
+  "forgotPassword": {
+    "title": "Recover Password",
+    "subtitle": "We'll help you recover access to your account",
+    "enterEmail": "Enter your email",
+    "enterEmailDesc": "We'll send you a verification code to reset your password",
+    "email": "Email",
+    "sendCode": "Send code",
+    "sending": "Sending...",
+    "enterCode": "Enter the code",
+    "enterCodeDesc": "Check your email and enter the 6-digit code we sent you",
+    "verificationCode": "Verification code",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "resetPassword": "Reset password",
+    "resetting": "Resetting...",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "backToLogin": "Back to sign in",
+    "passwordStrength": {
+      "veryWeak": "Very weak",
+      "weak": "Weak",
+      "good": "Good",
+      "strong": "Strong"
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email format",
+      "codeRequired": "Verification code is required",
+      "codeLength": "Code must be 6 digits",
+      "passwordRequired": "Password is required",
+      "passwordMin": "Minimum 8 characters",
+      "passwordWeak": "Must contain lowercase, uppercase, number and special character",
+      "confirmRequired": "Confirm password is required",
+      "passwordsNoMatch": "Passwords don't match"
+    },
+    "success": {
+      "title": "Password Reset!",
+      "subtitle": "Your password has been updated successfully",
+      "message": "You can now sign in with your new password",
+      "goToLogin": "Go to Sign In"
+    },
+    "errors": {
+      "sendError": "Error sending email",
+      "resetError": "Error resetting password",
+      "connectionError": "Connection error"
+    }
+  },
+  "codeVerification": {
+    "title": "Account Verification",
+    "subtitle": "Activate your TuEvento account",
+    "enterCode": "Enter the 6-digit code",
+    "sentTo": "We sent a verification code to",
+    "code": "Verification code",
+    "verify": "Verify",
+    "verifying": "Verifying...",
+    "notReceived": "Didn't receive the code?",
+    "resend": "Resend",
+    "resending": "Resending...",
+    "checkSpam": "Check your spam or junk folder",
+    "backToLogin": "Back to sign in",
+    "validation": {
+      "codeRequired": "Verification code is required",
+      "codeLength": "Code must be 6 digits",
+      "codeDigits": "Code can only contain numbers"
+    },
+    "success": {
+      "title": "Account Activated!",
+      "subtitle": "Your account has been successfully verified",
+      "message": "You can now sign in and enjoy all TuEvento features",
+      "goToLogin": "Go to Sign In"
+    },
+    "errors": {
+      "verificationError": "Error verifying code",
+      "invalidCode": "Invalid or expired code",
+      "resendError": "Error resending code",
+      "connectionError": "Connection error"
+    }
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "subtitle": "Update your access password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "change": "Change password",
+    "changing": "Changing...",
+    "cancel": "Cancel",
+    "passwordStrength": {
+      "veryWeak": "Very weak",
+      "weak": "Weak",
+      "good": "Good",
+      "strong": "Strong"
+    },
+    "validation": {
+      "currentRequired": "Current password is required",
+      "newRequired": "New password is required",
+      "newMin": "Minimum 8 characters",
+      "newWeak": "Must contain lowercase, uppercase, number and special character",
+      "confirmRequired": "Confirm password is required",
+      "passwordsNoMatch": "Passwords don't match",
+      "samePassword": "New password must be different from current"
+    },
+    "success": {
+      "title": "Password Updated!",
+      "subtitle": "Your password has been changed successfully",
+      "message": "For security, we recommend logging out on other devices",
+      "close": "Close"
+    },
+    "errors": {
+      "changeError": "Error changing password",
+      "wrongPassword": "Current password is incorrect",
+      "connectionError": "Connection error"
+    }
+  },
+  "reactivateAccount": {
+    "title": "Reactivate Account",
+    "subtitle": "Your account is inactive",
+    "message": "It seems your account was deactivated. If you want to use TuEvento again, you can reactivate it now.",
+    "reactivate": "Reactivate my account",
+    "reactivating": "Reactivating...",
+    "cancel": "Cancel",
+    "success": {
+      "title": "Account Reactivated!",
+      "subtitle": "Your account has been activated successfully",
+      "message": "You can now sign in and enjoy TuEvento",
+      "goToLogin": "Go to Sign In"
+    },
+    "errors": {
+      "reactivateError": "Error reactivating account",
+      "emailRequired": "Email is required",
+      "connectionError": "Connection error"
+    }
+  },
+  "completeProfile": {
+    "title": "Complete Profile",
+    "subtitle": "Just one more step",
+    "message": "To finalize your registration, we need you to enter your full name",
+    "fullName": "Full name",
+    "continue": "Continue",
+    "continuing": "Continuing...",
+    "validation": {
+      "nameRequired": "Full name is required",
+      "nameMin": "Enter first and last name",
+      "nameMinPerWord": "Each name must be at least 3 characters",
+      "nameLettersOnly": "Only letters and spaces — no numbers or symbols",
+      "nameMax": "Maximum 100 characters"
+    },
+    "errors": {
+      "updateError": "Error updating profile",
+      "connectionError": "Connection error"
+    }
   }
 }
