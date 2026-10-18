@@ -940,5 +940,262 @@
       "p1": "Pour exercer vos droits ou résoudre des questions sur le traitement de vos données:",
       "email": "soporte.capysoft@gmail.com"
     }
+  },
+  "login": {
+    "welcomeBack": "BIENVENUE DE RETOUR",
+    "signIn": "Se Connecter",
+    "signUp": "S'Inscrire",
+    "enterDetails": "Entrez vos données personnelles pour accéder à votre compte.",
+    "fullName": "Nom complet",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "loading": "Chargement...",
+    "signInButton": "SE CONNECTER",
+    "signUpButton": "S'INSCRIRE",
+    "forgotPassword": "Vous ne vous souvenez pas de votre mot de passe?",
+    "recoverIt": "Récupérez-le",
+    "orContinueWith": "ou continuez avec",
+    "google": "Google",
+    "facebook": "Facebook",
+    "signInWith": "Se connecter avec",
+    "noAccount": "Vous n'avez pas de compte?",
+    "hasAccount": "Vous avez déjà un compte?",
+    "createAccount": "Créer un compte",
+    "signInLink": "Se connecter",
+    "bySigningIn": "En vous connectant, vous acceptez nos",
+    "bySigningUp": "En vous inscrivant, vous acceptez nos",
+    "termsAndConditions": "Termes et conditions",
+    "notActivated": "Vous n'avez pas activé votre compte?",
+    "resendActivation": "Renvoyer l'e-mail d'activation",
+    "mustBeGmail": "Doit être @gmail.com",
+    "passwordStrength": {
+      "veryWeak": "Très faible",
+      "weak": "Faible",
+      "good": "Bon",
+      "strong": "Fort",
+      "mustContain": "Doit contenir",
+      "characters": "caractères",
+      "uppercase": "majuscule",
+      "lowercase": "minuscule",
+      "number": "chiffre",
+      "specialChar": "caractère spécial (@$!%*?&)"
+    },
+    "validation": {
+      "emailRequired": "L'e-mail est obligatoire",
+      "emailMax": "Maximum 255 caractères",
+      "emailInvalid": "Format d'e-mail invalide",
+      "emailGmailOnly": "Seuls les e-mails @gmail.com sont acceptés",
+      "passwordRequired": "Le mot de passe est obligatoire",
+      "passwordMin": "Minimum 8 caractères",
+      "passwordMax": "Maximum 100 caractères",
+      "passwordWeak": "Doit contenir minuscule, majuscule, chiffre et caractère spécial (@$!%*?&)",
+      "nameRequired": "Le nom complet est obligatoire",
+      "nameMax": "Maximum 100 caractères",
+      "nameLettersOnly": "Seulement lettres, espaces et accents",
+      "nameFirstLast": "Entrez prénom et nom",
+      "nameMinPerWord": "Chaque nom doit avoir au moins 3 caractères",
+      "confirmRequired": "Confirmer le mot de passe est obligatoire",
+      "confirmMatch": "Les mots de passe ne correspondent pas",
+      "passwordsNoMatch": "Les mots de passe ne correspondent pas"
+    },
+    "errors": {
+      "emailNotRegistered": "Cet e-mail n'est pas enregistré dans le système",
+      "invalidCredentials": "E-mail ou mot de passe incorrect",
+      "emailAlreadyRegistered": "Cet e-mail est déjà enregistré et activé. Connectez-vous avec vos identifiants.",
+      "emailNotActivated": "Cet e-mail est déjà enregistré mais pas activé. Si vous voulez activer votre compte, cliquez sur Renvoyer l'e-mail d'activation",
+      "accountNotActivated": "Compte non activé",
+      "accountInactive": "Votre compte est inactif. Voulez-vous le réactiver?",
+      "accountBlocked": "Votre compte a été bloqué. Veuillez contacter le support.",
+      "connectionError": "Erreur de connexion",
+      "loginError": "Erreur de connexion",
+      "registerError": "Erreur d'inscription",
+      "googleLoginError": "Impossible de se connecter avec Google. Réessayez.",
+      "resendError": "Erreur de connexion lors du renvoi du code d'activation",
+      "enterEmailResend": "Veuillez entrer votre e-mail pour renvoyer le code d'activation."
+    },
+    "modals": {
+      "termsTitle": "Termes et Conditions d'Utilisation",
+      "understood": "Compris",
+      "lastUpdate": "Dernière mise à jour:",
+      "successTitle": "Inscription Réussie!",
+      "successSubtitle": "Votre compte a été créé avec succès",
+      "checkInbox": "Vérifiez votre boîte de réception",
+      "sentCodeTo": "Nous vous avons envoyé un code d'activation à",
+      "checkSpam": "Vous ne le trouvez pas? Vérifiez votre dossier spam",
+      "continueVerification": "Continuer vers la Vérification",
+      "loginSuccessTitle": "Bon Retour!",
+      "loginSuccessSubtitle": "Vous vous êtes connecté avec succès",
+      "sessionStarted": "Session démarrée",
+      "accessAll": "Accédez à toutes les fonctionnalités de TuEvento",
+      "hello": "Bonjour",
+      "goHome": "Aller à l'Accueil"
+    },
+    "profile": {
+      "title": "Profil Utilisateur",
+      "welcomeBack": "Bon retour",
+      "name": "Nom",
+      "alias": "Pseudo",
+      "email": "E-mail",
+      "id": "ID",
+      "notDefined": "Non défini",
+      "logout": "Se Déconnecter"
+    }
+  },
+  "forgotPassword": {
+    "title": "Récupérer le Mot de Passe",
+    "subtitle": "Nous vous aiderons à récupérer l'accès à votre compte",
+    "enterEmail": "Entrez votre e-mail",
+    "enterEmailDesc": "Nous vous enverrons un code de vérification pour réinitialiser votre mot de passe",
+    "email": "E-mail",
+    "sendCode": "Envoyer le code",
+    "sending": "Envoi...",
+    "enterCode": "Entrez le code",
+    "enterCodeDesc": "Vérifiez votre e-mail et entrez le code à 6 chiffres que nous vous avons envoyé",
+    "verificationCode": "Code de vérification",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "resetting": "Réinitialisation...",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "backToLogin": "Retour à la connexion",
+    "passwordStrength": {
+      "veryWeak": "Très faible",
+      "weak": "Faible",
+      "good": "Bon",
+      "strong": "Fort"
+    },
+    "validation": {
+      "emailRequired": "L'e-mail est obligatoire",
+      "emailInvalid": "Format d'e-mail invalide",
+      "codeRequired": "Le code de vérification est obligatoire",
+      "codeLength": "Le code doit avoir 6 chiffres",
+      "passwordRequired": "Le mot de passe est obligatoire",
+      "passwordMin": "Minimum 8 caractères",
+      "passwordWeak": "Doit contenir minuscule, majuscule, chiffre et caractère spécial",
+      "confirmRequired": "Confirmer le mot de passe est obligatoire",
+      "passwordsNoMatch": "Les mots de passe ne correspondent pas"
+    },
+    "success": {
+      "title": "Mot de Passe Réinitialisé!",
+      "subtitle": "Votre mot de passe a été mis à jour avec succès",
+      "message": "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe",
+      "goToLogin": "Aller à la Connexion"
+    },
+    "errors": {
+      "sendError": "Erreur lors de l'envoi de l'e-mail",
+      "resetError": "Erreur lors de la réinitialisation du mot de passe",
+      "connectionError": "Erreur de connexion"
+    }
+  },
+  "codeVerification": {
+    "title": "Vérification du Compte",
+    "subtitle": "Activez votre compte TuEvento",
+    "enterCode": "Entrez le code à 6 chiffres",
+    "sentTo": "Nous avons envoyé un code de vérification à",
+    "code": "Code de vérification",
+    "verify": "Vérifier",
+    "verifying": "Vérification...",
+    "notReceived": "Vous n'avez pas reçu le code?",
+    "resend": "Renvoyer",
+    "resending": "Renvoi...",
+    "checkSpam": "Vérifiez votre dossier spam ou courrier indésirable",
+    "backToLogin": "Retour à la connexion",
+    "validation": {
+      "codeRequired": "Le code de vérification est obligatoire",
+      "codeLength": "Le code doit avoir 6 chiffres",
+      "codeDigits": "Le code ne peut contenir que des chiffres"
+    },
+    "success": {
+      "title": "Compte Activé!",
+      "subtitle": "Votre compte a été vérifié avec succès",
+      "message": "Vous pouvez maintenant vous connecter et profiter de toutes les fonctionnalités de TuEvento",
+      "goToLogin": "Aller à la Connexion"
+    },
+    "errors": {
+      "verificationError": "Erreur lors de la vérification du code",
+      "invalidCode": "Code invalide ou expiré",
+      "resendError": "Erreur lors du renvoi du code",
+      "connectionError": "Erreur de connexion"
+    }
+  },
+  "changePassword": {
+    "title": "Changer le Mot de Passe",
+    "subtitle": "Mettez à jour votre mot de passe d'accès",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "change": "Changer le mot de passe",
+    "changing": "Changement...",
+    "cancel": "Annuler",
+    "passwordStrength": {
+      "veryWeak": "Très faible",
+      "weak": "Faible",
+      "good": "Bon",
+      "strong": "Fort"
+    },
+    "validation": {
+      "currentRequired": "Le mot de passe actuel est obligatoire",
+      "newRequired": "Le nouveau mot de passe est obligatoire",
+      "newMin": "Minimum 8 caractères",
+      "newWeak": "Doit contenir minuscule, majuscule, chiffre et caractère spécial",
+      "confirmRequired": "Confirmer le mot de passe est obligatoire",
+      "passwordsNoMatch": "Les mots de passe ne correspondent pas",
+      "samePassword": "Le nouveau mot de passe doit être différent de l'actuel"
+    },
+    "success": {
+      "title": "Mot de Passe Mis à Jour!",
+      "subtitle": "Votre mot de passe a été changé avec succès",
+      "message": "Pour la sécurité, nous recommandons de vous déconnecter sur d'autres appareils",
+      "close": "Fermer"
+    },
+    "errors": {
+      "changeError": "Erreur lors du changement de mot de passe",
+      "wrongPassword": "Le mot de passe actuel est incorrect",
+      "connectionError": "Erreur de connexion"
+    }
+  },
+  "reactivateAccount": {
+    "title": "Réactiver le Compte",
+    "subtitle": "Votre compte est inactif",
+    "message": "Il semble que votre compte ait été désactivé. Si vous souhaitez réutiliser TuEvento, vous pouvez le réactiver maintenant.",
+    "reactivate": "Réactiver mon compte",
+    "reactivating": "Réactivation...",
+    "cancel": "Annuler",
+    "success": {
+      "title": "Compte Réactivé!",
+      "subtitle": "Votre compte a été activé avec succès",
+      "message": "Vous pouvez maintenant vous connecter et profiter de TuEvento",
+      "goToLogin": "Aller à la Connexion"
+    },
+    "errors": {
+      "reactivateError": "Erreur lors de la réactivation du compte",
+      "emailRequired": "L'e-mail est requis",
+      "connectionError": "Erreur de connexion"
+    }
+  },
+  "completeProfile": {
+    "title": "Compléter le Profil",
+    "subtitle": "Juste une étape de plus",
+    "message": "Pour finaliser votre inscription, nous avons besoin que vous entriez votre nom complet",
+    "fullName": "Nom complet",
+    "continue": "Continuer",
+    "continuing": "Continuation...",
+    "validation": {
+      "nameRequired": "Le nom complet est obligatoire",
+      "nameMin": "Entrez prénom et nom",
+      "nameMinPerWord": "Chaque nom doit avoir au moins 3 caractères",
+      "nameLettersOnly": "Seulement lettres et espaces — pas de chiffres ni symboles",
+      "nameMax": "Maximum 100 caractères"
+    },
+    "errors": {
+      "updateError": "Erreur lors de la mise à jour du profil",
+      "connectionError": "Erreur de connexion"
+    }
   }
 }

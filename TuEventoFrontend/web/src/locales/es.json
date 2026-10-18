@@ -940,5 +940,277 @@
       "adminAdjustment": "Ajuste administrativo",
       "movement": "Movimiento"
     }
+  },
+  "login": {
+    "welcomeBack": "BIENVENIDO DE VUELTA",
+    "signIn": "Iniciar Sesión",
+    "signUp": "Registrarse",
+    "enterDetails": "Ingresa tus datos personales para acceder a tu cuenta.",
+    "fullName": "Nombre completo",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "loading": "Cargando...",
+    "signInButton": "INICIAR SESIÓN",
+    "signUpButton": "REGISTRARSE",
+    "forgotPassword": "¿No recuerdas tu contraseña?",
+    "recoverIt": "Recupérala",
+    "orContinueWith": "o continúa con",
+    "google": "Google",
+    "facebook": "Facebook",
+    "signInWith": "Iniciar sesión con",
+    "noAccount": "¿No tienes una cuenta?",
+    "hasAccount": "¿Ya tienes una cuenta?",
+    "createAccount": "Crear cuenta",
+    "signInLink": "Inicia sesión",
+    "bySigningIn": "Al iniciar sesión, aceptas nuestros",
+    "bySigningUp": "Al registrarte, aceptas nuestros",
+    "termsAndConditions": "Términos y condiciones",
+    "notActivated": "¿No has activado tu cuenta?",
+    "resendActivation": "Reenviar correo de activación",
+    "mustBeGmail": "Debe ser @gmail.com",
+    "passwordStrength": {
+      "veryWeak": "Muy débil",
+      "weak": "Débil",
+      "good": "Buena",
+      "strong": "Fuerte",
+      "mustContain": "Debe contener",
+      "characters": "caracteres",
+      "uppercase": "mayúscula",
+      "lowercase": "minúscula",
+      "number": "número",
+      "specialChar": "carácter especial (@$!%*?&)"
+    },
+    "validation": {
+      "emailRequired": "El correo electrónico es obligatorio",
+      "emailMax": "Máximo 255 caracteres",
+      "emailInvalid": "Formato de correo no válido",
+      "emailGmailOnly": "Solo correos @gmail.com son aceptados",
+      "passwordRequired": "La contraseña es obligatoria",
+      "passwordMin": "Mínimo 8 caracteres",
+      "passwordMax": "Máximo 100 caracteres",
+      "passwordWeak": "Debe contener minúscula, mayúscula, número y carácter especial (@$!%*?&)",
+      "nameRequired": "El nombre completo es obligatorio",
+      "nameMax": "Máximo 100 caracteres",
+      "nameLettersOnly": "Solo letras, espacios y acentos",
+      "nameFirstLast": "Ingresa nombre y apellido",
+      "nameMinPerWord": "Cada nombre y apellido debe tener al menos 3 caracteres",
+      "confirmRequired": "Confirmar contraseña es obligatorio",
+      "confirmMatch": "Las contraseñas no coinciden",
+      "passwordsNoMatch": "Las contraseñas no coinciden"
+    },
+    "errors": {
+      "emailNotRegistered": "Este correo no está registrado en el sistema",
+      "invalidCredentials": "Correo o contraseña incorrectos",
+      "emailAlreadyRegistered": "Este correo ya está registrado y activado. Inicia sesión con tus credenciales.",
+      "emailNotActivated": "Este correo ya está registrado pero no activado. Si quieres activar tu cuenta, haz clic en Reenviar correo de activación",
+      "accountNotActivated": "Cuenta no activada",
+      "accountInactive": "Tu cuenta está inactiva. ¿Deseas reactivarla?",
+      "accountBlocked": "Tu cuenta ha sido bloqueada. Por favor contacta a soporte.",
+      "connectionError": "Error de conexión",
+      "loginError": "Error en login",
+      "registerError": "Error en registro",
+      "googleLoginError": "No se pudo iniciar sesión con Google. Intenta de nuevo.",
+      "resendError": "Error de conexión al reenviar código de activación",
+      "enterEmailResend": "Por favor, ingresa tu correo electrónico para reenviar el código de activación."
+    },
+    "modals": {
+      "termsTitle": "Términos y Condiciones de Uso",
+      "understood": "Entendido",
+      "lastUpdate": "Última actualización:",
+      "successTitle": "¡Registro Exitoso!",
+      "successSubtitle": "Tu cuenta ha sido creada correctamente",
+      "checkInbox": "Revisa tu bandeja de entrada",
+      "sentCodeTo": "Te enviamos un código de activación a",
+      "checkSpam": "¿No lo encuentras? Revisa tu carpeta de spam",
+      "continueVerification": "Continuar a Verificación",
+      "loginSuccessTitle": "¡Bienvenido de Vuelta!",
+      "loginSuccessSubtitle": "Has iniciado sesión exitosamente",
+      "sessionStarted": "Sesión iniciada",
+      "accessAll": "Accede a todas las funcionalidades de TuEvento",
+      "hello": "¡Hola",
+      "goHome": "Ir a Inicio"
+    },
+    "profile": {
+      "title": "Perfil de Usuario",
+      "welcomeBack": "Bienvenido de vuelta",
+      "name": "Nombre",
+      "alias": "Alias",
+      "email": "Correo",
+      "id": "ID",
+      "notDefined": "No definido",
+      "logout": "Cerrar Sesión"
+    },
+    "terms": {
+      "section1Title": "1. Aceptación de los términos",
+      "section1Text": "Al acceder, registrarse o utilizar la aplicación \"Tu Evento\" (en su versión web o Android), desarrollada por CapySoft, el usuario acepta expresamente los presentes Términos y Condiciones.",
+      "section2Title": "2. Definiciones",
+      "app": "Aplicación / Plataforma:",
+      "appDesc": "\"Tu Evento\" en su versión web y móvil.",
+      "user": "Usuario:",
+      "userDesc": "Persona que accede y utiliza la aplicación.",
+      "organizer": "Organizador:",
+      "organizerDesc": "Usuario autorizado para crear y publicar eventos.",
+      "attendee": "Asistente:",
+      "attendeeDesc": "Usuario que reserva o participa en eventos.",
+      "admin": "Administrador:",
+      "adminDesc": "Usuario con permisos especiales de gestión."
+    }
+  },
+  "forgotPassword": {
+    "title": "Recuperar Contraseña",
+    "subtitle": "Te ayudaremos a recuperar el acceso a tu cuenta",
+    "enterEmail": "Ingresa tu correo",
+    "enterEmailDesc": "Te enviaremos un código de verificación para restablecer tu contraseña",
+    "email": "Correo electrónico",
+    "sendCode": "Enviar código",
+    "sending": "Enviando...",
+    "enterCode": "Ingresa el código",
+    "enterCodeDesc": "Revisa tu correo y ingresa el código de 6 dígitos que te enviamos",
+    "verificationCode": "Código de verificación",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "resetPassword": "Restablecer contraseña",
+    "resetting": "Restableciendo...",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "backToLogin": "Volver al inicio de sesión",
+    "passwordStrength": {
+      "veryWeak": "Muy débil",
+      "weak": "Débil",
+      "good": "Buena",
+      "strong": "Fuerte"
+    },
+    "validation": {
+      "emailRequired": "El correo electrónico es obligatorio",
+      "emailInvalid": "Formato de correo no válido",
+      "codeRequired": "El código de verificación es obligatorio",
+      "codeLength": "El código debe tener 6 dígitos",
+      "passwordRequired": "La contraseña es obligatoria",
+      "passwordMin": "Mínimo 8 caracteres",
+      "passwordWeak": "Debe contener minúscula, mayúscula, número y carácter especial",
+      "confirmRequired": "Confirmar contraseña es obligatorio",
+      "passwordsNoMatch": "Las contraseñas no coinciden"
+    },
+    "success": {
+      "title": "¡Contraseña Restablecida!",
+      "subtitle": "Tu contraseña ha sido actualizada correctamente",
+      "message": "Ya puedes iniciar sesión con tu nueva contraseña",
+      "goToLogin": "Ir a Iniciar Sesión"
+    },
+    "errors": {
+      "sendError": "Error al enviar el correo",
+      "resetError": "Error al restablecer contraseña",
+      "connectionError": "Error de conexión"
+    }
+  },
+  "codeVerification": {
+    "title": "Verificación de Cuenta",
+    "subtitle": "Activa tu cuenta de TuEvento",
+    "enterCode": "Ingresa el código de 6 dígitos",
+    "sentTo": "Te enviamos un código de verificación a",
+    "code": "Código de verificación",
+    "verify": "Verificar",
+    "verifying": "Verificando...",
+    "notReceived": "¿No recibiste el código?",
+    "resend": "Reenviar",
+    "resending": "Reenviando...",
+    "checkSpam": "Revisa tu carpeta de spam o correo no deseado",
+    "backToLogin": "Volver al inicio de sesión",
+    "validation": {
+      "codeRequired": "El código de verificación es obligatorio",
+      "codeLength": "El código debe tener 6 dígitos",
+      "codeDigits": "El código solo puede contener números"
+    },
+    "success": {
+      "title": "¡Cuenta Activada!",
+      "subtitle": "Tu cuenta ha sido verificada correctamente",
+      "message": "Ya puedes iniciar sesión y disfrutar de todas las funciones de TuEvento",
+      "goToLogin": "Ir a Iniciar Sesión"
+    },
+    "errors": {
+      "verificationError": "Error al verificar el código",
+      "invalidCode": "Código inválido o expirado",
+      "resendError": "Error al reenviar el código",
+      "connectionError": "Error de conexión"
+    }
+  },
+  "changePassword": {
+    "title": "Cambiar Contraseña",
+    "subtitle": "Actualiza tu contraseña de acceso",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar nueva contraseña",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "change": "Cambiar contraseña",
+    "changing": "Cambiando...",
+    "cancel": "Cancelar",
+    "passwordStrength": {
+      "veryWeak": "Muy débil",
+      "weak": "Débil",
+      "good": "Buena",
+      "strong": "Fuerte"
+    },
+    "validation": {
+      "currentRequired": "La contraseña actual es obligatoria",
+      "newRequired": "La nueva contraseña es obligatoria",
+      "newMin": "Mínimo 8 caracteres",
+      "newWeak": "Debe contener minúscula, mayúscula, número y carácter especial",
+      "confirmRequired": "Confirmar contraseña es obligatorio",
+      "passwordsNoMatch": "Las contraseñas no coinciden",
+      "samePassword": "La nueva contraseña debe ser diferente a la actual"
+    },
+    "success": {
+      "title": "¡Contraseña Actualizada!",
+      "subtitle": "Tu contraseña ha sido cambiada correctamente",
+      "message": "Por seguridad, te recomendamos cerrar sesión en otros dispositivos",
+      "close": "Cerrar"
+    },
+    "errors": {
+      "changeError": "Error al cambiar contraseña",
+      "wrongPassword": "La contraseña actual es incorrecta",
+      "connectionError": "Error de conexión"
+    }
+  },
+  "reactivateAccount": {
+    "title": "Reactivar Cuenta",
+    "subtitle": "Tu cuenta está inactiva",
+    "message": "Parece que tu cuenta fue desactivada. Si deseas volver a usar TuEvento, puedes reactivarla ahora.",
+    "reactivate": "Reactivar mi cuenta",
+    "reactivating": "Reactivando...",
+    "cancel": "Cancelar",
+    "success": {
+      "title": "¡Cuenta Reactivada!",
+      "subtitle": "Tu cuenta ha sido activada correctamente",
+      "message": "Ya puedes iniciar sesión y disfrutar de TuEvento",
+      "goToLogin": "Ir a Iniciar Sesión"
+    },
+    "errors": {
+      "reactivateError": "Error al reactivar la cuenta",
+      "emailRequired": "Se requiere el correo electrónico",
+      "connectionError": "Error de conexión"
+    }
+  },
+  "completeProfile": {
+    "title": "Completar Perfil",
+    "subtitle": "Solo un paso más",
+    "message": "Para finalizar tu registro, necesitamos que ingreses tu nombre completo",
+    "fullName": "Nombre completo",
+    "continue": "Continuar",
+    "continuing": "Continuando...",
+    "validation": {
+      "nameRequired": "El nombre completo es obligatorio",
+      "nameMin": "Ingresa nombre y apellido",
+      "nameMinPerWord": "Cada nombre y apellido debe tener al menos 3 caracteres",
+      "nameLettersOnly": "Solo letras y espacios — sin números ni símbolos",
+      "nameMax": "Máximo 100 caracteres"
+    },
+    "errors": {
+      "updateError": "Error al actualizar el perfil",
+      "connectionError": "Error de conexión"
+    }
   }
 }
