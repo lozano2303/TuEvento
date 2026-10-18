@@ -9,12 +9,13 @@ import lombok.*;
 /**
  * Cuerpo del POST /api/v1/events/{eventId}/ratings.
  *
- * <p>El campo {@code rating} es opcional a nivel de request:
- * el service aplica las reglas de negocio R3/R4 para determinar si
- * el valor se usa, se ignora o debe ser null. El cliente puede enviarlo
- * siempre; el service lo sobreescribe si corresponde.
+ * <p>{@code rating} es opcional:
+ * el service aplica R3/R4 para determinar si se usa. Si se envía
+ * {@code parentRatingId}, el service ignora el rating (respuestas → null).
  *
- * <p>El campo {@code comment} se hace trim() en el service antes de validar.
+ * <p>{@code parentRatingId} es opcional. Si se envía, el comentario
+ * es una respuesta al comentario con ese id. El service valida que
+ * el padre exista, sea del mismo evento y sea principal (parent_id nulo).
  */
 @Getter
 @Setter
@@ -23,7 +24,7 @@ import lombok.*;
 @AllArgsConstructor
 public class AddEventRatingRequest {
 
-    /** 1–5 cuando aplica (R3). Ignorado si es el organizador (R4) o ya tiene uno (R3). */
+    /** 1–5 cuando aplica (R3). Ignorado si es respuesta, organizador (R4) o ya tiene uno (R3). */
     @Min(1)
     @Max(5)
     private Integer rating;
@@ -31,4 +32,10 @@ public class AddEventRatingRequest {
     @NotBlank
     @Size(max = 500)
     private String comment;
+
+    /** Nullable. Si se envía, este comentario es una respuesta al comentario con este id. */
+    private Long parentRatingId;
+    
+    /** Nullable. ID del usuario al que se responde directamente (para menciones). */
+    private Long replyToUserId;
 }

@@ -164,8 +164,8 @@ export default function AdminEventManagement() {
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard',          href: '#'             },
-    { icon: CreditCard,      label: 'Control Financiero', href: '#'             },
+    { icon: LayoutDashboard, label: 'Dashboard',          href: '/admin-dashboard' },
+    { icon: CreditCard,      label: 'Control Financiero', href: '/admin-financial' },
     { icon: Calendar,        label: 'Eventos',            href: '/admin-events', active: true },
     { icon: BarChart2,       label: 'Reportes',           href: '#'             },
     { icon: RefreshCcw,      label: 'Reembolsos',         href: '#'             },
@@ -1016,7 +1016,7 @@ export default function AdminEventManagement() {
                       : <p className="text-sm font-bold text-white">—</p>
                     }
                   </InfoCard>
-                  <InfoCard icon={MapPin} iconColor="text-rose-400" iconBg="bg-rose-500/15" label="Ciudad">
+                  <InfoCard icon={MapPin} iconColor="text-rose-400" iconBg="bg-rose-500/15" label="Sitio">
                     <p className="text-sm font-bold text-white">{modalData.siteName || '—'}</p>
                   </InfoCard>
                   <InfoCard icon={Users} iconColor="text-amber-400" iconBg="bg-amber-500/15" label="Modalidad">

@@ -1,4 +1,4 @@
-import { X, CheckCircle2, DollarSign, Wallet, CreditCard, RefreshCw, AlertCircle, Gift } from 'lucide-react';
+import { X, CheckCircle2, DollarSign, Wallet, CreditCard, RefreshCw, AlertCircle, Gift, MessageSquare, Reply, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { es, enUS, fr, pt } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
@@ -17,9 +17,13 @@ function getDateLocale(lang) {
 const NOTIFICATION_ICONS = {
   PAYMENT_APPROVED: CheckCircle2,
   PAYMENT_REFUNDED: RefreshCw,
-  WALLET_CREDITED: Wallet,
-  WELCOME: Gift,
-  DEFAULT: AlertCircle,
+  WALLET_CREDITED:  Wallet,
+  WELCOME:          Gift,
+  EVENT_PUBLISHED:  Calendar,
+  EVENT_REJECTED:   AlertCircle,
+  NEW_COMMENT:      MessageSquare,
+  NEW_REPLY:        Reply,
+  DEFAULT:          AlertCircle,
 };
 
 function getNotificationIcon(type) {
@@ -185,6 +189,38 @@ export default function NotificationDetailModal({ notification, onClose }) {
                   <span>{t('notifications.details.tips.welcomeItem2')}</span>
                 </li>
               </ul>
+            </div>
+          )}
+
+          {notification.type === 'EVENT_PUBLISHED' && (
+            <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
+              <p className="text-xs text-textMuted">
+                🎉 <strong>¡Enhorabuena!</strong> Tu evento ya es visible para todos los usuarios. Puedes gestionarlo desde <em>Mis eventos</em>.
+              </p>
+            </div>
+          )}
+
+          {notification.type === 'EVENT_REJECTED' && (
+            <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
+              <p className="text-xs text-textMuted">
+                💡 <strong>Tip:</strong> Revisa el motivo de rechazo, corrígelo y vuelve a enviar tu evento a revisión desde <em>Mis eventos</em>.
+              </p>
+            </div>
+          )}
+
+          {notification.type === 'NEW_COMMENT' && (
+            <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
+              <p className="text-xs text-textMuted">
+                💬 <strong>¡Tu evento está generando conversación!</strong> Entra y respóndele — los organizadores que interactúan con su comunidad marcan la diferencia.
+              </p>
+            </div>
+          )}
+
+          {notification.type === 'NEW_REPLY' && (
+            <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
+              <p className="text-xs text-textMuted">
+                🗨️ <strong>¡Te respondieron!</strong> No los dejes hablando solos — entra al evento y continúa la conversación.
+              </p>
             </div>
           )}
 

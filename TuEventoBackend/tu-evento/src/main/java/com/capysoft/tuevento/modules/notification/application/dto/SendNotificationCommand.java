@@ -30,4 +30,9 @@ public class SendNotificationCommand {
      * Null for non-event notifications.
      */
     private final String eventName;
+    /**
+     * Full name of the user who posted a comment or reply.
+     * Used in NEW_COMMENT and NEW_REPLY notification copy.
+     */
+    private final String commenterName;
 }
