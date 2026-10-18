@@ -14,12 +14,12 @@ public interface EventRatingTranslationRepository {
     /**
      * Busca una traducción específica por rating y idioma.
      */
-    Optional<EventRatingTranslation> findByRatingAndLanguage(Long ratingId, Integer languageId);
+    Optional<EventRatingTranslation> findByRatingAndLanguage(Integer ratingId, Integer languageId);
 
     /**
      * Busca todas las traducciones de un rating.
      */
-    List<EventRatingTranslation> findByRating(Long ratingId);
+    List<EventRatingTranslation> findByRating(Integer ratingId);
 
     /**
      * Busca todas las traducciones en un idioma específico.
@@ -34,7 +34,12 @@ public interface EventRatingTranslationRepository {
     /**
      * Busca traducciones por rating y estado.
      */
-    List<EventRatingTranslation> findByRatingAndStatus(Long ratingId, TranslationStatus status);
+    List<EventRatingTranslation> findByRatingAndStatus(Integer ratingId, TranslationStatus status);
+
+    /**
+     * Busca traducciones por múltiples ratings y estado.
+     */
+    List<EventRatingTranslation> findByRatingAndStatus(List<Integer> ratingIds, TranslationStatus status);
 
     /**
      * Guarda una traducción.
@@ -54,10 +59,10 @@ public interface EventRatingTranslationRepository {
     /**
      * Elimina todas las traducciones de un rating.
      */
-    void deleteByRating(Long ratingId);
+    void deleteByRating(Integer ratingId);
 
     /**
      * Verifica si existe una traducción para rating y idioma específicos.
      */
-    boolean existsByRatingAndLanguage(Long ratingId, Integer languageId);
+    boolean existsByRatingAndLanguage(Integer ratingId, Integer languageId);
 }

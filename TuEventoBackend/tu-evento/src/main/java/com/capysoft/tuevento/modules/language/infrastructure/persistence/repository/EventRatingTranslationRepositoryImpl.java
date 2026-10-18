@@ -19,14 +19,14 @@ public class EventRatingTranslationRepositoryImpl implements EventRatingTranslat
     private final EventRatingTranslationMapper mapper;
 
     @Override
-    public Optional<EventRatingTranslation> findByRatingAndLanguage(Long ratingId, Integer languageId) {
-        return jpaRepository.findByRatingIdAndLanguageId(ratingId, languageId)
+    public Optional<EventRatingTranslation> findByRatingAndLanguage(Integer ratingId, Integer languageId) {
+        return jpaRepository.findByRatingIdAndLanguageId(ratingId.longValue(), languageId)
                 .map(mapper::toDomain);
     }
 
     @Override
-    public List<EventRatingTranslation> findByRating(Long ratingId) {
-        return jpaRepository.findByRatingId(ratingId)
+    public List<EventRatingTranslation> findByRating(Integer ratingId) {
+        return jpaRepository.findByRatingId(ratingId.longValue())
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
@@ -50,10 +50,24 @@ public class EventRatingTranslationRepositoryImpl implements EventRatingTranslat
     }
 
     @Override
-    public List<EventRatingTranslation> findByRatingAndStatus(Long ratingId, TranslationStatus status) {
+    public List<EventRatingTranslation> findByRatingAndStatus(Integer ratingId, TranslationStatus status) {
         return findByRating(ratingId)
                 .stream()
                 .filter(translation -> status.equals(translation.getStatus()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<EventRatingTranslation> findByRatingAndStatus(List<Integer> ratingIds, TranslationStatus status) {
+        if (ratingIds == null || ratingIds.isEmpty()) {
+            return List.of();
+        }
+        List<Long> longRatingIds = ratingIds.stream()
+                .map(Integer::longValue)
+                .collect(Collectors.toList());
+        return jpaRepository.findByRatingIdsAndStatus(longRatingIds, status.name())
+                .stream()
+                .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
 
@@ -82,13 +96,13 @@ public class EventRatingTranslationRepositoryImpl implements EventRatingTranslat
     }
 
     @Override
-    public void deleteByRating(Long ratingId) {
-        var entities = jpaRepository.findByRatingId(ratingId);
+    public void deleteByRating(Integer ratingId) {
+        var entities = jpaRepository.findByRatingId(ratingId.longValue());
         jpaRepository.deleteAll(entities);
     }
 
     @Override
-    public boolean existsByRatingAndLanguage(Long ratingId, Integer languageId) {
-        return jpaRepository.findByRatingIdAndLanguageId(ratingId, languageId).isPresent();
+    public boolean existsByRatingAndLanguage(Integer ratingId, Integer languageId) {
+        return jpaRepository.findByRatingIdAndLanguageId(ratingId.longValue(), languageId).isPresent();
     }
 }

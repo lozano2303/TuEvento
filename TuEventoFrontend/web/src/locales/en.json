@@ -17,6 +17,25 @@
     "noResults": "No results found",
     "tryAgain": "Try again"
   },
+  "comments": {
+    "languageRestriction": "You must set your preferred language to Spanish to comment",
+    "translated": "Translated from Spanish",
+    "translating": "Translating comment…",
+    "loadingComments": "Loading comments…",
+    "noComments": "No comments yet",
+    "writeComment": "Write comment…",
+    "reply": "Reply",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "publish": "Publish",
+    "replyTo": "Replying to",
+    "editing": "Editing comment",
+    "organizer": "Organizer",
+    "edited": "Edited",
+    "selectRating": "Select a rating from 1 to 5 stars before publishing"
+  },
   "landing": {
     "hero": {
       "greeting": "Hello, {{name}}!",

@@ -35,9 +35,16 @@ function buildError(body, fallback) {
 /**
  * Obtiene todos los comentarios/ratings visibles de un evento (lista plana).
  * Endpoint público — no requiere autenticación.
+ * 
+ * @param {string|number} eventId - ID del evento
+ * @param {string} [languageCode] - Código de idioma (ej: 'en', 'fr', 'pt'). Opcional.
  */
-export const getEventComments = async (eventId) => {
-  const res = await fetch(`${API_URL}/events/${eventId}/ratings`);
+export const getEventComments = async (eventId, languageCode = null) => {
+  let url = `${API_URL}/events/${eventId}/ratings`;
+  if (languageCode && languageCode !== 'es') {
+    url += `?languageCode=${languageCode}`;
+  }
+  const res = await fetch(url);
   if (!res.ok) throw new Error('Error al obtener los comentarios del evento');
   return res.json();
 };
