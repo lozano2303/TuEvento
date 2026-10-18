@@ -227,6 +227,7 @@ function PropertyRow({ property, currentColor, isCustomized, contrastInfo, onEdi
 
 // ── LogEntry ──────────────────────────────────────────────────────────────────
 function LogEntry({ entry }) {
+  const { t } = useTranslation();
   const date = entry.createdAt
     ? new Date(entry.createdAt).toLocaleString('es-ES', {
         day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
@@ -243,7 +244,7 @@ function LogEntry({ entry }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-semibold text-textPrimary leading-tight">
-          {PROPERTY_LABELS[entry.property] ?? entry.property}
+          {getPropertyLabel(t, entry.property)}
         </p>
         {isUpdate ? (
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -428,7 +429,7 @@ export default function ThemeCustomizePanel({ themeName, onClose }) {
       }, ...prev]);
       if (editing === property) setEditing(null);
     } catch {
-      setGlobalError(`No se pudo restablecer "${PROPERTY_LABELS[property]}".`);
+      setGlobalError(`No se pudo restablecer "${getPropertyLabel(t, property)}".`);
       setTimeout(() => setGlobalError(null), 3000);
     } finally {
       setResetting(null);
@@ -555,7 +556,7 @@ export default function ThemeCustomizePanel({ themeName, onClose }) {
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-sm font-semibold text-textPrimary truncate">
-                              {PROPERTY_LABELS[prop]}
+                              {getPropertyLabel(t, prop)}
                             </span>
                             <ContrastBadge ratio={editorContrastInfo.ratio} />
                           </div>
@@ -580,7 +581,7 @@ export default function ThemeCustomizePanel({ themeName, onClose }) {
                               value={toInputHex(previewColor)}
                               onChange={e => handlePickerChange(e.target.value)}
                               data-no-theme-transition
-                              aria-label={`Selector de color para ${PROPERTY_LABELS[prop]}`}
+                              aria-label={`Selector de color para ${getPropertyLabel(t, prop)}`}
                             />
                           </div>
                           <input
@@ -703,7 +704,7 @@ export default function ThemeCustomizePanel({ themeName, onClose }) {
               ) : log.length === 0 ? (
                 <p className="text-xs text-textMuted text-center py-4">Sin cambios registrados</p>
               ) : (
-                log.map((entry, i) => <LogEntry key={entry.logId ?? i} entry={entry} t={t} />)
+                log.map((entry, i) => <LogEntry key={entry.logId ?? i} entry={entry} />)
               )}
             </div>
           </div>
