@@ -769,5 +769,176 @@
       "adminAdjustment": "Administrative adjustment",
       "movement": "Transaction"
     }
+  },
+  "terms": {
+    "title": "Terms of Use",
+    "subtitle": "Tu Evento",
+    "lastUpdate": "Last update: September 24, 2026",
+    "backToHome": "Back to home",
+    "disclaimer": "This document is a preliminary draft prepared for the academic project \"Tu Evento\" (SENA). It does not constitute certified legal advice. Review by a legal professional is recommended before deployment to production with real users.",
+    "section1": {
+      "title": "1. Acceptance of terms",
+      "p1": "By registering and using the \"Tu Evento\" platform (hereinafter, \"the Platform\"), operated by the CapySoft team, you accept these Terms of Use. If you do not agree with any of these points, we ask you not to use the Platform.",
+      "p2": "Tu Evento is a project developed as part of a SENA (National Learning Service) training program, currently available to users in Colombia."
+    },
+    "section2": {
+      "title": "2. Service description",
+      "intro": "Tu Evento is a web and mobile platform that allows:",
+      "item1": "Organizers: create, publish and manage events, define prices, zones and ticket availability, and manage their sales.",
+      "item2": "Attendees: explore events, buy tickets, receive their digital ticket with QR code, and validate their entry to the event using that code."
+    },
+    "section3": {
+      "title": "3. Account registration",
+      "p1": "To use certain functions of the Platform you must create an account, either with email and password, or by linking your Google or Facebook account.",
+      "intro": "You are responsible for:",
+      "item1": "Providing truthful information when registering.",
+      "item2": "Maintaining the confidentiality of your password.",
+      "item3": "All use made of your account.",
+      "p2": "You can request the deactivation or deletion of your account at any time from the Platform."
+    },
+    "section4": {
+      "title": "4. User-published content",
+      "intro": "If you publish content on the Platform (profile photo, event images, description, etc.), you declare that:",
+      "item1": "You have the necessary rights to publish that content.",
+      "item2": "The content does not infringe third-party rights or Colombian law.",
+      "item3": "The content does not include sexual, violent, discriminatory material or that in any way violates the Platform's community guidelines.",
+      "p1": "All images uploaded to the Platform go through an automatic content moderation process. We reserve the right to reject or remove any content that does not meet these conditions, as well as to suspend accounts that repeatedly violate them."
+    },
+    "section5": {
+      "title": "5. Ticket purchase and payments",
+      "item1": "Payments within the Platform are processed through the Wompi payment gateway. Tu Evento does not store your complete card or payment method data; this processing is performed by Wompi under its own security policies.",
+      "item2": "When buying a ticket, you will receive a digital ticket with a unique QR code, which will be validated at the event entrance.",
+      "item3": "Refund, change or event cancellation policies are defined by each organizer, unless otherwise provided by applicable law. We recommend reviewing the specific conditions of each event before purchasing.",
+      "item4": "Tu Evento acts as a technological intermediary between organizers and attendees; responsibility for the execution, quality and conditions of the event corresponds to the organizer who publishes it."
+    },
+    "section6": {
+      "title": "6. Organizer responsibilities",
+      "intro": "If you publish an event as an organizer, you commit to:",
+      "item1": "Provide truthful information about the event (date, place, price, available capacity).",
+      "item2": "Comply with current regulations applicable to holding public events in Colombia.",
+      "item3": "Respond to attendees for the correct execution of the published event."
+    },
+    "section7": {
+      "title": "7. Platform misuse",
+      "intro": "It is prohibited to:",
+      "item1": "Create fake or fraudulent events.",
+      "item2": "Use the Platform for illegal activities.",
+      "item3": "Attempt to violate system security.",
+      "item4": "Impersonate the identity of another person or organization.",
+      "p1": "Failure to comply with these points may result in the suspension or deletion of your account."
+    },
+    "section8": {
+      "title": "8. Intellectual property",
+      "p1": "The name \"Tu Evento\", its logo, design and interface are property of the CapySoft team. The content you publish (photos, event descriptions) remains your property, but you grant us a license to display it within the Platform for the purpose of operating the service."
+    },
+    "section9": {
+      "title": "9. Limitation of liability",
+      "p1": "Tu Evento is offered \"as is\" (as-is). Being a project in continuous development, we do not guarantee uninterrupted availability of the service. We are not responsible for damages derived from event cancellation by the organizer, nor for misuse that a third party makes of the information published on the Platform."
+    },
+    "section10": {
+      "title": "10. Modifications",
+      "p1": "We may update these Terms of Use at any time. Important changes will be notified within the Platform. Continued use of the service after an update implies acceptance of the new terms."
+    },
+    "section11": {
+      "title": "11. Contact",
+      "p1": "For questions about these terms, you can write to us at:",
+      "email": "soporte.capysoft@gmail.com"
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "subtitle": "Tu Evento",
+    "lastUpdate": "Last update: September 24, 2026",
+    "backToHome": "Back to home",
+    "disclaimer": "This document is a preliminary draft prepared for the academic project \"Tu Evento\" (SENA). It does not constitute certified legal advice. Review by a legal professional is recommended before deployment to production with real users.",
+    "intro": "At Tu Evento, developed by the CapySoft team, we are committed to protecting your personal information in accordance with Law 1581 of 2012 and Decree 1377 of 2013 of Colombia on personal data protection.",
+    "section1": {
+      "title": "1. Data controller",
+      "p1": "Tu Evento (CapySoft team) is responsible for the processing of personal data collected through its web and mobile platform.",
+      "p2": "Contact email for privacy issues:",
+      "email": "soporte.capysoft@gmail.com"
+    },
+    "section2": {
+      "title": "2. Data we collect",
+      "intro": "We collect the following data depending on how you use the Platform:",
+      "register": {
+        "title": "When registering:",
+        "item1": "Email and password (stored encrypted), or",
+        "item2": "Basic data from your Google or Facebook account if you register through them (name and email associated with that account)."
+      },
+      "profile": {
+        "title": "In your profile (optional, you enter them):",
+        "item1": "Name.",
+        "item2": "Description/biography.",
+        "item3": "Profile photo."
+      },
+      "purchase": {
+        "title": "When buying tickets:",
+        "item1": "Purchase history and tickets acquired within the Platform.",
+        "item2": "Payment data: processed directly by our Wompi payment gateway; Tu Evento does not store your complete card data."
+      },
+      "event": {
+        "title": "When publishing an event (organizers):",
+        "item1": "Event information (date, place, price, images) and contact data associated with the event."
+      },
+      "technical": {
+        "title": "Technical data:",
+        "item1": "Language and visual theme preferences within the Platform.",
+        "item2": "Session information necessary to maintain your active login (authentication tokens)."
+      }
+    },
+    "section3": {
+      "title": "3. Purpose of processing",
+      "intro": "We use your data to:",
+      "item1": "Create and manage your account.",
+      "item2": "Allow you to buy or sell event tickets.",
+      "item3": "Generate and validate your tickets with QR code.",
+      "item4": "Send you notifications related to your purchases or events.",
+      "item5": "Moderate published content (profile and event photos) to avoid inappropriate content.",
+      "item6": "Improve the security and functioning of the Platform.",
+      "p1": "We do not use your data for purposes other than those described here without your consent."
+    },
+    "section4": {
+      "title": "4. Storage and retention",
+      "item1": "The images you upload (profile photo, event images) are stored in our file storage infrastructure while your account or the corresponding event remain active.",
+      "item2": "If you delete your account or an event, we will proceed to delete or anonymize the associated data, except those we must keep by legal obligation (for example, payment transaction records)."
+    },
+    "section5": {
+      "title": "5. With whom we share your data",
+      "item1": "Wompi: for payment processing, under its own privacy and security policies.",
+      "item2": "Authentication providers (Google, Facebook): only to validate your identity when logging in with those accounts, if you choose to use them.",
+      "item3": "We do not sell or share your personal data with third parties for advertising purposes."
+    },
+    "section6": {
+      "title": "6. Your rights",
+      "intro": "As the owner of your data, at any time you can:",
+      "item1": "Request access to the data we have about you.",
+      "item2": "Request correction of inaccurate data.",
+      "item3": "Request deletion of your account and personal data.",
+      "item4": "Revoke your authorization for the processing of your data, unless there is a legal obligation to keep them.",
+      "p1": "You can exercise these rights from your profile on the Platform or by writing to",
+      "email": "soporte.capysoft@gmail.com"
+    },
+    "section7": {
+      "title": "7. Information security",
+      "intro": "We implement technical measures to protect your information, including:",
+      "item1": "Passwords stored in encrypted form (never in plain text).",
+      "item2": "Authentication through tokens (JWT) with secure expiration and renewal.",
+      "item3": "Automatic content moderation to prevent publication of inappropriate images.",
+      "p1": "No system is 100% infallible; in case of a security incident affecting your data, we will notify you as required by applicable regulations."
+    },
+    "section8": {
+      "title": "8. Minors",
+      "p1": "The Platform is not directed at minors under 18 years of age. If you are aware that a minor has created an account without authorization from their parents or guardians, contact us to proceed with its deletion."
+    },
+    "section9": {
+      "title": "9. Changes to this policy",
+      "p1": "We may update this Privacy Policy. Any relevant change will be notified within the Platform before it takes effect."
+    },
+    "section10": {
+      "title": "10. Contact",
+      "p1": "To exercise your rights or resolve questions about the processing of your data:",
+      "email": "soporte.capysoft@gmail.com"
+    }
   }
 }

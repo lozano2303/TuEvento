@@ -769,5 +769,176 @@
       "adminAdjustment": "Ajuste administrativo",
       "movement": "Movimento"
     }
+  },
+  "terms": {
+    "title": "Termos de Uso",
+    "subtitle": "Tu Evento",
+    "lastUpdate": "Última atualização: 24 de setembro de 2026",
+    "backToHome": "Voltar ao início",
+    "disclaimer": "Este documento é um rascunho preliminar elaborado para fins do projeto acadêmico \"Tu Evento\" (SENA). Não constitui assessoria jurídica certificada. Recomenda-se revisão por um profissional de direito antes de um lançamento em produção com usuários reais.",
+    "section1": {
+      "title": "1. Aceitação dos termos",
+      "p1": "Ao se registrar e usar a plataforma \"Tu Evento\" (doravante, \"a Plataforma\"), operada pela equipe CapySoft, você aceita os presentes Termos de Uso. Se você não concorda com algum destes pontos, pedimos que não utilize a Plataforma.",
+      "p2": "Tu Evento é um projeto desenvolvido no âmbito de uma formação do SENA (Serviço Nacional de Aprendizagem), atualmente disponível para usuários na Colômbia."
+    },
+    "section2": {
+      "title": "2. Descrição do serviço",
+      "intro": "Tu Evento é uma plataforma web e móvel que permite:",
+      "item1": "Aos organizadores: criar, publicar e administrar eventos, definir preços, zonas e disponibilidade de ingressos, e gerenciar sua venda.",
+      "item2": "Aos participantes: explorar eventos, comprar ingressos, receber seu ingresso digital com código QR, e validar sua entrada no evento usando esse código."
+    },
+    "section3": {
+      "title": "3. Registro de conta",
+      "p1": "Para usar certas funções da Plataforma você deve criar uma conta, seja com e-mail e senha, ou vinculando sua conta do Google ou Facebook.",
+      "intro": "Você é responsável por:",
+      "item1": "Fornecer informações verdadeiras ao se registrar.",
+      "item2": "Manter a confidencialidade de sua senha.",
+      "item3": "Todo uso feito de sua conta.",
+      "p2": "Você pode solicitar a desativação ou exclusão de sua conta a qualquer momento pela Plataforma."
+    },
+    "section4": {
+      "title": "4. Conteúdo publicado pelos usuários",
+      "intro": "Se você publicar conteúdo na Plataforma (foto de perfil, imagens de evento, descrição, etc.), você declara que:",
+      "item1": "Você tem os direitos necessários para publicar esse conteúdo.",
+      "item2": "O conteúdo não infringe direitos de terceiros nem a lei colombiana.",
+      "item3": "O conteúdo não inclui material sexual, violento, discriminatório ou que de qualquer forma viole as diretrizes da comunidade da Plataforma.",
+      "p1": "Todas as imagens enviadas para a Plataforma passam por um processo automático de moderação de conteúdo. Reservamo-nos o direito de rejeitar ou remover qualquer conteúdo que não atenda a estas condições, bem como de suspender contas que as violem repetidamente."
+    },
+    "section5": {
+      "title": "5. Compra de ingressos e pagamentos",
+      "item1": "Os pagamentos dentro da Plataforma são processados através da gateway de pagamento Wompi. Tu Evento não armazena os dados completos de seu cartão ou meio de pagamento; esse processamento é realizado pela Wompi sob suas próprias políticas de segurança.",
+      "item2": "Ao comprar um ingresso, você receberá um ingresso digital com um código QR único, que será validado na entrada do evento.",
+      "item3": "As políticas de reembolso, alterações ou cancelamento de um evento são definidas por cada organizador, salvo disposição em contrário da lei aplicável. Recomendamos verificar as condições específicas de cada evento antes de comprar.",
+      "item4": "Tu Evento atua como intermediário tecnológico entre organizadores e participantes; a responsabilidade pela realização, qualidade e condições do evento corresponde ao organizador que o publica."
+    },
+    "section6": {
+      "title": "6. Responsabilidades do organizador",
+      "intro": "Se você publicar um evento como organizador, você se compromete a:",
+      "item1": "Fornecer informações verdadeiras sobre o evento (data, local, preço, capacidade disponível).",
+      "item2": "Cumprir com a regulamentação vigente aplicável à realização de eventos públicos na Colômbia.",
+      "item3": "Responder aos participantes pela correta execução do evento publicado."
+    },
+    "section7": {
+      "title": "7. Uso indevido da plataforma",
+      "intro": "É proibido:",
+      "item1": "Criar eventos falsos ou fraudulentos.",
+      "item2": "Usar a Plataforma para atividades ilegais.",
+      "item3": "Tentar violar a segurança do sistema.",
+      "item4": "Personificar a identidade de outra pessoa ou organização.",
+      "p1": "O descumprimento destes pontos pode resultar na suspensão ou exclusão de sua conta."
+    },
+    "section8": {
+      "title": "8. Propriedade intelectual",
+      "p1": "O nome \"Tu Evento\", seu logo, design e interface são propriedade da equipe CapySoft. O conteúdo que você publica (fotos, descrições de eventos) continua sendo sua propriedade, mas você nos concede uma licença para exibi-lo dentro da Plataforma com o objetivo de operar o serviço."
+    },
+    "section9": {
+      "title": "9. Limitação de responsabilidade",
+      "p1": "Tu Evento é oferecido \"como está\" (as-is). Sendo um projeto em desenvolvimento contínuo, não garantimos disponibilidade ininterrupta do serviço. Não somos responsáveis por danos derivados do cancelamento de um evento pelo organizador, nem pelo uso indevido que um terceiro faça das informações publicadas na Plataforma."
+    },
+    "section10": {
+      "title": "10. Modificações",
+      "p1": "Podemos atualizar estes Termos de Uso a qualquer momento. Mudanças importantes serão notificadas dentro da Plataforma. O uso continuado do serviço após uma atualização implica na aceitação dos novos termos."
+    },
+    "section11": {
+      "title": "11. Contato",
+      "p1": "Para dúvidas sobre estes termos, você pode nos escrever em:",
+      "email": "soporte.capysoft@gmail.com"
+    }
+  },
+  "privacy": {
+    "title": "Política de Privacidade",
+    "subtitle": "Tu Evento",
+    "lastUpdate": "Última atualização: 24 de setembro de 2026",
+    "backToHome": "Voltar ao início",
+    "disclaimer": "Este documento é um rascunho preliminar elaborado para fins do projeto acadêmico \"Tu Evento\" (SENA). Não constitui assessoria jurídica certificada. Recomenda-se revisão por um profissional de direito antes de um lançamento em produção com usuários reais.",
+    "intro": "Na Tu Evento, desenvolvido pela equipe CapySoft, nos comprometemos a proteger suas informações pessoais de acordo com a Lei 1581 de 2012 e o Decreto 1377 de 2013 da Colômbia sobre proteção de dados pessoais.",
+    "section1": {
+      "title": "1. Responsável pelo tratamento de dados",
+      "p1": "Tu Evento (equipe CapySoft) é responsável pelo tratamento dos dados pessoais coletados através de sua plataforma web e móvel.",
+      "p2": "E-mail de contato para assuntos de privacidade:",
+      "email": "soporte.capysoft@gmail.com"
+    },
+    "section2": {
+      "title": "2. Dados que coletamos",
+      "intro": "Coletamos os seguintes dados dependendo de como você usa a Plataforma:",
+      "register": {
+        "title": "Ao se registrar:",
+        "item1": "E-mail e senha (armazenados de forma criptografada), ou",
+        "item2": "Dados básicos de sua conta do Google ou Facebook se você se registrar através delas (nome e e-mail associados a essa conta)."
+      },
+      "profile": {
+        "title": "Em seu perfil (opcionais, você os insere):",
+        "item1": "Nome.",
+        "item2": "Descrição/biografia.",
+        "item3": "Foto de perfil."
+      },
+      "purchase": {
+        "title": "Ao comprar ingressos:",
+        "item1": "Histórico de compras e ingressos adquiridos dentro da Plataforma.",
+        "item2": "Dados de pagamento: processados diretamente por nossa gateway de pagamento Wompi; Tu Evento não armazena os dados completos de seu cartão."
+      },
+      "event": {
+        "title": "Ao publicar um evento (organizadores):",
+        "item1": "Informações do evento (data, local, preço, imagens) e dados de contato associados ao evento."
+      },
+      "technical": {
+        "title": "Dados técnicos:",
+        "item1": "Preferências de idioma e tema visual dentro da Plataforma.",
+        "item2": "Informações de sessão necessárias para manter seu login ativo (tokens de autenticação)."
+      }
+    },
+    "section3": {
+      "title": "3. Finalidade do tratamento",
+      "intro": "Usamos seus dados para:",
+      "item1": "Criar e gerenciar sua conta.",
+      "item2": "Permitir que você compre ou venda ingressos de eventos.",
+      "item3": "Gerar e validar seus ingressos com código QR.",
+      "item4": "Enviar notificações relacionadas às suas compras ou eventos.",
+      "item5": "Moderar o conteúdo publicado (fotos de perfil e de eventos) para evitar conteúdo inadequado.",
+      "item6": "Melhorar a segurança e o funcionamento da Plataforma.",
+      "p1": "Não usamos seus dados para fins diferentes dos descritos aqui sem seu consentimento."
+    },
+    "section4": {
+      "title": "4. Armazenamento e conservação",
+      "item1": "As imagens que você envia (foto de perfil, imagens de eventos) são armazenadas em nossa infraestrutura de armazenamento de arquivos enquanto sua conta ou o evento correspondente permanecerem ativos.",
+      "item2": "Se você excluir sua conta ou um evento, procederemos à exclusão ou anonimização dos dados associados, exceto aqueles que devemos conservar por obrigação legal (por exemplo, registros de transações de pagamento)."
+    },
+    "section5": {
+      "title": "5. Com quem compartilhamos seus dados",
+      "item1": "Wompi: para o processamento de pagamentos, sob suas próprias políticas de privacidade e segurança.",
+      "item2": "Provedores de autenticação (Google, Facebook): apenas para validar sua identidade ao fazer login com essas contas, se você optar por usá-las.",
+      "item3": "Não vendemos nem compartilhamos seus dados pessoais com terceiros para fins publicitários."
+    },
+    "section6": {
+      "title": "6. Seus direitos",
+      "intro": "Como titular de seus dados, a qualquer momento você pode:",
+      "item1": "Solicitar acesso aos dados que temos sobre você.",
+      "item2": "Solicitar a correção de dados inexatos.",
+      "item3": "Solicitar a exclusão de sua conta e seus dados pessoais.",
+      "item4": "Revogar sua autorização para o tratamento de seus dados, salvo se houver obrigação legal de conservá-los.",
+      "p1": "Você pode exercer estes direitos através de seu perfil na Plataforma ou escrevendo para",
+      "email": "soporte.capysoft@gmail.com"
+    },
+    "section7": {
+      "title": "7. Segurança da informação",
+      "intro": "Implementamos medidas técnicas para proteger suas informações, incluindo:",
+      "item1": "Senhas armazenadas de forma criptografada (nunca em texto simples).",
+      "item2": "Autenticação através de tokens (JWT) com expiração e renovação seguras.",
+      "item3": "Moderação automática de conteúdo para prevenir a publicação de imagens inadequadas.",
+      "p1": "Nenhum sistema é 100% infalível; em caso de incidente de segurança que afete seus dados, notificaremos conforme exigido pela regulamentação aplicável."
+    },
+    "section8": {
+      "title": "8. Menores de idade",
+      "p1": "A Plataforma não é direcionada a menores de 18 anos. Se você tiver conhecimento de que um menor criou uma conta sem autorização de seus pais ou responsáveis, entre em contato conosco para proceder com sua exclusão."
+    },
+    "section9": {
+      "title": "9. Alterações nesta política",
+      "p1": "Podemos atualizar esta Política de Privacidade. Qualquer alteração relevante será notificada dentro da Plataforma antes que entre em vigor."
+    },
+    "section10": {
+      "title": "10. Contato",
+      "p1": "Para exercer seus direitos ou resolver dúvidas sobre o tratamento de seus dados:",
+      "email": "soporte.capysoft@gmail.com"
+    }
   }
 }
