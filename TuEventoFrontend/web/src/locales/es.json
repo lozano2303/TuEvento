@@ -1056,7 +1056,34 @@
       "attendee": "Asistente:",
       "attendeeDesc": "Usuario que reserva o participa en eventos.",
       "admin": "Administrador:",
-      "adminDesc": "Usuario con permisos especiales de gestión."
+      "adminDesc": "Usuario con permisos especiales de gestión.",
+      "section3Title": "3. Uso de la plataforma",
+      "section3Item1": "Requiere conexión estable a Internet.",
+      "section3Item2": "Los usuarios deben registrarse con datos verídicos.",
+      "section3Item3": "El sistema no gestiona pagos en línea.",
+      "section4Title": "4. Registro y cuentas",
+      "section4Item1": "Cuenta con correo válido y contraseña segura.",
+      "section4Item2": "Posible registro mediante Google/Facebook (OAuth).",
+      "section4Item3": "El usuario es responsable de sus credenciales.",
+      "section5Title": "5. Reservas y tickets",
+      "section5Item1": "Reserva en estado pendiente hasta validación de pago.",
+      "section5Item2": "Se genera un código QR único e intransferible al confirmar.",
+      "section5Item3": "La falsificación de QR implica denegación de acceso.",
+      "section6Title": "6. Responsabilidades del usuario",
+      "section6Item1": "Uso correcto y lícito de la plataforma.",
+      "section6Item2": "No difundir información falsa u ofensiva.",
+      "section6Item3": "No vulnerar la seguridad del sistema.",
+      "section7Title": "7. Limitación de responsabilidades",
+      "section7Text": "CapySoft no se hace responsable de fallas de conexión, información falsa de terceros ni cancelaciones ajenas al control de la plataforma.",
+      "section8Title": "8. Seguridad y privacidad",
+      "section8Item1": "Autenticación de dos pasos en registro normal.",
+      "section8Item2": "En OAuth, la seguridad depende del proveedor externo.",
+      "section9Title": "9. Propiedad intelectual",
+      "section9Text": "Prohibida la reproducción o modificación sin autorización expresa.",
+      "section10Title": "10. Modificaciones",
+      "section10Text": "CapySoft puede modificar estos Términos en cualquier momento.",
+      "section11Title": "11. Legislación aplicable",
+      "section11Text": "Regidos por las leyes vigentes en Colombia."
     }
   },
   "forgotPassword": {
@@ -1182,6 +1209,17 @@
     "reactivate": "Reactivar mi cuenta",
     "reactivating": "Reactivando...",
     "cancel": "Cancelar",
+    "verifying": "Verificando tu código de reactivación…",
+    "accountReactivated": "¡Cuenta reactivada!",
+    "accountActive": "Tu cuenta está activa de nuevo.",
+    "canLogin": "Ya puedes iniciar sesión con tu correo y contraseña habituales. Todos tus datos se conservaron intactos.",
+    "codeInvalidated": "El código de reactivación ha sido invalidado y no puede volver a usarse.",
+    "goToLogin": "Ir al inicio de sesión",
+    "codeNotValid": "Código no válido",
+    "couldNotReactivate": "No se pudo reactivar la cuenta.",
+    "requestNewCode": "¿Quieres solicitar un nuevo código?",
+    "emailSent": "Correo enviado. Si el correo corresponde a una cuenta desactivada, recibirás el nuevo código en minutos.",
+    "backToLogin": "Volver al inicio de sesión",
     "success": {
       "title": "¡Cuenta Reactivada!",
       "subtitle": "Tu cuenta ha sido activada correctamente",
@@ -1191,25 +1229,34 @@
     "errors": {
       "reactivateError": "Error al reactivar la cuenta",
       "emailRequired": "Se requiere el correo electrónico",
-      "connectionError": "Error de conexión"
+      "connectionError": "Error de conexión",
+      "expired": "El código de reactivación expiró. Los códigos son válidos por 30 minutos. Solicita uno nuevo a continuación.",
+      "used": "Este código ya fue utilizado. Si tu cuenta sigue sin acceso, solicita un nuevo código.",
+      "invalid": "El código de reactivación no es válido. Asegúrate de copiar el código completo del correo.",
+      "generic": "No se pudo reactivar la cuenta. Por favor intenta de nuevo.",
+      "resendError": "No se pudo enviar el correo. Intenta de nuevo."
     }
   },
   "completeProfile": {
     "title": "Completar Perfil",
+    "updateName": "Actualiza tu nombre",
+    "welcome": "¡Bienvenido/a!",
     "subtitle": "Solo un paso más",
     "message": "Para finalizar tu registro, necesitamos que ingreses tu nombre completo",
+    "invalidName": "Tu nombre actual no tiene el formato correcto. Ingresa tu nombre completo real para continuar.",
     "fullName": "Nombre completo",
+    "fullNamePlaceholder": "Ej. María García",
     "continue": "Continuar",
-    "continuing": "Continuando...",
+    "continuing": "Guardando…",
     "validation": {
-      "nameRequired": "El nombre completo es obligatorio",
-      "nameMin": "Ingresa nombre y apellido",
-      "nameMinPerWord": "Cada nombre y apellido debe tener al menos 3 caracteres",
-      "nameLettersOnly": "Solo letras y espacios — sin números ni símbolos",
-      "nameMax": "Máximo 100 caracteres"
+      "nameRequired": "El nombre completo es obligatorio.",
+      "nameMin": "Ingresa nombre y apellido.",
+      "nameMinPerWord": "Cada nombre y apellido debe tener al menos 3 caracteres.",
+      "nameLettersOnly": "Solo letras y espacios — sin números ni símbolos.",
+      "nameMax": "El nombre no puede superar los 100 caracteres."
     },
     "errors": {
-      "updateError": "Error al actualizar el perfil",
+      "updateError": "No se pudo guardar el nombre. Intenta de nuevo.",
       "connectionError": "Error de conexión"
     }
   }

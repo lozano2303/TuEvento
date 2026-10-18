@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import ChangePassword from "../pages/ChangePassword.jsx";
 import { getEventsByUser } from "../services/EventService.js";
 import NotificationBell from "../components/common/NotificationBell.jsx";
+import LanguageSelector from "../components/common/LanguageSelector.jsx";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -122,9 +123,12 @@ const displayName = (() => {
             )}
           </div>
 
-          {/* Derecha: notificaciones + usuario + hamburguesa */}
+          {/* Derecha: selector idioma (sin sesión) + notificaciones + usuario + hamburguesa */}
           <div className="flex items-center gap-2">
             
+            {/* Selector de idioma (solo sin sesión) */}
+            {!userData && <LanguageSelector position="inline" compact />}
+
             {/* Campana de notificaciones (solo si hay usuario) */}
             {userData && <NotificationBell />}
 

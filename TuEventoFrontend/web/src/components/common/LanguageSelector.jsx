@@ -9,10 +9,11 @@ import { useTranslation } from 'react-i18next';
  * de la UI sin afectar su perfil (porque no hay sesión activa).
  * 
  * Props:
- *   - position: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' (default: 'top-right')
+ *   - position: 'fixed-top-right' | 'fixed-top-left' | 'inline' (default: 'fixed-top-right')
  *   - className: clases CSS adicionales
+ *   - compact: boolean - versión más compacta para navbar
  */
-export default function LanguageSelector({ position = 'top-right', className = '' }) {
+export default function LanguageSelector({ position = 'fixed-top-right', className = '', compact = false }) {
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -49,21 +50,24 @@ export default function LanguageSelector({ position = 'top-right', className = '
   }, [isOpen]);
 
   const positionClasses = {
-    'top-right': 'top-4 right-4',
-    'top-left': 'top-4 left-4',
-    'bottom-right': 'bottom-4 right-4',
-    'bottom-left': 'bottom-4 left-4',
+    'fixed-top-right': 'fixed top-4 right-4 z-50',
+    'fixed-top-left': 'fixed top-4 left-4 z-50',
+    'inline': 'relative',
   };
+
+  const buttonSize = compact ? 'px-2.5 py-1.5' : 'px-3 py-2';
+  const flagSize = compact ? 'text-lg' : 'text-xl';
+  const iconSize = compact ? 14 : 16;
 
   return (
     <div 
       ref={dropdownRef}
-      className={`fixed ${positionClasses[position]} z-50 ${className}`}
+      className={`${positionClasses[position]} ${className}`}
     >
       {/* Botón del selector */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+        className={`flex items-center gap-2 ${buttonSize} rounded-lg transition-all duration-200 hover:scale-105`}
         style={{
           background: 'var(--color-surface)',
           border: '1px solid var(--color-surfaceAlt)',
@@ -71,8 +75,8 @@ export default function LanguageSelector({ position = 'top-right', className = '
         }}
         aria-label="Seleccionar idioma"
       >
-        <span className="text-xl">{currentLanguage.flag}</span>
-        <Globe size={16} className="opacity-70" />
+        <span className={flagSize}>{currentLanguage.flag}</span>
+        <Globe size={iconSize} className="opacity-70" />
       </button>
 
       {/* Dropdown */}
@@ -82,7 +86,7 @@ export default function LanguageSelector({ position = 'top-right', className = '
           style={{
             background: 'var(--color-surface)',
             border: '1px solid var(--color-surfaceAlt)',
-            right: position.includes('right') ? 0 : 'auto',
+            right: position.includes('right') || position === 'inline' ? 0 : 'auto',
             left: position.includes('left') ? 0 : 'auto',
           }}
         >
