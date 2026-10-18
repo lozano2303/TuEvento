@@ -769,5 +769,176 @@
       "adminAdjustment": "Ajustement administratif",
       "movement": "Transaction"
     }
+  },
+  "terms": {
+    "title": "Conditions d'Utilisation",
+    "subtitle": "Tu Evento",
+    "lastUpdate": "Dernière mise à jour: 24 septembre 2026",
+    "backToHome": "Retour à l'accueil",
+    "disclaimer": "Ce document est un projet préliminaire élaboré pour le projet académique \"Tu Evento\" (SENA). Il ne constitue pas un conseil juridique certifié. Un examen par un professionnel du droit est recommandé avant un déploiement en production avec de vrais utilisateurs.",
+    "section1": {
+      "title": "1. Acceptation des conditions",
+      "p1": "En vous inscrivant et en utilisant la plateforme \"Tu Evento\" (ci-après, \"la Plateforme\"), exploitée par l'équipe CapySoft, vous acceptez les présentes Conditions d'Utilisation. Si vous n'êtes pas d'accord avec l'un de ces points, nous vous demandons de ne pas utiliser la Plateforme.",
+      "p2": "Tu Evento est un projet développé dans le cadre d'une formation du SENA (Service National d'Apprentissage), actuellement disponible pour les utilisateurs en Colombie."
+    },
+    "section2": {
+      "title": "2. Description du service",
+      "intro": "Tu Evento est une plateforme web et mobile qui permet:",
+      "item1": "Aux organisateurs: créer, publier et gérer des événements, définir les prix, les zones et la disponibilité des billets, et gérer leur vente.",
+      "item2": "Aux participants: explorer les événements, acheter des billets, recevoir leur billet numérique avec code QR, et valider leur entrée à l'événement avec ce code."
+    },
+    "section3": {
+      "title": "3. Inscription de compte",
+      "p1": "Pour utiliser certaines fonctions de la Plateforme, vous devez créer un compte, soit avec un e-mail et un mot de passe, soit en liant votre compte Google ou Facebook.",
+      "intro": "Vous êtes responsable de:",
+      "item1": "Fournir des informations véridiques lors de l'inscription.",
+      "item2": "Maintenir la confidentialité de votre mot de passe.",
+      "item3": "Toute utilisation faite de votre compte.",
+      "p2": "Vous pouvez demander la désactivation ou la suppression de votre compte à tout moment depuis la Plateforme."
+    },
+    "section4": {
+      "title": "4. Contenu publié par les utilisateurs",
+      "intro": "Si vous publiez du contenu sur la Plateforme (photo de profil, images d'événement, description, etc.), vous déclarez que:",
+      "item1": "Vous avez les droits nécessaires pour publier ce contenu.",
+      "item2": "Le contenu ne viole pas les droits de tiers ni la loi colombienne.",
+      "item3": "Le contenu n'inclut pas de matériel sexuel, violent, discriminatoire ou qui viole de quelque manière que ce soit les directives communautaires de la Plateforme.",
+      "p1": "Toutes les images téléchargées sur la Plateforme passent par un processus automatique de modération de contenu. Nous nous réservons le droit de rejeter ou de supprimer tout contenu qui ne respecte pas ces conditions, ainsi que de suspendre les comptes qui les violent de manière répétée."
+    },
+    "section5": {
+      "title": "5. Achat de billets et paiements",
+      "item1": "Les paiements au sein de la Plateforme sont traités via la passerelle de paiement Wompi. Tu Evento ne stocke pas les données complètes de votre carte ou moyen de paiement; ce traitement est effectué par Wompi selon ses propres politiques de sécurité.",
+      "item2": "Lors de l'achat d'un billet, vous recevrez un billet numérique avec un code QR unique, qui sera validé à l'entrée de l'événement.",
+      "item3": "Les politiques de remboursement, de modification ou d'annulation d'un événement sont définies par chaque organisateur, sauf disposition contraire de la loi applicable. Nous recommandons de vérifier les conditions spécifiques de chaque événement avant d'acheter.",
+      "item4": "Tu Evento agit comme intermédiaire technologique entre organisateurs et participants; la responsabilité de la réalisation, de la qualité et des conditions de l'événement incombe à l'organisateur qui le publie."
+    },
+    "section6": {
+      "title": "6. Responsabilités de l'organisateur",
+      "intro": "Si vous publiez un événement en tant qu'organisateur, vous vous engagez à:",
+      "item1": "Fournir des informations véridiques sur l'événement (date, lieu, prix, capacité disponible).",
+      "item2": "Respecter la réglementation en vigueur applicable à la tenue d'événements publics en Colombie.",
+      "item3": "Répondre aux participants de la bonne exécution de l'événement publié."
+    },
+    "section7": {
+      "title": "7. Utilisation abusive de la plateforme",
+      "intro": "Il est interdit de:",
+      "item1": "Créer des événements faux ou frauduleux.",
+      "item2": "Utiliser la Plateforme pour des activités illégales.",
+      "item3": "Tenter de violer la sécurité du système.",
+      "item4": "Usurper l'identité d'une autre personne ou organisation.",
+      "p1": "Le non-respect de ces points peut entraîner la suspension ou la suppression de votre compte."
+    },
+    "section8": {
+      "title": "8. Propriété intellectuelle",
+      "p1": "Le nom \"Tu Evento\", son logo, son design et son interface sont la propriété de l'équipe CapySoft. Le contenu que vous publiez (photos, descriptions d'événements) reste votre propriété, mais vous nous accordez une licence pour l'afficher au sein de la Plateforme dans le but d'exploiter le service."
+    },
+    "section9": {
+      "title": "9. Limitation de responsabilité",
+      "p1": "Tu Evento est offert \"tel quel\" (as-is). Étant un projet en développement continu, nous ne garantissons pas la disponibilité ininterrompue du service. Nous ne sommes pas responsables des dommages résultant de l'annulation d'un événement par l'organisateur, ni de l'utilisation abusive que ferait un tiers des informations publiées sur la Plateforme."
+    },
+    "section10": {
+      "title": "10. Modifications",
+      "p1": "Nous pouvons mettre à jour ces Conditions d'Utilisation à tout moment. Les changements importants seront notifiés au sein de la Plateforme. L'utilisation continue du service après une mise à jour implique l'acceptation des nouvelles conditions."
+    },
+    "section11": {
+      "title": "11. Contact",
+      "p1": "Pour des questions sur ces conditions, vous pouvez nous écrire à:",
+      "email": "soporte.capysoft@gmail.com"
+    }
+  },
+  "privacy": {
+    "title": "Politique de Confidentialité",
+    "subtitle": "Tu Evento",
+    "lastUpdate": "Dernière mise à jour: 24 septembre 2026",
+    "backToHome": "Retour à l'accueil",
+    "disclaimer": "Ce document est un projet préliminaire élaboré pour le projet académique \"Tu Evento\" (SENA). Il ne constitue pas un conseil juridique certifié. Un examen par un professionnel du droit est recommandé avant un déploiement en production avec de vrais utilisateurs.",
+    "intro": "Chez Tu Evento, développé par l'équipe CapySoft, nous nous engageons à protéger vos informations personnelles conformément à la loi 1581 de 2012 et au décret 1377 de 2013 de Colombie sur la protection des données personnelles.",
+    "section1": {
+      "title": "1. Responsable du traitement des données",
+      "p1": "Tu Evento (équipe CapySoft) est responsable du traitement des données personnelles collectées via sa plateforme web et mobile.",
+      "p2": "E-mail de contact pour les questions de confidentialité:",
+      "email": "soporte.capysoft@gmail.com"
+    },
+    "section2": {
+      "title": "2. Données que nous collectons",
+      "intro": "Nous collectons les données suivantes selon votre utilisation de la Plateforme:",
+      "register": {
+        "title": "Lors de l'inscription:",
+        "item1": "E-mail et mot de passe (stockés de manière cryptée), ou",
+        "item2": "Données de base de votre compte Google ou Facebook si vous vous inscrivez via ces comptes (nom et e-mail associés à ce compte)."
+      },
+      "profile": {
+        "title": "Dans votre profil (facultatif, vous les saisissez):",
+        "item1": "Nom.",
+        "item2": "Description/biographie.",
+        "item3": "Photo de profil."
+      },
+      "purchase": {
+        "title": "Lors de l'achat de billets:",
+        "item1": "Historique des achats et billets acquis au sein de la Plateforme.",
+        "item2": "Données de paiement: traitées directement par notre passerelle de paiement Wompi; Tu Evento ne stocke pas les données complètes de votre carte."
+      },
+      "event": {
+        "title": "Lors de la publication d'un événement (organisateurs):",
+        "item1": "Informations de l'événement (date, lieu, prix, images) et données de contact associées à l'événement."
+      },
+      "technical": {
+        "title": "Données techniques:",
+        "item1": "Préférences de langue et de thème visuel au sein de la Plateforme.",
+        "item2": "Informations de session nécessaires pour maintenir votre connexion active (jetons d'authentification)."
+      }
+    },
+    "section3": {
+      "title": "3. Finalité du traitement",
+      "intro": "Nous utilisons vos données pour:",
+      "item1": "Créer et gérer votre compte.",
+      "item2": "Vous permettre d'acheter ou de vendre des billets d'événements.",
+      "item3": "Générer et valider vos billets avec code QR.",
+      "item4": "Vous envoyer des notifications liées à vos achats ou événements.",
+      "item5": "Modérer le contenu publié (photos de profil et d'événements) pour éviter le contenu inapproprié.",
+      "item6": "Améliorer la sécurité et le fonctionnement de la Plateforme.",
+      "p1": "Nous n'utilisons pas vos données à des fins autres que celles décrites ici sans votre consentement."
+    },
+    "section4": {
+      "title": "4. Stockage et conservation",
+      "item1": "Les images que vous téléchargez (photo de profil, images d'événements) sont stockées dans notre infrastructure de stockage de fichiers tant que votre compte ou l'événement correspondant restent actifs.",
+      "item2": "Si vous supprimez votre compte ou un événement, nous procéderons à la suppression ou à l'anonymisation des données associées, sauf celles que nous devons conserver par obligation légale (par exemple, les enregistrements de transactions de paiement)."
+    },
+    "section5": {
+      "title": "5. Avec qui nous partageons vos données",
+      "item1": "Wompi: pour le traitement des paiements, sous ses propres politiques de confidentialité et de sécurité.",
+      "item2": "Fournisseurs d'authentification (Google, Facebook): uniquement pour valider votre identité lors de la connexion avec ces comptes, si vous choisissez de les utiliser.",
+      "item3": "Nous ne vendons ni ne partageons vos données personnelles avec des tiers à des fins publicitaires."
+    },
+    "section6": {
+      "title": "6. Vos droits",
+      "intro": "En tant que titulaire de vos données, vous pouvez à tout moment:",
+      "item1": "Demander l'accès aux données que nous avons sur vous.",
+      "item2": "Demander la correction de données inexactes.",
+      "item3": "Demander la suppression de votre compte et de vos données personnelles.",
+      "item4": "Révoquer votre autorisation pour le traitement de vos données, sauf s'il existe une obligation légale de les conserver.",
+      "p1": "Vous pouvez exercer ces droits depuis votre profil sur la Plateforme ou en écrivant à",
+      "email": "soporte.capysoft@gmail.com"
+    },
+    "section7": {
+      "title": "7. Sécurité de l'information",
+      "intro": "Nous mettons en œuvre des mesures techniques pour protéger vos informations, notamment:",
+      "item1": "Mots de passe stockés de manière cryptée (jamais en texte clair).",
+      "item2": "Authentification via des jetons (JWT) avec expiration et renouvellement sécurisés.",
+      "item3": "Modération automatique de contenu pour empêcher la publication d'images inappropriées.",
+      "p1": "Aucun système n'est infaillible à 100%; en cas d'incident de sécurité affectant vos données, nous vous en informerons conformément aux exigences de la réglementation applicable."
+    },
+    "section8": {
+      "title": "8. Mineurs",
+      "p1": "La Plateforme n'est pas destinée aux mineurs de moins de 18 ans. Si vous avez connaissance qu'un mineur a créé un compte sans l'autorisation de ses parents ou tuteurs, contactez-nous pour procéder à sa suppression."
+    },
+    "section9": {
+      "title": "9. Modifications de cette politique",
+      "p1": "Nous pouvons mettre à jour cette Politique de Confidentialité. Tout changement pertinent sera notifié au sein de la Plateforme avant qu'il n'entre en vigueur."
+    },
+    "section10": {
+      "title": "10. Contact",
+      "p1": "Pour exercer vos droits ou résoudre des questions sur le traitement de vos données:",
+      "email": "soporte.capysoft@gmail.com"
+    }
   }
 }
