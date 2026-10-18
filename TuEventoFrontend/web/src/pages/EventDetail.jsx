@@ -1,32 +1,28 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send, CornerDownLeft, Pencil } from 'lucide-react';
 import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
 import Konva from 'konva';
 import { getEventById } from '../services/EventService';
 import { getEventMedia } from '../services/EventMediaService';
-import { getProfileByUserId } from '../services/ProfileService';
-import { getActiveLanguages } from '../services/LanguageService';
 import * as LayoutService from '../services/LayoutService';
 import * as SeatService from '../services/SeatService';
 import * as EventSectionService from '../services/EventSectionService';
-import { getEventComments, addEventComment } from '../services/EventCommentService';
+import { getEventComments, addEventComment, editEventComment, deleteEventComment } from '../services/EventCommentService';
 import { formatDistanceToNow } from 'date-fns';
-import { es as dateFnsEs, enUS as dateFnsEn, fr as dateFnsFr, pt as dateFnsPt } from 'date-fns/locale';
+import { es as dateFnsEs } from 'date-fns/locale';
 import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
+import StarRatingInput from '../components/common/StarRatingInput';
+import ConfirmModal from '../components/common/ConfirmModal';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
-import { useLanguageSync } from '../hooks/useLanguageSync';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
 import { useNotifications } from '../context/NotificationContext';
 
 export default function EventDetail() {
   const { eventId } = useParams();
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
-  const currentLanguage = useLanguageSync(); // Sincroniza automáticamente
   const { toast, showToast, hideToast } = useToast();
   const { subscribe } = useNotifications(); // Hook para suscripciones WebSocket
   
@@ -35,15 +31,6 @@ export default function EventDetail() {
   const [activeImage, setActiveImage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Mapeo de códigos de idioma a locales de date-fns
-  const dateFnsLocales = {
-    es: dateFnsEs,
-    en: dateFnsEn,
-    fr: dateFnsFr,
-    pt: dateFnsPt,
-  };
-  const currentDateLocale = dateFnsLocales[i18n.language] || dateFnsEs;
 
   // Estado de selección de sillas
   const [layoutElements, setLayoutElements] = useState([]);
@@ -66,9 +53,32 @@ export default function EventDetail() {
   const [commentRating, setCommentRating] = useState(0);   // 0 = sin selección
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentError, setCommentError] = useState(null);
-  const [hoverRating, setHoverRating] = useState(0);
+  const [deletingCommentId, setDeletingCommentId] = useState(null);
+  const [deleteCommentError, setDeleteCommentError] = useState(null);
+  // Modal de confirmación para borrar comentario
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // ratingId pendiente de confirmar
   // userId del organizador del evento (para R4 en el frontend)
   const [eventOrganizerUserId, setEventOrganizerUserId] = useState(null);
+
+  // ── Estado de respuestas ───────────────────────────────────────────────────
+  // replyingToId: ratingId del comentario al que se está respondiendo (puede ser principal o respuesta)
+  const [replyingToId, setReplyingToId] = useState(null);
+  // replyToUserId: userId del autor del comentario al que se responde (para mención)
+  const [replyToUserId, setReplyToUserId] = useState(null);
+  // replyToUserName: nombre del usuario al que se responde (para mostrar @Nombre)
+  const [replyToUserName, setReplyToUserName] = useState(null);
+  // parentRatingId: ratingId del comentario principal (raíz del hilo)
+  const [replyParentId, setReplyParentId] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [replySubmitting, setReplySubmitting] = useState(false);
+  const [replyError, setReplyError] = useState(null);
+
+  // ── Estado de edición ─────────────────────────────────────────────────────
+  // editingId: ratingId del comentario que se está editando (null = ninguno)
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState(null);
 
   // Ref con los ratingIds ya presentes para evitar duplicados al recibir WS
   const commentIdsRef = useRef(new Set());
@@ -77,38 +87,15 @@ export default function EventDetail() {
     const userId = localStorage.getItem('userID');
     setCurrentUserId(userId ? parseInt(userId) : null);
 
-    // Cargar idioma preferido del usuario y luego el evento
-    const loadEventWithUserLanguage = async () => {
-      setIsLoading(true);
-      let userLanguageCode = null;
-
-      // Si hay usuario autenticado, cargar su idioma preferido
-      if (userId) {
-        try {
-          const profileRes = await getProfileByUserId(userId);
-          const preferredLangId = profileRes?.data?.preferredLanguageId;
-          if (preferredLangId) {
-            const langs = await getActiveLanguages();
-            const preferredLang = langs.find(l => l.languageId === preferredLangId);
-            if (preferredLang) {
-              userLanguageCode = preferredLang.code;
-            }
-          }
-        } catch (err) {
-          console.warn('[EventDetail] No se pudo cargar idioma preferido del usuario:', err);
-        }
-      }
-
-      // Cargar evento con el idioma del usuario (si lo tiene)
-      try {
-        const [eventRes, mediaRes, layoutRes, sectionsRes] = await Promise.all([
-          getEventById(eventId, userLanguageCode),
-          getEventMedia(eventId),
-          LayoutService.getLayout(eventId),
-          EventSectionService.getByEvent(eventId),
-        ]);
-
+    Promise.all([
+      getEventById(eventId),
+      getEventMedia(eventId),
+      LayoutService.getLayout(eventId),
+      EventSectionService.getByEvent(eventId),
+    ])
+      .then(async ([eventRes, mediaRes, layoutRes, sectionsRes]) => {
         setEvent(eventRes.data);
+        // Guardar el userId del organizador para la lógica R4 del frontend
         setEventOrganizerUserId(eventRes.data?.userId ?? null);
         setMedia(mediaRes.data ?? []);
         setSections(sectionsRes.data ?? []);
@@ -134,93 +121,15 @@ export default function EventDetail() {
           }
           setSeats(seatMap);
         }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadEventWithUserLanguage();
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setIsLoading(false));
   }, [eventId]);
 
   // P4: mantener seatsRef sincronizado con el estado seats
   useEffect(() => {
     seatsRef.current = seats;
   }, [seats]);
-
-  // Auto-reload cuando se detecta que la traducción está generándose - Reemplazado por polling
-  // useEffect(() => {
-  //   if (event?.translationGenerating) {
-  //     const timer = setTimeout(() => {
-  //       window.location.reload();
-  //     }, 20000); // 20 segundos (dar tiempo a que complete la traducción)
-
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [event?.translationGenerating]);
-
-  // Polling para verificar si la traducción del evento está lista (sin recargar la página)
-  useEffect(() => {
-    if (!event?.translationGenerating) return;
-    
-    let pollCount = 0;
-    const maxPolls = 20; // Máximo 20 intentos (1 minuto)
-    
-    const checkTranslation = async () => {
-      try {
-        const userId = localStorage.getItem('userID');
-        let userLanguageCode = null;
-
-        // Obtener idioma del usuario si está autenticado
-        if (userId) {
-          try {
-            const profileRes = await getProfileByUserId(userId);
-            const preferredLangId = profileRes?.data?.preferredLanguageId;
-            if (preferredLangId) {
-              const langs = await getActiveLanguages();
-              const preferredLang = langs.find(l => l.languageId === preferredLangId);
-              if (preferredLang) {
-                userLanguageCode = preferredLang.code;
-              }
-            }
-          } catch (err) {
-            console.warn('[EventDetail] No se pudo cargar idioma preferido del usuario:', err);
-          }
-        }
-        
-        const result = await getEventById(eventId, userLanguageCode);
-        const eventData = result?.data;
-        
-        // Si la traducción ya está disponible, actualizar
-        if (eventData && !eventData.translationGenerating) {
-          setEvent(eventData);
-          return true; // Indicar que se completó
-        }
-        
-        pollCount++;
-        if (pollCount >= maxPolls) {
-          console.warn('[EventDetail] Translation polling timeout after 1 minute');
-          return true; // Detener el polling
-        }
-        
-        return false; // Continuar polling
-      } catch (err) {
-        console.warn('[EventDetail] Error checking translation status:', err);
-        return false;
-      }
-    };
-    
-    // Verificar cada 3 segundos
-    const pollInterval = setInterval(async () => {
-      const shouldStop = await checkTranslation();
-      if (shouldStop) {
-        clearInterval(pollInterval);
-      }
-    }, 3000);
-    
-    return () => clearInterval(pollInterval);
-  }, [event?.translationGenerating, eventId]);
 
   // ── Carga inicial de comentarios por REST ──────────────────────────────────
   useEffect(() => {
@@ -251,11 +160,42 @@ export default function EventDetail() {
       (incoming) => {
         // Solo comentarios visibles
         if (incoming.isVisible === false) return;
-        // Evitar duplicado: si ya está (por el POST propio), no agregar de nuevo
+        // Evitar duplicado: si ya está en el ref (POST propio o mensaje previo), no agregar.
         if (commentIdsRef.current.has(incoming.ratingId)) return;
 
         commentIdsRef.current.add(incoming.ratingId);
-        setComments((prev) => [incoming, ...prev]);
+
+        if (incoming.parentRatingId != null) {
+          // Es una respuesta. Insertarla solo si el padre ya está cargado.
+          // Si el padre no existe en la lista, recargar por REST para no perder el hilo.
+          setComments((prev) => {
+            // Segunda guardia dentro del updater: evita duplicados si prev ya lo tiene
+            // (puede ocurrir si el POST respondió antes que este updater se ejecute).
+            if (prev.some((c) => c.ratingId === incoming.ratingId)) return prev;
+
+            const parentExists = prev.some((c) => c.ratingId === incoming.parentRatingId);
+            if (!parentExists) {
+              // Recarga diferida para obtener el padre y la respuesta juntos.
+              // Usamos merge en lugar de reemplazar para no perder ids ya registrados.
+              getEventComments(eventId).then((res) => {
+                const list = (res.data ?? []).filter((c) => c.isVisible !== false);
+                // Merge: actualizar el ref con la unión de lo que ya había y lo que llegó
+                commentIdsRef.current = new Set([
+                  ...commentIdsRef.current,
+                  ...list.map((c) => c.ratingId),
+                ]);
+                setComments(list);
+              }).catch(() => {});
+              return prev; // Sin cambio hasta que llegue la recarga
+            }
+            return [...prev, incoming];
+          });
+        } else {
+          // Es un comentario principal: prependear (defensivo dentro del updater).
+          setComments((prev) =>
+            prev.some((c) => c.ratingId === incoming.ratingId) ? prev : [incoming, ...prev]
+          );
+        }
       },
       key
     );
@@ -265,8 +205,61 @@ export default function EventDetail() {
     };
   }, [eventId, isLoading, subscribe]);
 
-  // ── Suscripción WebSocket a comentarios eliminados — solo en rama delete ───
-  // (se añade en feat/event-comments-delete)
+  // ── Suscripción WebSocket a comentarios eliminados ─────────────────────────
+  useEffect(() => {
+    if (!eventId || isLoading) return;
+
+    const destination = `/topic/events/${eventId}/comments/deleted`;
+    const key = `comments-deleted-event-${eventId}`;
+
+    const unsubscribe = subscribe(
+      destination,
+      (incoming) => {
+        const id = incoming.ratingId;
+        if (!id) return;
+        // Al borrar un principal, quitar también sus respuestas (Regla C)
+        commentIdsRef.current.delete(id);
+        setComments((prev) => {
+          // Quitar el comentario borrado y todas sus respuestas directas
+          const filtered = prev.filter((c) => c.ratingId !== id && c.parentRatingId !== id);
+          // Limpiar el ref de ids de lo eliminado
+          prev.forEach((c) => {
+            if (c.ratingId === id || c.parentRatingId === id) {
+              commentIdsRef.current.delete(c.ratingId);
+            }
+          });
+          return filtered;
+        });
+      },
+      key
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [eventId, isLoading, subscribe]);
+
+  // ── Suscripción WebSocket a comentarios editados ──────────────────────────
+  useEffect(() => {
+    if (!eventId || isLoading) return;
+
+    const destination = `/topic/events/${eventId}/comments/updated`;
+    const key = `comments-updated-event-${eventId}`;
+
+    const unsubscribe = subscribe(
+      destination,
+      (incoming) => {
+        if (!incoming.ratingId) return;
+        // Reemplazar el comentario por ratingId, de forma idempotente
+        setComments((prev) =>
+          prev.map((c) => (c.ratingId === incoming.ratingId ? { ...c, ...incoming } : c))
+        );
+      },
+      key
+    );
+
+    return () => { unsubscribe(); };
+  }, [eventId, isLoading, subscribe]);
 
   // WebSocket: Suscripción dinámica a actualizaciones de sillas del evento
   useEffect(() => {
@@ -321,14 +314,14 @@ export default function EventDetail() {
     // CASO 9: Usuario anónimo intenta reservar
     const token = localStorage.getItem('token');
     if (!token) {
-      showToast('auth-required', t('seats.loginRequired'), 'warning');
+      showToast('auth-required', 'Iniciá sesión para reservar sillas', 'warning');
       setTimeout(() => navigate('/login'), 2000);
       return;
     }
 
     // CASO 11: Evento ya no disponible (COMPLETED/CANCELLED)
     if (event.status === 'COMPLETED' || event.status === 'CANCELLED') {
-      showToast('event-unavailable', t('seats.eventUnavailable'), 'error');
+      showToast('event-unavailable', 'Este evento ya no acepta reservas', 'error');
       return;
     }
 
@@ -340,12 +333,12 @@ export default function EventDetail() {
     } catch (err) {
       // CASO 10: Token expirado (401)
       if (err.response?.status === 401 || err.message?.includes('401')) {
-        showToast('token-expired', t('auth.sessionExpired'), 'error');
+        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
         setTimeout(() => navigate('/login'), 2000);
       }
       // CASO 3: Silla ya reservada por otro (condición de carrera)
       else if (err.message?.includes('SEAT_NOT_AVAILABLE') || err.message?.includes('no está disponible')) {
-        showToast('seat-taken', t('seats.alreadyTaken'), 'warning');
+        showToast('seat-taken', 'Esta silla ya fue reservada por otra persona', 'warning');
       }
       // CASO 7: Error genérico
       else {
@@ -381,7 +374,7 @@ export default function EventDetail() {
     } catch (err) {
       // CASO 10: Token expirado (401)
       if (err.response?.status === 401 || err.message?.includes('401')) {
-        showToast('token-expired', t('auth.sessionExpired'), 'error');
+        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
         setTimeout(() => navigate('/login'), 2000);
       }
       // CASO 7: Error genérico al liberar
@@ -401,7 +394,7 @@ export default function EventDetail() {
   // El scheduler del backend se encargará de liberar la silla en su próximo ciclo (cada 10s)
   const handleSeatExpire = useCallback((seatId) => {
     // CASO 4: Silla expirada
-    showToast('seat-expired', t('seats.expired'), 'info');
+    showToast('seat-expired', 'Tu reserva expiró y la silla se liberó', 'info');
     
     setSeats((prev) => {
       if (!prev[seatId]) return prev;
@@ -418,58 +411,215 @@ export default function EventDetail() {
     });
   }, [showToast]);
 
+  // ── Borrado de comentario propio ──────────────────────────────────────────
+  const handleDeleteComment = useCallback((ratingId) => {
+    setDeleteConfirm(ratingId);
+  }, []);
+
+  const executeDeleteComment = useCallback(async () => {
+    const ratingId = deleteConfirm;
+    if (!ratingId) return;
+    setDeleteConfirm(null);
+    setDeletingCommentId(ratingId);
+    setDeleteCommentError(null);
+
+    try {
+      await deleteEventComment(eventId, ratingId);
+      // Quitar localmente: el comentario y sus respuestas (Regla C)
+      commentIdsRef.current.delete(ratingId);
+      setComments((prev) => {
+        const toRemove = new Set([ratingId]);
+        prev.forEach((c) => { if (c.parentRatingId === ratingId) toRemove.add(c.ratingId); });
+        toRemove.forEach((id) => commentIdsRef.current.delete(id));
+        return prev.filter((c) => !toRemove.has(c.ratingId));
+      });
+    } catch (err) {
+      const msg = err.message || '';
+      if (msg.includes('SESSION_EXPIRED') || msg.includes('401')) {
+        setDeleteCommentError('Tu sesión expiró. Inicia sesión de nuevo.');
+      } else if (msg.includes('403') || msg.includes('Access denied')) {
+        setDeleteCommentError('No tienes permiso para eliminar este comentario.');
+      } else if (msg.includes('404') || msg.includes('NOT_FOUND')) {
+        setDeleteCommentError('El comentario ya no existe.');
+      } else {
+        setDeleteCommentError(msg || 'No se pudo eliminar el comentario.');
+      }
+    } finally {
+      setDeletingCommentId(null);
+    }
+  }, [deleteConfirm, eventId]);
+
+  // ── Enviar respuesta a un comentario ──────────────────────────────────────
+  const handleReplySubmit = useCallback(async (e) => {
+    e.preventDefault();
+    const trimmed = replyText.trim();
+    if (!trimmed) return;
+
+    setReplySubmitting(true);
+    setReplyError(null);
+
+    // Construir el comentario final: solo el texto del usuario.
+    // La mención viaja por separado en replyToUserId; el render la antepone al mostrar la respuesta.
+    const finalComment = trimmed;
+
+    try {
+      const payload = {
+        comment: finalComment,
+        parentRatingId: replyParentId,  // Siempre responder al comentario raíz
+      };
+
+      // Enviar replyToUserId solo si se responde a otro usuario (no a sí mismo)
+      if (replyToUserId && Number(replyToUserId) !== Number(currentUserId)) {
+        payload.replyToUserId = replyToUserId;
+      }
+
+      const res = await addEventComment(eventId, payload);
+      const saved = res.data;
+      commentIdsRef.current.add(saved.ratingId);
+      // Append defensivo: si el WS llegó antes que el POST respondiera, ya está en el array.
+      setComments((prev) =>
+        prev.some((c) => c.ratingId === saved.ratingId) ? prev : [...prev, saved]
+      );
+      setReplyText('');
+      setReplyingToId(null);
+      setReplyToUserId(null);
+      setReplyToUserName(null);
+      setReplyParentId(null);
+    } catch (err) {
+      const code = err.code || '';
+      const msg  = err.message || '';
+      if (msg.includes('401') || msg.includes('SESSION_EXPIRED')) {
+        setReplyError('Tu sesión expiró. Inicia sesión de nuevo.');
+      } else if (code === 'COMMENT_RATE_LIMITED' || msg.includes('COMMENT_RATE_LIMITED')) {
+        setReplyError('Espera unos segundos antes de volver a responder.');
+      } else if (code === 'COMMENT_PARENT_INVALID') {
+        setReplyError('Este comentario no puede recibir respuestas.');
+      } else {
+        setReplyError(msg || 'No se pudo enviar la respuesta.');
+      }
+    } finally {
+      setReplySubmitting(false);
+    }
+  }, [eventId, replyText, replyParentId, replyToUserId, replyToUserName, currentUserId]);
+
+  // ── Editar comentario propio ──────────────────────────────────────────────
+  const handleEditSubmit = useCallback(async (e, ratingId) => {
+    e.preventDefault();
+    const trimmed = editText.trim();
+    if (!trimmed) return;
+
+    setEditSubmitting(true);
+    setEditError(null);
+
+    try {
+      const res = await editEventComment(eventId, ratingId, trimmed);
+      const updated = res.data;
+      setComments((prev) =>
+        prev.map((c) => (c.ratingId === ratingId
+          ? { ...c, comment: updated.comment, editedAt: updated.editedAt, editableUntil: updated.editableUntil }
+          : c))
+      );
+      setEditingId(null);
+      setEditText('');
+    } catch (err) {
+      const code = err.code || '';
+      const msg  = err.message || '';
+      if (msg.includes('401') || msg.includes('SESSION_EXPIRED')) {
+        setEditError('Tu sesión expiró. Inicia sesión de nuevo.');
+      } else if (msg.includes('403')) {
+        setEditError('No tienes permiso para editar este comentario.');
+      } else if (code === 'COMMENT_EDIT_WINDOW_EXPIRED') {
+        // El backend confirmó que expiró: ocultar el botón actualizar el estado localmente
+        setComments((prev) =>
+          prev.map((c) => (c.ratingId === ratingId ? { ...c, _editExpired: true } : c))
+        );
+        setEditingId(null);
+        setEditError('El tiempo para editar este comentario ha expirado.');
+      } else {
+        setEditError(msg || 'No se pudo editar el comentario.');
+      }
+    } finally {
+      setEditSubmitting(false);
+    }
+  }, [eventId, editText]);
+
   // ── Helpers de comentarios ────────────────────────────────────────────────
   /**
    * ¿El usuario actual es el organizador del evento? (R4)
-   * Se compara con eventOrganizerUserId cargado al montar el evento.
    */
   const currentUserIsOrganizer = eventOrganizerUserId != null && currentUserId != null
     && Number(eventOrganizerUserId) === Number(currentUserId);
 
   /**
    * ¿Necesita el selector de estrellas?
-   * Sí: si el usuario es autenticado, NO es el organizador (R4),
-   * y no tiene todavía ningún comentario con rating (R3).
+   * Solo si no es el organizador (R4) y no tiene aún comentario principal con rating (R3).
    */
   const needsRatingSelector = !currentUserIsOrganizer &&
-    !comments.some((c) => Number(c.userId) === Number(currentUserId) && c.rating != null);
+    !comments.some((c) =>
+      c.parentRatingId == null &&
+      Number(c.userId) === Number(currentUserId) &&
+      c.rating != null
+    );
+
+  /**
+   * ¿Puede editar el comentario c?
+   * Usa editableUntil calculado por el servidor (createdAt + 2 h, zona America/Bogota)
+   * para evitar errores de zona horaria del navegador.
+   * Si editableUntil no está presente (comentarios legacy), no muestra el botón.
+   * El backend sigue siendo fuente de verdad: si responde COMMENT_EDIT_WINDOW_EXPIRED,
+   * handleEditSubmit marca _editExpired=true y oculta el botón.
+   */
+  const canEdit = useCallback((c) => {
+    if (!currentUserId || Number(c.userId) !== Number(currentUserId)) return false;
+    if (c._editExpired) return false;
+    if (!c.editableUntil) return false;
+    // editableUntil viene como string ISO local sin zona (ej. "2026-10-05T11:30:00").
+    // new Date() lo interpreta en zona local del navegador, pero la comparación es
+    // relativa (mayor que ahora), así que el único riesgo es mostrar el botón unos
+    // minutos de más o de menos en zonas muy alejadas de Bogotá (UTC-5). El backend
+    // rechaza con COMMENT_EDIT_WINDOW_EXPIRED si la ventana ya expiró.
+    return new Date(c.editableUntil).getTime() > Date.now();
+  }, [currentUserId]);
 
   // ── Envío de comentario ────────────────────────────────────────────────────
   const handleCommentSubmit = useCallback(async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-    // Si necesita estrellas, el botón ya está deshabilitado si rating===0;
-    // esta guardia es defensiva para el caso de submit por teclado.
-    if (needsRatingSelector && commentRating === 0) return;
+    if (needsRatingSelector && commentRating === 0) {
+      setCommentError('Selecciona una calificación de 1 a 5 estrellas antes de publicar.');
+      return;
+    }
 
     const trimmed = commentText.trim();
     setCommentSubmitting(true);
     setCommentError(null);
 
-    // Determinar el rating a enviar: solo si aplica (R3/R4)
     const ratingToSend = needsRatingSelector && commentRating > 0 ? commentRating : undefined;
 
     try {
       const res = await addEventComment(eventId, { rating: ratingToSend, comment: trimmed });
       const saved = res.data;
 
-      // Agregar localmente de inmediato y registrar el ratingId para filtrar el WS
       commentIdsRef.current.add(saved.ratingId);
-      setComments((prev) => [saved, ...prev]);
+      // Append defensivo: si el WS llegó antes que el POST respondiera, ya está en el array.
+      setComments((prev) =>
+        prev.some((c) => c.ratingId === saved.ratingId) ? prev : [saved, ...prev]
+      );
       setCommentText('');
       setCommentRating(0);
-      setHoverRating(0);
     } catch (err) {
       const code = err.code || '';
       const msg  = err.message || '';
       if (msg.includes('SESSION_EXPIRED') || msg.includes('401')) {
-        setCommentError(t('comments.errors.sessionExpired'));
+        setCommentError('Tu sesión expiró. Inicia sesión de nuevo para comentar.');
       } else if (msg.includes('403') || msg.includes('Access denied') || msg.includes('Forbidden')) {
-        setCommentError(t('comments.errors.forbidden'));
+        setCommentError('No tienes permiso para comentar en este evento.');
       } else if (code === 'COMMENT_RATE_LIMITED' || msg.includes('COMMENT_RATE_LIMITED')) {
-        setCommentError(t('comments.errors.rateLimited'));
+        setCommentError('Espera unos segundos antes de volver a comentar.');
+      } else if (code === 'COMMENT_RATING_REQUIRED' || code === 'COMMENT_RATING_INVALID') {
+        setCommentError('Selecciona una calificación de 1 a 5 estrellas antes de publicar.');
       } else {
-        setCommentError(msg || t('comments.errors.generic'));
+        setCommentError(msg || 'No se pudo publicar el comentario.');
       }
     } finally {
       setCommentSubmitting(false);
@@ -483,7 +633,7 @@ export default function EventDetail() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}>
-        <p className="text-sm" style={{ color: 'rgba(196,181,253,0.6)' }}>{t('common.loading')}</p>
+        <p className="text-sm" style={{ color: 'rgba(196,181,253,0.6)' }}>Cargando evento…</p>
       </div>
     );
   }
@@ -491,8 +641,8 @@ export default function EventDetail() {
   if (error || !event) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}>
-        <p className="text-sm text-red-400">{error ?? t('events.noEvents')}</p>
-        <BackButton fallback="/events" label={t('events.backToEvents')} />
+        <p className="text-sm text-red-400">{error ?? 'Evento no encontrado'}</p>
+        <BackButton fallback="/events" label="Volver a eventos" />
       </div>
     );
   }
@@ -506,7 +656,7 @@ export default function EventDetail() {
 
         {/* Back */}
         <div className="mb-6">
-          <BackButton fallback="/events" label={t('events.backToEvents')} />
+          <BackButton fallback="/events" label="Volver a eventos" />
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 mb-12">
@@ -586,32 +736,12 @@ export default function EventDetail() {
           <div className="flex flex-col gap-5">
             <div>
               <h1 className="text-2xl font-bold" style={{ color: '#e9d5ff' }}>
-                {event.translatedName || event.eventName}
+                {event.eventName}
               </h1>
-              {(event.translatedDescription || event.description) && (
+              {event.description && (
                 <p className="mt-2 text-sm leading-relaxed" style={{ color: 'rgba(196,181,253,0.75)' }}>
-                  {event.translatedDescription || event.description}
+                  {event.description}
                 </p>
-              )}
-              
-              {/* Translation status badge */}
-              {event.languageCode && !event.translationGenerating && (
-                <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(109,40,217,0.2)', color: 'rgba(167,139,250,0.8)', border: '1px solid rgba(167,139,250,0.2)' }}>
-                  {t('events.translation.translated', { lang: event.languageCode.toUpperCase() })}
-                </span>
-              )}
-              
-              {/* Translation generating indicator (lazy loading con auto-reload) */}
-              {event.translationGenerating && (
-                <div className="mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: 'rgba(251,191,36,0.9)' }}>
-                  <Clock className="w-3.5 h-3.5 animate-spin" />
-                  <span>
-                    {t('events.translation.generating')}
-                    <span className="block text-[10px] mt-0.5 opacity-75">
-                      {t('events.translation.autoReload')}
-                    </span>
-                  </span>
-                </div>
               )}
             </div>
 
@@ -639,7 +769,7 @@ export default function EventDetail() {
               {event.availableSeats > 0 && (
                 <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(233,213,255,0.8)' }}>
                   <Users className="w-4 h-4 shrink-0" style={{ color: 'rgba(167,139,250,0.7)' }} />
-                  <span>{t('events.availableSeats', { count: event.availableSeats })}</span>
+                  <span>{event.availableSeats.toLocaleString()} sillas disponibles</span>
                 </div>
               )}
             </div>
@@ -654,7 +784,7 @@ export default function EventDetail() {
                   border:     `1px solid ${event.status === 'PUBLISHED' ? 'rgba(74,222,128,0.3)' : 'rgba(107,114,128,0.3)'}`,
                 }}
               >
-                {t(`myEvents.eventStatus.${event.status}`)}
+                {event.status === 'PUBLISHED' ? 'Publicado' : event.status}
               </span>
             </div>
           </div>
@@ -688,19 +818,19 @@ export default function EventDetail() {
 
         {/* ── Comentarios ───────────────────────────────────────────────── */}
         <section
-          aria-label={t('comments.title')}
+          aria-label="Comentarios del evento"
           className="mt-12"
           style={{ borderTop: '1px solid rgba(167,139,250,0.15)', paddingTop: '2rem' }}
         >
           <h2 className="text-lg font-semibold mb-6" style={{ color: '#e9d5ff' }}>
-            {t('comments.title')} {comments.length > 0 && (
+            Comentarios {comments.length > 0 && (
               <span className="text-sm font-normal ml-2" style={{ color: 'rgba(196,181,253,0.5)' }}>
                 ({comments.length})
               </span>
             )}
           </h2>
 
-          {/* Formulario — cualquier usuario autenticado (R1) */}
+          {/* Formulario principal — cualquier usuario autenticado (R1) */}
           {localStorage.getItem('token') ? (
             <form
               id="comment-form"
@@ -708,159 +838,439 @@ export default function EventDetail() {
               className="mb-8 p-4 rounded-xl"
               style={{ background: 'rgba(109,40,217,0.1)', border: '1px solid rgba(167,139,250,0.15)' }}
             >
-              {/* Selector de estrellas — solo si aplica (R3/R4) */}
+              {/* Selector de estrellas — solo en comentarios principales (no en respuestas) */}
               {needsRatingSelector && (
-                <fieldset className="border-0 p-0 m-0 mb-3" aria-label={t('comments.ratingRequired')}>
-                  <legend className="text-xs mb-1" style={{ color: 'rgba(196,181,253,0.6)' }}>
-                    {t('comments.rating')} <span aria-hidden="true">*</span>
-                  </legend>
-                  <div className="flex items-center gap-1" role="group" aria-label={t('comments.ratingRequired')}>
-                    {[1, 2, 3, 4, 5].map((star) => {
-                      const active = star <= (hoverRating || commentRating);
-                      return (
-                        <button
-                          key={star}
-                          type="button"
-                          onClick={() => setCommentRating(star)}
-                          onMouseEnter={() => setHoverRating(star)}
-                          onMouseLeave={() => setHoverRating(0)}
-                          aria-label={`${star} ${star > 1 ? 'stars' : 'star'}`}
-                          aria-pressed={star <= commentRating}
-                          className="transition-colors cursor-pointer"
-                        >
-                          <Star
-                            className="w-5 h-5 pointer-events-none"
-                            style={{ color: active ? '#f59e0b' : 'rgba(196,181,253,0.3)' }}
-                            fill={active ? '#f59e0b' : 'none'}
-                          />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </fieldset>
+                <StarRatingInput
+                  value={commentRating}
+                  onChange={(star) => {
+                    setCommentRating(star);
+                    setCommentError(null);
+                  }}
+                  disabled={commentSubmitting}
+                />
               )}
-
-              {/* Textarea + botón enviar */}
               <div className="flex gap-3 items-start">
-                <label htmlFor="comment-textarea" className="sr-only">{t('comments.writeComment')}</label>
+                <label htmlFor="comment-textarea" className="sr-only">Texto del comentario</label>
                 <textarea
                   id="comment-textarea"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder={t('comments.writeComment')}
+                  placeholder="Escribe tu comentario sobre el evento…"
                   maxLength={500}
                   rows={3}
                   className="flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
-                  style={{
-                    background: 'rgba(15,10,30,0.6)',
-                    border: '1px solid rgba(167,139,250,0.2)',
-                    color: '#e9d5ff',
-                  }}
+                  style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.2)', color: '#e9d5ff' }}
                 />
                 <button
                   type="submit"
-                  disabled={
-                    commentSubmitting ||
-                    !commentText.trim() ||
-                    (needsRatingSelector && commentRating === 0)
-                  }
-                  aria-label={commentSubmitting ? t('comments.sending') : t('comments.publishComment')}
+                  disabled={commentSubmitting || !commentText.trim() || (needsRatingSelector && commentRating === 0)}
+                  aria-label={commentSubmitting ? 'Enviando comentario…' : 'Publicar comentario'}
                   className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-40"
                   style={{ background: 'rgba(109,40,217,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
                 >
-                  {commentSubmitting
-                    ? <span className="text-xs" style={{ color: '#e9d5ff' }}>…</span>
-                    : <Send className="w-4 h-4 pointer-events-none" style={{ color: '#e9d5ff' }} />
-                  }
+                  {commentSubmitting ? <span className="text-xs" style={{ color: '#e9d5ff' }}>…</span> : <Send className="w-4 h-4 pointer-events-none" style={{ color: '#e9d5ff' }} />}
                 </button>
               </div>
-
               <div className="flex items-center justify-between mt-1">
-                <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>
-                  {commentText.length}/500
-                </span>
-                {commentError && (
-                  <span role="alert" className="text-xs text-red-400">{commentError}</span>
-                )}
+                <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{commentText.length}/500</span>
+                {commentError && <span role="alert" className="text-xs text-red-400">{commentError}</span>}
               </div>
             </form>
           ) : (
             <p className="text-sm mb-6 text-center" style={{ color: 'rgba(196,181,253,0.5)' }}>
-              <a href="/login" style={{ color: '#a78bfa', textDecoration: 'underline' }}>
-                Inicia sesión
-              </a>{' '}para dejar un comentario.
+              <a href="/login" style={{ color: '#a78bfa', textDecoration: 'underline' }}>Inicia sesión</a>{' '}para dejar un comentario.
             </p>
           )}
 
-          {/* Lista de comentarios */}
+          {/* Lista de comentarios agrupados */}
           {commentsLoading ? (
-            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>
-              {t('common.loading')}
-            </p>
-          ) : comments.length === 0 ? (
-            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>
-              {localStorage.getItem('token') ? 
-                t('comments.noComments') : 
-                t('comments.loginToComment')
-              }
-            </p>
+            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>Cargando comentarios…</p>
+          ) : comments.filter((c) => c.parentRatingId == null).length === 0 ? (
+            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>Todavía no hay comentarios. ¡Sé el primero!</p>
           ) : (
             <ul className="space-y-4" aria-label="Lista de comentarios">
-              {comments.map((c) => {
-                const isOwn = currentUserId != null && Number(c.userId) === Number(currentUserId);
-                return (
-                  <li
-                    key={c.ratingId}
-                    className="p-4 rounded-xl"
-                    style={{ background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(167,139,250,0.12)' }}
-                  >
-                    {/* Cabecera: nombre + etiquetas + estrellas + botón eliminar */}
-                    <div className="flex items-start justify-between mb-1 gap-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium" style={{ color: '#c4b5fd' }}>
-                          {c.authorName || 'Usuario'}
-                        </span>
-                        {isOwn && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>
-                            {t('comments.you')}
-                          </span>
-                        )}
-                        {c.isOrganizer && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
-                            {t('comments.organizer')}
-                          </span>
-                        )}
-                        {/* Estrellas — solo si rating no es null */}
-                        {c.rating != null && (
-                          <div className="flex items-center gap-0.5" aria-label={`${c.rating} de 5 estrellas`}>
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className="w-3.5 h-3.5"
-                                style={{ color: star <= c.rating ? '#f59e0b' : 'rgba(196,181,253,0.2)' }}
-                                fill={star <= c.rating ? '#f59e0b' : 'none'}
-                              />
-                            ))}
+              {comments
+                .filter((c) => c.parentRatingId == null)
+                .map((c) => {
+                  const isOwn = currentUserId != null && Number(c.userId) === Number(currentUserId);
+                  const replies = comments
+                    .filter((r) => r.parentRatingId === c.ratingId)
+                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                  const isEditingThis = editingId === c.ratingId;
+
+                  return (
+                    <li key={c.ratingId} className="rounded-xl" style={{ background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(167,139,250,0.12)' }}>
+                      {/* ── Comentario principal ── */}
+                      <div className="p-4">
+                        {/* Cabecera */}
+                        <div className="flex items-start justify-between mb-1 gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium" style={{ color: '#c4b5fd' }}>{c.authorName || 'Usuario'}</span>
+                            {isOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>Tú</span>}
+                            {c.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>Organizador</span>}
+                            {c.rating != null && (
+                              <div className="flex items-center gap-0.5" aria-label={`${c.rating} de 5 estrellas`}>
+                                {[1,2,3,4,5].map((star) => (
+                                  <Star key={star} className="w-3.5 h-3.5" style={{ color: star <= c.rating ? '#f59e0b' : 'rgba(196,181,253,0.2)' }} fill={star <= c.rating ? '#f59e0b' : 'none'} />
+                                ))}
+                              </div>
+                            )}
                           </div>
+                          {/* Botones Editar + Eliminar — solo para el dueño, solo con sesión */}
+                          {isOwn && localStorage.getItem('token') && (
+                            <div className="flex items-center gap-2 shrink-0">
+                              {canEdit(c) && !isEditingThis && (
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingId(c.ratingId); setEditText(c.comment); setEditError(null); }}
+                                  aria-label="Editar mi comentario"
+                                  className="transition-opacity cursor-pointer"
+                                  style={{ color: 'rgba(167,139,250,0.7)' }}
+                                >
+                                  <Pencil className="w-3.5 h-3.5 pointer-events-none" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteComment(c.ratingId)}
+                                disabled={deletingCommentId === c.ratingId}
+                                aria-label="Eliminar mi comentario"
+                                className="transition-opacity disabled:opacity-40 cursor-pointer"
+                                style={{ color: 'rgba(248,113,113,0.7)' }}
+                              >
+                                <X className="w-3.5 h-3.5 pointer-events-none" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Texto o formulario de edición inline */}
+                        {isEditingThis ? (
+                          <form onSubmit={(e) => handleEditSubmit(e, c.ratingId)} className="mt-2">
+                            <label htmlFor={`edit-textarea-${c.ratingId}`} className="sr-only">Editar comentario</label>
+                            <textarea
+                              id={`edit-textarea-${c.ratingId}`}
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              maxLength={500}
+                              rows={3}
+                              className="w-full resize-none rounded-lg px-3 py-2 text-sm outline-none"
+                              style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.3)', color: '#e9d5ff' }}
+                            />
+                            <div className="flex items-center justify-between mt-1">
+                              <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{editText.length}/500</span>
+                              <div className="flex gap-2">
+                                <button type="button" onClick={() => { setEditingId(null); setEditError(null); }} className="text-xs px-2 py-1 rounded" style={{ color: 'rgba(196,181,253,0.6)' }}>Cancelar</button>
+                                <button
+                                  type="submit"
+                                  disabled={editSubmitting || !editText.trim()}
+                                  aria-label={editSubmitting ? 'Guardando…' : 'Guardar edición'}
+                                  className="text-xs px-3 py-1 rounded transition-opacity disabled:opacity-40"
+                                  style={{ background: 'rgba(109,40,217,0.6)', color: '#e9d5ff' }}
+                                >
+                                  {editSubmitting ? 'Guardando…' : 'Guardar'}
+                                </button>
+                              </div>
+                            </div>
+                            {editError && <p role="alert" className="text-xs text-red-400 mt-1">{editError}</p>}
+                          </form>
+                        ) : (
+                          <p className="text-sm leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>{c.comment}</p>
+                        )}
+
+                        {/* Tiempo + (editado) */}
+                        <div className="flex items-center gap-2 mt-1">
+                          {c.createdAt && (
+                            <time dateTime={c.createdAt} className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>
+                              {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: dateFnsEs })}
+                            </time>
+                          )}
+                          {c.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>(editado)</span>}
+                        </div>
+
+                        {/* Botón Responder — solo en principales, solo con sesión */}
+                        {localStorage.getItem('token') && replyParentId !== c.ratingId && (
+                          <button
+                            type="button"
+                            onClick={() => { 
+                              setReplyingToId(c.ratingId); 
+                              setReplyParentId(c.ratingId);  // El comentario principal es el parent
+                              setReplyToUserId(c.userId);    // Responder al autor del principal
+                              setReplyToUserName(c.authorName);
+                              setReplyText('');
+                              setReplyError(null); 
+                            }}
+                            aria-label={`Responder al comentario de ${c.authorName || 'Usuario'}`}
+                            className="mt-2 flex items-center gap-1 text-xs cursor-pointer transition-opacity"
+                            style={{ color: 'rgba(167,139,250,0.6)' }}
+                          >
+                            <CornerDownLeft className="w-3 h-3 pointer-events-none" />
+                            Responder
+                          </button>
+                        )}
+
+                        {/* Formulario de respuesta inline —
+                            Se muestra cuando replyParentId apunta a este comentario principal,
+                            ya sea que se responda al principal directamente o a cualquier respuesta del hilo. */}
+                        {replyParentId === c.ratingId && replyingToId !== null && (
+                          <form onSubmit={handleReplySubmit} className="mt-3">
+                            {/* ── Encabezado: a quién se responde ── */}
+                            <p className="text-xs mb-2" style={{ color: 'rgba(196,181,253,0.55)' }}>
+                              {replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId)
+                                ? <>Respondiendo a <span style={{ color: '#a78bfa', fontWeight: 500 }}>@{replyToUserName}</span></>
+                                : 'Escribe tu respuesta'}
+                            </p>
+                            {/* ── Área de input: mención fija + textarea ── */}
+                            <label htmlFor={`reply-textarea-${c.ratingId}`} className="sr-only">
+                              {replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId)
+                                ? `Respuesta a @${replyToUserName}. Escribe tu mensaje a continuación.`
+                                : 'Escribe tu respuesta'}
+                            </label>
+                            <div className="flex gap-2 items-start">
+                              {/* Contenedor del campo de texto con mención prefijada */}
+                              <div
+                                className="flex-1 flex items-start rounded-lg text-sm overflow-hidden"
+                                style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.2)' }}
+                              >
+                                {/* Mención fija — solo visible cuando aplica */}
+                                {replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId) && (
+                                  <span
+                                    aria-hidden="true"
+                                    className="shrink-0 pl-3 pt-2 pb-2 text-sm font-medium select-none"
+                                    style={{ color: '#a78bfa', lineHeight: '1.5rem' }}
+                                  >
+                                    @{replyToUserName}
+                                  </span>
+                                )}
+                                <textarea
+                                  id={`reply-textarea-${c.ratingId}`}
+                                  value={replyText}
+                                  onChange={(e) => {
+                                    if (e.target.value.length <= 500) {
+                                      setReplyText(e.target.value);
+                                    }
+                                  }}
+                                  placeholder={
+                                    replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId)
+                                      ? ' escribe aquí…'
+                                      : 'Escribe tu respuesta…'
+                                  }
+                                  rows={2}
+                                  autoFocus
+                                  className="flex-1 resize-none bg-transparent px-2 py-2 outline-none"
+                                  style={{ color: '#e9d5ff', minWidth: 0 }}
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <button
+                                  type="submit"
+                                  disabled={replySubmitting || !replyText.trim()}
+                                  aria-label={replySubmitting ? 'Enviando respuesta…' : 'Enviar respuesta'}
+                                  className="w-8 h-8 rounded flex items-center justify-center transition-opacity disabled:opacity-40"
+                                  style={{ background: 'rgba(109,40,217,0.6)' }}
+                                >
+                                  {replySubmitting ? <span className="text-xs" style={{ color: '#e9d5ff' }}>…</span> : <Send className="w-3.5 h-3.5 pointer-events-none" style={{ color: '#e9d5ff' }} />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReplyingToId(null);
+                                    setReplyToUserId(null);
+                                    setReplyToUserName(null);
+                                    setReplyParentId(null);
+                                    setReplyText('');
+                                    setReplyError(null);
+                                  }}
+                                  aria-label="Cancelar respuesta"
+                                  className="w-8 h-8 rounded flex items-center justify-center"
+                                  style={{ color: 'rgba(196,181,253,0.5)' }}
+                                >
+                                  <X className="w-3.5 h-3.5 pointer-events-none" />
+                                </button>
+                              </div>
+                            </div>
+                            {/* Contador: solo el texto que escribe el usuario (500 caracteres máx) */}
+                            <div className="flex items-center justify-between mt-1">
+                              <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>
+                                {replyText.length}/500
+                              </span>
+                              {replyError && <span role="alert" className="text-xs text-red-400">{replyError}</span>}
+                            </div>
+                          </form>
                         )}
                       </div>
-                    </div>
 
-                    {/* Texto del comentario */}
-                    <p className="text-sm leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>
-                      {c.comment}
-                    </p>
+                      {/* ── Respuestas ── */}
+                      {replies.length > 0 && (
+                        <ul className="border-t px-4 pb-3 pt-2 space-y-3" style={{ borderColor: 'rgba(167,139,250,0.08)' }} aria-label={`Respuestas al comentario de ${c.authorName || 'Usuario'}`}>
+                          {replies.map((r) => {
+                            const replyIsOwn = currentUserId != null && Number(r.userId) === Number(currentUserId);
+                            const isEditingReply = editingId === r.ratingId;
+                            return (
+                              <li key={r.ratingId} className="pl-4" style={{ borderLeft: '2px solid rgba(167,139,250,0.15)' }}>
+                                <div className="flex items-start justify-between gap-2 mb-0.5">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs font-medium" style={{ color: '#c4b5fd' }}>{r.authorName || 'Usuario'}</span>
+                                    {replyIsOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>Tú</span>}
+                                    {r.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>Organizador</span>}
+                                  </div>
+                                  {replyIsOwn && localStorage.getItem('token') && (
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      {canEdit(r) && !isEditingReply && editingId !== c.ratingId && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            // Quitar prefijo @Nombre si viene de datos guardados con el bug anterior
+                                            const hasMention = r.replyToUserName
+                                              && r.replyToUserId
+                                              && Number(r.replyToUserId) !== Number(r.userId);
+                                            const prefix = hasMention ? `@${r.replyToUserName} ` : '';
+                                            const textOnly = (hasMention && r.comment.startsWith(prefix))
+                                              ? r.comment.slice(prefix.length)
+                                              : r.comment;
+                                            setEditingId(r.ratingId);
+                                            setEditText(textOnly);
+                                            setEditError(null);
+                                          }}
+                                          aria-label="Editar mi respuesta"
+                                          className="transition-opacity cursor-pointer"
+                                          style={{ color: 'rgba(167,139,250,0.7)' }}
+                                        >
+                                          <Pencil className="w-3 h-3 pointer-events-none" />
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteComment(r.ratingId)}
+                                        disabled={deletingCommentId === r.ratingId}
+                                        aria-label="Eliminar mi respuesta"
+                                        className="transition-opacity disabled:opacity-40 cursor-pointer"
+                                        style={{ color: 'rgba(248,113,113,0.7)' }}
+                                      >
+                                        <X className="w-3 h-3 pointer-events-none" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
 
-                    {/* Tiempo relativo con date-fns */}
-                    {c.createdAt && (
-                      <time dateTime={c.createdAt} className="text-xs mt-1 block" style={{ color: 'rgba(196,181,253,0.35)' }}>
-                        {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: dateFnsEs })}
-                      </time>
-                    )}
-                  </li>
-                );
-              })}
+                                {isEditingReply ? (
+                                  // ── Formulario de edición de respuesta ──
+                                  // La mención es un span fijo; editText contiene solo el texto del usuario.
+                                  (() => {
+                                    const hasMention = r.replyToUserName
+                                      && r.replyToUserId
+                                      && Number(r.replyToUserId) !== Number(r.userId);
+                                    return (
+                                      <form onSubmit={(e) => handleEditSubmit(e, r.ratingId)} className="mt-1">
+                                        <label htmlFor={`edit-textarea-${r.ratingId}`} className="sr-only">
+                                          {hasMention
+                                            ? `Editar respuesta a @${r.replyToUserName}. Escribe solo tu mensaje.`
+                                            : 'Editar respuesta'}
+                                        </label>
+                                        <div
+                                          className="flex items-start rounded-lg text-xs overflow-hidden"
+                                          style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
+                                        >
+                                          {/* Mención fija — no editable */}
+                                          {hasMention && (
+                                            <span
+                                              aria-hidden="true"
+                                              className="shrink-0 pl-3 pt-2 pb-2 text-xs font-medium select-none"
+                                              style={{ color: '#a78bfa', lineHeight: '1.5rem' }}
+                                            >
+                                              @{r.replyToUserName}
+                                            </span>
+                                          )}
+                                          <textarea
+                                            id={`edit-textarea-${r.ratingId}`}
+                                            value={editText}
+                                            onChange={(e) => {
+                                              if (e.target.value.length <= 500) setEditText(e.target.value);
+                                            }}
+                                            rows={2}
+                                            autoFocus
+                                            className="flex-1 resize-none bg-transparent px-2 py-2 outline-none"
+                                            style={{ color: '#e9d5ff', minWidth: 0 }}
+                                          />
+                                        </div>
+                                        <div className="flex items-center justify-between mt-1">
+                                          <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{editText.length}/500</span>
+                                          <div className="flex gap-2">
+                                            <button type="button" onClick={() => { setEditingId(null); setEditError(null); }} className="text-xs px-2 py-0.5 rounded" style={{ color: 'rgba(196,181,253,0.6)' }}>Cancelar</button>
+                                            <button type="submit" disabled={editSubmitting || !editText.trim()} aria-label={editSubmitting ? 'Guardando…' : 'Guardar'} className="text-xs px-3 py-0.5 rounded disabled:opacity-40" style={{ background: 'rgba(109,40,217,0.6)', color: '#e9d5ff' }}>
+                                              {editSubmitting ? 'Guardando…' : 'Guardar'}
+                                            </button>
+                                          </div>
+                                        </div>
+                                        {editError && editingId === r.ratingId && <p role="alert" className="text-xs text-red-400 mt-1">{editError}</p>}
+                                      </form>
+                                    );
+                                  })()
+                                ) : (
+                                  // ── Visualización de la respuesta publicada ──
+                                  // Si r.comment empieza con "@Nombre " (datos guardados con el bug anterior),
+                                  // lo eliminamos para que el render no lo duplique.
+                                  (() => {
+                                    const hasMention = r.replyToUserName
+                                      && r.replyToUserId
+                                      && Number(r.replyToUserId) !== Number(r.userId);
+                                    const prefix = hasMention ? `@${r.replyToUserName} ` : '';
+                                    const bodyText = (hasMention && r.comment.startsWith(prefix))
+                                      ? r.comment.slice(prefix.length)
+                                      : r.comment;
+                                    return (
+                                      <p className="text-xs leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>
+                                        {hasMention && (
+                                          <span style={{ color: '#a78bfa', fontWeight: '500' }}>@{r.replyToUserName}{' '}</span>
+                                        )}
+                                        {bodyText}
+                                      </p>
+                                    );
+                                  })()
+                                )}
+
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  {r.createdAt && (
+                                    <time dateTime={r.createdAt} className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>
+                                      {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true, locale: dateFnsEs })}
+                                    </time>
+                                  )}
+                                  {r.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>(editado)</span>}
+                                </div>
+
+                                {/* Botón Responder en respuestas */}
+                                {localStorage.getItem('token') && replyParentId !== c.ratingId && !isEditingReply && (
+                                  <button
+                                    type="button"
+                                    onClick={() => { 
+                                      setReplyingToId(r.ratingId); 
+                                      setReplyParentId(c.ratingId);  // El parent sigue siendo el comentario principal
+                                      setReplyToUserId(r.userId);    // Responder al autor de esta respuesta
+                                      setReplyToUserName(r.authorName);
+                                      setReplyText('');
+                                      setReplyError(null); 
+                                    }}
+                                    aria-label={`Responder a ${r.authorName || 'Usuario'}`}
+                                    className="mt-1 flex items-center gap-1 text-xs cursor-pointer transition-opacity"
+                                    style={{ color: 'rgba(167,139,250,0.6)' }}
+                                  >
+                                    <CornerDownLeft className="w-3 h-3 pointer-events-none" />
+                                    Responder
+                                  </button>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
             </ul>
+          )}
+
+          {deleteCommentError && (
+            <p role="alert" className="text-xs text-red-400 mt-3 text-center">{deleteCommentError}</p>
           )}
         </section>
 
@@ -868,6 +1278,19 @@ export default function EventDetail() {
 
       {/* Toast de alertas */}
       <Toast toast={toast} onHide={hideToast} />
+
+      {/* Modal confirmación borrar comentario */}
+      <ConfirmModal
+        isOpen={deleteConfirm !== null}
+        title="¿Borrar este comentario?"
+        message="Una vez eliminado no hay vuelta atrás — el comentario y sus respuestas desaparecerán para siempre. ¿Seguimos?"
+        confirmLabel="Sí, eliminar"
+        cancelLabel="No, mejor no"
+        confirmStyle="danger"
+        loading={deletingCommentId !== null}
+        onConfirm={executeDeleteComment}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }
@@ -906,7 +1329,6 @@ function SeatSelectorSection({
   eventId,
   eventTitle,
 }) {
-  const { t } = useTranslation();
   const maxQuantity = 10;
   const stageRef = useRef();
   const containerRef = useRef();
@@ -1429,13 +1851,13 @@ function SeatSelectorSection({
       }}
     >
       <h2 className="text-xl font-bold mb-6" style={{ color: '#e9d5ff' }}>
-        {t('seats.selectSeats')}
+        Selecciona tus Sillas
       </h2>
 
       {/* Selector de cantidad estilo cine */}
       <div className="flex items-center gap-6 mb-6">
         <span className="text-sm" style={{ color: 'rgba(196,181,253,0.75)' }}>
-          {t('seats.howMany')}
+          ¿Cuántas sillas querés?
         </span>
         <div className="flex items-center gap-3">
           <button
@@ -1475,7 +1897,7 @@ function SeatSelectorSection({
           </button>
         </div>
         <span className="text-xs ml-auto" style={{ color: 'rgba(196,181,253,0.5)' }}>
-          {t('seats.selected', { count: cart.length, total: selectedQuantity })}
+          {cart.length} de {selectedQuantity} seleccionadas
         </span>
       </div>
 
@@ -1495,7 +1917,7 @@ function SeatSelectorSection({
         <div className="flex-1 rounded-xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', minWidth: 0 }}>
           <div className="flex items-center justify-between p-2 border-b" style={{ borderColor: 'rgba(167,139,250,0.15)' }}>
             <span className="text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
-              {t('seats.seatMap')}
+              Mapa de Sillas
             </span>
             {/* Controles de navegación entre sub-secciones */}
             {selectedSectionFilter && hasMultipleSubSections && (
@@ -1654,7 +2076,6 @@ function SeatSelectorSection({
  * Click en una sección activa el filtro (solo esa sección es seleccionable).
  */
 function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelectedSectionFilter, seats, showToast }) {
-  const { t } = useTranslation();
   // Mapear eventSectionId de la sección backend con los elementos de layout
   const sectionsWithLayout = sections.filter((sec) =>
     layoutElements.some((el) => el.backendSectionId === sec.eventSectionId)
@@ -1670,7 +2091,7 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
     >
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
-          {t('seats.sections')}
+          Secciones
         </h3>
         {selectedSectionFilter && (
           <button
@@ -1681,7 +2102,7 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
               color: '#c4b5fd',
             }}
           >
-            {t('navigation.viewAll')}
+            Ver todas
           </button>
         )}
       </div>
@@ -2109,7 +2530,6 @@ const SeatCircle = React.memo(function SeatCircle({
  * Panel lateral con el carrito de sillas reservadas.
  */
 function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eventId, eventTitle }) {
-  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const totalPrice = cart.reduce((sum, seat) => {
@@ -2149,11 +2569,11 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
         <div className="flex items-center gap-2 mb-3">
           <ShoppingCart className="w-4 h-4" style={{ color: '#a78bfa' }} />
           <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
-            {t('seats.myCart')}
+            Tu Carrito
           </h3>
         </div>
         <p className="text-xs text-center py-6" style={{ color: 'rgba(196,181,253,0.5)' }}>
-          {t('seats.noSeatsSelected')}
+          No has seleccionado ninguna silla
         </p>
       </div>
     );
@@ -2170,7 +2590,7 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
       <div className="flex items-center gap-2 mb-3">
         <ShoppingCart className="w-4 h-4" style={{ color: '#a78bfa' }} />
         <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
-          {t('seats.myCart')}
+          Tu Carrito
         </h3>
         <span className="ml-auto text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
           ({cart.length})
@@ -2211,7 +2631,7 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
           }}
           disabled={cart.length === 0}
         >
-          {t('eventDetail.continueToPayment')}
+          Continuar al Pago
         </button>
       </div>
     </div>

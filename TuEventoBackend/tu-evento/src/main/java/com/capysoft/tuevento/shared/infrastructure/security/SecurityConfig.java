@@ -70,7 +70,6 @@ public class SecurityConfig {
             "/api/v1/events/*/layout",   // GET layout de un evento — público para cargar el editor
             "/api/v1/events/*/ratings",  // GET ratings de un evento — público
             "/api/v1/events/*/media",    // GET media de un evento — público
-            "/api/v1/ratings/*/replies", // GET replies de un rating — público
             "/api/v1/categories/**",
             "/api/v1/category-events/**",
             "/api/v1/section-types",
@@ -148,11 +147,17 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.PUT,
                                 "/api/v1/events/*/layout").authenticated()
                         // ── Verbos no-GET en rutas cubiertas por PUBLIC_GET_ENDPOINTS ──────────────
+                        // ── Verbos no-GET en rutas cubiertas por PUBLIC_GET_ENDPOINTS ──────────────
                         // Estos matchers son necesarios porque PUBLIC_GET_ENDPOINTS solo registra GET.
                         // Sin estas reglas explícitas, los verbos restantes caerían en anyRequest()
                         // y @PreAuthorize podría bloquearse antes de llegar al use case (403 de Spring,
                         // no el error de negocio del use case).
-                        // ── Ratings: cualquier usuario autenticado puede comentar (R1) ──
+                        // ── Ratings: cualquier usuario autenticado puede comentar/borrar/editar (R1) ──
+                        // DELETE y PATCH /ratings/* van ANTES de DELETE/PATCH /events/** (ORGANIZER).
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE,
+                                "/api/v1/events/*/ratings/*").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH,
+                                "/api/v1/events/*/ratings/*").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.POST,
                                 "/api/v1/events/*/ratings").authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE,

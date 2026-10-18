@@ -18,7 +18,8 @@ import EventDetail from './pages/EventDetail';
 import ReactivateAccountPage from './pages/ReactivateAccountPage';
 import CompleteProfile from './pages/CompleteProfile';
 import AdminEventManagement from './pages/AdminEventManagement';
-import AdminCategoryManagement from './pages/AdminCategoryManagement';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminFinancial from './pages/AdminFinancial';
 import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
 import PaymentPending from './pages/PaymentPending';
@@ -51,7 +52,7 @@ function AppContent() {
   const showNavbar = ![
     '/login', '/verification', '/events/create',
     '/reactivate-account', '/complete-profile',
-    '/admin-panel', '/admin-events', '/admin-categories',
+    '/admin-panel', '/admin-events', '/admin-dashboard', '/admin-financial',
     '/checkout',
   ].includes(location.pathname)
     && !location.pathname.match(/^\/events\/[^/]+\/layout$/)
@@ -92,9 +93,14 @@ function AppContent() {
               <AdminEventManagement />
             </ProtectedRoute>
           } />
-          <Route path="/admin-categories" element={
+          <Route path="/admin-dashboard" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
-              <AdminCategoryManagement />
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-financial" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminFinancial />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={

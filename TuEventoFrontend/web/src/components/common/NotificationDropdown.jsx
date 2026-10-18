@@ -1,27 +1,22 @@
-import { CheckCircle2, DollarSign, Wallet, Info, AlertCircle, RefreshCw, Gift } from 'lucide-react';
+import { CheckCircle2, DollarSign, Wallet, Info, AlertCircle, RefreshCw, Gift, MessageSquare, Reply, Star, Calendar } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { es, enUS, fr, pt } from 'date-fns/locale';
+import { es } from 'date-fns/locale';
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import NotificationDetailModal from './NotificationDetailModal';
-
-/**
- * Obtiene el locale de date-fns según el idioma actual
- */
-function getDateLocale(lang) {
-  const locales = { es, en: enUS, fr, pt };
-  return locales[lang] || es;
-}
 
 /**
  * Iconos según el tipo de notificación
  */
 const NOTIFICATION_ICONS = {
-  PAYMENT_APPROVED: { Icon: CheckCircle2, color: 'text-success' },
-  PAYMENT_REFUNDED: { Icon: RefreshCw, color: 'text-warning' },
-  WALLET_CREDITED: { Icon: Wallet, color: 'text-info' },
-  WELCOME: { Icon: Gift, color: 'text-accent' },
-  DEFAULT: { Icon: Info, color: 'text-accent' },
+  PAYMENT_APPROVED: { Icon: CheckCircle2,   color: 'text-success'  },
+  PAYMENT_REFUNDED: { Icon: RefreshCw,      color: 'text-warning'  },
+  WALLET_CREDITED:  { Icon: Wallet,         color: 'text-info'     },
+  WELCOME:          { Icon: Gift,           color: 'text-accent'   },
+  EVENT_PUBLISHED:  { Icon: Calendar,       color: 'text-success'  },
+  EVENT_REJECTED:   { Icon: AlertCircle,    color: 'text-error'    },
+  NEW_COMMENT:      { Icon: MessageSquare,  color: 'text-accent'   },
+  NEW_REPLY:        { Icon: Reply,          color: 'text-info'     },
+  DEFAULT:          { Icon: Info,           color: 'text-accent'   },
 };
 
 /**
@@ -34,10 +29,10 @@ function getNotificationIcon(notificationType) {
 /**
  * Formatea la fecha relativa (ej: "hace 5 minutos")
  */
-function formatRelativeTime(dateString, locale) {
+function formatRelativeTime(dateString) {
   if (!dateString) return '';
   try {
-    return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale });
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: es });
   } catch {
     return '';
   }
@@ -46,7 +41,7 @@ function formatRelativeTime(dateString, locale) {
 /**
  * Item individual de notificación
  */
-function NotificationItem({ notification, onMarkAsRead, onClose, locale }) {
+function NotificationItem({ notification, onMarkAsRead, onClose }) {
   const [showModal, setShowModal] = useState(false);
   const { Icon, color } = getNotificationIcon(notification.type);
   const isUnread = !notification.readAt;
@@ -103,7 +98,7 @@ function NotificationItem({ notification, onMarkAsRead, onClose, locale }) {
             
             {/* Timestamp */}
             <p className="text-[10px] text-textMuted mt-1.5">
-              {formatRelativeTime(notification.createdAt, locale)}
+              {formatRelativeTime(notification.sentAt || notification.createdAt)}
             </p>
           </div>
         </div>
@@ -131,8 +126,6 @@ export default function NotificationDropdown({
   onMarkAllAsRead,
   onClose,
 }) {
-  const { t, i18n } = useTranslation();
-  const locale = getDateLocale(i18n.language);
   // Mostrar solo las últimas 5 notificaciones
   const displayedNotifications = notifications.slice(0, 5);
   const hasMore = notifications.length > 5;
@@ -143,14 +136,14 @@ export default function NotificationDropdown({
       {/* Header */}
       <div className="px-4 py-3 theme-menu-divider flex items-center justify-between">
         <h3 className="text-sm font-bold text-textPrimary">
-          {t('notifications.title')} {unreadCount > 0 && `(${unreadCount})`}
+          Notificaciones {unreadCount > 0 && `(${unreadCount})`}
         </h3>
         {unreadCount > 0 && (
           <button
             onClick={onMarkAllAsRead}
             className="text-xs font-medium text-accent hover:text-accentDark transition-colors"
           >
-            {t('notifications.actions.markAllRead')}
+            Marcar todas como leídas
           </button>
         )}
       </div>
@@ -159,12 +152,12 @@ export default function NotificationDropdown({
       <div className="max-h-[400px] overflow-y-auto">
         {loading ? (
           <div className="px-4 py-8 text-center text-textMuted text-sm">
-            {t('notifications.loading')}
+            Cargando notificaciones...
           </div>
         ) : notifications.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <Bell className="w-12 h-12 text-textMuted mx-auto mb-2 opacity-30" />
-            <p className="text-sm text-textMuted">{t('notifications.dropdown.noNotifications')}</p>
+            <p className="text-sm text-textMuted">No tienes notificaciones</p>
           </div>
         ) : (
           <>
@@ -174,7 +167,6 @@ export default function NotificationDropdown({
                 notification={notification}
                 onMarkAsRead={onMarkAsRead}
                 onClose={onClose}
-                locale={locale}
               />
             ))}
             
@@ -186,7 +178,7 @@ export default function NotificationDropdown({
                   className="block text-center text-sm font-medium text-accent hover:text-accentDark transition-colors"
                   onClick={onClose}
                 >
-                  {t('notifications.dropdown.viewAll')} ({notifications.length})
+                  Ver todas las notificaciones ({notifications.length})
                 </a>
               </div>
             )}

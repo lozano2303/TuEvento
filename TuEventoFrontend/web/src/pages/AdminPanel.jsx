@@ -41,8 +41,8 @@ export default function AdminPanel() {
   };
 
   useEffect(() => {
-    fetchRequests();
-  }, []);
+    fetchRequests(filter);
+  }, [filter]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -54,11 +54,16 @@ export default function AdminPanel() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu]);
 
-  const fetchRequests = async () => {
+  const fetchRequests = async (activeFilter = 'all') => {
+    setLoading(true);
+    setError(null);
     try {
-      const response = await httpRequest(`${API_URL}/admin/organizer-requests`, {
-        method: 'GET',
-      });
+      const statusMap = { pending: 'PENDING', approved: 'APPROVED', rejected: 'REJECTED' };
+      const statusParam = statusMap[activeFilter];
+      const url = statusParam
+        ? `${API_URL}/admin/organizer-requests?status=${statusParam}`
+        : `${API_URL}/admin/organizer-requests`;
+      const response = await httpRequest(url, { method: 'GET' });
       const data = await response.json();
       if (response.ok) {
         setRequests(data.data || []);
@@ -72,18 +77,10 @@ export default function AdminPanel() {
     }
   };
 
-  const filteredRequests = requests.filter((req) => {
-    if (filter === 'all')      return true;
-    if (filter === 'pending')  return req.status === 'PENDING';
-    if (filter === 'approved') return req.status === 'APPROVED';
-    if (filter === 'rejected') return req.status === 'REJECTED';
-    return true;
-  });
-
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard' },
-    { icon: CreditCard,      label: 'Control Financiero' },
-    { icon: Calendar,        label: 'Eventos',    href: '/admin-events' },
+    { icon: LayoutDashboard, label: 'Dashboard',          href: '/admin-dashboard' },
+    { icon: CreditCard,      label: 'Control Financiero', href: '/admin-financial' },
+    { icon: Calendar,        label: 'Eventos',            href: '/admin-events' },
     { icon: BarChart2,       label: 'Reportes' },
     { icon: RefreshCcw,      label: 'Reembolsos' },
     { icon: Settings,        label: 'Categorías', href: '/admin-categories' },
@@ -158,7 +155,7 @@ export default function AdminPanel() {
       }
       setConfirmModal(null);
       closeDocumentModal();
-      await fetchRequests();
+      await fetchRequests(filter);
     } catch (err) {
       setError(err.message || `Error al ${type === 'approve' ? 'aprobar' : 'rechazar'} solicitud`);
       setConfirmModal(null);
@@ -287,7 +284,7 @@ export default function AdminPanel() {
               <div className="p-10 text-center text-error text-sm">{error}</div>
             ) : loading ? (
               <div className="p-10 text-center text-textMuted text-sm">Cargando...</div>
-            ) : filteredRequests.length === 0 ? (
+            ) : requests.length === 0 ? (
               <div className="p-10 text-center text-textMuted text-sm">
                 No hay solicitudes para mostrar
               </div>
@@ -308,7 +305,7 @@ export default function AdminPanel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRequests.map((req, idx) => {
+                    {requests.map((req, idx) => {
                       const { bg, label } = statusStyle(req.status);
                       return (
                         <tr
@@ -363,7 +360,7 @@ export default function AdminPanel() {
             {/* Pagination */}
             <div className="px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-surfaceAlt">
               <p className="text-xs text-textMuted">
-                Mostrando 1 a {filteredRequests.length} de {requests.length} solicitudes
+                Mostrando {requests.length} solicitudes
               </p>
               <div className="flex items-center gap-1.5">
                 <button className="h-8 w-8 flex items-center justify-center rounded-full bg-surfaceAlt/50 text-textMuted cursor-not-allowed text-sm">‹</button>
