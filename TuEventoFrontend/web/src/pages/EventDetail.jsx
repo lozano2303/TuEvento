@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send, CornerDownLeft, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send, CornerDownLeft, Pencil, Globe } from 'lucide-react';
 import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
 import Konva from 'konva';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import { getEventById } from '../services/EventService';
 import { getEventMedia } from '../services/EventMediaService';
 import * as LayoutService from '../services/LayoutService';
@@ -25,6 +27,7 @@ export default function EventDetail() {
   const navigate = useNavigate();
   const { toast, showToast, hideToast } = useToast();
   const { subscribe } = useNotifications(); // Hook para suscripciones WebSocket
+  const { t } = useTranslation();
   
   const [event, setEvent] = useState(null);
   const [media, setMedia] = useState([]);
@@ -82,6 +85,10 @@ export default function EventDetail() {
 
   // Ref con los ratingIds ya presentes para evitar duplicados al recibir WS
   const commentIdsRef = useRef(new Set());
+  
+  // ── Estado de polling de traducciones ─────────────────────────────────────
+  const pollingIntervalRef = useRef(null);
+  const commentsRef = useRef(comments);
 
   useEffect(() => {
     const userId = localStorage.getItem('userID');
@@ -130,13 +137,19 @@ export default function EventDetail() {
   useEffect(() => {
     seatsRef.current = seats;
   }, [seats]);
+  
+  // Mantener commentsRef sincronizado con el estado comments (para polling)
+  useEffect(() => {
+    commentsRef.current = comments;
+  }, [comments]);
 
   // ── Carga inicial de comentarios por REST ──────────────────────────────────
   useEffect(() => {
     if (!eventId || isLoading) return;
 
+    const userLanguage = i18next.language || 'es';
     setCommentsLoading(true);
-    getEventComments(eventId)
+    getEventComments(eventId, userLanguage)
       .then((res) => {
         const list = res.data ?? [];
         // Filtrar solo visibles (cortesía defensiva; el backend ya filtra)
@@ -147,6 +160,112 @@ export default function EventDetail() {
       .catch((err) => console.error('[EventDetail] Error cargando comentarios:', err.message))
       .finally(() => setCommentsLoading(false));
   }, [eventId, isLoading]);
+  
+  /**
+   * Verificar si un comentario necesita polling de traducción.
+   * Retorna true si:
+   * - El idioma preferido del usuario NO es español
+   * - translationGenerating === true
+   * - El comentario es reciente (menos de 2 minutos)
+   */
+  const needsTranslationPolling = useCallback((comment) => {
+    const userLanguage = i18next.language || 'es';
+    
+    // Si es español, no necesita traducción
+    if (userLanguage === 'es') {
+      return false;
+    }
+
+    // Si no está generando traducción, no necesita polling
+    if (!comment.translationGenerating) {
+      return false;
+    }
+
+    // Solo hacer polling si es reciente (últimos 2 minutos)
+    const commentTime = new Date(comment.createdAt).getTime();
+    const now = Date.now();
+    const twoMinutes = 2 * 60 * 1000;
+    
+    return (now - commentTime) < twoMinutes;
+  }, []);
+
+  /**
+   * Actualizar comentarios específicos desde el backend.
+   */
+  const updateComments = useCallback(async (ratingIds) => {
+    try {
+      const userLanguage = i18next.language || 'es';
+      const response = await getEventComments(eventId, userLanguage);
+      const commentList = response.data || [];
+      
+      // Actualizar solo los comentarios solicitados
+      setComments(prev => 
+        prev.map(c => {
+          if (ratingIds.includes(c.ratingId)) {
+            const updated = commentList.find(nc => nc.ratingId === c.ratingId);
+            return updated || c;
+          }
+          return c;
+        })
+      );
+    } catch (err) {
+      // Error silenciado
+    }
+  }, [eventId]);
+
+  /**
+   * Iniciar polling para comentarios que necesitan traducción.
+   */
+  useEffect(() => {
+    const userLanguage = i18next.language || 'es';
+    
+    // No hacer polling si el idioma es español
+    if (userLanguage === 'es') {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Buscar comentarios que necesitan polling
+    const commentsNeedingPolling = comments.filter(needsTranslationPolling);
+
+    if (commentsNeedingPolling.length === 0) {
+      // No hay comentarios pendientes, limpiar polling
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Iniciar polling cada 3 segundos
+    if (!pollingIntervalRef.current) {
+      pollingIntervalRef.current = setInterval(async () => {
+        const currentComments = commentsRef.current;
+        const pendingComments = currentComments.filter(needsTranslationPolling);
+
+        if (pendingComments.length === 0) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+          return;
+        }
+
+        // Actualizar comentarios pendientes
+        const ratingIds = pendingComments.map(c => c.ratingId);
+        await updateComments(ratingIds);
+      }, 3000);
+    }
+
+    // Cleanup
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [comments, needsTranslationPolling, updateComments]);
 
   // ── Suscripción WebSocket a nuevos comentarios ─────────────────────────────
   useEffect(() => {
@@ -177,7 +296,8 @@ export default function EventDetail() {
             if (!parentExists) {
               // Recarga diferida para obtener el padre y la respuesta juntos.
               // Usamos merge en lugar de reemplazar para no perder ids ya registrados.
-              getEventComments(eventId).then((res) => {
+              const userLanguage = i18next.language || 'es';
+              getEventComments(eventId, userLanguage).then((res) => {
                 const list = (res.data ?? []).filter((c) => c.isVisible !== false);
                 // Merge: actualizar el ref con la unión de lo que ya había y lo que llegó
                 commentIdsRef.current = new Set([
@@ -549,6 +669,15 @@ export default function EventDetail() {
    */
   const currentUserIsOrganizer = eventOrganizerUserId != null && currentUserId != null
     && Number(eventOrganizerUserId) === Number(currentUserId);
+  
+  /**
+   * ¿El usuario puede comentar?
+   * Solo usuarios con idioma configurado en español pueden escribir comentarios.
+   */
+  const canUserComment = () => {
+    const userLanguage = i18next.language || 'es';
+    return userLanguage === 'es';
+  };
 
   /**
    * ¿Necesita el selector de estrellas?
@@ -560,6 +689,32 @@ export default function EventDetail() {
       Number(c.userId) === Number(currentUserId) &&
       c.rating != null
     );
+  
+  /**
+   * Obtener el texto del comentario a mostrar.
+   * Si hay traducción disponible, mostrar la traducción; si no, mostrar el original.
+   */
+  const getCommentText = (comment) => {
+    if (comment.translatedComment && comment.languageCode) {
+      return comment.translatedComment;
+    }
+    return comment.comment;
+  };
+  
+  /**
+   * ¿Mostrar badge de traducción?
+   */
+  const showTranslationBadge = (comment) => {
+    return comment.translatedComment && comment.languageCode;
+  };
+  
+  /**
+   * ¿Mostrar indicador de traducción en progreso?
+   */
+  const showTranslatingIndicator = (comment) => {
+    const userLanguage = i18next.language || 'es';
+    return userLanguage !== 'es' && comment.translationGenerating === true;
+  };
 
   /**
    * ¿Puede editar el comentario c?
@@ -832,50 +987,59 @@ export default function EventDetail() {
 
           {/* Formulario principal — cualquier usuario autenticado (R1) */}
           {localStorage.getItem('token') ? (
-            <form
-              id="comment-form"
-              onSubmit={handleCommentSubmit}
-              className="mb-8 p-4 rounded-xl"
-              style={{ background: 'rgba(109,40,217,0.1)', border: '1px solid rgba(167,139,250,0.15)' }}
-            >
-              {/* Selector de estrellas — solo en comentarios principales (no en respuestas) */}
-              {needsRatingSelector && (
-                <StarRatingInput
-                  value={commentRating}
-                  onChange={(star) => {
-                    setCommentRating(star);
-                    setCommentError(null);
-                  }}
-                  disabled={commentSubmitting}
-                />
-              )}
-              <div className="flex gap-3 items-start">
-                <label htmlFor="comment-textarea" className="sr-only">Texto del comentario</label>
-                <textarea
-                  id="comment-textarea"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Escribe tu comentario sobre el evento…"
-                  maxLength={500}
-                  rows={3}
-                  className="flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
-                  style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.2)', color: '#e9d5ff' }}
-                />
-                <button
-                  type="submit"
-                  disabled={commentSubmitting || !commentText.trim() || (needsRatingSelector && commentRating === 0)}
-                  aria-label={commentSubmitting ? 'Enviando comentario…' : 'Publicar comentario'}
-                  className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-40"
-                  style={{ background: 'rgba(109,40,217,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
-                >
-                  {commentSubmitting ? <span className="text-xs" style={{ color: '#e9d5ff' }}>…</span> : <Send className="w-4 h-4 pointer-events-none" style={{ color: '#e9d5ff' }} />}
-                </button>
+            canUserComment() ? (
+              <form
+                id="comment-form"
+                onSubmit={handleCommentSubmit}
+                className="mb-8 p-4 rounded-xl"
+                style={{ background: 'rgba(109,40,217,0.1)', border: '1px solid rgba(167,139,250,0.15)' }}
+              >
+                {/* Selector de estrellas — solo en comentarios principales (no en respuestas) */}
+                {needsRatingSelector && (
+                  <StarRatingInput
+                    value={commentRating}
+                    onChange={(star) => {
+                      setCommentRating(star);
+                      setCommentError(null);
+                    }}
+                    disabled={commentSubmitting}
+                  />
+                )}
+                <div className="flex gap-3 items-start">
+                  <label htmlFor="comment-textarea" className="sr-only">Texto del comentario</label>
+                  <textarea
+                    id="comment-textarea"
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Escribe tu comentario sobre el evento…"
+                    maxLength={500}
+                    rows={3}
+                    className="flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
+                    style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.2)', color: '#e9d5ff' }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={commentSubmitting || !commentText.trim() || (needsRatingSelector && commentRating === 0)}
+                    aria-label={commentSubmitting ? 'Enviando comentario…' : 'Publicar comentario'}
+                    className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-40"
+                    style={{ background: 'rgba(109,40,217,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
+                  >
+                    {commentSubmitting ? <span className="text-xs" style={{ color: '#e9d5ff' }}>…</span> : <Send className="w-4 h-4 pointer-events-none" style={{ color: '#e9d5ff' }} />}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{commentText.length}/500</span>
+                  {commentError && <span role="alert" className="text-xs text-red-400">{commentError}</span>}
+                </div>
+              </form>
+            ) : (
+              <div className="mb-8 p-4 rounded-xl text-center" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)' }}>
+                <Globe className="w-5 h-5 mx-auto mb-2" style={{ color: 'rgba(251,191,36,0.8)' }} />
+                <p className="text-sm" style={{ color: 'rgba(251,191,36,0.9)' }}>
+                  {t('comments.languageRestriction')}
+                </p>
               </div>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{commentText.length}/500</span>
-                {commentError && <span role="alert" className="text-xs text-red-400">{commentError}</span>}
-              </div>
-            </form>
+            )
           ) : (
             <p className="text-sm mb-6 text-center" style={{ color: 'rgba(196,181,253,0.5)' }}>
               <a href="/login" style={{ color: '#a78bfa', textDecoration: 'underline' }}>Inicia sesión</a>{' '}para dejar un comentario.
@@ -975,7 +1139,28 @@ export default function EventDetail() {
                             {editError && <p role="alert" className="text-xs text-red-400 mt-1">{editError}</p>}
                           </form>
                         ) : (
-                          <p className="text-sm leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>{c.comment}</p>
+                          <>
+                            <p className="text-sm leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>
+                              {getCommentText(c)}
+                            </p>
+                            {/* Badge de traducción o indicador de carga */}
+                            {showTranslationBadge(c) && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Globe className="w-3 h-3" style={{ color: 'rgba(167,139,250,0.5)' }} />
+                                <span className="text-xs" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                                  {t('comments.translated')}
+                                </span>
+                              </div>
+                            )}
+                            {showTranslatingIndicator(c) && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <div className="w-3 h-3 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'rgba(167,139,250,0.5)' }} />
+                                <span className="text-xs" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                                  {t('comments.translating')}
+                                </span>
+                              </div>
+                            )}
+                          </>
                         )}
 
                         {/* Tiempo + (editado) */}
@@ -989,7 +1174,7 @@ export default function EventDetail() {
                         </div>
 
                         {/* Botón Responder — solo en principales, solo con sesión */}
-                        {localStorage.getItem('token') && replyParentId !== c.ratingId && (
+                        {localStorage.getItem('token') && canUserComment() && replyParentId !== c.ratingId && (
                           <button
                             type="button"
                             onClick={() => { 
@@ -1215,16 +1400,36 @@ export default function EventDetail() {
                                       && r.replyToUserId
                                       && Number(r.replyToUserId) !== Number(r.userId);
                                     const prefix = hasMention ? `@${r.replyToUserName} ` : '';
-                                    const bodyText = (hasMention && r.comment.startsWith(prefix))
-                                      ? r.comment.slice(prefix.length)
-                                      : r.comment;
+                                    const commentToShow = getCommentText(r);
+                                    const bodyText = (hasMention && commentToShow.startsWith(prefix))
+                                      ? commentToShow.slice(prefix.length)
+                                      : commentToShow;
                                     return (
-                                      <p className="text-xs leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>
-                                        {hasMention && (
-                                          <span style={{ color: '#a78bfa', fontWeight: '500' }}>@{r.replyToUserName}{' '}</span>
+                                      <>
+                                        <p className="text-xs leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>
+                                          {hasMention && (
+                                            <span style={{ color: '#a78bfa', fontWeight: '500' }}>@{r.replyToUserName}{' '}</span>
+                                          )}
+                                          {bodyText}
+                                        </p>
+                                        {/* Badge de traducción o indicador de carga */}
+                                        {showTranslationBadge(r) && (
+                                          <div className="flex items-center gap-1 mt-1">
+                                            <Globe className="w-2.5 h-2.5" style={{ color: 'rgba(167,139,250,0.5)' }} />
+                                            <span className="text-xs" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                                              {t('comments.translated')}
+                                            </span>
+                                          </div>
                                         )}
-                                        {bodyText}
-                                      </p>
+                                        {showTranslatingIndicator(r) && (
+                                          <div className="flex items-center gap-1 mt-1">
+                                            <div className="w-2.5 h-2.5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'rgba(167,139,250,0.5)' }} />
+                                            <span className="text-xs" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                                              {t('comments.translating')}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </>
                                     );
                                   })()
                                 )}
@@ -1239,7 +1444,7 @@ export default function EventDetail() {
                                 </div>
 
                                 {/* Botón Responder en respuestas */}
-                                {localStorage.getItem('token') && replyParentId !== c.ratingId && !isEditingReply && (
+                                {localStorage.getItem('token') && canUserComment() && replyParentId !== c.ratingId && !isEditingReply && (
                                   <button
                                     type="button"
                                     onClick={() => { 

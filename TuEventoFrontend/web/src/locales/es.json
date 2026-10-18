@@ -17,6 +17,25 @@
     "noResults": "No hay resultados",
     "tryAgain": "Intentar de nuevo"
   },
+  "comments": {
+    "languageRestriction": "Debes configurar tu idioma preferido como Español para poder comentar",
+    "translated": "Traducido desde español",
+    "translating": "Traduciendo comentario…",
+    "loadingComments": "Cargando comentarios…",
+    "noComments": "No hay comentarios aún",
+    "writeComment": "Escribir comentario…",
+    "reply": "Responder",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "publish": "Publicar",
+    "replyTo": "Respondiendo a",
+    "editing": "Editando comentario",
+    "organizer": "Organizador",
+    "edited": "Editado",
+    "selectRating": "Selecciona una calificación de 1 a 5 estrellas antes de publicar"
+  },
   "landing": {
     "hero": {
       "greeting": "¡Hola, {{name}}!",

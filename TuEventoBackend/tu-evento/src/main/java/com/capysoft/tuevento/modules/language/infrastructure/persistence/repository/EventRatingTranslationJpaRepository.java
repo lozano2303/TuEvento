@@ -29,6 +29,9 @@ public interface EventRatingTranslationJpaRepository extends JpaRepository<Event
     @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId AND ert.status = :status")
     List<EventRatingTranslationEntity> findByRatingIdAndStatus(@Param("ratingId") Long ratingId, @Param("status") String status);
 
+    @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.ratingId IN :ratingIds AND ert.status = :status")
+    List<EventRatingTranslationEntity> findByRatingIdsAndStatus(@Param("ratingIds") List<Long> ratingIds, @Param("status") String status);
+
     @Modifying
     @Query("DELETE FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId")
     void deleteByRatingId(@Param("ratingId") Long ratingId);
