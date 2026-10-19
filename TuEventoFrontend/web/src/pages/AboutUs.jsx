@@ -52,61 +52,241 @@ export default function AboutUs() {
           className="absolute inset-0"
           style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primaryDark) 100%)' }}
         >
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute top-20 left-20 w-2 h-2 bg-accent rounded-full animate-pulse" />
-            <div className="absolute top-40 right-32 w-3 h-3 bg-accent rounded-full animate-bounce" />
-            <div className="absolute bottom-32 left-1/4 w-1 h-1 bg-textPrimary rounded-full animate-ping" />
-            <div className="absolute top-60 left-3/4 w-2 h-2 bg-accent rounded-full animate-pulse" />
-          </div>
+          {/* Blob superior-izquierda */}
+          <svg className="absolute -top-32 -left-32 pointer-events-none" style={{ opacity: 0.3, animation: 'lp2-float-slow 10s ease-in-out infinite' }} width="500" height="500" viewBox="0 0 500 500" fill="none">
+            <circle cx="250" cy="250" r="240" fill="url(#auGrad1)"/>
+            <circle cx="250" cy="250" r="180" stroke="rgba(196,181,253,0.35)" strokeWidth="1.5" strokeDasharray="14 9"/>
+            <circle cx="250" cy="250" r="120" stroke="rgba(196,181,253,0.2)" strokeWidth="1" strokeDasharray="7 12"/>
+            <defs>
+              <radialGradient id="auGrad1" cx="35%" cy="35%" r="65%">
+                <stop offset="0%" stopColor="#c4b5fd" stopOpacity="0.4"/>
+                <stop offset="60%" stopColor="#7c3aed" stopOpacity="0.1"/>
+                <stop offset="100%" stopColor="#7c3aed" stopOpacity="0"/>
+              </radialGradient>
+            </defs>
+          </svg>
+
+          {/* Anillo giratorio top-left */}
+          <svg className="absolute top-8 left-12 pointer-events-none" style={{ opacity: 0.28, animation: 'lp2-spin-slow 28s linear infinite' }} width="160" height="160" viewBox="0 0 160 160" fill="none">
+            <circle cx="80" cy="80" r="74" stroke="rgba(221,214,254,0.85)" strokeWidth="2" strokeDasharray="12 7"/>
+            <circle cx="80" cy="80" r="50" stroke="rgba(221,214,254,0.45)" strokeWidth="1" strokeDasharray="5 10"/>
+          </svg>
+
+          {/* Rombo derecha */}
+          <svg className="absolute top-12 right-16 pointer-events-none" style={{ opacity: 0.28, animation: 'lp2-float 7s 1s ease-in-out infinite' }} width="140" height="140" viewBox="0 0 140 140" fill="none">
+            <polygon points="70,5 135,70 70,135 5,70" fill="url(#auGrad2)" stroke="rgba(221,214,254,0.65)" strokeWidth="1.8"/>
+            <polygon points="70,28 112,70 70,112 28,70" fill="none" stroke="rgba(221,214,254,0.3)" strokeWidth="1" strokeDasharray="5 6"/>
+            <defs>
+              <linearGradient id="auGrad2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.32"/>
+                <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.04"/>
+              </linearGradient>
+            </defs>
+          </svg>
+
+          {/* Triángulo bottom-derecha */}
+          <svg className="absolute bottom-24 right-24 pointer-events-none" style={{ opacity: 0.22, animation: 'lp2-float-slow 11s 2s ease-in-out infinite' }} width="90" height="90" viewBox="0 0 90 90" fill="none">
+            <polygon points="45,5 85,80 5,80" fill="url(#auGrad3)" stroke="rgba(221,214,254,0.55)" strokeWidth="1.8"/>
+            <defs>
+              <linearGradient id="auGrad3" x1="0.5" y1="0" x2="0.5" y2="1">
+                <stop offset="0%" stopColor="#c4b5fd" stopOpacity="0.35"/>
+                <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.04"/>
+              </linearGradient>
+            </defs>
+          </svg>
+
+          {/* Cuadrado rotado bottom-left */}
+          <svg className="absolute bottom-28 left-1/4 pointer-events-none" style={{ opacity: 0.2, transform: 'rotate(18deg)', animation: 'lp2-float 9s 0.5s ease-in-out infinite' }} width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <rect x="4" y="4" width="56" height="56" rx="10" fill="rgba(167,139,250,0.18)" stroke="rgba(221,214,254,0.6)" strokeWidth="1.8" strokeDasharray="6 5"/>
+          </svg>
+
+          {/* Hexágono centro */}
+          <svg className="absolute top-1/3 left-1/2 pointer-events-none" style={{ opacity: 0.15, animation: 'lp2-float-slow 13s 1s ease-in-out infinite' }} width="52" height="52" viewBox="0 0 52 52" fill="none">
+            <polygon points="26,2 50,14 50,38 26,50 2,38 2,14" fill="rgba(167,139,250,0.2)" stroke="rgba(221,214,254,0.6)" strokeWidth="1.5"/>
+          </svg>
+
+          {/* Cruz decorativa */}
+          <svg className="absolute top-12 left-1/2 pointer-events-none" style={{ opacity: 0.22, animation: 'lp2-float-slow 14s 3s ease-in-out infinite' }} width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <line x1="14" y1="2" x2="14" y2="26" stroke="rgba(221,214,254,0.9)" strokeWidth="2.5" strokeLinecap="round"/>
+            <line x1="2" y1="14" x2="26" y2="14" stroke="rgba(221,214,254,0.9)" strokeWidth="2.5" strokeLinecap="round"/>
+          </svg>
+
+          {/* Puntos de luz */}
+          <div className="absolute top-16 right-20 pointer-events-none" style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(221,214,254,0.85)', boxShadow: '0 0 26px 10px rgba(167,139,250,0.32)', animation: 'lp2-pulse-ring 2.6s ease-out infinite' }}/>
+          <div className="absolute top-1/2 left-16 pointer-events-none" style={{ width: 9, height: 9, borderRadius: '50%', background: 'rgba(196,181,253,0.7)', boxShadow: '0 0 16px 6px rgba(167,139,250,0.25)', animation: 'lp2-pulse-ring 3.2s 1.1s ease-out infinite' }}/>
+          <div className="absolute bottom-20 right-1/3 pointer-events-none" style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(196,181,253,0.6)', boxShadow: '0 0 12px 4px rgba(167,139,250,0.2)', animation: 'lp2-pulse-ring 4s 0.7s ease-out infinite' }}/>
+
+          {/* Estrellas / destellos */}
+          {[
+            { top: '15%', left: '42%', size: 4, delay: '0s',   dur: '2.8s' },
+            { top: '68%', left: '58%', size: 3, delay: '1.2s', dur: '3.4s' },
+            { top: '38%', left: '78%', size: 5, delay: '0.6s', dur: '2.2s' },
+            { top: '80%', left: '18%', size: 3, delay: '1.8s', dur: '3.8s' },
+            { top: '10%', left: '62%', size: 4, delay: '0.3s', dur: '2.5s' },
+          ].map(({ top, left, size, delay, dur }, i) => (
+            <div
+              key={i}
+              className="absolute pointer-events-none"
+              style={{
+                top, left,
+                width: size, height: size,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.95)',
+                boxShadow: `0 0 ${size * 3}px ${size}px rgba(255,255,255,0.4)`,
+                animation: `lp2-star-twinkle ${dur} ${delay} ease-in-out infinite`,
+              }}
+            />
+          ))}
+
+          {/* Blob morfante */}
+          <div
+            className="lp2-morph-blob"
+            style={{
+              width: 320, height: 320,
+              bottom: '-80px', right: '-80px',
+              background: 'radial-gradient(circle, rgba(167,139,250,0.20), rgba(124,58,237,0.05) 70%)',
+            }}
+          />
+
+          {/* Cuadrícula diagonal sutil */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.035 }} preserveAspectRatio="none">
+            <defs>
+              <pattern id="au-grid" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse" patternTransform="rotate(15)">
+                <line x1="0" y1="0" x2="0" y2="60" stroke="white" strokeWidth="0.8"/>
+                <line x1="0" y1="0" x2="60" y2="0" stroke="white" strokeWidth="0.8"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#au-grid)"/>
+          </svg>
+
           <div
             className="absolute inset-0"
             style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 80%, transparent), color-mix(in srgb, var(--color-primaryDark) 60%, transparent), color-mix(in srgb, var(--color-background) 40%, transparent))' }}
           />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 py-17">
-          <div className="text-center space-y-8">
+        <div className="relative max-w-6xl mx-auto px-4 py-24 md:py-32">
+          <div className="text-center space-y-7">
             <div
-              className="inline-flex items-center px-6 py-2 rounded-full border mb-6"
-              style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', borderColor: 'rgba(255,255,255,0.2)' }}
+              className="inline-flex items-center px-5 py-2 rounded-full border mb-2"
+              style={{
+                background: 'rgba(255,255,255,0.13)',
+                backdropFilter: 'blur(10px)',
+                borderColor: 'rgba(255,255,255,0.25)',
+                animation: 'lp2-slide-up 0.5s ease both',
+              }}
             >
-              <Sparkles className="w-5 h-5 text-accent mr-2" />
-              <span className="text-sm font-medium text-textPrimary">Plataforma de Eventos Innovadora</span>
+              <Sparkles className="w-4 h-4 mr-2" style={{ color: '#c4b5fd' }} />
+              <span className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.92)' }}>Plataforma de Eventos Innovadora</span>
+              <span
+                className="ml-2 w-2 h-2 rounded-full inline-block"
+                style={{ background: '#4ade80', boxShadow: '0 0 6px #4ade80', animation: 'lp2-pulse-ring 1.4s ease-out infinite' }}
+              />
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-bold leading-tight text-textPrimary">
-              Sobre <span className="text-accent drop-shadow-lg">Nosotros</span>
+            <h1
+              className="text-5xl md:text-7xl font-extrabold leading-tight text-white"
+              style={{ animation: 'lp2-slide-up 0.7s 0.1s ease both', letterSpacing: '-0.02em' }}
+            >
+              Sobre{' '}
+              <span style={{
+                background: 'linear-gradient(90deg, #e9d5ff, #a78bfa, #c4b5fd)',
+                backgroundSize: '200% auto',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                animation: 'lp2-shimmer 3s linear infinite',
+              }}>
+                Nosotros
+              </span>
             </h1>
 
-            <p className="text-xl max-w-4xl mx-auto leading-relaxed" style={{ color: 'color-mix(in srgb, var(--color-textPrimary) 85%, transparent)' }}>
-              En <span className="font-semibold text-accent">"Tu Evento"</span> transformamos ideas en experiencias inolvidables. Somos una plataforma especializada en la
-              <span className="font-medium text-textPrimary"> maquetación virtual de espacios</span> para eventos, permitiendo a organizadores planificar visualmente la disposición
+            <p
+              className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed"
+              style={{ color: 'rgba(255,255,255,0.78)', animation: 'lp2-slide-up 0.7s 0.2s ease both' }}
+            >
+              En <span className="font-semibold" style={{ color: '#c4b5fd' }}>"Tu Evento"</span> transformamos ideas en experiencias inolvidables. Somos una plataforma especializada en la
+              <span className="font-semibold text-white"> maquetación virtual de espacios</span> para eventos, permitiendo a organizadores planificar visualmente la disposición
               de sus lugares: mesas, escenarios, pistas de baile, áreas VIP y más.
             </p>
 
-            <div className="flex flex-wrap justify-center gap-4 mt-8">
+            <div
+              className="flex flex-wrap justify-center gap-3 pt-2"
+              style={{ animation: 'lp2-slide-up 0.7s 0.3s ease both' }}
+            >
               {[
-                { icon: Zap,    text: 'Visualización 2D',     color: 'text-accent' },
-                { icon: Target, text: 'Planificación Precisa', color: 'text-success' },
-                { icon: Heart,  text: 'Experiencias Únicas',  color: 'text-error'  },
-              ].map(({ icon: Icon, text, color }) => (
+                { icon: Zap,    text: 'Visualización 2D' },
+                { icon: Target, text: 'Planificación Precisa' },
+                { icon: Heart,  text: 'Experiencias Únicas' },
+              ].map(({ icon: Icon, text }) => (
                 <div
                   key={text}
-                  className="flex items-center px-4 py-2 rounded-lg border"
-                  style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', borderColor: 'rgba(255,255,255,0.2)' }}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 cursor-default"
+                  style={{
+                    background: 'rgba(255,255,255,0.12)',
+                    backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255,255,255,0.22)',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.22)';
+                    e.currentTarget.style.transform = 'translateY(-3px) scale(1.04)';
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                    e.currentTarget.style.transform = '';
+                    e.currentTarget.style.boxShadow = '';
+                  }}
                 >
-                  <Icon className={`w-5 h-5 ${color} mr-2`} />
-                  <span className="text-sm text-textPrimary">{text}</span>
+                  <Icon className="w-4 h-4" style={{ color: '#c4b5fd' }} />
+                  <span className="text-sm font-semibold text-white">{text}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Mini stats strip */}
+            <div
+              className="flex flex-wrap justify-center gap-3 pt-3"
+              style={{ animation: 'lp2-slide-up 0.7s 0.4s ease both' }}
+            >
+              {[
+                { val: '2D',   label: 'Editor visual' },
+                { val: '100%', label: 'Seguro' },
+                { val: '24/7', label: 'Disponible' },
+                { val: '2',    label: 'Plataformas' },
+              ].map(({ val, label }) => (
+                <div
+                  key={val}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl"
+                  style={{
+                    background: 'rgba(255,255,255,0.22)',
+                    border: '1px solid rgba(255,255,255,0.45)',
+                    backdropFilter: 'blur(12px)',
+                  }}
+                >
+                  <span style={{ color: '#fff', fontWeight: 900, fontSize: '0.95rem', lineHeight: 1 }}>{val}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.78rem', fontWeight: 500 }}>{label}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Onda decorativa */}
-        <div className="relative w-full overflow-hidden mt-16">
-          <svg viewBox="0 0 1200 120" className="w-full h-32 fill-background" preserveAspectRatio="none">
-            <path d="M0,60 Q150,20 300,60 T600,60 Q750,100 900,60 T1200,60 L1200,120 L0,120 Z" />
+        {/* Onda decorativa — doble ola animada */}
+        <div className="lp2-wave-wrap" style={{ height: 110, marginTop: '-2px' }}>
+          {/* Ola trasera */}
+          <svg className="lp2-wave-svg lp2-wave-svg-2" viewBox="0 0 2880 110" preserveAspectRatio="none">
+            <path
+              d="M0,55 C240,95 480,20 720,55 C960,90 1200,15 1440,55 C1680,95 1920,20 2160,55 C2400,90 2640,15 2880,55 L2880,110 L0,110 Z"
+              fill="color-mix(in srgb, var(--color-background) 55%, var(--color-primaryDark))"
+            />
+          </svg>
+          {/* Ola delantera */}
+          <svg className="lp2-wave-svg lp2-wave-svg-1" viewBox="0 0 2880 110" preserveAspectRatio="none">
+            <path
+              d="M0,65 C180,20 360,95 540,55 C720,15 900,90 1080,55 C1260,20 1440,95 1620,55 C1800,15 1980,90 2160,55 C2340,20 2520,90 2700,60 C2790,45 2840,70 2880,65 L2880,110 L0,110 Z"
+              fill="var(--color-background)"
+            />
           </svg>
         </div>
       </section>
@@ -231,33 +411,102 @@ export default function AboutUs() {
 
         <div className="max-w-6xl mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Ilustración */}
-            <div className="relative">
+            {/* Ilustración — mockup de interfaz */}
+            <div className="relative flex items-center justify-center">
               <div
-                className="p-8 rounded-3xl"
-                style={{ background: 'color-mix(in srgb, var(--color-primary) 20%, transparent)', backdropFilter: 'blur(8px)', border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)' }}
+                className="relative w-full max-w-sm rounded-3xl p-6 shadow-2xl"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-primary) 22%, transparent)',
+                  backdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(255,255,255,0.18)',
+                }}
               >
-                <div
-                  className="relative h-80 rounded-2xl overflow-hidden"
-                  style={{ background: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}
-                >
-                  <div className="absolute top-8 left-8 w-16 h-12 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.2)' }}>
-                    <Calendar className="w-6 h-6 text-textPrimary" />
+                {/* Header del mockup */}
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                   </div>
-                  <div className="absolute top-8 right-8 w-12 h-12 rounded-full flex items-center justify-center bg-accent/80">
-                    <Clock className="w-6 h-6 text-background" />
+                  <div
+                    className="text-xs font-semibold px-3 py-1 rounded-full"
+                    style={{ background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.85)' }}
+                  >
+                    Editor de planos
                   </div>
-                  <div className="absolute bottom-8 left-8 w-20 h-16 rounded-lg" style={{ background: 'rgba(255,255,255,0.2)' }} />
-                  <div className="absolute bottom-8 right-8 w-14 h-14 bg-primary/80 rounded-full" />
-                  <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2">
-                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.3)' }}>
-                      <Users className="w-8 h-8 text-textPrimary" />
-                    </div>
-                  </div>
-                  <div className="absolute top-20 left-1/4 w-2 h-2 bg-accent rounded-full animate-pulse" />
-                  <div className="absolute top-32 right-1/4 w-3 h-3 bg-textPrimary/60 rounded-full animate-bounce" />
-                  <div className="absolute bottom-32 left-1/3 w-1 h-1 bg-textPrimary rounded-full animate-ping" />
                 </div>
+
+                {/* Grid de secciones simuladas */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {[
+                    { label: 'VIP',       w: 'col-span-2', h: 'h-14', opacity: '0.35' },
+                    { label: 'General',   w: 'col-span-1', h: 'h-14', opacity: '0.25' },
+                    { label: 'Escenario', w: 'col-span-3', h: 'h-10', opacity: '0.20' },
+                    { label: 'Mesa A',    w: 'col-span-1', h: 'h-12', opacity: '0.30' },
+                    { label: 'Mesa B',    w: 'col-span-1', h: 'h-12', opacity: '0.30' },
+                    { label: 'Barra',     w: 'col-span-1', h: 'h-12', opacity: '0.22' },
+                  ].map(({ label, w, h, opacity }) => (
+                    <div
+                      key={label}
+                      className={`${w} ${h} rounded-xl flex items-center justify-center`}
+                      style={{ background: `rgba(255,255,255,${opacity})`, border: '1px solid rgba(255,255,255,0.2)' }}
+                    >
+                      <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>{label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Barra de herramientas simulada */}
+                <div
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl"
+                  style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)' }}
+                >
+                  {[Calendar, Users, Zap, CheckCircle].map((Icon, i) => (
+                    <div
+                      key={i}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ background: i === 0 ? 'rgba(255,255,255,0.25)' : 'transparent' }}
+                    >
+                      <Icon className="w-4 h-4" style={{ color: i === 0 ? '#fff' : 'rgba(255,255,255,0.5)' }} />
+                    </div>
+                  ))}
+                  <div
+                    className="text-xs font-semibold px-3 py-1 rounded-lg"
+                    style={{ background: 'var(--color-accent)', color: '#fff' }}
+                  >
+                    Guardar
+                  </div>
+                </div>
+              </div>
+
+              {/* Badge flotante — asistentes */}
+              <div
+                className="absolute -bottom-4 -right-4 flex items-center gap-2 px-3 py-2 rounded-2xl shadow-xl"
+                style={{
+                  background: 'rgba(255,255,255,0.95)',
+                  animation: 'lp2-float 5s ease-in-out infinite',
+                }}
+              >
+                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primaryDark))' }}>
+                  <Users className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div>
+                  <p className="font-bold text-gray-800" style={{ fontSize: '0.7rem' }}>248 asistentes</p>
+                  <p className="text-gray-500" style={{ fontSize: '0.6rem' }}>confirmados</p>
+                </div>
+              </div>
+
+              {/* Badge flotante — en vivo */}
+              <div
+                className="absolute -top-3 -left-3 flex items-center gap-2 px-3 py-1.5 rounded-xl shadow-lg"
+                style={{
+                  background: 'rgba(255,255,255,0.95)',
+                  animation: 'lp2-float 6s 1.5s ease-in-out infinite',
+                }}
+              >
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" />
+                <p className="font-bold text-gray-800" style={{ fontSize: '0.7rem' }}>En vivo</p>
               </div>
             </div>
 
