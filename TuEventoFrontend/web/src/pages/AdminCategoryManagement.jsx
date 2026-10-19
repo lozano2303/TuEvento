@@ -207,7 +207,7 @@ export default function AdminCategoryManagement() {
     { icon: BarChart2,       label: 'Reportes' },
     { icon: RefreshCcw,      label: 'Reembolsos' },
     { icon: Users,           label: 'Solicitudes',        href: '/admin' },
-    { icon: Settings,        label: 'Categorías',         active: true },
+    { icon: Settings,        label: 'Categorías',         href: '/admin-categories', active: true },
     { icon: Layers,          label: 'Tipos de Sección',   href: '/admin-section-types' },
   ];
 
