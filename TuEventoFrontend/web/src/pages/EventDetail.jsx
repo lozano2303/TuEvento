@@ -113,7 +113,7 @@ export default function EventDetail() {
       getEventById(eventId, userLanguage),
       getEventMedia(eventId),
       LayoutService.getLayout(eventId),
-      EventSectionService.getByEvent(eventId),
+      EventSectionService.getByEvent(eventId, userLanguage),
     ])
       .then(async ([eventRes, mediaRes, layoutRes, sectionsRes]) => {
         setEvent(eventRes.data);
