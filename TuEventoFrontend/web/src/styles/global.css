@@ -1468,6 +1468,34 @@ input[type="password"]::-ms-reveal { display: none; }
   }
 }
 
+/* ── Botón volver al landing ─────────────────────────────────────────────── */
+.login-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(168, 85, 247, 0.85);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.1rem;
+  margin-bottom: 1.25rem;
+  transition: color 0.18s, gap 0.18s;
+  letter-spacing: 0.01em;
+}
+
+.login-back-btn:hover {
+  color: #a855f7;
+  gap: 0.5rem;
+}
+
+.login-back-btn:focus-visible {
+  outline: 2px solid #a855f7;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
 /* ── Tarjeta glassmorphism ────────────────────────────────────────────────── */
 .login-card {
   width: 100%;
@@ -1879,6 +1907,8 @@ input[type="password"]::-ms-reveal { display: none; }
   display: flex;
   flex-direction: column;
   justify-content: center;
+  height: 100vh;
+  padding-bottom: 110px;
 }
 
 .lp2-hero-bg {
@@ -2065,11 +2095,13 @@ input[type="password"]::-ms-reveal { display: none; }
 }
 /* Onda animada — wrapper */
 .lp2-wave-wrap {
-  position: relative;
+  position: absolute;
+  bottom: -1px;
+  left: 0;
   width: 100%;
   overflow: hidden;
   line-height: 0;
-  height: 100px;
+  height: 110px;
 }
 .lp2-wave-svg {
   position: absolute;
