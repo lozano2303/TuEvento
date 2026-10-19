@@ -87,6 +87,24 @@ public class GetEventService implements GetEventUseCase {
                 .toList();
     }
 
+    @Override
+    public List<EventSummaryResponse> searchPublishedEvents(String q, LocalDate date) {
+        if (date != null && date.isBefore(LocalDate.now())) {
+            throw new BusinessException("INVALID_SEARCH_DATE",
+                    "Search date cannot be in the past");
+        }
+        // blank query → empty string so LIKE '%%' matches all event names
+        String term = (q == null || q.isBlank()) ? "" : q.trim();
+
+        // Split into two separate repo calls to avoid null-binding issues in
+        // native queries on PostgreSQL when date is null.
+        List<Event> results = (date == null)
+                ? eventRepository.searchPublishedByText(term)
+                : eventRepository.searchPublishedByTextAndDate(term, date);
+
+        return results.stream().map(this::toSummary).toList();
+    }
+
     // ─── Mappers ──────────────────────────────────────────────────────────────
 
     private EventResponse toResponse(Event e) {
