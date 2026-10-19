@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send, CornerDownLeft, Pencil, Globe } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send, CornerDownLeft, Pencil, Globe, AlertTriangle } from 'lucide-react';
 import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
 import Konva from 'konva';
 import { useTranslation } from 'react-i18next';
@@ -1038,18 +1038,18 @@ export default function EventDetail() {
                 </div>
               </form>
             ) : (
-              <div className="mb-8 p-4 rounded-xl text-center" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)' }}>
-                <Globe className="w-5 h-5 mx-auto mb-2" style={{ color: 'rgba(251,191,36,0.8)' }} />
-                <p className="text-sm mb-2" style={{ color: 'rgba(251,191,36,0.9)' }}>
-                  {t('comments.languageRestriction')}
-                </p>
-                <a
-                  href="/profile"
-                  className="text-xs underline transition-opacity hover:opacity-80"
-                  style={{ color: 'rgba(251,191,36,1)' }}
-                >
-                  {t('profile.editProfile')}
-                </a>
+              <div className="mb-8 flex items-center gap-3 rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: 'rgba(251,191,36,0.9)' }}>
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" style={{ color: 'rgba(251,191,36,0.8)' }} />
+                <div>
+                  <p className="mb-1">{t('comments.languageRestriction')}</p>
+                  <a
+                    href="/profile"
+                    className="text-xs underline transition-opacity hover:opacity-80"
+                    style={{ color: 'rgba(251,191,36,1)' }}
+                  >
+                    {t('profile.editProfile')}
+                  </a>
+                </div>
               </div>
             )
           ) : (
