@@ -103,7 +103,7 @@ export default function AdminFinancial() {
     { icon: LayoutDashboard, label: 'Dashboard',          href: '/admin-dashboard' },
     { icon: CreditCard,      label: 'Control Financiero', href: '/admin-financial', active: true },
     { icon: Calendar,        label: 'Eventos',            href: '/admin-events'   },
-    { icon: BarChart2,       label: 'Reportes',           href: '#'               },
+    { icon: BarChart2,       label: 'Reportes',           href: '/admin-reports' },
     { icon: RefreshCcw,      label: 'Reembolsos',         href: '#'               },
     { icon: Users,           label: 'Solicitudes',        href: '/admin-panel'    },
   ];
@@ -131,16 +131,15 @@ export default function AdminFinancial() {
       iconColor: 'text-rose-400',
       label:     'Reembolsos pendientes',
       value:     fmtNum(stats?.pendingRefunds),
-      sub:       'Solicitudes esperando validación',
+      sub:       `${fmtNum(stats?.processedRefunds)} reembolsos ya procesados`,
     },
     {
       icon:      ArrowLeftRight,
-      iconBg:    'bg-violet-500/15',
-      iconColor: 'text-violet-400',
-      label:     'Saldo compensatorio total',
-      value:     fmtCOP(stats?.totalRevenue ?? 0),
-      sub:       'Generado por eventos cancelados',
-      accent:    true,
+      iconBg:    'bg-amber-500/15',
+      iconColor: 'text-amber-400',
+      label:     'Total reembolsado',
+      value:     fmtCOP(stats?.totalRefundedAmount ?? 0),
+      sub:       'Monto devuelto a usuarios por pagos revertidos',
     },
   ];
 
@@ -151,14 +150,7 @@ export default function AdminFinancial() {
       <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-background border-r border-surfaceAlt/30 h-screen sticky top-0">
         {/* Logo */}
         <div>
-          <div className="flex items-center gap-2 px-3 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-black text-xs">TE</span>
-            </div>
-            <span className="text-sm font-bold text-textPrimary">Tu Evento</span>
-          </div>
-
-          <nav className="flex flex-col gap-0.5">
+          <nav className="flex flex-col gap-0.5 mt-4">
             {navItems.map((item, idx) => (
               <a
                 key={idx}
