@@ -19,4 +19,8 @@ public class SectionTypeEntity {
 
     @Column(name = "name", nullable = false, length = 100)
     private String name;
+
+    @Builder.Default
+    @Column(name = "active", nullable = false)
+    private Boolean active = true;
 }

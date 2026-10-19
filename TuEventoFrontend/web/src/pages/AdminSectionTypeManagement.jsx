@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, 
-  User, Settings, ChevronDown, X, Plus, Layers, 
-  AlertCircle
+  LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, 
+  User, Settings, ChevronDown, X, Plus, Edit2, Trash2, Layers,
+  CheckCircle, AlertCircle
 } from 'lucide-react';
 import { performLogout } from '../services/httpClient';
 import { useNavigate } from 'react-router-dom';
@@ -19,7 +19,10 @@ export default function AdminSectionTypeManagement() {
   const [error, setError] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedSectionType, setSelectedSectionType] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [sectionTypeFilter, setSectionTypeFilter] = useState('all');
 
   const [formData, setFormData] = useState({
     name: ''
@@ -30,6 +33,17 @@ export default function AdminSectionTypeManagement() {
     email: localStorage.getItem('userEmail') || '',
     role: localStorage.getItem('role') === 'ADMIN' ? 'Super Admin' : 'Admin',
   };
+
+  const navItems = [
+    { icon: LayoutDashboard, label: 'Dashboard',          href: '/admin-dashboard' },
+    { icon: CreditCard,      label: 'Control Financiero', href: '/admin-financial' },
+    { icon: Calendar,        label: 'Eventos',            href: '/admin-events' },
+    { icon: BarChart2,       label: 'Reportes' },
+    { icon: RefreshCcw,      label: 'Reembolsos' },
+    { icon: Users,           label: 'Solicitudes',        href: '/admin' },
+    { icon: Settings,        label: 'Categorías',         href: '/admin-categories' },
+    { icon: Layers,          label: 'Tipos de Sección',   href: '/admin-section-types', active: true },
+  ];
 
   const handleLogout = async () => {
     await performLogout();
@@ -99,9 +113,67 @@ export default function AdminSectionTypeManagement() {
     }
   };
 
+  const handleEditSectionType = async () => {
+    if (!selectedSectionType || !formData.name.trim()) return;
+    
+    setActionLoading(true);
+    try {
+      const response = await httpRequest(`${API_URL}/section-types/${selectedSectionType.sectionTypeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name.trim()
+        }),
+      });
+      
+      if (response.ok) {
+        setShowEditModal(false);
+        setSelectedSectionType(null);
+        resetForm();
+        await fetchSectionTypes();
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || 'Error al actualizar tipo de sección');
+      }
+    } catch (err) {
+      setError('Error al actualizar tipo de sección: ' + err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleToggleActive = async (sectionType) => {
+    setActionLoading(true);
+    try {
+      const endpoint = sectionType.active ? 'deactivate' : 'activate';
+      const response = await httpRequest(`${API_URL}/section-types/${sectionType.sectionTypeId}/${endpoint}`, {
+        method: 'PUT',
+      });
+      
+      if (response.ok) {
+        await fetchSectionTypes();
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message || `Error al ${sectionType.active ? 'desactivar' : 'activar'} tipo de sección`);
+      }
+    } catch (err) {
+      setError(`Error al ${sectionType.active ? 'desactivar' : 'activar'} tipo de sección: ` + err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const openCreateModal = () => {
     resetForm();
     setShowCreateModal(true);
+  };
+
+  const openEditModal = (sectionType) => {
+    setSelectedSectionType(sectionType);
+    setFormData({
+      name: sectionType.name || ''
+    });
+    setShowEditModal(true);
   };
 
   const resetForm = () => {
@@ -110,21 +182,22 @@ export default function AdminSectionTypeManagement() {
     });
   };
 
-  const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard',          href: '/admin-dashboard' },
-    { icon: CreditCard,      label: 'Control Financiero', href: '/admin-financial' },
-    { icon: Calendar,        label: 'Eventos',            href: '/admin-events' },
-    { icon: BarChart2,       label: 'Reportes' },
-    { icon: RefreshCcw,      label: 'Reembolsos' },
-    { icon: Users,           label: 'Solicitudes',        href: '/admin' },
-    { icon: Settings,        label: 'Categorías',         href: '/admin-categories' },
-    { icon: Layers,          label: 'Tipos de Sección',   active: true },
-  ];
+  const getStatusStyle = (sectionType) => {
+    if (sectionType.active) {
+      return { bg: 'bg-emerald-500', label: 'Activo', icon: CheckCircle };
+    }
+    return { bg: 'bg-slate-500', label: 'Inactivo', icon: AlertCircle };
+  };
+
+  const filteredSectionTypes = sectionTypes.filter(st => {
+    if (sectionTypeFilter === 'all') return true;
+    if (sectionTypeFilter === 'active') return st.active;
+    if (sectionTypeFilter === 'inactive') return !st.active;
+    return true;
+  });
 
   return (
     <div className="min-h-screen flex bg-background text-textPrimary font-sans">
-
-      {/* Sidebar */}
       <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-background border-r border-surfaceAlt/30 h-screen sticky top-0">
         <nav className="flex flex-col gap-0.5">
           {navItems.map((item, idx) => (
@@ -143,7 +216,6 @@ export default function AdminSectionTypeManagement() {
           ))}
         </nav>
 
-        {/* User Profile Card */}
         <div className="pt-4 border-t border-surfaceAlt/40 relative user-menu-container flex-shrink-0">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
@@ -189,11 +261,8 @@ export default function AdminSectionTypeManagement() {
         </div>
       </aside>
 
-      {/* Main */}
       <main className="flex-1 overflow-y-auto bg-background">
         <div className="p-8 max-w-6xl mx-auto w-full">
-
-          {/* Page header */}
           <div className="mb-6">
             <div className="flex items-center justify-between">
               <div>
@@ -201,7 +270,7 @@ export default function AdminSectionTypeManagement() {
                   Gestión de Tipos de Sección
                 </h1>
                 <p className="text-textSecondary text-sm leading-relaxed max-w-xl">
-                  Gestiona los tipos de sección del sistema. Define categorías como General, VIP, Palco, Tribuna, etc.
+                  Gestiona los tipos de sección del sistema. Define categorías como General, VIP, Palco, Tribuna, Pista para organizar eventos.
                 </p>
               </div>
               <button
@@ -209,12 +278,31 @@ export default function AdminSectionTypeManagement() {
                 className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primaryDark text-textPrimary font-semibold rounded-xl transition-all"
               >
                 <Plus className="w-4 h-4" />
-                Nuevo Tipo de Sección
+                Nuevo Tipo
               </button>
             </div>
           </div>
 
-          {/* Error Alert */}
+          <div className="flex items-center gap-2 mb-6">
+            {[
+              { key: 'all', label: 'Todos los Tipos' },
+              { key: 'active', label: 'Activos' },
+              { key: 'inactive', label: 'Inactivos' }
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setSectionTypeFilter(key)}
+                className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all
+                  ${sectionTypeFilter === key
+                    ? 'bg-primary text-textPrimary'
+                    : 'bg-surfaceAlt/60 text-textSecondary hover:bg-surfaceAlt'
+                  }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           {error && (
             <div className="mb-6 p-4 bg-error/10 border border-error/30 text-error rounded-xl flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -228,7 +316,6 @@ export default function AdminSectionTypeManagement() {
             </div>
           )}
 
-          {/* Section Types Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => (
@@ -241,13 +328,16 @@ export default function AdminSectionTypeManagement() {
                   </div>
                 </div>
               ))
-            ) : sectionTypes.length === 0 ? (
+            ) : filteredSectionTypes.length === 0 ? (
               <div className="col-span-full text-center py-12 text-textMuted">
                 <Layers className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No hay tipos de sección para mostrar</p>
               </div>
             ) : (
-              sectionTypes.map((sectionType) => {
+              filteredSectionTypes.map((sectionType) => {
+                const status = getStatusStyle(sectionType);
+                const StatusIcon = status.icon;
+                
                 return (
                   <div
                     key={sectionType.sectionTypeId}
@@ -267,23 +357,45 @@ export default function AdminSectionTypeManagement() {
                           </p>
                         </div>
                       </div>
+                      <div className="flex items-center gap-1">
+                        <StatusIcon className="w-3 h-3" style={{ 
+                          color: status.bg.includes('emerald') ? '#10b981' : '#6b7280' 
+                        }} />
+                      </div>
                     </div>
 
-                    <div className="mt-3 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                      <div className="flex items-center gap-1 text-xs text-emerald-400">
-                        <span className="font-semibold">Tipo de sección activo</span>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openEditModal(sectionType)}
+                        className="p-2 hover:bg-primary/20 rounded-lg transition-colors text-primary"
+                        title="Editar tipo de sección"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(sectionType)}
+                        disabled={actionLoading}
+                        className={`p-2 rounded-lg transition-colors ${
+                          sectionType.active 
+                            ? 'hover:bg-red-500/20 text-red-400' 
+                            : 'hover:bg-emerald-500/20 text-emerald-400'
+                        }`}
+                        title={sectionType.active ? 'Desactivar' : 'Activar'}
+                      >
+                        {sectionType.active ? 
+                          <Trash2 className="w-3.5 h-3.5" /> : 
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        }
+                      </button>
                     </div>
                   </div>
                 );
               })
             )}
           </div>
-
         </div>
       </main>
 
-      {/* Create Section Type Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl max-w-md w-full">
@@ -330,13 +442,59 @@ export default function AdminSectionTypeManagement() {
                 disabled={!formData.name.trim() || actionLoading}
                 className="flex-1 py-2 px-4 bg-primary hover:bg-primaryDark text-textPrimary rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {actionLoading ? 'Creando...' : 'Guardar Tipo'}
+                {actionLoading ? 'Creando...' : 'Crear Tipo'}
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {showEditModal && selectedSectionType && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl max-w-md w-full">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-surfaceAlt">
+              <h2 className="text-lg font-bold text-textPrimary">Editar Tipo de Sección</h2>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="p-1.5 hover:bg-surfaceAlt rounded-full transition-colors text-textMuted"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-textPrimary mb-2">
+                  Nombre del Tipo de Sección *
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Ej: General, VIP, Palco, Tribuna..."
+                  className="w-full px-3 py-2 bg-background border border-surfaceAlt rounded-lg text-textPrimary placeholder-textMuted focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3 px-6 py-4 border-t border-surfaceAlt">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="flex-1 py-2 px-4 border border-surfaceAlt rounded-lg text-textSecondary hover:bg-surfaceAlt transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEditSectionType}
+                disabled={!formData.name.trim() || actionLoading}
+                className="flex-1 py-2 px-4 bg-primary hover:bg-primaryDark text-textPrimary rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {actionLoading ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

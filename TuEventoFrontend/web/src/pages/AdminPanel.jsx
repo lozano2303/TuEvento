@@ -83,9 +83,9 @@ export default function AdminPanel() {
     { icon: Calendar,        label: 'Eventos',            href: '/admin-events' },
     { icon: BarChart2,       label: 'Reportes' },
     { icon: RefreshCcw,      label: 'Reembolsos' },
+    { icon: Users,           label: 'Solicitudes',        href: '/admin', active: true },
     { icon: Settings,        label: 'Categorías',         href: '/admin-categories' },
     { icon: Layers,          label: 'Tipos de Sección',   href: '/admin-section-types' },
-    { icon: Users,           label: 'Solicitudes',        active: true },
   ];
 
   const statusStyle = (status) => {
