@@ -93,9 +93,12 @@ export default function EventDetail() {
   useEffect(() => {
     const userId = localStorage.getItem('userID');
     setCurrentUserId(userId ? parseInt(userId) : null);
+    
+    // Obtener idioma del usuario para cargar el evento con traducciones si está disponible
+    const userLanguage = i18next.language || 'es';
 
     Promise.all([
-      getEventById(eventId),
+      getEventById(eventId, userLanguage),
       getEventMedia(eventId),
       LayoutService.getLayout(eventId),
       EventSectionService.getByEvent(eventId),
@@ -788,7 +791,7 @@ export default function EventDetail() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}>
-        <p className="text-sm" style={{ color: 'rgba(196,181,253,0.6)' }}>Cargando evento…</p>
+        <p className="text-sm" style={{ color: 'rgba(196,181,253,0.6)' }}>{t('eventDetail.loadingEvent')}</p>
       </div>
     );
   }
@@ -796,8 +799,8 @@ export default function EventDetail() {
   if (error || !event) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}>
-        <p className="text-sm text-red-400">{error ?? 'Evento no encontrado'}</p>
-        <BackButton fallback="/events" label="Volver a eventos" />
+        <p className="text-sm text-red-400">{error ?? t('eventDetail.eventNotFound')}</p>
+        <BackButton fallback="/events" label={t('eventDetail.backToEvents')} />
       </div>
     );
   }
@@ -811,7 +814,7 @@ export default function EventDetail() {
 
         {/* Back */}
         <div className="mb-6">
-          <BackButton fallback="/events" label="Volver a eventos" />
+          <BackButton fallback="/events" label={t('eventDetail.backToEvents')} />
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 mb-12">
@@ -859,7 +862,7 @@ export default function EventDetail() {
                 <div className="w-full h-full flex flex-col items-center justify-center gap-2" style={{ background: 'rgba(109,40,217,0.15)' }}>
                   <ImageOff className="w-8 h-8" style={{ color: 'rgba(196,181,253,0.3)' }} />
                   <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>
-                    Este evento aún no tiene imágenes
+                    {t('eventDetail.noImages')}
                   </span>
                 </div>
               )}
@@ -926,7 +929,7 @@ export default function EventDetail() {
               {event.availableSeats > 0 && (
                 <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(233,213,255,0.8)' }}>
                   <Users className="w-4 h-4 shrink-0" style={{ color: 'rgba(167,139,250,0.7)' }} />
-                  <span>{event.availableSeats.toLocaleString()} sillas disponibles</span>
+                  <span>{t('eventDetail.availableSeats', { count: event.availableSeats.toLocaleString() })}</span>
                 </div>
               )}
             </div>
@@ -941,7 +944,7 @@ export default function EventDetail() {
                   border:     `1px solid ${event.status === 'PUBLISHED' ? 'rgba(74,222,128,0.3)' : 'rgba(107,114,128,0.3)'}`,
                 }}
               >
-                {event.status === 'PUBLISHED' ? 'Publicado' : event.status}
+                {event.status === 'PUBLISHED' ? t('eventDetail.published') : event.status}
               </span>
             </div>
           </div>
@@ -980,7 +983,7 @@ export default function EventDetail() {
           style={{ borderTop: '1px solid rgba(167,139,250,0.15)', paddingTop: '2rem' }}
         >
           <h2 className="text-lg font-semibold mb-6" style={{ color: '#e9d5ff' }}>
-            Comentarios {comments.length > 0 && (
+            {t('eventDetail.commentsCount')} {comments.length > 0 && (
               <span className="text-sm font-normal ml-2" style={{ color: 'rgba(196,181,253,0.5)' }}>
                 ({comments.length})
               </span>
@@ -1013,7 +1016,7 @@ export default function EventDetail() {
                     id="comment-textarea"
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Escribe tu comentario sobre el evento…"
+                    placeholder={t('eventDetail.writeComment')}
                     maxLength={500}
                     rows={3}
                     className="flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
@@ -1022,7 +1025,7 @@ export default function EventDetail() {
                   <button
                     type="submit"
                     disabled={commentSubmitting || !commentText.trim() || (needsRatingSelector && commentRating === 0)}
-                    aria-label={commentSubmitting ? 'Enviando comentario…' : 'Publicar comentario'}
+                    aria-label={commentSubmitting ? t('eventDetail.publishingComment') : t('eventDetail.publishComment')}
                     className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-40"
                     style={{ background: 'rgba(109,40,217,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
                   >
@@ -1037,22 +1040,29 @@ export default function EventDetail() {
             ) : (
               <div className="mb-8 p-4 rounded-xl text-center" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)' }}>
                 <Globe className="w-5 h-5 mx-auto mb-2" style={{ color: 'rgba(251,191,36,0.8)' }} />
-                <p className="text-sm" style={{ color: 'rgba(251,191,36,0.9)' }}>
+                <p className="text-sm mb-2" style={{ color: 'rgba(251,191,36,0.9)' }}>
                   {t('comments.languageRestriction')}
                 </p>
+                <a
+                  href="/profile"
+                  className="text-xs underline transition-opacity hover:opacity-80"
+                  style={{ color: 'rgba(251,191,36,1)' }}
+                >
+                  {t('profile.editProfile')}
+                </a>
               </div>
             )
           ) : (
             <p className="text-sm mb-6 text-center" style={{ color: 'rgba(196,181,253,0.5)' }}>
-              <a href="/login" style={{ color: '#a78bfa', textDecoration: 'underline' }}>Inicia sesión</a>{' '}para dejar un comentario.
+              <a href="/login" style={{ color: '#a78bfa', textDecoration: 'underline' }}>{t('auth.login')}</a>{' '}{t('eventDetail.loginToComment')}
             </p>
           )}
 
           {/* Lista de comentarios agrupados */}
           {commentsLoading ? (
-            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>Cargando comentarios…</p>
+            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>{t('eventDetail.loadingComments')}</p>
           ) : comments.filter((c) => c.parentRatingId == null).length === 0 ? (
-            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>Todavía no hay comentarios. ¡Sé el primero!</p>
+            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>{t('eventDetail.noCommentsYet')}</p>
           ) : (
             <ul className="space-y-4" aria-label="Lista de comentarios">
               {comments
@@ -1072,8 +1082,8 @@ export default function EventDetail() {
                         <div className="flex items-start justify-between mb-1 gap-2">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-medium" style={{ color: '#c4b5fd' }}>{c.authorName || 'Usuario'}</span>
-                            {isOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>Tú</span>}
-                            {c.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>Organizador</span>}
+                            {isOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>{t('eventDetail.you')}</span>}
+                            {c.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>{t('eventDetail.organizer')}</span>}
                             {c.rating != null && (
                               <div className="flex items-center gap-0.5" aria-label={`${c.rating} de 5 estrellas`}>
                                 {[1,2,3,4,5].map((star) => (
@@ -1172,7 +1182,7 @@ export default function EventDetail() {
                               {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: dateFnsEs })}
                             </time>
                           )}
-                          {c.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>(editado)</span>}
+                          {c.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>({t('eventDetail.edited')})</span>}
                         </div>
 
                         {/* Botón Responder — solo en principales, solo con sesión */}
@@ -1187,12 +1197,12 @@ export default function EventDetail() {
                               setReplyText('');
                               setReplyError(null); 
                             }}
-                            aria-label={`Responder al comentario de ${c.authorName || 'Usuario'}`}
+                            aria-label={`${t('eventDetail.reply')} ${c.authorName || 'Usuario'}`}
                             className="mt-2 flex items-center gap-1 text-xs cursor-pointer transition-opacity"
                             style={{ color: 'rgba(167,139,250,0.6)' }}
                           >
                             <CornerDownLeft className="w-3 h-3 pointer-events-none" />
-                            Responder
+                            {t('eventDetail.reply')}
                           </button>
                         )}
 
@@ -1442,7 +1452,7 @@ export default function EventDetail() {
                                       {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true, locale: dateFnsEs })}
                                     </time>
                                   )}
-                                  {r.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>(editado)</span>}
+                                  {r.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>({t('eventDetail.edited')})</span>}
                                 </div>
 
                                 {/* Botón Responder en respuestas */}
@@ -1457,12 +1467,12 @@ export default function EventDetail() {
                                       setReplyText('');
                                       setReplyError(null); 
                                     }}
-                                    aria-label={`Responder a ${r.authorName || 'Usuario'}`}
+                                    aria-label={`${t('eventDetail.reply')} ${r.authorName || 'Usuario'}`}
                                     className="mt-1 flex items-center gap-1 text-xs cursor-pointer transition-opacity"
                                     style={{ color: 'rgba(167,139,250,0.6)' }}
                                   >
                                     <CornerDownLeft className="w-3 h-3 pointer-events-none" />
-                                    Responder
+                                    {t('eventDetail.reply')}
                                   </button>
                                 )}
                               </li>
@@ -1489,10 +1499,10 @@ export default function EventDetail() {
       {/* Modal confirmación borrar comentario */}
       <ConfirmModal
         isOpen={deleteConfirm !== null}
-        title="¿Borrar este comentario?"
-        message="Una vez eliminado no hay vuelta atrás — el comentario y sus respuestas desaparecerán para siempre. ¿Seguimos?"
-        confirmLabel="Sí, eliminar"
-        cancelLabel="No, mejor no"
+        title={t('eventDetail.deleteCommentTitle')}
+        message={t('eventDetail.deleteCommentMessage')}
+        confirmLabel={t('eventDetail.yesDelete')}
+        cancelLabel={t('eventDetail.noCancel')}
         confirmStyle="danger"
         loading={deletingCommentId !== null}
         onConfirm={executeDeleteComment}
@@ -1536,6 +1546,7 @@ function SeatSelectorSection({
   eventId,
   eventTitle,
 }) {
+  const { t } = useTranslation();
   const maxQuantity = 10;
   const stageRef = useRef();
   const containerRef = useRef();
@@ -2058,13 +2069,13 @@ function SeatSelectorSection({
       }}
     >
       <h2 className="text-xl font-bold mb-6" style={{ color: '#e9d5ff' }}>
-        Selecciona tus Sillas
+        {t('seats.selectSeats')}
       </h2>
 
       {/* Selector de cantidad estilo cine */}
       <div className="flex items-center gap-6 mb-6">
         <span className="text-sm" style={{ color: 'rgba(196,181,253,0.75)' }}>
-          ¿Cuántas sillas querés?
+          {t('seats.howMany')}
         </span>
         <div className="flex items-center gap-3">
           <button
@@ -2104,7 +2115,7 @@ function SeatSelectorSection({
           </button>
         </div>
         <span className="text-xs ml-auto" style={{ color: 'rgba(196,181,253,0.5)' }}>
-          {cart.length} de {selectedQuantity} seleccionadas
+          {t('seats.selected', { count: cart.length, total: selectedQuantity })}
         </span>
       </div>
 
@@ -2124,7 +2135,7 @@ function SeatSelectorSection({
         <div className="flex-1 rounded-xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', minWidth: 0 }}>
           <div className="flex items-center justify-between p-2 border-b" style={{ borderColor: 'rgba(167,139,250,0.15)' }}>
             <span className="text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
-              Mapa de Sillas
+              {t('seats.seatMap')}
             </span>
             {/* Controles de navegación entre sub-secciones */}
             {selectedSectionFilter && hasMultipleSubSections && (
@@ -2283,6 +2294,8 @@ function SeatSelectorSection({
  * Click en una sección activa el filtro (solo esa sección es seleccionable).
  */
 function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelectedSectionFilter, seats, showToast }) {
+  const { t } = useTranslation();
+  
   // Mapear eventSectionId de la sección backend con los elementos de layout
   const sectionsWithLayout = sections.filter((sec) =>
     layoutElements.some((el) => el.backendSectionId === sec.eventSectionId)
@@ -2298,7 +2311,7 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
     >
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
-          Secciones
+          {t('seats.sections')}
         </h3>
         {selectedSectionFilter && (
           <button
@@ -2309,7 +2322,7 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
               color: '#c4b5fd',
             }}
           >
-            Ver todas
+            {t('seats.viewAll')}
           </button>
         )}
       </div>
@@ -2738,6 +2751,7 @@ const SeatCircle = React.memo(function SeatCircle({
  */
 function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eventId, eventTitle }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const totalPrice = cart.reduce((sum, seat) => {
     const section = sections.find((s) => s.eventSectionId === seat.eventSectionId);
@@ -2776,11 +2790,11 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
         <div className="flex items-center gap-2 mb-3">
           <ShoppingCart className="w-4 h-4" style={{ color: '#a78bfa' }} />
           <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
-            Tu Carrito
+            {t('seats.myCart')}
           </h3>
         </div>
         <p className="text-xs text-center py-6" style={{ color: 'rgba(196,181,253,0.5)' }}>
-          No has seleccionado ninguna silla
+          {t('seats.noSeatsSelected')}
         </p>
       </div>
     );
@@ -2797,7 +2811,7 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
       <div className="flex items-center gap-2 mb-3">
         <ShoppingCart className="w-4 h-4" style={{ color: '#a78bfa' }} />
         <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
-          Tu Carrito
+          {t('seats.myCart')}
         </h3>
         <span className="ml-auto text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
           ({cart.length})
@@ -2822,7 +2836,7 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
 
       <div className="mt-3 pt-3 space-y-2" style={{ borderTop: '1px solid rgba(167,139,250,0.15)' }}>
         <div className="flex items-center justify-between text-sm">
-          <span style={{ color: 'rgba(196,181,253,0.75)' }}>Total</span>
+          <span style={{ color: 'rgba(196,181,253,0.75)' }}>{t('seats.total')}</span>
           <span className="font-bold text-base" style={{ color: '#a78bfa' }}>
             ${totalPrice.toFixed(2)}
           </span>
@@ -2838,7 +2852,7 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
           }}
           disabled={cart.length === 0}
         >
-          Continuar al Pago
+          {t('seats.continueToPayment')}
         </button>
       </div>
     </div>
@@ -2850,6 +2864,7 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
  */
 function CartItem({ seat, section, onRelease, onExpire, isReleasing }) {
   const [timeLeft, setTimeLeft] = useState('');
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!seat.reservedUntil) return;
@@ -2860,7 +2875,7 @@ function CartItem({ seat, section, onRelease, onExpire, isReleasing }) {
       const diffMs = until - now;
 
       if (diffMs <= 0) {
-        setTimeLeft('Expirado');
+        setTimeLeft(t('seats.expiredCountdown'));
         // Deselección optimista: liberar inmediatamente en el cliente
         // sin esperar el evento de WebSocket del scheduler
         if (onExpire) {
@@ -2878,7 +2893,7 @@ function CartItem({ seat, section, onRelease, onExpire, isReleasing }) {
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [seat.reservedUntil, seat.seatId, onExpire]);
+  }, [seat.reservedUntil, seat.seatId, onExpire, t]);
 
   return (
     <div
