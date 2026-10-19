@@ -12,7 +12,7 @@ import * as SeatService from '../services/SeatService';
 import * as EventSectionService from '../services/EventSectionService';
 import { getEventComments, addEventComment, editEventComment, deleteEventComment } from '../services/EventCommentService';
 import { formatDistanceToNow } from 'date-fns';
-import { es as dateFnsEs } from 'date-fns/locale';
+import { es, enUS, fr, pt } from 'date-fns/locale';
 import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
 import StarRatingInput from '../components/common/StarRatingInput';
@@ -90,6 +90,18 @@ export default function EventDetail() {
   const pollingIntervalRef = useRef(null);
   const commentsRef = useRef(comments);
 
+  // ── Helper para obtener el locale de date-fns según el idioma actual ─────
+  const getDateFnsLocale = useCallback(() => {
+    const currentLang = i18next.language || 'es';
+    switch (currentLang) {
+      case 'en': return enUS;
+      case 'fr': return fr;
+      case 'pt': return pt;
+      case 'es':
+      default: return es;
+    }
+  }, []);
+
   useEffect(() => {
     const userId = localStorage.getItem('userID');
     setCurrentUserId(userId ? parseInt(userId) : null);
@@ -162,6 +174,31 @@ export default function EventDetail() {
       })
       .catch((err) => console.error('[EventDetail] Error cargando comentarios:', err.message))
       .finally(() => setCommentsLoading(false));
+  }, [eventId, isLoading]);
+  
+  // ── Recargar comentarios cuando cambia el idioma ──────────────────────────
+  useEffect(() => {
+    const handleLanguageChange = () => {
+      if (!eventId || isLoading) return;
+      
+      const userLanguage = i18next.language || 'es';
+      setCommentsLoading(true);
+      getEventComments(eventId, userLanguage)
+        .then((res) => {
+          const list = res.data ?? [];
+          const visible = list.filter((c) => c.isVisible !== false);
+          setComments(visible);
+          commentIdsRef.current = new Set(visible.map((c) => c.ratingId));
+        })
+        .catch((err) => console.error('[EventDetail] Error recargando comentarios:', err.message))
+        .finally(() => setCommentsLoading(false));
+    };
+
+    i18next.on('languageChanged', handleLanguageChange);
+
+    return () => {
+      i18next.off('languageChanged', handleLanguageChange);
+    };
   }, [eventId, isLoading]);
   
   /**
@@ -1179,7 +1216,7 @@ export default function EventDetail() {
                         <div className="flex items-center gap-2 mt-1">
                           {c.createdAt && (
                             <time dateTime={c.createdAt} className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>
-                              {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: dateFnsEs })}
+                              {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: getDateFnsLocale() })}
                             </time>
                           )}
                           {c.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>({t('eventDetail.edited')})</span>}
@@ -1449,7 +1486,7 @@ export default function EventDetail() {
                                 <div className="flex items-center gap-2 mt-0.5">
                                   {r.createdAt && (
                                     <time dateTime={r.createdAt} className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>
-                                      {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true, locale: dateFnsEs })}
+                                      {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true, locale: getDateFnsLocale() })}
                                     </time>
                                   )}
                                   {r.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>({t('eventDetail.edited')})</span>}

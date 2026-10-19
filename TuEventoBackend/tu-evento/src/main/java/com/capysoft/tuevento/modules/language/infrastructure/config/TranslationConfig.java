@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.language.infrastructure.config;
 
 import com.capysoft.tuevento.modules.category.infrastructure.translation.CategoryTranslatableContentHandler;
 import com.capysoft.tuevento.modules.event.infrastructure.translation.EventTranslatableContentHandler;
+import com.capysoft.tuevento.modules.event.infrastructure.translation.EventRatingTranslatableContentHandler;
 import com.capysoft.tuevento.modules.notification.infrastructure.translation.NotificationTranslatableContentHandler;
 import com.capysoft.tuevento.modules.profile.infrastructure.translation.ProfileTranslatableContentHandler;
 import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
@@ -23,6 +24,7 @@ import java.util.Map;
 public class TranslationConfig {
 
     private final EventTranslatableContentHandler eventHandler;
+    private final EventRatingTranslatableContentHandler eventRatingHandler;
     private final CategoryTranslatableContentHandler categoryHandler;
     private final ProfileTranslatableContentHandler profileHandler;
     private final NotificationTranslatableContentHandler notificationHandler;
@@ -37,6 +39,9 @@ public class TranslationConfig {
         
         // Registrar handler de eventos
         registry.put("event", eventHandler);
+        
+        // Registrar handler de comentarios de eventos
+        registry.put("event_rating", eventRatingHandler);
         
         // Registrar handler de categorías
         registry.put("category", categoryHandler);
