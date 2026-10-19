@@ -60,25 +60,38 @@ public class EventRepositoryImpl implements EventRepository {
 
     @Override
     public List<Event> findAllPublished() {
-        return jpaRepository.findByStatusAndIsPublic(EventStatus.PUBLISHED, true)
+        // Only returns active events: PUBLISHED + is_public + finish_date >= today
+        return jpaRepository.findActivePublished(LocalDate.now())
                 .stream().map(mapper::toDomain).toList();
     }
 
     @Override
     public List<Event> findByCityId(Long cityId) {
-        return jpaRepository.findPublishedByCityId(cityId)
+        return jpaRepository.findPublishedByCityId(LocalDate.now(), cityId)
                 .stream().map(mapper::toDomain).toList();
     }
 
     @Override
     public List<Event> findByCategoryId(Integer categoryId) {
-        return jpaRepository.findPublishedByCategoryId(categoryId)
+        return jpaRepository.findPublishedByCategoryId(LocalDate.now(), categoryId)
                 .stream().map(mapper::toDomain).toList();
     }
 
     @Override
     public List<Event> findByDateRange(LocalDate from, LocalDate to) {
-        return jpaRepository.findPublishedByDateRange(from, to)
+        return jpaRepository.findPublishedByDateRange(LocalDate.now(), from, to)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> searchPublishedByText(String q) {
+        return jpaRepository.searchPublishedByText(LocalDate.now(), q)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> searchPublishedByTextAndDate(String q, LocalDate date) {
+        return jpaRepository.searchPublishedByTextAndDate(LocalDate.now(), q, date)
                 .stream().map(mapper::toDomain).toList();
     }
 
