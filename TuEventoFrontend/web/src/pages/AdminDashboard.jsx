@@ -211,7 +211,7 @@ export default function AdminDashboard() {
     { icon: LayoutDashboard, label: 'Dashboard',          href: '/admin-dashboard', active: true },
     { icon: CreditCard,      label: 'Control Financiero', href: '/admin-financial' },
     { icon: Calendar,        label: 'Eventos',            href: '/admin-events' },
-    { icon: BarChart2,       label: 'Reportes',           href: '#'             },
+    { icon: BarChart2,       label: 'Reportes',           href: '/admin-reports' },
     { icon: RefreshCcw,      label: 'Reembolsos',         href: '#'             },
     { icon: Users,           label: 'Solicitudes',        href: '/admin-panel'  },
   ];
