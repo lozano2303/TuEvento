@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, 
-  User, Settings, ChevronDown, X, Plus, Edit2, Trash2, Save, Tag, 
-  CheckCircle, AlertCircle, ChevronRight
+  LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, 
+  User, Settings, ChevronDown, X, Plus, Edit2, Trash2, Tag, 
+  CheckCircle, AlertCircle, ChevronRight, Layers
 } from 'lucide-react';
 import { performLogout } from '../services/httpClient';
 import { useNavigate } from 'react-router-dom';
-import { getAllCategories, getCategoryById, getRootCategories } from '../services/CategoryService';
+import { getAllCategories, getRootCategories } from '../services/CategoryService';
 import { httpRequest } from '../services/httpClient';
-import ConfirmModal from '../components/common/ConfirmModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -16,7 +15,7 @@ export default function AdminCategoryManagement() {
   const navigate = useNavigate();
   
   const [categories, setCategories] = useState([]);
-  const [rootCategories, setRootCategories] = useState([]); // Para el selector de categoría padre
+  const [rootCategories, setRootCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -24,17 +23,14 @@ export default function AdminCategoryManagement() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [confirmModal, setConfirmModal] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState('all');
 
-  // Form data
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     dadId: null
   });
 
-  // Helper function to get parent category name
   const getParentCategoryName = (dadId) => {
     const parentCategory = categories.find(cat => cat.categoryId === dadId);
     return parentCategory ? parentCategory.name : 'Desconocida';
@@ -58,11 +54,9 @@ export default function AdminCategoryManagement() {
     if (action === 'logout') handleLogout();
   };
 
-  // Auto-reload removed - no translations to monitor
-
   useEffect(() => {
     fetchCategories();
-    fetchRootCategories(); // Cargar categorías principales para el selector
+    fetchRootCategories();
   }, []);
 
   useEffect(() => {
@@ -80,7 +74,6 @@ export default function AdminCategoryManagement() {
       setLoading(true);
       setError(null);
       
-      // Cargar categorías siempre en español (sin traducciones)
       const response = await getAllCategories('es');
       setCategories(response.data || []);
     } catch (err) {
@@ -92,7 +85,6 @@ export default function AdminCategoryManagement() {
 
   const fetchRootCategories = async () => {
     try {
-      // Cargar categorías principales siempre en español
       const response = await getRootCategories('es');
       setRootCategories(response.data || []);
     } catch (err) {
@@ -119,7 +111,7 @@ export default function AdminCategoryManagement() {
         setShowCreateModal(false);
         resetForm();
         await fetchCategories();
-        await fetchRootCategories(); // Actualizar también las categorías principales
+        await fetchRootCategories();
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Error al crear categoría');
@@ -151,7 +143,7 @@ export default function AdminCategoryManagement() {
         setSelectedCategory(null);
         resetForm();
         await fetchCategories();
-        await fetchRootCategories(); // Actualizar también las categorías principales
+        await fetchRootCategories();
       } else {
         const errorData = await response.json();
         setError(errorData.message || 'Error al actualizar categoría');
@@ -173,6 +165,7 @@ export default function AdminCategoryManagement() {
       
       if (response.ok) {
         await fetchCategories();
+        await fetchRootCategories();
       } else {
         const errorData = await response.json();
         setError(errorData.message || `Error al ${category.active ? 'desactivar' : 'activar'} categoría`);
@@ -208,13 +201,14 @@ export default function AdminCategoryManagement() {
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard' },
-    { icon: CreditCard,      label: 'Control Financiero' },
-    { icon: Calendar,        label: 'Eventos',    href: '/admin-events' },
+    { icon: LayoutDashboard, label: 'Dashboard',          href: '/admin-dashboard' },
+    { icon: CreditCard,      label: 'Control Financiero', href: '/admin-financial' },
+    { icon: Calendar,        label: 'Eventos',            href: '/admin-events' },
     { icon: BarChart2,       label: 'Reportes' },
     { icon: RefreshCcw,      label: 'Reembolsos' },
-    { icon: Users,           label: 'Solicitudes', href: '/admin' },
-    { icon: Settings,        label: 'Categorías', active: true },
+    { icon: Users,           label: 'Solicitudes',        href: '/admin' },
+    { icon: Settings,        label: 'Categorías',         active: true },
+    { icon: Layers,          label: 'Tipos de Sección',   href: '/admin-section-types' },
   ];
 
   const getStatusStyle = (category) => {
@@ -228,8 +222,8 @@ export default function AdminCategoryManagement() {
     if (categoryFilter === 'all') return true;
     if (categoryFilter === 'active') return cat.active;
     if (categoryFilter === 'inactive') return !cat.active;
-    if (categoryFilter === 'parents') return !cat.dadId; // Categorías principales (sin padre)
-    if (categoryFilter === 'subcategories') return cat.dadId; // Subcategorías (con padre)
+    if (categoryFilter === 'parents') return !cat.dadId;
+    if (categoryFilter === 'subcategories') return cat.dadId;
     return true;
   });
 
@@ -271,7 +265,6 @@ export default function AdminCategoryManagement() {
             <ChevronDown className={`w-4 h-4 text-textMuted transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
           </button>
 
-          {/* Dropdown Menu */}
           {showUserMenu && (
             <div className="absolute bottom-full left-0 right-0 mb-2 mx-2 bg-surface border border-surfaceAlt rounded-xl overflow-hidden shadow-xl z-50 user-menu-container">
               <button
@@ -367,7 +360,6 @@ export default function AdminCategoryManagement() {
           {/* Categories Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {loading ? (
-              // Loading skeletons
               Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="bg-surface border border-surfaceAlt rounded-xl p-4 animate-pulse">
                   <div className="flex items-start justify-between mb-3">
@@ -426,22 +418,18 @@ export default function AdminCategoryManagement() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <StatusIcon className={`w-3 h-3 ${status.bg.includes('yellow') ? 'animate-spin' : ''}`} style={{ 
-                          color: status.bg.includes('emerald') ? '#10b981' : 
-                                status.bg.includes('yellow') ? '#eab308' : 
-                                status.bg.includes('blue') ? '#3b82f6' : '#6b7280' 
+                        <StatusIcon className="w-3 h-3" style={{ 
+                          color: status.bg.includes('emerald') ? '#10b981' : '#6b7280' 
                         }} />
                       </div>
                     </div>
 
-                    {/* Description */}
                     {category.description && (
                       <p className="text-xs text-textSecondary mb-3 line-clamp-2">
                         {category.description}
                       </p>
                     )}
 
-                    {/* Parent-Child Relationship Info */}
                     {category.dadId && (
                       <div className="mb-3 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
                         <div className="flex items-center gap-1 text-xs text-amber-400">

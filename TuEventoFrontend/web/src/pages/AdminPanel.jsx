@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, User, Settings, ChevronDown, X } from 'lucide-react';
+import { Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, User, Settings, ChevronDown, X, Layers } from 'lucide-react';
 import { approveOrganizerRequest, rejectOrganizerRequest } from '../services/OrganizerPetitionService';
 import { performLogout, httpRequest } from '../services/httpClient';
 import { useNavigate } from 'react-router-dom';
@@ -83,8 +83,9 @@ export default function AdminPanel() {
     { icon: Calendar,        label: 'Eventos',            href: '/admin-events' },
     { icon: BarChart2,       label: 'Reportes' },
     { icon: RefreshCcw,      label: 'Reembolsos' },
-    { icon: Settings,        label: 'Categorías', href: '/admin-categories' },
-    { icon: Users,           label: 'Solicitudes', active: true },
+    { icon: Settings,        label: 'Categorías',         href: '/admin-categories' },
+    { icon: Layers,          label: 'Tipos de Sección',   href: '/admin-section-types' },
+    { icon: Users,           label: 'Solicitudes',        active: true },
   ];
 
   const statusStyle = (status) => {
