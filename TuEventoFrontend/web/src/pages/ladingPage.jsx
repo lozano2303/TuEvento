@@ -92,7 +92,7 @@ export default function LadingPage() {
     <div className="min-h-screen bg-background text-textPrimary">
 
       {/* ══ HERO ══════════════════════════════════════════════════════════ */}
-      <section className="lp2-hero pt-16">
+      <section className="lp2-hero pt-14">
         <div className="lp2-hero-bg" />
         <div className="lp2-hero-dots" />
         <div className="lp2-orb lp2-orb-1" />
@@ -208,14 +208,14 @@ export default function LadingPage() {
               <line x1="0" y1="0" x2="60" y2="0" stroke="white" strokeWidth="0.8"/>
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#lp-grid)"/>
+          <rect width="100%" height="0%" fill="url(#lp-grid)"/>
         </svg>
 
-        <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
-          <div className="grid md:grid-cols-2 gap-14 items-center">
+        <div className="relative max-w-6xl mx-auto px-4 py-10 md:py-14">
+          <div className="grid md:grid-cols-2 gap-10 items-center">
 
             {/* Texto */}
-            <div className="space-y-7 z-10 relative">
+            <div className="space-y-5 z-10 relative">
               {/* Eyebrow */}
               <div>
                 <span className="lp2-eyebrow">
@@ -353,7 +353,7 @@ export default function LadingPage() {
         </div>
 
         {/* ── Olas animadas (montaña que sube y baja) ──────────────────── */}
-        <div className="lp2-wave-wrap" style={{ height: 110, marginBottom: -1 }}>
+        <div className="lp2-wave-wrap">
           {/* Ola trasera — más lenta */}
           <svg className="lp2-wave-svg lp2-wave-svg-2" viewBox="0 0 2880 110" preserveAspectRatio="none">
             <path
