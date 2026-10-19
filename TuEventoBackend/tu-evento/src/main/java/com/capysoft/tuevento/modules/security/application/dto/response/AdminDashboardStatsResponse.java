@@ -29,7 +29,9 @@ public class AdminDashboardStatsResponse {
     private final long approvedOrganizerRequests;
 
     // ── Pagos ─────────────────────────────────────────────────────────────────
-    private final BigDecimal totalRevenue;       // SUM(amount) WHERE status='APPROVED'
+    private final BigDecimal totalRevenue;          // SUM(amount) WHERE status='APPROVED'
     private final long       approvedPayments;
     private final long       pendingRefunds;
+    private final BigDecimal totalRefundedAmount;   // SUM(amount + walletAmountApplied) WHERE status='REFUNDED'
+    private final long       processedRefunds;       // COUNT WHERE refund.status='PROCESSED'
 }

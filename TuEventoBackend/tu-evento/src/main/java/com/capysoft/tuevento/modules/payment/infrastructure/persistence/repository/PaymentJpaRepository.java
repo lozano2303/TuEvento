@@ -22,6 +22,14 @@ public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, Long>
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM PaymentEntity p WHERE p.status = 'APPROVED'")
     BigDecimal sumApprovedRevenue();
 
+    /** Sum of wallet credits returned to users from refunded payments. */
+    @Query("SELECT COALESCE(SUM(p.walletAmountApplied), 0) FROM PaymentEntity p WHERE p.status = 'REFUNDED'")
+    BigDecimal sumRefundedWalletCredits();
+
+    /** Sum of total amount (gateway + wallet) from refunded payments. */
+    @Query("SELECT COALESCE(SUM(p.amount + p.walletAmountApplied), 0) FROM PaymentEntity p WHERE p.status = 'REFUNDED'")
+    BigDecimal sumTotalRefundedAmount();
+
     /** Most recent N payments ordered by processedAt — used for admin activity feed. */
     @Query("SELECT p FROM PaymentEntity p WHERE p.processedAt IS NOT NULL ORDER BY p.processedAt DESC")
     List<PaymentEntity> findTopByOrderByProcessedAtDesc(Pageable pageable);
