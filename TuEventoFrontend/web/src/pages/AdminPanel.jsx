@@ -81,7 +81,7 @@ export default function AdminPanel() {
     { icon: LayoutDashboard, label: 'Dashboard',          href: '/admin-dashboard' },
     { icon: CreditCard,      label: 'Control Financiero', href: '/admin-financial' },
     { icon: Calendar,        label: 'Eventos',            href: '/admin-events' },
-    { icon: BarChart2,       label: 'Reportes' },
+    { icon: BarChart2,       label: 'Reportes',           href: '/admin-reports' },
     { icon: RefreshCcw,      label: 'Reembolsos' },
     { icon: Users,           label: 'Solicitudes', active: true },
   ];
