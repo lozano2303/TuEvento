@@ -18,7 +18,7 @@
     "tryAgain": "Intentar de nuevo"
   },
   "comments": {
-    "languageRestriction": "Solo los usuarios con español como idioma preferido pueden comentar o responder. Cambia tu idioma a español en tu perfil para participar.",
+    "languageRestriction": "Para comentar, necesitas tener español como idioma preferido en tu perfil.",
     "translated": "Traducido desde español",
     "translating": "Traduciendo comentario…",
     "loadingComments": "Cargando comentarios…",
@@ -526,25 +526,6 @@
       "update": "Error al actualizar categoría",
       "delete": "Error al eliminar categoría",
       "load": "Error al cargar categorías"
-    }
-  },
-  "comments": {
-    "title": "Comentarios",
-    "writeComment": "Escribe tu comentario sobre el evento…",
-    "rating": "Calificación",
-    "ratingRequired": "Calificación obligatoria para tu primer comentario",
-    "publish": "Publicar",
-    "publishComment": "Publicar comentario",
-    "sending": "Enviando comentario…",
-    "organizer": "Organizador",
-    "you": "Tú",
-    "noComments": "Todavía no hay comentarios. ¡Sé el primero!",
-    "loginToComment": "Inicia sesión para comentar",
-    "errors": {
-      "rateLimited": "Espera unos segundos antes de volver a comentar.",
-      "sessionExpired": "Tu sesión expiró. Inicia sesión de nuevo para comentar.",
-      "forbidden": "No tienes permiso para comentar en este evento.",
-      "generic": "No se pudo publicar el comentario."
     }
   },
   "cart": {

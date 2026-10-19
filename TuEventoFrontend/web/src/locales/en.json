@@ -18,7 +18,7 @@
     "tryAgain": "Try again"
   },
   "comments": {
-    "languageRestriction": "Only users with Spanish as their preferred language can comment or reply. Change your language to Spanish in your profile to participate.",
+    "languageRestriction": "To comment, you need to have Spanish set as your preferred language in your profile.",
     "translated": "Translated from Spanish",
     "translating": "Translating comment…",
     "loadingComments": "Loading comments…",
@@ -526,25 +526,6 @@
       "update": "Failed to update category",
       "delete": "Failed to delete category",
       "load": "Failed to load categories"
-    }
-  },
-  "comments": {
-    "title": "Comments",
-    "writeComment": "Write your comment about the event…",
-    "rating": "Rating",
-    "ratingRequired": "Rating required for your first comment",
-    "publish": "Publish",
-    "publishComment": "Publish comment",
-    "sending": "Sending comment…",
-    "organizer": "Organizer",
-    "you": "You",
-    "noComments": "No comments yet. Be the first!",
-    "loginToComment": "Log in to comment",
-    "errors": {
-      "rateLimited": "Wait a few seconds before commenting again.",
-      "sessionExpired": "Your session expired. Log in again to comment.",
-      "forbidden": "You don't have permission to comment on this event.",
-      "generic": "Could not publish the comment."
     }
   },
   "cart": {
