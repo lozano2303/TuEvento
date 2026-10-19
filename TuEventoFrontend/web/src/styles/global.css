@@ -1876,7 +1876,6 @@ input[type="password"]::-ms-reveal { display: none; }
 .lp2-hero {
   position: relative;
   overflow: hidden;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
