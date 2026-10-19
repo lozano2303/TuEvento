@@ -20,6 +20,7 @@ import CompleteProfile from './pages/CompleteProfile';
 import AdminEventManagement from './pages/AdminEventManagement';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminFinancial from './pages/AdminFinancial';
+import AdminReports from './pages/AdminReports';
 import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
 import PaymentPending from './pages/PaymentPending';
@@ -52,7 +53,7 @@ function AppContent() {
   const showNavbar = ![
     '/login', '/verification', '/events/create',
     '/reactivate-account', '/complete-profile',
-    '/admin-panel', '/admin-events', '/admin-dashboard', '/admin-financial',
+    '/admin-panel', '/admin-events', '/admin-dashboard', '/admin-financial', '/admin-reports',
     '/checkout',
   ].includes(location.pathname)
     && !location.pathname.match(/^\/events\/[^/]+\/layout$/)
@@ -101,6 +102,11 @@ function AppContent() {
           <Route path="/admin-financial" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminFinancial />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-reports" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminReports />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={
