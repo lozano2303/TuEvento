@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.language.infrastructure.persistence.repository;
 
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.EventRatingTranslationEntity;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -24,13 +25,13 @@ public interface EventRatingTranslationJpaRepository extends JpaRepository<Event
     List<EventRatingTranslationEntity> findByLanguageId(@Param("languageId") Integer languageId);
 
     @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.status = :status")
-    List<EventRatingTranslationEntity> findByStatus(@Param("status") String status);
+    List<EventRatingTranslationEntity> findByStatus(@Param("status") TranslationStatus status);
 
     @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId AND ert.status = :status")
-    List<EventRatingTranslationEntity> findByRatingIdAndStatus(@Param("ratingId") Long ratingId, @Param("status") String status);
+    List<EventRatingTranslationEntity> findByRatingIdAndStatus(@Param("ratingId") Long ratingId, @Param("status") TranslationStatus status);
 
     @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.ratingId IN :ratingIds AND ert.status = :status")
-    List<EventRatingTranslationEntity> findByRatingIdsAndStatus(@Param("ratingIds") List<Long> ratingIds, @Param("status") String status);
+    List<EventRatingTranslationEntity> findByRatingIdsAndStatus(@Param("ratingIds") List<Long> ratingIds, @Param("status") TranslationStatus status);
 
     @Modifying
     @Query("DELETE FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId")

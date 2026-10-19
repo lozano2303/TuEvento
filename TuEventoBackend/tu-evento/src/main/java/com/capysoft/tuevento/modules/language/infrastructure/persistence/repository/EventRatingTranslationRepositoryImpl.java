@@ -65,7 +65,7 @@ public class EventRatingTranslationRepositoryImpl implements EventRatingTranslat
         List<Long> longRatingIds = ratingIds.stream()
                 .map(Integer::longValue)
                 .collect(Collectors.toList());
-        return jpaRepository.findByRatingIdsAndStatus(longRatingIds, status.name())
+        return jpaRepository.findByRatingIdsAndStatus(longRatingIds, status)
                 .stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());

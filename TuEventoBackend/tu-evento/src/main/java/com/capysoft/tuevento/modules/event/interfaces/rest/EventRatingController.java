@@ -22,6 +22,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -47,6 +48,7 @@ import java.util.stream.Collectors;
  * (createdAt + 2 horas, zona America/Bogota) para que el frontend no necesite
  * calcularlo con la zona del navegador.
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/events/{eventId}/ratings")
 @RequiredArgsConstructor
@@ -64,6 +66,7 @@ public class EventRatingController {
     private final ProfileJpaRepository               profileJpaRepository;
     private final EventRatingTranslationRepository   eventRatingTranslationRepository;
     private final LanguageRepository                 languageRepository;
+    private final com.capysoft.tuevento.modules.language.application.service.TranslationService translationService;
 
     @Operation(summary = "Add a comment/rating or reply to an event — any authenticated user")
     @PostMapping
@@ -144,6 +147,20 @@ public class EventRatingController {
             for (EventRatingTranslation translation : translations) {
                 if (translation.getLanguageId().equals(targetLanguageId)) {
                     translationsByRatingId.put(translation.getRatingId().longValue(), translation);
+                }
+            }
+            
+            // Solicitar traducciones para ratings que no tienen traducción PUBLISHED
+            for (EventRating rating : ratings) {
+                if (!translationsByRatingId.containsKey(rating.getRatingId())) {
+                    try {
+                        translationService.requestTranslation("event_rating", rating.getRatingId(), "es");
+                    } catch (Exception e) {
+                        // Non-blocking: si falla la solicitud de traducción, solo logueamos
+                        // El frontend seguirá mostrando el indicador "translating"
+                        log.warn("Failed to request translation for rating {}: {}", 
+                                rating.getRatingId(), e.getMessage());
+                    }
                 }
             }
         }
