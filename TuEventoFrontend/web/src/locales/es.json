@@ -18,7 +18,7 @@
     "tryAgain": "Intentar de nuevo"
   },
   "comments": {
-    "languageRestriction": "Debes configurar tu idioma preferido como Español para poder comentar",
+    "languageRestriction": "Solo los usuarios con español como idioma preferido pueden comentar o responder. Cambia tu idioma a español en tu perfil para participar.",
     "translated": "Traducido desde español",
     "translating": "Traduciendo comentario…",
     "loadingComments": "Cargando comentarios…",
@@ -354,7 +354,11 @@
     "expired": "Tu reserva expiró y la silla se liberó",
     "alreadyTaken": "Esta silla ya fue reservada por otra persona",
     "loginRequired": "Iniciá sesión para reservar sillas",
-    "eventUnavailable": "Este evento ya no acepta reservas"
+    "eventUnavailable": "Este evento ya no acepta reservas",
+    "total": "Total",
+    "continueToPayment": "Continuar al Pago",
+    "viewAll": "Ver todas",
+    "expiredCountdown": "Expirado"
   },
   "profile": {
     "myProfile": "Mi perfil",
@@ -726,7 +730,32 @@
     "backToEvents": "Volver a eventos"
   },
   "eventDetail": {
-    "continueToPayment": "Continuar al Pago"
+    "continueToPayment": "Continuar al Pago",
+    "backToEvents": "Volver a eventos",
+    "availableSeats": "{{count}} sillas disponibles",
+    "published": "Publicado",
+    "loadingEvent": "Cargando evento…",
+    "eventNotFound": "Evento no encontrado",
+    "noImages": "Este evento aún no tiene imágenes",
+    "seatSelection": "Selecciona tus Sillas",
+    "howManySeats": "¿Cuántas sillas querés?",
+    "selected": "{{count}} de {{total}} seleccionadas",
+    "noSeatsSelected": "No has seleccionado ninguna silla",
+    "loginToComment": "para dejar un comentario",
+    "loadingComments": "Cargando comentarios…",
+    "noCommentsYet": "Todavía no hay comentarios. ¡Sé el primero!",
+    "edited": "editado",
+    "you": "Tú",
+    "organizer": "Organizador",
+    "commentsCount": "Comentarios",
+    "reply": "Responder",
+    "writeComment": "Escribe tu comentario sobre el evento…",
+    "publishingComment": "Enviando comentario…",
+    "publishComment": "Publicar comentario",
+    "deleteCommentTitle": "¿Borrar este comentario?",
+    "deleteCommentMessage": "Una vez eliminado no hay vuelta atrás — el comentario y sus respuestas desaparecerán para siempre. ¿Seguimos?",
+    "yesDelete": "Sí, eliminar",
+    "noCancel": "No, mejor no"
   },
   "paymentApproved": {
     "title": "¡Pago aprobado!",

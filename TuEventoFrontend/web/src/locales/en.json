@@ -18,7 +18,7 @@
     "tryAgain": "Try again"
   },
   "comments": {
-    "languageRestriction": "You must set your preferred language to Spanish to comment",
+    "languageRestriction": "Only users with Spanish as their preferred language can comment or reply. Change your language to Spanish in your profile to participate.",
     "translated": "Translated from Spanish",
     "translating": "Translating comment…",
     "loadingComments": "Loading comments…",
@@ -354,7 +354,11 @@
     "expired": "Your reservation expired and the seat was released",
     "alreadyTaken": "This seat was already reserved by someone else",
     "loginRequired": "Log in to reserve seats",
-    "eventUnavailable": "This event no longer accepts reservations"
+    "eventUnavailable": "This event no longer accepts reservations",
+    "total": "Total",
+    "continueToPayment": "Continue to Payment",
+    "viewAll": "View all",
+    "expiredCountdown": "Expired"
   },
   "profile": {
     "myProfile": "My profile",
@@ -726,7 +730,32 @@
     "backToEvents": "Back to events"
   },
   "eventDetail": {
-    "continueToPayment": "Continue to Payment"
+    "continueToPayment": "Continue to Payment",
+    "backToEvents": "Back to events",
+    "availableSeats": "{{count}} seats available",
+    "published": "Published",
+    "loadingEvent": "Loading event…",
+    "eventNotFound": "Event not found",
+    "noImages": "This event has no images yet",
+    "seatSelection": "Select your Seats",
+    "howManySeats": "How many seats do you want?",
+    "selected": "{{count}} of {{total}} selected",
+    "noSeatsSelected": "You haven't selected any seats",
+    "loginToComment": "to leave a comment",
+    "loadingComments": "Loading comments…",
+    "noCommentsYet": "No comments yet. Be the first!",
+    "edited": "edited",
+    "you": "You",
+    "organizer": "Organizer",
+    "commentsCount": "Comments",
+    "reply": "Reply",
+    "writeComment": "Write your comment about the event…",
+    "publishingComment": "Sending comment…",
+    "publishComment": "Publish comment",
+    "deleteCommentTitle": "Delete this comment?",
+    "deleteCommentMessage": "Once deleted there's no going back — the comment and its replies will disappear forever. Continue?",
+    "yesDelete": "Yes, delete",
+    "noCancel": "No, cancel"
   },
   "paymentApproved": {
     "title": "Payment approved!",

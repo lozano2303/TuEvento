@@ -18,7 +18,7 @@
     "tryAgain": "Tentar novamente"
   },
   "comments": {
-    "languageRestriction": "Você deve definir seu idioma preferido como espanhol para comentar",
+    "languageRestriction": "Apenas usuários com espanhol como idioma preferido podem comentar ou responder. Altere seu idioma para espanhol no seu perfil para participar.",
     "translated": "Traduzido do espanhol",
     "translating": "Traduzindo comentário…",
     "loadingComments": "Carregando comentários…",
@@ -35,6 +35,15 @@
     "organizer": "Organizador",
     "edited": "Editado",
     "selectRating": "Selecione uma classificação de 1 a 5 estrelas antes de publicar"
+  },
+  "seats": {
+    "selectSeats": "Selecione seus Assentos",
+    "myCart": "Seu Carrinho",
+    "noSeatsSelected": "Você não selecionou nenhum assento",
+    "total": "Total",
+    "continueToPayment": "Continuar para o Pagamento",
+    "viewAll": "Ver todos",
+    "expiredCountdown": "Expirado"
   },
   "landing": {
     "hero": {
@@ -354,7 +363,9 @@
     "expired": "Sua reserva expirou e o lugar foi liberado",
     "alreadyTaken": "Este lugar já foi reservado por outra pessoa",
     "loginRequired": "Faça login para reservar lugares",
-    "eventUnavailable": "Este evento não aceita mais reservas"
+    "eventUnavailable": "Este evento não aceita mais reservas",
+    "total": "Total",
+    "continueToPayment": "Continuar para o pagamento"
   },
   "profile": {
     "myProfile": "Meu perfil",
@@ -726,7 +737,32 @@
     "backToEvents": "Voltar aos eventos"
   },
   "eventDetail": {
-    "continueToPayment": "Continuar para o pagamento"
+    "continueToPayment": "Continuar para o pagamento",
+    "backToEvents": "Voltar aos eventos",
+    "availableSeats": "{{count}} lugares disponíveis",
+    "published": "Publicado",
+    "loadingEvent": "Carregando evento…",
+    "eventNotFound": "Evento não encontrado",
+    "noImages": "Este evento ainda não tem imagens",
+    "seatSelection": "Selecione seus Lugares",
+    "howManySeats": "Quantos lugares você quer?",
+    "selected": "{{count}} de {{total}} selecionados",
+    "noSeatsSelected": "Você não selecionou nenhum lugar",
+    "loginToComment": "para deixar um comentário",
+    "loadingComments": "Carregando comentários…",
+    "noCommentsYet": "Ainda não há comentários. Seja o primeiro!",
+    "edited": "editado",
+    "you": "Você",
+    "organizer": "Organizador",
+    "commentsCount": "Comentários",
+    "reply": "Responder",
+    "writeComment": "Escreva seu comentário sobre o evento…",
+    "publishingComment": "Enviando comentário…",
+    "publishComment": "Publicar comentário",
+    "deleteCommentTitle": "Excluir este comentário?",
+    "deleteCommentMessage": "Uma vez excluído não há volta — o comentário e suas respostas desaparecerão para sempre. Continuar?",
+    "yesDelete": "Sim, excluir",
+    "noCancel": "Não, cancelar"
   },
   "paymentApproved": {
     "title": "Pagamento aprovado!",
