@@ -176,13 +176,13 @@ public final class NotificationMessageFactory {
         boolean hasGateway = gateway.compareTo(BigDecimal.ZERO) > 0;
         if (hasWallet && hasGateway) {
             return "Pagaste " + money(wallet, currency) + " con tu cartera y "
-                    + money(gateway, currency) + " a través de la pasarela.";
+                    + money(gateway, currency) + " con pasarela de pago.";
         }
         if (hasWallet) {
             return "Pagaste " + money(wallet, currency) + " con tu cartera.";
         }
         if (hasGateway) {
-            return "Pagaste " + money(gateway, currency) + " a través de la pasarela.";
+            return "Pagaste " + money(gateway, currency) + " con pasarela de pago.";
         }
         return "El movimiento se registró correctamente.";
     }
@@ -199,13 +199,17 @@ public final class NotificationMessageFactory {
 
     private static String html(String... paragraphs) {
         StringBuilder sb = new StringBuilder();
-        sb.append("<html><body>");
+        sb.append("<!DOCTYPE html>\n");
+        sb.append("<html>\n");
+        sb.append("<head><meta charset=\"UTF-8\"></head>\n");
+        sb.append("<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333;\">\n");
         for (String p : paragraphs) {
             if (p != null && !p.isBlank()) {
-                sb.append("<p>").append(p).append("</p>");
+                sb.append("<p style=\"margin: 10px 0;\">").append(p).append("</p>\n");
             }
         }
-        sb.append("<p>TuEvento</p></body></html>");
+        sb.append("<p style=\"margin: 20px 0 0 0; color: #666; font-size: 0.9em;\">— TuEvento</p>\n");
+        sb.append("</body>\n</html>");
         return sb.toString();
     }
 

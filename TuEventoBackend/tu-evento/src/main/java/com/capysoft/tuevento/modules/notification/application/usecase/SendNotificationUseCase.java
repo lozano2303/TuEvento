@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -51,6 +52,10 @@ public class SendNotificationUseCase {
 
     @Transactional
     public void execute(SendNotificationCommand command) {
+        log.debug("SendNotificationUseCase.execute() CALLED - Type: {}, Recipients: {}, emailEnabled: {}", 
+                command == null ? "NULL" : command.getTypeName(),
+                command == null ? "NULL" : command.getUserIds(),
+                emailEnabled);
         
         if (command == null || command.getUserIds() == null || command.getUserIds().isEmpty()) {
             log.warn("SendNotification skipped: missing recipients type={}", command == null ? null : command.getTypeName());
@@ -66,16 +71,19 @@ public class SendNotificationUseCase {
         }
 
         List<Channel> activeChannels = channelRepository.findAllActive();
+        log.debug("Active channels found: {}", activeChannels.size());
         for (Channel channel : activeChannels) {
+            log.debug("Processing channel: {}", channel.getName());
             
             if (NotificationChannelNames.EMAIL.equals(channel.getName()) && !emailEnabled) {
-                log.debug("EMAIL channel skipped because notification.email.enabled=false");
+                log.debug("EMAIL channel SKIPPED because emailEnabled=false");
                 continue;
             }
 
             NotificationChannelPort adapter = channelsByName.get(channel.getName());
+            log.debug("Adapter for {}: {}", channel.getName(), adapter == null ? "NULL" : adapter.getClass().getSimpleName());
             if (adapter == null) {
-                log.warn("No adapter registered for channel={}", channel.getName());
+                log.warn("NO ADAPTER for channel={}", channel.getName());
                 continue;
             }
 
@@ -83,8 +91,9 @@ public class SendNotificationUseCase {
                     ? command.getTypeName() + ":" + command.getEntityId() + ":" + channel.getName()
                       + ":" + command.getIdempotencySuffix()
                     : command.getTypeName() + ":" + command.getEntityId() + ":" + channel.getName();
+            log.debug("Idempotency key: {}", idempotencyKey);
             if (notificationRepository.existsByIdempotencyKey(idempotencyKey)) {
-                log.info("Notification already sent, skipping duplicate idempotencyKey={}", idempotencyKey);
+                log.debug("DUPLICATE DETECTED, skipping idempotencyKey={}", idempotencyKey);
                 continue;
             }
 
@@ -106,20 +115,64 @@ public class SendNotificationUseCase {
                     .idempotencyKey(idempotencyKey)
                     .build());
 
-            // Solicitar traducción de la notificación (español es el idioma fuente)
-            try {
-                translationService.requestTranslation("notification", saved.getNotificationId(), "es");
-                log.debug("Translation requested for notification {}", saved.getNotificationId());
-            } catch (Exception e) {
-                log.warn("Failed to request translation for notification {}: {}", saved.getNotificationId(), e.getMessage());
-            }
+            // CRITICAL: Flush to ensure notification is committed to DB
+            notificationRepository.flush();
 
-            try {
-                adapter.deliver(saved, command.getUserIds());
-            } catch (Exception e) {
-                log.error("Channel adapter failed without aborting origin flow: channel={}, notificationId={}",
-                        channel.getName(), saved.getNotificationId(), e);
+            // IN_APP debe ejecutarse INMEDIATAMENTE (antes del commit) para WebSocket
+            // EMAIL debe ejecutarse DESPUÉS del commit para evitar "Notification not found"
+            final boolean isInApp = NotificationChannelNames.IN_APP.equals(channel.getName());
+            
+            if (isInApp) {
+                // IN_APP: Ejecutar inmediatamente (WebSocket necesita respuesta rápida)
+                try {
+                    log.info("=== CALLING ADAPTER DELIVER (IN_APP) === channel={}, notificationId={}, recipientCount={}, adapterClass={}", 
+                            channel.getName(), saved.getNotificationId(), command.getUserIds().size(), 
+                            adapter.getClass().getSimpleName());
+                    adapter.deliver(saved, command.getUserIds());
+                    log.info("=== ADAPTER DELIVER RETURNED (IN_APP) === channel={}, notificationId={}", 
+                            channel.getName(), saved.getNotificationId());
+                } catch (Exception e) {
+                    log.error("Channel adapter failed without aborting origin flow: channel={}, notificationId={}",
+                            channel.getName(), saved.getNotificationId(), e);
+                }
             }
+            
+            // Schedule translation request AND EMAIL delivery AFTER transaction commit
+            // This ensures the notification is visible to async operations
+            final Long notificationId = saved.getNotificationId();
+            final NotificationChannelPort finalAdapter = adapter;
+            final String channelName = channel.getName();
+            
+            TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        // Request translation
+                        try {
+                            translationService.requestTranslation("notification", notificationId, "es");
+                            log.debug("Translation requested for notification {}", notificationId);
+                        } catch (Exception e) {
+                            log.warn("Failed to request translation for notification {}: {}", notificationId, e.getMessage());
+                        }
+                        
+                        // Deliver EMAIL notification AFTER commit (avoids "Notification not found")
+                        // IN_APP already executed before commit
+                        if (!isInApp) {
+                            try {
+                                log.info("=== CALLING ADAPTER DELIVER (EMAIL) === channel={}, notificationId={}, recipientCount={}, adapterClass={}", 
+                                        channelName, notificationId, command.getUserIds().size(), 
+                                        finalAdapter.getClass().getSimpleName());
+                                finalAdapter.deliver(saved, command.getUserIds());
+                                log.info("=== ADAPTER DELIVER RETURNED (EMAIL) === channel={}, notificationId={}", 
+                                        channelName, notificationId);
+                            } catch (Exception e) {
+                                log.error("Channel adapter failed without aborting origin flow: channel={}, notificationId={}",
+                                        channelName, notificationId, e);
+                            }
+                        }
+                    }
+                }
+            );
         }
     }
 

@@ -22,6 +22,12 @@ public interface NotificationTranslationRepository {
     List<NotificationTranslation> findByNotification(Long notificationId);
 
     /**
+     * Busca todas las traducciones de una notificación (optimizado para queries).
+     * Este método es más eficiente que findAll() + filter.
+     */
+    List<NotificationTranslation> findAllByNotificationId(Integer notificationId);
+
+    /**
      * Busca todas las traducciones en un idioma específico.
      */
     List<NotificationTranslation> findByLanguage(Integer languageId);

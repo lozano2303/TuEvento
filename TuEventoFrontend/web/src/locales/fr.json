@@ -614,6 +614,7 @@
       "EVENT_PUBLISHED": "Événement publié",
       "EVENT_REJECTED": "Événement rejeté"
     },
+    "translating": "Traduction...",
     "details": {
       "close": "Fermer",
       "readAt": "Lu",
@@ -631,7 +632,8 @@
     },
     "dropdown": {
       "viewAll": "Voir toutes les notifications",
-      "noNotifications": "Vous n'avez pas de notifications"
+      "noNotifications": "Vous n'avez pas de notifications",
+      "loading": "Chargement des notifications..."
     }
   },
   "organizerPetition": {
