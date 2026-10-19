@@ -19,17 +19,23 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
  * Canal EMAIL: Spring Mail contra smtp.gmail.com:587 con STARTTLS.
  * Estados: PENDING → SENT si SMTP acepta, FAILED si falla.
  * El correo del destinatario se obtiene del usuario y se copia a notification_user.email_address.
+ * 
+ * ASYNC: Este canal se ejecuta en un thread pool separado para no bloquear la transacción principal.
  */
 @Slf4j
 @Component
@@ -51,93 +57,149 @@ public class EmailChannelAdapter implements NotificationChannelPort {
         return NotificationChannelNames.EMAIL;
     }
 
+    @Async("notificationExecutor")
     @Override
     public void deliver(Notification notification, List<Integer> userIds) {
+        log.info("=== EMAIL DELIVERY STARTED === notification={}, recipients={}, thread={}", 
+                notification.getNotificationId(), userIds, Thread.currentThread().getName());
+        
+        // Pre-load emails and user data in a transactional context before async processing
+        Map<Integer, UserData> userData = loadUserData(userIds);
+        
+        log.info("User data loaded: {}", userData.size());
+        
         for (Integer userId : userIds) {
-            String userEmail = null;
-            NotificationUser savedRecord = null;
-            
+            UserData data = userData.get(userId);
+            if (data == null) {
+                log.warn("No user data found for userId={}, skipping", userId);
+                continue;
+            }
+            log.info("Delivering to userId={}, email={}", userId, maskEmail(data.email));
+            deliverToUserWithData(notification, userId, data);
+        }
+        
+        log.info("=== EMAIL DELIVERY COMPLETED === notification={}", notification.getNotificationId());
+    }
+    
+    /**
+     * Pre-carga emails, idiomas preferidos y profile data en un contexto transaccional
+     * ANTES de entrar al método async, evitando LazyInitializationException.
+     */
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    protected Map<Integer, UserData> loadUserData(List<Integer> userIds) {
+        Map<Integer, UserData> result = new HashMap<>();
+        
+        for (Integer userId : userIds) {
             try {
-                // Obtener email del LoginCredentials
-                userEmail = loginCredentialsRepository.findByUserId(userId)
-                        .map(credentials -> credentials.getEmail())
-                        .orElse(null);
-
-                if (userEmail == null || userEmail.isBlank()) {
-                    log.warn("EMAIL notification skipped: user has no email, userId={}", userId);
-                    notificationUserRepository.save(NotificationUser.builder()
-                            .notificationId(notification.getNotificationId())
-                            .userId(userId)
-                            .emailAddress(null)
-                            .deliveredStatus(DeliveredStatus.FAILED)
-                            .errorMessage("Usuario sin dirección de correo electrónico")
-                            .build());
-                    continue;
+                String email = loginCredentialsRepository.findEmailByUserId(userId).orElse(null);
+                
+                Optional<Profile> profileOpt = profileRepository.findByUserId(userId);
+                Long preferredLanguageId = null;
+                if (profileOpt.isPresent() && profileOpt.get().getPreferredLanguageId() != null) {
+                    preferredLanguageId = profileOpt.get().getPreferredLanguageId();
                 }
-
-                // Crear registro PENDING
-                savedRecord = notificationUserRepository.save(NotificationUser.builder()
+                
+                result.put(userId, new UserData(email, preferredLanguageId));
+            } catch (Exception e) {
+                log.error("Failed to load user data for userId={}: {}", userId, e.getMessage());
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Clase para transportar datos del usuario pre-cargados.
+     */
+    private static class UserData {
+        final String email;
+        final Long preferredLanguageId;
+        
+        UserData(String email, Long preferredLanguageId) {
+            this.email = email;
+            this.preferredLanguageId = preferredLanguageId;
+        }
+    }
+    
+    private void deliverToUserWithData(Notification notification, Integer userId, UserData userData) {
+        String userEmail = userData.email;
+        NotificationUser savedRecord = null;
+        
+        try {
+            if (userEmail == null || userEmail.isBlank()) {
+                log.warn("EMAIL notification skipped: user has no email, userId={}", userId);
+                notificationUserRepository.save(NotificationUser.builder()
                         .notificationId(notification.getNotificationId())
                         .userId(userId)
-                        .emailAddress(userEmail)
-                        .deliveredStatus(DeliveredStatus.PENDING)
-                        .errorMessage(null)
+                        .emailAddress(null)
+                        .deliveredStatus(DeliveredStatus.FAILED)
+                        .errorMessage("Usuario sin dirección de correo electrónico")
                         .build());
+                return;
+            }
 
-                // Obtener idioma preferido del usuario y traducción si es necesario
-                TranslatedContent content = getTranslatedContent(notification, userId);
-                
-                // Enviar correo con contenido (traducido o original)
-                sendEmail(userEmail, content.subject, content.body);
+            // Crear registro PENDING
+            savedRecord = notificationUserRepository.save(NotificationUser.builder()
+                    .notificationId(notification.getNotificationId())
+                    .userId(userId)
+                    .emailAddress(userEmail)
+                    .deliveredStatus(DeliveredStatus.PENDING)
+                    .errorMessage(null)
+                    .build());
 
-                // Actualizar a SENT (preservando el ID)
-                NotificationUser updated = NotificationUser.builder()
-                        .notificationUserId(savedRecord.getNotificationUserId())
-                        .notificationId(savedRecord.getNotificationId())
-                        .userId(savedRecord.getUserId())
-                        .emailAddress(savedRecord.getEmailAddress())
-                        .deliveredStatus(DeliveredStatus.SENT)
-                        .errorMessage(null)
-                        .readAt(savedRecord.getReadAt())
-                        .build();
-                notificationUserRepository.save(updated);
+            // Obtener idioma preferido del usuario y traducción si es necesario
+            TranslatedContent content = getTranslatedContent(notification, userId, userData.preferredLanguageId);
+            
+            // Enviar correo con contenido (traducido o original)
+            sendEmail(userEmail, content.subject, content.body);
 
-                log.debug("EMAIL notification sent: notificationUserId={}, userId={}, email={}, language={}",
-                        updated.getNotificationUserId(), userId, maskEmail(userEmail), 
-                        content.wasTranslated ? content.languageCode : "es (original)");
+            // Actualizar a SENT (preservando el ID)
+            NotificationUser updated = NotificationUser.builder()
+                    .notificationUserId(savedRecord.getNotificationUserId())
+                    .notificationId(savedRecord.getNotificationId())
+                    .userId(savedRecord.getUserId())
+                    .emailAddress(savedRecord.getEmailAddress())
+                    .deliveredStatus(DeliveredStatus.SENT)
+                    .errorMessage(null)
+                    .readAt(savedRecord.getReadAt())
+                    .build();
+            notificationUserRepository.save(updated);
 
-            } catch (Exception e) {
-                log.error("Failed to send EMAIL notification: userId={}, email={}, notificationId={}",
-                        userId, maskEmail(userEmail), notification.getNotificationId(), e);
+            log.debug("EMAIL notification sent: notificationUserId={}, userId={}, email={}, language={}",
+                    updated.getNotificationUserId(), userId, maskEmail(userEmail), 
+                    content.wasTranslated ? content.languageCode : "es (original)");
 
-                // Actualizar registro existente a FAILED (si existe) o crear uno nuevo
-                try {
-                    if (savedRecord != null && savedRecord.getNotificationUserId() != null) {
-                        // Ya existe un registro PENDING, actualizarlo a FAILED
-                        NotificationUser failed = NotificationUser.builder()
-                                .notificationUserId(savedRecord.getNotificationUserId())
-                                .notificationId(savedRecord.getNotificationId())
-                                .userId(savedRecord.getUserId())
-                                .emailAddress(savedRecord.getEmailAddress())
-                                .deliveredStatus(DeliveredStatus.FAILED)
-                                .errorMessage(truncate(e.getMessage(), 1000))
-                                .readAt(savedRecord.getReadAt())
-                                .build();
-                        notificationUserRepository.save(failed);
-                    } else {
-                        // No se llegó a crear el registro PENDING, crear uno FAILED
-                        NotificationUser failed = NotificationUser.builder()
-                                .notificationId(notification.getNotificationId())
-                                .userId(userId)
-                                .emailAddress(userEmail)
-                                .deliveredStatus(DeliveredStatus.FAILED)
-                                .errorMessage(truncate(e.getMessage(), 1000))
-                                .build();
-                        notificationUserRepository.save(failed);
-                    }
-                } catch (Exception saveError) {
-                    log.error("Failed to save FAILED EMAIL notification: userId={}", userId, saveError);
+        } catch (Exception e) {
+            log.error("Failed to send EMAIL notification: userId={}, email={}, notificationId={}",
+                    userId, maskEmail(userEmail), notification.getNotificationId(), e);
+
+            // Actualizar registro existente a FAILED (si existe) o crear uno nuevo
+            try {
+                if (savedRecord != null && savedRecord.getNotificationUserId() != null) {
+                    // Ya existe un registro PENDING, actualizarlo a FAILED
+                    NotificationUser failed = NotificationUser.builder()
+                            .notificationUserId(savedRecord.getNotificationUserId())
+                            .notificationId(savedRecord.getNotificationId())
+                            .userId(savedRecord.getUserId())
+                            .emailAddress(savedRecord.getEmailAddress())
+                            .deliveredStatus(DeliveredStatus.FAILED)
+                            .errorMessage(truncate(e.getMessage(), 1000))
+                            .readAt(savedRecord.getReadAt())
+                            .build();
+                    notificationUserRepository.save(failed);
+                } else {
+                    // No se llegó a crear el registro PENDING, crear uno FAILED
+                    NotificationUser failed = NotificationUser.builder()
+                            .notificationId(notification.getNotificationId())
+                            .userId(userId)
+                            .emailAddress(userEmail)
+                            .deliveredStatus(DeliveredStatus.FAILED)
+                            .errorMessage(truncate(e.getMessage(), 1000))
+                            .build();
+                    notificationUserRepository.save(failed);
                 }
+            } catch (Exception saveError) {
+                log.error("Failed to save FAILED EMAIL notification: userId={}", userId, saveError);
             }
         }
     }
@@ -145,18 +207,14 @@ public class EmailChannelAdapter implements NotificationChannelPort {
     /**
      * Obtiene el contenido traducido de la notificación según el idioma preferido del usuario.
      * Si el idioma no es español, espera hasta 1 minuto para que la traducción esté lista.
-     * Si timeout o error, devuelve contenido original en español.
+     * Si timeout o error, devuelve contenido original en español con nota.
      */
-    private TranslatedContent getTranslatedContent(Notification notification, Integer userId) {
+    private TranslatedContent getTranslatedContent(Notification notification, Integer userId, Long preferredLanguageId) {
         try {
-            // Obtener idioma preferido del usuario
-            Optional<Profile> profileOpt = profileRepository.findByUserId(userId);
-            if (profileOpt.isEmpty() || profileOpt.get().getPreferredLanguageId() == null) {
+            if (preferredLanguageId == null) {
                 log.debug("User {} has no preferred language, using original Spanish content", userId);
                 return new TranslatedContent(notification.getSubject(), notification.getBody(), false, "es");
             }
-
-            Long preferredLanguageId = profileOpt.get().getPreferredLanguageId();
             
             // Obtener información del idioma
             Optional<Language> languageOpt = languageRepository.findById(preferredLanguageId.intValue());
@@ -265,14 +323,21 @@ public class EmailChannelAdapter implements NotificationChannelPort {
     }
 
     private void sendEmail(String to, String subject, String body) throws MessagingException {
-        if (body != null && body.trim().startsWith("<html")) {
-            // HTML email
+        // Detectar HTML de forma más robusta
+        boolean isHtml = body != null && 
+                         (body.trim().toLowerCase().startsWith("<!doctype") || 
+                          body.trim().toLowerCase().startsWith("<html") || 
+                          body.trim().toLowerCase().contains("<html>"));
+        
+        if (isHtml) {
+            // HTML email con encoding correcto
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(body, true);  // true = HTML
             mailSender.send(message);
+            log.info("Sent HTML email to {} (subject: {})", maskEmail(to), subject);
         } else {
             // Plain text email
             SimpleMailMessage message = new SimpleMailMessage();
@@ -280,6 +345,7 @@ public class EmailChannelAdapter implements NotificationChannelPort {
             message.setSubject(subject);
             message.setText(body);
             mailSender.send(message);
+            log.info("Sent plain text email to {} (subject: {})", maskEmail(to), subject);
         }
     }
 

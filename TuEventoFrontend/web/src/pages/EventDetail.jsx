@@ -891,11 +891,13 @@ export default function EventDetail() {
           <div className="flex flex-col gap-5">
             <div>
               <h1 className="text-2xl font-bold" style={{ color: '#e9d5ff' }}>
-                {event.eventName}
+                {/* FIX: Usar traducción si está disponible */}
+                {(i18next.language !== 'es' && event.translatedName) ? event.translatedName : event.eventName}
               </h1>
-              {event.description && (
+              {(event.description || event.translatedDescription) && (
                 <p className="mt-2 text-sm leading-relaxed" style={{ color: 'rgba(196,181,253,0.75)' }}>
-                  {event.description}
+                  {/* FIX: Usar traducción si está disponible */}
+                  {(i18next.language !== 'es' && event.translatedDescription) ? event.translatedDescription : event.description}
                 </p>
               )}
             </div>

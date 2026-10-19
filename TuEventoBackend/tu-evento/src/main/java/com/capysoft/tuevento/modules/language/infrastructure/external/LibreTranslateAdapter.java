@@ -49,11 +49,14 @@ public class LibreTranslateAdapter implements TranslationPort {
                 sourceText.substring(0, Math.min(50, sourceText.length())));
 
         try {
+            // Detect if content is HTML
+            String format = isHtmlContent(sourceText) ? "html" : "text";
+            
             Map<String, String> request = Map.of(
                 "q", sourceText,
                 "source", sourceLang,
                 "target", targetLang,
-                "format", "text"
+                "format", format
             );
 
             log.debug("Sending request to LibreTranslate: {}", request);
@@ -86,6 +89,22 @@ public class LibreTranslateAdapter implements TranslationPort {
             log.error(error, e);
             throw new TranslationException(error, e);
         }
+    }
+    
+    /**
+     * Detecta si el contenido es HTML basándose en la presencia de tags HTML comunes.
+     */
+    private boolean isHtmlContent(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return false;
+        }
+        String trimmed = text.trim().toLowerCase();
+        return trimmed.startsWith("<!doctype") || 
+               trimmed.startsWith("<html") || 
+               trimmed.contains("<html>") ||
+               trimmed.contains("<body") ||
+               trimmed.contains("<div") ||
+               trimmed.contains("<p>");
     }
 
     @Override

@@ -98,14 +98,12 @@ public class InAppNotificationQueryUseCase {
 
     /**
      * Carga las traducciones de una notificación.
+     * FIX BUG #7: Usa consulta específica en lugar de findAll() + filter para mejor performance
      */
     private List<NotificationTranslationDTO> loadTranslations(Long notificationId) {
-        // Buscar todas las traducciones para esta notificación
+        // Usar consulta específica en lugar de findAll()
         List<NotificationTranslation> translations = notificationTranslationRepository
-                .findAll()
-                .stream()
-                .filter(t -> t.getNotificationId().equals(notificationId.intValue()))
-                .collect(Collectors.toList());
+                .findAllByNotificationId(notificationId.intValue());
 
         return translations.stream()
                 .map(translation -> {

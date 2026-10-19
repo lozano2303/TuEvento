@@ -34,4 +34,9 @@ public class LoginCredentialsRepositoryImpl implements LoginCredentialsRepositor
     public boolean existsByEmail(String email) {
         return jpaRepository.existsByEmail(email);
     }
+
+    @Override
+    public Optional<String> findEmailByUserId(Integer userId) {
+        return jpaRepository.findEmailByUserId(userId);
+    }
 }

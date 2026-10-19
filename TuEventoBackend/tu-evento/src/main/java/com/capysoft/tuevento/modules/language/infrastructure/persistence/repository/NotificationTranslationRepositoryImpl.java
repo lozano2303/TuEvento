@@ -39,6 +39,15 @@ public class NotificationTranslationRepositoryImpl implements NotificationTransl
     }
 
     @Override
+    public List<NotificationTranslation> findAllByNotificationId(Integer notificationId) {
+        // FIX BUG #7: Método optimizado que usa query específica en lugar de findAll() + filter
+        return jpaRepository.findByNotificationId(notificationId.longValue())
+                .stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<NotificationTranslation> findByLanguage(Integer languageId) {
         return jpaRepository.findByLanguageId(languageId)
                 .stream()
