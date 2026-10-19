@@ -328,17 +328,165 @@ input[type="password"]::-ms-reveal { display: none; }
   box-shadow: 0 8px 32px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
-/* EventCard */
-.theme-event-card {
-  background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
-  border: 0.5px solid color-mix(in srgb, var(--color-accent) 20%, transparent);
+/* ── EventCard v2 ──────────────────────────────────────────────────────── */
+.ec-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+  outline: none;
 }
-.theme-event-card-placeholder {
-  background-color: color-mix(in srgb, var(--color-primaryDark) 25%, transparent);
+.ec-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 48px color-mix(in srgb, var(--color-primary) 28%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
 }
-.theme-event-card-footer {
-  border-top: 0.5px solid color-mix(in srgb, var(--color-accent) 15%, transparent);
+.ec-card:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 60%, transparent);
 }
+
+/* Imagen */
+.ec-img-wrap {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-primaryDark) 20%, var(--color-background));
+  flex-shrink: 0;
+}
+.ec-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  image-rendering: auto;
+  transition: transform 0.4s ease;
+}
+.ec-card:hover .ec-img {
+  transform: scale(1.03);
+}
+.ec-img-placeholder {
+  width: 100%;
+  height: 100%;
+}
+.ec-img-overlay {
+  display: none;
+}
+
+/* Badges */
+.ec-badges {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.ec-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+}
+.ec-badge-draft   { background: rgba(234,179,8,0.85);  color: #1a1a1a; }
+.ec-badge-soldout { background: rgba(239,68,68,0.85);  color: #fff; }
+.ec-badge-almost  { background: color-mix(in srgb, var(--color-accent) 85%, transparent); color: #fff; }
+
+/* Chip de fecha — esquina superior derecha */
+.ec-date-chip {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Cuerpo */
+.ec-body {
+  flex: 1;
+  padding: 1rem 1.1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.ec-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-textPrimary);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ec-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.ec-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--color-textSecondary);
+  min-width: 0;
+}
+.ec-meta-item svg {
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+/* Footer */
+.ec-footer {
+  padding: 0.75rem 1.1rem 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-primary) 14%, transparent);
+  margin-top: auto;
+}
+.ec-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primaryDark));
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+.ec-btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+/* mantener compatibilidad con clases antiguas */
+.theme-event-card          { background-color: color-mix(in srgb, var(--color-primary) 20%, transparent); border: 0.5px solid color-mix(in srgb, var(--color-accent) 20%, transparent); }
+.theme-event-card-placeholder { background-color: color-mix(in srgb, var(--color-primaryDark) 25%, transparent); }
+.theme-event-card-footer   { border-top: 0.5px solid color-mix(in srgb, var(--color-accent) 15%, transparent); }
 
 /* ProfilePage — hero section */
 .theme-hero-section {
@@ -1627,3 +1775,636 @@ input[type="password"]::-ms-reveal { display: none; }
 }
 
 /* ── Barra de fortaleza — reutiliza strength-bar-* existentes ────────────── */
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LANDING PAGE v2 — Rediseño divertido y dinámico
+   Prefijo: lp2-
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Animaciones globales ──────────────────────────────────────────────── */
+@keyframes lp2-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%       { transform: translateY(-12px) rotate(2deg); }
+  66%       { transform: translateY(-6px) rotate(-1deg); }
+}
+@keyframes lp2-float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-18px); }
+}
+@keyframes lp2-spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes lp2-pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0;   }
+}
+@keyframes lp2-slide-up {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+@keyframes lp2-slide-right {
+  from { opacity: 0; transform: translateX(-32px); }
+  to   { opacity: 1; transform: translateX(0);     }
+}
+@keyframes lp2-count-up {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1);   }
+}
+@keyframes lp2-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes lp2-bounce-in {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-10deg); }
+  60%  { opacity: 1; transform: scale(1.1) rotate(3deg);   }
+  80%  { transform: scale(0.95) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes lp2-gradient-shift {
+  0%, 100% { background-position: 0%   50%; }
+  50%       { background-position: 100% 50%; }
+}
+@keyframes lp2-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25%       { transform: rotate(-8deg); }
+  75%       { transform: rotate(8deg); }
+}
+@keyframes lp2-particle {
+  0%   { transform: translateY(0)   scale(1);   opacity: 1; }
+  100% { transform: translateY(-80px) scale(0); opacity: 0; }
+}
+@keyframes lp2-wave-flow {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes lp2-wave-flow-rev {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
+}
+@keyframes lp2-glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px 6px rgba(167,139,250,0.3); }
+  50%       { box-shadow: 0 0 40px 14px rgba(167,139,250,0.55); }
+}
+@keyframes lp2-star-twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.4); }
+}
+@keyframes lp2-morph-blob {
+  0%, 100% { border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%; }
+  33%       { border-radius: 45% 55% 40% 60% / 60% 40% 55% 45%; }
+  66%       { border-radius: 55% 45% 60% 40% / 40% 55% 45% 60%; }
+}
+@keyframes lp2-scan-line {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.6; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+@keyframes lp2-rotate-ring {
+  0%   { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.05); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+@keyframes lp2-fade-in-up {
+  from { opacity: 0; transform: translateY(40px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+.lp2-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.lp2-hero-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    var(--color-primary)     0%,
+    var(--color-primaryDark) 40%,
+    color-mix(in srgb, var(--color-primary) 60%, #000) 100%
+  );
+  background-size: 300% 300%;
+  animation: lp2-gradient-shift 8s ease infinite;
+}
+
+/* Malla de puntos decorativa */
+.lp2-hero-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* Orbes de fondo */
+.lp2-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(60px);
+}
+.lp2-orb-1 {
+  width: 500px; height: 500px;
+  top: -150px; right: -150px;
+  background: radial-gradient(circle, rgba(255,255,255,0.12), transparent 70%);
+  animation: lp2-float-slow 7s ease-in-out infinite;
+}
+.lp2-orb-2 {
+  width: 350px; height: 350px;
+  bottom: -100px; left: -100px;
+  background: radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%);
+  animation: lp2-float-slow 9s ease-in-out infinite reverse;
+}
+.lp2-orb-3 {
+  width: 200px; height: 200px;
+  top: 40%; left: 20%;
+  background: radial-gradient(circle, rgba(255,255,255,0.05), transparent 70%);
+  animation: lp2-float-slow 11s ease-in-out infinite;
+}
+
+/* Etiqueta "NUEVO" encima del título */
+.lp2-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 9999px;
+  padding: 0.35rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.95);
+  animation: lp2-slide-up 0.6s ease both;
+}
+.lp2-eyebrow-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 6px #4ade80;
+  animation: lp2-pulse-ring 1.4s ease-out infinite;
+}
+
+/* Título hero */
+.lp2-hero-title {
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 900;
+  line-height: 1.05;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  animation: lp2-slide-up 0.7s 0.1s ease both;
+}
+.lp2-hero-title-accent {
+  background: linear-gradient(90deg, #ffffff 0%, rgba(255,255,255,0.7) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: lp2-shimmer 3s linear infinite;
+}
+
+.lp2-hero-subtitle {
+  font-size: 1.125rem;
+  color: rgba(255,255,255,0.80);
+  max-width: 540px;
+  line-height: 1.7;
+  animation: lp2-slide-up 0.7s 0.2s ease both;
+}
+
+/* Botones hero */
+.lp2-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 2.2rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  border: none;
+  cursor: pointer;
+  background: #ffffff;
+  color: var(--color-primary);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: lp2-slide-up 0.7s 0.3s ease both;
+}
+.lp2-btn-primary:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.35);
+}
+.lp2-btn-primary:active { transform: translateY(0) scale(1); }
+
+.lp2-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 2.2rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  background: transparent;
+  color: #ffffff;
+  border: 2px solid rgba(255,255,255,0.45);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  animation: lp2-slide-up 0.7s 0.35s ease both;
+}
+.lp2-btn-secondary:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.7);
+  transform: translateY(-2px);
+}
+
+/* Tarjeta flotante hero — estilos base ya definidos en lp2-hero-card más abajo */
+
+/* Pill de stat dentro de la tarjeta */
+.lp2-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255,255,255,0.15);
+  border-radius: 1rem;
+  padding: 0.75rem 1rem;
+}
+.lp2-stat-pill-icon {
+  width: 40px; height: 40px;
+  border-radius: 0.75rem;
+  background: rgba(255,255,255,0.20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.lp2-stat-pill-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+}
+.lp2-stat-pill-label {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.70);
+  line-height: 1;
+}
+
+/* Ondas divisoras */
+.lp2-wave {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+}
+/* Onda animada — wrapper */
+.lp2-wave-wrap {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+  height: 100px;
+}
+.lp2-wave-svg {
+  position: absolute;
+  bottom: 0;
+  width: 200%;
+  height: 100%;
+}
+.lp2-wave-svg-1 {
+  animation: lp2-wave-flow 14s linear infinite;
+  opacity: 0.8;
+}
+.lp2-wave-svg-2 {
+  animation: lp2-wave-flow-rev 10s linear infinite;
+  opacity: 0.4;
+}
+
+/* ── Sección estadísticas ────────────────────────────────────────────────── */
+.lp2-stats-section {
+  padding: 5rem 0;
+  position: relative;
+  overflow: hidden;
+}
+.lp2-stat-card {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  border-radius: 1.5rem;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  animation: lp2-count-up 0.6s ease both;
+}
+.lp2-stat-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 50px color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+.lp2-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  border-radius: 3px 3px 0 0;
+}
+.lp2-stat-number {
+  font-size: 3rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-primary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+.lp2-stat-label {
+  color: var(--color-textSecondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+/* ── Sección "Cómo funciona" ────────────────────────────────────────────── */
+.lp2-step-card {
+  position: relative;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surfaceAlt);
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
+}
+.lp2-step-card:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--color-primary) 60%, transparent);
+  box-shadow: 0 16px 48px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+.lp2-step-number {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-primary));
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lp2-step-icon {
+  width: 72px; height: 72px;
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--color-primary) 15%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 1rem;
+  transition: transform 0.3s ease;
+}
+.lp2-step-card:hover .lp2-step-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+.lp2-step-connector {
+  display: none;
+}
+@media (min-width: 768px) {
+  .lp2-step-connector {
+    display: block;
+    position: absolute;
+    top: 50%;
+    right: -20%;
+    width: 40%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--color-primary), transparent);
+    z-index: 0;
+  }
+}
+
+/* ── Feature cards ───────────────────────────────────────────────────────── */
+.lp2-feature-card {
+  padding: 2rem;
+  border-radius: 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surfaceAlt);
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.lp2-feature-card:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  box-shadow: 0 16px 48px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+.lp2-feature-icon {
+  width: 56px; height: 56px;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  transition: transform 0.3s ease;
+}
+.lp2-feature-card:hover .lp2-feature-icon {
+  transform: scale(1.15) rotate(-5deg);
+  animation: lp2-wiggle 0.4s ease;
+}
+
+/* ── Testimonios ────────────────────────────────────────────────────────── */
+.lp2-testimonial-card {
+  padding: 1.75rem;
+  border-radius: 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surfaceAlt);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.lp2-testimonial-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 48px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+.lp2-testimonial-quote {
+  position: absolute;
+  top: 1rem; right: 1.25rem;
+  font-size: 4rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  font-family: Georgia, serif;
+  pointer-events: none;
+  user-select: none;
+}
+.lp2-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+.lp2-stars {
+  display: flex;
+  gap: 2px;
+  font-size: 0.85rem;
+}
+
+/* ── CTA final ───────────────────────────────────────────────────────────── */
+.lp2-cta-section {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2rem;
+  margin: 0 1rem;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: linear-gradient(135deg,
+    var(--color-primary)     0%,
+    var(--color-primaryDark) 50%,
+    color-mix(in srgb, var(--color-primary) 70%, #000) 100%
+  );
+  background-size: 200% 200%;
+  animation: lp2-gradient-shift 6s ease infinite;
+}
+.lp2-cta-section::before {
+  content: '';
+  position: absolute;
+  top: -80px; right: -80px;
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+.lp2-cta-section::after {
+  content: '';
+  position: absolute;
+  bottom: -60px; left: -60px;
+  width: 240px; height: 240px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  pointer-events: none;
+}
+
+/* ── Compatibilidad / plataformas ────────────────────────────────────────── */
+.lp2-platform-card {
+  padding: 2.5rem 2rem;
+  border-radius: 1.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surfaceAlt);
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.lp2-platform-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 56px color-mix(in srgb, var(--color-primary) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
+}
+.lp2-platform-icon-wrap {
+  width: 88px; height: 88px;
+  border-radius: 1.5rem;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  transition: transform 0.3s ease;
+}
+.lp2-platform-card:hover .lp2-platform-icon-wrap {
+  transform: scale(1.08) rotate(3deg);
+}
+
+/* ── Section headers ─────────────────────────────────────────────────────── */
+.lp2-section-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  border-radius: 9999px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 0.75rem;
+}
+
+/* ── Floating emoji particles ────────────────────────────────────────────── */
+.lp2-emoji-float {
+  position: absolute;
+  font-size: 1.75rem;
+  pointer-events: none;
+  user-select: none;
+  animation: lp2-particle 4s ease-in-out infinite;
+  opacity: 0.45;
+}
+
+/* ── Star twinkle decorations ─────────────────────────────────────────── */
+.lp2-star {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+}
+.lp2-star-sm { width: 3px; height: 3px; }
+.lp2-star-md { width: 5px; height: 5px; }
+
+/* ── Glow button accent ───────────────────────────────────────────────── */
+.lp2-btn-primary-glow {
+  animation: lp2-glow-pulse 2.5s ease-in-out infinite;
+}
+
+/* ── Morph blob ───────────────────────────────────────────────────────── */
+.lp2-morph-blob {
+  position: absolute;
+  pointer-events: none;
+  filter: blur(48px);
+  animation: lp2-morph-blob 8s ease-in-out infinite;
+}
+
+/* ── Scan line on hero card ───────────────────────────────────────────── */
+.lp2-hero-card {
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  animation: lp2-float 6s ease-in-out infinite;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.20);
+  overflow: hidden;
+}
+.lp2-hero-card::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+  animation: lp2-scan-line 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ── Rotating ring decoration ─────────────────────────────────────────── */
+.lp2-rotate-ring {
+  position: absolute;
+  pointer-events: none;
+  animation: lp2-rotate-ring 20s linear infinite;
+}
+
+/* ── Fade in up for sections ──────────────────────────────────────────── */
+.lp2-fade-in-up {
+  animation: lp2-fade-in-up 0.8s ease both;
+}
