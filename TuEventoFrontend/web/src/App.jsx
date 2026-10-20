@@ -22,6 +22,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminFinancial from './pages/AdminFinancial';
 import AdminCategoryManagement from './pages/AdminCategoryManagement';
 import AdminSectionTypeManagement from './pages/AdminSectionTypeManagement';
+import AdminEventTranslations from './pages/AdminEventTranslations';
 import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
 import PaymentPending from './pages/PaymentPending';
@@ -114,6 +115,11 @@ function AppContent() {
           <Route path="/admin-section-types" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminSectionTypeManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-translations/:lang/events" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminEventTranslations />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, 
-  Users, LogOut, User, Settings, ChevronDown, Layers
+  Users, LogOut, User, Settings, ChevronDown, Layers, Languages,
+  FileText, Globe
 } from 'lucide-react';
 import { performLogout } from '../../services/httpClient';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
  */
 export default function AdminSidebar({ activePage }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showTranslations, setShowTranslations] = useState(false);
   const navigate = useNavigate();
 
   const userData = {
@@ -75,6 +77,17 @@ export default function AdminSidebar({ activePage }) {
     },
   ];
 
+  // Módulos de traducciones (sin idiomas anidados)
+  // Las rutas apuntan a inglés por defecto (español es el idioma fuente, no se traduce)
+  const translationModules = [
+    { id: 'translation-events', label: 'Eventos', href: '/admin-translations/en/events', icon: Calendar },
+    { id: 'translation-categories', label: 'Categorías', href: '/admin-translations/en/categories', icon: Settings },
+    { id: 'translation-section-types', label: 'Tipos de Sección', href: '/admin-translations/en/section-types', icon: Layers },
+    { id: 'translation-comments', label: 'Comentarios', href: '/admin-translations/en/comments', icon: FileText, disabled: true },
+    { id: 'translation-profiles', label: 'Perfiles', href: '/admin-translations/en/profiles', icon: Users, disabled: true },
+    { id: 'translation-notifications', label: 'Notificaciones', href: '/admin-translations/en/notifications', icon: Globe, disabled: true },
+  ];
+
   const handleLogout = async () => {
     await performLogout();
     window.location.href = '/login';
@@ -98,7 +111,7 @@ export default function AdminSidebar({ activePage }) {
   }, [showUserMenu]);
 
   return (
-    <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-background border-r border-surfaceAlt/30 h-screen sticky top-0">
+    <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-background border-r border-surfaceAlt/30 h-screen sticky top-0 overflow-y-auto">
       {/* Logo + Navigation */}
       <div>
         {/* Logo */}
@@ -132,6 +145,49 @@ export default function AdminSidebar({ activePage }) {
               {item.label}
             </a>
           ))}
+
+          {/* Sección de Traducciones con dropdown simple */}
+          <div className="mt-2 border-t border-surfaceAlt/40 pt-2">
+            <button
+              onClick={() => setShowTranslations(!showTranslations)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-full text-sm font-medium transition-colors
+                ${activePage?.startsWith('translation')
+                  ? 'bg-primary text-textPrimary'
+                  : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt/50'
+                }`}
+            >
+              <Languages className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1 text-left">Traducciones</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showTranslations ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Lista de módulos traducibles */}
+            {showTranslations && (
+              <div className="mt-1 ml-2 space-y-0.5">
+                {translationModules.map((module) => (
+                  <a
+                    key={module.id}
+                    href={module.disabled ? undefined : module.href}
+                    onClick={(e) => {
+                      if (module.disabled) {
+                        e.preventDefault();
+                      }
+                    }}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors
+                      ${module.id === activePage
+                        ? 'bg-primary/20 text-primary'
+                        : module.disabled
+                          ? 'text-textMuted cursor-not-allowed opacity-50'
+                          : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt/30'
+                      }`}
+                  >
+                    <module.icon className="w-3.5 h-3.5 flex-shrink-0" />
+                    {module.label}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
       </div>
 
