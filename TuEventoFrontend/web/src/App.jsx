@@ -23,6 +23,7 @@ import AdminFinancial from './pages/AdminFinancial';
 import AdminCategoryManagement from './pages/AdminCategoryManagement';
 import AdminSectionTypeManagement from './pages/AdminSectionTypeManagement';
 import AdminEventTranslations from './pages/AdminEventTranslations';
+import AdminCategoryTranslations from './pages/AdminCategoryTranslations';
 import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
 import PaymentPending from './pages/PaymentPending';
@@ -60,7 +61,8 @@ function AppContent() {
     '/checkout',
   ].includes(location.pathname)
     && !location.pathname.match(/^\/events\/[^/]+\/layout$/)
-    && !location.pathname.match(/^\/checkout/);
+    && !location.pathname.match(/^\/checkout/)
+    && !location.pathname.match(/^\/admin-translations/);
 
   return (
     <div className="min-h-screen bg-background">
@@ -120,6 +122,11 @@ function AppContent() {
           <Route path="/admin-translations/:lang/events" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminEventTranslations />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-translations/:lang/categories" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminCategoryTranslations />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={

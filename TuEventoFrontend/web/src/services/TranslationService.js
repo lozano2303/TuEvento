@@ -56,10 +56,11 @@ export const createEventTranslation = updateEventTranslation;
 /**
  * Obtiene todas las traducciones de categorías para un idioma específico
  * @param {string} languageCode - Código del idioma (es, en, fr, pt)
+ * @param {string} filter - Filtro: 'all', 'needs-review', 'translated', 'not-translated'
  * @returns {Promise} Lista de categorías con sus traducciones
  */
-export const getCategoryTranslations = async (languageCode) => {
-  const response = await httpRequest(`${API_URL}/admin/translations/categories/${languageCode}`);
+export const getCategoryTranslations = async (languageCode, filter = 'all') => {
+  const response = await httpRequest(`${API_URL}/admin/category-translations/${languageCode}?filter=${filter}`);
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Error al obtener traducciones' }));
     throw new Error(error.message || 'Error al obtener traducciones de categorías');
@@ -68,7 +69,7 @@ export const getCategoryTranslations = async (languageCode) => {
 };
 
 /**
- * Actualiza la traducción de una categoría
+ * Actualiza o crea la traducción de una categoría
  * @param {number} categoryId - ID de la categoría
  * @param {number} languageId - ID del idioma
  * @param {object} translationData - Datos de la traducción
@@ -76,7 +77,7 @@ export const getCategoryTranslations = async (languageCode) => {
  */
 export const updateCategoryTranslation = async (categoryId, languageId, translationData) => {
   const response = await httpRequest(
-    `${API_URL}/admin/translations/categories/${categoryId}/language/${languageId}`,
+    `${API_URL}/admin/category-translations/${categoryId}/language/${languageId}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -91,27 +92,9 @@ export const updateCategoryTranslation = async (categoryId, languageId, translat
 };
 
 /**
- * Crea una nueva traducción para una categoría
- * @param {number} categoryId - ID de la categoría
- * @param {number} languageId - ID del idioma
- * @param {object} translationData - Datos de la traducción
- * @returns {Promise}
+ * Alias de updateCategoryTranslation (PUT crea o actualiza)
  */
-export const createCategoryTranslation = async (categoryId, languageId, translationData) => {
-  const response = await httpRequest(
-    `${API_URL}/admin/translations/categories/${categoryId}/language/${languageId}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(translationData),
-    }
-  );
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Error al crear traducción' }));
-    throw new Error(error.message || 'Error al crear traducción');
-  }
-  return response.json();
-};
+export const createCategoryTranslation = updateCategoryTranslation;
 
 // ========== SECTION TYPE TRANSLATIONS ==========
 

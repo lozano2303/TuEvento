@@ -97,6 +97,17 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
                 .dadId(request.getDadId())
                 .build());
 
+        // Request automatic translations if content changed
+        if (nameChanged || (existing.getDescription() != null && !existing.getDescription().equals(request.getDescription()))) {
+            try {
+                translationService.requestTranslation("category", updated.getCategoryId().longValue(), "es");
+                log.debug("Translation jobs requested for updated category: id={}", updated.getCategoryId());
+            } catch (Exception e) {
+                log.warn("Failed to request translations for updated category {}: {}", updated.getCategoryId(), e.getMessage());
+                // Non-blocking: translation failure should not prevent category update
+            }
+        }
+
         log.debug("Category updated: id={}", updated.getCategoryId());
         return categoryMapper.toResponse(updated);
     }
