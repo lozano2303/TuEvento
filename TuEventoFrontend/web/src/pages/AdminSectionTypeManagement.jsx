@@ -1,23 +1,18 @@
 import { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, Users, LogOut, 
-  User, Settings, ChevronDown, X, Plus, Edit2, Trash2, Layers,
+  X, Plus, Edit2, Trash2, Layers,
   CheckCircle, AlertCircle
 } from 'lucide-react';
-import { performLogout } from '../services/httpClient';
-import { useNavigate } from 'react-router-dom';
 import { getAllSectionTypes } from '../services/SectionTypeService';
 import { httpRequest } from '../services/httpClient';
+import AdminSidebar from '../components/admin/AdminSidebar';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export default function AdminSectionTypeManagement() {
-  const navigate = useNavigate();
-  
   const [sectionTypes, setSectionTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedSectionType, setSelectedSectionType] = useState(null);
@@ -28,48 +23,9 @@ export default function AdminSectionTypeManagement() {
     name: ''
   });
 
-  const userData = {
-    name: localStorage.getItem('name') || localStorage.getItem('fullName') || 'Usuario',
-    email: localStorage.getItem('userEmail') || '',
-    role: localStorage.getItem('role') === 'ADMIN' ? 'Super Admin' : 'Admin',
-  };
-
-  const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard',          href: '/admin-dashboard' },
-    { icon: CreditCard,      label: 'Control Financiero', href: '/admin-financial' },
-    { icon: Calendar,        label: 'Eventos',            href: '/admin-events' },
-    { icon: BarChart2,       label: 'Reportes' },
-    { icon: RefreshCcw,      label: 'Reembolsos' },
-    { icon: Users,           label: 'Solicitudes',        href: '/admin' },
-    { icon: Settings,        label: 'Categorías',         href: '/admin-categories' },
-    { icon: Layers,          label: 'Tipos de Sección',   href: '/admin-section-types', active: true },
-  ];
-
-  const handleLogout = async () => {
-    await performLogout();
-    window.location.href = '/login';
-  };
-
-  const handleMenuClick = (action) => {
-    setShowUserMenu(false);
-    if (action === 'profile') navigate('/profile');
-    if (action === 'settings') navigate('/settings');
-    if (action === 'logout') handleLogout();
-  };
-
   useEffect(() => {
     fetchSectionTypes();
   }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (showUserMenu && !e.target.closest('.user-menu-container')) {
-        setShowUserMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showUserMenu]);
 
   const fetchSectionTypes = async () => {
     try {
@@ -198,68 +154,7 @@ export default function AdminSectionTypeManagement() {
 
   return (
     <div className="min-h-screen flex bg-background text-textPrimary font-sans">
-      <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-background border-r border-surfaceAlt/30 h-screen sticky top-0">
-        <nav className="flex flex-col gap-0.5">
-          {navItems.map((item, idx) => (
-            <a
-              key={idx}
-              href={item.href || '#'}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-full text-sm font-medium transition-colors
-                ${item.active
-                  ? 'bg-primary text-textPrimary'
-                  : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt/50'
-                }`}
-            >
-              <item.icon className="w-4 h-4 flex-shrink-0" />
-              {item.label}
-            </a>
-          ))}
-        </nav>
-
-        <div className="pt-4 border-t border-surfaceAlt/40 relative user-menu-container flex-shrink-0">
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-surfaceAlt/40 transition-all group"
-          >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primaryDark flex items-center justify-center text-textPrimary font-bold text-sm flex-shrink-0">
-              {userData.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 text-left min-w-0">
-              <p className="text-sm font-semibold text-textPrimary truncate">{userData.name}</p>
-              <p className="text-xs text-textMuted truncate">{userData.role}</p>
-            </div>
-            <ChevronDown className={`w-4 h-4 text-textMuted transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showUserMenu && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 mx-2 bg-surface border border-surfaceAlt rounded-xl overflow-hidden shadow-xl z-50 user-menu-container">
-              <button
-                onClick={() => handleMenuClick('profile')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-textSecondary hover:bg-surfaceAlt/40 hover:text-textPrimary transition-colors"
-              >
-                <User className="w-4 h-4" />
-                Perfil
-              </button>
-              <button
-                onClick={() => handleMenuClick('settings')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-textSecondary hover:bg-surfaceAlt/40 hover:text-textPrimary transition-colors"
-              >
-                <Settings className="w-4 h-4" />
-                Configuración
-              </button>
-              <div className="border-t border-surfaceAlt/40">
-                <button
-                  onClick={() => handleMenuClick('logout')}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Cerrar sesión
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
+      <AdminSidebar activePage="section-types" />
 
       <main className="flex-1 overflow-y-auto bg-background">
         <div className="p-8 max-w-6xl mx-auto w-full">
