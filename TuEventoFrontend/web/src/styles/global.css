@@ -1907,8 +1907,6 @@ input[type="password"]::-ms-reveal { display: none; }
   display: flex;
   flex-direction: column;
   justify-content: center;
-  height: 100vh;
-  padding-bottom: 110px;
 }
 
 .lp2-hero-bg {
@@ -2095,13 +2093,11 @@ input[type="password"]::-ms-reveal { display: none; }
 }
 /* Onda animada — wrapper */
 .lp2-wave-wrap {
-  position: absolute;
-  bottom: -1px;
-  left: 0;
+  position: relative;
   width: 100%;
   overflow: hidden;
   line-height: 0;
-  height: 110px;
+  height: 100px;
 }
 .lp2-wave-svg {
   position: absolute;
