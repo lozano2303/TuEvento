@@ -183,50 +183,49 @@ const AdminProfileTranslations = () => {
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="bg-surface rounded-xl shadow-sm p-4 mb-6 border border-surfaceAlt">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setFilter('not-translated')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  filter === 'not-translated'
-                    ? 'bg-red-500 text-white'
-                    : 'bg-surfaceAlt text-textSecondary hover:bg-surface hover:text-textPrimary'
+          {/* Filtros de visualización */}
+          <div className="mb-6 flex items-center gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-textMuted">Mostrar:</span>
+            <button
+              onClick={() => setFilter('not-translated')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all
+                ${filter === 'not-translated'
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                  : 'bg-surfaceAlt/60 text-textMuted hover:bg-surfaceAlt'
                 }`}
-              >
-                Sin traducir
-              </button>
-              <button
-                onClick={() => setFilter('needs-review')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  filter === 'needs-review'
-                    ? 'bg-yellow-500 text-white'
-                    : 'bg-surfaceAlt text-textSecondary hover:bg-surface hover:text-textPrimary'
+            >
+              Sin traducir
+            </button>
+            <button
+              onClick={() => setFilter('needs-review')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all
+                ${filter === 'needs-review'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  : 'bg-surfaceAlt/60 text-textMuted hover:bg-surfaceAlt'
                 }`}
-              >
-                Necesitan revisión
-              </button>
-              <button
-                onClick={() => setFilter('translated')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  filter === 'translated'
-                    ? 'bg-green-500 text-white'
-                    : 'bg-surfaceAlt text-textSecondary hover:bg-surface hover:text-textPrimary'
+            >
+              Necesitan revisión
+            </button>
+            <button
+              onClick={() => setFilter('translated')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all
+                ${filter === 'translated'
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                  : 'bg-surfaceAlt/60 text-textMuted hover:bg-surfaceAlt'
                 }`}
-              >
-                Traducidos
-              </button>
-              <button
-                onClick={() => setFilter('all')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  filter === 'all'
-                    ? 'bg-primary text-textPrimary'
-                    : 'bg-surfaceAlt text-textSecondary hover:bg-surface hover:text-textPrimary'
+            >
+              Traducidos
+            </button>
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all
+                ${filter === 'all'
+                  ? 'bg-primary text-textPrimary'
+                  : 'bg-surfaceAlt/60 text-textMuted hover:bg-surfaceAlt'
                 }`}
-              >
-                Todos
-              </button>
-            </div>
+            >
+              Todos
+            </button>
           </div>
 
           {/* Error Message */}
