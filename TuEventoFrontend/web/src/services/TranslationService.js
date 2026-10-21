@@ -187,6 +187,51 @@ export const updateCommentTranslation = async (ratingId, languageId, translation
  */
 export const createCommentTranslation = updateCommentTranslation;
 
+// ========== PROFILE TRANSLATIONS ==========
+
+/**
+ * Obtiene todas las traducciones de perfiles para un idioma
+ * @param {string} languageCode - Código del idioma (es, en, fr, pt)
+ * @param {string} filter - Filtro: 'all', 'needs-review', 'translated', 'not-translated'
+ * @returns {Promise} Lista de perfiles con sus traducciones
+ */
+export const getProfileTranslations = async (languageCode, filter = 'all') => {
+  const response = await httpRequest(`${API_URL}/admin/profile-translations/${languageCode}?filter=${filter}`);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Error al obtener traducciones' }));
+    throw new Error(error.message || 'Error al obtener traducciones de perfiles');
+  }
+  return response.json();
+};
+
+/**
+ * Actualiza o crea la traducción de un perfil
+ * @param {number} profileId - ID del perfil
+ * @param {number} languageId - ID del idioma
+ * @param {object} translationData - Datos de la traducción
+ * @returns {Promise}
+ */
+export const updateProfileTranslation = async (profileId, languageId, translationData) => {
+  const response = await httpRequest(
+    `${API_URL}/admin/profile-translations/${profileId}/language/${languageId}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(translationData),
+    }
+  );
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Error al actualizar traducción' }));
+    throw new Error(error.message || 'Error al actualizar traducción');
+  }
+  return response.json();
+};
+
+/**
+ * Alias de updateProfileTranslation (PUT crea o actualiza)
+ */
+export const createProfileTranslation = updateProfileTranslation;
+
 // ========== LANGUAGE UTILS ==========
 
 /**
