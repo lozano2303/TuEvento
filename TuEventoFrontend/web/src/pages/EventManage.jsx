@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Plus, LayoutDashboard, Pencil, Trash2, AlertTriangle, ImagePlus,
   Eye, Calendar, Tag, Globe, Lock, Rocket, ChevronLeft, ChevronRight,
-  FileText, MapPin, Users, Clock, XCircle,
+  FileText, MapPin, Users, Clock, XCircle, TrendingUp,
 } from 'lucide-react';
 import * as EventService from '../services/EventService';
 import * as CategoryService from '../services/CategoryService';
@@ -457,12 +457,20 @@ export default function EventManage() {
           <h1 className="text-2xl font-bold text-textPrimary">Mis Eventos</h1>
           <p className="text-sm text-textMuted mt-0.5">Gestiona y edita tus eventos</p>
         </div>
-        <button
-          onClick={() => navigate('/events/create')}
-          className={`${btnBase} bg-primary text-white hover:bg-primaryDark`}
-        >
-          <Plus className="w-4 h-4" /> Crear nuevo evento
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/organizer/earnings')}
+            className={`${btnBase} bg-surfaceAlt text-textSecondary hover:text-accent hover:bg-accent/10 border border-surfaceAlt`}
+          >
+            <TrendingUp className="w-4 h-4" /> Mis ganancias
+          </button>
+          <button
+            onClick={() => navigate('/events/create')}
+            className={`${btnBase} bg-primary text-white hover:bg-primaryDark`}
+          >
+            <Plus className="w-4 h-4" /> Crear nuevo evento
+          </button>
+        </div>
       </div>
 
       {/* Loading */}
