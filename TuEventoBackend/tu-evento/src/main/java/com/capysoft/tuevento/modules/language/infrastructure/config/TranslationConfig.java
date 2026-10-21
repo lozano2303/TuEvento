@@ -5,6 +5,7 @@ import com.capysoft.tuevento.modules.event.infrastructure.translation.EventTrans
 import com.capysoft.tuevento.modules.event.infrastructure.translation.EventRatingTranslatableContentHandler;
 import com.capysoft.tuevento.modules.notification.infrastructure.translation.NotificationTranslatableContentHandler;
 import com.capysoft.tuevento.modules.profile.infrastructure.translation.ProfileTranslatableContentHandler;
+import com.capysoft.tuevento.modules.section.infrastructure.translation.SectionTypeTranslatableContentHandler;
 import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class TranslationConfig {
     private final CategoryTranslatableContentHandler categoryHandler;
     private final ProfileTranslatableContentHandler profileHandler;
     private final NotificationTranslatableContentHandler notificationHandler;
+    private final SectionTypeTranslatableContentHandler sectionTypeHandler;
 
     /**
      * Registry de handlers por tipo de entidad.
@@ -51,6 +53,9 @@ public class TranslationConfig {
         
         // Registrar handler de notificaciones
         registry.put("notification", notificationHandler);
+        
+        // Registrar handler de tipos de sección
+        registry.put("section_type", sectionTypeHandler);
         
         // TODO: Agregar handlers para otras entidades (sites, etc.)
         // registry.put("site", siteHandler);

@@ -24,6 +24,7 @@ import AdminCategoryManagement from './pages/AdminCategoryManagement';
 import AdminSectionTypeManagement from './pages/AdminSectionTypeManagement';
 import AdminEventTranslations from './pages/AdminEventTranslations';
 import AdminCategoryTranslations from './pages/AdminCategoryTranslations';
+import AdminSectionTypeTranslations from './pages/AdminSectionTypeTranslations';
 import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
 import PaymentPending from './pages/PaymentPending';
@@ -127,6 +128,11 @@ function AppContent() {
           <Route path="/admin-translations/:lang/categories" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminCategoryTranslations />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-translations/:lang/section-types" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminSectionTypeTranslations />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={

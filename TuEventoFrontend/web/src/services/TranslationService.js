@@ -101,10 +101,11 @@ export const createCategoryTranslation = updateCategoryTranslation;
 /**
  * Obtiene todas las traducciones de tipos de sección para un idioma específico
  * @param {string} languageCode - Código del idioma (es, en, fr, pt)
+ * @param {string} filter - Filtro: 'all', 'needs-review', 'translated', 'not-translated'
  * @returns {Promise} Lista de tipos de sección con sus traducciones
  */
-export const getSectionTypeTranslations = async (languageCode) => {
-  const response = await httpRequest(`${API_URL}/admin/translations/section-types/${languageCode}`);
+export const getSectionTypeTranslations = async (languageCode, filter = 'all') => {
+  const response = await httpRequest(`${API_URL}/admin/section-type-translations/${languageCode}?filter=${filter}`);
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Error al obtener traducciones' }));
     throw new Error(error.message || 'Error al obtener traducciones de tipos de sección');
@@ -113,7 +114,7 @@ export const getSectionTypeTranslations = async (languageCode) => {
 };
 
 /**
- * Actualiza la traducción de un tipo de sección
+ * Actualiza o crea la traducción de un tipo de sección
  * @param {number} sectionTypeId - ID del tipo de sección
  * @param {number} languageId - ID del idioma
  * @param {object} translationData - Datos de la traducción
@@ -121,7 +122,7 @@ export const getSectionTypeTranslations = async (languageCode) => {
  */
 export const updateSectionTypeTranslation = async (sectionTypeId, languageId, translationData) => {
   const response = await httpRequest(
-    `${API_URL}/admin/translations/section-types/${sectionTypeId}/language/${languageId}`,
+    `${API_URL}/admin/section-type-translations/${sectionTypeId}/language/${languageId}`,
     {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -136,27 +137,9 @@ export const updateSectionTypeTranslation = async (sectionTypeId, languageId, tr
 };
 
 /**
- * Crea una nueva traducción para un tipo de sección
- * @param {number} sectionTypeId - ID del tipo de sección
- * @param {number} languageId - ID del idioma
- * @param {object} translationData - Datos de la traducción
- * @returns {Promise}
+ * Alias de updateSectionTypeTranslation (PUT crea o actualiza)
  */
-export const createSectionTypeTranslation = async (sectionTypeId, languageId, translationData) => {
-  const response = await httpRequest(
-    `${API_URL}/admin/translations/section-types/${sectionTypeId}/language/${languageId}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(translationData),
-    }
-  );
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Error al crear traducción' }));
-    throw new Error(error.message || 'Error al crear traducción');
-  }
-  return response.json();
-};
+export const createSectionTypeTranslation = updateSectionTypeTranslation;
 
 // ========== LANGUAGE UTILS ==========
 
