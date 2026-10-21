@@ -56,7 +56,7 @@ export default function AdminSectionTypeTranslations() {
   const [error, setError] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ translatedName: '' });
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('not-translated');
 
   const currentLanguage = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
   const languageId = getLanguageId(lang);
@@ -195,16 +195,6 @@ export default function AdminSectionTypeTranslations() {
           <div className="mb-6 flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-textMuted">Mostrar:</span>
             <button
-              onClick={() => setFilter('needs-review')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all
-                ${filter === 'needs-review'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                  : 'bg-surfaceAlt/60 text-textMuted hover:bg-surfaceAlt'
-                }`}
-            >
-              Necesitan revisión
-            </button>
-            <button
               onClick={() => setFilter('not-translated')}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all
                 ${filter === 'not-translated'
@@ -213,6 +203,16 @@ export default function AdminSectionTypeTranslations() {
                 }`}
             >
               Sin traducir
+            </button>
+            <button
+              onClick={() => setFilter('needs-review')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all
+                ${filter === 'needs-review'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  : 'bg-surfaceAlt/60 text-textMuted hover:bg-surfaceAlt'
+                }`}
+            >
+              Necesitan revisión
             </button>
             <button
               onClick={() => setFilter('translated')}
