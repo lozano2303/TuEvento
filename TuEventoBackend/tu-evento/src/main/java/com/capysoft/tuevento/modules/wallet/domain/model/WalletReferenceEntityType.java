@@ -7,5 +7,6 @@ public enum WalletReferenceEntityType {
     EVENT_CANCELLATION, // Crédito por cancelación de evento
     ORDER,              // Movimiento asociado a una orden de compra
     TICKET,             // Movimiento asociado a un ticket individual
-    ADMIN_ADJUSTMENT    // Crédito o ajuste manual de administrador
+    ADMIN_ADJUSTMENT,   // Crédito o ajuste manual de administrador
+    PAYMENT_EARNINGS    // Ganancia del organizador por pago aprobado en su evento
 }

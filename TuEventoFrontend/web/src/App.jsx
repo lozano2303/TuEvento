@@ -20,10 +20,12 @@ import CompleteProfile from './pages/CompleteProfile';
 import AdminEventManagement from './pages/AdminEventManagement';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminFinancial from './pages/AdminFinancial';
+import AdminReports from './pages/AdminReports';
 import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
 import PaymentPending from './pages/PaymentPending';
 import PaymentConfirmation from './pages/PaymentConfirmation';
+import OrganizerEarnings from './pages/OrganizerEarnings';
 import TerminosDeUso from './pages/TerminosDeUso';
 import Privacidad from './pages/Privacidad';
 import Notifications from './pages/Notifications';
@@ -52,7 +54,7 @@ function AppContent() {
   const showNavbar = ![
     '/login', '/verification', '/events/create',
     '/reactivate-account', '/complete-profile',
-    '/admin-panel', '/admin-events', '/admin-dashboard', '/admin-financial',
+    '/admin-panel', '/admin-events', '/admin-dashboard', '/admin-financial', '/admin-reports',
     '/checkout',
   ].includes(location.pathname)
     && !location.pathname.match(/^\/events\/[^/]+\/layout$/)
@@ -75,6 +77,11 @@ function AppContent() {
           <Route path="/events/manage" element={
             <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
               <EventManage />
+            </ProtectedRoute>
+          } />
+          <Route path="/organizer/earnings" element={
+            <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
+              <OrganizerEarnings />
             </ProtectedRoute>
           } />
           <Route path="/events/:eventId" element={<EventDetail />} />
@@ -101,6 +108,11 @@ function AppContent() {
           <Route path="/admin-financial" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminFinancial />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-reports" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminReports />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={
