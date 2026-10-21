@@ -1,7 +1,8 @@
 package com.capysoft.tuevento.modules.payment.application.usecase;
 
-import com.capysoft.tuevento.modules.payment.application.dto.GatewayPaymentEvent;
-import com.capysoft.tuevento.modules.payment.application.port.out.PaymentGatewayPort;
+import com.capysoft.tuevento.modules.event.domain.model.Event;
+import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.payment.application.dto.GatewayPaymentEvent;import com.capysoft.tuevento.modules.payment.application.port.out.PaymentGatewayPort;
 import com.capysoft.tuevento.modules.payment.domain.event.PaymentApprovedEvent;
 import com.capysoft.tuevento.modules.payment.domain.event.PaymentRefundedEvent;
 import com.capysoft.tuevento.modules.payment.domain.model.*;
@@ -15,8 +16,10 @@ import com.capysoft.tuevento.modules.ticket.application.port.in.FailOrderPayment
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
 import com.capysoft.tuevento.modules.wallet.application.usecase.ConfirmWalletPaymentUseCaseImpl;
+import com.capysoft.tuevento.modules.wallet.application.usecase.CreditWalletUseCaseImpl;
 import com.capysoft.tuevento.modules.wallet.application.usecase.ReleaseWalletPaymentUseCaseImpl;
 import com.capysoft.tuevento.modules.wallet.application.usecase.ReverseWalletPaymentUseCaseImpl;
+import com.capysoft.tuevento.modules.wallet.domain.model.WalletReferenceEntityType;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +42,11 @@ import java.time.LocalDateTime;
  *   APPROVED  → ConfirmWalletPaymentUseCase (descuenta balance definitivamente)
  *   DECLINED/FAILED/CANCELLED → ReleaseWalletPaymentUseCase (libera reserva PENDING)
  *   REFUNDED + walletAmountApplied > 0 → ReverseWalletPaymentUseCase (devuelve crédito)
+ *
+ * Ganancias del organizador (APPROVED):
+ *   Se acredita en la wallet del organizador el monto total del pago
+ *   (gateway + wallet del comprador) usando CreditWalletUseCase con
+ *   idempotencyKey = "organizer-earnings-payment-{paymentId}" para idempotencia.
  */
 @Service
 @RequiredArgsConstructor
@@ -51,6 +59,7 @@ public class ProcessWebhookUseCaseImpl {
     private final PaymentLogRepository paymentLogRepository;
     private final RefundRepository refundRepository;
     private final OrderRepository orderRepository;
+    private final EventRepository eventRepository;
     private final PaymentGatewayPort paymentGatewayPort;
     private final ConfirmOrderPaymentUseCase confirmOrderPaymentUseCase;
     private final FailOrderPaymentUseCase failOrderPaymentUseCase;
@@ -58,6 +67,8 @@ public class ProcessWebhookUseCaseImpl {
     private final ConfirmWalletPaymentUseCaseImpl confirmWalletPaymentUseCase;
     private final ReleaseWalletPaymentUseCaseImpl releaseWalletPaymentUseCase;
     private final ReverseWalletPaymentUseCaseImpl reverseWalletPaymentUseCase;
+    private final CreditWalletUseCaseImpl creditWalletUseCase;
+    private final CreditOrganizerEarningsUseCase creditOrganizerEarningsUseCase;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -92,6 +103,11 @@ public class ProcessWebhookUseCaseImpl {
         try {
             switch (event.getStatus().toUpperCase()) {
                 case "APPROVED":
+                    // Idempotencia: si ya está APPROVED, ignorar el webhook duplicado
+                    if (payment.getStatus() == PaymentStatus.APPROVED) {
+                        log.info("Payment already APPROVED, skipping duplicate webhook: paymentId={}", payment.getPaymentId());
+                        return;
+                    }
                     payment.approve();
                     paymentRepository.save(payment);
                     savePaymentLog(payment.getPaymentId(), oldStatus, PaymentStatus.APPROVED, reason);
@@ -106,13 +122,22 @@ public class ProcessWebhookUseCaseImpl {
                         log.info("Wallet payment confirmed on APPROVED: txId={}", payment.getWalletTransactionId());
                     }
 
+                    // Acreditar ganancias en la wallet del organizador del evento
+                    // Cargamos la orden aquí para reutilizarla también en la notificación
+                    Order approvedOrder = orderRepository.findById(payment.getOrderId()).orElse(null);
+                    try {
+                        creditOrganizerEarningsUseCase.execute(payment, approvedOrder);
+                    } catch (Exception e) {
+                        log.error("creditOrganizerEarnings failed (non-breaking): paymentId={}",
+                                payment.getPaymentId(), e);
+                    }
+
                     // Publicar evento para notificaciones
                     try {
-                        Order order = orderRepository.findById(payment.getOrderId()).orElse(null);
-                        if (order != null) {
+                        if (approvedOrder != null) {
                             PaymentApprovedEvent approvedEvent = PaymentApprovedEvent.builder()
                                     .paymentId(payment.getPaymentId())
-                                    .userId(order.getUserId().intValue())
+                                    .userId(approvedOrder.getUserId().intValue())
                                     .walletAmount(payment.getWalletAmountApplied())
                                     .gatewayAmount(payment.getAmount() != null ? payment.getAmount().getAmount() : BigDecimal.ZERO)
                                     .currency(payment.getAmount() != null ? payment.getAmount().getCurrency().toString() : "USD")
@@ -131,6 +156,10 @@ public class ProcessWebhookUseCaseImpl {
                     break;
 
                 case "DECLINED":
+                    if (payment.getStatus() == PaymentStatus.REJECTED) {
+                        log.info("Payment already REJECTED, skipping duplicate webhook: paymentId={}", payment.getPaymentId());
+                        return;
+                    }
                     payment.reject();
                     paymentRepository.save(payment);
                     savePaymentLog(payment.getPaymentId(), oldStatus, PaymentStatus.REJECTED, reason);
@@ -147,6 +176,10 @@ public class ProcessWebhookUseCaseImpl {
                     break;
 
                 case "FAILED":
+                    if (payment.getStatus() == PaymentStatus.ERROR) {
+                        log.info("Payment already in ERROR, skipping duplicate webhook: paymentId={}", payment.getPaymentId());
+                        return;
+                    }
                     payment.markAsError();
                     paymentRepository.save(payment);
                     savePaymentLog(payment.getPaymentId(), oldStatus, PaymentStatus.ERROR, reason);
@@ -162,6 +195,10 @@ public class ProcessWebhookUseCaseImpl {
                     break;
 
                 case "CANCELLED":
+                    if (payment.getStatus() == PaymentStatus.ERROR) {
+                        log.info("Payment already in ERROR (cancelled), skipping duplicate webhook: paymentId={}", payment.getPaymentId());
+                        return;
+                    }
                     payment.markAsError();
                     paymentRepository.save(payment);
                     savePaymentLog(payment.getPaymentId(), oldStatus, PaymentStatus.ERROR,
@@ -178,6 +215,10 @@ public class ProcessWebhookUseCaseImpl {
                     break;
 
                 case "REFUNDED":
+                    if (payment.getStatus() == PaymentStatus.REFUNDED) {
+                        log.info("Payment already REFUNDED, skipping duplicate webhook: paymentId={}", payment.getPaymentId());
+                        return;
+                    }
                     payment.refund();
                     paymentRepository.save(payment);
                     savePaymentLog(payment.getPaymentId(), oldStatus, PaymentStatus.REFUNDED, reason);
