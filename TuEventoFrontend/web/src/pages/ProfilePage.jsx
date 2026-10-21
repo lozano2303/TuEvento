@@ -20,13 +20,21 @@ import DeactivateAccountModal from '../components/common/DeactivateAccountModal'
 //    muestras de vista previa — no se usan en la UI de la página) ─────────────
 const THEME_PREVIEWS = {
   PRINCIPAL: { background: '#1E0A3C', primary: '#7C3AED', accent: '#A78BFA' },
+  Principal: { background: '#1E0A3C', primary: '#7C3AED', accent: '#A78BFA' },
   DARK:      { background: '#0D0D0D', primary: '#E0E0E0', accent: '#7a7a7a' },
+  Oscuro:    { background: '#0D0D0D', primary: '#E0E0E0', accent: '#7a7a7a' },
   LIGHT:     { background: '#FFFFFF', primary: '#424242', accent: '#757575' },
+  Claro:     { background: '#FFFFFF', primary: '#424242', accent: '#757575' },
   PASTEL:    { background: '#FFF9FB', primary: '#e0165a', accent: '#ac48bd' },
+  Pastel:    { background: '#FFF9FB', primary: '#e0165a', accent: '#ac48bd' },
   VIBRANT:   { background: '#0A0A0A', primary: '#FF1744', accent: '#FFEA00' },
+  Vibrante:  { background: '#0A0A0A', primary: '#FF1744', accent: '#FFEA00' },
   NATURE:    { background: '#F1F8E9', primary: '#2E7D32', accent: '#886a60' },
+  Naturaleza: { background: '#F1F8E9', primary: '#2E7D32', accent: '#886a60' },
   OCEAN:     { background: '#E3F2FD', primary: '#0272b5', accent: '#007786' },
+  Océano:    { background: '#E3F2FD', primary: '#0272b5', accent: '#007786' },
   SUNSET:    { background: '#FFF3E0', primary: '#c94116', accent: '#d33300' },
+  Atardecer: { background: '#FFF3E0', primary: '#c94116', accent: '#d33300' },
 };
 
 const MAX_AVATAR_SIZE_MB = 2;
@@ -142,10 +150,27 @@ const ProfilePage = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
-    getThemes()
-      .then(data => setThemes(data || []))
-      .catch(() => {});
-  }, []);
+    
+    // Obtener el idioma actual del usuario para cargar temas traducidos
+    const loadThemesWithLanguage = async () => {
+      try {
+        const currentLang = currentLanguage || 'es';
+        const themesData = await getThemes(currentLang);
+        setThemes(themesData || []);
+      } catch (err) {
+        console.error('[ProfilePage] Error loading themes with language:', err);
+        // Fallback: cargar sin idioma
+        try {
+          const themesData = await getThemes();
+          setThemes(themesData || []);
+        } catch {
+          setThemes([]);
+        }
+      }
+    };
+    
+    loadThemesWithLanguage();
+  }, [currentLanguage]); // Recargar cuando cambie el idioma
 
   // ── Carga idiomas primero ─────────────────────────────────────────────────
   useEffect(() => {
@@ -810,7 +835,7 @@ const ProfilePage = () => {
                 const theme = themes[carouselIdx];
                 const preview = THEME_PREVIEWS[theme.name] ?? THEME_PREVIEWS.PRINCIPAL;
                 const isActive = activeThemeId === theme.id;
-                const isCustomisable = theme.name !== 'PRINCIPAL';
+                const isCustomisable = theme.name?.toUpperCase() !== 'PRINCIPAL';
 
                 return (
                   <div>
@@ -824,7 +849,7 @@ const ProfilePage = () => {
                       {/* Nombre + badge Activo */}
                       <div className="flex items-center justify-between mb-3">
                         <span className={`text-sm font-bold ${isActive ? 'text-textPrimary' : 'text-textSecondary'}`}>
-                          {theme.name}
+                          {theme.translatedName || theme.name}
                         </span>
                         {isActive && (
                           <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm bg-primary/20 border border-primary/40 text-accent">
