@@ -1,8 +1,7 @@
 package com.capysoft.tuevento.modules.payment.application.usecase;
 
-import com.capysoft.tuevento.modules.event.domain.model.Event;
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.payment.application.dto.GatewayPaymentEvent;import com.capysoft.tuevento.modules.payment.application.port.out.PaymentGatewayPort;
+import com.capysoft.tuevento.modules.payment.application.dto.GatewayPaymentEvent;
+import com.capysoft.tuevento.modules.payment.application.port.out.PaymentGatewayPort;
 import com.capysoft.tuevento.modules.payment.domain.event.PaymentApprovedEvent;
 import com.capysoft.tuevento.modules.payment.domain.event.PaymentRefundedEvent;
 import com.capysoft.tuevento.modules.payment.domain.model.*;
@@ -16,10 +15,8 @@ import com.capysoft.tuevento.modules.ticket.application.port.in.FailOrderPayment
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
 import com.capysoft.tuevento.modules.wallet.application.usecase.ConfirmWalletPaymentUseCaseImpl;
-import com.capysoft.tuevento.modules.wallet.application.usecase.CreditWalletUseCaseImpl;
 import com.capysoft.tuevento.modules.wallet.application.usecase.ReleaseWalletPaymentUseCaseImpl;
 import com.capysoft.tuevento.modules.wallet.application.usecase.ReverseWalletPaymentUseCaseImpl;
-import com.capysoft.tuevento.modules.wallet.domain.model.WalletReferenceEntityType;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,22 +28,20 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Use case para procesar webhooks del gateway de pago.
- * 1. Verifica firma HMAC
- * 2. Verifica idempotencia (gatewayEventId)
- * 3. Persiste TransactionWebhook
- * 4. Actualiza Payment con PaymentLog
- * 5. Llama a los puertos de ticket y wallet según el evento
+ * Processes payment gateway webhooks.
+ * 1. Verifies HMAC signature
+ * 2. Checks idempotency (gatewayEventId)
+ * 3. Persists TransactionWebhook
+ * 4. Updates Payment with PaymentLog
+ * 5. Triggers ticket and wallet side effects
  *
- * Reglas wallet (solo si Payment.walletTransactionId != null):
- *   APPROVED  → ConfirmWalletPaymentUseCase (descuenta balance definitivamente)
- *   DECLINED/FAILED/CANCELLED → ReleaseWalletPaymentUseCase (libera reserva PENDING)
- *   REFUNDED + walletAmountApplied > 0 → ReverseWalletPaymentUseCase (devuelve crédito)
+ * Wallet rules (only when Payment.walletTransactionId != null):
+ *   APPROVED  → ConfirmWalletPayment (settles the reserved balance)
+ *   DECLINED/FAILED/CANCELLED → ReleaseWalletPayment (releases PENDING reservation)
+ *   REFUNDED + walletAmountApplied > 0 → ReverseWalletPayment (returns credit to buyer)
  *
- * Ganancias del organizador (APPROVED):
- *   Se acredita en la wallet del organizador el monto total del pago
- *   (gateway + wallet del comprador) usando CreditWalletUseCase con
- *   idempotencyKey = "organizer-earnings-payment-{paymentId}" para idempotencia.
+ * Organizer earnings are informational only — computed on demand from approved
+ * payments via GET /api/v1/organizer/earnings. No wallet credit is made here.
  */
 @Service
 @RequiredArgsConstructor
@@ -59,7 +54,6 @@ public class ProcessWebhookUseCaseImpl {
     private final PaymentLogRepository paymentLogRepository;
     private final RefundRepository refundRepository;
     private final OrderRepository orderRepository;
-    private final EventRepository eventRepository;
     private final PaymentGatewayPort paymentGatewayPort;
     private final ConfirmOrderPaymentUseCase confirmOrderPaymentUseCase;
     private final FailOrderPaymentUseCase failOrderPaymentUseCase;
@@ -67,8 +61,6 @@ public class ProcessWebhookUseCaseImpl {
     private final ConfirmWalletPaymentUseCaseImpl confirmWalletPaymentUseCase;
     private final ReleaseWalletPaymentUseCaseImpl releaseWalletPaymentUseCase;
     private final ReverseWalletPaymentUseCaseImpl reverseWalletPaymentUseCase;
-    private final CreditWalletUseCaseImpl creditWalletUseCase;
-    private final CreditOrganizerEarningsUseCase creditOrganizerEarningsUseCase;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -122,17 +114,10 @@ public class ProcessWebhookUseCaseImpl {
                         log.info("Wallet payment confirmed on APPROVED: txId={}", payment.getWalletTransactionId());
                     }
 
-                    // Acreditar ganancias en la wallet del organizador del evento
-                    // Cargamos la orden aquí para reutilizarla también en la notificación
+                    // Load order for notification event
                     Order approvedOrder = orderRepository.findById(payment.getOrderId()).orElse(null);
-                    try {
-                        creditOrganizerEarningsUseCase.execute(payment, approvedOrder);
-                    } catch (Exception e) {
-                        log.error("creditOrganizerEarnings failed (non-breaking): paymentId={}",
-                                payment.getPaymentId(), e);
-                    }
 
-                    // Publicar evento para notificaciones
+                    // Publish event for notifications
                     try {
                         if (approvedOrder != null) {
                             PaymentApprovedEvent approvedEvent = PaymentApprovedEvent.builder()

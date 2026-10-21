@@ -130,8 +130,8 @@ export default function OrganizerEarnings() {
             <span style={{ color: palette.primary }}>ganancias</span>
           </h1>
           <p className="text-sm leading-relaxed max-w-lg" style={{ color: palette.textSecondary }}>
-            Cada vez que alguien compra un ticket en tus eventos, el monto se acredita
-            automáticamente en tu cartera. Aquí ves el resumen completo.
+            Aquí ves un resumen de lo recaudado en tus eventos. Esta información
+            es de solo lectura — el cobro real lo gestiona la plataforma directamente.
           </p>
         </section>
 
@@ -161,7 +161,7 @@ export default function OrganizerEarnings() {
                 <DollarSign className="w-4 h-4 text-white/70" />
               </div>
               <p className="text-3xl font-black text-white">{fmtCOP(totalEarnings)}</p>
-              <p className="text-xs text-white/60">Acumulado en todos tus eventos</p>
+              <p className="text-xs text-white/60">Total generado en todos tus eventos</p>
             </div>
           </div>
 
@@ -185,7 +185,7 @@ export default function OrganizerEarnings() {
               </div>
               <p className="text-3xl font-black">{totalTickets.toLocaleString('es-CO')}</p>
               <p className="text-xs" style={{ color: palette.textSecondary }}>
-                Pagos aprobados en total
+                Transacciones completadas
               </p>
             </div>
           </div>
@@ -378,13 +378,13 @@ export default function OrganizerEarnings() {
           {[
             {
               icon: ShieldCheck,
-              title: '¿Cómo funciona?',
-              text:  'Cada pago aprobado se acredita automáticamente en tu cartera. Podrás usarlo para comprar en cualquier evento de la plataforma.',
+              title: '¿Cómo se calcula?',
+              text:  'Se suman todos los pagos aprobados en tus eventos. El monto mostrado refleja el total cobrado a los asistentes.',
             },
             {
               icon: TrendingUp,
-              title: 'Acreditación instantánea',
-              text:  'El monto total del ticket (incluido lo que el comprador pagó con su cartera) se refleja en tu saldo en tiempo real.',
+              title: 'Información en tiempo real',
+              text:  'Los datos se actualizan cada vez que se aprueba una compra. Para consultar el pago de tus ganancias, contacta al equipo de la plataforma.',
             },
           ].map(({ icon: Icon, title, text }) => (
             <div
