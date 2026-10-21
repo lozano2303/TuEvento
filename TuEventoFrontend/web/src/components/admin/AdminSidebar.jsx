@@ -91,8 +91,7 @@ export default function AdminSidebar({ activePage }) {
     { id: 'translation-categories', label: 'Categorías', href: '/admin-translations/en/categories', icon: Settings },
     { id: 'translation-section-types', label: 'Tipos de Sección', href: '/admin-translations/en/section-types', icon: Layers },
     { id: 'translation-comments', label: 'Comentarios', href: '/admin-translations/en/comments', icon: FileText },
-    { id: 'translation-profiles', label: 'Perfiles', href: '/admin-translations/en/profiles', icon: Users, disabled: true },
-    { id: 'translation-notifications', label: 'Notificaciones', href: '/admin-translations/en/notifications', icon: Globe, disabled: true },
+    { id: 'translation-profiles', label: 'Perfiles', href: '/admin-translations/en/profiles', icon: Users },
   ];
 
   const handleLogout = async () => {

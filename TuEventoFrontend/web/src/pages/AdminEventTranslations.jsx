@@ -277,7 +277,8 @@ export default function AdminEventTranslations() {
                         <tr
                           key={event.eventId}
                           className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors
-                            ${idx % 2 !== 0 ? 'bg-white/[0.02]' : ''}`}
+                            ${isEditing ? 'bg-primary/10 ring-2 ring-primary/40' : ''}
+                            ${idx % 2 !== 0 && !isEditing ? 'bg-white/[0.02]' : ''}`}
                         >
                           {/* ID */}
                           <td className="px-5 py-3.5 text-sm text-textMuted font-mono">
