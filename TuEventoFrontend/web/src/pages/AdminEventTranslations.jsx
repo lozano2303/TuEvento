@@ -58,7 +58,7 @@ export default function AdminEventTranslations() {
   const [error, setError] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ translatedName: '', translatedDescription: '' });
-  const [filter, setFilter] = useState('needs-review'); // Filtro por defecto: necesitan revisión
+  const [filter, setFilter] = useState('not-translated'); // Filtro por defecto: sin traducir
 
   const currentLanguage = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
   const languageId = getLanguageId(lang);
@@ -131,7 +131,7 @@ export default function AdminEventTranslations() {
 
   return (
     <div className="min-h-screen flex bg-background text-textPrimary font-sans">
-      <AdminSidebar activePage="translations" />
+      <AdminSidebar activePage="translation-events" />
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto bg-background">
@@ -184,16 +184,6 @@ export default function AdminEventTranslations() {
           <div className="mb-6 flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-textMuted">Mostrar:</span>
             <button
-              onClick={() => setFilter('needs-review')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all
-                ${filter === 'needs-review'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                  : 'bg-surfaceAlt/60 text-textMuted hover:bg-surfaceAlt'
-                }`}
-            >
-              Necesitan revisión
-            </button>
-            <button
               onClick={() => setFilter('not-translated')}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all
                 ${filter === 'not-translated'
@@ -202,6 +192,16 @@ export default function AdminEventTranslations() {
                 }`}
             >
               Sin traducir
+            </button>
+            <button
+              onClick={() => setFilter('needs-review')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all
+                ${filter === 'needs-review'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  : 'bg-surfaceAlt/60 text-textMuted hover:bg-surfaceAlt'
+                }`}
+            >
+              Necesitan revisión
             </button>
             <button
               onClick={() => setFilter('translated')}

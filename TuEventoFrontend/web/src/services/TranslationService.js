@@ -141,6 +141,52 @@ export const updateSectionTypeTranslation = async (sectionTypeId, languageId, tr
  */
 export const createSectionTypeTranslation = updateSectionTypeTranslation;
 
+// ========== COMMENT TRANSLATIONS ==========
+
+/**
+ * Obtiene todas las traducciones de comentarios para un idioma y evento específico
+ * @param {string} languageCode - Código del idioma (es, en, fr, pt)
+ * @param {number} eventId - ID del evento
+ * @param {string} filter - Filtro: 'all', 'needs-review', 'translated', 'not-translated'
+ * @returns {Promise} Lista de comentarios con sus traducciones
+ */
+export const getCommentTranslations = async (languageCode, eventId, filter = 'all') => {
+  const response = await httpRequest(`${API_URL}/admin/comment-translations/${languageCode}?eventId=${eventId}&filter=${filter}`);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Error al obtener traducciones' }));
+    throw new Error(error.message || 'Error al obtener traducciones de comentarios');
+  }
+  return response.json();
+};
+
+/**
+ * Actualiza o crea la traducción de un comentario
+ * @param {number} ratingId - ID del comentario
+ * @param {number} languageId - ID del idioma
+ * @param {object} translationData - Datos de la traducción
+ * @returns {Promise}
+ */
+export const updateCommentTranslation = async (ratingId, languageId, translationData) => {
+  const response = await httpRequest(
+    `${API_URL}/admin/comment-translations/${ratingId}/language/${languageId}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(translationData),
+    }
+  );
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Error al actualizar traducción' }));
+    throw new Error(error.message || 'Error al actualizar traducción');
+  }
+  return response.json();
+};
+
+/**
+ * Alias de updateCommentTranslation (PUT crea o actualiza)
+ */
+export const createCommentTranslation = updateCommentTranslation;
+
 // ========== LANGUAGE UTILS ==========
 
 /**

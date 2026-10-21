@@ -14,7 +14,14 @@ import { useNavigate } from 'react-router-dom';
  */
 export default function AdminSidebar({ activePage }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showTranslations, setShowTranslations] = useState(false);
+  // Persistir el estado del dropdown de traducciones en localStorage
+  const [showTranslations, setShowTranslations] = useState(() => {
+    const saved = localStorage.getItem('adminSidebar_showTranslations');
+    // Si la página activa es de traducciones, siempre mostrar el dropdown
+    if (activePage?.startsWith('translation')) return true;
+    // Si no, usar el valor guardado (por defecto false)
+    return saved === 'true';
+  });
   const navigate = useNavigate();
 
   const userData = {
@@ -83,7 +90,7 @@ export default function AdminSidebar({ activePage }) {
     { id: 'translation-events', label: 'Eventos', href: '/admin-translations/en/events', icon: Calendar },
     { id: 'translation-categories', label: 'Categorías', href: '/admin-translations/en/categories', icon: Settings },
     { id: 'translation-section-types', label: 'Tipos de Sección', href: '/admin-translations/en/section-types', icon: Layers },
-    { id: 'translation-comments', label: 'Comentarios', href: '/admin-translations/en/comments', icon: FileText, disabled: true },
+    { id: 'translation-comments', label: 'Comentarios', href: '/admin-translations/en/comments', icon: FileText },
     { id: 'translation-profiles', label: 'Perfiles', href: '/admin-translations/en/profiles', icon: Users, disabled: true },
     { id: 'translation-notifications', label: 'Notificaciones', href: '/admin-translations/en/notifications', icon: Globe, disabled: true },
   ];
@@ -109,6 +116,18 @@ export default function AdminSidebar({ activePage }) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu]);
+
+  // Persistir el estado del dropdown en localStorage cuando cambie
+  useEffect(() => {
+    localStorage.setItem('adminSidebar_showTranslations', showTranslations.toString());
+  }, [showTranslations]);
+
+  // Asegurarse de que el dropdown esté abierto si estamos en una página de traducciones
+  useEffect(() => {
+    if (activePage?.startsWith('translation') && !showTranslations) {
+      setShowTranslations(true);
+    }
+  }, [activePage]);
 
   return (
     <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-background border-r border-surfaceAlt/30 h-screen sticky top-0 overflow-y-auto">
