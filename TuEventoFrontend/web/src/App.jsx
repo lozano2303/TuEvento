@@ -25,6 +25,7 @@ import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
 import PaymentPending from './pages/PaymentPending';
 import PaymentConfirmation from './pages/PaymentConfirmation';
+import OrganizerEarnings from './pages/OrganizerEarnings';
 import TerminosDeUso from './pages/TerminosDeUso';
 import Privacidad from './pages/Privacidad';
 import Notifications from './pages/Notifications';
@@ -76,6 +77,11 @@ function AppContent() {
           <Route path="/events/manage" element={
             <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
               <EventManage />
+            </ProtectedRoute>
+          } />
+          <Route path="/organizer/earnings" element={
+            <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
+              <OrganizerEarnings />
             </ProtectedRoute>
           } />
           <Route path="/events/:eventId" element={<EventDetail />} />
