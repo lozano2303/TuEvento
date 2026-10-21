@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -32,6 +34,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/themes")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Themes", description = "Theme management and palette customization endpoints")
 public class ThemeController {
 
@@ -44,9 +47,11 @@ public class ThemeController {
 
     @Operation(summary = "List all available themes — public")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ThemeResponse>>> getThemes() {
+    public ResponseEntity<ApiResponse<List<ThemeResponse>>> getThemes(
+            @RequestParam(required = false) String language) {
+        log.info("GET /themes called with language parameter: {}", language);
         return ResponseEntity.ok(ApiResponse.ok("Themes retrieved successfully",
-                getThemesPort.getAll()));
+                getThemesPort.getAll(language)));
     }
 
     @Operation(summary = "Activate a theme for the authenticated user")
