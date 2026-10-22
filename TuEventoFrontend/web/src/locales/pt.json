@@ -62,54 +62,162 @@
   },
   "landing": {
     "hero": {
-      "greeting": "Olá, {{name}}!",
-      "greetingFallback": "Olá, {{alias}}!",
-      "welcomeBack": "Bem-vindo de volta.",
-      "mainTitle": "Visualize o evento",
-      "subtitle": "perfeito.",
-      "description": "Projete, planeje e viva experiências únicas que fazem a diferença. Cada detalhe conta e nosso kit de assistência torna isso realidade.",
-      "startNow": "Começar agora"
+      "eyebrow": "Gestão de eventos · Simples · Poderoso",
+      "welcomeBack": "Bem-vindo de volta, {{name}}",
+      "titleGuest": {
+        "line1": "Crie eventos",
+        "accent": "que as pessoas",
+        "line2": "lembram."
+      },
+      "titleAuth": {
+        "line1": "Seu próximo",
+        "accent": "evento",
+        "line2": "espera por você."
+      },
+      "subtitleGuest": "Projete, planeje e viva experiências únicas que fazem a diferença. Cada detalhe conta e nosso kit torna isso realidade.",
+      "subtitleAuth": "Explore os eventos da sua cidade, organize o seu próprio ou gerencie seus ingressos. Tudo em um só lugar.",
+      "viewEvents": "Ver eventos",
+      "createEvent": "Criar evento",
+      "startFree": "Começar grátis",
+      "trust": {
+        "free": "Grátis para começar",
+        "noCard": "Sem cartão de crédito",
+        "support": "Suporte em espanhol"
+      },
+      "stats": {
+        "editor": "Editor visual",
+        "secure": "Seguro",
+        "available": "Disponível"
+      }
     },
-    "features": {
+    "heroCard": {
+      "editor": {
+        "title": "Editor de plantas",
+        "desc": "Projete seu espaço em tempo real"
+      },
+      "tickets": {
+        "title": "Venda de ingressos",
+        "desc": "Pagamentos seguros e sem complicações"
+      },
+      "badge": {
+        "title": "Ingresso confirmado",
+        "sub": "VIP · Fila A"
+      }
+    },
+    "value": {
       "section1": {
-        "title": "Organize, projete e viva eventos",
-        "titleAccent": "sem limites.",
-        "description": "Construa eventos memoráveis com nosso criador de plantas interativas online. Projete espaços personalizados, gerencie participantes e visualize cada detalhe do seu evento em tempo real, tudo em uma única plataforma."
+        "eyebrow": "Tudo em uma plataforma",
+        "title": "Organize, projete e viva",
+        "titleAccent": "eventos sem limites.",
+        "description": "Construa eventos memoráveis com nosso criador de plantas interativo online. Projete espaços personalizados, gerencie participantes e visualize cada detalhe do seu evento em tempo real, tudo em uma só plataforma.",
+        "items": {
+          "editor": "Editor de plantas drag & drop em tempo real",
+          "analytics": "Painel de análises para cada evento",
+          "notifications": "Notificações automáticas para seus participantes"
+        },
+        "tags": {
+          "plan": "Planta interativa",
+          "tickets": "Venda de ingressos",
+          "analytics": "Análises"
+        }
       },
       "section2": {
+        "eyebrow": "Descubra experiências",
         "title": "Solicitação de",
-        "titleAccent": "Eventos excepcionais.",
-        "description": "Se você está procurando novas experiências, confira nossa lista de eventos disponíveis. Explore todas as opções e encontre o plano perfeito para você.",
-        "button": "Confira os eventos disponíveis"
+        "titleAccent": "eventos excepcionais.",
+        "description": "Se você busca novas experiências, confira nossa lista de eventos disponíveis. Explore todas as opções e encontre o plano perfeito para você.",
+        "items": {
+          "filter": "Filtre por cidade, categoria e data",
+          "buy": "Compre ingressos de forma rápida e segura",
+          "alerts": "Receba alertas de eventos que te interessam"
+        },
+        "tags": {
+          "search": "Busca avançada",
+          "location": "Por localização",
+          "category": "Por categoria"
+        },
+        "button": "Ver eventos disponíveis"
       }
     },
-    "benefits": {
-      "title": "Por que você deveria nos escolher?",
-      "items": {
-        "timesSaving": {
-          "title": "Economize tempo em filas",
-          "description": "Ofereça aos seus clientes um processo de planejamento de eventos, reduzindo o processamento com assistentes especializados e elimine as filas."
-        },
-        "findEvents": {
-          "title": "Encontre eventos facilmente",
-          "description": "Nosso sistema permite encontrar o assistente através de uma interface acessível e útil que permitirá confirmar detalhes do seu evento tão rápido quanto desejar sem complicações."
-        },
-        "free": {
-          "title": "Totalmente gratuito.",
-          "description": "Acesso às funções básicas do nosso plano gratuito que o torna um agente acessível tanto para pequenos negócios quanto para grandes empresas."
-        }
+    "steps": {
+      "eyebrow": "Simples por design",
+      "title": "Seu evento pronto em quatro passos",
+      "subtitle": "Da ideia ao evento real, sem precisar de conhecimento técnico.",
+      "step1": {
+        "title": "Crie sua conta",
+        "desc": "Cadastre-se em segundos. Sem cartão de crédito, sem passos desnecessários."
+      },
+      "step2": {
+        "title": "Projete o espaço",
+        "desc": "Use o editor de plantas para montar seções, assentos e zonas personalizadas."
+      },
+      "step3": {
+        "title": "Venda ingressos",
+        "desc": "Ative a venda de ingressos e gerencie pagamentos com segurança."
+      },
+      "step4": {
+        "title": "Viva o evento",
+        "desc": "Gerencie participantes em tempo real e receba feedback do seu público."
       }
     },
-    "compatibility": {
-      "title": "Compatibilidade de dispositivos.",
-      "web": "WEB",
-      "android": "ANDROID",
-      "downloadApk": "Baixar APK"
+    "featuresList": {
+      "eyebrow": "Ferramentas incluídas",
+      "title": "Tudo o que você precisa,",
+      "titleAccent": "pronto desde o primeiro dia",
+      "subtitle": "Sem plugins extras, sem integrações complicadas. Cada ferramenta é pensada para você focar no seu evento, não na tecnologia.",
+      "planEditor": {
+        "title": "Editor de plantas",
+        "desc": "Crie a distribuição do seu evento com um editor visual drag & drop em tempo real."
+      },
+      "notifications": {
+        "title": "Notificações",
+        "desc": "Lembretes, mudanças e confirmações chegam automaticamente aos seus participantes."
+      },
+      "payments": {
+        "title": "Pagamentos integrados",
+        "desc": "Gateway de pagamento seguro. Cobre ingressos e receba seu dinheiro sem intermediários."
+      },
+      "analytics": {
+        "title": "Análises",
+        "desc": "Métricas de vendas e presença em um painel claro para tomar melhores decisões."
+      },
+      "geolocation": {
+        "title": "Geolocalização",
+        "desc": "Os participantes descobrem eventos perto deles filtrando por cidade e categoria."
+      },
+      "categories": {
+        "title": "Categorias",
+        "desc": "Classifique seu evento entre música, cultura, esporte, gastronomia e muito mais."
+      }
+    },
+    "reviews": {
+      "eyebrow": "Usuários reais",
+      "title": "O que dizem sobre os eventos no TuEvento",
+      "subtitle": "Avaliações verificadas de participantes em eventos publicados.",
+      "anonymous": "Usuário",
+      "organizer": "Organizador",
+      "cta": "Ver todos os eventos e suas avaliações"
+    },
+    "platforms": {
+      "eyebrow": "Disponível em",
+      "title": "Onde você estiver, o TuEvento vai com você",
+      "subtitle": "Acesse pelo navegador ou baixe o app Android. A mesma experiência em qualquer dispositivo.",
+      "popular": "Popular",
+      "web": {
+        "title": "Versão Web",
+        "desc": "Funciona em qualquer navegador moderno. Sem instalar nada, basta abrir a página.",
+        "button": "Abrir app web"
+      },
+      "android": {
+        "title": "App Android",
+        "desc": "Baixe o APK e tenha notificações push, scanner de ingressos e recursos nativos.",
+        "button": "Baixar APK"
+      }
     },
     "apkModal": {
       "title": "Aplicativo Móvel TuEvento",
       "subtitle": "Disponível para dispositivos Android",
-      "description": "Baixe o aplicativo móvel para acessar todas as funcionalidades do TuEvento do seu dispositivo Android.",
+      "description": "Baixe o aplicativo móvel para acessar todas as funções do TuEvento no seu dispositivo Android. Notificações push, scanner de ingressos e mais.",
       "download": "Baixar APK",
       "cancel": "Cancelar"
     }

@@ -62,55 +62,163 @@
   },
   "landing": {
     "hero": {
-      "greeting": "Salut, {{name}}!",
-      "greetingFallback": "Salut, {{alias}}!",
-      "welcomeBack": "Bon retour.",
-      "mainTitle": "Visualisez l'événement",
-      "subtitle": "parfait.",
-      "description": "Concevez, planifiez et vivez des expériences uniques qui font la différence. Chaque détail compte et notre kit d'assistance le rend réel.",
-      "startNow": "Commencer maintenant"
+      "eyebrow": "Gestion d’événements · Simple · Puissant",
+      "welcomeBack": "Bon retour, {{name}}",
+      "titleGuest": {
+        "line1": "Créez des événements",
+        "accent": "que les gens",
+        "line2": "retiennent."
+      },
+      "titleAuth": {
+        "line1": "Votre prochain",
+        "accent": "événement",
+        "line2": "vous attend."
+      },
+      "subtitleGuest": "Concevez, planifiez et vivez des expériences uniques qui font la différence. Chaque détail compte et notre kit le rend possible.",
+      "subtitleAuth": "Explorez les événements de votre ville, organisez le vôtre ou gérez vos billets. Tout au même endroit.",
+      "viewEvents": "Voir les événements",
+      "createEvent": "Créer un événement",
+      "startFree": "Commencer gratuitement",
+      "trust": {
+        "free": "Gratuit pour commencer",
+        "noCard": "Sans carte bancaire",
+        "support": "Support en espagnol"
+      },
+      "stats": {
+        "editor": "Éditeur visuel",
+        "secure": "Sécurisé",
+        "available": "Disponible"
+      }
     },
-    "features": {
+    "heroCard": {
+      "editor": {
+        "title": "Éditeur de plans",
+        "desc": "Concevez votre espace en temps réel"
+      },
+      "tickets": {
+        "title": "Vente de billets",
+        "desc": "Paiements sécurisés et sans souci"
+      },
+      "badge": {
+        "title": "Billet confirmé",
+        "sub": "VIP · Rangée A"
+      }
+    },
+    "value": {
       "section1": {
-        "title": "Organisez, concevez et vivez des événements",
-        "titleAccent": "sans limites.",
-        "description": "Construisez des événements mémorables avec notre créateur de plans interactifs en ligne. Concevez des espaces personnalisés, gérez les participants et visualisez chaque détail de votre événement en temps réel, le tout sur une seule plateforme."
+        "eyebrow": "Tout sur une plateforme",
+        "title": "Organisez, concevez et vivez",
+        "titleAccent": "des événements sans limites.",
+        "description": "Créez des événements mémorables avec notre créateur de plans interactif en ligne. Concevez des espaces personnalisés, gérez les participants et visualisez chaque détail de votre événement en temps réel, le tout sur une seule plateforme.",
+        "items": {
+          "editor": "Éditeur de plans drag & drop en temps réel",
+          "analytics": "Panneau d’analytique pour chaque événement",
+          "notifications": "Notifications automatiques à vos participants"
+        },
+        "tags": {
+          "plan": "Plan interactif",
+          "tickets": "Vente de billets",
+          "analytics": "Analytique"
+        }
       },
       "section2": {
-        "title": "Demande d'",
-        "titleAccent": "Événements exceptionnels.",
-        "description": "Si vous cherchez de nouvelles expériences, consultez notre liste d'événements disponibles. Explorez toutes les options et trouvez le plan parfait pour vous.",
-        "button": "Consultez les événements disponibles"
+        "eyebrow": "Découvrez des expériences",
+        "title": "Demande d’",
+        "titleAccent": "événements exceptionnels.",
+        "description": "Si vous cherchez de nouvelles expériences, consultez notre liste d’événements disponibles. Explorez toutes les options et trouvez le plan parfait pour vous.",
+        "items": {
+          "filter": "Filtrez par ville, catégorie et date",
+          "buy": "Achetez des billets rapidement et en toute sécurité",
+          "alerts": "Recevez des alertes pour les événements qui vous intéressent"
+        },
+        "tags": {
+          "search": "Recherche avancée",
+          "location": "Par lieu",
+          "category": "Par catégorie"
+        },
+        "button": "Voir les événements disponibles"
       }
     },
-    "benefits": {
-      "title": "Pourquoi nous choisir?",
-      "items": {
-        "timesSaving": {
-          "title": "Économisez du temps dans les files",
-          "description": "Offrez à vos clients un processus de planification d'événements, réduisant le traitement avec des assistants experts et éliminez les files d'attente."
-        },
-        "findEvents": {
-          "title": "Trouvez facilement des événements",
-          "description": "Notre système vous permet de trouver l'assistant depuis une interface accessible et utile qui vous permettra de confirmer les détails de votre événement aussi rapidement que vous le souhaitez sans complications."
-        },
-        "free": {
-          "title": "Totalement gratuit.",
-          "description": "Accès aux fonctions de base de notre plan gratuit qui vous rend accessible tant aux petites entreprises qu'aux grandes compagnies."
-        }
+    "steps": {
+      "eyebrow": "Simple par conception",
+      "title": "Votre événement prêt en quatre étapes",
+      "subtitle": "De l’idée à l’événement réel, sans aucune connaissance technique.",
+      "step1": {
+        "title": "Créez votre compte",
+        "desc": "Inscrivez-vous en quelques secondes. Sans carte bancaire, sans étapes inutiles."
+      },
+      "step2": {
+        "title": "Concevez l’espace",
+        "desc": "Utilisez l’éditeur de plans pour créer sections, sièges et zones personnalisées."
+      },
+      "step3": {
+        "title": "Vendez des billets",
+        "desc": "Activez la vente de billets et gérez les paiements en toute sécurité."
+      },
+      "step4": {
+        "title": "Vivez l’événement",
+        "desc": "Gérez les participants en temps réel et recevez les retours de votre audience."
       }
     },
-    "compatibility": {
-      "title": "Compatibilité des appareils.",
-      "web": "WEB",
-      "android": "ANDROID",
-      "downloadApk": "Télécharger APK"
+    "featuresList": {
+      "eyebrow": "Outils inclus",
+      "title": "Tout ce dont vous avez besoin,",
+      "titleAccent": "prêt dès le premier jour",
+      "subtitle": "Sans plugins supplémentaires, sans intégrations compliquées. Chaque outil est conçu pour que vous vous concentriez sur votre événement, pas sur la technologie.",
+      "planEditor": {
+        "title": "Éditeur de plans",
+        "desc": "Créez la disposition de votre événement avec un éditeur visuel drag & drop en temps réel."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "desc": "Rappels, changements et confirmations parviennent automatiquement à vos participants."
+      },
+      "payments": {
+        "title": "Paiements intégrés",
+        "desc": "Passerelle de paiement sécurisée. Encaissez les billets et recevez votre argent sans intermédiaires."
+      },
+      "analytics": {
+        "title": "Analytique",
+        "desc": "Métriques de ventes et de présence dans un panneau clair pour mieux décider."
+      },
+      "geolocation": {
+        "title": "Géolocalisation",
+        "desc": "Les participants découvrent les événements près d’eux en filtrant par ville et catégorie."
+      },
+      "categories": {
+        "title": "Catégories",
+        "desc": "Classez votre événement parmi musique, culture, sport, gastronomie et bien plus."
+      }
+    },
+    "reviews": {
+      "eyebrow": "Utilisateurs réels",
+      "title": "Ce que l’on dit des événements sur TuEvento",
+      "subtitle": "Avis vérifiés de participants à des événements publiés.",
+      "anonymous": "Utilisateur",
+      "organizer": "Organisateur",
+      "cta": "Voir tous les événements et leurs avis"
+    },
+    "platforms": {
+      "eyebrow": "Disponible sur",
+      "title": "Où que vous soyez, TuEvento vous suit",
+      "subtitle": "Accédez depuis le navigateur ou téléchargez l’app Android. La même expérience sur tous les appareils.",
+      "popular": "Populaire",
+      "web": {
+        "title": "Version Web",
+        "desc": "Fonctionne sur tout navigateur moderne. Rien à installer, ouvrez la page et c’est parti.",
+        "button": "Ouvrir l’app web"
+      },
+      "android": {
+        "title": "Application Android",
+        "desc": "Téléchargez l’APK et accédez aux notifications push, au scanner de billets et aux fonctions natives.",
+        "button": "Télécharger l’APK"
+      }
     },
     "apkModal": {
-      "title": "Application Mobile TuEvento",
+      "title": "Application mobile TuEvento",
       "subtitle": "Disponible pour appareils Android",
-      "description": "Téléchargez l'application mobile pour accéder à toutes les fonctions de TuEvento depuis votre appareil Android.",
-      "download": "Télécharger APK",
+      "description": "Téléchargez l’application mobile pour accéder à toutes les fonctions de TuEvento depuis votre appareil Android. Notifications push, scanner de billets et plus.",
+      "download": "Télécharger l’APK",
       "cancel": "Annuler"
     }
   },
