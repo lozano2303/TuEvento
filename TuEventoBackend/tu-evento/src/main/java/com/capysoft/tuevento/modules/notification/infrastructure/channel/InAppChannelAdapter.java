@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.notification.infrastructure.channel;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -58,6 +59,8 @@ public class InAppChannelAdapter implements NotificationChannelPort {
                         .orElse("UNKNOWN");
 
                 // Intentar push por WebSocket (nunca debe romper el guardado)
+                // NOTA: Siempre enviamos el contenido original en español.
+                // El frontend hará polling para obtener la traducción cuando esté lista.
                 try {
                     // Usar HashMap en lugar de Map.of() porque Map.of() no permite valores null
                     Map<String, Object> message = new HashMap<>();
@@ -70,6 +73,7 @@ public class InAppChannelAdapter implements NotificationChannelPort {
                     message.put("sentAt", notification.getSentAt() != null ? notification.getSentAt().toString() : null);
                     message.put("readAt", saved.getReadAt() != null ? saved.getReadAt().toString() : null);
                     message.put("read", false);  // Nueva notificación siempre es no leída
+                    // No incluimos translations aquí - el frontend las obtendrá via polling
 
                     // Usar topic en lugar de user destination para evitar problemas con el simple broker
                     // El frontend se suscribe a /topic/notifications/{userId}

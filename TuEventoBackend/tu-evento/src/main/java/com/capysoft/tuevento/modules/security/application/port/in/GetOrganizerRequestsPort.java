@@ -5,5 +5,9 @@ import com.capysoft.tuevento.modules.security.application.dto.response.Organizer
 import java.util.List;
 
 public interface GetOrganizerRequestsPort {
-    List<OrganizerRequestResponse> getPendingRequests();
+    /**
+     * Returns organizer requests filtered by status.
+     * Pass {@code null} to retrieve all statuses.
+     */
+    List<OrganizerRequestResponse> getRequests(String status);
 }

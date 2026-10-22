@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useLanguageSync } from '../hooks/useLanguageSync';
+import { useEventTranslation } from '../hooks/useEventTranslation';
 import {
   Plus, LayoutDashboard, Pencil, Trash2, AlertTriangle, ImagePlus,
   Eye, Calendar, Tag, Globe, Lock, Rocket, ChevronLeft, ChevronRight,
-  FileText, MapPin, Users, Clock, XCircle,
+  FileText, MapPin, Users, Clock, XCircle, TrendingUp,
 } from 'lucide-react';
 import * as EventService from '../services/EventService';
 import * as CategoryService from '../services/CategoryService';
@@ -79,8 +82,23 @@ const labelClass = 'block text-xs font-semibold text-textMuted uppercase trackin
 export default function EventManage() {
   const navigate  = useNavigate();
   const userId    = localStorage.getItem('userID');
+  const { t } = useTranslation();
+  
+  // Sincronización de idioma con el perfil del usuario
+  const currentLanguage = useLanguageSync();
+  
+  // Verificar si está en español para permitir edición
+  const isSpanishLanguage = currentLanguage === 'es';
 
-  const [events,     setEvents]     = useState([]);
+  // Hook personalizado para manejar eventos con traducción
+  const { 
+    events, 
+    setEvents, 
+    updateEvent, 
+    loadEventsWithTranslation, 
+    isPolling 
+  } = useEventTranslation([], currentLanguage);
+
   const [isLoading,  setIsLoading]  = useState(true);
   const [error,      setError]      = useState(null);
 
@@ -132,11 +150,14 @@ export default function EventManage() {
   // ── Carga inicial ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!userId) { setError('No hay sesión activa'); setIsLoading(false); return; }
-    EventService.getEventsByUser(userId)
-      .then((res) => setEvents(res.data ?? []))
-      .catch((err) => setError(err.message))
-      .finally(() => setIsLoading(false));
-  }, [userId]);
+    
+    loadEventsWithTranslation(userId)
+      .then(() => setIsLoading(false))
+      .catch((err) => {
+        setError(err.message);
+        setIsLoading(false);
+      });
+  }, [userId, loadEventsWithTranslation]);
 
   // Cargar categorías una sola vez para el modal de edición
   useEffect(() => {
@@ -296,7 +317,7 @@ export default function EventManage() {
     setDetailLoading(true);
     try {
       const [detailRes, mediaRes] = await Promise.allSettled([
-        EventService.getEventById(event.eventId),
+        EventService.getEventById(event.eventId, currentLanguage), // Pasar el idioma para obtener traducción
         getEventMedia(event.eventId),
       ]);
       if (detailRes.status === 'fulfilled') setDetailFull(detailRes.value?.data ?? null);
@@ -436,13 +457,13 @@ export default function EventManage() {
 
   // Eventos filtrados por estado — frontend, sin llamada adicional al backend
   const FILTER_OPTIONS = [
-    { value: 'ALL',            label: 'Todos' },
-    { value: 'DRAFT',          label: STATUS_BADGE.DRAFT.label },
-    { value: 'PENDING_REVIEW', label: STATUS_BADGE.PENDING_REVIEW.label },
-    { value: 'PUBLISHED',      label: STATUS_BADGE.PUBLISHED.label },
-    { value: 'REJECTED',       label: STATUS_BADGE.REJECTED.label },
-    { value: 'CANCELLED',      label: STATUS_BADGE.CANCELLED.label },
-    { value: 'COMPLETED',      label: STATUS_BADGE.COMPLETED.label },
+    { value: 'ALL',            label: t('myEvents.filters.all') },
+    { value: 'DRAFT',          label: t(STATUS_BADGE.DRAFT.labelKey) },
+    { value: 'PENDING_REVIEW', label: t(STATUS_BADGE.PENDING_REVIEW.labelKey) },
+    { value: 'PUBLISHED',      label: t(STATUS_BADGE.PUBLISHED.labelKey) },
+    { value: 'REJECTED',       label: t(STATUS_BADGE.REJECTED.labelKey) },
+    { value: 'CANCELLED',      label: t(STATUS_BADGE.CANCELLED.labelKey) },
+    { value: 'COMPLETED',      label: t(STATUS_BADGE.COMPLETED.labelKey) },
   ];
   const visibleEvents = statusFilter === 'ALL'
     ? events
@@ -454,21 +475,43 @@ export default function EventManage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-textPrimary">Mis Eventos</h1>
-          <p className="text-sm text-textMuted mt-0.5">Gestiona y edita tus eventos</p>
+          <h1 className="text-2xl font-bold text-textPrimary">{t('myEvents.title')}</h1>
+          <p className="text-sm text-textMuted mt-0.5">{t('myEvents.subtitle')}</p>
         </div>
-        <button
-          onClick={() => navigate('/events/create')}
-          className={`${btnBase} bg-primary text-white hover:bg-primaryDark`}
-        >
-          <Plus className="w-4 h-4" /> Crear nuevo evento
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/organizer/earnings')}
+            className={`${btnBase} bg-surfaceAlt text-textSecondary hover:text-accent hover:bg-accent/10 border border-surfaceAlt`}
+          >
+            <TrendingUp className="w-4 h-4" /> {t('myEvents.myEarnings')}
+          </button>
+          <button
+            onClick={() => isSpanishLanguage && navigate('/events/create')}
+            disabled={!isSpanishLanguage}
+            className={`${btnBase} ${
+              isSpanishLanguage 
+                ? 'bg-primary text-white hover:bg-primaryDark cursor-pointer' 
+                : 'bg-surfaceAlt text-textMuted cursor-not-allowed opacity-60'
+            }`}
+            title={!isSpanishLanguage ? t('myEvents.editRestriction') : ''}
+          >
+            <Plus className="w-4 h-4" /> {t('myEvents.createNew')}
+          </button>
+        </div>
       </div>
+
+      {/* Restricción de edición cuando no está en español */}
+      {!isSpanishLanguage && (
+        <div className="flex items-center gap-3 bg-warning/10 border border-warning/30 text-warning rounded-xl px-4 py-3 text-sm mb-6">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          {t('myEvents.editRestriction')}
+        </div>
+      )}
 
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-24 text-textMuted text-sm">
-          Cargando eventos…
+          {t('myEvents.loading')}
         </div>
       )}
 
@@ -487,14 +530,20 @@ export default function EventManage() {
             <LayoutDashboard className="w-8 h-8 text-textMuted" />
           </div>
           <div>
-            <p className="text-textPrimary font-semibold text-lg">Aún no tienes eventos</p>
-            <p className="text-textMuted text-sm mt-1">Crea tu primer evento para empezar</p>
+            <p className="text-textPrimary font-semibold text-lg">{t('myEvents.noEvents.title')}</p>
+            <p className="text-textMuted text-sm mt-1">{t('myEvents.noEvents.subtitle')}</p>
           </div>
           <button
-            onClick={() => navigate('/events/create')}
-            className={`${btnBase} bg-primary text-white hover:bg-primaryDark px-5 py-2.5 text-sm`}
+            onClick={() => isSpanishLanguage && navigate('/events/create')}
+            disabled={!isSpanishLanguage}
+            className={`${btnBase} ${
+              isSpanishLanguage 
+                ? 'bg-primary text-white hover:bg-primaryDark cursor-pointer' 
+                : 'bg-surfaceAlt text-textMuted cursor-not-allowed opacity-60'
+            } px-5 py-2.5 text-sm`}
+            title={!isSpanishLanguage ? t('myEvents.editRestriction') : ''}
           >
-            <Plus className="w-4 h-4" /> Crear primer evento
+            <Plus className="w-4 h-4" /> {t('myEvents.createFirst')}
           </button>
         </div>
       )}
@@ -533,18 +582,23 @@ export default function EventManage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-surfaceAlt bg-surfaceAlt/50">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider">Evento</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider">Estado</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider hidden md:table-cell">Fechas</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider hidden lg:table-cell">Sillas</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-textMuted uppercase tracking-wider">Acciones</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider">{t('myEvents.table.headers.event')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider">{t('myEvents.table.headers.status')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider hidden md:table-cell">{t('myEvents.table.headers.dates')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider hidden lg:table-cell">{t('myEvents.table.headers.seats')}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-textMuted uppercase tracking-wider">{t('myEvents.table.headers.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {visibleEvents.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-10 text-center text-sm text-textMuted">
-                    No hay eventos en estado "{FILTER_OPTIONS.find(o => o.value === statusFilter)?.label}".
+                    {statusFilter === 'ALL' 
+                      ? t('myEvents.table.noEvents')
+                      : t('myEvents.table.noEventsInStatus', { 
+                          status: FILTER_OPTIONS.find(o => o.value === statusFilter)?.label 
+                        })
+                    }
                   </td>
                 </tr>
               ) : visibleEvents.map((event, idx) => {
@@ -558,20 +612,38 @@ export default function EventManage() {
                     {/* Nombre */}
                     <td className="px-4 py-3">
                       <p className="font-medium text-textPrimary truncate max-w-[200px]">
-                        {event.eventName}
+                        {/* Mostrar nombre traducido si está disponible, sino el original */}
+                        {event.translatedName || event.eventName}
                       </p>
-                      <p className="text-[11px] text-textMuted mt-0.5">#{event.eventId}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-[11px] text-textMuted">#{event.eventId}</p>
+                        {/* Indicador de traducción */}
+                        {currentLanguage !== 'es' && (
+                          <>
+                            {event.translationGenerating && !event.translatedName ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-accent/10 text-accent border border-accent/20">
+                                <span className="w-2 h-2 border border-accent/30 border-t-accent rounded-full animate-spin" />
+                                {t('events.translation.generating')}
+                              </span>
+                            ) : event.translatedName ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-success/10 text-success border border-success/20">
+                                ✓ {t('events.translation.translated', { lang: currentLanguage.toUpperCase() })}
+                              </span>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
                       {/* Inline status notices under the event name */}
                       {event.status === 'PENDING_REVIEW' && (
                         <p className="text-[10px] text-yellow-400 mt-0.5 flex items-center gap-1">
                           <Clock className="w-2.5 h-2.5 flex-shrink-0" />
-                          En espera de aprobación
+                          {t('myEvents.status.pendingReview')}
                         </p>
                       )}
                       {event.status === 'REJECTED' && (
                         <p className="text-[10px] text-red-400 mt-0.5 flex items-center gap-1">
                           <XCircle className="w-2.5 h-2.5 flex-shrink-0" />
-                          Rechazado — revisa el motivo
+                          {t('myEvents.status.rejected')}
                         </p>
                       )}
                     </td>
@@ -607,67 +679,83 @@ export default function EventManage() {
                         <button
                           onClick={() => openDetail(event)}
                           className="w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-accent hover:bg-accent/10 transition-colors"
-                          title="Ver detalle del evento"
+                          title={t('myEvents.actions.viewDetail')}
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Editar layout — solo disponible en DRAFT */}
+                        {/* Editar layout — solo disponible en DRAFT y si está en español */}
                         <button
-                          onClick={() => event.status === 'DRAFT' && navigate(`/events/${event.eventId}/layout`)}
-                          disabled={event.status !== 'DRAFT'}
+                          onClick={() => (event.status === 'DRAFT' && isSpanishLanguage) && navigate(`/events/${event.eventId}/layout`)}
+                          disabled={event.status !== 'DRAFT' || !isSpanishLanguage}
                           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
-                            ${event.status === 'DRAFT'
+                            ${(event.status === 'DRAFT' && isSpanishLanguage)
                               ? 'text-textMuted hover:text-accent hover:bg-accent/10 cursor-pointer'
                               : 'text-textMuted/30 cursor-not-allowed'}`}
-                          title={event.status === 'DRAFT'
-                            ? 'Editar layout del evento'
-                            : 'El layout solo se puede editar en estado Borrador'}
+                          title={
+                            event.status !== 'DRAFT' 
+                              ? t('myEvents.actions.editLayoutRestricted')
+                              : !isSpanishLanguage 
+                              ? t('myEvents.editRestriction')
+                              : t('myEvents.actions.editLayout')
+                          }
                         >
                           <LayoutDashboard className="w-3.5 h-3.5" />
                         </button>
 
                         {/* Editar info */}
                         <button
-                          onClick={() => event.status === 'DRAFT' && openEdit(event)}
-                          disabled={event.status !== 'DRAFT'}
+                          onClick={() => (event.status === 'DRAFT' && isSpanishLanguage) && openEdit(event)}
+                          disabled={event.status !== 'DRAFT' || !isSpanishLanguage}
                           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
-                            ${event.status === 'DRAFT'
+                            ${(event.status === 'DRAFT' && isSpanishLanguage)
                               ? 'text-textMuted hover:text-primary hover:bg-primary/10 cursor-pointer'
                               : 'text-textMuted/30 cursor-not-allowed'}`}
-                          title={event.status === 'DRAFT'
-                            ? 'Editar información del evento'
-                            : 'La información solo se puede editar en estado Borrador'}
+                          title={
+                            event.status !== 'DRAFT' 
+                              ? t('myEvents.actions.editInfoRestricted')
+                              : !isSpanishLanguage 
+                              ? t('myEvents.editRestriction')
+                              : t('myEvents.actions.editInfo')
+                          }
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Gestionar imágenes — solo disponible en DRAFT */}
+                        {/* Gestionar imágenes — solo disponible en DRAFT y si está en español */}
                         <button
-                          onClick={() => event.status === 'DRAFT' && openMedia(event)}
-                          disabled={event.status !== 'DRAFT'}
+                          onClick={() => (event.status === 'DRAFT' && isSpanishLanguage) && openMedia(event)}
+                          disabled={event.status !== 'DRAFT' || !isSpanishLanguage}
                           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
-                            ${event.status === 'DRAFT'
+                            ${(event.status === 'DRAFT' && isSpanishLanguage)
                               ? 'text-textMuted hover:text-accent hover:bg-accent/10 cursor-pointer'
                               : 'text-textMuted/30 cursor-not-allowed'}`}
-                          title={event.status === 'DRAFT'
-                            ? 'Gestionar imágenes del evento'
-                            : 'Las imágenes solo se pueden modificar en estado Borrador'}
+                          title={
+                            event.status !== 'DRAFT' 
+                              ? t('myEvents.actions.manageImagesRestricted')
+                              : !isSpanishLanguage 
+                              ? t('myEvents.editRestriction')
+                              : t('myEvents.actions.manageImages')
+                          }
                         >
                           <ImagePlus className="w-3.5 h-3.5" />
                         </button>
 
-                        {/* Eliminar — solo disponible en DRAFT (backend lo exige también) */}
+                        {/* Eliminar — solo disponible en DRAFT y si está en español */}
                         <button
-                          onClick={() => event.status === 'DRAFT' && setDeleteTarget(event)}
-                          disabled={event.status !== 'DRAFT'}
+                          onClick={() => (event.status === 'DRAFT' && isSpanishLanguage) && setDeleteTarget(event)}
+                          disabled={event.status !== 'DRAFT' || !isSpanishLanguage}
                           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
-                            ${event.status === 'DRAFT'
+                            ${(event.status === 'DRAFT' && isSpanishLanguage)
                               ? 'text-textMuted hover:text-error hover:bg-error/10 cursor-pointer'
                               : 'text-textMuted/30 cursor-not-allowed'}`}
-                          title={event.status === 'DRAFT'
-                            ? 'Eliminar evento'
-                            : 'Solo se pueden eliminar eventos en estado Borrador'}
+                          title={
+                            event.status !== 'DRAFT' 
+                              ? t('myEvents.actions.deleteEventRestricted')
+                              : !isSpanishLanguage 
+                              ? t('myEvents.editRestriction')
+                              : t('myEvents.actions.deleteEvent')
+                          }
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -694,39 +782,43 @@ export default function EventManage() {
           ? new Date(d + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
           : '—';
 
+        // Usar traducción si está disponible
+        const displayName = full?.translatedName || full?.eventName || ev.eventName;
+        const displayDescription = full?.translatedDescription || full?.description || ev.description;
+
         // Campos del grid
         const gridFields = [
           {
             icon: Calendar,
-            label: 'FECHA Y HORA',
+            label: t('myEvents.detailModal.fields.startDate'),
             value: fmtDate(ev.startDate),
             sub:   null,
           },
           {
             icon: Tag,
-            label: 'TIPO DE EVENTO',
+            label: t('myEvents.detailModal.fields.eventType'),
             value: full?.categoryName ?? ev.categoryName ?? null,
             pill:  true,
           },
           {
             icon: MapPin,
-            label: 'CIUDAD',
+            label: t('myEvents.detailModal.fields.city'),
             value: full?.siteName ?? ev.siteName ?? '—',
           },
           {
             icon: Calendar,
-            label: 'FECHA DE FIN',
+            label: t('myEvents.detailModal.fields.finishDate'),
             value: fmtDate(ev.finishDate),
           },
           {
             icon: Users,
-            label: 'SILLAS DISPONIBLES',
+            label: t('myEvents.detailModal.fields.availableSeats'),
             value: ev.availableSeats != null ? ev.availableSeats.toLocaleString('es-CO') : '—',
           },
           {
             icon: ev.isPublic ? Globe : Lock,
-            label: 'ESTADO',
-            value: ev.isPublic ? 'Público' : 'Privado',
+            label: t('myEvents.detailModal.fields.status'),
+            value: ev.isPublic ? t('myEvents.visibility.public') : t('myEvents.visibility.private'),
             accent: ev.isPublic,
           },
         ];
@@ -752,20 +844,20 @@ export default function EventManage() {
                   style={{ background: 'var(--color-surfaceAlt)' }}
                 >
                   <span className="text-base font-bold text-textSecondary select-none">
-                    {ev.eventName?.charAt(0).toUpperCase() ?? '?'}
+                    {displayName?.charAt(0).toUpperCase() ?? '?'}
                   </span>
                 </div>
 
                 {/* Nombre */}
                 <p id="detail-modal-title" className="flex-1 font-bold text-base text-textPrimary truncate min-w-0">
-                  {ev.eventName}
+                  {displayName}
                 </p>
 
                 {/* Badges */}
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {/* Badge estado del evento */}
                   <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badge.cls}`}>
-                    {badge.label}
+                    {t(badge.labelKey)}
                   </span>
                   {/* Badge visibilidad */}
                   {ev.isPublic != null && (
@@ -774,14 +866,14 @@ export default function EventManage() {
                         ? 'bg-success/10 text-success border-success/30'
                         : 'bg-surfaceAlt/60 text-textMuted border-surfaceAlt'}`}>
                       {ev.isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                      {ev.isPublic ? 'Activo' : 'Privado'}
+                      {ev.isPublic ? t('myEvents.visibility.active') : t('myEvents.visibility.private')}
                     </span>
                   )}
                   {/* Cerrar */}
                   <button
                     onClick={closeDetail}
                     className="ml-1 w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-textPrimary hover:bg-surfaceAlt transition-colors"
-                    aria-label="Cerrar"
+                    aria-label={t('myEvents.detailModal.close')}
                   >
                     ×
                   </button>
@@ -797,7 +889,7 @@ export default function EventManage() {
                   {/* Columna izquierda — título + meta + descripción corta */}
                   <div className="flex-1 min-w-0 flex flex-col gap-2">
                     <h2 className="text-xl font-bold text-textPrimary leading-tight">
-                      {ev.eventName}
+                      {displayName}
                     </h2>
 
                     {/* Meta en línea: fecha · hora · ciudad */}
@@ -817,16 +909,16 @@ export default function EventManage() {
                     </div>
 
                     {/* Descripción corta */}
-                    {(full?.description ?? ev.description) && (
+                    {displayDescription && (
                       <p className="text-sm text-textSecondary leading-relaxed line-clamp-3">
-                        {full?.description ?? ev.description}
+                        {displayDescription}
                       </p>
                     )}
 
                     {detailLoading && (
                       <div className="flex items-center gap-2 text-xs text-textMuted mt-1">
                         <span className="w-3 h-3 border border-accent/30 border-t-accent rounded-full animate-spin" />
-                        Cargando detalles…
+                        {t('myEvents.detailModal.loadingDetails')}
                       </div>
                     )}
                   </div>
@@ -841,7 +933,7 @@ export default function EventManage() {
                       {detailMedia.length > 0 ? (
                         <img
                           src={detailMedia[detailCarousel]}
-                          alt={`${ev.eventName} — ${detailCarousel + 1}`}
+                          alt={`${displayName} — ${detailCarousel + 1}`}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -885,7 +977,7 @@ export default function EventManage() {
                     style={{ background: 'color-mix(in srgb, var(--color-warning, #eab308) 8%, transparent)' }}>
                     <Clock className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-yellow-300 leading-snug">
-                      Tu evento está en revisión. Te lo publicaremos cuando el administrador lo apruebe.
+                      {t('myEvents.detailModal.banners.pendingReview')}
                     </p>
                   </div>
                 )}
@@ -894,18 +986,19 @@ export default function EventManage() {
                     style={{ background: 'color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent)' }}>
                     <XCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-red-400 mb-1">Evento rechazado</p>
+                      <p className="text-sm font-semibold text-red-400 mb-1">{t('myEvents.detailModal.banners.rejectedTitle')}</p>
                       {(full?.rejectionReason) && (
                         <p className="text-xs text-red-300 leading-snug">{full.rejectionReason}</p>
                       )}
                       <p className="text-xs text-red-300/70 mt-1 leading-snug">
-                        Cierra este panel, corrige el evento y envíalo a revisión nuevamente.
+                        {t('myEvents.detailModal.banners.rejectedAction')}
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* ── Descripción expandida con ícono ── */}                {(full?.description ?? ev.description) && (
+                {/* ── Descripción expandida con ícono ── */}
+                {displayDescription && (
                   <div
                     className="flex items-start gap-3 rounded-xl p-3.5 border"
                     style={{ background: 'var(--color-surfaceAlt)', borderColor: 'var(--color-surfaceAlt)' }}
@@ -918,10 +1011,10 @@ export default function EventManage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[9px] font-bold uppercase tracking-widest text-textMuted mb-1">
-                        Descripción del evento
+                        {t('myEvents.detailModal.descriptionLabel')}
                       </p>
                       <p className="text-sm text-textSecondary leading-relaxed whitespace-pre-wrap">
-                        {full?.description ?? ev.description}
+                        {displayDescription}
                       </p>
                     </div>
                   </div>
@@ -974,7 +1067,7 @@ export default function EventManage() {
                     style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%)' }}
                   >
                     <Rocket className="w-4 h-4" />
-                    Enviar a revisión
+                    {t('myEvents.detailModal.submitReview')}
                   </button>
                 </div>
               )}
@@ -1174,14 +1267,25 @@ export default function EventManage() {
       </Modal>
       {/* ── Modal: confirmar transición de estado ──────────────────────── */}
       {pendingTransition && (() => {
-        const info = TRANSITION_INFO[pendingTransition.newStatus];
+        const status = pendingTransition.newStatus;
         // When reverting to DRAFT from REJECTED, show a more specific title
-        const title = (pendingTransition.newStatus === 'DRAFT' && pendingTransition.event?.status === 'REJECTED')
-          ? '¿Corregir este evento?'
-          : info.title;
-        const body = (pendingTransition.newStatus === 'DRAFT' && pendingTransition.event?.status === 'REJECTED')
-          ? 'El evento volverá a estado Borrador para que puedas corregirlo y enviarlo a revisión nuevamente.'
-          : info.body;
+        const isCorrection = status === 'DRAFT' && pendingTransition.event?.status === 'REJECTED';
+        const title = isCorrection
+          ? t('myEvents.transitionConfirm.DRAFT.titleCorrect')
+          : t(`myEvents.transitionConfirm.${status}.title`);
+        const body = isCorrection
+          ? t('myEvents.transitionConfirm.DRAFT.bodyCorrect')
+          : t(`myEvents.transitionConfirm.${status}.body`);
+        const confirmLabel = t(`myEvents.transitionConfirm.${status}.confirm`);
+        
+        // Clases de estilo por estado
+        const confirmClassMap = {
+          PENDING_REVIEW: 'bg-yellow-600 hover:bg-yellow-500 text-white',
+          DRAFT: 'bg-gray-600 hover:bg-gray-500 text-white',
+          CANCELLED: 'bg-red-600 hover:bg-red-500 text-white',
+          COMPLETED: 'bg-blue-600 hover:bg-blue-500 text-white',
+        };
+        
         return (
           <Modal
             isOpen
@@ -1196,14 +1300,14 @@ export default function EventManage() {
                   disabled={transitionBusy}
                   className="px-4 py-2 rounded-xl text-sm font-medium text-textSecondary bg-surfaceAlt hover:bg-surfaceAlt/80 transition-colors disabled:opacity-60"
                 >
-                  Cancelar
+                  {t('myEvents.transitionConfirm.cancel')}
                 </button>
                 <button
                   onClick={confirmTransition}
                   disabled={transitionBusy}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-60 ${info.confirmClass}`}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-60 ${confirmClassMap[status]}`}
                 >
-                  {transitionBusy ? 'Cambiando…' : info.confirmLabel}
+                  {transitionBusy ? t('myEvents.transitionConfirm.changing') : confirmLabel}
                 </button>
               </>
             }

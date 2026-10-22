@@ -11,6 +11,7 @@ import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeN
 import com.capysoft.tuevento.modules.notification.domain.repository.ChannelRepository;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationRepository;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationTypeRepository;
+import com.capysoft.tuevento.modules.language.application.service.TranslationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,7 @@ class SendNotificationUseCaseIdempotencyTest {
     @Mock private NotificationTypeRepository notificationTypeRepository;
     @Mock private NotificationRepository     notificationRepository;
     @Mock private NotificationChannelPort    inAppPort;
+    @Mock private TranslationService         translationService;
 
     private SendNotificationUseCase useCase;
 
@@ -58,6 +60,7 @@ class SendNotificationUseCaseIdempotencyTest {
                 notificationTypeRepository,
                 notificationRepository,
                 List.of(inAppPort),
+                translationService,
                 false  // email disabled for these tests
         );
 

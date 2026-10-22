@@ -23,6 +23,8 @@ public class CreateProfileRequest {
 
     private Integer storedFileId;
 
+    private Integer preferredLanguageId;
+
     /**
      * Indicates whether the caller explicitly set storedFileId (even if null).
      * Used to distinguish "use default avatar" from "explicitly set no avatar".
@@ -37,6 +39,7 @@ public class CreateProfileRequest {
         private Integer userId;
         private String fullName;
         private Integer storedFileId;
+        private Integer preferredLanguageId;
         private boolean storedFileIdSet = false;
 
         public CreateProfileRequestBuilder userId(Integer userId) {
@@ -55,11 +58,17 @@ public class CreateProfileRequest {
             return this;
         }
 
+        public CreateProfileRequestBuilder preferredLanguageId(Integer preferredLanguageId) {
+            this.preferredLanguageId = preferredLanguageId;
+            return this;
+        }
+
         public CreateProfileRequest build() {
             CreateProfileRequest req = new CreateProfileRequest();
             req.userId = this.userId;
             req.fullName = this.fullName;
             req.storedFileId = this.storedFileId;
+            req.preferredLanguageId = this.preferredLanguageId;
             req.storedFileIdSet = this.storedFileIdSet;
             return req;
         }

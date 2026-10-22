@@ -6,14 +6,27 @@ import com.capysoft.tuevento.modules.event.application.dto.response.EventStatusL
 import com.capysoft.tuevento.modules.event.application.port.in.AdminChangeEventStatusPort;
 import com.capysoft.tuevento.modules.event.application.port.in.GetAdminEventsPort;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
+import com.capysoft.tuevento.modules.event.infrastructure.persistence.repository.EventJpaRepository;
+import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.PaymentJpaRepository;
+import com.capysoft.tuevento.modules.wallet.application.dto.BulkCreditWalletRequest;
+import com.capysoft.tuevento.modules.wallet.application.dto.BulkCreditWalletResponse;
+import com.capysoft.tuevento.modules.wallet.application.usecase.BulkCreditWalletUseCaseImpl;
+import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.RefundJpaRepository;
+import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
+import com.capysoft.tuevento.modules.payment.domain.model.RefundStatus;
+import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.tuevento.modules.security.application.dto.response.ActivityItemResponse;
+import com.capysoft.tuevento.modules.security.application.dto.response.AdminDashboardStatsResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerRequestResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.ApproveOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizerRequestsPort;
 import com.capysoft.tuevento.modules.security.application.port.in.RejectOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
+import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
 import com.capysoft.tuevento.modules.storage.application.dto.response.PublicUrlResponse;
 import com.capysoft.tuevento.modules.storage.application.port.in.GeneratePublicUrlPort;
+import com.capysoft.tuevento.modules.ticket.infrastructure.persistence.repository.TicketJpaRepository;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
@@ -21,12 +34,18 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/admin")
@@ -46,15 +65,60 @@ public class AdminController {
     private final GetAdminEventsPort          getAdminEventsPort;
     private final AdminChangeEventStatusPort  adminChangeEventStatusPort;
 
+    // ── Stats (JPA repos injected directly — read-only aggregates) ────────────
+    private final UserJpaRepository           userJpaRepository;
+    private final EventJpaRepository          eventJpaRepository;
+    private final TicketJpaRepository         ticketJpaRepository;
+    private final PaymentJpaRepository        paymentJpaRepository;
+    private final RefundJpaRepository         refundJpaRepository;
+    private final ProfileJpaRepository        profileJpaRepository;
+
+    // ── Wallet bulk credit ────────────────────────────────────────────────────
+    private final BulkCreditWalletUseCaseImpl bulkCreditWalletUseCase;
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Dashboard stats
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Operation(summary = "Get aggregated platform stats for the admin dashboard")
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<AdminDashboardStatsResponse>> getStats() {
+        var stats = AdminDashboardStatsResponse.builder()
+                // users
+                .totalUsers(userJpaRepository.count())
+                // events
+                .totalEvents(eventJpaRepository.count())
+                .publishedEvents(eventJpaRepository.countByStatus(EventStatus.PUBLISHED))
+                .pendingReviewEvents(eventJpaRepository.countByStatus(EventStatus.PENDING_REVIEW))
+                .rejectedEvents(eventJpaRepository.countByStatus(EventStatus.REJECTED))
+                .cancelledEvents(eventJpaRepository.countByStatus(EventStatus.CANCELLED))
+                .completedEvents(eventJpaRepository.countByStatus(EventStatus.COMPLETED))
+                .draftEvents(eventJpaRepository.countByStatus(EventStatus.DRAFT))
+                // tickets
+                .totalTickets(ticketJpaRepository.count())
+                // organizer requests
+                .pendingOrganizerRequests(organizerPetitionRepository.findByStatus("PENDING").size())
+                .approvedOrganizerRequests(organizerPetitionRepository.findByStatus("APPROVED").size())
+                // payments
+                .totalRevenue(paymentJpaRepository.sumApprovedRevenue())
+                .approvedPayments(paymentJpaRepository.countByStatus(PaymentStatus.APPROVED))
+                .pendingRefunds(refundJpaRepository.countByStatus(RefundStatus.REQUESTED))
+                .totalRefundedAmount(paymentJpaRepository.sumTotalRefundedAmount())
+                .processedRefunds(refundJpaRepository.countByStatus(RefundStatus.PROCESSED))
+                .build();
+        return ResponseEntity.ok(ApiResponse.ok("Dashboard stats retrieved", stats));
+    }
+
     // ═════════════════════════════════════════════════════════════════════════
     // Organizer-request endpoints
     // ═════════════════════════════════════════════════════════════════════════
 
-    @Operation(summary = "List all pending organizer requests")
+    @Operation(summary = "List organizer requests. Pass ?status=PENDING|APPROVED|REJECTED to filter; omit for all.")
     @GetMapping("/organizer-requests")
-    public ResponseEntity<ApiResponse<List<OrganizerRequestResponse>>> getPendingRequests() {
-        return ResponseEntity.ok(ApiResponse.ok("Pending organizer requests retrieved",
-                getOrganizerRequestsPort.getPendingRequests()));
+    public ResponseEntity<ApiResponse<List<OrganizerRequestResponse>>> getOrganizerRequests(
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(ApiResponse.ok("Organizer requests retrieved",
+                getOrganizerRequestsPort.getRequests(status)));
     }
 
     @Operation(summary = "Approve an organizer request and assign ORGANIZER role to the user")
@@ -105,5 +169,113 @@ public class AdminController {
             @AuthenticationPrincipal SecurityUser principal) {
         return ResponseEntity.ok(ApiResponse.ok("Event status changed",
                 adminChangeEventStatusPort.execute(eventId, request, principal.getUserId().longValue())));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Activity feed
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Operation(summary = "Get unified admin activity feed — combines recent events, payments and user registrations")
+    @GetMapping("/activity")
+    public ResponseEntity<ApiResponse<List<ActivityItemResponse>>> getActivity(
+            @RequestParam(defaultValue = "50") int limit) {
+
+        List<ActivityItemResponse> items = new ArrayList<>();
+
+        // ── Recent event status changes ───────────────────────────────────────
+        var recentEvents = eventJpaRepository.findTopByOrderByUpdatedAtDesc(
+                PageRequest.of(0, Math.min(limit, 100)));
+
+        // Collect organizer userIds to resolve names in one query
+        var organizerIds = recentEvents.stream()
+                .map(e -> e.getUserId().intValue())
+                .distinct()
+                .toList();
+
+        Map<Integer, String> organizerNames = profileJpaRepository
+                .findAllByUserIdIn(organizerIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        p -> p.getUserId(),
+                        p -> p.getFullName(),
+                        (a, b) -> a));
+
+        for (var ev : recentEvents) {
+            String organizerName = organizerNames.getOrDefault(ev.getUserId().intValue(), "Organizador");
+            String title = switch (ev.getStatus()) {
+                case PUBLISHED       -> "Event approved and published";
+                case REJECTED        -> "Event rejected";
+                case CANCELLED       -> "Event cancelled";
+                case PENDING_REVIEW  -> "Event submitted for review";
+                case COMPLETED       -> "Event completed";
+                default              -> "Event created as draft";
+            };
+            items.add(ActivityItemResponse.builder()
+                    .type("EVENT_STATUS_CHANGE")
+                    .title(title)
+                    .description("\"" + ev.getEventName() + "\"")
+                    .actor("Organizer: " + organizerName)
+                    .occurredAt(ev.getUpdatedAt() != null ? ev.getUpdatedAt() : ev.getCreatedAt())
+                    .build());
+        }
+
+        // ── Recent approved payments ──────────────────────────────────────────
+        var recentPayments = paymentJpaRepository.findTopByOrderByProcessedAtDesc(
+                PageRequest.of(0, Math.min(limit / 2, 20)));
+
+        for (var p : recentPayments) {
+            String label = p.getStatus() == PaymentStatus.APPROVED
+                    ? "Payment approved"
+                    : "Payment processed";
+            String amountStr = p.getAmount() != null
+                    ? "$ " + String.format("%,.0f", p.getAmount()) + " " + p.getCurrency()
+                    : "";
+            items.add(ActivityItemResponse.builder()
+                    .type("PAYMENT")
+                    .title(label)
+                    .description(amountStr)
+                    .actor("Order #" + p.getOrderId())
+                    .occurredAt(p.getProcessedAt())
+                    .build());
+        }
+
+        // ── Recent user registrations ─────────────────────────────────────────
+        var recentUsers = userJpaRepository.findTopByOrderByCreatedAtDesc(
+                PageRequest.of(0, Math.min(limit / 3, 15)));
+
+        for (var u : recentUsers) {
+            items.add(ActivityItemResponse.builder()
+                    .type("USER_REGISTERED")
+                    .title("New user registered")
+                    .description("@" + u.getAlias())
+                    .actor(u.getRole() != null ? u.getRole().getName() : "USER")
+                    .occurredAt(u.getCreatedAt())
+                    .build());
+        }
+
+        // ── Sort by occurredAt desc, cap to limit ─────────────────────────────
+        var sorted = items.stream()
+                .filter(i -> i.getOccurredAt() != null)
+                .sorted(Comparator.comparing(ActivityItemResponse::getOccurredAt).reversed())
+                .limit(limit)
+                .toList();
+
+        return ResponseEntity.ok(ApiResponse.ok("Activity feed retrieved", sorted));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Bulk wallet credit
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Operation(summary = "Credit wallet balance to ALL platform users — idempotent via jobId")
+    @PostMapping("/wallet/credit-all")
+    public ResponseEntity<ApiResponse<BulkCreditWalletResponse>> bulkCreditAll(
+            @Valid @RequestBody BulkCreditWalletRequest request) {
+        BulkCreditWalletResponse result = bulkCreditWalletUseCase.execute(
+                request.getAmount(),
+                request.getReason(),
+                request.getJobId()
+        );
+        return ResponseEntity.ok(ApiResponse.ok("Bulk wallet credit completed", result));
     }
 }

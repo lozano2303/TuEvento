@@ -1,6 +1,15 @@
-import { X, CheckCircle2, DollarSign, Wallet, CreditCard, RefreshCw, AlertCircle, Gift } from 'lucide-react';
+import { X, CheckCircle2, DollarSign, Wallet, CreditCard, RefreshCw, AlertCircle, Gift, MessageSquare, Reply, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, enUS, fr, pt } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+
+/**
+ * Obtiene el locale de date-fns según el idioma actual
+ */
+function getDateLocale(lang) {
+  const locales = { es, en: enUS, fr, pt };
+  return locales[lang] || es;
+}
 
 /**
  * Configuración de iconos por tipo de notificación
@@ -8,9 +17,13 @@ import { es } from 'date-fns/locale';
 const NOTIFICATION_ICONS = {
   PAYMENT_APPROVED: CheckCircle2,
   PAYMENT_REFUNDED: RefreshCw,
-  WALLET_CREDITED: Wallet,
-  WELCOME: Gift,
-  DEFAULT: AlertCircle,
+  WALLET_CREDITED:  Wallet,
+  WELCOME:          Gift,
+  EVENT_PUBLISHED:  Calendar,
+  EVENT_REJECTED:   AlertCircle,
+  NEW_COMMENT:      MessageSquare,
+  NEW_REPLY:        Reply,
+  DEFAULT:          AlertCircle,
 };
 
 function getNotificationIcon(type) {
@@ -20,10 +33,10 @@ function getNotificationIcon(type) {
 /**
  * Formatea una fecha a formato legible
  */
-function formatDate(dateString) {
+function formatDate(dateString, locale) {
   if (!dateString) return '';
   try {
-    return format(new Date(dateString), "d 'de' MMMM 'de' yyyy 'a las' HH:mm", { locale: es });
+    return format(new Date(dateString), "d 'de' MMMM 'de' yyyy 'a las' HH:mm", { locale });
   } catch {
     return dateString;
   }
@@ -32,7 +45,7 @@ function formatDate(dateString) {
 /**
  * Extrae información específica del body HTML
  */
-function parseNotificationBody(body) {
+function parseNotificationBody(body, t) {
   if (!body) return { text: '', details: [] };
   
   // Remover tags HTML
@@ -44,20 +57,39 @@ function parseNotificationBody(body) {
   const gatewayMatch = text.match(/(?:Tarjeta|QR|Gateway):\s*\$?([\d,.]+)/i);
   const totalMatch = text.match(/Total:\s*\$?([\d,.]+)/i);
   
-  if (walletMatch) details.push({ label: 'Cartera', value: `$${walletMatch[1]}`, icon: Wallet });
-  if (gatewayMatch) details.push({ label: 'Tarjeta/QR', value: `$${gatewayMatch[1]}`, icon: CreditCard });
-  if (totalMatch) details.push({ label: 'Total', value: `$${totalMatch[1]}`, icon: DollarSign });
+  if (walletMatch) details.push({ label: t('notifications.details.wallet'), value: `$${walletMatch[1]}`, icon: Wallet });
+  if (gatewayMatch) details.push({ label: t('notifications.details.card'), value: `$${gatewayMatch[1]}`, icon: CreditCard });
+  if (totalMatch) details.push({ label: t('notifications.details.total'), value: `$${totalMatch[1]}`, icon: DollarSign });
   
   return { text, details };
 }
 
 /**
  * Modal de detalle de notificación (simplificado y alineado al tema)
+ * FIX BUG #3: Ahora muestra traducciones cuando están disponibles
  */
 export default function NotificationDetailModal({ notification, onClose }) {
+  const { t, i18n } = useTranslation();
+  const locale = getDateLocale(i18n.language);
   const Icon = getNotificationIcon(notification.type);
-  const { text, details } = parseNotificationBody(notification.body);
   const isUnread = !notification.readAt;
+  
+  // FIX BUG #3: Obtener traducción si existe para el idioma actual
+  const userLanguage = i18n.language || 'es';
+  const translation = userLanguage !== 'es' 
+    ? notification.translations?.find(t => t.languageCode === userLanguage && t.status === 'PUBLISHED')
+    : null;
+  
+  // Usar traducción si existe, sino mostrar original
+  const displaySubject = translation?.translatedSubject || notification.subject;
+  const displayBody = translation?.translatedBody || notification.body;
+  
+  // Parsear el body traducido (o original)
+  const { text, details } = parseNotificationBody(displayBody, t);
+  
+  // Detectar si está esperando traducción
+  // NO mostrar indicador si la traducción ya está lista (IN_APP envía traducido)
+  const isTranslating = false; // Deshabilitado porque IN_APP ahora envía traducido
 
   return (
     <div 
@@ -80,14 +112,23 @@ export default function NotificationDetailModal({ notification, onClose }) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-lg font-bold text-textPrimary">
-                  {notification.subject}
+                  {displaySubject}
                 </h2>
                 {isUnread && (
                   <span className="w-2 h-2 rounded-full bg-accent flex-shrink-0"></span>
                 )}
+                {isTranslating && (
+                  <span className="inline-flex items-center gap-1 text-xs text-warning font-normal">
+                    <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                    </svg>
+                    {t('notifications.translating') || 'Traduciendo...'}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-textMuted">
-                {formatDate(notification.sentAt)}
+                {formatDate(notification.sentAt, locale)}
               </p>
             </div>
           </div>
@@ -138,7 +179,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
           {notification.type === 'PAYMENT_APPROVED' && (
             <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
               <p className="text-xs text-textMuted">
-                💡 <strong>Tip:</strong> Puedes ver tus tickets en tu perfil
+                💡 <strong>Tip:</strong> {t('notifications.details.tips.paymentApproved')}
               </p>
             </div>
           )}
@@ -146,7 +187,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
           {notification.type === 'PAYMENT_REFUNDED' && (
             <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
               <p className="text-xs text-textMuted">
-                💡 <strong>Tip:</strong> Los fondos estarán disponibles según el método de pago original
+                💡 <strong>Tip:</strong> {t('notifications.details.tips.paymentRefunded')}
               </p>
             </div>
           )}
@@ -154,7 +195,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
           {notification.type === 'WALLET_CREDITED' && (
             <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
               <p className="text-xs text-textMuted">
-                💡 <strong>Tip:</strong> El saldo está disponible inmediatamente
+                💡 <strong>Tip:</strong> {t('notifications.details.tips.walletCredited')}
               </p>
             </div>
           )}
@@ -162,18 +203,50 @@ export default function NotificationDetailModal({ notification, onClose }) {
           {notification.type === 'WELCOME' && (
             <div className="p-4 rounded-lg bg-surfaceAlt">
               <p className="text-xs text-textMuted mb-3">
-                <strong>¿Qué puedes hacer en TuEvento?</strong>
+                <strong>{t('notifications.details.tips.welcomeTitle')}</strong>
               </p>
               <ul className="text-xs text-textMuted space-y-2 ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
-                  <span>Explora y compra tickets para eventos</span>
+                  <span>{t('notifications.details.tips.welcomeItem1')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-accent mt-0.5">•</span>
-                  <span>Solicita ser organizador con tu cédula/pasaporte y documentos adicionales</span>
+                  <span>{t('notifications.details.tips.welcomeItem2')}</span>
                 </li>
               </ul>
+            </div>
+          )}
+
+          {notification.type === 'EVENT_PUBLISHED' && (
+            <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
+              <p className="text-xs text-textMuted">
+                🎉 <strong>¡Enhorabuena!</strong> Tu evento ya es visible para todos los usuarios. Puedes gestionarlo desde <em>Mis eventos</em>.
+              </p>
+            </div>
+          )}
+
+          {notification.type === 'EVENT_REJECTED' && (
+            <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
+              <p className="text-xs text-textMuted">
+                💡 <strong>Tip:</strong> Revisa el motivo de rechazo, corrígelo y vuelve a enviar tu evento a revisión desde <em>Mis eventos</em>.
+              </p>
+            </div>
+          )}
+
+          {notification.type === 'NEW_COMMENT' && (
+            <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
+              <p className="text-xs text-textMuted">
+                💬 <strong>¡Tu evento está generando conversación!</strong> Entra y respóndele — los organizadores que interactúan con su comunidad marcan la diferencia.
+              </p>
+            </div>
+          )}
+
+          {notification.type === 'NEW_REPLY' && (
+            <div className="p-3 rounded-lg bg-surfaceAlt border border-surfaceAlt">
+              <p className="text-xs text-textMuted">
+                🗨️ <strong>¡Te respondieron!</strong> No los dejes hablando solos — entra al evento y continúa la conversación.
+              </p>
             </div>
           )}
 
@@ -183,7 +256,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
               <span>ID: #{notification.notificationUserId}</span>
               {notification.readAt && (
                 <span>
-                  Leída: {format(new Date(notification.readAt), 'dd/MM/yy HH:mm')}
+                  {t('notifications.details.readAt')}: {format(new Date(notification.readAt), 'dd/MM/yy HH:mm')}
                 </span>
               )}
             </div>
@@ -196,7 +269,7 @@ export default function NotificationDetailModal({ notification, onClose }) {
             onClick={onClose}
             className="px-5 py-2 bg-accent text-white rounded-lg font-medium hover:bg-accentDark transition-colors"
           >
-            Cerrar
+            {t('notifications.details.close')}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Footer from '../layouts/Footer';
 
 // ── Helpers de tipografía para documentos legales ─────────────────────────────
@@ -32,6 +33,8 @@ const Strong = ({ children }) => (
 );
 
 export default function TerminosDeUso() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-background text-textPrimary font-sans flex flex-col">
       <main className="flex-1 w-full">
@@ -40,11 +43,11 @@ export default function TerminosDeUso() {
           {/* Encabezado */}
           <div className="mb-10">
             <h1 className="text-3xl font-black text-textPrimary tracking-tight mb-3">
-              Términos de Uso —{' '}
-              <span className="text-accent">Tu Evento</span>
+              {t('terms.title')} —{' '}
+              <span className="text-accent">{t('terms.subtitle')}</span>
             </h1>
             <p className="text-sm font-medium" style={{ color: 'rgba(196,181,253,0.65)' }}>
-              Última actualización: 24 de septiembre de 2026
+              {t('terms.lastUpdate')}
             </p>
           </div>
 
@@ -52,127 +55,89 @@ export default function TerminosDeUso() {
           <div className="h-px bg-surfaceAlt mb-10" />
 
           {/* ── Sección 1 ── */}
-          <H2>1. Aceptación de los términos</H2>
-          <P>
-            Al registrarte y usar la plataforma "Tu Evento" (en adelante, "la Plataforma"),
-            operada por el equipo CapySoft, aceptas los presentes Términos de Uso. Si no estás
-            de acuerdo con alguno de estos puntos, te pedimos no utilizar la Plataforma.
-          </P>
-          <P>
-            Tu Evento es un proyecto desarrollado en el marco de una formación del SENA
-            (Servicio Nacional de Aprendizaje), actualmente disponible para usuarios en Colombia.
-          </P>
+          <H2>{t('terms.section1.title')}</H2>
+          <P>{t('terms.section1.p1')}</P>
+          <P>{t('terms.section1.p2')}</P>
 
           {/* ── Sección 2 ── */}
-          <H2>2. Descripción del servicio</H2>
-          <P>Tu Evento es una plataforma web y móvil que permite:</P>
+          <H2>{t('terms.section2.title')}</H2>
+          <P>{t('terms.section2.intro')}</P>
           <Ul items={[
-            'A organizadores: crear, publicar y administrar eventos, definir precios, zonas y disponibilidad de boletas, y gestionar la venta de las mismas.',
-            'A asistentes: explorar eventos, comprar boletas, recibir su ticket digital con código QR, y validar su ingreso al evento mediante ese código.',
+            t('terms.section2.item1'),
+            t('terms.section2.item2'),
           ]} />
 
           {/* ── Sección 3 ── */}
-          <H2>3. Registro de cuenta</H2>
-          <P>
-            Para usar ciertas funciones de la Plataforma debes crear una cuenta, ya sea con
-            correo electrónico y contraseña, o vinculando tu cuenta de Google o Facebook.
-          </P>
-          <P>Eres responsable de:</P>
+          <H2>{t('terms.section3.title')}</H2>
+          <P>{t('terms.section3.p1')}</P>
+          <P>{t('terms.section3.intro')}</P>
           <Ul items={[
-            'Proporcionar información veraz al registrarte.',
-            'Mantener la confidencialidad de tu contraseña.',
-            'Todo uso que se haga de tu cuenta.',
+            t('terms.section3.item1'),
+            t('terms.section3.item2'),
+            t('terms.section3.item3'),
           ]} />
-          <P>
-            Puedes solicitar la desactivación o eliminación de tu cuenta en cualquier momento
-            desde la Plataforma.
-          </P>
+          <P>{t('terms.section3.p2')}</P>
 
           {/* ── Sección 4 ── */}
-          <H2>4. Contenido publicado por los usuarios</H2>
-          <P>
-            Si publicas contenido en la Plataforma (foto de perfil, imágenes de un evento,
-            descripción, etc.), declaras que:
-          </P>
+          <H2>{t('terms.section4.title')}</H2>
+          <P>{t('terms.section4.intro')}</P>
           <Ul items={[
-            'Tienes los derechos necesarios para publicar ese contenido.',
-            'El contenido no infringe derechos de terceros ni la ley colombiana.',
-            'El contenido no incluye material sexual, violento, discriminatorio o que de cualquier forma viole las normas de convivencia de la Plataforma.',
+            t('terms.section4.item1'),
+            t('terms.section4.item2'),
+            t('terms.section4.item3'),
           ]} />
-          <P>
-            Todas las imágenes subidas a la Plataforma pasan por un proceso automático de
-            moderación de contenido. Nos reservamos el derecho de rechazar o eliminar cualquier
-            contenido que no cumpla con estas condiciones, así como de suspender cuentas que
-            las incumplan de forma reiterada.
-          </P>
+          <P>{t('terms.section4.p1')}</P>
 
           {/* ── Sección 5 ── */}
-          <H2>5. Compra de boletas y pagos</H2>
+          <H2>{t('terms.section5.title')}</H2>
           <Ul items={[
-            'Los pagos dentro de la Plataforma se procesan a través de la pasarela de pagos Wompi. Tu Evento no almacena los datos completos de tu tarjeta o medio de pago; ese procesamiento lo realiza Wompi bajo sus propias políticas de seguridad.',
-            'Al comprar una boleta, recibirás un ticket digital con un código QR único, que será validado en el ingreso al evento.',
-            'Las políticas de reembolso, cambios o cancelación de un evento son definidas por cada organizador, salvo que la ley aplicable disponga lo contrario. Te recomendamos revisar las condiciones específicas de cada evento antes de comprar.',
-            'Tu Evento actúa como intermediario tecnológico entre organizadores y asistentes; la responsabilidad sobre la realización, calidad y condiciones del evento corresponde al organizador que lo publica.',
+            t('terms.section5.item1'),
+            t('terms.section5.item2'),
+            t('terms.section5.item3'),
+            t('terms.section5.item4'),
           ]} />
 
           {/* ── Sección 6 ── */}
-          <H2>6. Responsabilidades del organizador</H2>
-          <P>Si publicas un evento como organizador, te comprometes a:</P>
+          <H2>{t('terms.section6.title')}</H2>
+          <P>{t('terms.section6.intro')}</P>
           <Ul items={[
-            'Brindar información veraz sobre el evento (fecha, lugar, precio, cupo disponible).',
-            'Cumplir con la normativa vigente aplicable a la realización de eventos públicos en Colombia.',
-            'Responder ante los asistentes por la correcta ejecución del evento publicado.',
+            t('terms.section6.item1'),
+            t('terms.section6.item2'),
+            t('terms.section6.item3'),
           ]} />
 
           {/* ── Sección 7 ── */}
-          <H2>7. Uso indebido de la plataforma</H2>
-          <P>Está prohibido:</P>
+          <H2>{t('terms.section7.title')}</H2>
+          <P>{t('terms.section7.intro')}</P>
           <Ul items={[
-            'Crear eventos falsos o fraudulentos.',
-            'Usar la Plataforma para actividades ilegales.',
-            'Intentar vulnerar la seguridad del sistema.',
-            'Suplantar la identidad de otra persona u organización.',
+            t('terms.section7.item1'),
+            t('terms.section7.item2'),
+            t('terms.section7.item3'),
+            t('terms.section7.item4'),
           ]} />
-          <P>
-            El incumplimiento de estos puntos puede resultar en la suspensión o eliminación
-            de tu cuenta.
-          </P>
+          <P>{t('terms.section7.p1')}</P>
 
           {/* ── Sección 8 ── */}
-          <H2>8. Propiedad intelectual</H2>
-          <P>
-            El nombre "Tu Evento", su logo, diseño e interfaz son propiedad del equipo CapySoft.
-            El contenido que tú publicas (fotos, descripciones de eventos) sigue siendo de tu
-            propiedad, pero nos otorgas una licencia para mostrarlo dentro de la Plataforma
-            con el fin de operar el servicio.
-          </P>
+          <H2>{t('terms.section8.title')}</H2>
+          <P>{t('terms.section8.p1')}</P>
 
           {/* ── Sección 9 ── */}
-          <H2>9. Limitación de responsabilidad</H2>
-          <P>
-            Tu Evento se ofrece "tal cual" (as-is). Al ser un proyecto en desarrollo continuo,
-            no garantizamos disponibilidad ininterrumpida del servicio. No somos responsables
-            por daños derivados de la cancelación de un evento por parte del organizador, ni
-            por el mal uso que un tercero haga de la información publicada en la Plataforma.
-          </P>
+          <H2>{t('terms.section9.title')}</H2>
+          <P>{t('terms.section9.p1')}</P>
 
           {/* ── Sección 10 ── */}
-          <H2>10. Modificaciones</H2>
-          <P>
-            Podemos actualizar estos Términos de Uso en cualquier momento. Los cambios
-            importantes serán notificados dentro de la Plataforma. El uso continuado del
-            servicio después de una actualización implica la aceptación de los nuevos términos.
-          </P>
+          <H2>{t('terms.section10.title')}</H2>
+          <P>{t('terms.section10.p1')}</P>
 
           {/* ── Sección 11 ── */}
-          <H2>11. Contacto</H2>
+          <H2>{t('terms.section11.title')}</H2>
           <P>
-            Para dudas sobre estos términos, puedes escribirnos a:{' '}
+            {t('terms.section11.p1')}{' '}
             <a
-              href="mailto:soporte.capysoft@gmail.com"
+              href={`mailto:${t('terms.section11.email')}`}
               className="text-accent hover:text-textPrimary transition-colors underline underline-offset-2"
             >
-              soporte.capysoft@gmail.com
+              {t('terms.section11.email')}
             </a>
           </P>
 
@@ -184,9 +149,7 @@ export default function TerminosDeUso() {
             className="text-xs leading-relaxed italic"
             style={{ color: 'rgba(196,181,253,0.55)' }}
           >
-            Este documento es un borrador preliminar elaborado para fines del proyecto académico
-            "Tu Evento" (SENA). No constituye asesoría legal certificada. Se recomienda revisión
-            por un profesional del derecho antes de un despliegue en producción con usuarios reales.
+            {t('terms.disclaimer')}
           </p>
 
           {/* Volver */}
@@ -195,7 +158,7 @@ export default function TerminosDeUso() {
               to="/"
               className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:text-textPrimary transition-colors"
             >
-              ← Volver al inicio
+              ← {t('terms.backToHome')}
             </Link>
           </div>
 

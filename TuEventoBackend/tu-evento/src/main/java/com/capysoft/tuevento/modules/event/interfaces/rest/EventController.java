@@ -54,9 +54,10 @@ public class EventController {
     @Operation(summary = "Get event by ID")
     @GetMapping("/{eventId}")
     public ResponseEntity<ApiResponse<EventResponse>> getEvent(
-            @PathVariable Long eventId) {
+            @PathVariable Long eventId,
+            @RequestParam(required = false) String language) {
         return ResponseEntity.ok(ApiResponse.ok("Event retrieved successfully",
-                getEventUseCase.findById(eventId)));
+                getEventUseCase.findById(eventId, language)));
     }
 
     @Operation(summary = "Get events by user")
@@ -109,11 +110,21 @@ public class EventController {
 
     // ─── Public endpoints ─────────────────────────────────────────────────────
 
+    @Operation(summary = "Search published public events by text and/or date — no auth required")
+    @GetMapping("/public/search")
+    public ResponseEntity<ApiResponse<List<EventSummaryResponse>>> searchPublishedEvents(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(ApiResponse.ok("Events found",
+                getEventUseCase.searchPublishedEvents(q, date)));
+    }
+
     @Operation(summary = "List all published public events — no auth required")
     @GetMapping("/public")
-    public ResponseEntity<ApiResponse<List<EventSummaryResponse>>> getPublishedEvents() {
+    public ResponseEntity<ApiResponse<List<EventResponse>>> getPublishedEvents(
+            @RequestParam(required = false) String language) {
         return ResponseEntity.ok(ApiResponse.ok("Published events retrieved",
-                getEventUseCase.getPublishedEvents()));
+                getEventUseCase.getPublishedEventsWithTranslations(language)));
     }
 
     @Operation(summary = "List published public events by city — no auth required")

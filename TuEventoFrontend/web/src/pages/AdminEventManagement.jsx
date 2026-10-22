@@ -1,18 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Eye, LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw,
-  Users, LogOut, User, Settings, ChevronDown, X, CheckCircle, XCircle,
+  Eye, X, CheckCircle, XCircle,
   AlertTriangle, Globe, Lock, Loader2, ChevronLeft, ChevronRight,
   UserCircle, Tag, MapPin, Ticket, ZoomIn, Clock, Check, Send,
-  FileText, Shield, MessageSquareDashed,
+  FileText, Shield, MessageSquareDashed, Calendar, Users,
 } from 'lucide-react';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
 import ConfirmModal from '../components/common/ConfirmModal';
-import { useNavigate } from 'react-router-dom';
-import { performLogout } from '../services/httpClient';
 import { getAdminEvents, adminChangeEventStatus, getEventById } from '../services/EventService';
 import { getEventMedia } from '../services/EventMediaService';
 import { getByEvent as getEventSections } from '../services/EventSectionService';
+import AdminSidebar from '../components/admin/AdminSidebar';
 
 const PAGE_SIZE = 10;
 
@@ -155,22 +153,6 @@ export default function AdminEventManagement() {
 
   // Modal de confirmación genérico (para PUBLISHED, COMPLETED — no-destructivos)
   const [pendingConfirm, setPendingConfirm] = useState(null);   // { eventId, newStatus, eventName } | null
-
-  const navigate = useNavigate();
-
-  const userData = {
-    name: localStorage.getItem('name') || localStorage.getItem('alias') || 'Admin',
-    role: 'Super Admin',
-  };
-
-  const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard',          href: '#'             },
-    { icon: CreditCard,      label: 'Control Financiero', href: '#'             },
-    { icon: Calendar,        label: 'Eventos',            href: '/admin-events', active: true },
-    { icon: BarChart2,       label: 'Reportes',           href: '#'             },
-    { icon: RefreshCcw,      label: 'Reembolsos',         href: '#'             },
-    { icon: Users,           label: 'Solicitudes',        href: '/admin-panel'  },
-  ];
 
   // Contadores de estados especiales — derivados de la lista actual sin petición extra.
   // Se recalculan cuando cambia `events`. Se usan en los chips de filtro.
@@ -365,19 +347,6 @@ export default function AdminEventManagement() {
     setRejectFromModal(false);
   };
 
-  // ── Logout / navegación ───────────────────────────────────────────────────
-  const handleLogout = async () => {
-    await performLogout();
-    window.location.href = '/login';
-  };
-
-  const handleMenuClick = (action) => {
-    setShowMenu(false);
-    if (action === 'profile')  navigate('/profile');
-    if (action === 'settings') navigate('/settings');
-    if (action === 'logout')   handleLogout();
-  };
-
   // ── Datos combinados para el modal (summary + detail) ────────────────────
   // `selected` viene del summary (tabla); `fullDetail` viene de EventResponse.
   // Si fullDetail cargó, usamos sus campos; si no, usamos el summary como fallback.
@@ -399,62 +368,7 @@ export default function AdminEventManagement() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen flex bg-background text-textPrimary font-sans">
-
-      {/* ── Sidebar ── */}
-      <aside className="w-52 flex-shrink-0 flex flex-col justify-between px-3 py-6 bg-background border-r border-surfaceAlt/30 h-screen sticky top-0">
-        <nav className="flex flex-col gap-0.5">
-          {navItems.map((item, idx) => (
-            <a
-              key={idx}
-              href={item.href}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-full text-sm font-medium transition-colors
-                ${item.active
-                  ? 'bg-primary text-textPrimary'
-                  : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceAlt/50'
-                }`}
-            >
-              <item.icon className="w-4 h-4 flex-shrink-0" />
-              {item.label}
-            </a>
-          ))}
-        </nav>
-
-        {/* User card */}
-        <div className="pt-4 border-t border-white/5 relative user-menu-container flex-shrink-0">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-all group"
-          >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primaryDark flex items-center justify-center text-textPrimary font-bold text-sm flex-shrink-0">
-              {userData.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 text-left min-w-0">
-              <p className="text-sm font-semibold text-textPrimary truncate">{userData.name}</p>
-              <p className="text-xs text-textMuted truncate">{userData.role}</p>
-            </div>
-            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${showMenu ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showMenu && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 mx-2 bg-surface border border-surfaceAlt rounded-xl overflow-hidden shadow-xl z-50 user-menu-container">
-              <button onClick={() => handleMenuClick('profile')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-textSecondary hover:bg-surfaceAlt/40 hover:text-textPrimary transition-colors">
-                <User className="w-4 h-4" /> Perfil
-              </button>
-              <button onClick={() => handleMenuClick('settings')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-textSecondary hover:bg-surfaceAlt/40 hover:text-textPrimary transition-colors">
-                <Settings className="w-4 h-4" /> Configuración
-              </button>
-              <div className="border-t border-surfaceAlt/40">
-                <button onClick={() => handleMenuClick('logout')}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
-                  <LogOut className="w-4 h-4" /> Cerrar sesión
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
+      <AdminSidebar activePage="events" />
 
       {/* ── Main content ── */}
       <main className="flex-1 overflow-y-auto bg-background">
@@ -782,7 +696,7 @@ export default function AdminEventManagement() {
                         ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/35'
                         : 'bg-violet-900/40 text-violet-300 border border-violet-700/40'}`}>
                       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${modalData.isPublic ? 'bg-emerald-400' : 'bg-violet-400'}`} />
-                      {modalData.isPublic ? 'Activo' : 'Privado'}
+                      {modalData.isPublic ? 'Público' : 'Privado'}
                     </span>
                   )}
                   <button
@@ -1016,7 +930,7 @@ export default function AdminEventManagement() {
                       : <p className="text-sm font-bold text-white">—</p>
                     }
                   </InfoCard>
-                  <InfoCard icon={MapPin} iconColor="text-rose-400" iconBg="bg-rose-500/15" label="Ciudad">
+                  <InfoCard icon={MapPin} iconColor="text-rose-400" iconBg="bg-rose-500/15" label="Sitio">
                     <p className="text-sm font-bold text-white">{modalData.siteName || '—'}</p>
                   </InfoCard>
                   <InfoCard icon={Users} iconColor="text-amber-400" iconBg="bg-amber-500/15" label="Modalidad">

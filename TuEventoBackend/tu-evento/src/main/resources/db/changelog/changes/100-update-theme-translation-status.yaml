@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 100-update-theme-translation-status-to-published
+      author: capysoft
+      changes:
+        - update:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: status
+                  value: "PUBLISHED"
+            where: "status = 'draft' OR status IS NULL"

@@ -20,23 +20,39 @@ public interface EventRepository {
     /** Returns all events regardless of status or visibility — for admin use. */
     List<Event> findAll();
 
-    /** Returns all events with status=PUBLISHED and is_public=true. */
+    /**
+     * Returns all events with status=PUBLISHED, is_public=true
+     * and finish_date >= today (active events only).
+     */
     List<Event> findAllPublished();
 
     /**
-     * Returns published public events whose site belongs to the given city.
+     * Returns published public active events whose site belongs to the given city.
      * Requires a JOIN to the site table.
      */
     List<Event> findByCityId(Long cityId);
 
     /**
-     * Returns published public events assigned to the given category.
+     * Returns published public active events assigned to the given category.
      * Resolved via category_event join.
      */
     List<Event> findByCategoryId(Integer categoryId);
 
-    /** Returns published public events whose startDate falls within [from, to]. */
+    /** Returns published public active events whose startDate falls within [from, to]. */
     List<Event> findByDateRange(LocalDate from, LocalDate to);
+
+    /**
+     * Full-text search on published active events — no date filter.
+     * @param q term to search in event_name (empty string = match all)
+     */
+    List<Event> searchPublishedByText(String q);
+
+    /**
+     * Full-text + exact start_date search on published active events.
+     * @param q    term to search in event_name (empty string = match all)
+     * @param date exact start_date filter — always non-null
+     */
+    List<Event> searchPublishedByTextAndDate(String q, LocalDate date);
 
     /**
      * Returns all PUBLISHED events whose finishDate is before the given date.

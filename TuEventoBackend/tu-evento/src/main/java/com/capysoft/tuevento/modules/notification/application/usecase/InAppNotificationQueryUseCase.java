@@ -1,6 +1,8 @@
 package com.capysoft.tuevento.modules.notification.application.usecase;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -8,9 +10,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.capysoft.tuevento.modules.language.domain.model.NotificationTranslation;
+import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.modules.language.domain.repository.NotificationTranslationRepository;
 import com.capysoft.tuevento.modules.notification.application.dto.InAppNotificationDetails;
 import com.capysoft.tuevento.modules.notification.application.dto.InAppNotificationPageResponse;
 import com.capysoft.tuevento.modules.notification.application.dto.InAppNotificationResponse;
+import com.capysoft.tuevento.modules.notification.application.dto.NotificationTranslationDTO;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationUser;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationUserRepository;
 import com.capysoft.tuevento.modules.notification.infrastructure.persistence.repository.NotificationUserRepositoryAdapter;
@@ -24,6 +30,8 @@ public class InAppNotificationQueryUseCase {
 
     private final NotificationUserRepository notificationUserRepository;
     private final NotificationUserRepositoryAdapter notificationUserRepositoryAdapter;
+    private final NotificationTranslationRepository notificationTranslationRepository;
+    private final LanguageRepository languageRepository;
 
     @Transactional(readOnly = true)
     public InAppNotificationPageResponse listMine(Integer userId, int page, int size, boolean unreadOnly) {
@@ -34,17 +42,23 @@ public class InAppNotificationQueryUseCase {
         Page<InAppNotificationDetails> notificationDetails = notificationUserRepositoryAdapter
                 .findInAppDetailsWithNotificationByUserId(userId, unreadOnly, pageable);
         
-        Page<InAppNotificationResponse> result = notificationDetails.map(details -> InAppNotificationResponse.builder()
-                .notificationUserId(details.getNotificationUserId())
-                .type(details.getTypeName())
-                .subject(details.getSubject())
-                .body(details.getBody())
-                .entityType(details.getEntityType())
-                .entityId(details.getEntityId())
-                .sentAt(details.getSentAt())
-                .readAt(details.getReadAt())
-                .read(details.getReadAt() != null)
-                .build());
+        Page<InAppNotificationResponse> result = notificationDetails.map(details -> {
+            // Cargar traducciones para esta notificación
+            List<NotificationTranslationDTO> translations = loadTranslations(details.getNotificationId());
+            
+            return InAppNotificationResponse.builder()
+                    .notificationUserId(details.getNotificationUserId())
+                    .type(details.getTypeName())
+                    .subject(details.getSubject())
+                    .body(details.getBody())
+                    .entityType(details.getEntityType())
+                    .entityId(details.getEntityId())
+                    .sentAt(details.getSentAt())
+                    .readAt(details.getReadAt())
+                    .read(details.getReadAt() != null)
+                    .translations(translations)
+                    .build();
+        });
                 
         return InAppNotificationPageResponse.builder()
                 .content(result.getContent())
@@ -80,5 +94,33 @@ public class InAppNotificationQueryUseCase {
     @Transactional
     public void markAllRead(Integer userId) {
         notificationUserRepository.markAllInAppRead(userId, LocalDateTime.now());
+    }
+
+    /**
+     * Carga las traducciones de una notificación.
+     * FIX BUG #7: Usa consulta específica en lugar de findAll() + filter para mejor performance
+     */
+    private List<NotificationTranslationDTO> loadTranslations(Long notificationId) {
+        // Usar consulta específica en lugar de findAll()
+        List<NotificationTranslation> translations = notificationTranslationRepository
+                .findAllByNotificationId(notificationId.intValue());
+
+        return translations.stream()
+                .map(translation -> {
+                    // Obtener código del idioma
+                    String languageCode = languageRepository.findById(translation.getLanguageId())
+                            .map(lang -> lang.getCode())
+                            .orElse(null);
+
+                    return NotificationTranslationDTO.builder()
+                            .languageCode(languageCode)
+                            .translatedSubject(translation.getTranslatedSubject())
+                            .translatedBody(translation.getTranslatedBody())
+                            .status(translation.getStatus() != null ? translation.getStatus().name() : null)
+                            .source(translation.getSource() != null ? translation.getSource().name() : null)
+                            .build();
+                })
+                .filter(dto -> dto.getLanguageCode() != null)
+                .collect(Collectors.toList());
     }
 }

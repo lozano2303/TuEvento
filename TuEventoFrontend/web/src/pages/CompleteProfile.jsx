@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { createProfile, updateProfile } from '../services/ProfileService';
+import LanguageSelector from '../components/common/LanguageSelector.jsx';
 
 /**
  * Onboarding page shown after a Google OAuth login when:
@@ -19,21 +21,22 @@ import { createProfile, updateProfile } from '../services/ProfileService';
 const FULL_NAME_RE =
   /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{3,}(\s[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{3,})+$/;
 
-function validateFullName(value) {
-  if (!value || !value.trim()) return 'El nombre completo es obligatorio.';
+function validateFullName(value, t) {
+  if (!value || !value.trim()) return t('completeProfile.validation.nameRequired');
   const words = value.trim().split(/\s+/);
-  if (words.length < 2) return 'Ingresa nombre y apellido.';
+  if (words.length < 2) return t('completeProfile.validation.nameMin');
   const shortWord = words.find(w => w.length < 3);
-  if (shortWord) return 'Cada nombre y apellido debe tener al menos 3 caracteres.';
+  if (shortWord) return t('completeProfile.validation.nameMinPerWord');
   if (!FULL_NAME_RE.test(value.trim()))
-    return 'Solo letras y espacios — sin números ni símbolos.';
+    return t('completeProfile.validation.nameLettersOnly');
   if (value.trim().length > 100)
-    return 'El nombre no puede superar los 100 caracteres.';
+    return t('completeProfile.validation.nameMax');
   return '';
 }
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [fullName, setFullName] = useState('');
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
@@ -51,7 +54,7 @@ export default function CompleteProfile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const nameError = validateFullName(fullName);
+    const nameError = validateFullName(fullName, t);
     if (nameError) { setError(nameError); return; }
 
     setError('');
@@ -70,7 +73,7 @@ export default function CompleteProfile() {
       localStorage.removeItem('profileId');
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.message || 'No se pudo guardar el nombre. Intenta de nuevo.');
+      setError(err.message || t('completeProfile.errors.updateError'));
     } finally {
       setLoading(false);
     }
@@ -78,14 +81,15 @@ export default function CompleteProfile() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <LanguageSelector position="fixed-top-right" />
       <div className="w-full max-w-md bg-card rounded-2xl shadow-lg p-8">
         <h1 className="text-2xl font-bold text-foreground mb-2">
-          {profileId ? 'Actualiza tu nombre' : '¡Bienvenido/a!'}
+          {profileId ? t('completeProfile.updateName') : t('completeProfile.welcome')}
         </h1>
         <p className="text-muted-foreground mb-6 text-sm">
           {profileId
-            ? 'Tu nombre actual no tiene el formato correcto. Ingresa tu nombre completo real para continuar.'
-            : 'Para completar tu registro, ingresa tu nombre completo tal como quieres que aparezca en la plataforma.'}
+            ? t('completeProfile.invalidName')
+            : t('completeProfile.message')}
         </p>
 
         <form onSubmit={handleSubmit} noValidate>
@@ -93,13 +97,13 @@ export default function CompleteProfile() {
             htmlFor="fullName"
             className="block text-sm font-medium text-foreground mb-1"
           >
-            Nombre completo
+            {t('completeProfile.fullName')}
           </label>
           <input
             id="fullName"
             type="text"
             autoComplete="name"
-            placeholder="Ej. María García"
+            placeholder={t('completeProfile.fullNamePlaceholder')}
             value={fullName}
             onChange={(e) => { setFullName(e.target.value); setError(''); }}
             className={`w-full px-4 py-2 rounded-lg border text-foreground bg-background
@@ -121,7 +125,7 @@ export default function CompleteProfile() {
             className="mt-6 w-full py-2 px-4 rounded-lg bg-primary text-primary-foreground
               font-semibold hover:opacity-90 transition disabled:opacity-50"
           >
-            {loading ? 'Guardando…' : 'Continuar'}
+            {loading ? t('completeProfile.continuing') : t('completeProfile.continue')}
           </button>
         </form>
       </div>

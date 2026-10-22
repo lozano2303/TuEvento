@@ -13,4 +13,10 @@ public class CategoryResponse {
     private boolean active;
     private boolean visible;
     private Integer dadId;
+    
+    // Translation fields
+    private String translatedName;
+    private String translatedDescription;
+    private String languageCode;
+    private Boolean translationGenerating;
 }

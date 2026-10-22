@@ -39,4 +39,10 @@ public class OrganizerPetitionRepositoryImpl implements OrganizerPetitionReposit
     public List<OrganizerPetition> findByStatus(String status) {
         return jpaRepository.findByStatus(status).stream().map(mapper::toDomain).toList();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrganizerPetition> findAll() {
+        return jpaRepository.findAll().stream().map(mapper::toDomain).toList();
+    }
 }

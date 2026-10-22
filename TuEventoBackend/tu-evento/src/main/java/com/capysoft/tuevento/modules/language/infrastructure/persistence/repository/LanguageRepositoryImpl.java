@@ -21,7 +21,7 @@ public class LanguageRepositoryImpl implements LanguageRepository {
     private final LanguageInfraMapper mapper;
 
     @Override
-    public Optional<Language> findById(Long languageId) {
+    public Optional<Language> findById(Integer languageId) {
         return jpaRepository.findById(languageId)
                 .map(mapper::toDomain);
     }

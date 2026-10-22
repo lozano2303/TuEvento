@@ -24,6 +24,8 @@ public final class NotificationMessageFactory {
             case NotificationTypeNames.WELCOME          -> welcome(email, command);
             case NotificationTypeNames.EVENT_PUBLISHED  -> eventPublished(email, command);
             case NotificationTypeNames.EVENT_REJECTED   -> eventRejected(email, command);
+            case NotificationTypeNames.NEW_COMMENT      -> newComment(email, command);
+            case NotificationTypeNames.NEW_REPLY        -> newReply(email, command);
             default -> new MessageContent(
                     "Notificación",
                     email ? html("Tienes una nueva notificación en TuEvento.") : "Tienes una nueva notificación.");
@@ -122,6 +124,50 @@ public final class NotificationMessageFactory {
                 + " Corrígelo desde Mis eventos.");
     }
 
+    // ── Comment / reply notifications ─────────────────────────────────────────
+
+    private static MessageContent newComment(boolean email, SendNotificationCommand command) {
+        String commenter = escapeHtml(command.getCommenterName() != null ? command.getCommenterName() : "Alguien");
+        String event     = escapeHtml(command.getEventName()    != null ? command.getEventName()    : "tu evento");
+        String comment   = escapeHtml(command.getReason()       != null ? command.getReason()       : "");
+        if (email) {
+            return new MessageContent(
+                    "TuEvento — " + commenter + " comentó en tu evento",
+                    html(
+                        "¡Ey! <strong>" + commenter + "</strong> dejó un comentario en tu evento <strong>" + event + "</strong>.",
+                        comment.isBlank() ? null : "Esto fue lo que dijo: <em>\"" + comment + "\"</em>",
+                        "Entra y respóndele, ¡los organizadores que interactúan con su comunidad son los mejores! 🎉"
+                    ));
+        }
+        // IN_APP — subject es el título del bell; body es lo que se lee debajo
+        String subject = commenter + " comentó en \"" + command.getEventName() + "\" 💬";
+        String body = comment.isBlank()
+                ? commenter + " dejó un comentario en tu evento. ¡Entra a verlo!"
+                : "\"" + command.getReason() + "\"";
+        return new MessageContent(subject, body);
+    }
+
+    private static MessageContent newReply(boolean email, SendNotificationCommand command) {
+        String commenter = escapeHtml(command.getCommenterName() != null ? command.getCommenterName() : "Alguien");
+        String event     = escapeHtml(command.getEventName()    != null ? command.getEventName()    : "un evento");
+        String comment   = escapeHtml(command.getReason()       != null ? command.getReason()       : "");
+        if (email) {
+            return new MessageContent(
+                    "TuEvento — " + commenter + " respondió tu comentario",
+                    html(
+                        "¡Oye, te respondieron! <strong>" + commenter + "</strong> contestó tu comentario en el evento <strong>" + event + "</strong>.",
+                        comment.isBlank() ? null : "Lo que te dijo: <em>\"" + comment + "\"</em>",
+                        "No lo dejes hablando solo — entra y continúa la conversación. 🗨️"
+                    ));
+        }
+        // IN_APP
+        String subject = commenter + " respondió tu comentario 💬";
+        String body = comment.isBlank()
+                ? commenter + " respondió tu comentario en \"" + command.getEventName() + "\". ¡Entra a ver!"
+                : commenter + " en \"" + command.getEventName() + "\": \"" + command.getReason() + "\"";
+        return new MessageContent(subject, body);
+    }
+
     private static String paymentBreakdown(SendNotificationCommand command) {
         BigDecimal wallet = zeroIfNull(command.getWalletAmount());
         BigDecimal gateway = zeroIfNull(command.getGatewayAmount());
@@ -130,13 +176,13 @@ public final class NotificationMessageFactory {
         boolean hasGateway = gateway.compareTo(BigDecimal.ZERO) > 0;
         if (hasWallet && hasGateway) {
             return "Pagaste " + money(wallet, currency) + " con tu cartera y "
-                    + money(gateway, currency) + " a través de la pasarela.";
+                    + money(gateway, currency) + " con pasarela de pago.";
         }
         if (hasWallet) {
             return "Pagaste " + money(wallet, currency) + " con tu cartera.";
         }
         if (hasGateway) {
-            return "Pagaste " + money(gateway, currency) + " a través de la pasarela.";
+            return "Pagaste " + money(gateway, currency) + " con pasarela de pago.";
         }
         return "El movimiento se registró correctamente.";
     }
@@ -153,13 +199,17 @@ public final class NotificationMessageFactory {
 
     private static String html(String... paragraphs) {
         StringBuilder sb = new StringBuilder();
-        sb.append("<html><body>");
+        sb.append("<!DOCTYPE html>\n");
+        sb.append("<html>\n");
+        sb.append("<head><meta charset=\"UTF-8\"></head>\n");
+        sb.append("<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333;\">\n");
         for (String p : paragraphs) {
             if (p != null && !p.isBlank()) {
-                sb.append("<p>").append(p).append("</p>");
+                sb.append("<p style=\"margin: 10px 0;\">").append(p).append("</p>\n");
             }
         }
-        sb.append("<p>TuEvento</p></body></html>");
+        sb.append("<p style=\"margin: 20px 0 0 0; color: #666; font-size: 0.9em;\">— TuEvento</p>\n");
+        sb.append("</body>\n</html>");
         return sb.toString();
     }
 

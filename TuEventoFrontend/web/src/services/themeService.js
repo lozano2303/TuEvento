@@ -3,8 +3,11 @@ import { httpRequest } from './httpClient.js';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 // ── GET /themes  — public, no auth needed ─────────────────────────────────────
-export const getThemes = async () => {
-  const response = await fetch(`${API_URL}/themes`);
+export const getThemes = async (languageCode = null) => {
+  const url = languageCode 
+    ? `${API_URL}/themes?language=${languageCode}` 
+    : `${API_URL}/themes`;
+  const response = await fetch(url);
   if (!response.ok) throw new Error('Error fetching themes');
   const json = await response.json();
   return json.data;

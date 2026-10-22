@@ -74,6 +74,12 @@ public class UpdateProfileUseCase implements UpdateProfilePort {
                     request.getCityId().toString());
             profile.setCity(city);
         }
+        if (request.getPreferredLanguageId() != null) {
+            log(profile.getProfileId(), "LANGUAGE_CHANGED",
+                    profile.getPreferredLanguageId() != null ? profile.getPreferredLanguageId().toString() : null,
+                    request.getPreferredLanguageId().toString());
+            profile.setPreferredLanguageId(request.getPreferredLanguageId());
+        }
 
         Profile saved = profileRepository.save(profile);
 
@@ -118,6 +124,7 @@ public class UpdateProfileUseCase implements UpdateProfilePort {
                 .storedFileId(p.getStoredFileId())
                 .fullName(p.getFullName())
                 .bio(p.getBio())
+                .preferredLanguageId(p.getPreferredLanguageId())
                 .nameChangedAt(p.getNameChangedAt())
                 .build();
     }

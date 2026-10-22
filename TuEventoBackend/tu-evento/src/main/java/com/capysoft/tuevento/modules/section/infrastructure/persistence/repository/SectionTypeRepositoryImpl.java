@@ -37,6 +37,7 @@ public class SectionTypeRepositoryImpl implements SectionTypeRepository {
         SectionTypeEntity entity = SectionTypeEntity.builder()
                 .sectionTypeId(sectionType.getSectionTypeId())
                 .name(sectionType.getName())
+                .active(sectionType.getActive())
                 .build();
         return toDomain(jpaRepository.save(entity));
     }
@@ -45,6 +46,7 @@ public class SectionTypeRepositoryImpl implements SectionTypeRepository {
         return SectionType.builder()
                 .sectionTypeId(entity.getSectionTypeId())
                 .name(entity.getName())
+                .active(entity.getActive())
                 .build();
     }
 }
