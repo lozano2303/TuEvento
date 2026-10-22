@@ -27,10 +27,12 @@ import AdminCategoryTranslations from './pages/AdminCategoryTranslations';
 import AdminSectionTypeTranslations from './pages/AdminSectionTypeTranslations';
 import AdminCommentTranslations from './pages/AdminCommentTranslations';
 import AdminProfileTranslations from './pages/AdminProfileTranslations';
+import AdminReports from './pages/AdminReports';
 import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
 import PaymentPending from './pages/PaymentPending';
 import PaymentConfirmation from './pages/PaymentConfirmation';
+import OrganizerEarnings from './pages/OrganizerEarnings';
 import TerminosDeUso from './pages/TerminosDeUso';
 import Privacidad from './pages/Privacidad';
 import Notifications from './pages/Notifications';
@@ -59,7 +61,7 @@ function AppContent() {
   const showNavbar = ![
     '/login', '/verification', '/events/create',
     '/reactivate-account', '/complete-profile',
-    '/admin-panel', '/admin-events', '/admin-dashboard', '/admin-financial',
+    '/admin-panel', '/admin-events', '/admin-dashboard', '/admin-financial', '/admin-reports',
     '/admin-categories', '/admin-section-types',
     '/checkout',
   ].includes(location.pathname)
@@ -84,6 +86,11 @@ function AppContent() {
           <Route path="/events/manage" element={
             <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
               <EventManage />
+            </ProtectedRoute>
+          } />
+          <Route path="/organizer/earnings" element={
+            <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
+              <OrganizerEarnings />
             </ProtectedRoute>
           } />
           <Route path="/events/:eventId" element={<EventDetail />} />
@@ -120,6 +127,11 @@ function AppContent() {
           <Route path="/admin-section-types" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminSectionTypeManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-reports" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminReports />
             </ProtectedRoute>
           } />
           <Route path="/admin-translations/:lang/events" element={

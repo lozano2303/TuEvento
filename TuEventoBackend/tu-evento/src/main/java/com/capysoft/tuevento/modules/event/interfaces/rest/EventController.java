@@ -110,6 +110,15 @@ public class EventController {
 
     // ─── Public endpoints ─────────────────────────────────────────────────────
 
+    @Operation(summary = "Search published public events by text and/or date — no auth required")
+    @GetMapping("/public/search")
+    public ResponseEntity<ApiResponse<List<EventSummaryResponse>>> searchPublishedEvents(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(ApiResponse.ok("Events found",
+                getEventUseCase.searchPublishedEvents(q, date)));
+    }
+
     @Operation(summary = "List all published public events — no auth required")
     @GetMapping("/public")
     public ResponseEntity<ApiResponse<List<EventResponse>>> getPublishedEvents(

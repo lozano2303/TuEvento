@@ -100,6 +100,12 @@
         "visualization": "2D Visualization",
         "planning": "Precise Planning",
         "experiences": "Unique Experiences"
+      },
+      "stats": {
+        "editor": "Visual editor",
+        "secure": "Secure",
+        "available": "Available",
+        "platforms": "Platforms"
       }
     },
     "story": {
@@ -130,7 +136,7 @@
           "description": "We believe in the power of teamwork and collaboration to achieve common goals and create value for everyone."
         },
         "integrity": {
-          "title": "Integrity", 
+          "title": "Integrity",
           "description": "We operate with honesty, transparency and ethics in all our interactions and decisions."
         }
       }
@@ -221,7 +227,9 @@
       "translated": "Translated ({{lang}})",
       "generating": "Generating translation...",
       "autoReload": "The page will reload automatically."
-    }
+    },
+    "soldOut": "Sold out",
+    "almostGone": "Few left"
   },
   "myEvents": {
     "title": "My Events",
@@ -241,7 +249,7 @@
       "headers": {
         "event": "Event",
         "status": "Status",
-        "dates": "Dates", 
+        "dates": "Dates",
         "seats": "Seats",
         "actions": "Actions"
       },
@@ -252,7 +260,7 @@
       "viewDetail": "View event details",
       "editLayout": "Edit event layout",
       "editLayoutRestricted": "Layout can only be edited in Draft status",
-      "editInfo": "Edit event information", 
+      "editInfo": "Edit event information",
       "editInfoRestricted": "Information can only be edited in Draft status",
       "manageImages": "Manage event images",
       "manageImagesRestricted": "Images can only be modified in Draft status",
@@ -332,7 +340,8 @@
         "rejectedAction": "Close this panel, fix the event and submit it for review again."
       },
       "submitReview": "Submit for review"
-    }
+    },
+    "myEarnings": "My earnings"
   },
   "seats": {
     "selectSeats": "Select your Seats",

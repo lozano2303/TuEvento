@@ -103,6 +103,8 @@ public class AdminController {
                 .totalRevenue(paymentJpaRepository.sumApprovedRevenue())
                 .approvedPayments(paymentJpaRepository.countByStatus(PaymentStatus.APPROVED))
                 .pendingRefunds(refundJpaRepository.countByStatus(RefundStatus.REQUESTED))
+                .totalRefundedAmount(paymentJpaRepository.sumTotalRefundedAmount())
+                .processedRefunds(refundJpaRepository.countByStatus(RefundStatus.PROCESSED))
                 .build();
         return ResponseEntity.ok(ApiResponse.ok("Dashboard stats retrieved", stats));
     }

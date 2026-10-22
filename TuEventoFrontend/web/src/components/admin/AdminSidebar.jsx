@@ -54,8 +54,7 @@ export default function AdminSidebar({ activePage }) {
       id: 'reports', 
       icon: BarChart2, 
       label: 'Reportes',
-      href: '#',
-      disabled: true
+      href: '/admin-reports'
     },
     { 
       id: 'refunds', 

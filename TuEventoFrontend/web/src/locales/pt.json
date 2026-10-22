@@ -37,13 +37,28 @@
     "selectRating": "Selecione uma classificação de 1 a 5 estrelas antes de publicar"
   },
   "seats": {
-    "selectSeats": "Selecione seus Assentos",
+    "selectSeats": "Selecione seus Lugares",
+    "availableSeats": "Lugares disponíveis",
+    "reservedSeats": "Lugares reservados",
+    "soldSeats": "Lugares vendidos",
+    "myReservations": "Minhas reservas",
+    "quantity": "Quantidade",
+    "howMany": "Quantos lugares você quer?",
+    "selected": "{{count}} de {{total}} selecionados",
+    "sections": "Seções",
+    "seatMap": "Mapa de Lugares",
     "myCart": "Seu Carrinho",
-    "noSeatsSelected": "Você não selecionou nenhum assento",
+    "noSeatsSelected": "Você não selecionou nenhum lugar",
+    "section": "Seção",
+    "price": "Preço",
+    "reserve": "Reservar",
+    "release": "Liberar",
+    "expired": "Sua reserva expirou e o lugar foi liberado",
+    "alreadyTaken": "Este lugar já foi reservado por outra pessoa",
+    "loginRequired": "Faça login para reservar lugares",
+    "eventUnavailable": "Este evento não aceita mais reservas",
     "total": "Total",
-    "continueToPayment": "Continuar para o Pagamento",
-    "viewAll": "Ver todos",
-    "expiredCountdown": "Expirado"
+    "continueToPayment": "Continuar para o pagamento"
   },
   "landing": {
     "hero": {
@@ -109,6 +124,12 @@
         "visualization": "Visualização 2D",
         "planning": "Planejamento Preciso",
         "experiences": "Experiências Únicas"
+      },
+      "stats": {
+        "editor": "Editor visual",
+        "secure": "Seguro",
+        "available": "Disponível",
+        "platforms": "Plataformas"
       }
     },
     "story": {
@@ -230,7 +251,9 @@
       "translated": "Traduzido ({{lang}})",
       "generating": "Gerando tradução...",
       "autoReload": "A página será recarregada automaticamente."
-    }
+    },
+    "soldOut": "Esgotado",
+    "almostGone": "Últimos lugares"
   },
   "myEvents": {
     "title": "Meus Eventos",
@@ -250,7 +273,7 @@
       "headers": {
         "event": "Evento",
         "status": "Status",
-        "dates": "Datas", 
+        "dates": "Datas",
         "seats": "Lugares",
         "actions": "Ações"
       },
@@ -261,7 +284,7 @@
       "viewDetail": "Ver detalhes do evento",
       "editLayout": "Editar layout do evento",
       "editLayoutRestricted": "O layout só pode ser editado no status Rascunho",
-      "editInfo": "Editar informações do evento", 
+      "editInfo": "Editar informações do evento",
       "editInfoRestricted": "As informações só podem ser editadas no status Rascunho",
       "manageImages": "Gerenciar imagens do evento",
       "manageImagesRestricted": "As imagens só podem ser modificadas no status Rascunho",
@@ -341,31 +364,8 @@
         "rejectedAction": "Feche este painel, corrija o evento e envie-o para revisão novamente."
       },
       "submitReview": "Enviar para revisão"
-    }
-  },
-  "seats": {
-    "selectSeats": "Selecione seus Lugares",
-    "availableSeats": "Lugares disponíveis",
-    "reservedSeats": "Lugares reservados",
-    "soldSeats": "Lugares vendidos",
-    "myReservations": "Minhas reservas",
-    "quantity": "Quantidade",
-    "howMany": "Quantos lugares você quer?",
-    "selected": "{{count}} de {{total}} selecionados",
-    "sections": "Seções",
-    "seatMap": "Mapa de Lugares",
-    "myCart": "Seu Carrinho",
-    "noSeatsSelected": "Você não selecionou nenhum lugar",
-    "section": "Seção",
-    "price": "Preço",
-    "reserve": "Reservar",
-    "release": "Liberar",
-    "expired": "Sua reserva expirou e o lugar foi liberado",
-    "alreadyTaken": "Este lugar já foi reservado por outra pessoa",
-    "loginRequired": "Faça login para reservar lugares",
-    "eventUnavailable": "Este evento não aceita mais reservas",
-    "total": "Total",
-    "continueToPayment": "Continuar para o pagamento"
+    },
+    "myEarnings": "Meus ganhos"
   },
   "profile": {
     "myProfile": "Meu perfil",

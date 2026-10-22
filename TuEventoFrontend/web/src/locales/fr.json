@@ -37,13 +37,28 @@
     "selectRating": "Sélectionnez une note de 1 à 5 étoiles avant de publier"
   },
   "seats": {
-    "selectSeats": "Sélectionnez vos Sièges",
+    "selectSeats": "Sélectionnez vos Places",
+    "availableSeats": "Places disponibles",
+    "reservedSeats": "Places réservées",
+    "soldSeats": "Places vendues",
+    "myReservations": "Mes réservations",
+    "quantity": "Quantité",
+    "howMany": "Combien de places voulez-vous?",
+    "selected": "{{count}} sur {{total}} sélectionnées",
+    "sections": "Sections",
+    "seatMap": "Plan des Places",
     "myCart": "Votre Panier",
-    "noSeatsSelected": "Vous n'avez sélectionné aucun siège",
+    "noSeatsSelected": "Vous n'avez sélectionné aucune place",
+    "section": "Section",
+    "price": "Prix",
+    "reserve": "Réserver",
+    "release": "Libérer",
+    "expired": "Votre réservation a expiré et la place a été libérée",
+    "alreadyTaken": "Cette place a déjà été réservée par quelqu'un d'autre",
+    "loginRequired": "Connectez-vous pour réserver des places",
+    "eventUnavailable": "Cet événement n'accepte plus de réservations",
     "total": "Total",
-    "continueToPayment": "Continuer vers le Paiement",
-    "viewAll": "Voir tout",
-    "expiredCountdown": "Expiré"
+    "continueToPayment": "Continuer au paiement"
   },
   "landing": {
     "hero": {
@@ -109,6 +124,12 @@
         "visualization": "Visualisation 2D",
         "planning": "Planification Précise",
         "experiences": "Expériences Uniques"
+      },
+      "stats": {
+        "editor": "Éditeur visuel",
+        "secure": "Sécurisé",
+        "available": "Disponible",
+        "platforms": "Plateformes"
       }
     },
     "story": {
@@ -175,7 +196,7 @@
         },
         "jhampier": {
           "name": "Jhampier Santos Ortiz",
-          "role": "Développeur Logiciel", 
+          "role": "Développeur Logiciel",
           "description": "Responsable de l'implémentation de la logique système, création d'interfaces graphiques web et mobiles, et élaboration de la documentation du projet."
         }
       }
@@ -230,7 +251,9 @@
       "translated": "Traduit ({{lang}})",
       "generating": "Génération de la traduction...",
       "autoReload": "La page se rechargera automatiquement."
-    }
+    },
+    "soldOut": "Complet",
+    "almostGone": "Dernières places"
   },
   "myEvents": {
     "title": "Mes Événements",
@@ -250,7 +273,7 @@
       "headers": {
         "event": "Événement",
         "status": "Statut",
-        "dates": "Dates", 
+        "dates": "Dates",
         "seats": "Places",
         "actions": "Actions"
       },
@@ -261,7 +284,7 @@
       "viewDetail": "Voir les détails de l'événement",
       "editLayout": "Modifier la disposition de l'événement",
       "editLayoutRestricted": "La disposition ne peut être modifiée qu'en statut Brouillon",
-      "editInfo": "Modifier les informations de l'événement", 
+      "editInfo": "Modifier les informations de l'événement",
       "editInfoRestricted": "Les informations ne peuvent être modifiées qu'en statut Brouillon",
       "manageImages": "Gérer les images de l'événement",
       "manageImagesRestricted": "Les images ne peuvent être modifiées qu'en statut Brouillon",
@@ -341,31 +364,8 @@
         "rejectedAction": "Fermez ce panneau, corrigez l'événement et soumettez-le à nouveau pour révision."
       },
       "submitReview": "Soumettre pour révision"
-    }
-  },
-  "seats": {
-    "selectSeats": "Sélectionnez vos Places",
-    "availableSeats": "Places disponibles",
-    "reservedSeats": "Places réservées",
-    "soldSeats": "Places vendues",
-    "myReservations": "Mes réservations",
-    "quantity": "Quantité",
-    "howMany": "Combien de places voulez-vous?",
-    "selected": "{{count}} sur {{total}} sélectionnées",
-    "sections": "Sections",
-    "seatMap": "Plan des Places",
-    "myCart": "Votre Panier",
-    "noSeatsSelected": "Vous n'avez sélectionné aucune place",
-    "section": "Section",
-    "price": "Prix",
-    "reserve": "Réserver",
-    "release": "Libérer",
-    "expired": "Votre réservation a expiré et la place a été libérée",
-    "alreadyTaken": "Cette place a déjà été réservée par quelqu'un d'autre",
-    "loginRequired": "Connectez-vous pour réserver des places",
-    "eventUnavailable": "Cet événement n'accepte plus de réservations",
-    "total": "Total",
-    "continueToPayment": "Continuer au paiement"
+    },
+    "myEarnings": "Mes revenus"
   },
   "profile": {
     "myProfile": "Mon profil",

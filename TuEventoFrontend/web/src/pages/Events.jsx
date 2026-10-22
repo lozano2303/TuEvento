@@ -21,6 +21,10 @@ const TuEvento = () => {
   const [error, setError] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [eventsWithTranslations, setEventsWithTranslations] = useState(new Set()); // IDs de eventos con traducciones en progreso
+  const [dateError, setDateError] = useState('');
+
+  // Fecha mínima permitida: hoy (YYYY-MM-DD en hora local)
+  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     const userId = localStorage.getItem('userID');
@@ -167,19 +171,24 @@ const TuEvento = () => {
   }, [eventsWithTranslations]);
 
   const handleServerFilter = async () => {
+    // Validación de fecha en el frontend antes de ir al servidor
+    if (selectedDate && selectedDate < today) {
+      setDateError('No podés buscar eventos en fechas pasadas.');
+      return;
+    }
+    setDateError('');
+
     try {
       setLoading(true);
+      setError(null);
       const result = await searchEvents(
         searchTerm || null,
-        selectedDate || null,
-        true,
-        selectedCity !== 'Bogotá' ? selectedCity : null
+        selectedDate || null
       );
 
       if (result.success) {
         const eventsList = result.data;
         setEvents(eventsList);
-        // filtro se aplica en el useEffect — categoryId viene embebido
         setFilteredEvents(eventsList.filter(e => e.status === 'PUBLISHED' && e.categoryId));
       } else {
         setError(result.message || t('events.connectionError'));
@@ -263,7 +272,11 @@ const TuEvento = () => {
               <input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                min={today}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setDateError('');
+                }}
                 className="bg-transparent text-sm outline-none"
                 style={{ color: selectedDate ? 'var(--color-textPrimary)' : 'var(--color-textMuted)' }}
               />
@@ -285,6 +298,12 @@ const TuEvento = () => {
               </button>
             </div>
           </div>
+          {/* Error de fecha */}
+          {dateError && (
+            <p className="text-center text-xs mt-2" style={{ color: '#f87171' }}>
+              {dateError}
+            </p>
+          )}
         </div>
 
         {/* Contenido principal */}
