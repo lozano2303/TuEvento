@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.section.interfaces.rest;
 
 import com.capysoft.tuevento.modules.section.application.dto.request.CreateSectionTypeRequest;
+import com.capysoft.tuevento.modules.section.application.dto.request.UpdateSectionTypeRequest;
 import com.capysoft.tuevento.modules.section.application.dto.response.SectionTypeResponse;
 import com.capysoft.tuevento.modules.section.application.port.in.SectionTypeUseCase;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
@@ -38,5 +39,31 @@ public class SectionTypeController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok("Tipo de sección creado correctamente",
                         sectionTypeUseCase.createSectionType(request)));
+    }
+
+    @Operation(summary = "Update a section type")
+    @PutMapping("/{sectionTypeId}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<SectionTypeResponse>> update(
+            @PathVariable Integer sectionTypeId,
+            @Valid @RequestBody UpdateSectionTypeRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok("Tipo de sección actualizado correctamente",
+                sectionTypeUseCase.updateSectionType(sectionTypeId, request)));
+    }
+
+    @Operation(summary = "Activate a section type")
+    @PutMapping("/{sectionTypeId}/activate")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> activate(@PathVariable Integer sectionTypeId) {
+        sectionTypeUseCase.activateSectionType(sectionTypeId);
+        return ResponseEntity.ok(ApiResponse.ok("Tipo de sección activado correctamente"));
+    }
+
+    @Operation(summary = "Deactivate a section type")
+    @PutMapping("/{sectionTypeId}/deactivate")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deactivate(@PathVariable Integer sectionTypeId) {
+        sectionTypeUseCase.deactivateSectionType(sectionTypeId);
+        return ResponseEntity.ok(ApiResponse.ok("Tipo de sección desactivado correctamente"));
     }
 }

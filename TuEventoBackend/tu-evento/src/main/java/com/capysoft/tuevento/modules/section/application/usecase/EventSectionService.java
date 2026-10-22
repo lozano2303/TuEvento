@@ -7,6 +7,8 @@ import com.capysoft.tuevento.modules.section.application.port.in.EventSectionUse
 import com.capysoft.tuevento.modules.section.domain.model.EventSection;
 import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeRepository;
+import com.capysoft.tuevento.modules.language.domain.repository.SectionTypeTranslationRepository;
+import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +22,13 @@ public class EventSectionService implements EventSectionUseCase {
 
     private final EventSectionRepository eventSectionRepository;
     private final SectionTypeRepository  sectionTypeRepository;
+    private final SectionTypeTranslationRepository sectionTypeTranslationRepository;
+    private final LanguageRepository languageRepository;
 
     @Override
-    public List<EventSectionResponse> getSectionsByEvent(Integer eventId) {
+    public List<EventSectionResponse> getSectionsByEvent(Integer eventId, String languageCode) {
         return eventSectionRepository.findAllByEventId(eventId).stream()
-                .map(this::toResponse)
+                .map(section -> toResponse(section, languageCode))
                 .toList();
     }
 
@@ -47,7 +51,7 @@ public class EventSectionService implements EventSectionUseCase {
                 .price(request.getPrice())
                 .isActive(true)
                 .build());
-        return toResponse(saved);
+        return toResponse(saved, null); // Admin operation, no translation needed
     }
 
     @Override
@@ -70,7 +74,7 @@ public class EventSectionService implements EventSectionUseCase {
                         ? request.getIsActive() : existing.getIsActive())
                 .build();
 
-        return toResponse(eventSectionRepository.save(updated));
+        return toResponse(eventSectionRepository.save(updated), null); // Admin operation, no translation needed
     }
 
     @Override
@@ -82,10 +86,26 @@ public class EventSectionService implements EventSectionUseCase {
         eventSectionRepository.deleteById(eventSectionId);
     }
 
-    private EventSectionResponse toResponse(EventSection domain) {
+    private EventSectionResponse toResponse(EventSection domain, String languageCode) {
         String typeName = sectionTypeRepository.findById(domain.getSectionTypeId())
-                .map(SectionType -> SectionType.getName())
+                .map(sectionType -> sectionType.getName())
                 .orElse("Desconocido");
+        
+        // Si se solicita traducción y no es español, intentar cargar traducción
+        if (languageCode != null && !languageCode.isEmpty() && !"es".equalsIgnoreCase(languageCode)) {
+            var languageOpt = languageRepository.findByCode(languageCode.toLowerCase());
+            if (languageOpt.isPresent()) {
+                Long sectionTypeIdLong = Long.valueOf(domain.getSectionTypeId());
+                Integer languageId = languageOpt.get().getLanguageId();
+                
+                var translationOpt = sectionTypeTranslationRepository
+                        .findBySectionTypeAndLanguage(sectionTypeIdLong, languageId);
+                if (translationOpt.isPresent()) {
+                    typeName = translationOpt.get().getTranslatedName();
+                }
+            }
+        }
+        
         return EventSectionResponse.builder()
                 .eventSectionId(domain.getEventSectionId())
                 .eventId(domain.getEventId())

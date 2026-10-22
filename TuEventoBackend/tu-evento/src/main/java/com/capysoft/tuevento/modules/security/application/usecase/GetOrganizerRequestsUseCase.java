@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.security.application.usecase;
 import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
 import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerRequestResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizerRequestsPort;
+import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.LoginCredentialsJpaRepository;
 import com.capysoft.tuevento.modules.storage.application.port.in.GeneratePublicUrlPort;
@@ -25,8 +26,12 @@ public class GetOrganizerRequestsUseCase implements GetOrganizerRequestsPort {
 
     @Override
     @Transactional
-    public List<OrganizerRequestResponse> getPendingRequests() {
-        return organizerPetitionRepository.findByStatus("PENDING").stream()
+    public List<OrganizerRequestResponse> getRequests(String status) {
+        List<OrganizerPetition> petitions = (status == null || status.isBlank())
+                ? organizerPetitionRepository.findAll()
+                : organizerPetitionRepository.findByStatus(status.toUpperCase());
+
+        return petitions.stream()
                 .map(petition -> {
                     Integer userId = petition.getUser().getUserId();
 

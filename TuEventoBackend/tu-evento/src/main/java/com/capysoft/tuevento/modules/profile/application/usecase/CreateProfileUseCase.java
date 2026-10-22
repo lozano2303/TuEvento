@@ -30,6 +30,9 @@ public class CreateProfileUseCase implements CreateProfilePort {
 
     @Value("${app.profile.default-avatar-stored-file-id:#{null}}")
     private Integer defaultAvatarStoredFileId;
+    
+    @Value("${app.profile.default-language-id:1}")
+    private Long defaultLanguageId; // 1 = Español
 
     @Override
     @Transactional
@@ -50,6 +53,9 @@ public class CreateProfileUseCase implements CreateProfilePort {
                 .storedFileId(request.isStoredFileIdSet()
                         ? request.getStoredFileId()
                         : defaultAvatarStoredFileId)
+                .preferredLanguageId(request.getPreferredLanguageId() != null 
+                        ? request.getPreferredLanguageId().longValue() 
+                        : defaultLanguageId)
                 .build());
 
         profileLogRepository.save(ProfileLog.builder()
@@ -71,6 +77,7 @@ public class CreateProfileUseCase implements CreateProfilePort {
                 .storedFileId(profile.getStoredFileId())
                 .fullName(profile.getFullName())
                 .bio(profile.getBio())
+                .preferredLanguageId(profile.getPreferredLanguageId())
                 .build();
     }
 }

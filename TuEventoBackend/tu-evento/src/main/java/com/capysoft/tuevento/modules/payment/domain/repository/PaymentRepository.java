@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.payment.domain.repository;
 import java.util.List;
 import java.util.Optional;
 
+import com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsByEventResponse;
 import com.capysoft.tuevento.modules.payment.domain.model.Payment;
 import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
 
@@ -16,4 +17,7 @@ public interface PaymentRepository {
     Optional<Payment> findByGatewayTransactionId(String gatewayTransactionId);
     boolean existsById(Long paymentId);
     List<Payment> findByOrderIdInAndStatus(List<Long> orderIds, PaymentStatus status);
+
+    /** Retorna las ganancias desglosadas por evento para el organizador indicado. */
+    List<OrganizerEarningsByEventResponse> findEarningsByOrganizer(Long organizerId);
 }

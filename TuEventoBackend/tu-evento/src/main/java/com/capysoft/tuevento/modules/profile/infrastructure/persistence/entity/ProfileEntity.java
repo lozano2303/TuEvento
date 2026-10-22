@@ -36,6 +36,9 @@ public class ProfileEntity extends JpaAuditingEntity {
     @Column(name = "bio", length = 255)
     private String bio;
 
+    @Column(name = "preferred_language_id")
+    private Long preferredLanguageId;
+
     @Column(name = "name_changed_at")
     private java.time.LocalDateTime nameChangedAt;
 }

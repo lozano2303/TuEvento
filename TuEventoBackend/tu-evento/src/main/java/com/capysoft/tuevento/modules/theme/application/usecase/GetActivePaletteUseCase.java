@@ -21,7 +21,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GetActivePaletteUseCase implements GetActivePalettePort {
 
-    private static final String DEFAULT_THEME_NAME = "DARK";
+    private static final String DEFAULT_THEME_NAME = "PRINCIPAL";
 
     private final ThemeRepository              themeRepository;
     private final UserThemeRepository          userThemeRepository;

@@ -4,8 +4,6 @@ import lombok.*;
 
 @Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class OauthProfile {
 
     private String providerUserId;
@@ -14,4 +12,14 @@ public class OauthProfile {
     private String fullName;
     /** Alias hint from the provider — used as fallback base for alias generation when email is absent. */
     private String alias;
+
+    public OauthProfile() {
+    }
+
+    public OauthProfile(String providerUserId, String email, String fullName, String alias) {
+        this.providerUserId = providerUserId;
+        this.email = email;
+        this.fullName = fullName;
+        this.alias = alias;
+    }
 }

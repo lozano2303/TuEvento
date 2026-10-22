@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.notification.application.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,4 +22,5 @@ public class InAppNotificationResponse {
     private LocalDateTime sentAt;
     private LocalDateTime readAt;
     private boolean read;
+    private List<NotificationTranslationDTO> translations;
 }

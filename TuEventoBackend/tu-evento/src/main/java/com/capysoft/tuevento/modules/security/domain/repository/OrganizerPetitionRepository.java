@@ -11,4 +11,5 @@ public interface OrganizerPetitionRepository {
     Optional<OrganizerPetition> findById(Integer organizerPetitionId);
     Optional<OrganizerPetition> findPendingByUserId(Integer userId);
     List<OrganizerPetition> findByStatus(String status);
+    List<OrganizerPetition> findAll();
 }

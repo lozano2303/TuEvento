@@ -97,16 +97,12 @@ export const changePassword = async (oldPassword, newPassword) => {
 // Función para verificar código de activación
 export const verifyActivationCode = async (email, code) => {
   try {
-    const requestBody = { email, activationCode: code };
-    console.log('=== LOGIN.JS SENDING ===');
-    console.log('Request body:', requestBody);
-    
     const response = await fetch(`${API_URL}/auth/activate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({ email, activationCode: code }),
     });
 
     const data = await response.json();

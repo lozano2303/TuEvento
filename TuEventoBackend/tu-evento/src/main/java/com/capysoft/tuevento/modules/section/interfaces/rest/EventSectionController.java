@@ -27,9 +27,10 @@ public class EventSectionController {
     @Operation(summary = "Get sections for an event — public")
     @GetMapping("/event/{eventId}")
     public ResponseEntity<ApiResponse<List<EventSectionResponse>>> getByEvent(
-            @PathVariable Integer eventId) {
+            @PathVariable Integer eventId,
+            @RequestParam(required = false) String languageCode) {
         return ResponseEntity.ok(ApiResponse.ok("Secciones del evento obtenidas correctamente",
-                eventSectionUseCase.getSectionsByEvent(eventId)));
+                eventSectionUseCase.getSectionsByEvent(eventId, languageCode)));
     }
 
     @Operation(summary = "Create a section for an event")

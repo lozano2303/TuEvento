@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, AlertTriangle, Loader2, ShieldCheck, RefreshCcw } from 'lucide-react';
 import { confirmReactivation, requestReactivation } from '../services/Login.js';
+import LanguageSelector from '../components/common/LanguageSelector.jsx';
 
 /**
  * ReactivateAccountPage — /reactivate-account?token=XXXXXXXX
@@ -19,6 +21,7 @@ import { confirmReactivation, requestReactivation } from '../services/Login.js';
  */
 export default function ReactivateAccountPage() {
   const navigate    = useNavigate();
+  const { t } = useTranslation();
   const [status, setStatus]           = useState('loading'); // 'loading' | 'success' | 'error'
   const [errorMessage, setErrorMessage] = useState('');
   const [email, setEmail]               = useState('');
@@ -35,7 +38,7 @@ export default function ReactivateAccountPage() {
     const token  = params.get('token');
 
     if (!token || token.trim().length === 0) {
-      setErrorMessage('No se proporcionó ningún token de reactivación. Verifica el enlace del correo.');
+      setErrorMessage(t('reactivateAccount.errors.invalid'));
       setStatus('error');
       return;
     }
@@ -44,15 +47,14 @@ export default function ReactivateAccountPage() {
       .then(() => setStatus('success'))
       .catch((err) => {
         const msg = err.message || '';
-        // Translate known backend error codes to friendly Spanish messages
         if (msg.includes('expirado') || msg.toLowerCase().includes('expired')) {
-          setErrorMessage('El código de reactivación expiró. Los códigos son válidos por 30 minutos. Solicita uno nuevo a continuación.');
+          setErrorMessage(t('reactivateAccount.errors.expired'));
         } else if (msg.includes('ya fue utilizado') || msg.toLowerCase().includes('used')) {
-          setErrorMessage('Este código ya fue utilizado. Si tu cuenta sigue sin acceso, solicita un nuevo código.');
+          setErrorMessage(t('reactivateAccount.errors.used'));
         } else if (msg.includes('inválido') || msg.toLowerCase().includes('not_found') || msg.toLowerCase().includes('invalid')) {
-          setErrorMessage('El código de reactivación no es válido. Asegúrate de copiar el código completo del correo.');
+          setErrorMessage(t('reactivateAccount.errors.invalid'));
         } else {
-          setErrorMessage(msg || 'No se pudo reactivar la cuenta. Por favor intenta de nuevo.');
+          setErrorMessage(msg || t('reactivateAccount.errors.generic'));
         }
         setStatus('error');
       });
@@ -66,7 +68,7 @@ export default function ReactivateAccountPage() {
       await requestReactivation(email.trim());
       setResendStatus('sent');
     } catch (err) {
-      setResendError(err.message || 'No se pudo enviar el correo. Intenta de nuevo.');
+      setResendError(err.message || t('reactivateAccount.errors.resendError'));
       setResendStatus('error');
     }
   };
@@ -77,6 +79,7 @@ export default function ReactivateAccountPage() {
       className="min-h-screen flex items-center justify-center p-6"
       style={{ background: 'var(--color-background)' }}
     >
+      <LanguageSelector position="fixed-top-right" />
       <div
         className="w-full max-w-md theme-modal-card rounded-2xl overflow-hidden"
         style={{ boxShadow: '0 24px 60px color-mix(in srgb, var(--color-primary) 25%, transparent)' }}
@@ -92,7 +95,7 @@ export default function ReactivateAccountPage() {
       <Wrapper>
         <div className="p-10 flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 animate-spin" style={{ color: 'var(--color-primary)' }} />
-          <p className="text-textSecondary text-sm">Verificando tu código de reactivación…</p>
+          <p className="text-textSecondary text-sm">{t('reactivateAccount.verifying')}</p>
         </div>
       </Wrapper>
     );
@@ -109,20 +112,20 @@ export default function ReactivateAccountPage() {
               <CheckCircle className="w-8 h-8" />
             </div>
           </div>
-          <h1 className="bm-title">¡Cuenta reactivada!</h1>
-          <p className="bm-subtitle">Tu cuenta está activa de nuevo.</p>
+          <h1 className="bm-title">{t('reactivateAccount.accountReactivated')}</h1>
+          <p className="bm-subtitle">{t('reactivateAccount.accountActive')}</p>
         </div>
 
         {/* Body */}
         <div className="bm-body">
           <div className="bm-info-card rounded-xl mb-4">
             <p className="text-sm text-textSecondary leading-relaxed">
-              Ya puedes iniciar sesión con tu correo y contraseña habituales. Todos tus datos se conservaron intactos.
+              {t('reactivateAccount.canLogin')}
             </p>
           </div>
           <p className="text-xs bm-hint flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--color-accent)' }} />
-            El código de reactivación ha sido invalidado y no puede volver a usarse.
+            {t('reactivateAccount.codeInvalidated')}
           </p>
         </div>
 
@@ -132,7 +135,7 @@ export default function ReactivateAccountPage() {
             onClick={() => navigate('/login')}
             className="bm-btn-primary"
           >
-            Ir al inicio de sesión
+            {t('reactivateAccount.goToLogin')}
           </button>
         </div>
       </Wrapper>
@@ -149,8 +152,8 @@ export default function ReactivateAccountPage() {
             <AlertTriangle className="w-8 h-8" />
           </div>
         </div>
-        <h1 className="bm-title">Código no válido</h1>
-        <p className="bm-subtitle">No se pudo reactivar la cuenta.</p>
+        <h1 className="bm-title">{t('reactivateAccount.codeNotValid')}</h1>
+        <p className="bm-subtitle">{t('reactivateAccount.couldNotReactivate')}</p>
       </div>
 
       {/* Body */}
@@ -162,7 +165,7 @@ export default function ReactivateAccountPage() {
         {/* Solicitar nuevo código */}
         {resendStatus !== 'sent' ? (
           <div className="space-y-2">
-            <p className="text-xs bm-label font-medium">¿Quieres solicitar un nuevo código?</p>
+            <p className="text-xs bm-label font-medium">{t('reactivateAccount.requestNewCode')}</p>
             <div className="flex gap-2">
               <input
                 type="email"
@@ -200,7 +203,7 @@ export default function ReactivateAccountPage() {
           <div className="bm-info-card rounded-xl">
             <p className="text-sm text-textSecondary leading-relaxed flex items-start gap-2">
               <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--color-success)' }} />
-              Correo enviado. Si el correo corresponde a una cuenta desactivada, recibirás el nuevo código en minutos.
+              {t('reactivateAccount.emailSent')}
             </p>
           </div>
         )}
@@ -209,7 +212,7 @@ export default function ReactivateAccountPage() {
       {/* Footer */}
       <div className="bm-footer">
         <button onClick={() => navigate('/login')} className="bm-btn-secondary">
-          Volver al inicio de sesión
+          {t('reactivateAccount.backToLogin')}
         </button>
       </div>
     </Wrapper>

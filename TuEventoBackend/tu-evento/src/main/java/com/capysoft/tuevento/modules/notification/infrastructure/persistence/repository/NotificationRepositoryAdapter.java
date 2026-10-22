@@ -36,6 +36,12 @@ public class NotificationRepositoryAdapter implements NotificationRepository {
                 .map(this::toDomain);
     }
 
+    @Override
+    public void flush() {
+        // FIX BUG #1: Delegar al repositorio JPA para hacer flush
+        jpaNotificationRepository.flush();
+    }
+
     private Notification toDomain(NotificationEntity entity) {
         return Notification.builder()
                 .notificationId(entity.getNotificationId())
