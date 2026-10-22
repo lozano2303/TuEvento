@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useTheme } from "../context/ThemeContext";
 import { scanQr } from "../services/ticketService";
+import { mapErrorMessage } from "../utils/errorMessages";
 
 /**
  * Pantalla del organizador para escanear los QR de las entradas.
@@ -38,7 +39,7 @@ export default function ScanTicketScreen() {
       const res = await scanQr(data);
       setResult(res);
     } catch (e) {
-      setError(e.message || "No se pudo validar el QR.");
+      setError(mapErrorMessage(e.message) || "No se pudo validar el QR.");
     } finally {
       setSubmitting(false);
     }
@@ -105,11 +106,24 @@ export default function ScanTicketScreen() {
     );
   }
 
-  // ── Resultado (éxito o error) ────────────────────────────────────────────────
+  // ── Resultado (éxito / ya usada / error) ─────────────────────────────────────
   if (result || error) {
-    const ok = !!result;
     const validated = result?.validatedCount ?? 0;
     const alreadyUsed = result?.alreadyUsedCount ?? 0;
+
+    // Tres desenlaces visuales:
+    //  success  → se validó al menos una entrada (puede ingresar)
+    //  warning  → el QR era válido pero todo ya estaba usado (ya escaneada antes)
+    //  error    → QR inválido/caducado/sin permiso
+    let kind = "error";
+    if (result) kind = validated > 0 ? "success" : "warning";
+
+    const STYLE = {
+      success: { color: "#34d399", icon: "checkmark-circle",  title: "¡Entrada válida!" },
+      warning: { color: "#f59e0b", icon: "alert-circle",      title: "Entrada ya escaneada" },
+      error:   { color: colors.error, icon: "close-circle",   title: "QR no válido" },
+    }[kind];
+
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <StatusBar barStyle="light-content" backgroundColor={colors.surface} />
@@ -117,39 +131,44 @@ export default function ScanTicketScreen() {
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 18, paddingHorizontal: 32 }}>
           <View style={{
             width: 96, height: 96, borderRadius: 48,
-            backgroundColor: (ok ? "#34d399" : colors.error) + "22",
+            backgroundColor: STYLE.color + "22",
             alignItems: "center", justifyContent: "center",
           }}>
-            <Ionicons
-              name={ok ? "checkmark-circle" : "close-circle"}
-              size={64}
-              color={ok ? "#34d399" : colors.error}
-            />
+            <Ionicons name={STYLE.icon} size={64} color={STYLE.color} />
           </View>
 
-          <Text style={{ color: colors.textPrimary, fontSize: 22, fontWeight: "900", textAlign: "center" }}>
-            {ok ? "Entrada válida" : "QR no válido"}
+          <Text style={{ color: colors.textPrimary, fontSize: 24, fontWeight: "900", textAlign: "center" }}>
+            {STYLE.title}
           </Text>
 
-          {ok ? (
+          {kind === "success" && (
             <View style={{ alignItems: "center", gap: 6 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: "center" }}>
-                {validated > 0
-                  ? `${validated} ${validated === 1 ? "entrada validada" : "entradas validadas"}`
-                  : "Sin entradas nuevas por validar"}
+              <Text style={{ color: "#34d399", fontSize: 16, fontWeight: "700", textAlign: "center" }}>
+                Puedes ingresar
               </Text>
-              {alreadyUsed > 0 && (
-                <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: "center" }}>
-                  {alreadyUsed} ya estaba{alreadyUsed === 1 ? "" : "n"} usada{alreadyUsed === 1 ? "" : "s"}
-                </Text>
-              )}
+              <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: "center" }}>
+                {validated === 1
+                  ? "1 entrada validada"
+                  : `${validated} entradas validadas`}
+                {alreadyUsed > 0 && ` · ${alreadyUsed} ya usada${alreadyUsed === 1 ? "" : "s"}`}
+              </Text>
               {result?.orderId != null && (
                 <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
                   Orden #{result.orderId}
                 </Text>
               )}
             </View>
-          ) : (
+          )}
+
+          {kind === "warning" && (
+            <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: "center", lineHeight: 22 }}>
+              {alreadyUsed === 1
+                ? "Esta entrada ya había sido escaneada. No se permite el reingreso."
+                : "Estas entradas ya habían sido escaneadas. No se permite el reingreso."}
+            </Text>
+          )}
+
+          {kind === "error" && (
             <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: "center", lineHeight: 20 }}>
               {error}
             </Text>

@@ -51,6 +51,18 @@ export const authService = {
     return json.data;
   },
 
+  // Reenvía el código de activación al correo (POST /auth/resend-activation).
+  async resendActivation(email) {
+    const res = await fetch(`${BASE_URL}/resend-activation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success) throw new Error(json.message || "No se pudo reenviar el código");
+    return json.data;
+  },
+
   async recoverPassword(email) {
     const res = await fetch(`${BASE_URL}/recover-password`, {
       method: "POST",

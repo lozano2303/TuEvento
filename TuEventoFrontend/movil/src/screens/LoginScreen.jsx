@@ -44,10 +44,20 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!validate()) return;
-    try {
-      const result = await login(email, password);
-      if (result.success) navigation.navigate("Main");
-    } finally {}
+    const result = await login(email, password);
+    if (result.success) {
+      navigation.navigate("Main");
+      return;
+    }
+    // Si la cuenta no está activada, reenviar el código y llevar a verificación
+    // (mismo comportamiento que la web).
+    const msg = (result.message || "").toLowerCase();
+    const notActivated = ["no activada", "not activated", "activar", "revisa tu correo"]
+      .some((s) => msg.includes(s));
+    if (notActivated) {
+      try { await authService.resendActivation(email.trim()); } catch (_) { /* no bloquear el flujo */ }
+      navigation.navigate("Activate", { email: email.trim() });
+    }
   };
 
   const handleOAuthLogin = async (provider) => {

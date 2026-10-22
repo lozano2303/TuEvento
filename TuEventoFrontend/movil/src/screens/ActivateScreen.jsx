@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import { useState, useEffect, useRef } from "react";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -10,6 +10,8 @@ import BackButton from "../components/BackButton";
 import ScreenLayout from "../components/ScreenLayout";
 import { darkColors } from "../theme/colors";
 
+const RESEND_COOLDOWN = 60; // segundos entre reenvíos
+
 export default function ActivateScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -19,6 +21,25 @@ export default function ActivateScreen() {
   const [code, setCode] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // Reenvío de código
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMsg, setResendMsg] = useState(null);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownRef = useRef(null);
+
+  useEffect(() => () => clearInterval(cooldownRef.current), []);
+
+  const startCooldown = () => {
+    setCooldown(RESEND_COOLDOWN);
+    clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setCooldown((c) => {
+        if (c <= 1) { clearInterval(cooldownRef.current); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+  };
 
   const handleActivate = async () => {
     if (!code.trim()) { setError("El código es requerido"); return; }
@@ -32,6 +53,22 @@ export default function ActivateScreen() {
       setError(mapErrorMessage(e.message));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email || resendLoading || cooldown > 0) return;
+    setResendLoading(true);
+    setResendMsg(null);
+    setError(null);
+    try {
+      await authService.resendActivation(email);
+      setResendMsg("Te enviamos un nuevo código a tu correo.");
+      startCooldown();
+    } catch (e) {
+      setError(mapErrorMessage(e.message));
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -82,6 +119,35 @@ export default function ActivateScreen() {
             </Text>
           </LinearGradient>
         </TouchableOpacity>
+
+        {/* Mensaje de reenvío exitoso */}
+        {resendMsg && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 20 }}>
+            <Ionicons name="checkmark-circle" size={16} color={palette.success} />
+            <Text style={{ color: palette.success, fontSize: 13, flex: 1 }}>{resendMsg}</Text>
+          </View>
+        )}
+
+        {/* Reenviar código */}
+        <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: resendMsg ? 16 : 28, gap: 6 }}>
+          <Text style={{ color: palette.textSecondary, fontSize: 13 }}>¿No recibiste el código?</Text>
+          <TouchableOpacity
+            onPress={handleResend}
+            disabled={resendLoading || cooldown > 0}
+            activeOpacity={0.75}
+          >
+            {resendLoading ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <ActivityIndicator size="small" color={palette.accent} />
+                <Text style={{ color: palette.accent, fontSize: 13, fontWeight: "700" }}>Enviando…</Text>
+              </View>
+            ) : (
+              <Text style={{ color: cooldown > 0 ? palette.textMuted : palette.accent, fontSize: 13, fontWeight: "700" }}>
+                {cooldown > 0 ? `Reenviar en ${cooldown}s` : "Reenviar código"}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </ScreenLayout>
   );

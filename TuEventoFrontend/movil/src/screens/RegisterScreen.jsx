@@ -28,6 +28,7 @@ export default function RegisterScreen() {
   const [apiError, setApiError] = useState(null);
   const [apiLoading, setApiLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(null);
+  const [resendLoading, setResendLoading] = useState(false);
 
   const update = (field, value) => {
     setForm({ ...form, [field]: value });
@@ -68,6 +69,29 @@ export default function RegisterScreen() {
       else setApiError(mapErrorMessage(e.message));
     } finally {
       setApiLoading(false);
+    }
+  };
+
+  // Reenviar correo de activación usando el correo del formulario (igual que la web).
+  const handleResendActivation = async () => {
+    const email = form.email.trim();
+    if (!email) {
+      setErrors({ ...errors, email: "Ingresa tu correo para reenviar el código" });
+      return;
+    }
+    if (!GMAIL_PATTERN.test(email)) {
+      setErrors({ ...errors, email: "Solo se aceptan correos @gmail.com" });
+      return;
+    }
+    setResendLoading(true);
+    setApiError(null);
+    try {
+      await authService.resendActivation(email);
+      navigation.navigate("Activate", { email });
+    } catch (e) {
+      setApiError(mapErrorMessage(e.message));
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -231,6 +255,23 @@ export default function RegisterScreen() {
               </Text>
             </LinearGradient>
           </TouchableOpacity>
+
+          {/* Reenviar correo de activación (usa el correo del formulario) */}
+          <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", flexWrap: "wrap", marginTop: 16, gap: 5 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>¿No has activado tu cuenta?</Text>
+            <TouchableOpacity onPress={handleResendActivation} disabled={resendLoading} activeOpacity={0.75}>
+              {resendLoading ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                  <ActivityIndicator size="small" color={colors.accent} />
+                  <Text style={{ color: colors.accent, fontSize: 13, fontWeight: "700" }}>Enviando…</Text>
+                </View>
+              ) : (
+                <Text style={{ color: colors.accent, fontSize: 13, fontWeight: "700" }}>
+                  Reenviar correo de activación
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Divider */}
