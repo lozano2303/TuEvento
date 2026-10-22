@@ -6,7 +6,7 @@ import { useEventTranslation } from '../hooks/useEventTranslation';
 import {
   Plus, LayoutDashboard, Pencil, Trash2, AlertTriangle, ImagePlus,
   Eye, Calendar, Tag, Globe, Lock, Rocket, ChevronLeft, ChevronRight,
-  FileText, MapPin, Users, Clock, XCircle,
+  FileText, MapPin, Users, Clock, XCircle, TrendingUp,
 } from 'lucide-react';
 import * as EventService from '../services/EventService';
 import * as CategoryService from '../services/CategoryService';
@@ -478,18 +478,26 @@ export default function EventManage() {
           <h1 className="text-2xl font-bold text-textPrimary">{t('myEvents.title')}</h1>
           <p className="text-sm text-textMuted mt-0.5">{t('myEvents.subtitle')}</p>
         </div>
-        <button
-          onClick={() => isSpanishLanguage && navigate('/events/create')}
-          disabled={!isSpanishLanguage}
-          className={`${btnBase} ${
-            isSpanishLanguage 
-              ? 'bg-primary text-white hover:bg-primaryDark cursor-pointer' 
-              : 'bg-surfaceAlt text-textMuted cursor-not-allowed opacity-60'
-          }`}
-          title={!isSpanishLanguage ? t('myEvents.editRestriction') : ''}
-        >
-          <Plus className="w-4 h-4" /> {t('myEvents.createNew')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/organizer/earnings')}
+            className={`${btnBase} bg-surfaceAlt text-textSecondary hover:text-accent hover:bg-accent/10 border border-surfaceAlt`}
+          >
+            <TrendingUp className="w-4 h-4" /> {t('myEvents.myEarnings')}
+          </button>
+          <button
+            onClick={() => isSpanishLanguage && navigate('/events/create')}
+            disabled={!isSpanishLanguage}
+            className={`${btnBase} ${
+              isSpanishLanguage 
+                ? 'bg-primary text-white hover:bg-primaryDark cursor-pointer' 
+                : 'bg-surfaceAlt text-textMuted cursor-not-allowed opacity-60'
+            }`}
+            title={!isSpanishLanguage ? t('myEvents.editRestriction') : ''}
+          >
+            <Plus className="w-4 h-4" /> {t('myEvents.createNew')}
+          </button>
+        </div>
       </div>
 
       {/* Restricción de edición cuando no está en español */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight, PartyPopper, Sparkles, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight, PartyPopper, Sparkles, FileText, X } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import loginHero from "../assets/images/tu-evento-login-hero-left.png";
 import { loginUser, registerUser, resendActivationCode, googleLogin } from "../services/Login.js";
@@ -67,6 +68,7 @@ function GoogleButton({ onSuccess, onError }) {
 export default function Login() {
   const { refreshPalette } = useTheme();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [view, setView] = useState('login');
   const [userID, setUserID] = useState(null);
@@ -581,6 +583,20 @@ export default function Login() {
 
           {/* ── Tarjeta glassmorphism ── */}
           <div className="login-card">
+
+            {/* ── Botón volver al landing ── */}
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="login-back-btn"
+              aria-label="Volver al inicio"
+            >
+              <ArrowRight
+                size={26}
+                style={{ transform: 'rotate(180deg)' }}
+                aria-hidden="true"
+              />
+            </button>
 
             {/* Encabezado */}
             <p className="login-card-eyebrow">{t('login.welcomeBack').toUpperCase()}</p>

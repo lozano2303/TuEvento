@@ -91,23 +91,21 @@ export default function AdminFinancial() {
       iconColor: 'text-rose-400',
       label:     'Reembolsos pendientes',
       value:     fmtNum(stats?.pendingRefunds),
-      sub:       'Solicitudes esperando validación',
+      sub:       `${fmtNum(stats?.processedRefunds)} reembolsos ya procesados`,
     },
     {
       icon:      ArrowLeftRight,
-      iconBg:    'bg-violet-500/15',
-      iconColor: 'text-violet-400',
-      label:     'Saldo compensatorio total',
-      value:     fmtCOP(stats?.totalRevenue ?? 0),
-      sub:       'Generado por eventos cancelados',
-      accent:    true,
+      iconBg:    'bg-amber-500/15',
+      iconColor: 'text-amber-400',
+      label:     'Total reembolsado',
+      value:     fmtCOP(stats?.totalRefundedAmount ?? 0),
+      sub:       'Monto devuelto a usuarios por pagos revertidos',
     },
   ];
 
   return (
     <div className="min-h-screen flex bg-background text-textPrimary font-sans">
       <AdminSidebar activePage="financial" />
-
       {/* ── Main ───────────────────────────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto bg-background">
         <div className="p-8 max-w-6xl mx-auto w-full">

@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsByEventResponse;
 import com.capysoft.tuevento.modules.payment.domain.model.Payment;
 import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentRepository;
@@ -54,6 +55,11 @@ public class PaymentRepositoryImpl implements PaymentRepository {
                 .stream()
                 .map(this::toDomain)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrganizerEarningsByEventResponse> findEarningsByOrganizer(Long organizerId) {
+        return jpaRepository.findEarningsByOrganizer(organizerId);
     }
 
     private PaymentEntity toEntity(Payment payment) {

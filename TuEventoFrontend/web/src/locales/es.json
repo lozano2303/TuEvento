@@ -94,12 +94,18 @@
     "hero": {
       "badge": "Plataforma de Eventos Innovadora",
       "title": "Sobre",
-      "titleAccent": "Nosotros", 
+      "titleAccent": "Nosotros",
       "description": "En \"Tu Evento\" transformamos ideas en experiencias inolvidables. Somos una plataforma especializada en la maquetación virtual de espacios para eventos, permitiendo a organizadores planificar visualmente la disposición de sus lugares: mesas, escenarios, pistas de baile, áreas VIP y más.",
       "features": {
         "visualization": "Visualización 2D",
-        "planning": "Planificación Precisa", 
+        "planning": "Planificación Precisa",
         "experiences": "Experiencias Únicas"
+      },
+      "stats": {
+        "editor": "Editor visual",
+        "secure": "Seguro",
+        "available": "Disponible",
+        "platforms": "Plataformas"
       }
     },
     "story": {
@@ -112,7 +118,7 @@
         "feature": "Innovación Constante"
       },
       "mission": {
-        "title": "Nuestra Misión", 
+        "title": "Nuestra Misión",
         "description": "Proporcionar herramientas intuitivas y poderosas que permitan a organizadores crear eventos excepcionales y a asistentes descubrir experiencias que enriquezcan sus vidas, todo mientras mantenemos los más altos estándares de calidad y seguridad.",
         "feature": "Pasión por Eventos"
       }
@@ -126,7 +132,7 @@
           "description": "Nos comprometemos con la más alta calidad en todo lo que hacemos, desde el desarrollo de software hasta el soporte al cliente."
         },
         "collaboration": {
-          "title": "Colaboración", 
+          "title": "Colaboración",
           "description": "Creemos en el poder del trabajo en equipo y la colaboración para lograr objetivos comunes y crear valor para todos."
         },
         "integrity": {
@@ -165,7 +171,7 @@
           "description": "Encargado de vigilar el seguimiento del equipo, desarrollador del Backend, diseñador de la base de datos, apoyo en la visualización móvil y documentación."
         },
         "jhampier": {
-          "name": "Jhampier Santos Ortiz", 
+          "name": "Jhampier Santos Ortiz",
           "role": "Desarrollador de Software",
           "description": "Responsable de implementar la lógica del sistema, creación de interfaces gráficas web y móviles, además de la elaboración de la documentación del proyecto."
         }
@@ -221,7 +227,9 @@
       "translated": "Traducido ({{lang}})",
       "generating": "Generando traducción...",
       "autoReload": "La página se recargará automáticamente."
-    }
+    },
+    "soldOut": "Agotado",
+    "almostGone": "Últimos lugares"
   },
   "myEvents": {
     "title": "Mis Eventos",
@@ -241,7 +249,7 @@
       "headers": {
         "event": "Evento",
         "status": "Estado",
-        "dates": "Fechas", 
+        "dates": "Fechas",
         "seats": "Sillas",
         "actions": "Acciones"
       },
@@ -252,7 +260,7 @@
       "viewDetail": "Ver detalle del evento",
       "editLayout": "Editar layout del evento",
       "editLayoutRestricted": "El layout solo se puede editar en estado Borrador",
-      "editInfo": "Editar información del evento", 
+      "editInfo": "Editar información del evento",
       "editInfoRestricted": "La información solo se puede editar en estado Borrador",
       "manageImages": "Gestionar imágenes del evento",
       "manageImagesRestricted": "Las imágenes solo se pueden modificar en estado Borrador",
@@ -332,7 +340,8 @@
         "rejectedAction": "Cierra este panel, corrige el evento y envíalo a revisión nuevamente."
       },
       "submitReview": "Enviar a revisión"
-    }
+    },
+    "myEarnings": "Mis ganancias"
   },
   "seats": {
     "selectSeats": "Selecciona tus Sillas",

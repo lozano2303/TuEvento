@@ -19,4 +19,11 @@ public interface GetEventUseCase {
     List<EventSummaryResponse> getPublishedEventsByCityId(Long cityId);
     List<EventSummaryResponse> getPublishedEventsByCategoryId(Integer categoryId);
     List<EventSummaryResponse> getPublishedEventsByDateRange(LocalDate from, LocalDate to);
+
+    /**
+     * Full-text + optional exact-date search on published public events.
+     * @param q    search term (blank = all events)
+     * @param date exact start_date filter (null = no date filter)
+     */
+    List<EventSummaryResponse> searchPublishedEvents(String q, LocalDate date);
 }
