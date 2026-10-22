@@ -73,13 +73,13 @@ export default function ProfileScreen() {
       icon: "grid-outline",
       label: "Dashboard",
       sub: "Vista general",
-      route: null,         // pendiente de implementar
+      route: "AdminDashboard",
     },
     {
       icon: "card-outline",
       label: "Control Financiero",
       sub: "Pagos y reembolsos",
-      route: null,
+      route: "AdminFinancial",
     },
     {
       icon: "calendar-outline",
@@ -91,7 +91,7 @@ export default function ProfileScreen() {
       icon: "bar-chart-outline",
       label: "Reportes",
       sub: "Estadísticas de la plataforma",
-      route: null,
+      route: "AdminReports",
     },
     {
       icon: "refresh-circle-outline",
@@ -104,6 +104,18 @@ export default function ProfileScreen() {
       label: "Solicitudes",
       sub: "Solicitudes de organizador",
       route: "OrganizerRequests",
+    },
+    {
+      icon: "pricetags-outline",
+      label: "Categorías",
+      sub: "Gestionar categorías",
+      route: "AdminCategories",
+    },
+    {
+      icon: "layers-outline",
+      label: "Tipos de Sección",
+      sub: "Gestionar tipos de sección",
+      route: "AdminSectionTypes",
     },
   ];
 

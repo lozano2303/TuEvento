@@ -28,6 +28,11 @@ import PaymentPendingScreen        from "../screens/PaymentPendingScreen";
 import WalletScreen                from "../screens/WalletScreen";
 import NotificationsScreen         from "../screens/NotificationsScreen";
 import AdminEventsScreen           from "../screens/AdminEventsScreen";
+import AdminDashboardScreen        from "../screens/AdminDashboardScreen";
+import AdminFinancialScreen        from "../screens/AdminFinancialScreen";
+import AdminReportsScreen          from "../screens/AdminReportsScreen";
+import AdminCategoriesScreen       from "../screens/AdminCategoriesScreen";
+import AdminSectionTypesScreen     from "../screens/AdminSectionTypesScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -219,6 +224,11 @@ export default function AppNavigator() {
         <Stack.Screen name="Wallet"                  component={WalletScreen} />
         <Stack.Screen name="Notifications"           component={NotificationsScreen} />
         <Stack.Screen name="AdminEvents"             component={AdminEventsScreen} />
+        <Stack.Screen name="AdminDashboard"          component={AdminDashboardScreen} />
+        <Stack.Screen name="AdminFinancial"          component={AdminFinancialScreen} />
+        <Stack.Screen name="AdminReports"            component={AdminReportsScreen} />
+        <Stack.Screen name="AdminCategories"         component={AdminCategoriesScreen} />
+        <Stack.Screen name="AdminSectionTypes"       component={AdminSectionTypesScreen} />
         <Stack.Screen
           name="Main"
           component={MainTabs}
