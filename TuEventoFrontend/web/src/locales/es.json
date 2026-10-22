@@ -1458,5 +1458,12 @@
     "subtitle": "Esta sección sólo está disponible en español",
     "description": "La creación y edición de eventos sólo está disponible con el idioma español seleccionado. Cambia tu idioma a español en tu perfil para continuar.",
     "action": "Volver"
+  },
+  "paymentConfirmation": {
+    "loading": "Cargando tu confirmación…",
+    "notApproved": "El pago no está aprobado",
+    "loadError": "Error al cargar los datos",
+    "backToEvents": "Volver a eventos",
+    "remainingBalance": "Tu saldo restante"
   }
 }
