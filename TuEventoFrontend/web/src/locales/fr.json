@@ -294,7 +294,7 @@
     "team": {
       "badge": "Rencontrez l'équipe",
       "title": "Notre Équipe",
-      "description": "Une équipe passionnée de 5 professionnels dédiés à rendre chaque événement mémorable.",
+      "description": "Une équipe passionnée de 2 professionnels dédiés à rendre chaque événement mémorable.",
       "counter": "{{current}} de {{total}}",
       "members": {
         "cristofer": {
@@ -307,6 +307,21 @@
           "role": "Développeur Logiciel",
           "description": "Responsable de l'implémentation de la logique système, création d'interfaces graphiques web et mobiles, et élaboration de la documentation du projet."
         }
+      }
+    },
+    "mockup": {
+      "editorTitle": "Éditeur de plans",
+      "save": "Enregistrer",
+      "attendees": "{{count}} participants",
+      "confirmed": "confirmés",
+      "live": "En direct",
+      "sections": {
+        "vip": "VIP",
+        "general": "Général",
+        "stage": "Scène",
+        "tableA": "Table A",
+        "tableB": "Table B",
+        "bar": "Bar"
       }
     }
   },

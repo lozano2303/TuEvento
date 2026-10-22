@@ -426,26 +426,26 @@ export default function AboutUs() {
                     className="text-xs font-semibold px-3 py-1 rounded-full"
                     style={{ background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.85)' }}
                   >
-                    Editor de planos
+                    {t('about.mockup.editorTitle')}
                   </div>
                 </div>
 
                 {/* Grid de secciones simuladas */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   {[
-                    { label: 'VIP',       w: 'col-span-2', h: 'h-14', opacity: '0.35' },
-                    { label: 'General',   w: 'col-span-1', h: 'h-14', opacity: '0.25' },
-                    { label: 'Escenario', w: 'col-span-3', h: 'h-10', opacity: '0.20' },
-                    { label: 'Mesa A',    w: 'col-span-1', h: 'h-12', opacity: '0.30' },
-                    { label: 'Mesa B',    w: 'col-span-1', h: 'h-12', opacity: '0.30' },
-                    { label: 'Barra',     w: 'col-span-1', h: 'h-12', opacity: '0.22' },
-                  ].map(({ label, w, h, opacity }) => (
+                    { key: 'vip',       labelKey: 'about.mockup.sections.vip',       w: 'col-span-2', h: 'h-14', opacity: '0.35' },
+                    { key: 'general',   labelKey: 'about.mockup.sections.general',   w: 'col-span-1', h: 'h-14', opacity: '0.25' },
+                    { key: 'stage',     labelKey: 'about.mockup.sections.stage',     w: 'col-span-3', h: 'h-10', opacity: '0.20' },
+                    { key: 'tableA',    labelKey: 'about.mockup.sections.tableA',    w: 'col-span-1', h: 'h-12', opacity: '0.30' },
+                    { key: 'tableB',    labelKey: 'about.mockup.sections.tableB',    w: 'col-span-1', h: 'h-12', opacity: '0.30' },
+                    { key: 'bar',       labelKey: 'about.mockup.sections.bar',       w: 'col-span-1', h: 'h-12', opacity: '0.22' },
+                  ].map(({ key, labelKey, w, h, opacity }) => (
                     <div
-                      key={label}
+                      key={key}
                       className={`${w} ${h} rounded-xl flex items-center justify-center`}
                       style={{ background: `rgba(255,255,255,${opacity})`, border: '1px solid rgba(255,255,255,0.2)' }}
                     >
-                      <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>{label}</span>
+                      <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>{t(labelKey)}</span>
                     </div>
                   ))}
                 </div>
@@ -468,7 +468,7 @@ export default function AboutUs() {
                     className="text-xs font-semibold px-3 py-1 rounded-lg"
                     style={{ background: 'var(--color-accent)', color: '#fff' }}
                   >
-                    Guardar
+                    {t('about.mockup.save')}
                   </div>
                 </div>
               </div>
@@ -486,8 +486,8 @@ export default function AboutUs() {
                   <Users className="w-3.5 h-3.5 text-white" />
                 </div>
                 <div>
-                  <p className="font-bold text-gray-800" style={{ fontSize: '0.7rem' }}>248 asistentes</p>
-                  <p className="text-gray-500" style={{ fontSize: '0.6rem' }}>confirmados</p>
+                  <p className="font-bold text-gray-800" style={{ fontSize: '0.7rem' }}>{t('about.mockup.attendees', { count: 248 })}</p>
+                  <p className="text-gray-500" style={{ fontSize: '0.6rem' }}>{t('about.mockup.confirmed')}</p>
                 </div>
               </div>
 
@@ -500,7 +500,7 @@ export default function AboutUs() {
                 }}
               >
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" />
-                <p className="font-bold text-gray-800" style={{ fontSize: '0.7rem' }}>En vivo</p>
+                <p className="font-bold text-gray-800" style={{ fontSize: '0.7rem' }}>{t('about.mockup.live')}</p>
               </div>
             </div>
 
