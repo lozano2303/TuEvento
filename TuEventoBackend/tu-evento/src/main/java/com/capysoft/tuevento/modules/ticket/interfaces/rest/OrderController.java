@@ -70,7 +70,7 @@ public class OrderController {
      * Generar el QR de la orden completa (solo el comprador, solo en móvil).
      * Al escanearse marca como USED los tickets PAID restantes de la orden.
      */
-    @PostMapping("/{orderId}/qr")
+    @PostMapping("/{orderId:\\d+}/qr")
     public ResponseEntity<ApiResponse<TicketQrResponse>> generateOrderQr(
             @PathVariable Long orderId,
             @AuthenticationPrincipal SecurityUser principal) {
@@ -82,7 +82,7 @@ public class OrderController {
     /**
      * Obtener una orden por ID.
      */
-    @GetMapping("/{orderId}")
+    @GetMapping("/{orderId:\\d+}")
     public ResponseEntity<ApiResponse<OrderResponse>> getOrder(@PathVariable Long orderId) {
         OrderResponse response = getOrderUseCase.execute(orderId);
         return ResponseEntity.ok(ApiResponse.ok("Order retrieved successfully", response));
@@ -91,7 +91,7 @@ public class OrderController {
     /**
      * Obtener los tickets de una orden.
      */
-    @GetMapping("/{orderId}/tickets")
+    @GetMapping("/{orderId:\\d+}/tickets")
     public ResponseEntity<ApiResponse<List<TicketResponse>>> getOrderTickets(@PathVariable Long orderId) {
         List<TicketResponse> tickets = getOrderTicketsUseCase.execute(orderId);
         return ResponseEntity.ok(ApiResponse.ok("Order tickets retrieved successfully", tickets));
@@ -100,7 +100,7 @@ public class OrderController {
     /**
      * Cancelar una orden.
      */
-    @PostMapping("/{orderId}/cancel")
+    @PostMapping("/{orderId:\\d+}/cancel")
     public ResponseEntity<ApiResponse<Void>> cancelOrder(@PathVariable Long orderId) {
         cancelOrderUseCase.execute(orderId);
         return ResponseEntity.ok(ApiResponse.ok("Order cancelled successfully"));

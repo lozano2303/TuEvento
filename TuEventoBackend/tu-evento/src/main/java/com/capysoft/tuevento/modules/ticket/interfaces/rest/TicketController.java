@@ -39,7 +39,7 @@ public class TicketController {
     /**
      * Obtener un ticket por ID.
      */
-    @GetMapping("/{ticketId}")
+    @GetMapping("/{ticketId:\\d+}")
     public ResponseEntity<ApiResponse<TicketResponse>> getTicket(@PathVariable Long ticketId) {
         TicketResponse response = getTicketUseCase.execute(ticketId);
         return ResponseEntity.ok(ApiResponse.ok("Ticket retrieved successfully", response));
@@ -68,7 +68,7 @@ public class TicketController {
      * Generar el QR de un ticket individual (solo el comprador, solo en móvil).
      * El token caduca en segundos y regenerarlo invalida el anterior.
      */
-    @PostMapping("/{ticketId}/qr")
+    @PostMapping("/{ticketId:\\d+}/qr")
     public ResponseEntity<ApiResponse<TicketQrResponse>> generateTicketQr(
             @PathVariable Long ticketId,
             @AuthenticationPrincipal SecurityUser principal) {
@@ -94,7 +94,7 @@ public class TicketController {
     /**
      * Hacer check-in de un ticket (rol staff/organizer).
      */
-    @PostMapping("/{ticketId}/checkin")
+    @PostMapping("/{ticketId:\\d+}/checkin")
     public ResponseEntity<ApiResponse<TicketCheckinResponse>> checkinTicket(
             @PathVariable Long ticketId,
             @Valid @RequestBody CheckinTicketRequest request) {

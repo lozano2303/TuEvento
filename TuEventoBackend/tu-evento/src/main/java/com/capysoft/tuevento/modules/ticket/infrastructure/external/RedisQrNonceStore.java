@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.ticket.infrastructure.external;
 
 import com.capysoft.tuevento.modules.ticket.domain.port.QrNonceStore;
 import com.capysoft.tuevento.modules.ticket.domain.port.QrTokenPort.QrScope;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,7 @@ import java.time.Duration;
  * Fail-closed: si Redis no está disponible, consume() devuelve false (el escaneo
  * se rechaza) en lugar de permitir el acceso.
  */
+@Slf4j
 @Component
 public class RedisQrNonceStore implements QrNonceStore {
 
@@ -44,7 +46,15 @@ public class RedisQrNonceStore implements QrNonceStore {
         if (redis == null) {
             return;
         }
-        redis.opsForValue().set(key(scope, targetId), nonce, Duration.ofSeconds(ttlSeconds));
+        try {
+            redis.opsForValue().set(key(scope, targetId), nonce, Duration.ofSeconds(ttlSeconds));
+        } catch (RuntimeException e) {
+            // Redis caído: no bloqueamos la generación del QR. La caducidad la
+            // garantiza el exp del JWT; se pierde el refuerzo anti-reventa hasta
+            // que Redis vuelva (consume() sigue siendo fail-closed).
+            log.warn("Redis unavailable, QR nonce not stored for {}:{} — {}",
+                    scope, targetId, e.getMessage());
+        }
     }
 
     @Override

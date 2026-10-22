@@ -39,6 +39,7 @@ function getInitial(fullName) {
 // ─── Opciones del menú de perfil ─────────────────────────────────────────────
 const MENU_OPTIONS = [
   { icon: "person-outline",        label: "Mi perfil",        sub: "Información, foto y tema",    route: "EditProfile"   },
+  { icon: "ticket-outline",        label: "Mis entradas",     sub: "Tus tickets y códigos QR",   route: "MyTickets"     },
   { icon: "wallet-outline",        label: "Cartera",          sub: "Saldo y movimientos",        route: "Wallet"        },
   { icon: "notifications-outline", label: "Notificaciones",   sub: "Gestiona tus alertas",       route: "Notifications" },
 ];
@@ -260,6 +261,49 @@ export default function ProfileScreen() {
 
         {/* ── Opciones de menú ── */}
         <Animated.View style={[{ paddingHorizontal: 24, marginTop: 32 }, animStyle(menuAnim)]}>
+
+          {/* ── Validar entradas — solo ORGANIZER ── */}
+          {user?.role === "ORGANIZER" && (
+            <>
+              <Text style={{
+                color: colors.textSecondary, fontSize: 11, fontWeight: "700",
+                letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12,
+              }}>
+                Organizador
+              </Text>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate("ScanTicket")}
+                style={{
+                  flexDirection: "row", alignItems: "center",
+                  backgroundColor: colors.surface + "CC",
+                  borderRadius: 14, borderWidth: 1,
+                  borderColor: colors.primary + "40",
+                  padding: 16, marginBottom: 24,
+                }}
+              >
+                <View style={{
+                  width: 40, height: 40, borderRadius: 12,
+                  backgroundColor: colors.primary + "22",
+                  borderWidth: 1, borderColor: colors.primary + "40",
+                  alignItems: "center", justifyContent: "center",
+                  marginRight: 14,
+                }}>
+                  <Ionicons name="scan-outline" size={20} color={colors.accent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "600" }}>
+                    Validar entradas
+                  </Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>
+                    Escanear códigos QR de tus eventos
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+            </>
+          )}
 
           {/* ── Sección Administración — solo visible para ADMIN ── */}
           {user?.role === "ADMIN" && (

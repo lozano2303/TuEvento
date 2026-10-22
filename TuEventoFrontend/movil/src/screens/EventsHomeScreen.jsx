@@ -13,19 +13,16 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { getPublishedEvents } from "../services/eventService";
 
 /**
  * Pantalla principal del tab "Eventos".
- * Muestra diferentes contenidos según el rol del usuario:
- * - ORGANIZER: Muestra código QR (placeholder por ahora)
- * - Otros roles: Muestra lista de eventos publicados
+ * Muestra la lista de eventos publicados para todos los roles.
+ * (La validación de QR del organizador vive en "Validar entradas", en el perfil.)
  */
 export default function EventsHomeScreen() {
   const { colors } = useTheme();
-  const { user } = useAuth();
   const navigation = useNavigation();
   const styles = createStyles(colors);
 
@@ -62,13 +59,8 @@ export default function EventsHomeScreen() {
   };
 
   useEffect(() => {
-    // Solo cargar eventos si el usuario NO es organizador
-    if (user?.role !== "ORGANIZER") {
-      loadEvents();
-    } else {
-      setLoading(false);
-    }
-  }, [user?.role]);
+    loadEvents();
+  }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -100,30 +92,6 @@ export default function EventsHomeScreen() {
     return startStr;
   };
 
-  // Si el usuario es ORGANIZER, mostrar placeholder de QR
-  if (user?.role === "ORGANIZER") {
-    return (
-      <SafeAreaView style={styles.container} edges={["top"]}>
-        <StatusBar barStyle="light-content" backgroundColor={colors.background} />
-        
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Código QR</Text>
-        </View>
-
-        <View style={styles.qrPlaceholder}>
-          <View style={styles.qrIconContainer}>
-            <Ionicons name="qr-code" size={80} color={colors.primary} />
-          </View>
-          <Text style={styles.qrTitle}>Código QR del Organizador</Text>
-          <Text style={styles.qrMessage}>
-            Aquí se mostrará tu código QR para validación de tickets
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Si NO es organizador, mostrar lista de eventos
   const renderEventCard = ({ item }) => (
     <TouchableOpacity
       style={styles.eventCard}
@@ -466,37 +434,6 @@ function createStyles(colors) {
       fontSize: 15,
       fontWeight: "700",
       color: colors.textPrimary,
-    },
-    // QR Placeholder styles
-    qrPlaceholder: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: 32,
-    },
-    qrIconContainer: {
-      width: 160,
-      height: 160,
-      borderRadius: 24,
-      backgroundColor: colors.primary + "20",
-      borderWidth: 2,
-      borderColor: colors.primary + "40",
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 24,
-    },
-    qrTitle: {
-      fontSize: 22,
-      fontWeight: "800",
-      color: colors.textPrimary,
-      marginBottom: 12,
-      textAlign: "center",
-    },
-    qrMessage: {
-      fontSize: 15,
-      color: colors.textSecondary,
-      textAlign: "center",
-      lineHeight: 22,
     },
   });
 }
