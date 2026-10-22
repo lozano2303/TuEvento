@@ -1450,5 +1450,11 @@
         "text": "Les données se mettent à jour à chaque achat approuvé. Pour toute question sur le versement de vos revenus, contactez l’équipe de la plateforme."
       }
     }
+  },
+  "languageGuard": {
+    "title": "Passez la langue en espagnol",
+    "subtitle": "Cette section est uniquement disponible en espagnol",
+    "description": "La création et la modification d’événements ne sont disponibles qu’avec l’espagnol sélectionné comme langue. Changez votre langue en espagnol dans votre profil pour continuer.",
+    "action": "Retour"
   }
 }

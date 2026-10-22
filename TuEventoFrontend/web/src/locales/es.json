@@ -1452,5 +1452,11 @@
         "text": "Los datos se actualizan cada vez que se aprueba una compra. Para consultar el pago de tus ganancias, contacta al equipo de la plataforma."
       }
     }
+  },
+  "languageGuard": {
+    "title": "Cambia el idioma a español",
+    "subtitle": "Esta sección sólo está disponible en español",
+    "description": "La creación y edición de eventos sólo está disponible con el idioma español seleccionado. Cambia tu idioma a español en tu perfil para continuar.",
+    "action": "Volver"
   }
 }
