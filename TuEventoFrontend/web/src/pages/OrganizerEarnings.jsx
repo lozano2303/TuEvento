@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   TrendingUp, Ticket, Calendar, ChevronRight,
   LayoutDashboard, Loader2, AlertTriangle, DollarSign,
@@ -22,6 +23,7 @@ const fmtCOP = (n) =>
 export default function OrganizerEarnings() {
   const navigate      = useNavigate();
   const { palette }   = useTheme();
+  const { t }         = useTranslation();
 
   const [earnings,  setEarnings]  = useState(null);  // OrganizerEarningsResponse
   const [loading,   setLoading]   = useState(true);
@@ -30,9 +32,9 @@ export default function OrganizerEarnings() {
   useEffect(() => {
     getOrganizerEarnings()
       .then((res) => setEarnings(res.data))
-      .catch((err) => setError(err.message || 'No se pudieron cargar las ganancias'))
+      .catch((err) => setError(err.message || t('organizerEarnings.loadError')))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
@@ -61,7 +63,7 @@ export default function OrganizerEarnings() {
             className="text-sm px-4 py-2 rounded-xl font-medium transition-colors hover:brightness-110"
             style={{ background: palette.primary, color: '#fff' }}
           >
-            Reintentar
+            {t('organizerEarnings.retry')}
           </button>
         </div>
       </div>
@@ -86,10 +88,9 @@ export default function OrganizerEarnings() {
           >
             <TrendingUp className="w-8 h-8" style={{ color: palette.primary }} />
           </div>
-          <h2 className="text-2xl font-bold">Aún no hay ganancias</h2>
+          <h2 className="text-2xl font-bold">{t('organizerEarnings.empty.title')}</h2>
           <p className="text-sm leading-relaxed" style={{ color: palette.textSecondary }}>
-            Cuando alguien compre tickets en uno de tus eventos publicados,
-            las ganancias aparecerán aquí automáticamente.
+            {t('organizerEarnings.empty.description')}
           </p>
           <button
             onClick={() => navigate('/events/manage')}
@@ -97,7 +98,7 @@ export default function OrganizerEarnings() {
             style={{ background: `linear-gradient(135deg, ${palette.primary}, ${palette.accent})`, color: '#fff' }}
           >
             <LayoutDashboard className="w-4 h-4" />
-            Ir a mis eventos
+            {t('organizerEarnings.empty.goToEvents')}
           </button>
         </div>
       </div>
@@ -123,15 +124,14 @@ export default function OrganizerEarnings() {
             }}
           >
             <TrendingUp className="w-3.5 h-3.5" />
-            Panel de ganancias
+            {t('organizerEarnings.hero.badge')}
           </span>
           <h1 className="text-3xl md:text-4xl font-black leading-tight">
-            Tus{' '}
-            <span style={{ color: palette.primary }}>ganancias</span>
+            {t('organizerEarnings.hero.title')}{' '}
+            <span style={{ color: palette.primary }}>{t('organizerEarnings.hero.titleAccent')}</span>
           </h1>
           <p className="text-sm leading-relaxed max-w-lg" style={{ color: palette.textSecondary }}>
-            Aquí ves un resumen de lo recaudado en tus eventos. Esta información
-            es de solo lectura — el cobro real lo gestiona la plataforma directamente.
+            {t('organizerEarnings.hero.description')}
           </p>
         </section>
 
@@ -156,12 +156,12 @@ export default function OrganizerEarnings() {
             <div className="relative z-10 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-white/70">
-                  Total recaudado
+                  {t('organizerEarnings.kpi.totalRevenue.label')}
                 </span>
                 <DollarSign className="w-4 h-4 text-white/70" />
               </div>
               <p className="text-3xl font-black text-white">{fmtCOP(totalEarnings)}</p>
-              <p className="text-xs text-white/60">Total generado en todos tus eventos</p>
+              <p className="text-xs text-white/60">{t('organizerEarnings.kpi.totalRevenue.sub')}</p>
             </div>
           </div>
 
@@ -179,13 +179,13 @@ export default function OrganizerEarnings() {
                   className="text-[10px] font-bold uppercase tracking-widest"
                   style={{ color: palette.textMuted }}
                 >
-                  Tickets vendidos
+                  {t('organizerEarnings.kpi.ticketsSold.label')}
                 </span>
                 <Ticket className="w-4 h-4" style={{ color: palette.textMuted }} />
               </div>
               <p className="text-3xl font-black">{totalTickets.toLocaleString('es-CO')}</p>
               <p className="text-xs" style={{ color: palette.textSecondary }}>
-                Transacciones completadas
+                {t('organizerEarnings.kpi.ticketsSold.sub')}
               </p>
             </div>
           </div>
@@ -204,13 +204,13 @@ export default function OrganizerEarnings() {
                   className="text-[10px] font-bold uppercase tracking-widest"
                   style={{ color: palette.textMuted }}
                 >
-                  Eventos con ventas
+                  {t('organizerEarnings.kpi.eventsWithSales.label')}
                 </span>
                 <Calendar className="w-4 h-4" style={{ color: palette.textMuted }} />
               </div>
               <p className="text-3xl font-black">{byEvent.length}</p>
               <p className="text-xs" style={{ color: palette.textSecondary }}>
-                Con al menos un ticket vendido
+                {t('organizerEarnings.kpi.eventsWithSales.sub')}
               </p>
             </div>
           </div>
@@ -231,14 +231,14 @@ export default function OrganizerEarnings() {
           >
             <div className="flex items-center gap-2">
               <BarChart2 className="w-4 h-4" style={{ color: palette.primary }} />
-              <h2 className="text-sm font-bold">Desglose por evento</h2>
+              <h2 className="text-sm font-bold">{t('organizerEarnings.table.title')}</h2>
             </div>
             <button
               onClick={() => navigate('/events/manage')}
               className="text-xs font-semibold flex items-center gap-1 transition-colors hover:brightness-110"
               style={{ color: palette.primary }}
             >
-              Gestionar eventos
+              {t('organizerEarnings.table.manageEvents')}
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -249,12 +249,12 @@ export default function OrganizerEarnings() {
               <thead>
                 <tr style={{ borderBottom: `1px solid ${palette.textPrimary}10` }}>
                   {[
-                    { label: 'Evento',          align: 'left'  },
-                    { label: 'Tickets vendidos', align: 'right' },
-                    { label: 'Recaudado',        align: 'right' },
-                  ].map(({ label, align }) => (
+                    { key: 'event',   label: t('organizerEarnings.table.columns.event'),   align: 'left'  },
+                    { key: 'tickets', label: t('organizerEarnings.table.columns.tickets'), align: 'right' },
+                    { key: 'revenue', label: t('organizerEarnings.table.columns.revenue'), align: 'right' },
+                  ].map(({ key, label, align }) => (
                     <th
-                      key={label}
+                      key={key}
                       className={`px-6 py-3 text-[10px] font-bold uppercase tracking-widest ${align === 'right' ? 'text-right' : ''}`}
                       style={{ color: palette.textMuted }}
                     >
@@ -345,7 +345,7 @@ export default function OrganizerEarnings() {
                 <tr style={{ borderTop: `2px solid ${palette.textPrimary}15` }}>
                   <td className="px-6 py-4">
                     <span className="text-sm font-bold" style={{ color: palette.textMuted }}>
-                      Total
+                      {t('organizerEarnings.table.total')}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -378,13 +378,13 @@ export default function OrganizerEarnings() {
           {[
             {
               icon: ShieldCheck,
-              title: '¿Cómo se calcula?',
-              text:  'Se suman todos los pagos aprobados en tus eventos. El monto mostrado refleja el total cobrado a los asistentes.',
+              title: t('organizerEarnings.info.howCalculated.title'),
+              text:  t('organizerEarnings.info.howCalculated.text'),
             },
             {
               icon: TrendingUp,
-              title: 'Información en tiempo real',
-              text:  'Los datos se actualizan cada vez que se aprueba una compra. Para consultar el pago de tus ganancias, contacta al equipo de la plataforma.',
+              title: t('organizerEarnings.info.realTime.title'),
+              text:  t('organizerEarnings.info.realTime.text'),
             },
           ].map(({ icon: Icon, title, text }) => (
             <div

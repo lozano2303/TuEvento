@@ -1403,5 +1403,54 @@
       "updateError": "No se pudo guardar el nombre. Intenta de nuevo.",
       "connectionError": "Error de conexión"
     }
+  },
+  "organizerEarnings": {
+    "loadError": "No se pudieron cargar las ganancias",
+    "retry": "Reintentar",
+    "empty": {
+      "title": "Aún no hay ganancias",
+      "description": "Cuando alguien compre tickets en uno de tus eventos publicados, las ganancias aparecerán aquí automáticamente.",
+      "goToEvents": "Ir a mis eventos"
+    },
+    "hero": {
+      "badge": "Panel de ganancias",
+      "title": "Tus",
+      "titleAccent": "ganancias",
+      "description": "Aquí ves un resumen de lo recaudado en tus eventos. Esta información es de solo lectura — el cobro real lo gestiona la plataforma directamente."
+    },
+    "kpi": {
+      "totalRevenue": {
+        "label": "Total recaudado",
+        "sub": "Total generado en todos tus eventos"
+      },
+      "ticketsSold": {
+        "label": "Tickets vendidos",
+        "sub": "Transacciones completadas"
+      },
+      "eventsWithSales": {
+        "label": "Eventos con ventas",
+        "sub": "Con al menos un ticket vendido"
+      }
+    },
+    "table": {
+      "title": "Desglose por evento",
+      "manageEvents": "Gestionar eventos",
+      "columns": {
+        "event": "Evento",
+        "tickets": "Tickets vendidos",
+        "revenue": "Recaudado"
+      },
+      "total": "Total"
+    },
+    "info": {
+      "howCalculated": {
+        "title": "¿Cómo se calcula?",
+        "text": "Se suman todos los pagos aprobados en tus eventos. El monto mostrado refleja el total cobrado a los asistentes."
+      },
+      "realTime": {
+        "title": "Información en tiempo real",
+        "text": "Los datos se actualizan cada vez que se aprueba una compra. Para consultar el pago de tus ganancias, contacta al equipo de la plataforma."
+      }
+    }
   }
 }

@@ -1401,5 +1401,54 @@
       "updateError": "Impossible d'enregistrer le nom. Réessayez.",
       "connectionError": "Erreur de connexion"
     }
+  },
+  "organizerEarnings": {
+    "loadError": "Impossible de charger les revenus",
+    "retry": "Réessayer",
+    "empty": {
+      "title": "Pas encore de revenus",
+      "description": "Lorsque quelqu’un achète des billets pour l’un de vos événements publiés, les revenus apparaîtront ici automatiquement.",
+      "goToEvents": "Aller à mes événements"
+    },
+    "hero": {
+      "badge": "Panneau des revenus",
+      "title": "Vos",
+      "titleAccent": "revenus",
+      "description": "Vous voyez ici un résumé de ce que vous avez encaissé sur vos événements. Ces informations sont en lecture seule — le versement réel est géré directement par la plateforme."
+    },
+    "kpi": {
+      "totalRevenue": {
+        "label": "Total encaissé",
+        "sub": "Total généré sur tous vos événements"
+      },
+      "ticketsSold": {
+        "label": "Billets vendus",
+        "sub": "Transactions terminées"
+      },
+      "eventsWithSales": {
+        "label": "Événements avec ventes",
+        "sub": "Avec au moins un billet vendu"
+      }
+    },
+    "table": {
+      "title": "Détail par événement",
+      "manageEvents": "Gérer les événements",
+      "columns": {
+        "event": "Événement",
+        "tickets": "Billets vendus",
+        "revenue": "Encaissé"
+      },
+      "total": "Total"
+    },
+    "info": {
+      "howCalculated": {
+        "title": "Comment est-ce calculé ?",
+        "text": "Tous les paiements approuvés de vos événements sont additionnés. Le montant affiché reflète le total facturé aux participants."
+      },
+      "realTime": {
+        "title": "Informations en temps réel",
+        "text": "Les données se mettent à jour à chaque achat approuvé. Pour toute question sur le versement de vos revenus, contactez l’équipe de la plateforme."
+      }
+    }
   }
 }

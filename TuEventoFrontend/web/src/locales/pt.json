@@ -1401,5 +1401,54 @@
       "updateError": "Não foi possível salvar o nome. Tente novamente.",
       "connectionError": "Erro de conexão"
     }
+  },
+  "organizerEarnings": {
+    "loadError": "Não foi possível carregar os ganhos",
+    "retry": "Tentar novamente",
+    "empty": {
+      "title": "Ainda não há ganhos",
+      "description": "Quando alguém comprar ingressos para um dos seus eventos publicados, os ganhos aparecerão aqui automaticamente.",
+      "goToEvents": "Ir para meus eventos"
+    },
+    "hero": {
+      "badge": "Painel de ganhos",
+      "title": "Seus",
+      "titleAccent": "ganhos",
+      "description": "Aqui você vê um resumo do que arrecadou em seus eventos. Estas informações são somente leitura — o pagamento real é gerenciado diretamente pela plataforma."
+    },
+    "kpi": {
+      "totalRevenue": {
+        "label": "Total arrecadado",
+        "sub": "Total gerado em todos os seus eventos"
+      },
+      "ticketsSold": {
+        "label": "Ingressos vendidos",
+        "sub": "Transações concluídas"
+      },
+      "eventsWithSales": {
+        "label": "Eventos com vendas",
+        "sub": "Com pelo menos um ingresso vendido"
+      }
+    },
+    "table": {
+      "title": "Detalhamento por evento",
+      "manageEvents": "Gerenciar eventos",
+      "columns": {
+        "event": "Evento",
+        "tickets": "Ingressos vendidos",
+        "revenue": "Arrecadado"
+      },
+      "total": "Total"
+    },
+    "info": {
+      "howCalculated": {
+        "title": "Como é calculado?",
+        "text": "Somam-se todos os pagamentos aprovados nos seus eventos. O valor exibido reflete o total cobrado dos participantes."
+      },
+      "realTime": {
+        "title": "Informação em tempo real",
+        "text": "Os dados são atualizados sempre que uma compra é aprovada. Para consultar o pagamento dos seus ganhos, entre em contato com a equipe da plataforma."
+      }
+    }
   }
 }

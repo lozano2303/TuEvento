@@ -1403,5 +1403,54 @@
       "updateError": "Could not save the name. Try again.",
       "connectionError": "Connection error"
     }
+  },
+  "organizerEarnings": {
+    "loadError": "Could not load earnings",
+    "retry": "Retry",
+    "empty": {
+      "title": "No earnings yet",
+      "description": "When someone buys tickets for one of your published events, earnings will appear here automatically.",
+      "goToEvents": "Go to my events"
+    },
+    "hero": {
+      "badge": "Earnings panel",
+      "title": "Your",
+      "titleAccent": "earnings",
+      "description": "Here you see a summary of what you have collected across your events. This information is read-only — the actual payout is handled by the platform directly."
+    },
+    "kpi": {
+      "totalRevenue": {
+        "label": "Total collected",
+        "sub": "Total generated across all your events"
+      },
+      "ticketsSold": {
+        "label": "Tickets sold",
+        "sub": "Completed transactions"
+      },
+      "eventsWithSales": {
+        "label": "Events with sales",
+        "sub": "With at least one ticket sold"
+      }
+    },
+    "table": {
+      "title": "Breakdown by event",
+      "manageEvents": "Manage events",
+      "columns": {
+        "event": "Event",
+        "tickets": "Tickets sold",
+        "revenue": "Collected"
+      },
+      "total": "Total"
+    },
+    "info": {
+      "howCalculated": {
+        "title": "How is it calculated?",
+        "text": "All approved payments across your events are added up. The amount shown reflects the total charged to attendees."
+      },
+      "realTime": {
+        "title": "Real-time information",
+        "text": "Data updates every time a purchase is approved. To inquire about the payout of your earnings, contact the platform team."
+      }
+    }
   }
 }
