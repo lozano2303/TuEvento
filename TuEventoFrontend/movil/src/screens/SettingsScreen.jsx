@@ -88,7 +88,7 @@ export default function SettingsScreen() {
         <BackButton style={{ marginBottom: 0 }} />
         <View style={{ flex: 1, alignItems: "center" }}>
           <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: "800" }}>
-            Configuración
+            Personalizar tema
           </Text>
         </View>
         {/* Spacer para centrar el título */}
