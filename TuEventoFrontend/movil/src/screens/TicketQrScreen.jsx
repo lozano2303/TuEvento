@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg";
 import { useTheme } from "../context/ThemeContext";
 import { generateTicketQr, generateOrderQr } from "../services/ticketService";
+import { mapErrorMessage } from "../utils/errorMessages";
 
 /**
  * Pantalla que muestra el QR de un ticket o de una orden.
@@ -39,7 +40,7 @@ export default function TicketQrScreen() {
       setQr(data);
       setRemaining(data.expiresInSeconds ?? 60);
     } catch (e) {
-      setError(e.message || "No se pudo generar el QR.");
+      setError(mapErrorMessage(e.message) || "No se pudo generar el QR.");
       setQr(null);
     } finally {
       setLoading(false);

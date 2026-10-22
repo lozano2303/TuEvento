@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   StatusBar, RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../context/ThemeContext";
 import { getMyOrders } from "../services/ticketService";
@@ -58,7 +58,9 @@ export default function MyTicketsScreen() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // Recarga cada vez que la pantalla recibe foco, para reflejar cambios de
+  // estado (p. ej. un ticket que pasó a USED tras ser escaneado).
+  useFocusEffect(useCallback(() => { load(); }, [load]));
   const onRefresh = () => { setRefreshing(true); load(); };
 
   const renderTicket = (order, ticket) => {

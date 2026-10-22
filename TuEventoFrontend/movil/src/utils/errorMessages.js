@@ -26,6 +26,21 @@ export const mapErrorMessage = (message) => {
     "Recovery code has already been used": "Este código ya fue utilizado. Solicita uno nuevo",
     "Recovery code has expired": "El código de recuperación expiró. Solicita uno nuevo",
     "Passwords do not match": "Las contraseñas no coinciden",
+    // QR de tickets / escaneo
+    "Ticket is not in a state that can generate a QR":
+      "Esta entrada ya fue escaneada o no está disponible",
+    "TICKET_NOT_VALIDATABLE": "Esta entrada ya fue escaneada o no está disponible",
+    "The event is not active": "El evento ya no está activo, no puedes generar el código",
+    "EVENT_NOT_ACTIVE": "El evento ya no está activo, no puedes generar el código",
+    "This order has no remaining tickets to validate":
+      "No quedan entradas por validar en esta orden",
+    "ORDER_NO_VALIDATABLE_TICKETS": "No quedan entradas por validar en esta orden",
+    "QR code is invalid or has expired": "El código QR no es válido o ya caducó",
+    "QR_INVALID": "El código QR no es válido o ya caducó",
+    "QR code is no longer valid": "Este código QR ya no es válido. Pide uno nuevo",
+    "QR_EXPIRED_OR_REPLACED": "Este código QR ya no es válido. Pide uno nuevo",
+    "You are not the organizer of this event":
+      "Solo el organizador de este evento puede validar esta entrada",
     // Genéricos
     "An unexpected error occurred": "Error inesperado. Intenta de nuevo",
     "Malformed JSON request": "Error en la solicitud. Intenta de nuevo",
