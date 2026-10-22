@@ -22,6 +22,8 @@ public class OrderResponse {
     private Long orderId;
     private Long userId;
     private Long eventId;
+    private String eventName;      // nombre del evento (para mostrarlo en "mis entradas")
+    private String eventStatus;    // estado del evento: PUBLISHED, CANCELLED, COMPLETED, ...
     private BigDecimal totalAmount;
     private String currency;
     private OrderStatus status;
@@ -41,15 +43,21 @@ public class OrderResponse {
     }
     
     public static OrderResponse fromDomainWithTickets(Order order, List<TicketResponse> tickets) {
-        OrderResponse response = fromDomain(order);
+        return fromDomainWithTickets(order, tickets, null, null);
+    }
+
+    public static OrderResponse fromDomainWithTickets(Order order, List<TicketResponse> tickets,
+                                                      String eventName, String eventStatus) {
         return OrderResponse.builder()
-            .orderId(response.getOrderId())
-            .userId(response.getUserId())
-            .eventId(response.getEventId())
-            .totalAmount(response.getTotalAmount())
-            .currency(response.getCurrency())
-            .status(response.getStatus())
-            .createdAt(response.getCreatedAt())
+            .orderId(order.getOrderId())
+            .userId(order.getUserId())
+            .eventId(order.getEventId())
+            .eventName(eventName)
+            .eventStatus(eventStatus)
+            .totalAmount(order.getTotalAmount().getAmount())
+            .currency(order.getTotalAmount().getCurrency())
+            .status(order.getStatus())
+            .createdAt(order.getCreatedAt())
             .tickets(tickets)
             .build();
     }

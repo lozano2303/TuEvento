@@ -33,6 +33,9 @@ import AdminFinancialScreen        from "../screens/AdminFinancialScreen";
 import AdminReportsScreen          from "../screens/AdminReportsScreen";
 import AdminCategoriesScreen       from "../screens/AdminCategoriesScreen";
 import AdminSectionTypesScreen     from "../screens/AdminSectionTypesScreen";
+import MyTicketsScreen             from "../screens/MyTicketsScreen";
+import TicketQrScreen              from "../screens/TicketQrScreen";
+import ScanTicketScreen            from "../screens/ScanTicketScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -229,6 +232,9 @@ export default function AppNavigator() {
         <Stack.Screen name="AdminReports"            component={AdminReportsScreen} />
         <Stack.Screen name="AdminCategories"         component={AdminCategoriesScreen} />
         <Stack.Screen name="AdminSectionTypes"       component={AdminSectionTypesScreen} />
+        <Stack.Screen name="MyTickets"               component={MyTicketsScreen} />
+        <Stack.Screen name="TicketQr"                component={TicketQrScreen} />
+        <Stack.Screen name="ScanTicket"              component={ScanTicketScreen} />
         <Stack.Screen
           name="Main"
           component={MainTabs}
