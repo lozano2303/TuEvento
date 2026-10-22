@@ -13,7 +13,7 @@ public interface LanguageRepository {
     /**
      * Busca un idioma por su ID.
      */
-    Optional<Language> findById(Long languageId);
+    Optional<Language> findById(Integer languageId);
 
     /**
      * Busca un idioma por su código.

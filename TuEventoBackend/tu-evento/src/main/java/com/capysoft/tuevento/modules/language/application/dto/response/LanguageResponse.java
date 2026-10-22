@@ -10,7 +10,7 @@ import lombok.Getter;
 @Builder
 public class LanguageResponse {
     
-    private final Long languageId;
+    private final Integer languageId;
     private final String code;
     private final String name;
     private final Boolean isActive;

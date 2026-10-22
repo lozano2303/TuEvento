@@ -36,7 +36,7 @@ public class GetLanguagesUseCaseImpl implements GetLanguagesUseCase {
     }
 
     @Override
-    public Optional<LanguageResponse> getLanguageById(Long languageId) {
+    public Optional<LanguageResponse> getLanguageById(Integer languageId) {
         return languageRepository.findById(languageId)
                 .map(mapper::toResponse);
     }

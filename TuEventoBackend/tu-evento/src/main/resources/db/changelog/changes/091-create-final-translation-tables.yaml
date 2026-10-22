@@ -1,0 +1,303 @@
+databaseChangeLog:
+  - changeSet:
+      id: 091
+      author: kiro
+      changes:
+        - createTable:
+            tableName: event_comment_reply_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: reply_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_reply_text
+                  type: varchar(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: draft
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: section_type_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: draft
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: channel_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: channel_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: translated_description
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: draft
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: notification_type_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: notification_type_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_description
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: draft
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: module_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: module
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: draft
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: action_translation
+            columns:
+              - column:
+                  name: translation_id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: action
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language_id
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: translated_description
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: draft
+                  constraints:
+                    nullable: false
+
+        - addUniqueConstraint:
+            tableName: event_comment_reply_translation
+            columnNames: reply_id, language_id
+            constraintName: uk_event_comment_reply_translation_reply_language
+
+        - addUniqueConstraint:
+            tableName: section_type_translation
+            columnNames: section_type_id, language_id
+            constraintName: uk_section_type_translation_section_type_language
+
+        - addUniqueConstraint:
+            tableName: channel_translation
+            columnNames: channel_id, language_id
+            constraintName: uk_channel_translation_channel_language
+
+        - addUniqueConstraint:
+            tableName: notification_type_translation
+            columnNames: notification_type_id, language_id
+            constraintName: uk_notification_type_translation_notification_type_language
+
+        - addUniqueConstraint:
+            tableName: module_translation
+            columnNames: module, language_id
+            constraintName: uk_module_translation_module_language
+
+        - addUniqueConstraint:
+            tableName: action_translation
+            columnNames: action, language_id
+            constraintName: uk_action_translation_action_language
+
+        - addForeignKeyConstraint:
+            baseTableName: event_comment_reply_translation
+            baseColumnNames: language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_event_comment_reply_translation_language
+
+        - addForeignKeyConstraint:
+            baseTableName: section_type_translation
+            baseColumnNames: language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_section_type_translation_language
+
+        - addForeignKeyConstraint:
+            baseTableName: channel_translation
+            baseColumnNames: language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_channel_translation_language
+
+        - addForeignKeyConstraint:
+            baseTableName: notification_type_translation
+            baseColumnNames: language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_notification_type_translation_language
+
+        - addForeignKeyConstraint:
+            baseTableName: module_translation
+            baseColumnNames: language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_module_translation_language
+
+        - addForeignKeyConstraint:
+            baseTableName: action_translation
+            baseColumnNames: language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_action_translation_language

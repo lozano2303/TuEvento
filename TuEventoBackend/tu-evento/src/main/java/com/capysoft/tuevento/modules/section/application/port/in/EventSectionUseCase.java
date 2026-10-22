@@ -7,7 +7,7 @@ import com.capysoft.tuevento.modules.section.application.dto.response.EventSecti
 import java.util.List;
 
 public interface EventSectionUseCase {
-    List<EventSectionResponse> getSectionsByEvent(Integer eventId);
+    List<EventSectionResponse> getSectionsByEvent(Integer eventId, String languageCode);
     EventSectionResponse createEventSection(CreateEventSectionRequest request);
     EventSectionResponse updateEventSection(Integer eventSectionId, UpdateEventSectionRequest request);
     void deleteEventSection(Integer eventSectionId);

@@ -10,10 +10,12 @@ import java.util.List;
 public interface GetEventUseCase {
 
     EventResponse findById(Long eventId);
+    EventResponse findById(Long eventId, String languageCode);
     List<EventSummaryResponse> findByUser(Long userId);
     List<EventSummaryResponse> findByStatus(EventStatus status);
 
     List<EventSummaryResponse> getPublishedEvents();
+    List<EventResponse> getPublishedEventsWithTranslations(String languageCode);
     List<EventSummaryResponse> getPublishedEventsByCityId(Long cityId);
     List<EventSummaryResponse> getPublishedEventsByCategoryId(Integer categoryId);
     List<EventSummaryResponse> getPublishedEventsByDateRange(LocalDate from, LocalDate to);

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Upload, FileText, UserCheck, Info, Send, Delete, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react';
 import { createPetition, getPetitionStatus } from '../services/OrganizerPetitionService';
 
 const OrganizerPetitionForm = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ const OrganizerPetitionForm = () => {
   const handleRemoveFile = () => setSelectedFile(null);
 
   const handleSubmit = async () => {
-    if (!selectedFile) { setError('Selecciona un documento'); return; }
+    if (!selectedFile) { setError(t('organizerPetition.errors.selectDocument')); return; }
     setLoading(true); setError(null);
     try {
       const formData = new FormData();
@@ -46,7 +48,7 @@ const OrganizerPetitionForm = () => {
       setSuccess(true);
       await checkPetitionStatus();
     } catch (err) {
-      setError(err.message || 'Error al enviar la solicitud');
+      setError(err.message || t('organizerPetition.errors.submitError'));
     } finally {
       setLoading(false);
     }
@@ -62,10 +64,10 @@ const OrganizerPetitionForm = () => {
         <section className="mb-10">
           <div className="flex flex-col gap-2">
             <h1 className="text-textPrimary text-4xl md:text-5xl font-black leading-tight tracking-tight">
-              Solicitud de Organizador
+              {t('organizerPetition.title')}
             </h1>
             <p className="text-textSecondary text-lg max-w-2xl">
-              Sube un documento de identidad para verificar tu cuenta y poder crear eventos dentro de la plataforma.
+              {t('organizerPetition.subtitle')}
             </p>
           </div>
         </section>
@@ -76,8 +78,8 @@ const OrganizerPetitionForm = () => {
             style={{ background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
             <Clock className="text-primary shrink-0 w-6 h-6" />
             <div>
-              <p className="text-textPrimary font-semibold">Tu solicitud está en revisión</p>
-              <p className="text-textMuted text-sm">Enviada el {new Date(petitionStatus.applicationDate).toLocaleDateString('es-CO')}</p>
+              <p className="text-textPrimary font-semibold">{t('organizerPetition.status.pending')}</p>
+              <p className="text-textMuted text-sm">{t('organizerPetition.status.pendingSince', { date: new Date(petitionStatus.applicationDate).toLocaleDateString() })}</p>
             </div>
           </div>
         )}
@@ -86,8 +88,8 @@ const OrganizerPetitionForm = () => {
             style={{ background: 'color-mix(in srgb, var(--color-error) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)' }}>
             <XCircle className="text-error shrink-0 w-6 h-6" />
             <div>
-              <p className="text-textPrimary font-semibold">Tu solicitud fue rechazada</p>
-              <p className="text-textMuted text-sm">Puedes intentarlo nuevamente</p>
+              <p className="text-textPrimary font-semibold">{t('organizerPetition.status.rejected')}</p>
+              <p className="text-textMuted text-sm">{t('organizerPetition.status.rejectedRetry')}</p>
             </div>
           </div>
         )}
@@ -107,7 +109,7 @@ const OrganizerPetitionForm = () => {
               <div>
                 <h3 className="text-textPrimary text-lg font-bold leading-tight tracking-tight mb-4 flex items-center gap-2">
                   <FileText className="text-primary" />
-                  {petitionStatus?.status === 'APPROVED' ? 'Documento verificado' : 'Archivo cargado'}
+                  {petitionStatus?.status === 'APPROVED' ? t('organizerPetition.status.approved') : t('organizerPetition.fileUpload.fileLoaded')}
                 </h3>
                 <div className="flex items-center gap-4 rounded-xl px-4 py-3 justify-between"
                   style={{ background: 'var(--color-surface)', border: '1px solid var(--color-surfaceAlt)' }}>
@@ -117,13 +119,13 @@ const OrganizerPetitionForm = () => {
                       <FileText className="w-6 h-6" />
                     </div>
                     <div className="flex flex-col justify-center">
-                      <p className="text-textPrimary text-base font-semibold leading-none">Documento de identidad</p>
+                      <p className="text-textPrimary text-base font-semibold leading-none">{t('organizerPetition.documents.items.officialId')}</p>
                       <p className="text-textMuted text-sm mt-1">
                         {petitionStatus?.status === 'APPROVED'
-                          ? 'Aprobado'
+                          ? t('organizerPetition.buttons.approved')
                           : petitionStatus?.applicationDate
-                            ? `Enviado el ${new Date(petitionStatus.applicationDate).toLocaleDateString('es-CO')}`
-                            : 'Subido'}
+                            ? t('organizerPetition.status.pendingSince', { date: new Date(petitionStatus.applicationDate).toLocaleDateString() })
+                            : t('organizerPetition.fileUpload.uploaded')}
                       </p>
                     </div>
                   </div>
@@ -169,8 +171,8 @@ const OrganizerPetitionForm = () => {
                         <Upload className="w-10 h-10 text-primary" />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <p className="text-textPrimary text-xl font-bold">Arrastra y suelta tu documento aquí</p>
-                        <p className="text-textMuted text-sm">O haz clic para seleccionar un archivo manualmente</p>
+                        <p className="text-textPrimary text-xl font-bold">{t('organizerPetition.fileUpload.dragDrop')}</p>
+                        <p className="text-textMuted text-sm">{t('organizerPetition.fileUpload.clickSelect')}</p>
                       </div>
                     </div>
                     <input type="file" className="hidden" accept=".pdf"
@@ -178,9 +180,9 @@ const OrganizerPetitionForm = () => {
                     <label htmlFor="file-upload"
                       className="flex min-w-[200px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-6 text-textPrimary text-sm font-bold leading-normal tracking-wide transition-transform active:scale-95 shadow-lg"
                       style={{ background: 'var(--color-primary)', boxShadow: 'var(--color-primary) 0 0 20px -8px' }}>
-                      Seleccionar archivo
+                      {t('organizerPetition.fileUpload.selectFile')}
                     </label>
-                    <p className="text-textMuted text-xs font-medium uppercase tracking-widest">PDF • Máx 5MB</p>
+                    <p className="text-textMuted text-xs font-medium uppercase tracking-widest">{t('organizerPetition.fileUpload.formatInfo')}</p>
                   </div>
                 </div>
 
@@ -210,13 +212,13 @@ const OrganizerPetitionForm = () => {
               className="flex items-center justify-center gap-2 w-full h-14 rounded-xl text-textPrimary font-bold text-lg tracking-wide transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))' }}>
               {loading ? (
-                <><div className="w-5 h-5 border-2 border-textPrimary/30 border-t-textPrimary rounded-full animate-spin" />Enviando...</>
+                <><div className="w-5 h-5 border-2 border-textPrimary/30 border-t-textPrimary rounded-full animate-spin" />{t('organizerPetition.buttons.sending')}</>
               ) : petitionStatus?.status === 'PENDING' ? (
-                <>En revisión<Clock className="w-5 h-5" /></>
+                <>{t('organizerPetition.buttons.inReview')}<Clock className="w-5 h-5" /></>
               ) : petitionStatus?.status === 'APPROVED' ? (
-                <>Aprobado<CheckCircle className="w-5 h-5" /></>
+                <>{t('organizerPetition.buttons.approved')}<CheckCircle className="w-5 h-5" /></>
               ) : (
-                <><Send className="w-5 h-5" />Enviar solicitud</>
+                <><Send className="w-5 h-5" />{t('organizerPetition.buttons.send')}</>
               )}
             </button>
           </div>
@@ -227,12 +229,16 @@ const OrganizerPetitionForm = () => {
               style={{ background: 'var(--color-surface)', border: '1px solid var(--color-surfaceAlt)' }}>
               <h3 className="text-textPrimary text-lg font-bold leading-tight mb-6 flex items-center gap-2">
                 <UserCheck className="text-primary w-5 h-5" />
-                Documentos requeridos
+                {t('organizerPetition.documents.title')}
               </h3>
               <div className="mb-6">
-                <p className="text-xs font-bold text-textMuted uppercase tracking-widest mb-3">Obligatorios</p>
+                <p className="text-xs font-bold text-textMuted uppercase tracking-widest mb-3">{t('organizerPetition.documents.required')}</p>
                 <ul className="space-y-3">
-                  {['Cédula de ciudadanía / ID', 'Pasaporte válido (Extranjeros)', 'Documento de identidad oficial'].map(item => (
+                  {[
+                    t('organizerPetition.documents.items.idCard'),
+                    t('organizerPetition.documents.items.passport'),
+                    t('organizerPetition.documents.items.officialId')
+                  ].map(item => (
                     <li key={item} className="flex items-start gap-3">
                       <span className="w-1 h-1 bg-textMuted rounded-full mt-1.5 shrink-0" />
                       <span className="text-textSecondary text-sm">{item}</span>
@@ -241,9 +247,13 @@ const OrganizerPetitionForm = () => {
                 </ul>
               </div>
               <div className="pt-6" style={{ borderTop: '1px solid var(--color-surfaceAlt)' }}>
-                <p className="text-xs font-bold text-textMuted uppercase tracking-widest mb-3">Opcionales</p>
+                <p className="text-xs font-bold text-textMuted uppercase tracking-widest mb-3">{t('organizerPetition.documents.optional')}</p>
                 <ul className="space-y-3">
-                  {['Certificado de antecedentes', 'Certificados de cursos', 'Referencias laborales'].map(item => (
+                  {[
+                    t('organizerPetition.documents.items.backgroundCheck'),
+                    t('organizerPetition.documents.items.courseCerts'),
+                    t('organizerPetition.documents.items.references')
+                  ].map(item => (
                     <li key={item} className="flex items-start gap-3">
                       <span className="w-1 h-1 bg-textMuted rounded-full mt-1.5 shrink-0" />
                       <span className="text-textMuted text-sm italic">{item}</span>
@@ -258,7 +268,7 @@ const OrganizerPetitionForm = () => {
               <div className="flex gap-3">
                 <Info className="text-primary w-4 h-4 shrink-0 mt-0.5" />
                 <p className="text-xs text-textSecondary leading-relaxed">
-                  Tu información será procesada en un plazo de 24 a 48 horas hábiles por nuestro equipo de seguridad.
+                  {t('organizerPetition.info.processingTime')}
                 </p>
               </div>
             </div>

@@ -1,0 +1,59 @@
+databaseChangeLog:
+  - changeSet:
+      id: 086-seed-additional-languages
+      author: system
+      changes:
+        - insert:
+            tableName: language
+            columns:
+              - column:
+                  name: code
+                  value: "fr"
+              - column:
+                  name: name
+                  value: "Français"
+              - column:
+                  name: is_active
+                  valueBoolean: true
+              - column:
+                  name: is_default
+                  valueBoolean: false
+              - column:
+                  name: created_at
+                  valueDate: NOW()
+              - column:
+                  name: updated_at
+                  valueDate: NOW()
+              - column:
+                  name: created_by
+                  value: "system"
+              - column:
+                  name: updated_by
+                  value: "system"
+        - insert:
+            tableName: language
+            columns:
+              - column:
+                  name: code
+                  value: "pt"
+              - column:
+                  name: name
+                  value: "Português (Portugal)"
+              - column:
+                  name: is_active
+                  valueBoolean: true
+              - column:
+                  name: is_default
+                  valueBoolean: false
+              - column:
+                  name: created_at
+                  valueDate: NOW()
+              - column:
+                  name: updated_at
+                  valueDate: NOW()
+              - column:
+                  name: created_by
+                  value: "system"
+              - column:
+                  name: updated_by
+                  value: "system"

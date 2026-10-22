@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 084b-fix-language-default-index
+      author: system
+      dbms: postgresql
+      changes:
+        - sql:
+            sql: DROP INDEX IF EXISTS idx_language_is_default_unique;
+        - sql:
+            sql: CREATE UNIQUE INDEX idx_language_is_default_unique ON language (is_default) WHERE is_default = TRUE;
+      rollback:
+        - sql:
+            sql: DROP INDEX IF EXISTS idx_language_is_default_unique;
+        - sql:
+            sql: CREATE UNIQUE INDEX idx_language_is_default_unique ON language (is_default);
+        # Note: rollback will fail if there are multiple languages with is_default=false

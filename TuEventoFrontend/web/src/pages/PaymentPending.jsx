@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { XCircle, Loader2, AlertCircle, RefreshCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { getPayment } from '../services/PaymentService';
 import { getOrderTickets } from '../services/OrderService';
 import PaymentApprovedSummary from '../components/PaymentApprovedSummary';
@@ -23,6 +24,7 @@ export default function PaymentPending() {
   const { paymentId } = useParams();
   const location      = useLocation();
   const navigate      = useNavigate();
+  const { t }         = useTranslation();
 
   const { orderId, eventId, cartItems = [], eventTitle = 'Evento' } = location.state || {};
 
@@ -170,14 +172,14 @@ export default function PaymentPending() {
 
             <div>
               <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
-                Procesando tu pago
+                {t('paymentPending.title')}
               </h1>
               <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
                 {popupOpen
-                  ? 'Completá el pago en la ventana que se abrió.'
+                  ? t('paymentPending.completePaymentInWindow')
                   : gatewayTxId?.startsWith('wallet_only_')
-                  ? 'Confirmando tu pago con cartera…'
-                  : 'Abriendo la ventana de pago…'}
+                  ? t('paymentPending.confirmingWalletPayment')
+                  : t('paymentPending.openingPaymentWindow')}
               </p>
             </div>
 
@@ -186,11 +188,11 @@ export default function PaymentPending() {
               style={{ background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.1)' }}
             >
               <div className="flex justify-between text-xs">
-                <span style={{ color: 'var(--color-textMuted)' }}>Evento</span>
+                <span style={{ color: 'var(--color-textMuted)' }}>{t('paymentPending.event')}</span>
                 <span style={{ color: 'var(--color-textSecondary)' }}>{eventTitle}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span style={{ color: 'var(--color-textMuted)' }}>Sillas</span>
+                <span style={{ color: 'var(--color-textMuted)' }}>{t('paymentPending.seats')}</span>
                 <span style={{ color: 'var(--color-textSecondary)' }}>{cartItems.length}</span>
               </div>
             </div>
@@ -202,12 +204,12 @@ export default function PaymentPending() {
                 className="text-sm underline underline-offset-2 transition-opacity hover:opacity-70"
                 style={{ color: 'var(--color-accent)' }}
               >
-                Volver a abrir la ventana de pago
+                {t('paymentPending.reopenPaymentWindow')}
               </button>
             )}
 
             <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-              No cierres esta pestaña mientras se procesa el pago.
+              {t('paymentPending.doNotCloseTab')}
             </p>
           </div>
         )}
@@ -236,17 +238,17 @@ export default function PaymentPending() {
             <div>
               <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
                 {cancelledByUser
-                  ? 'Pago cancelado'
+                  ? t('paymentPending.paymentCancelled')
                   : status === 'REJECTED'
-                  ? 'Pago rechazado'
-                  : 'Error en el pago'}
+                  ? t('paymentPending.paymentRejected')
+                  : t('paymentPending.paymentError')}
               </h1>
               <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
                 {cancelledByUser
-                  ? 'Cancelaste la transacción. Podés volver a intentarlo cuando quieras.'
+                  ? t('paymentPending.cancelledMessage')
                   : status === 'REJECTED'
-                  ? 'El pago fue rechazado. Podés volver a intentarlo.'
-                  : 'Ocurrió un error al procesar el pago. Podés intentarlo nuevamente.'}
+                  ? t('paymentPending.rejectedMessage')
+                  : t('paymentPending.errorMessage')}
               </p>
             </div>
 
@@ -270,7 +272,7 @@ export default function PaymentPending() {
                 }}
               >
                 <RefreshCcw className="w-4 h-4" />
-                Reintentar
+                {t('paymentPending.retry')}
               </button>
 
               <button
@@ -278,7 +280,7 @@ export default function PaymentPending() {
                 className="w-full py-2 rounded-xl text-sm transition-opacity hover:opacity-70"
                 style={{ color: 'var(--color-textSecondary)' }}
               >
-                Volver a eventos
+                {t('paymentPending.backToEvents')}
               </button>
             </div>
           </div>

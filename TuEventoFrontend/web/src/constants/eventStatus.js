@@ -19,22 +19,22 @@ export const VALID_TRANSITIONS = {
 
 /** Badge pill per status — uses theme CSS variables, no hardcoded colors. */
 export const STATUS_BADGE = {
-  DRAFT:          { label: 'Borrador',    cls: 'bg-gray-500/20 text-gray-400 border-gray-500/30' },
-  PENDING_REVIEW: { label: 'En revisión', cls: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
-  PUBLISHED:      { label: 'Publicado',   cls: 'bg-green-500/20 text-green-400 border-green-500/30' },
-  REJECTED:       { label: 'Rechazado',   cls: 'bg-red-500/20 text-red-400 border-red-500/30' },
-  CANCELLED:      { label: 'Cancelado',   cls: 'bg-red-900/20 text-red-300 border-red-900/30' },
-  COMPLETED:      { label: 'Finalizado',  cls: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  DRAFT:          { labelKey: 'myEvents.eventStatus.DRAFT',          cls: 'bg-gray-500/20 text-gray-400 border-gray-500/30' },
+  PENDING_REVIEW: { labelKey: 'myEvents.eventStatus.PENDING_REVIEW', cls: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
+  PUBLISHED:      { labelKey: 'myEvents.eventStatus.PUBLISHED',      cls: 'bg-green-500/20 text-green-400 border-green-500/30' },
+  REJECTED:       { labelKey: 'myEvents.eventStatus.REJECTED',       cls: 'bg-red-500/20 text-red-400 border-red-500/30' },
+  CANCELLED:      { labelKey: 'myEvents.eventStatus.CANCELLED',      cls: 'bg-red-900/20 text-red-300 border-red-900/30' },
+  COMPLETED:      { labelKey: 'myEvents.eventStatus.COMPLETED',      cls: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
 };
 
 /** Label shown inside the dropdown item for each target status. */
 export const STATUS_LABEL = {
-  DRAFT:          'Volver a borrador',
-  PENDING_REVIEW: 'Enviar a revisión',
-  PUBLISHED:      'Publicar',
-  REJECTED:       'Rechazar',
-  CANCELLED:      'Cancelar',
-  COMPLETED:      'Marcar finalizado',
+  DRAFT:          'myEvents.statusActions.backToDraft',
+  PENDING_REVIEW: 'myEvents.statusActions.submitReview',
+  PUBLISHED:      'myEvents.statusActions.publish',
+  REJECTED:       'myEvents.statusActions.reject',
+  CANCELLED:      'myEvents.statusActions.cancel',
+  COMPLETED:      'myEvents.statusActions.markCompleted',
 };
 
 /**

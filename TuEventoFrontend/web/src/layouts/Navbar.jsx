@@ -1,12 +1,15 @@
 import { Calendar, User, Plus, Wallet, Menu, X, Bell } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import ChangePassword from "../pages/ChangePassword.jsx";
 import { getEventsByUser } from "../services/EventService.js";
 import NotificationBell from "../components/common/NotificationBell.jsx";
+import LanguageSelector from "../components/common/LanguageSelector.jsx";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [userData, setUserData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -99,15 +102,15 @@ const displayName = (() => {
 
           {/* Links centrales — solo desktop */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium flex-1 justify-center">
-            <Link to="/" className="text-textSecondary hover:text-accent transition-colors">Inicio</Link>
-            <Link to="/nosotros" className="text-textSecondary hover:text-accent transition-colors">Nosotros</Link>
-            <Link to="/events" className="text-textSecondary hover:text-accent transition-colors">Eventos</Link>
+            <Link to="/" className="text-textSecondary hover:text-accent transition-colors">{t('navigation.home')}</Link>
+            <Link to="/nosotros" className="text-textSecondary hover:text-accent transition-colors">{t('navigation.about')}</Link>
+            <Link to="/events" className="text-textSecondary hover:text-accent transition-colors">{t('navigation.events')}</Link>
             {userData && isOrganizer && (
               <button
                 onClick={() => navigate(hasEvents ? '/events/manage' : '/events/create')}
                 className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
-                <Plus className="w-4 h-4" /> {hasEvents ? 'Mis Eventos' : 'Crear Evento'}
+                <Plus className="w-4 h-4" /> {hasEvents ? t('navigation.myEvents') : t('navigation.createEvent')}
               </button>
             )}
             {userData && !isAdmin && !isOrganizer && (
@@ -115,14 +118,17 @@ const displayName = (() => {
                 onClick={() => navigate('/organizer-petition-form')}
                 className="flex items-center gap-1 text-textSecondary hover:text-accent transition-colors bg-transparent border-none cursor-pointer text-sm font-medium"
               >
-                <Plus className="w-4 h-4" /> Solicitud Organizador
+                <Plus className="w-4 h-4" /> {t('navigation.organizerPetition')}
               </button>
             )}
           </div>
 
-          {/* Derecha: notificaciones + usuario + hamburguesa */}
+          {/* Derecha: selector idioma (sin sesión) + notificaciones + usuario + hamburguesa */}
           <div className="flex items-center gap-2">
             
+            {/* Selector de idioma (solo sin sesión) */}
+            {!userData && <LanguageSelector position="inline" compact />}
+
             {/* Campana de notificaciones (solo si hay usuario) */}
             {userData && <NotificationBell />}
 
@@ -155,8 +161,8 @@ const displayName = (() => {
                         <User className="w-[17px] h-[17px] text-accent" />
                       </div>
                       <div>
-                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">Perfil</p>
-                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">Ver y editar tu cuenta</p>
+                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.profile')}</p>
+                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.profileDesc')}</p>
                       </div>
                       <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                     </Link>
@@ -170,8 +176,8 @@ const displayName = (() => {
                         <Bell className="w-[17px] h-[17px] text-accent" />
                       </div>
                       <div>
-                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">Notificaciones</p>
-                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">Ver todas tus notificaciones</p>
+                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.notifications')}</p>
+                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.notificationsDesc')}</p>
                       </div>
                       <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                     </Link>
@@ -185,8 +191,8 @@ const displayName = (() => {
                         <Wallet className="w-[17px] h-[17px] text-accent" />
                       </div>
                       <div>
-                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">Cartera</p>
-                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">Saldo y transacciones</p>
+                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.wallet')}</p>
+                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.walletDesc')}</p>
                       </div>
                       <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                     </Link>
@@ -201,8 +207,8 @@ const displayName = (() => {
                           <Calendar className="w-[17px] h-[17px] text-error" />
                         </div>
                         <div>
-                          <p className="text-[14px] font-semibold text-textPrimary leading-tight">Panel de Gestión</p>
-                          <p className="text-[11px] text-textMuted leading-tight mt-0.5">Administrar plataforma</p>
+                          <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.adminPanel')}</p>
+                          <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.adminPanelDesc')}</p>
                         </div>
                         <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-error)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                       </Link>
@@ -216,7 +222,7 @@ const displayName = (() => {
                 to="/login"
                 className="bg-primary hover:bg-primaryDark text-textPrimary text-sm font-medium px-5 py-2 rounded-xl transition-colors"
               >
-                Iniciar sesión
+                {t('userMenu.login')}
               </Link>
             )}
 
@@ -235,26 +241,26 @@ const displayName = (() => {
           <div className="md:hidden bg-surface border-t border-surfaceAlt px-4 py-3 flex flex-col gap-1">
             <Link to="/" onClick={() => setIsMobileMenuOpen(false)}
               className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
-              Inicio
+              {t('navigation.home')}
             </Link>
             <Link to="/nosotros" onClick={() => setIsMobileMenuOpen(false)}
               className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
-              Nosotros
+              {t('navigation.about')}
             </Link>
             <Link to="/events" onClick={() => setIsMobileMenuOpen(false)}
               className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
-              Eventos
+              {t('navigation.events')}
             </Link>
             {userData && isOrganizer && (
               <button onClick={() => handleNavClick(hasEvents ? '/events/manage' : '/events/create')}
                 className="flex items-center gap-2 text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer">
-                <Plus className="w-4 h-4" /> {hasEvents ? 'Mis Eventos' : 'Crear Evento'}
+                <Plus className="w-4 h-4" /> {hasEvents ? t('navigation.myEvents') : t('navigation.createEvent')}
               </button>
             )}
             {userData && !isAdmin && !isOrganizer && (
               <button onClick={() => handleNavClick('/organizer-petition-form')}
                 className="flex items-center gap-2 text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer">
-                <Plus className="w-4 h-4" /> Solicitud Organizador
+                <Plus className="w-4 h-4" /> {t('navigation.organizerPetition')}
               </button>
             )}
           </div>
