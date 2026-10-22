@@ -1458,5 +1458,12 @@
     "subtitle": "This section is only available in Spanish",
     "description": "Creating and editing events is only available with Spanish selected as your language. Change your language to Spanish in your profile to continue.",
     "action": "Go back"
+  },
+  "paymentConfirmation": {
+    "loading": "Loading your confirmation…",
+    "notApproved": "The payment is not approved",
+    "loadError": "Error loading the data",
+    "backToEvents": "Back to events",
+    "remainingBalance": "Your remaining balance"
   }
 }

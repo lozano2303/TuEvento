@@ -1456,5 +1456,12 @@
     "subtitle": "Cette section est uniquement disponible en espagnol",
     "description": "La création et la modification d’événements ne sont disponibles qu’avec l’espagnol sélectionné comme langue. Changez votre langue en espagnol dans votre profil pour continuer.",
     "action": "Retour"
+  },
+  "paymentConfirmation": {
+    "loading": "Chargement de votre confirmation…",
+    "notApproved": "Le paiement n’est pas approuvé",
+    "loadError": "Erreur lors du chargement des données",
+    "backToEvents": "Retour aux événements",
+    "remainingBalance": "Votre solde restant"
   }
 }
