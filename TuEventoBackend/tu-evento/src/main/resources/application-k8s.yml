@@ -40,6 +40,9 @@ app:
     secret: ${JWT_SECRET}
     access-token-expiration: 900000
     refresh-token-expiration: 604800000
+  qr:
+    secret: ${QR_SECRET:${JWT_SECRET}}
+    expiration: ${QR_EXPIRATION:60000}
   storage:
     enabled: false
     endpoint: http://minio-service:9000
