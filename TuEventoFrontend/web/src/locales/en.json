@@ -38,54 +38,162 @@
   },
   "landing": {
     "hero": {
-      "greeting": "Hello, {{name}}!",
-      "greetingFallback": "Hello, {{alias}}!",
-      "welcomeBack": "Welcome back.",
-      "mainTitle": "Visualize the perfect",
-      "subtitle": "event.",
-      "description": "Design, plan and live unique experiences that make a difference. Every detail matters and our assistance kit makes it a reality.",
-      "startNow": "Get started now"
+      "eyebrow": "Event management · Simple · Powerful",
+      "welcomeBack": "Welcome back, {{name}}",
+      "titleGuest": {
+        "line1": "Design events",
+        "accent": "people",
+        "line2": "remember."
+      },
+      "titleAuth": {
+        "line1": "Your next",
+        "accent": "event",
+        "line2": "awaits."
+      },
+      "subtitleGuest": "Design, plan and experience unique moments that make a difference. Every detail counts and our toolkit makes it happen.",
+      "subtitleAuth": "Explore events in your city, host your own or manage your tickets. All in one place.",
+      "viewEvents": "View events",
+      "createEvent": "Create event",
+      "startFree": "Start free",
+      "trust": {
+        "free": "Free to start",
+        "noCard": "No credit card",
+        "support": "Spanish support"
+      },
+      "stats": {
+        "editor": "Visual editor",
+        "secure": "Secure",
+        "available": "Available"
+      }
     },
-    "features": {
+    "heroCard": {
+      "editor": {
+        "title": "Floor plan editor",
+        "desc": "Design your space in real time"
+      },
+      "tickets": {
+        "title": "Ticket sales",
+        "desc": "Secure, hassle-free payments"
+      },
+      "badge": {
+        "title": "Ticket confirmed",
+        "sub": "VIP · Row A"
+      }
+    },
+    "value": {
       "section1": {
-        "title": "Organize, design and live events",
-        "titleAccent": "without limits.",
-        "description": "Build memorable events with our online interactive floor plan creator. Design custom spaces, manage attendees and visualize every detail of your event in real time, all on one platform."
+        "eyebrow": "All in one platform",
+        "title": "Organize, design and live",
+        "titleAccent": "events without limits.",
+        "description": "Build memorable events with our interactive online floor plan creator. Design custom spaces, manage attendees and visualize every detail of your event in real time, all in one platform.",
+        "items": {
+          "editor": "Real-time drag & drop floor plan editor",
+          "analytics": "Analytics panel for every event",
+          "notifications": "Automatic notifications to your attendees"
+        },
+        "tags": {
+          "plan": "Interactive plan",
+          "tickets": "Ticket sales",
+          "analytics": "Analytics"
+        }
       },
       "section2": {
+        "eyebrow": "Discover experiences",
         "title": "Request for",
-        "titleAccent": "Exceptional events.",
-        "description": "If you're looking for new experiences, check out our list of available events. Explore all options and find the perfect plan for you.",
-        "button": "Check out available events"
+        "titleAccent": "exceptional events.",
+        "description": "If you are looking for new experiences, check our list of available events. Explore all options and find the perfect plan for you.",
+        "items": {
+          "filter": "Filter by city, category and date",
+          "buy": "Buy tickets quickly and securely",
+          "alerts": "Get alerts for events you care about"
+        },
+        "tags": {
+          "search": "Advanced search",
+          "location": "By location",
+          "category": "By category"
+        },
+        "button": "View available events"
       }
     },
-    "benefits": {
-      "title": "Why should you choose us?",
-      "items": {
-        "timesSaving": {
-          "title": "Save time in queues",
-          "description": "Give your customers an event planning process, reducing processing with expert assistants and eliminate lines."
-        },
-        "findEvents": {
-          "title": "Find events easily",
-          "description": "Our system allows you to find the assistant from an accessible, useful interface that will allow you to confirm details of your event as quickly as you want without complications."
-        },
-        "free": {
-          "title": "Completely free.",
-          "description": "Access to the basic functions of our free plan that makes you an accessible agent for both small businesses and large companies."
-        }
+    "steps": {
+      "eyebrow": "Simple by design",
+      "title": "Your event ready in four steps",
+      "subtitle": "From idea to real event, without needing any technical knowledge.",
+      "step1": {
+        "title": "Create your account",
+        "desc": "Sign up in seconds. No credit card, no unnecessary steps."
+      },
+      "step2": {
+        "title": "Design the space",
+        "desc": "Use the floor plan editor to set up sections, seats and custom zones."
+      },
+      "step3": {
+        "title": "Sell tickets",
+        "desc": "Enable ticket sales and manage payments securely."
+      },
+      "step4": {
+        "title": "Live the event",
+        "desc": "Manage attendees in real time and get feedback from your audience."
       }
     },
-    "compatibility": {
-      "title": "Device compatibility.",
-      "web": "WEB",
-      "android": "ANDROID",
-      "downloadApk": "Download APK"
+    "featuresList": {
+      "eyebrow": "Included tools",
+      "title": "Everything you need,",
+      "titleAccent": "ready from day one",
+      "subtitle": "No extra plugins, no complicated integrations. Every tool is designed so you focus on your event, not the technology.",
+      "planEditor": {
+        "title": "Floor plan editor",
+        "desc": "Create your event layout with a real-time visual drag & drop editor."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "desc": "Reminders, changes and confirmations reach your attendees automatically."
+      },
+      "payments": {
+        "title": "Integrated payments",
+        "desc": "Secure payment gateway. Charge for tickets and receive your money without intermediaries."
+      },
+      "analytics": {
+        "title": "Analytics",
+        "desc": "Sales and attendance metrics in a clear panel to make better decisions."
+      },
+      "geolocation": {
+        "title": "Geolocation",
+        "desc": "Attendees discover events near them by filtering by city and category."
+      },
+      "categories": {
+        "title": "Categories",
+        "desc": "Classify your event among music, culture, sports, food and much more."
+      }
+    },
+    "reviews": {
+      "eyebrow": "Real users",
+      "title": "What people say about events on TuEvento",
+      "subtitle": "Verified reviews from attendees at published events.",
+      "anonymous": "User",
+      "organizer": "Organizer",
+      "cta": "See all events and their reviews"
+    },
+    "platforms": {
+      "eyebrow": "Available on",
+      "title": "Wherever you are, TuEvento goes with you",
+      "subtitle": "Access from the browser or download the Android app. The same experience on any device.",
+      "popular": "Popular",
+      "web": {
+        "title": "Web version",
+        "desc": "Works in any modern browser. Nothing to install, just open the page and go.",
+        "button": "Open web app"
+      },
+      "android": {
+        "title": "Android App",
+        "desc": "Download the APK and get push notifications, ticket scanner and native features.",
+        "button": "Download APK"
+      }
     },
     "apkModal": {
       "title": "TuEvento Mobile App",
       "subtitle": "Available for Android devices",
-      "description": "Download the mobile app to access all TuEvento features from your Android device.",
+      "description": "Download the mobile app to access all TuEvento features from your Android device. Push notifications, ticket scanner and more.",
       "download": "Download APK",
       "cancel": "Cancel"
     }
