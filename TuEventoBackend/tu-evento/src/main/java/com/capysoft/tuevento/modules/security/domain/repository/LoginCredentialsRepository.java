@@ -10,4 +10,10 @@ public interface LoginCredentialsRepository {
     Optional<LoginCredentials> findByEmail(String email);
     Optional<LoginCredentials> findByUserId(Integer userId);
     boolean existsByEmail(String email);
+    
+    /**
+     * Obtiene solo el email de un usuario sin cargar la entidad completa.
+     * Útil para contextos async sin sesión Hibernate.
+     */
+    Optional<String> findEmailByUserId(Integer userId);
 }

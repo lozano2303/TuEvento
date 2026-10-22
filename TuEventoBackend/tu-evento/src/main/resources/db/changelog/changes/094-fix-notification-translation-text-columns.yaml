@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 094
+      author: kiro
+      comment: "Change notification_translation subject and body columns from VARCHAR to TEXT to support HTML content"
+      changes:
+        - modifyDataType:
+            tableName: notification_translation
+            columnName: translated_subject
+            newDataType: text
+        - modifyDataType:
+            tableName: notification_translation
+            columnName: translated_body
+            newDataType: text

@@ -29,7 +29,7 @@ public class UpdateLanguageUseCaseImpl implements UpdateLanguageUseCase {
 
     @Override
     @Transactional
-    public LanguageResponse updateLanguage(Long languageId, UpdateLanguageRequest request) {
+    public LanguageResponse updateLanguage(Integer languageId, UpdateLanguageRequest request) {
         Language language = languageRepository.findById(languageId)
                 .orElseThrow(() -> new NotFoundException("LANGUAGE_NOT_FOUND", "Language not found with id: " + languageId));
 
@@ -47,7 +47,7 @@ public class UpdateLanguageUseCaseImpl implements UpdateLanguageUseCase {
 
     @Override
     @Transactional
-    public LanguageResponse activateLanguage(Long languageId) {
+    public LanguageResponse activateLanguage(Integer languageId) {
         Language language = languageRepository.findById(languageId)
                 .orElseThrow(() -> new NotFoundException("LANGUAGE_NOT_FOUND", "Language not found with id: " + languageId));
 
@@ -63,7 +63,7 @@ public class UpdateLanguageUseCaseImpl implements UpdateLanguageUseCase {
 
     @Override
     @Transactional
-    public LanguageResponse deactivateLanguage(Long languageId) {
+    public LanguageResponse deactivateLanguage(Integer languageId) {
         Language language = languageRepository.findById(languageId)
                 .orElseThrow(() -> new NotFoundException("LANGUAGE_NOT_FOUND", "Language not found with id: " + languageId));
 
@@ -79,7 +79,7 @@ public class UpdateLanguageUseCaseImpl implements UpdateLanguageUseCase {
 
     @Override
     @Transactional
-    public LanguageResponse setDefaultLanguage(Long languageId) {
+    public LanguageResponse setDefaultLanguage(Integer languageId) {
         // Verificar que el idioma existe
         Language language = languageRepository.findById(languageId)
                 .orElseThrow(() -> new NotFoundException("LANGUAGE_NOT_FOUND", "Language not found with id: " + languageId));
@@ -96,7 +96,7 @@ public class UpdateLanguageUseCaseImpl implements UpdateLanguageUseCase {
 
         // Obtener el idioma por defecto actual
         Optional<Language> currentDefault = languageRepository.findDefaultLanguage();
-        Long previousDefaultId = currentDefault.map(Language::getLanguageId).orElse(null);
+        Integer previousDefaultId = currentDefault.map(Language::getLanguageId).orElse(null);
 
         // Desmarcar el idioma por defecto actual si existe
         if (currentDefault.isPresent()) {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Wallet } from 'lucide-react';
 import { getPayment } from '../services/PaymentService';
 import { getOrderTickets } from '../services/OrderService';
@@ -18,6 +19,7 @@ import PaymentApprovedSummary from '../components/PaymentApprovedSummary';
 export default function PaymentConfirmation() {
   const { paymentId } = useParams();
   const navigate      = useNavigate();
+  const { t }         = useTranslation();
 
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState(null);
@@ -39,7 +41,7 @@ export default function PaymentConfirmation() {
         setPayment(paymentData);
 
         if (paymentData.status !== 'APPROVED') {
-          setError('El pago no está aprobado');
+          setError(t('paymentConfirmation.notApproved'));
           setLoading(false);
           return;
         }
@@ -60,13 +62,13 @@ export default function PaymentConfirmation() {
         setLoading(false);
       } catch (err) {
         console.error('[PaymentConfirmation] error:', err);
-        setError(err.message || 'Error al cargar los datos');
+        setError(err.message || t('paymentConfirmation.loadError'));
         setLoading(false);
       }
     };
 
     loadData();
-  }, [paymentId, navigate]);
+  }, [paymentId, navigate, t]);
 
   const handleGoToEvent = () => {
     if (payment?.orderId) {
@@ -97,7 +99,7 @@ export default function PaymentConfirmation() {
               <Loader2 className="w-10 h-10 animate-spin" style={{ color: 'var(--color-primary)' }} />
             </div>
             <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-              Cargando tu confirmación…
+              {t('paymentConfirmation.loading')}
             </p>
           </div>
         )}
@@ -119,7 +121,7 @@ export default function PaymentConfirmation() {
                 color: 'var(--color-onPrimary)',
               }}
             >
-              Volver a eventos
+              {t('paymentConfirmation.backToEvents')}
             </button>
           </div>
         )}
@@ -141,7 +143,7 @@ export default function PaymentConfirmation() {
                   <div className="flex items-center gap-2">
                     <Wallet className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
                     <span className="text-sm font-semibold" style={{ color: 'var(--color-textPrimary)' }}>
-                      Tu saldo restante
+                      {t('paymentConfirmation.remainingBalance')}
                     </span>
                   </div>
                   <span className="text-sm font-bold" style={{ color: 'var(--color-primary)' }}>

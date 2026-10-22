@@ -20,6 +20,13 @@ import CompleteProfile from './pages/CompleteProfile';
 import AdminEventManagement from './pages/AdminEventManagement';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminFinancial from './pages/AdminFinancial';
+import AdminCategoryManagement from './pages/AdminCategoryManagement';
+import AdminSectionTypeManagement from './pages/AdminSectionTypeManagement';
+import AdminEventTranslations from './pages/AdminEventTranslations';
+import AdminCategoryTranslations from './pages/AdminCategoryTranslations';
+import AdminSectionTypeTranslations from './pages/AdminSectionTypeTranslations';
+import AdminCommentTranslations from './pages/AdminCommentTranslations';
+import AdminProfileTranslations from './pages/AdminProfileTranslations';
 import AdminReports from './pages/AdminReports';
 import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
@@ -29,6 +36,7 @@ import OrganizerEarnings from './pages/OrganizerEarnings';
 import TerminosDeUso from './pages/TerminosDeUso';
 import Privacidad from './pages/Privacidad';
 import Notifications from './pages/Notifications';
+import SpanishOnlyRoute from './components/common/SpanishOnlyRoute';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -55,10 +63,12 @@ function AppContent() {
     '/login', '/verification', '/events/create',
     '/reactivate-account', '/complete-profile',
     '/admin-panel', '/admin-events', '/admin-dashboard', '/admin-financial', '/admin-reports',
+    '/admin-categories', '/admin-section-types',
     '/checkout',
   ].includes(location.pathname)
     && !location.pathname.match(/^\/events\/[^/]+\/layout$/)
-    && !location.pathname.match(/^\/checkout/);
+    && !location.pathname.match(/^\/checkout/)
+    && !location.pathname.match(/^\/admin-translations/);
 
   return (
     <div className="min-h-screen bg-background">
@@ -71,7 +81,9 @@ function AppContent() {
           <Route path="/events" element={<Events />} />
           <Route path="/events/create" element={
             <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
-              <EventCreateWizard />
+              <SpanishOnlyRoute>
+                <EventCreateWizard />
+              </SpanishOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/events/manage" element={
@@ -110,9 +122,44 @@ function AppContent() {
               <AdminFinancial />
             </ProtectedRoute>
           } />
+          <Route path="/admin-categories" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminCategoryManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-section-types" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminSectionTypeManagement />
+            </ProtectedRoute>
+          } />
           <Route path="/admin-reports" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminReports />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-translations/:lang/events" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminEventTranslations />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-translations/:lang/categories" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminCategoryTranslations />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-translations/:lang/section-types" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminSectionTypeTranslations />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-translations/:lang/comments" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminCommentTranslations />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-translations/:lang/profiles" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminProfileTranslations />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={
@@ -136,7 +183,9 @@ function AppContent() {
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/events/:eventId/layout" element={
             <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
-              <EventLayoutEditor />
+              <SpanishOnlyRoute>
+                <EventLayoutEditor />
+              </SpanishOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/wallet" element={

@@ -17,12 +17,22 @@ public interface CategoryUseCase {
     void activateCategory(Integer id);
 
     CategoryResponse getCategoryById(Integer id);
+    
+    CategoryResponse getCategoryById(Integer id, String languageCode);
 
     List<CategoryResponse> getAllCategories();
+    
+    List<CategoryResponse> getAllCategories(String languageCode);
 
     List<CategoryResponse> getActiveCategories();
+    
+    List<CategoryResponse> getActiveCategories(String languageCode);
 
     List<CategoryResponse> getSubcategories(Integer parentId);
+    
+    List<CategoryResponse> getSubcategories(Integer parentId, String languageCode);
 
     List<CategoryResponse> getRootCategories();
+    
+    List<CategoryResponse> getRootCategories(String languageCode);
 }

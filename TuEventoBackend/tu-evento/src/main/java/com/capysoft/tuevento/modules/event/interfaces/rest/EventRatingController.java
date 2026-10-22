@@ -10,13 +10,19 @@ import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventRating;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.language.domain.model.EventRatingTranslation;
+import com.capysoft.tuevento.modules.language.domain.model.Language;
+import com.capysoft.tuevento.modules.language.domain.repository.EventRatingTranslationRepository;
+import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -42,6 +48,7 @@ import java.util.stream.Collectors;
  * (createdAt + 2 horas, zona America/Bogota) para que el frontend no necesite
  * calcularlo con la zona del navegador.
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/events/{eventId}/ratings")
 @RequiredArgsConstructor
@@ -51,12 +58,15 @@ public class EventRatingController {
     /** Ventana de edición en horas (debe coincidir con EditEventRatingService). */
     private static final long EDIT_WINDOW_HOURS = 2L;
 
-    private final AddEventRatingUseCase    addEventRatingUseCase;
-    private final DeleteEventRatingUseCase deleteEventRatingUseCase;
-    private final EditEventRatingUseCase   editEventRatingUseCase;
-    private final EventRatingRepository    eventRatingRepository;
-    private final EventRepository          eventRepository;
-    private final ProfileJpaRepository     profileJpaRepository;
+    private final AddEventRatingUseCase              addEventRatingUseCase;
+    private final DeleteEventRatingUseCase           deleteEventRatingUseCase;
+    private final EditEventRatingUseCase             editEventRatingUseCase;
+    private final EventRatingRepository              eventRatingRepository;
+    private final EventRepository                    eventRepository;
+    private final ProfileJpaRepository               profileJpaRepository;
+    private final EventRatingTranslationRepository   eventRatingTranslationRepository;
+    private final LanguageRepository                 languageRepository;
+    private final com.capysoft.tuevento.modules.language.application.service.TranslationService translationService;
 
     @Operation(summary = "Add a comment/rating or reply to an event — any authenticated user")
     @PostMapping
@@ -75,11 +85,19 @@ public class EventRatingController {
      * Incluye tanto comentarios principales como respuestas (lista plana con parentRatingId).
      * Carga perfiles en una sola consulta (sin N+1).
      * Incluye {@code isOrganizer} para que el frontend muestre la etiqueta "Organizador".
+     * 
+     * Soporta traducciones: si se proporciona el parámetro {@code lang}, se intentará
+     * cargar las traducciones de los comentarios a ese idioma. Si lang='es' o no se 
+     * proporciona, se devuelven los comentarios en español original.
+     * 
+     * @param eventId ID del evento
+     * @param languageCode Código del idioma solicitado (ej: 'en', 'fr', 'pt'). Opcional.
      */
-    @Operation(summary = "Get comments for an event — public (flat list with parentRatingId)")
+    @Operation(summary = "Get comments for an event — public (flat list with parentRatingId, with optional translations)")
     @GetMapping
     public ResponseEntity<ApiResponse<List<EventRatingResponse>>> getRatings(
-            @PathVariable Long eventId) {
+            @PathVariable Long eventId,
+            @RequestParam(required = false) String languageCode) {
 
         List<EventRating> ratings = eventRatingRepository.findByEventIdOrderByCreatedAtDesc(eventId);
 
@@ -103,22 +121,92 @@ public class EventRatingController {
                         p -> p.getUserId(),
                         p -> p.getFullName()));
 
+        // ── Lógica de traducción ──────────────────────────────────────────────────
+        boolean needsTranslation = languageCode != null 
+                && !languageCode.isEmpty() 
+                && !"es".equalsIgnoreCase(languageCode);
+        
+        Integer targetLanguageId = null;
+        if (needsTranslation) {
+            targetLanguageId = languageRepository.findByCode(languageCode.toLowerCase())
+                    .map(Language::getLanguageId)
+                    .orElse(null);
+        }
+
+        // Cargar todas las traducciones de estos ratings si se solicita traducción
+        Map<Long, EventRatingTranslation> translationsByRatingId = new java.util.HashMap<>();
+        if (needsTranslation && targetLanguageId != null) {
+            List<Integer> ratingIds = ratings.stream()
+                    .map(r -> r.getRatingId().intValue())
+                    .collect(Collectors.toList());
+            
+            // Buscar traducciones PUBLISHED para estos ratings en el idioma target
+            List<EventRatingTranslation> translations = eventRatingTranslationRepository.findByRatingAndStatus(
+                    ratingIds, TranslationStatus.PUBLISHED);
+            
+            for (EventRatingTranslation translation : translations) {
+                if (translation.getLanguageId().equals(targetLanguageId)) {
+                    translationsByRatingId.put(translation.getRatingId().longValue(), translation);
+                }
+            }
+            
+            // Solicitar traducciones para ratings que no tienen traducción PUBLISHED
+            for (EventRating rating : ratings) {
+                if (!translationsByRatingId.containsKey(rating.getRatingId())) {
+                    try {
+                        translationService.requestTranslation("event_rating", rating.getRatingId(), "es");
+                    } catch (Exception e) {
+                        // Non-blocking: si falla la solicitud de traducción, solo logueamos
+                        // El frontend seguirá mostrando el indicador "translating"
+                        log.warn("Failed to request translation for rating {}: {}", 
+                                rating.getRatingId(), e.getMessage());
+                    }
+                }
+            }
+        }
+
+        // Construir respuestas con traducción si está disponible
         final Long finalOrganizerUserId = organizerUserId;
+        final Integer finalTargetLanguageId = targetLanguageId;
+        final Map<Long, EventRatingTranslation> finalTranslations = translationsByRatingId;
+        
         List<EventRatingResponse> response = ratings.stream()
-                .map(r -> EventRatingResponse.builder()
-                        .ratingId(r.getRatingId())
-                        .userId(r.getUserId())
-                        .authorName(nameByUserId.getOrDefault(r.getUserId().intValue(), "Usuario"))
-                        .rating(r.getRating())
-                        .comment(r.getComment())
-                        .isVisible(r.getIsVisible())
-                        .isOrganizer(finalOrganizerUserId != null
-                                && finalOrganizerUserId.equals(r.getUserId()))
-                        .createdAt(r.getCreatedAt())
-                        .parentRatingId(r.getParentRatingId())
-                        .editableUntil(r.getCreatedAt() != null
-                                ? r.getCreatedAt().plusHours(EDIT_WINDOW_HOURS) : null)
-                        .build())
+                .map(r -> {
+                    EventRatingResponse.EventRatingResponseBuilder builder = EventRatingResponse.builder()
+                            .ratingId(r.getRatingId())
+                            .userId(r.getUserId())
+                            .authorName(nameByUserId.getOrDefault(r.getUserId().intValue(), "Usuario"))
+                            .rating(r.getRating())
+                            .comment(r.getComment())
+                            .isVisible(r.getIsVisible())
+                            .isOrganizer(finalOrganizerUserId != null
+                                    && finalOrganizerUserId.equals(r.getUserId()))
+                            .createdAt(r.getCreatedAt())
+                            .parentRatingId(r.getParentRatingId())
+                            .editedAt(r.getEditedAt())
+                            .replyToUserId(r.getReplyToUserId())
+                            .replyToUserName(r.getReplyToUserName())
+                            .editableUntil(r.getCreatedAt() != null
+                                    ? r.getCreatedAt().plusHours(EDIT_WINDOW_HOURS) : null);
+                    
+                    // Agregar campos de traducción si aplica
+                    if (needsTranslation && finalTargetLanguageId != null) {
+                        EventRatingTranslation translation = finalTranslations.get(r.getRatingId());
+                        if (translation != null && translation.getStatus() == TranslationStatus.PUBLISHED) {
+                            // Traducción disponible
+                            builder.translatedComment(translation.getTranslatedComment())
+                                   .languageCode(languageCode.toLowerCase())
+                                   .translationGenerating(false);
+                        } else {
+                            // Traducción en progreso o no existe aún
+                            builder.translatedComment(null)
+                                   .languageCode(null)
+                                   .translationGenerating(true);
+                        }
+                    }
+                    
+                    return builder.build();
+                })
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(ApiResponse.ok("Ratings retrieved successfully", response));

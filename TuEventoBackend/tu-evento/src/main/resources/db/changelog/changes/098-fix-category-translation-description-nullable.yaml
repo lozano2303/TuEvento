@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 098-fix-category-translation-description-nullable
+      author: capysoft
+      changes:
+        - dropNotNullConstraint:
+            tableName: category_translation
+            columnName: translated_description
+            columnDataType: VARCHAR(255)
+      rollback:
+        - addNotNullConstraint:
+            tableName: category_translation
+            columnName: translated_description
+            columnDataType: VARCHAR(255)
