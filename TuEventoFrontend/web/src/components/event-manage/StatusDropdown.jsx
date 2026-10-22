@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { VALID_TRANSITIONS, STATUS_LABEL } from '../../constants/eventStatus';
 
 /**
@@ -20,6 +21,7 @@ export default function StatusDropdown({
   onToggle,
   onSelect,
 }) {
+  const { t } = useTranslation();
   const buttonRef = useRef(null);
   const menuRef   = useRef(null);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
@@ -77,7 +79,7 @@ export default function StatusDropdown({
         className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badge.cls}`}
         title="Este estado no permite más transiciones"
       >
-        {badge.label}
+        {t(badge.labelKey)}
       </span>
     );
   }
@@ -91,7 +93,7 @@ export default function StatusDropdown({
         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border transition-colors
                     ${badge.cls} ${busy ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-80'}`}
       >
-        {badge.label}
+        {t(badge.labelKey)}
         {!busy && <ChevronDown className="w-3 h-3" />}
         {busy && (
           <span className="w-3 h-3 inline-block animate-spin border border-current border-t-transparent rounded-full" />
@@ -110,7 +112,7 @@ export default function StatusDropdown({
               onClick={() => { onToggle(null); onSelect(event, s); }}
               className="w-full text-left px-3 py-2 text-xs transition-colors hover:bg-surfaceAlt text-textSecondary"
             >
-              {STATUS_LABEL[s] ?? s}
+              {t(STATUS_LABEL[s]) || s}
             </button>
           ))}
         </div>,

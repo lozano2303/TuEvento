@@ -13,7 +13,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
@@ -32,6 +32,11 @@ spring:
 logging:
   level:
     com.capysoft: DEBUG
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.hibernate.orm.jdbc.bind: WARN
+    org.springframework.scheduling: WARN
+    org.springframework.data.jpa: WARN
 
 springdoc:
   api-docs:

@@ -57,37 +57,43 @@ public class CategoryController {
 
     @Operation(summary = "Get category by ID — public")
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CategoryResponse>> getById(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<CategoryResponse>> getById(
+            @PathVariable Integer id,
+            @RequestParam(required = false) String language) {
         return ResponseEntity.ok(ApiResponse.ok("Category retrieved",
-                categoryUseCase.getCategoryById(id)));
+                categoryUseCase.getCategoryById(id, language)));
     }
 
     @Operation(summary = "Get all categories — public")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAll() {
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAll(
+            @RequestParam(required = false) String language) {
         return ResponseEntity.ok(ApiResponse.ok("Categories retrieved",
-                categoryUseCase.getAllCategories()));
+                categoryUseCase.getAllCategories(language)));
     }
 
     @Operation(summary = "Get active categories — public")
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getActive() {
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getActive(
+            @RequestParam(required = false) String language) {
         return ResponseEntity.ok(ApiResponse.ok("Active categories retrieved",
-                categoryUseCase.getActiveCategories()));
+                categoryUseCase.getActiveCategories(language)));
     }
 
     @Operation(summary = "Get root categories — public")
     @GetMapping("/root")
-    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getRoot() {
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getRoot(
+            @RequestParam(required = false) String language) {
         return ResponseEntity.ok(ApiResponse.ok("Root categories retrieved",
-                categoryUseCase.getRootCategories()));
+                categoryUseCase.getRootCategories(language)));
     }
 
     @Operation(summary = "Get subcategories of a parent — public")
     @GetMapping("/{id}/subcategories")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getSubcategories(
-            @PathVariable Integer id) {
+            @PathVariable Integer id,
+            @RequestParam(required = false) String language) {
         return ResponseEntity.ok(ApiResponse.ok("Subcategories retrieved",
-                categoryUseCase.getSubcategories(id)));
+                categoryUseCase.getSubcategories(id, language)));
     }
 }

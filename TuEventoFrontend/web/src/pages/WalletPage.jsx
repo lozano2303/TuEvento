@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Wallet, ShoppingCart, RefreshCcw, ShieldCheck, HelpCircle,
   ChevronRight, CheckCircle, Zap, XCircle, Loader2,
@@ -23,38 +24,38 @@ const fmtDate = (isoStr) => {
 };
 
 // ── Mapeo de WalletTransactionType a iconType y texto ──────────────────────────
-const mapTransactionType = (type, isAdditive) => {
+const mapTransactionType = (type, isAdditive, t) => {
   switch (type) {
     case 'CREDIT':
     case 'REVERSAL':
       return {
         iconType: 'credit',
-        concept: type === 'REVERSAL' ? 'Reversión' : 'Crédito por cancelación',
+        concept: type === 'REVERSAL' ? t('wallet.movements.reversal') : t('wallet.movements.creditCancellation'),
       };
     case 'PAYMENT':
       return {
         iconType: 'purchase',
-        concept: 'Aplicación en compra',
+        concept: t('wallet.movements.appliedToPurchase'),
       };
     case 'ADJUSTMENT':
       return {
         iconType: isAdditive ? 'credit' : 'purchase',
-        concept: isAdditive ? 'Ajuste administrativo' : 'Ajuste administrativo',
+        concept: t('wallet.movements.adminAdjustment'),
       };
     default:
-      return { iconType: 'credit', concept: 'Movimiento' };
+      return { iconType: 'credit', concept: t('wallet.movements.movement') };
   }
 };
 
 // ── Mapeo de WalletTransactionStatus a badge ───────────────────────────────────
-const mapStatus = (status) => {
+const mapStatus = (status, t) => {
   switch (status) {
     case 'COMPLETED':
-      return 'Completado';
+      return t('wallet.statusCompleted');
     case 'PENDING':
-      return 'Pendiente';
+      return t('wallet.statusPending');
     case 'FAILED':
-      return 'Fallido';
+      return t('wallet.statusFailed');
     default:
       return status;
   }
@@ -143,6 +144,7 @@ function WalletIllustration({ palette }) {
 export default function WalletPage() {
   const navigate = useNavigate();
   const { palette } = useTheme();
+  const { t } = useTranslation();
   const [showAll, setShowAll] = useState(false);
   
   // Estado
@@ -184,7 +186,7 @@ export default function WalletPage() {
   // Procesamiento de transacciones para UI
   const processedTransactions = transactions.map(tx => {
     const isAdditive = ['CREDIT', 'REVERSAL', 'ADJUSTMENT'].includes(tx.type);
-    const { iconType, concept } = mapTransactionType(tx.type, isAdditive);
+    const { iconType, concept } = mapTransactionType(tx.type, isAdditive, t);
     
     // Determinar si el monto es positivo o negativo según el tipo
     let displayAmount = tx.amount;
@@ -199,7 +201,7 @@ export default function WalletPage() {
       concept,
       event: tx.eventName || `ID: ${tx.entityId || 'N/A'}`,
       date: tx.createdAt,
-      status: mapStatus(tx.status),
+      status: mapStatus(tx.status, t),
       amount: displayAmount,
       iconType,
     };
@@ -207,7 +209,8 @@ export default function WalletPage() {
 
   const visibleMovements = showAll ? processedTransactions : processedTransactions.slice(0, 10);
   const availableBalance = wallet?.availableBalance || 0;
-  const reservedBalance = wallet?.reservedBalance || 0;
+  const totalBalance = wallet?.balance || 0;
+  const reservedBalance = Math.max(0, totalBalance - availableBalance);
 
   // Estado vacío o sin wallet
   if (!loading && !wallet) {
@@ -218,9 +221,9 @@ export default function WalletPage() {
       >
         <div className="text-center max-w-md px-4">
           <Wallet className="w-16 h-16 mx-auto mb-4" style={{ color: palette.textMuted }} />
-          <h2 className="text-2xl font-bold mb-2">Aún no tenés crédito acumulado</h2>
+          <h2 className="text-2xl font-bold mb-2">{t('wallet.noCredit')}</h2>
           <p className="text-sm" style={{ color: palette.textSecondary }}>
-            Tu saldo de cartera se generará cuando canceles una compra o recibas un reembolso.
+            {t('wallet.noCreditMessage')}
           </p>
         </div>
       </div>
@@ -263,19 +266,18 @@ export default function WalletPage() {
               }}
             >
               <Wallet className="w-3.5 h-3.5" />
-              Mi Saldo
+              {t('wallet.myBalance')}
             </span>
 
             {/* Título */}
             <h1 className="text-3xl md:text-4xl font-black leading-tight">
-              <span>Tu saldo </span>
-              <span style={{ color: palette.primary }}>disponible</span>
+              <span>{t('wallet.availableBalance').split(' ')[0]} </span>
+              <span style={{ color: palette.primary }}>{t('wallet.availableBalance').split(' ').slice(1).join(' ')}</span>
             </h1>
 
             {/* Descripción */}
             <p className="text-sm leading-relaxed max-w-sm" style={{ color: palette.textSecondary }}>
-              Llevá el control de tus fondos y disfrutá de una experiencia
-              segura, rápida y sin complicaciones para tus compras en eventos.
+              {t('wallet.description')}
             </p>
           </div>
 
@@ -315,7 +317,7 @@ export default function WalletPage() {
                 className="text-[10px] uppercase tracking-widest font-bold"
                 style={{ color: palette.textMuted }}
               >
-                SALDO ACTUAL
+                {t('wallet.currentBalance')}
               </span>
             </div>
 
@@ -331,11 +333,11 @@ export default function WalletPage() {
               {/* Subtítulo con saldo reservado si existe */}
               {reservedBalance > 0 ? (
                 <p className="text-sm" style={{ color: palette.textSecondary }}>
-                  ${reservedBalance.toLocaleString('es-CO')} en compras pendientes
+                  ${reservedBalance.toLocaleString('es-CO')} {t('wallet.pendingPurchases')}
                 </p>
               ) : (
                 <p className="text-sm" style={{ color: palette.textSecondary }}>
-                  Saldo disponible para usar en tus compras
+                  {t('wallet.availableForPurchases')}
                 </p>
               )}
 
@@ -350,7 +352,7 @@ export default function WalletPage() {
                 }}
               >
                 <ShieldCheck className="w-3 h-3" />
-                Crédito interno protegido
+                {t('wallet.protectedCredit')}
               </span>
 
               {/* Divider */}
@@ -370,7 +372,7 @@ export default function WalletPage() {
                 >
                   <div className="flex items-center gap-2">
                     <Wallet className="w-4 h-4" />
-                    Usar saldo en una compra
+                    {t('wallet.useBalance')}
                   </div>
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -393,13 +395,13 @@ export default function WalletPage() {
               className="px-6 py-4 flex items-center justify-between"
               style={{ borderBottom: `1px solid ${palette.textPrimary}10` }}
             >
-              <h2 className="text-sm font-bold">Historial de movimientos</h2>
+              <h2 className="text-sm font-bold">{t('wallet.movementHistory')}</h2>
               <button
                 onClick={() => setShowAll(!showAll)}
                 className="text-xs font-semibold flex items-center gap-1 transition-colors hover:brightness-110"
                 style={{ color: palette.primary }}
               >
-                {showAll ? 'Ver menos' : 'Ver todo'}
+                {showAll ? t('wallet.viewLess') : t('wallet.viewAll')}
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -410,10 +412,10 @@ export default function WalletPage() {
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${palette.textPrimary}10` }}>
                     {[
-                      { label: 'CONCEPTO', right: false, width: 'w-2/5' },
-                      { label: 'FECHA',    right: false, width: 'w-1/5' },
-                      { label: 'ESTADO',   right: false, width: 'w-1/5' },
-                      { label: 'MONTO',    right: true,  width: 'w-1/5' },
+                      { label: t('wallet.concept'), right: false, width: 'w-2/5' },
+                      { label: t('wallet.date'),    right: false, width: 'w-1/5' },
+                      { label: t('wallet.status'),   right: false, width: 'w-1/5' },
+                      { label: t('wallet.amount'),    right: true,  width: 'w-1/5' },
                     ].map(({ label, right, width }) => (
                       <th
                         key={label}
@@ -524,7 +526,7 @@ export default function WalletPage() {
 
               {processedTransactions.length === 0 && (
                 <div className="p-10 text-center text-sm" style={{ color: palette.textMuted }}>
-                  No hay movimientos registrados
+                  {t('wallet.noMovements')}
                 </div>
               )}
             </div>
@@ -538,20 +540,20 @@ export default function WalletPage() {
           {[
             {
               icon: Zap,
-              title: '¿Cómo usarlo?',
-              text:  'Utilizá tu saldo disponible para comprar tickets, servicios y más en nuestros eventos.',
+              title: t('wallet.howToUse'),
+              text:  t('wallet.howToUseText'),
               arrow: true,
             },
             {
               icon: ShieldCheck,
-              title: 'Saldo Protegido',
-              text:  'Tu dinero está seguro con nuestra tecnología de encriptación y procesos verificados.',
+              title: t('wallet.protectedBalance'),
+              text:  t('wallet.protectedBalanceText'),
               arrow: true,
             },
             {
               icon: HelpCircle,
-              title: '¿Dudas?',
-              text:  'Si tenés preguntas sobre tu saldo o movimientos, contactá a nuestro equipo de soporte.',
+              title: t('wallet.help'),
+              text:  t('wallet.helpText'),
               arrow: true,
             },
           ].map(({ icon: Icon, title, text, arrow }) => (

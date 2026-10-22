@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.config;
 
 import java.util.Properties;
+import java.util.concurrent.Executor;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -8,11 +9,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /**
  * Configuración del módulo de notificaciones.
  * - Spring Mail para canal EMAIL
- * - Async habilitado para event listeners
+ * - Async habilitado para event listeners y canal EMAIL
  */
 @Configuration
 @EnableAsync
@@ -62,5 +64,23 @@ public class NotificationConfig {
         props.put("mail.smtp.ssl.trust", mailHost);
 
         return mailSender;
+    }
+    
+    /**
+     * Thread pool para envío asíncrono de notificaciones EMAIL.
+     * Esto permite que el envío de emails no bloquee la transacción principal,
+     * mejorando el tiempo de respuesta de WebSocket (IN_APP).
+     */
+    @Bean(name = "notificationExecutor")
+    public Executor notificationExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(5);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("notification-email-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
+        executor.initialize();
+        return executor;
     }
 }

@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 092-add-preferred-language-to-profile
+      author: capysoft
+      changes:
+        - addColumn:
+            tableName: profile
+            columns:
+              - column:
+                  name: preferred_language_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+                  remarks: "User's preferred language for content display"
+        
+        - addForeignKeyConstraint:
+            baseTableName: profile
+            baseColumnNames: preferred_language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_profile_preferred_language

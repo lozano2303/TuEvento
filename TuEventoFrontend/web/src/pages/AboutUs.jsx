@@ -1,30 +1,32 @@
 import { Calendar, Users, Gift, Smartphone, Globe, CheckCircle, Heart, Target, Award, Sparkles, Zap, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Footer from '../layouts/Footer';
 
 
 export default function AboutUs() {
+  const { t } = useTranslation();
   const [currentMember, setCurrentMember] = useState(0);
 
   const teamMembers = [
     {
       id: 1,
-      name: "Cristofer David Lozano Contreras",
+      name: t('about.team.members.cristofer.name'),
       email: "cristoferlozano233@gmail.com",
       phone: "+57 313 460  5214",
       initials: "CG",
-      role: "Desarollador de Software",
-      description: "Encargado de vigilar el seguimiento del equipo, desarrollador del Backend, diseñador de la base de datos, apoyo en la visualización móvil y documentación.",
+      role: t('about.team.members.cristofer.role'),
+      description: t('about.team.members.cristofer.description'),
       gradient: "from-green-500 to-emerald-500"
     },
     {
       id: 2,
-      name: "Jhampier Santos Ortiz",
+      name: t('about.team.members.jhampier.name'),
       email: "ortizjhampier@gmail.com",
       phone: "+57 302 770 0760",
       initials: "DP",
-      role: "Desarollador de Software",
-      description: "Responsable de implementar la lógica del sistema, creación de interfaces gráficas web y móviles, además de la elaboración de la documentación del proyecto.",
+      role: t('about.team.members.jhampier.role'),
+      description: t('about.team.members.jhampier.description'),
       gradient: "from-pink-500 to-rose-500"
     }
   ];
@@ -177,7 +179,7 @@ export default function AboutUs() {
               }}
             >
               <Sparkles className="w-4 h-4 mr-2" style={{ color: '#c4b5fd' }} />
-              <span className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.92)' }}>Plataforma de Eventos Innovadora</span>
+              <span className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.92)' }}>{t('about.hero.badge')}</span>
               <span
                 className="ml-2 w-2 h-2 rounded-full inline-block"
                 style={{ background: '#4ade80', boxShadow: '0 0 6px #4ade80', animation: 'lp2-pulse-ring 1.4s ease-out infinite' }}
@@ -188,7 +190,7 @@ export default function AboutUs() {
               className="text-5xl md:text-7xl font-extrabold leading-tight text-white"
               style={{ animation: 'lp2-slide-up 0.7s 0.1s ease both', letterSpacing: '-0.02em' }}
             >
-              Sobre{' '}
+              {t('about.hero.title')}{' '}
               <span style={{
                 background: 'linear-gradient(90deg, #e9d5ff, #a78bfa, #c4b5fd)',
                 backgroundSize: '200% auto',
@@ -197,7 +199,7 @@ export default function AboutUs() {
                 backgroundClip: 'text',
                 animation: 'lp2-shimmer 3s linear infinite',
               }}>
-                Nosotros
+                {t('about.hero.titleAccent')}
               </span>
             </h1>
 
@@ -205,9 +207,7 @@ export default function AboutUs() {
               className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed"
               style={{ color: 'rgba(255,255,255,0.78)', animation: 'lp2-slide-up 0.7s 0.2s ease both' }}
             >
-              En <span className="font-semibold" style={{ color: '#c4b5fd' }}>"Tu Evento"</span> transformamos ideas en experiencias inolvidables. Somos una plataforma especializada en la
-              <span className="font-semibold text-white"> maquetación virtual de espacios</span> para eventos, permitiendo a organizadores planificar visualmente la disposición
-              de sus lugares: mesas, escenarios, pistas de baile, áreas VIP y más.
+              {t('about.hero.description')}
             </p>
 
             <div
@@ -215,12 +215,12 @@ export default function AboutUs() {
               style={{ animation: 'lp2-slide-up 0.7s 0.3s ease both' }}
             >
               {[
-                { icon: Zap,    text: 'Visualización 2D' },
-                { icon: Target, text: 'Planificación Precisa' },
-                { icon: Heart,  text: 'Experiencias Únicas' },
-              ].map(({ icon: Icon, text }) => (
+                { icon: Zap,    textKey: 'about.hero.features.visualization' },
+                { icon: Target, textKey: 'about.hero.features.planning' },
+                { icon: Heart,  textKey: 'about.hero.features.experiences' },
+              ].map(({ icon: Icon, textKey }) => (
                 <div
-                  key={text}
+                  key={textKey}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 cursor-default"
                   style={{
                     background: 'rgba(255,255,255,0.12)',
@@ -239,7 +239,7 @@ export default function AboutUs() {
                   }}
                 >
                   <Icon className="w-4 h-4" style={{ color: '#c4b5fd' }} />
-                  <span className="text-sm font-semibold text-white">{text}</span>
+                  <span className="text-sm font-semibold text-white">{t(textKey)}</span>
                 </div>
               ))}
             </div>
@@ -250,11 +250,11 @@ export default function AboutUs() {
               style={{ animation: 'lp2-slide-up 0.7s 0.4s ease both' }}
             >
               {[
-                { val: '2D',   label: 'Editor visual' },
-                { val: '100%', label: 'Seguro' },
-                { val: '24/7', label: 'Disponible' },
-                { val: '2',    label: 'Plataformas' },
-              ].map(({ val, label }) => (
+                { val: '2D',   labelKey: 'about.hero.stats.editor' },
+                { val: '100%', labelKey: 'about.hero.stats.secure' },
+                { val: '24/7', labelKey: 'about.hero.stats.available' },
+                { val: '2',    labelKey: 'about.hero.stats.platforms' },
+              ].map(({ val, labelKey }) => (
                 <div
                   key={val}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl"
@@ -265,7 +265,7 @@ export default function AboutUs() {
                   }}
                 >
                   <span style={{ color: '#fff', fontWeight: 900, fontSize: '0.95rem', lineHeight: 1 }}>{val}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.78rem', fontWeight: 500 }}>{label}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.78rem', fontWeight: 500 }}>{t(labelKey)}</span>
                 </div>
               ))}
             </div>
@@ -302,16 +302,14 @@ export default function AboutUs() {
           <div className="text-center mb-20">
             <div className="inline-flex items-center px-6 py-3 rounded-full border mb-8 bg-primary/20 border-primary/30">
               <Calendar className="w-5 h-5 text-accent mr-2" />
-              <span className="text-sm font-medium text-accent">Nuestra Trayectoria</span>
+              <span className="text-sm font-medium text-accent">{t('about.story.badge')}</span>
             </div>
 
             <h2 className="text-4xl md:text-5xl font-bold mb-8 text-textPrimary">
-              Nuestra Historia
+              {t('about.story.title')}
             </h2>
             <p className="text-textSecondary text-xl max-w-4xl mx-auto leading-relaxed">
-              Todo comenzó con una simple idea: hacer que la organización de eventos sea más fácil,
-              eficiente y accesible para todos. Desde nuestros inicios, hemos trabajado incansablemente
-              para crear una plataforma que combine tecnología innovadora con una experiencia de usuario excepcional.
+              {t('about.story.description')}
             </p>
           </div>
 
@@ -321,17 +319,15 @@ export default function AboutUs() {
                 className="p-8 rounded-2xl hover:border-primary/30 transition-all duration-300"
                 style={{ background: 'color-mix(in srgb, var(--color-surface) 50%, transparent)', backdropFilter: 'blur(8px)', border: '1px solid color-mix(in srgb, var(--color-surfaceAlt) 50%, transparent)' }}
               >
-                <h3 className="text-3xl font-bold mb-4 text-textPrimary">Nuestra Visión</h3>
+                <h3 className="text-3xl font-bold mb-4 text-textPrimary">{t('about.story.vision.title')}</h3>
                 <p className="text-textSecondary leading-relaxed mb-6">
-                  Ser la plataforma líder en gestión de eventos, facilitando conexiones significativas
-                  entre organizadores y asistentes, impulsando la industria del entretenimiento y
-                  fortaleciendo comunidades a través de experiencias inolvidables.
+                  {t('about.story.vision.description')}
                 </p>
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
                     <Target className="w-6 h-6 text-accent" />
                   </div>
-                  <span className="text-lg font-semibold text-accent">Innovación Constante</span>
+                  <span className="text-lg font-semibold text-accent">{t('about.story.vision.feature')}</span>
                 </div>
               </div>
             </div>
@@ -341,17 +337,15 @@ export default function AboutUs() {
                 className="p-8 rounded-2xl transition-all duration-300"
                 style={{ background: 'color-mix(in srgb, var(--color-surface) 50%, transparent)', backdropFilter: 'blur(8px)', border: '1px solid color-mix(in srgb, var(--color-surfaceAlt) 50%, transparent)' }}
               >
-                <h3 className="text-3xl font-bold mb-4 text-textPrimary">Nuestra Misión</h3>
+                <h3 className="text-3xl font-bold mb-4 text-textPrimary">{t('about.story.mission.title')}</h3>
                 <p className="text-textSecondary leading-relaxed mb-6">
-                  Proporcionar herramientas intuitivas y poderosas que permitan a organizadores
-                  crear eventos excepcionales y a asistentes descubrir experiencias que enriquezcan
-                  sus vidas, todo mientras mantenemos los más altos estándares de calidad y seguridad.
+                  {t('about.story.mission.description')}
                 </p>
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-error/20 rounded-full flex items-center justify-center">
                     <Heart className="w-6 h-6 text-error" />
                   </div>
-                  <span className="text-lg font-semibold text-error">Pasión por Eventos</span>
+                  <span className="text-lg font-semibold text-error">{t('about.story.mission.feature')}</span>
                 </div>
               </div>
             </div>
@@ -370,29 +364,29 @@ export default function AboutUs() {
           <div className="text-center mb-20">
             <div className="inline-flex items-center px-6 py-3 rounded-full border mb-8 bg-primary/20 border-primary/30">
               <Award className="w-5 h-5 text-accent mr-2" />
-              <span className="text-sm font-medium text-accent">Lo que nos define</span>
+              <span className="text-sm font-medium text-accent">{t('about.values.badge')}</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-8 text-textPrimary">
-              Nuestros Valores
+              {t('about.values.title')}
             </h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { icon: Award,       title: 'Excelencia',   text: 'Nos comprometemos con la más alta calidad en todo lo que hacemos, desde el desarrollo de software hasta el soporte al cliente.',        hoverBorder: 'hover:border-primary/50',  gradient: 'from-primary to-primaryDark' },
-              { icon: Users,       title: 'Colaboración', text: 'Creemos en el poder del trabajo en equipo y la colaboración para lograr objetivos comunes y crear valor para todos.',                   hoverBorder: 'hover:border-accent/50',   gradient: 'from-accent to-primary'     },
-              { icon: CheckCircle, title: 'Integridad',   text: 'Operamos con honestidad, transparencia y ética en todas nuestras interacciones y decisiones.',                                          hoverBorder: 'hover:border-success/50',  gradient: 'from-success to-primaryDark' },
-            ].map(({ icon: Icon, title, text, hoverBorder, gradient }) => (
+              { icon: Award,       titleKey: 'about.values.items.excellence.title',   textKey: 'about.values.items.excellence.description',    hoverBorder: 'hover:border-primary/50',  gradient: 'from-primary to-primaryDark' },
+              { icon: Users,       titleKey: 'about.values.items.collaboration.title', textKey: 'about.values.items.collaboration.description', hoverBorder: 'hover:border-accent/50',   gradient: 'from-accent to-primary'     },
+              { icon: CheckCircle, titleKey: 'about.values.items.integrity.title',   textKey: 'about.values.items.integrity.description',     hoverBorder: 'hover:border-success/50',  gradient: 'from-success to-primaryDark' },
+            ].map(({ icon: Icon, titleKey, textKey, hoverBorder, gradient }) => (
               <div
-                key={title}
+                key={titleKey}
                 className={`group text-center space-y-6 p-8 rounded-2xl backdrop-blur-sm transition-all duration-300 hover:scale-105 ${hoverBorder}`}
                 style={{ background: 'color-mix(in srgb, var(--color-surfaceAlt) 30%, transparent)', border: '1px solid color-mix(in srgb, var(--color-surfaceAlt) 30%, transparent)' }}
               >
                 <div className={`w-20 h-20 bg-gradient-to-br ${gradient} rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
                   <Icon className="w-10 h-10 text-textPrimary" />
                 </div>
-                <h3 className="text-2xl font-bold text-textPrimary">{title}</h3>
-                <p className="text-textSecondary leading-relaxed">{text}</p>
+                <h3 className="text-2xl font-bold text-textPrimary">{t(titleKey)}</h3>
+                <p className="text-textSecondary leading-relaxed">{t(textKey)}</p>
               </div>
             ))}
           </div>
@@ -432,26 +426,26 @@ export default function AboutUs() {
                     className="text-xs font-semibold px-3 py-1 rounded-full"
                     style={{ background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.85)' }}
                   >
-                    Editor de planos
+                    {t('about.mockup.editorTitle')}
                   </div>
                 </div>
 
                 {/* Grid de secciones simuladas */}
                 <div className="grid grid-cols-3 gap-2 mb-4">
                   {[
-                    { label: 'VIP',       w: 'col-span-2', h: 'h-14', opacity: '0.35' },
-                    { label: 'General',   w: 'col-span-1', h: 'h-14', opacity: '0.25' },
-                    { label: 'Escenario', w: 'col-span-3', h: 'h-10', opacity: '0.20' },
-                    { label: 'Mesa A',    w: 'col-span-1', h: 'h-12', opacity: '0.30' },
-                    { label: 'Mesa B',    w: 'col-span-1', h: 'h-12', opacity: '0.30' },
-                    { label: 'Barra',     w: 'col-span-1', h: 'h-12', opacity: '0.22' },
-                  ].map(({ label, w, h, opacity }) => (
+                    { key: 'vip',       labelKey: 'about.mockup.sections.vip',       w: 'col-span-2', h: 'h-14', opacity: '0.35' },
+                    { key: 'general',   labelKey: 'about.mockup.sections.general',   w: 'col-span-1', h: 'h-14', opacity: '0.25' },
+                    { key: 'stage',     labelKey: 'about.mockup.sections.stage',     w: 'col-span-3', h: 'h-10', opacity: '0.20' },
+                    { key: 'tableA',    labelKey: 'about.mockup.sections.tableA',    w: 'col-span-1', h: 'h-12', opacity: '0.30' },
+                    { key: 'tableB',    labelKey: 'about.mockup.sections.tableB',    w: 'col-span-1', h: 'h-12', opacity: '0.30' },
+                    { key: 'bar',       labelKey: 'about.mockup.sections.bar',       w: 'col-span-1', h: 'h-12', opacity: '0.22' },
+                  ].map(({ key, labelKey, w, h, opacity }) => (
                     <div
-                      key={label}
+                      key={key}
                       className={`${w} ${h} rounded-xl flex items-center justify-center`}
                       style={{ background: `rgba(255,255,255,${opacity})`, border: '1px solid rgba(255,255,255,0.2)' }}
                     >
-                      <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>{label}</span>
+                      <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>{t(labelKey)}</span>
                     </div>
                   ))}
                 </div>
@@ -474,7 +468,7 @@ export default function AboutUs() {
                     className="text-xs font-semibold px-3 py-1 rounded-lg"
                     style={{ background: 'var(--color-accent)', color: '#fff' }}
                   >
-                    Guardar
+                    {t('about.mockup.save')}
                   </div>
                 </div>
               </div>
@@ -492,8 +486,8 @@ export default function AboutUs() {
                   <Users className="w-3.5 h-3.5 text-white" />
                 </div>
                 <div>
-                  <p className="font-bold text-gray-800" style={{ fontSize: '0.7rem' }}>248 asistentes</p>
-                  <p className="text-gray-500" style={{ fontSize: '0.6rem' }}>confirmados</p>
+                  <p className="font-bold text-gray-800" style={{ fontSize: '0.7rem' }}>{t('about.mockup.attendees', { count: 248 })}</p>
+                  <p className="text-gray-500" style={{ fontSize: '0.6rem' }}>{t('about.mockup.confirmed')}</p>
                 </div>
               </div>
 
@@ -506,7 +500,7 @@ export default function AboutUs() {
                 }}
               >
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" />
-                <p className="font-bold text-gray-800" style={{ fontSize: '0.7rem' }}>En vivo</p>
+                <p className="font-bold text-gray-800" style={{ fontSize: '0.7rem' }}>{t('about.mockup.live')}</p>
               </div>
             </div>
 
@@ -514,22 +508,21 @@ export default function AboutUs() {
             <div className="space-y-8">
               <div>
                 <h2 className="text-4xl md:text-5xl font-bold mb-6 text-textPrimary">
-                  Organiza tus eventos
+                  {t('about.organize.title')}
                 </h2>
                 <p className="text-xl leading-relaxed mb-8" style={{ color: 'color-mix(in srgb, var(--color-textPrimary) 85%, transparent)' }}>
-                  Organiza tus eventos en minutos, no en horas. Con nuestras herramientas virtuales,
-                  simplifica la planificación y enfócate en lo importante.
+                  {t('about.organize.description')}
                 </p>
               </div>
 
               <div className="space-y-4">
                 {[
-                  { icon: Clock,  title: 'Ahorra tiempo',          desc: 'Planifica en minutos con nuestras herramientas intuitivas',  accentBg: 'bg-accent/80',   accentText: 'text-background' },
-                  { icon: Zap,    title: 'Herramientas virtuales',  desc: 'Maquetación 2D y visualización en tiempo real',              accentBg: 'bg-primary/80',  accentText: 'text-textPrimary' },
-                  { icon: Target, title: 'Enfoque en lo importante', desc: 'Dedica más tiempo a crear experiencias memorables',          accentBg: 'bg-success/80',  accentText: 'text-textPrimary' },
-                ].map(({ icon: Icon, title, desc, accentBg, accentText }) => (
+                  { icon: Clock,  titleKey: 'about.organize.features.saveTime.title',      descKey: 'about.organize.features.saveTime.description',      accentBg: 'bg-accent/80',   accentText: 'text-background' },
+                  { icon: Zap,    titleKey: 'about.organize.features.virtualTools.title',  descKey: 'about.organize.features.virtualTools.description',  accentBg: 'bg-primary/80',  accentText: 'text-textPrimary' },
+                  { icon: Target, titleKey: 'about.organize.features.focus.title',         descKey: 'about.organize.features.focus.description',         accentBg: 'bg-success/80',  accentText: 'text-textPrimary' },
+                ].map(({ icon: Icon, titleKey, descKey, accentBg, accentText }) => (
                   <div
-                    key={title}
+                    key={titleKey}
                     className="flex items-center space-x-4 p-4 rounded-lg border"
                     style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', borderColor: 'rgba(255,255,255,0.2)' }}
                   >
@@ -537,8 +530,8 @@ export default function AboutUs() {
                       <Icon className={`w-5 h-5 ${accentText}`} />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-textPrimary">{title}</h3>
-                      <p className="text-sm" style={{ color: 'color-mix(in srgb, var(--color-textPrimary) 70%, transparent)' }}>{desc}</p>
+                      <h3 className="font-semibold text-textPrimary">{t(titleKey)}</h3>
+                      <p className="text-sm" style={{ color: 'color-mix(in srgb, var(--color-textPrimary) 70%, transparent)' }}>{t(descKey)}</p>
                     </div>
                   </div>
                 ))}
@@ -559,13 +552,13 @@ export default function AboutUs() {
           <div className="text-center mb-16">
             <div className="inline-flex items-center px-6 py-3 rounded-full border mb-8 bg-primary/20 border-primary/30">
               <Users className="w-5 h-5 text-accent mr-2" />
-              <span className="text-sm font-medium text-accent">Conoce al equipo</span>
+              <span className="text-sm font-medium text-accent">{t('about.team.badge')}</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold mb-8 text-textPrimary">
-              Nuestro Equipo
+              {t('about.team.title')}
             </h2>
             <p className="text-textSecondary text-xl max-w-3xl mx-auto leading-relaxed">
-              Un equipo apasionado de 5 profesionales dedicados a hacer que cada evento sea memorable.
+              {t('about.team.description')}
             </p>
           </div>
 
@@ -662,7 +655,7 @@ export default function AboutUs() {
 
             <div className="text-center mt-6">
               <span className="text-textMuted text-sm">
-                {currentMember + 1} de {teamMembers.length}
+                {t('about.team.counter', { current: currentMember + 1, total: teamMembers.length })}
               </span>
             </div>
           </div>

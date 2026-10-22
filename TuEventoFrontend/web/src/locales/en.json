@@ -1,0 +1,1469 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "noResults": "No results found",
+    "tryAgain": "Try again"
+  },
+  "comments": {
+    "languageRestriction": "To comment, you need to have Spanish set as your preferred language in your profile.",
+    "translated": "Translated from Spanish",
+    "translating": "Translating comment…",
+    "loadingComments": "Loading comments…",
+    "noComments": "No comments yet",
+    "writeComment": "Write comment…",
+    "reply": "Reply",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "publish": "Publish",
+    "replyTo": "Replying to",
+    "editing": "Editing comment",
+    "organizer": "Organizer",
+    "edited": "Edited",
+    "selectRating": "Select a rating from 1 to 5 stars before publishing"
+  },
+  "landing": {
+    "hero": {
+      "eyebrow": "Event management · Simple · Powerful",
+      "welcomeBack": "Welcome back, {{name}}",
+      "titleGuest": {
+        "line1": "Design events",
+        "accent": "people",
+        "line2": "remember."
+      },
+      "titleAuth": {
+        "line1": "Your next",
+        "accent": "event",
+        "line2": "awaits."
+      },
+      "subtitleGuest": "Design, plan and experience unique moments that make a difference. Every detail counts and our toolkit makes it happen.",
+      "subtitleAuth": "Explore events in your city, host your own or manage your tickets. All in one place.",
+      "viewEvents": "View events",
+      "createEvent": "Create event",
+      "startFree": "Start free",
+      "trust": {
+        "free": "Free to start",
+        "noCard": "No credit card",
+        "support": "Spanish support"
+      },
+      "stats": {
+        "editor": "Visual editor",
+        "secure": "Secure",
+        "available": "Available"
+      }
+    },
+    "heroCard": {
+      "editor": {
+        "title": "Floor plan editor",
+        "desc": "Design your space in real time"
+      },
+      "tickets": {
+        "title": "Ticket sales",
+        "desc": "Secure, hassle-free payments"
+      },
+      "badge": {
+        "title": "Ticket confirmed",
+        "sub": "VIP · Row A"
+      }
+    },
+    "value": {
+      "section1": {
+        "eyebrow": "All in one platform",
+        "title": "Organize, design and live",
+        "titleAccent": "events without limits.",
+        "description": "Build memorable events with our interactive online floor plan creator. Design custom spaces, manage attendees and visualize every detail of your event in real time, all in one platform.",
+        "items": {
+          "editor": "Real-time drag & drop floor plan editor",
+          "analytics": "Analytics panel for every event",
+          "notifications": "Automatic notifications to your attendees"
+        },
+        "tags": {
+          "plan": "Interactive plan",
+          "tickets": "Ticket sales",
+          "analytics": "Analytics"
+        }
+      },
+      "section2": {
+        "eyebrow": "Discover experiences",
+        "title": "Request for",
+        "titleAccent": "exceptional events.",
+        "description": "If you are looking for new experiences, check our list of available events. Explore all options and find the perfect plan for you.",
+        "items": {
+          "filter": "Filter by city, category and date",
+          "buy": "Buy tickets quickly and securely",
+          "alerts": "Get alerts for events you care about"
+        },
+        "tags": {
+          "search": "Advanced search",
+          "location": "By location",
+          "category": "By category"
+        },
+        "button": "View available events"
+      }
+    },
+    "steps": {
+      "eyebrow": "Simple by design",
+      "title": "Your event ready in four steps",
+      "subtitle": "From idea to real event, without needing any technical knowledge.",
+      "step1": {
+        "title": "Create your account",
+        "desc": "Sign up in seconds. No credit card, no unnecessary steps."
+      },
+      "step2": {
+        "title": "Design the space",
+        "desc": "Use the floor plan editor to set up sections, seats and custom zones."
+      },
+      "step3": {
+        "title": "Sell tickets",
+        "desc": "Enable ticket sales and manage payments securely."
+      },
+      "step4": {
+        "title": "Live the event",
+        "desc": "Manage attendees in real time and get feedback from your audience."
+      }
+    },
+    "featuresList": {
+      "eyebrow": "Included tools",
+      "title": "Everything you need,",
+      "titleAccent": "ready from day one",
+      "subtitle": "No extra plugins, no complicated integrations. Every tool is designed so you focus on your event, not the technology.",
+      "planEditor": {
+        "title": "Floor plan editor",
+        "desc": "Create your event layout with a real-time visual drag & drop editor."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "desc": "Reminders, changes and confirmations reach your attendees automatically."
+      },
+      "payments": {
+        "title": "Integrated payments",
+        "desc": "Secure payment gateway. Charge for tickets and receive your money without intermediaries."
+      },
+      "analytics": {
+        "title": "Analytics",
+        "desc": "Sales and attendance metrics in a clear panel to make better decisions."
+      },
+      "geolocation": {
+        "title": "Geolocation",
+        "desc": "Attendees discover events near them by filtering by city and category."
+      },
+      "categories": {
+        "title": "Categories",
+        "desc": "Classify your event among music, culture, sports, food and much more."
+      }
+    },
+    "reviews": {
+      "eyebrow": "Real users",
+      "title": "What people say about events on TuEvento",
+      "subtitle": "Verified reviews from attendees at published events.",
+      "anonymous": "User",
+      "organizer": "Organizer",
+      "cta": "See all events and their reviews"
+    },
+    "platforms": {
+      "eyebrow": "Available on",
+      "title": "Wherever you are, TuEvento goes with you",
+      "subtitle": "Access from the browser or download the Android app. The same experience on any device.",
+      "popular": "Popular",
+      "web": {
+        "title": "Web version",
+        "desc": "Works in any modern browser. Nothing to install, just open the page and go.",
+        "button": "Open web app"
+      },
+      "android": {
+        "title": "Android App",
+        "desc": "Download the APK and get push notifications, ticket scanner and native features.",
+        "button": "Download APK"
+      }
+    },
+    "apkModal": {
+      "title": "TuEvento Mobile App",
+      "subtitle": "Available for Android devices",
+      "description": "Download the mobile app to access all TuEvento features from your Android device. Push notifications, ticket scanner and more.",
+      "download": "Download APK",
+      "cancel": "Cancel"
+    }
+  },
+  "about": {
+    "hero": {
+      "badge": "Innovative Event Platform",
+      "title": "About",
+      "titleAccent": "Us",
+      "description": "At \"Tu Evento\" we transform ideas into unforgettable experiences. We are a platform specialized in virtual space layout for events, allowing organizers to visually plan the layout of their venues: tables, stages, dance floors, VIP areas and more.",
+      "features": {
+        "visualization": "2D Visualization",
+        "planning": "Precise Planning",
+        "experiences": "Unique Experiences"
+      },
+      "stats": {
+        "editor": "Visual editor",
+        "secure": "Secure",
+        "available": "Available",
+        "platforms": "Platforms"
+      }
+    },
+    "story": {
+      "badge": "Our Journey",
+      "title": "Our Story",
+      "description": "It all started with a simple idea: make event organization easier, more efficient and accessible to everyone. Since our beginnings, we have worked tirelessly to create a platform that combines innovative technology with an exceptional user experience.",
+      "vision": {
+        "title": "Our Vision",
+        "description": "To be the leading platform in event management, facilitating meaningful connections between organizers and attendees, driving the entertainment industry and strengthening communities through unforgettable experiences.",
+        "feature": "Constant Innovation"
+      },
+      "mission": {
+        "title": "Our Mission",
+        "description": "To provide intuitive and powerful tools that allow organizers to create exceptional events and attendees to discover experiences that enrich their lives, all while maintaining the highest standards of quality and security.",
+        "feature": "Passion for Events"
+      }
+    },
+    "values": {
+      "badge": "What defines us",
+      "title": "Our Values",
+      "items": {
+        "excellence": {
+          "title": "Excellence",
+          "description": "We commit to the highest quality in everything we do, from software development to customer support."
+        },
+        "collaboration": {
+          "title": "Collaboration",
+          "description": "We believe in the power of teamwork and collaboration to achieve common goals and create value for everyone."
+        },
+        "integrity": {
+          "title": "Integrity",
+          "description": "We operate with honesty, transparency and ethics in all our interactions and decisions."
+        }
+      }
+    },
+    "organize": {
+      "title": "Organize your events",
+      "description": "Organize your events in minutes, not hours. With our virtual tools, simplify planning and focus on what matters.",
+      "features": {
+        "saveTime": {
+          "title": "Save time",
+          "description": "Plan in minutes with our intuitive tools"
+        },
+        "virtualTools": {
+          "title": "Virtual tools",
+          "description": "2D layout and real-time visualization"
+        },
+        "focus": {
+          "title": "Focus on what matters",
+          "description": "Spend more time creating memorable experiences"
+        }
+      }
+    },
+    "team": {
+      "badge": "Meet the team",
+      "title": "Our Team",
+      "description": "A passionate team of 2 professionals dedicated to making every event memorable.",
+      "counter": "{{current}} of {{total}}",
+      "members": {
+        "cristofer": {
+          "name": "Cristofer David Lozano Contreras",
+          "role": "Software Developer",
+          "description": "In charge of team monitoring, backend developer, database designer, mobile visualization support and documentation."
+        },
+        "jhampier": {
+          "name": "Jhampier Santos Ortiz",
+          "role": "Software Developer",
+          "description": "Responsible for implementing system logic, creating web and mobile graphical interfaces, and project documentation."
+        }
+      }
+    },
+    "mockup": {
+      "editorTitle": "Floor plan editor",
+      "save": "Save",
+      "attendees": "{{count}} attendees",
+      "confirmed": "confirmed",
+      "live": "Live",
+      "sections": {
+        "vip": "VIP",
+        "general": "General",
+        "stage": "Stage",
+        "tableA": "Table A",
+        "tableB": "Table B",
+        "bar": "Bar"
+      }
+    }
+  },
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "register": "Sign up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "forgotPassword": "Forgot your password?",
+    "rememberMe": "Remember me",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "sessionExpired": "Your session expired, please log in again"
+  },
+  "events": {
+    "title": "Events",
+    "pageTitle": "EVENTS",
+    "searchPlaceholder": "Search events...",
+    "searchButton": "Search",
+    "loadingEvents": "Loading events...",
+    "noEventsFound": "No events found",
+    "noEventsMessage": "Try another search or change the date.",
+    "viewDetails": "View details",
+    "draft": "Draft",
+    "deleteConfirm": "Are you sure you want to delete this event?",
+    "deleteSuccess": "Event deleted successfully",
+    "deleteError": "Error deleting the event",
+    "connectionError": "Connection error loading events",
+    "noEvents": "No events available",
+    "createEvent": "Create event",
+    "editEvent": "Edit event",
+    "eventDetails": "Event details",
+    "eventName": "Event name",
+    "description": "Description",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "location": "Location",
+    "availableSeats": "{{count}} seats available",
+    "backToEvents": "Back to events",
+    "noImages": "This event has no images yet",
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "cancelled": "Cancelled",
+      "completed": "Completed"
+    },
+    "translation": {
+      "translated": "Translated ({{lang}})",
+      "generating": "Generating translation...",
+      "autoReload": "The page will reload automatically."
+    },
+    "soldOut": "Sold out",
+    "almostGone": "Few left"
+  },
+  "myEvents": {
+    "title": "My Events",
+    "subtitle": "Manage and edit your events",
+    "createNew": "Create new event",
+    "createFirst": "Create first event",
+    "loading": "Loading events…",
+    "noEvents": {
+      "title": "You don't have any events yet",
+      "subtitle": "Create your first event to get started"
+    },
+    "editRestriction": "To create and edit events, change the language to Spanish in your profile",
+    "filters": {
+      "all": "All"
+    },
+    "table": {
+      "headers": {
+        "event": "Event",
+        "status": "Status",
+        "dates": "Dates",
+        "seats": "Seats",
+        "actions": "Actions"
+      },
+      "noEventsInStatus": "No events in {{status}} status.",
+      "noEvents": "No events"
+    },
+    "actions": {
+      "viewDetail": "View event details",
+      "editLayout": "Edit event layout",
+      "editLayoutRestricted": "Layout can only be edited in Draft status",
+      "editInfo": "Edit event information",
+      "editInfoRestricted": "Information can only be edited in Draft status",
+      "manageImages": "Manage event images",
+      "manageImagesRestricted": "Images can only be modified in Draft status",
+      "deleteEvent": "Delete event",
+      "deleteEventRestricted": "Only Draft events can be deleted"
+    },
+    "status": {
+      "pendingReview": "Waiting for approval",
+      "rejected": "Rejected — check the reason"
+    },
+    "eventStatus": {
+      "DRAFT": "Draft",
+      "PENDING_REVIEW": "Under review",
+      "PUBLISHED": "Published",
+      "REJECTED": "Rejected",
+      "CANCELLED": "Cancelled",
+      "COMPLETED": "Completed"
+    },
+    "statusActions": {
+      "backToDraft": "Back to draft",
+      "submitReview": "Submit for review",
+      "publish": "Publish",
+      "reject": "Reject",
+      "cancel": "Cancel",
+      "markCompleted": "Mark as completed"
+    },
+    "transitionConfirm": {
+      "PENDING_REVIEW": {
+        "title": "Submit this event for review?",
+        "body": "The event will be pending administrator approval. You won't be able to edit it or modify images while under review. You can withdraw it at any time if you need to make changes.",
+        "confirm": "Yes, submit for review"
+      },
+      "DRAFT": {
+        "title": "Withdraw event from review?",
+        "body": "The event will return to Draft status and you'll be able to edit it again. You'll need to submit it for review again when ready.",
+        "confirm": "Yes, withdraw submission",
+        "titleCorrect": "Fix this event?",
+        "bodyCorrect": "The event will return to Draft status so you can fix it and submit it for review again."
+      },
+      "CANCELLED": {
+        "title": "Cancel this event?",
+        "body": "The event will no longer be publicly available. This action cannot be reversed. If tickets have already been sold, the refund process must be managed separately.",
+        "confirm": "Yes, cancel event"
+      },
+      "COMPLETED": {
+        "title": "Mark this event as completed?",
+        "body": "This indicates that the event has ended. You won't be able to modify it or change its status after this.",
+        "confirm": "Yes, mark as completed"
+      },
+      "cancel": "Cancel",
+      "changing": "Changing…"
+    },
+    "visibility": {
+      "public": "Public",
+      "private": "Private",
+      "active": "Active"
+    },
+    "detailModal": {
+      "close": "Close",
+      "active": "Active",
+      "private": "Private",
+      "loadingDetails": "Loading details…",
+      "descriptionLabel": "Event description",
+      "fields": {
+        "startDate": "START DATE & TIME",
+        "eventType": "EVENT TYPE",
+        "city": "CITY",
+        "finishDate": "END DATE",
+        "availableSeats": "AVAILABLE SEATS",
+        "status": "STATUS",
+        "public": "Public",
+        "private": "Private"
+      },
+      "banners": {
+        "pendingReview": "Your event is under review. We'll publish it once the administrator approves it.",
+        "rejectedTitle": "Event rejected",
+        "rejectedAction": "Close this panel, fix the event and submit it for review again."
+      },
+      "submitReview": "Submit for review"
+    },
+    "myEarnings": "My earnings"
+  },
+  "seats": {
+    "selectSeats": "Select your Seats",
+    "availableSeats": "Available seats",
+    "reservedSeats": "Reserved seats",
+    "soldSeats": "Sold seats",
+    "myReservations": "My reservations",
+    "quantity": "Quantity",
+    "howMany": "How many seats do you want?",
+    "selected": "{{count}} of {{total}} selected",
+    "sections": "Sections",
+    "seatMap": "Seat Map",
+    "myCart": "Your Cart",
+    "noSeatsSelected": "You haven't selected any seats",
+    "section": "Section",
+    "price": "Price",
+    "reserve": "Reserve",
+    "release": "Release",
+    "expired": "Your reservation expired and the seat was released",
+    "alreadyTaken": "This seat was already reserved by someone else",
+    "loginRequired": "Log in to reserve seats",
+    "eventUnavailable": "This event no longer accepts reservations",
+    "total": "Total",
+    "continueToPayment": "Continue to Payment",
+    "viewAll": "View all",
+    "expiredCountdown": "Expired"
+  },
+  "profile": {
+    "myProfile": "My profile",
+    "editProfile": "Edit profile",
+    "personalInfo": "Personal Information",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "fullName": "Full Name",
+    "phone": "Phone",
+    "city": "City",
+    "bio": "Biography",
+    "bioPlaceholder": "Tell us something about yourself…",
+    "language": "Preferred language",
+    "languagePreferred": "Preferred Language",
+    "preferences": "Preferences",
+    "theme": "Visual Theme",
+    "saveChanges": "Save changes",
+    "saving": "Saving...",
+    "updateSuccess": "Profile updated successfully",
+    "updateError": "Could not update profile",
+    "accountSecurity": "Account Security",
+    "logout": "Logout",
+    "logoutDescription": "Sign out of this device.",
+    "dangerZone": "Danger Zone",
+    "deactivateWarning": "Once you deactivate your account, you cannot reverse this action.",
+    "deactivateAccount": "Deactivate Account",
+    "roles": {
+      "admin": "Administrator",
+      "organizer": "Organizer",
+      "user": "User"
+    },
+    "translation": {
+      "translated": "Translated ({{lang}})",
+      "generating": "Generating bio translation...",
+      "autoUpdate": "It will update automatically when ready."
+    },
+    "biographyTranslatedAutomatically": "Biography translated automatically",
+    "cannotEditTranslated": "You cannot edit a translated biography. Change the language to Spanish to edit it.",
+    "fullNamePlaceholder": "Your full name",
+    "loadingLanguages": "Loading languages…",
+    "languageUpdated": "Language updated successfully",
+    "languageUpdateError": "Could not update language",
+    "photoUpdateError": "Could not update photo.",
+    "photoUpdated": "Photo updated.",
+    "profileNotFound": "Your profile was not found.",
+    "photoLoadError": "Could not load your photo.",
+    "saveError": "Error saving profile",
+    "profileSaved": "Profile saved successfully",
+    "onlyImageFormats": "Only JPG, PNG or WEBP.",
+    "maxFileSize": "Max. {{size}} MB.",
+    "imageRequirements": "Only JPG, PNG or WEBP. Max. {{size}} MB. No adult content.",
+    "imageRequirementsLabel": "Image requirements",
+    "themeSection": {
+      "loadingThemes": "Loading themes…",
+      "active": "Active",
+      "applyTheme": "Apply theme",
+      "applying": "Applying…",
+      "previousTheme": "Previous theme",
+      "nextTheme": "Next theme",
+      "goToTheme": "Go to theme {{number}}",
+      "customizeColors": "Customize colors",
+      "activateToCustomize": "Activate this theme to customize it",
+      "unsavedChanges": "Save changes to apply the new language",
+      "saveLanguage": "Save language",
+      "savingLanguage": "Saving…"
+    },
+    "customizePanel": {
+      "officialThemeTitle": "Official Theme",
+      "officialThemeDesc": "The PRINCIPAL theme is the official identity of Tu Evento and cannot be customized.",
+      "customizeTheme": "Customize theme",
+      "resetAll": "Reset all",
+      "closePanel": "Close panel",
+      "closeEditor": "Close editor",
+      "groups": {
+        "backgrounds": "Backgrounds",
+        "primary": "Primary",
+        "texts": "Texts",
+        "states": "States"
+      },
+      "properties": {
+        "background": "Main background",
+        "surface": "Surface",
+        "surfaceAlt": "Alternative surface",
+        "primary": "Primary color",
+        "primaryDark": "Dark primary",
+        "accent": "Accent",
+        "textPrimary": "Primary text",
+        "textSecondary": "Secondary text",
+        "textMuted": "Muted text",
+        "error": "Error",
+        "errorBg": "Error background",
+        "success": "Success",
+        "successBg": "Success background"
+      },
+      "contrast": {
+        "ratio": "Contrast ratio: {{ratio}}:1",
+        "aaa": "AAA",
+        "aa": "AA",
+        "aaLarge": "AA Large",
+        "fail": "No contrast",
+        "lowContrast": "Low contrast",
+        "lowContrastWarning": "this color may be hard to read on the current background ({{ratio}}:1, minimum WCAG AA 4.5:1). You can save it anyway.",
+        "suggested": "Suggested:",
+        "useThis": "← use this",
+        "resetToBase": "Reset to base value"
+      },
+      "editor": {
+        "colorPicker": "Open color picker",
+        "colorPickerLabel": "Color picker for {{property}}",
+        "hexLabel": "Hexadecimal color value",
+        "hexPlaceholder": "#RRGGBB",
+        "invalidFormat": "Invalid format — use #RGB, #RRGGBB or rgba(…)",
+        "colorSwatch": "Color {{hex}}",
+        "cancel": "Cancel",
+        "apply": "Apply",
+        "saving": "Saving…",
+        "saveError": "Could not save. Try again."
+      },
+      "log": {
+        "title": "Change history",
+        "loading": "Loading history…",
+        "empty": "No changes recorded",
+        "resetAction": "Reset to base value",
+        "updateAction": "Updated"
+      },
+      "footer": {
+        "contrastInfo": "Contrast values follow the WCAG 2.1 AA standard (minimum 4.5:1 for normal text). Warnings are indicative — you can save any color."
+      },
+      "badges": {
+        "custom": "Custom",
+        "active": "Active"
+      },
+      "errors": {
+        "resetError": "Could not reset \"{{property}}\".",
+        "resetAllError": "Error resetting all colors."
+      }
+    }
+  },
+  "categories": {
+    "title": "Categories",
+    "allCategories": "All categories",
+    "selectCategory": "Select a category",
+    "noCategories": "No categories available",
+    "createCategory": "Create Category",
+    "editCategory": "Edit Category",
+    "deleteCategory": "Delete Category",
+    "name": "Name",
+    "description": "Description",
+    "namePlaceholder": "Category name",
+    "descriptionPlaceholder": "Optional description",
+    "parentCategory": "Parent category",
+    "selectParent": "Select parent category (optional)",
+    "noParent": "No parent category",
+    "rootCategory": "Root category",
+    "creating": "Creating...",
+    "saving": "Saving...",
+    "deleting": "Deleting...",
+    "required": "required",
+    "translation": {
+      "translated": "Translated ({{lang}})",
+      "generating": "Generating translation..."
+    },
+    "errors": {
+      "create": "Failed to create category",
+      "update": "Failed to update category",
+      "delete": "Failed to delete category",
+      "load": "Failed to load categories"
+    }
+  },
+  "cart": {
+    "myCart": "My cart",
+    "emptyCart": "Your cart is empty",
+    "total": "Total",
+    "checkout": "Proceed to checkout",
+    "continueShopping": "Continue shopping"
+  },
+  "payment": {
+    "paymentMethod": "Payment method",
+    "card": "Card",
+    "cash": "Cash",
+    "processing": "Processing payment…",
+    "success": "Payment successful",
+    "failed": "Payment failed",
+    "pending": "Payment pending"
+  },
+  "navigation": {
+    "home": "Home",
+    "about": "About",
+    "events": "Events",
+    "myEvents": "My Events",
+    "createEvent": "Create Event",
+    "profile": "Profile",
+    "viewAll": "View all",
+    "organizerPetition": "Organizer Application"
+  },
+  "userMenu": {
+    "profile": "Profile",
+    "profileDesc": "View and edit your account",
+    "notifications": "Notifications",
+    "notificationsDesc": "View all your notifications",
+    "wallet": "Wallet",
+    "walletDesc": "Balance and transactions",
+    "adminPanel": "Management Panel",
+    "adminPanelDesc": "Manage platform",
+    "login": "Log in"
+  },
+  "footer": {
+    "tagline": "The platform to discover, create, and manage live events easily and professionally.",
+    "navigation": "Navigation",
+    "legal": "Legal",
+    "termsOfService": "Terms of Service",
+    "privacy": "Privacy",
+    "copyright": "© {{year}} Tu Evento · All rights reserved",
+    "madeWith": "Made with ♥ by CapySoft"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Stay up to date with all your notifications",
+    "filters": {
+      "all": "All",
+      "unread": "Unread"
+    },
+    "actions": {
+      "markAllRead": "Mark all as read"
+    },
+    "loading": "Loading notifications...",
+    "empty": {
+      "title": "You have no notifications",
+      "subtitle": "Notifications will appear here when you receive them",
+      "unreadTitle": "You have no unread notifications",
+      "unreadSubtitle": "All your notifications are up to date"
+    },
+    "types": {
+      "PAYMENT_APPROVED": "Payment approved",
+      "PAYMENT_REFUNDED": "Payment refunded",
+      "WALLET_CREDITED": "Wallet credited",
+      "WELCOME": "Welcome",
+      "EVENT_PUBLISHED": "Event published",
+      "EVENT_REJECTED": "Event rejected"
+    },
+    "translating": "Translating...",
+    "details": {
+      "close": "Close",
+      "readAt": "Read",
+      "wallet": "Wallet",
+      "card": "Card/QR",
+      "total": "Total",
+      "tips": {
+        "paymentApproved": "You can view your tickets in your profile",
+        "paymentRefunded": "Funds will be available according to the original payment method",
+        "walletCredited": "Balance is available immediately",
+        "welcomeTitle": "What can you do on TuEvento?",
+        "welcomeItem1": "Explore and buy tickets for events",
+        "welcomeItem2": "Apply to be an organizer with your ID/passport and additional documents"
+      }
+    },
+    "dropdown": {
+      "viewAll": "View all notifications",
+      "noNotifications": "You have no notifications",
+      "loading": "Loading notifications..."
+    }
+  },
+  "organizerPetition": {
+    "title": "Organizer Application",
+    "subtitle": "Upload an identity document to verify your account and create events on the platform.",
+    "status": {
+      "pending": "Your application is under review",
+      "pendingSince": "Submitted on {{date}}",
+      "rejected": "Your application was rejected",
+      "rejectedRetry": "You can try again",
+      "approved": "Document verified"
+    },
+    "fileUpload": {
+      "dragDrop": "Drag and drop your document here",
+      "clickSelect": "Or click to select a file manually",
+      "selectFile": "Select file",
+      "formatInfo": "PDF • Max 5MB",
+      "fileLoaded": "File loaded",
+      "uploaded": "Uploaded"
+    },
+    "buttons": {
+      "send": "Submit application",
+      "sending": "Sending...",
+      "inReview": "Under review",
+      "approved": "Approved"
+    },
+    "documents": {
+      "title": "Required documents",
+      "required": "Required",
+      "optional": "Optional",
+      "items": {
+        "idCard": "Citizen ID / ID card",
+        "passport": "Valid passport (Foreigners)",
+        "officialId": "Official identity document",
+        "backgroundCheck": "Background check certificate",
+        "courseCerts": "Course certificates",
+        "references": "Work references"
+      }
+    },
+    "info": {
+      "processingTime": "Your information will be processed within 24 to 48 business hours by our security team."
+    },
+    "errors": {
+      "selectDocument": "Select a document",
+      "submitError": "Error submitting the application"
+    }
+  },
+  "checkout": {
+    "title": "Confirm purchase",
+    "backToSelection": "Back to selection",
+    "preparingOrder": "Preparing your order…",
+    "orderCreateError": "Could not create order",
+    "backToSeats": "Back to seat selection",
+    "selectedSeats": "Selected seats",
+    "seat": "seat",
+    "seats": "seats",
+    "total": "Total",
+    "wallet": "Wallet",
+    "available": "available",
+    "normalPayment": "Normal payment",
+    "useWallet": "Use wallet",
+    "orderTotal": "Order total",
+    "walletDiscount": "Wallet discount",
+    "remainingGateway": "Remaining via gateway",
+    "walletCoversAll": "To pay (wallet covers all)",
+    "paymentMethod": "Payment method",
+    "qrCode": "QR Code",
+    "scanWithBank": "Scan the QR with your banking app",
+    "pay": "Pay",
+    "payWithWallet": "Pay with wallet",
+    "processing": "Processing…",
+    "reservationNote": "By confirming, your seats will be reserved while payment is processed."
+  },
+  "paymentPending": {
+    "title": "Processing your payment",
+    "completePaymentInWindow": "Complete the payment in the window that opened.",
+    "confirmingWalletPayment": "Confirming your wallet payment…",
+    "openingPaymentWindow": "Opening payment window…",
+    "event": "Event",
+    "seats": "Seats",
+    "reopenPaymentWindow": "Reopen payment window",
+    "doNotCloseTab": "Do not close this tab while payment is being processed.",
+    "paymentCancelled": "Payment cancelled",
+    "paymentRejected": "Payment rejected",
+    "paymentError": "Payment error",
+    "cancelledMessage": "You cancelled the transaction. You can try again whenever you want.",
+    "rejectedMessage": "Payment was rejected. You can try again.",
+    "errorMessage": "An error occurred while processing payment. You can try again.",
+    "retry": "Retry",
+    "backToEvents": "Back to events"
+  },
+  "eventDetail": {
+    "continueToPayment": "Continue to Payment",
+    "backToEvents": "Back to events",
+    "availableSeats": "{{count}} seats available",
+    "published": "Published",
+    "loadingEvent": "Loading event…",
+    "eventNotFound": "Event not found",
+    "noImages": "This event has no images yet",
+    "seatSelection": "Select your Seats",
+    "howManySeats": "How many seats do you want?",
+    "selected": "{{count}} of {{total}} selected",
+    "noSeatsSelected": "You haven't selected any seats",
+    "loginToComment": "to leave a comment",
+    "loadingComments": "Loading comments…",
+    "noCommentsYet": "No comments yet. Be the first!",
+    "edited": "edited",
+    "you": "You",
+    "organizer": "Organizer",
+    "commentsCount": "Comments",
+    "reply": "Reply",
+    "writeComment": "Write your comment about the event…",
+    "publishingComment": "Sending comment…",
+    "publishComment": "Publish comment",
+    "deleteCommentTitle": "Delete this comment?",
+    "deleteCommentMessage": "Once deleted there's no going back — the comment and its replies will disappear forever. Continue?",
+    "yesDelete": "Yes, delete",
+    "noCancel": "No, cancel"
+  },
+  "paymentApproved": {
+    "title": "Payment approved!",
+    "subtitle": "Your purchase was successful. Here are your tickets.",
+    "yourTickets": "Your tickets",
+    "ticketNumber": "Ticket #{{id}}",
+    "ticketsEmail": "Your tickets will be sent to your email shortly.",
+    "viewMoreEvents": "View more events"
+  },
+  "wallet": {
+    "noCredit": "You don't have accumulated credit yet",
+    "noCreditMessage": "Your wallet balance will be generated when you cancel a purchase or receive a refund.",
+    "myBalance": "My Balance",
+    "availableBalance": "Your available balance",
+    "description": "Keep track of your funds and enjoy a secure, fast, and hassle-free experience for your event purchases.",
+    "currentBalance": "CURRENT BALANCE",
+    "pendingPurchases": "in pending purchases",
+    "availableForPurchases": "Balance available to use for your purchases",
+    "protectedCredit": "Protected internal credit",
+    "useBalance": "Use balance for a purchase",
+    "movementHistory": "Transaction history",
+    "viewLess": "View less",
+    "viewAll": "View all",
+    "concept": "CONCEPT",
+    "date": "DATE",
+    "status": "STATUS",
+    "amount": "AMOUNT",
+    "noMovements": "No transactions recorded",
+    "statusCompleted": "Completed",
+    "statusPending": "Pending",
+    "statusFailed": "Failed",
+    "howToUse": "How to use it?",
+    "howToUseText": "Use your available balance to buy tickets, services and more at our events.",
+    "protectedBalance": "Protected Balance",
+    "protectedBalanceText": "Your money is safe with our encryption technology and verified processes.",
+    "help": "Questions?",
+    "helpText": "If you have questions about your balance or transactions, contact our support team.",
+    "movements": {
+      "reversal": "Reversal",
+      "creditCancellation": "Credit from cancellation",
+      "appliedToPurchase": "Applied to purchase",
+      "adminAdjustment": "Administrative adjustment",
+      "movement": "Transaction"
+    }
+  },
+  "terms": {
+    "title": "Terms of Use",
+    "subtitle": "Tu Evento",
+    "lastUpdate": "Last update: September 24, 2026",
+    "backToHome": "Back to home",
+    "disclaimer": "This document is a preliminary draft prepared for the academic project \"Tu Evento\" (SENA). It does not constitute certified legal advice. Review by a legal professional is recommended before deployment to production with real users.",
+    "section1": {
+      "title": "1. Acceptance of terms",
+      "p1": "By registering and using the \"Tu Evento\" platform (hereinafter, \"the Platform\"), operated by the CapySoft team, you accept these Terms of Use. If you do not agree with any of these points, we ask you not to use the Platform.",
+      "p2": "Tu Evento is a project developed as part of a SENA (National Learning Service) training program, currently available to users in Colombia."
+    },
+    "section2": {
+      "title": "2. Service description",
+      "intro": "Tu Evento is a web and mobile platform that allows:",
+      "item1": "Organizers: create, publish and manage events, define prices, zones and ticket availability, and manage their sales.",
+      "item2": "Attendees: explore events, buy tickets, receive their digital ticket with QR code, and validate their entry to the event using that code."
+    },
+    "section3": {
+      "title": "3. Account registration",
+      "p1": "To use certain functions of the Platform you must create an account, either with email and password, or by linking your Google or Facebook account.",
+      "intro": "You are responsible for:",
+      "item1": "Providing truthful information when registering.",
+      "item2": "Maintaining the confidentiality of your password.",
+      "item3": "All use made of your account.",
+      "p2": "You can request the deactivation or deletion of your account at any time from the Platform."
+    },
+    "section4": {
+      "title": "4. User-published content",
+      "intro": "If you publish content on the Platform (profile photo, event images, description, etc.), you declare that:",
+      "item1": "You have the necessary rights to publish that content.",
+      "item2": "The content does not infringe third-party rights or Colombian law.",
+      "item3": "The content does not include sexual, violent, discriminatory material or that in any way violates the Platform's community guidelines.",
+      "p1": "All images uploaded to the Platform go through an automatic content moderation process. We reserve the right to reject or remove any content that does not meet these conditions, as well as to suspend accounts that repeatedly violate them."
+    },
+    "section5": {
+      "title": "5. Ticket purchase and payments",
+      "item1": "Payments within the Platform are processed through the Wompi payment gateway. Tu Evento does not store your complete card or payment method data; this processing is performed by Wompi under its own security policies.",
+      "item2": "When buying a ticket, you will receive a digital ticket with a unique QR code, which will be validated at the event entrance.",
+      "item3": "Refund, change or event cancellation policies are defined by each organizer, unless otherwise provided by applicable law. We recommend reviewing the specific conditions of each event before purchasing.",
+      "item4": "Tu Evento acts as a technological intermediary between organizers and attendees; responsibility for the execution, quality and conditions of the event corresponds to the organizer who publishes it."
+    },
+    "section6": {
+      "title": "6. Organizer responsibilities",
+      "intro": "If you publish an event as an organizer, you commit to:",
+      "item1": "Provide truthful information about the event (date, place, price, available capacity).",
+      "item2": "Comply with current regulations applicable to holding public events in Colombia.",
+      "item3": "Respond to attendees for the correct execution of the published event."
+    },
+    "section7": {
+      "title": "7. Platform misuse",
+      "intro": "It is prohibited to:",
+      "item1": "Create fake or fraudulent events.",
+      "item2": "Use the Platform for illegal activities.",
+      "item3": "Attempt to violate system security.",
+      "item4": "Impersonate the identity of another person or organization.",
+      "p1": "Failure to comply with these points may result in the suspension or deletion of your account."
+    },
+    "section8": {
+      "title": "8. Intellectual property",
+      "p1": "The name \"Tu Evento\", its logo, design and interface are property of the CapySoft team. The content you publish (photos, event descriptions) remains your property, but you grant us a license to display it within the Platform for the purpose of operating the service."
+    },
+    "section9": {
+      "title": "9. Limitation of liability",
+      "p1": "Tu Evento is offered \"as is\" (as-is). Being a project in continuous development, we do not guarantee uninterrupted availability of the service. We are not responsible for damages derived from event cancellation by the organizer, nor for misuse that a third party makes of the information published on the Platform."
+    },
+    "section10": {
+      "title": "10. Modifications",
+      "p1": "We may update these Terms of Use at any time. Important changes will be notified within the Platform. Continued use of the service after an update implies acceptance of the new terms."
+    },
+    "section11": {
+      "title": "11. Contact",
+      "p1": "For questions about these terms, you can write to us at:",
+      "email": "soporte.capysoft@gmail.com"
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "subtitle": "Tu Evento",
+    "lastUpdate": "Last update: September 24, 2026",
+    "backToHome": "Back to home",
+    "disclaimer": "This document is a preliminary draft prepared for the academic project \"Tu Evento\" (SENA). It does not constitute certified legal advice. Review by a legal professional is recommended before deployment to production with real users.",
+    "intro": "At Tu Evento, developed by the CapySoft team, we are committed to protecting your personal information in accordance with Law 1581 of 2012 and Decree 1377 of 2013 of Colombia on personal data protection.",
+    "section1": {
+      "title": "1. Data controller",
+      "p1": "Tu Evento (CapySoft team) is responsible for the processing of personal data collected through its web and mobile platform.",
+      "p2": "Contact email for privacy issues:",
+      "email": "soporte.capysoft@gmail.com"
+    },
+    "section2": {
+      "title": "2. Data we collect",
+      "intro": "We collect the following data depending on how you use the Platform:",
+      "register": {
+        "title": "When registering:",
+        "item1": "Email and password (stored encrypted), or",
+        "item2": "Basic data from your Google or Facebook account if you register through them (name and email associated with that account)."
+      },
+      "profile": {
+        "title": "In your profile (optional, you enter them):",
+        "item1": "Name.",
+        "item2": "Description/biography.",
+        "item3": "Profile photo."
+      },
+      "purchase": {
+        "title": "When buying tickets:",
+        "item1": "Purchase history and tickets acquired within the Platform.",
+        "item2": "Payment data: processed directly by our Wompi payment gateway; Tu Evento does not store your complete card data."
+      },
+      "event": {
+        "title": "When publishing an event (organizers):",
+        "item1": "Event information (date, place, price, images) and contact data associated with the event."
+      },
+      "technical": {
+        "title": "Technical data:",
+        "item1": "Language and visual theme preferences within the Platform.",
+        "item2": "Session information necessary to maintain your active login (authentication tokens)."
+      }
+    },
+    "section3": {
+      "title": "3. Purpose of processing",
+      "intro": "We use your data to:",
+      "item1": "Create and manage your account.",
+      "item2": "Allow you to buy or sell event tickets.",
+      "item3": "Generate and validate your tickets with QR code.",
+      "item4": "Send you notifications related to your purchases or events.",
+      "item5": "Moderate published content (profile and event photos) to avoid inappropriate content.",
+      "item6": "Improve the security and functioning of the Platform.",
+      "p1": "We do not use your data for purposes other than those described here without your consent."
+    },
+    "section4": {
+      "title": "4. Storage and retention",
+      "item1": "The images you upload (profile photo, event images) are stored in our file storage infrastructure while your account or the corresponding event remain active.",
+      "item2": "If you delete your account or an event, we will proceed to delete or anonymize the associated data, except those we must keep by legal obligation (for example, payment transaction records)."
+    },
+    "section5": {
+      "title": "5. With whom we share your data",
+      "item1": "Wompi: for payment processing, under its own privacy and security policies.",
+      "item2": "Authentication providers (Google, Facebook): only to validate your identity when logging in with those accounts, if you choose to use them.",
+      "item3": "We do not sell or share your personal data with third parties for advertising purposes."
+    },
+    "section6": {
+      "title": "6. Your rights",
+      "intro": "As the owner of your data, at any time you can:",
+      "item1": "Request access to the data we have about you.",
+      "item2": "Request correction of inaccurate data.",
+      "item3": "Request deletion of your account and personal data.",
+      "item4": "Revoke your authorization for the processing of your data, unless there is a legal obligation to keep them.",
+      "p1": "You can exercise these rights from your profile on the Platform or by writing to",
+      "email": "soporte.capysoft@gmail.com"
+    },
+    "section7": {
+      "title": "7. Information security",
+      "intro": "We implement technical measures to protect your information, including:",
+      "item1": "Passwords stored in encrypted form (never in plain text).",
+      "item2": "Authentication through tokens (JWT) with secure expiration and renewal.",
+      "item3": "Automatic content moderation to prevent publication of inappropriate images.",
+      "p1": "No system is 100% infallible; in case of a security incident affecting your data, we will notify you as required by applicable regulations."
+    },
+    "section8": {
+      "title": "8. Minors",
+      "p1": "The Platform is not directed at minors under 18 years of age. If you are aware that a minor has created an account without authorization from their parents or guardians, contact us to proceed with its deletion."
+    },
+    "section9": {
+      "title": "9. Changes to this policy",
+      "p1": "We may update this Privacy Policy. Any relevant change will be notified within the Platform before it takes effect."
+    },
+    "section10": {
+      "title": "10. Contact",
+      "p1": "To exercise your rights or resolve questions about the processing of your data:",
+      "email": "soporte.capysoft@gmail.com"
+    }
+  },
+  "login": {
+    "welcomeBack": "WELCOME BACK",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "enterDetails": "Enter your personal details to access your account.",
+    "fullName": "Full name",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "loading": "Loading...",
+    "signInButton": "SIGN IN",
+    "signUpButton": "SIGN UP",
+    "forgotPassword": "Don't remember your password?",
+    "recoverIt": "Recover it",
+    "orContinueWith": "or continue with",
+    "google": "Google",
+    "facebook": "Facebook",
+    "signInWith": "Sign in with",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "createAccount": "Create account",
+    "signInLink": "Sign in",
+    "bySigningIn": "By signing in, you accept our",
+    "bySigningUp": "By signing up, you accept our",
+    "termsAndConditions": "Terms and conditions",
+    "notActivated": "Haven't activated your account?",
+    "resendActivation": "Resend activation email",
+    "mustBeGmail": "Must be @gmail.com",
+    "passwordStrength": {
+      "veryWeak": "Very weak",
+      "weak": "Weak",
+      "good": "Good",
+      "strong": "Strong",
+      "mustContain": "Must contain",
+      "characters": "characters",
+      "uppercase": "uppercase",
+      "lowercase": "lowercase",
+      "number": "number",
+      "specialChar": "special character (@$!%*?&)"
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailMax": "Maximum 255 characters",
+      "emailInvalid": "Invalid email format",
+      "emailGmailOnly": "Only @gmail.com emails are accepted",
+      "passwordRequired": "Password is required",
+      "passwordMin": "Minimum 8 characters",
+      "passwordMax": "Maximum 100 characters",
+      "passwordWeak": "Must contain lowercase, uppercase, number and special character (@$!%*?&)",
+      "nameRequired": "Full name is required",
+      "nameMax": "Maximum 100 characters",
+      "nameLettersOnly": "Only letters, spaces and accents",
+      "nameFirstLast": "Enter first and last name",
+      "nameMinPerWord": "Each name must be at least 3 characters",
+      "confirmRequired": "Confirm password is required",
+      "confirmMatch": "Passwords don't match",
+      "passwordsNoMatch": "Passwords don't match"
+    },
+    "errors": {
+      "emailNotRegistered": "This email is not registered in the system",
+      "invalidCredentials": "Invalid email or password",
+      "emailAlreadyRegistered": "This email is already registered and activated. Sign in with your credentials.",
+      "emailNotActivated": "This email is already registered but not activated. If you want to activate your account, click Resend activation email",
+      "accountNotActivated": "Account not activated",
+      "accountInactive": "Your account is inactive. Do you want to reactivate it?",
+      "accountBlocked": "Your account has been blocked. Please contact support.",
+      "connectionError": "Connection error",
+      "loginError": "Login error",
+      "registerError": "Registration error",
+      "googleLoginError": "Could not sign in with Google. Try again.",
+      "resendError": "Connection error when resending activation code",
+      "enterEmailResend": "Please enter your email to resend the activation code."
+    },
+    "modals": {
+      "termsTitle": "Terms and Conditions of Use",
+      "understood": "Understood",
+      "lastUpdate": "Last update:",
+      "successTitle": "Registration Successful!",
+      "successSubtitle": "Your account has been created successfully",
+      "checkInbox": "Check your inbox",
+      "sentCodeTo": "We sent you an activation code to",
+      "checkSpam": "Can't find it? Check your spam folder",
+      "continueVerification": "Continue to Verification",
+      "loginSuccessTitle": "Welcome Back!",
+      "loginSuccessSubtitle": "You have successfully signed in",
+      "sessionStarted": "Session started",
+      "accessAll": "Access all TuEvento features",
+      "hello": "Hello",
+      "goHome": "Go to Home"
+    },
+    "profile": {
+      "title": "User Profile",
+      "welcomeBack": "Welcome back",
+      "name": "Name",
+      "alias": "Alias",
+      "email": "Email",
+      "id": "ID",
+      "notDefined": "Not defined",
+      "logout": "Log Out"
+    },
+    "terms": {
+      "section1Title": "1. Acceptance of terms",
+      "section1Text": "By accessing, registering or using the \"Tu Evento\" application (in its web or Android version), developed by CapySoft, the user expressly accepts these Terms and Conditions.",
+      "section2Title": "2. Definitions",
+      "app": "Application / Platform:",
+      "appDesc": "\"Tu Evento\" in its web and mobile version.",
+      "user": "User:",
+      "userDesc": "Person who accesses and uses the application.",
+      "organizer": "Organizer:",
+      "organizerDesc": "Authorized user to create and publish events.",
+      "attendee": "Attendee:",
+      "attendeeDesc": "User who reserves or participates in events.",
+      "admin": "Administrator:",
+      "adminDesc": "User with special management permissions.",
+      "section3Title": "3. Use of the platform",
+      "section3Item1": "Requires stable Internet connection.",
+      "section3Item2": "Users must register with truthful data.",
+      "section3Item3": "The system does not manage online payments.",
+      "section4Title": "4. Registration and accounts",
+      "section4Item1": "Account with valid email and secure password.",
+      "section4Item2": "Possible registration through Google/Facebook (OAuth).",
+      "section4Item3": "The user is responsible for their credentials.",
+      "section5Title": "5. Reservations and tickets",
+      "section5Item1": "Reservation in pending status until payment validation.",
+      "section5Item2": "A unique and non-transferable QR code is generated upon confirmation.",
+      "section5Item3": "QR counterfeiting implies denial of access.",
+      "section6Title": "6. User responsibilities",
+      "section6Item1": "Correct and lawful use of the platform.",
+      "section6Item2": "Do not disseminate false or offensive information.",
+      "section6Item3": "Do not compromise the security of the system.",
+      "section7Title": "7. Limitation of responsibilities",
+      "section7Text": "CapySoft is not responsible for connection failures, false information from third parties or cancellations beyond the platform's control.",
+      "section8Title": "8. Security and privacy",
+      "section8Item1": "Two-step authentication in normal registration.",
+      "section8Item2": "In OAuth, security depends on the external provider.",
+      "section9Title": "9. Intellectual property",
+      "section9Text": "Reproduction or modification without express authorization is prohibited.",
+      "section10Title": "10. Modifications",
+      "section10Text": "CapySoft may modify these Terms at any time.",
+      "section11Title": "11. Applicable legislation",
+      "section11Text": "Governed by the laws in force in Colombia."
+    }
+  },
+  "forgotPassword": {
+    "title": "Recover Password",
+    "subtitle": "We'll help you recover access to your account",
+    "enterEmail": "Enter your email",
+    "enterEmailDesc": "We'll send you a verification code to reset your password",
+    "email": "Email",
+    "sendCode": "Send code",
+    "sending": "Sending...",
+    "enterCode": "Enter the code",
+    "enterCodeDesc": "Check your email and enter the 6-digit code we sent you",
+    "verificationCode": "Verification code",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "resetPassword": "Reset password",
+    "resetting": "Resetting...",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "backToLogin": "Back to sign in",
+    "passwordStrength": {
+      "veryWeak": "Very weak",
+      "weak": "Weak",
+      "good": "Good",
+      "strong": "Strong"
+    },
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email format",
+      "codeRequired": "Verification code is required",
+      "codeLength": "Code must be 6 digits",
+      "passwordRequired": "Password is required",
+      "passwordMin": "Minimum 8 characters",
+      "passwordWeak": "Must contain lowercase, uppercase, number and special character",
+      "confirmRequired": "Confirm password is required",
+      "passwordsNoMatch": "Passwords don't match"
+    },
+    "success": {
+      "title": "Password Reset!",
+      "subtitle": "Your password has been updated successfully",
+      "message": "You can now sign in with your new password",
+      "goToLogin": "Go to Sign In"
+    },
+    "errors": {
+      "sendError": "Error sending email",
+      "resetError": "Error resetting password",
+      "connectionError": "Connection error"
+    }
+  },
+  "codeVerification": {
+    "title": "Account Verification",
+    "subtitle": "Activate your TuEvento account",
+    "enterCode": "Enter the 6-digit code",
+    "sentTo": "We sent a verification code to",
+    "code": "Verification code",
+    "verify": "Verify",
+    "verifying": "Verifying...",
+    "notReceived": "Didn't receive the code?",
+    "resend": "Resend",
+    "resending": "Resending...",
+    "checkSpam": "Check your spam or junk folder",
+    "backToLogin": "Back to sign in",
+    "validation": {
+      "codeRequired": "Verification code is required",
+      "codeLength": "Code must be 6 digits",
+      "codeDigits": "Code can only contain numbers"
+    },
+    "success": {
+      "title": "Account Activated!",
+      "subtitle": "Your account has been successfully verified",
+      "message": "You can now sign in and enjoy all TuEvento features",
+      "goToLogin": "Go to Sign In"
+    },
+    "errors": {
+      "verificationError": "Error verifying code",
+      "invalidCode": "Invalid or expired code",
+      "resendError": "Error resending code",
+      "connectionError": "Connection error"
+    }
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "subtitle": "Update your access password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "change": "Change password",
+    "changing": "Changing...",
+    "cancel": "Cancel",
+    "passwordStrength": {
+      "veryWeak": "Very weak",
+      "weak": "Weak",
+      "good": "Good",
+      "strong": "Strong"
+    },
+    "validation": {
+      "currentRequired": "Current password is required",
+      "newRequired": "New password is required",
+      "newMin": "Minimum 8 characters",
+      "newWeak": "Must contain lowercase, uppercase, number and special character",
+      "confirmRequired": "Confirm password is required",
+      "passwordsNoMatch": "Passwords don't match",
+      "samePassword": "New password must be different from current"
+    },
+    "success": {
+      "title": "Password Updated!",
+      "subtitle": "Your password has been changed successfully",
+      "message": "For security, we recommend logging out on other devices",
+      "close": "Close"
+    },
+    "errors": {
+      "changeError": "Error changing password",
+      "wrongPassword": "Current password is incorrect",
+      "connectionError": "Connection error"
+    }
+  },
+  "reactivateAccount": {
+    "title": "Reactivate Account",
+    "subtitle": "Your account is inactive",
+    "message": "It seems your account was deactivated. If you want to use TuEvento again, you can reactivate it now.",
+    "reactivate": "Reactivate my account",
+    "reactivating": "Reactivating...",
+    "cancel": "Cancel",
+    "verifying": "Verifying your reactivation code…",
+    "accountReactivated": "Account reactivated!",
+    "accountActive": "Your account is active again.",
+    "canLogin": "You can now sign in with your usual email and password. All your data has been preserved.",
+    "codeInvalidated": "The reactivation code has been invalidated and cannot be used again.",
+    "goToLogin": "Go to sign in",
+    "codeNotValid": "Invalid code",
+    "couldNotReactivate": "Could not reactivate the account.",
+    "requestNewCode": "Want to request a new code?",
+    "emailSent": "Email sent. If the email corresponds to a deactivated account, you will receive the new code in minutes.",
+    "backToLogin": "Back to sign in",
+    "success": {
+      "title": "Account Reactivated!",
+      "subtitle": "Your account has been activated successfully",
+      "message": "You can now sign in and enjoy TuEvento",
+      "goToLogin": "Go to Sign In"
+    },
+    "errors": {
+      "reactivateError": "Error reactivating account",
+      "emailRequired": "Email is required",
+      "connectionError": "Connection error",
+      "expired": "The reactivation code expired. Codes are valid for 30 minutes. Request a new one below.",
+      "used": "This code has already been used. If your account still has no access, request a new code.",
+      "invalid": "The reactivation code is not valid. Make sure to copy the complete code from the email.",
+      "generic": "Could not reactivate the account. Please try again.",
+      "resendError": "Could not send email. Try again."
+    }
+  },
+  "completeProfile": {
+    "title": "Complete Profile",
+    "updateName": "Update your name",
+    "welcome": "Welcome!",
+    "subtitle": "Just one more step",
+    "message": "To finalize your registration, we need you to enter your full name",
+    "invalidName": "Your current name does not have the correct format. Enter your real full name to continue.",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "E.g. Maria Garcia",
+    "continue": "Continue",
+    "continuing": "Saving…",
+    "validation": {
+      "nameRequired": "Full name is required.",
+      "nameMin": "Enter first and last name.",
+      "nameMinPerWord": "Each name must be at least 3 characters.",
+      "nameLettersOnly": "Only letters and spaces — no numbers or symbols.",
+      "nameMax": "Name cannot exceed 100 characters."
+    },
+    "errors": {
+      "updateError": "Could not save the name. Try again.",
+      "connectionError": "Connection error"
+    }
+  },
+  "organizerEarnings": {
+    "loadError": "Could not load earnings",
+    "retry": "Retry",
+    "empty": {
+      "title": "No earnings yet",
+      "description": "When someone buys tickets for one of your published events, earnings will appear here automatically.",
+      "goToEvents": "Go to my events"
+    },
+    "hero": {
+      "badge": "Earnings panel",
+      "title": "Your",
+      "titleAccent": "earnings",
+      "description": "Here you see a summary of what you have collected across your events. This information is read-only — the actual payout is handled by the platform directly."
+    },
+    "kpi": {
+      "totalRevenue": {
+        "label": "Total collected",
+        "sub": "Total generated across all your events"
+      },
+      "ticketsSold": {
+        "label": "Tickets sold",
+        "sub": "Completed transactions"
+      },
+      "eventsWithSales": {
+        "label": "Events with sales",
+        "sub": "With at least one ticket sold"
+      }
+    },
+    "table": {
+      "title": "Breakdown by event",
+      "manageEvents": "Manage events",
+      "columns": {
+        "event": "Event",
+        "tickets": "Tickets sold",
+        "revenue": "Collected"
+      },
+      "total": "Total"
+    },
+    "info": {
+      "howCalculated": {
+        "title": "How is it calculated?",
+        "text": "All approved payments across your events are added up. The amount shown reflects the total charged to attendees."
+      },
+      "realTime": {
+        "title": "Real-time information",
+        "text": "Data updates every time a purchase is approved. To inquire about the payout of your earnings, contact the platform team."
+      }
+    }
+  },
+  "languageGuard": {
+    "title": "Switch the language to Spanish",
+    "subtitle": "This section is only available in Spanish",
+    "description": "Creating and editing events is only available with Spanish selected as your language. Change your language to Spanish in your profile to continue.",
+    "action": "Go back"
+  },
+  "paymentConfirmation": {
+    "loading": "Loading your confirmation…",
+    "notApproved": "The payment is not approved",
+    "loadError": "Error loading the data",
+    "backToEvents": "Back to events",
+    "remainingBalance": "Your remaining balance"
+  }
+}

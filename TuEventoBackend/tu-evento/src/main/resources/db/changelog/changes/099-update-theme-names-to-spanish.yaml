@@ -1,0 +1,120 @@
+databaseChangeLog:
+  - changeSet:
+      id: 099-update-theme-principal-name
+      author: capysoft
+      changes:
+        - update:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: "Principal"
+              - column:
+                  name: description
+                  value: "Tema oficial de Tu Evento — identidad de la plataforma"
+            where: "name = 'PRINCIPAL'"
+
+  - changeSet:
+      id: 099-update-theme-dark-name
+      author: capysoft
+      changes:
+        - update:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: "Oscuro"
+              - column:
+                  name: description
+                  value: "Tema oscuro con grises profundos y acentos sutiles"
+            where: "name = 'DARK'"
+
+  - changeSet:
+      id: 099-update-theme-light-name
+      author: capysoft
+      changes:
+        - update:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: "Claro"
+              - column:
+                  name: description
+                  value: "Tema claro y limpio con fondos blancos y grises suaves"
+            where: "name = 'LIGHT'"
+
+  - changeSet:
+      id: 099-update-theme-pastel-name
+      author: capysoft
+      changes:
+        - update:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: "Pastel"
+              - column:
+                  name: description
+                  value: "Colores suaves y relajados para una experiencia tranquila"
+            where: "name = 'PASTEL'"
+
+  - changeSet:
+      id: 099-update-theme-vibrant-name
+      author: capysoft
+      changes:
+        - update:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: "Vibrante"
+              - column:
+                  name: description
+                  value: "Colores saturados y energéticos para destacar"
+            where: "name = 'VIBRANT'"
+
+  - changeSet:
+      id: 099-update-theme-nature-name
+      author: capysoft
+      changes:
+        - update:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: "Naturaleza"
+              - column:
+                  name: description
+                  value: "Verdes orgánicos y tierras para una experiencia natural"
+            where: "name = 'NATURE'"
+
+  - changeSet:
+      id: 099-update-theme-ocean-name
+      author: capysoft
+      changes:
+        - update:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: "Océano"
+              - column:
+                  name: description
+                  value: "Azules profundos y turquesas para una experiencia marina"
+            where: "name = 'OCEAN'"
+
+  - changeSet:
+      id: 099-update-theme-sunset-name
+      author: capysoft
+      changes:
+        - update:
+            tableName: theme
+            columns:
+              - column:
+                  name: name
+                  value: "Atardecer"
+              - column:
+                  name: description
+                  value: "Naranjas cálidos y rosas para una experiencia vibrante y acogedora"
+            where: "name = 'SUNSET'"

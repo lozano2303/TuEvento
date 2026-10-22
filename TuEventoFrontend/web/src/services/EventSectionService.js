@@ -3,8 +3,12 @@ import { httpRequest } from './httpClient.js';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 /** Obtiene las secciones de un evento — público, sin auth. */
-export const getByEvent = async (eventId) => {
-  const res = await fetch(`${API_URL}/event-sections/event/${eventId}`);
+export const getByEvent = async (eventId, languageCode = null) => {
+  let url = `${API_URL}/event-sections/event/${eventId}`;
+  if (languageCode && languageCode !== 'es') {
+    url += `?languageCode=${languageCode}`;
+  }
+  const res = await fetch(url);
   if (!res.ok) throw new Error('Error al obtener secciones del evento');
   return res.json(); // ApiResponse<List<EventSectionResponse>>
   // EventSectionResponse: { eventSectionId, eventId, sectionTypeName, capacity, availableSeats, price, isActive }
