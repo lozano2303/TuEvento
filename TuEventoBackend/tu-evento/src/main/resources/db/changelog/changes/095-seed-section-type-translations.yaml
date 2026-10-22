@@ -1,0 +1,293 @@
+﻿databaseChangeLog:
+  # English Translations
+  # EN Translations
+  - changeSet:
+      id: 095-seed-section-type-translation-general-en-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'General')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "General"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 095-seed-section-type-translation-vip-en-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'VIP')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "VIP"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 095-seed-section-type-translation-palco-en-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'Palco')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "Box Seat"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 095-seed-section-type-translation-tribuna-en-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'Tribuna')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "Stand"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 095-seed-section-type-translation-pista-en-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'Pista')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "Floor"
+              - column:
+                  name: source
+                  value: "MANUAL"
+
+  # FR Translations
+  - changeSet:
+      id: 095-seed-section-type-translation-general-fr-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'General')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "Général"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 095-seed-section-type-translation-vip-fr-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'VIP')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "VIP"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 095-seed-section-type-translation-palco-fr-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'Palco')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "Loge"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 095-seed-section-type-translation-tribuna-fr-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'Tribuna')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "Tribune"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 095-seed-section-type-translation-pista-fr-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'Pista')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "Parterre"
+              - column:
+                  name: source
+                  value: "MANUAL"
+
+  # PT Translations
+  - changeSet:
+      id: 095-seed-section-type-translation-general-pt-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'General')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "Geral"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 095-seed-section-type-translation-vip-pt-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'VIP')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "VIP"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 095-seed-section-type-translation-palco-pt-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'Palco')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "Camarote"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 095-seed-section-type-translation-tribuna-pt-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'Tribuna')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "Arquibancada"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 095-seed-section-type-translation-pista-pt-v2
+      author: capysoft
+      changes:
+        - insert:
+            tableName: section_type_translation
+            columns:
+              - column:
+                  name: section_type_id
+                  valueComputed: "(SELECT section_type_id FROM section_type WHERE name = 'Pista')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "Pista"
+              - column:
+                  name: source
+                  value: "MANUAL"
+

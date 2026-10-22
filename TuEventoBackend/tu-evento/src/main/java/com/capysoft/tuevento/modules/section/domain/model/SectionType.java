@@ -8,4 +8,5 @@ import lombok.Getter;
 public class SectionType {
     private Integer sectionTypeId;
     private String name;
+    private Boolean active;
 }

@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 097-add-active-column-to-section-type
+      author: system
+      changes:
+        - addColumn:
+            tableName: section_type
+            columns:
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: UPDATE section_type SET active = true WHERE active IS NULL;

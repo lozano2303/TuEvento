@@ -2,14 +2,16 @@ package com.capysoft.tuevento.shared.domain.valueobject;
 
 /**
  * Estado de una traducción.
+ * Indica el nivel de calidad y revisión de la traducción.
+ * Basado en translation_status_enum del DBML.
  */
 public enum TranslationStatus {
-    /** Traducción automática generada por IA/servicios */
-    AUTOMATIC,
+    /** Borrador inicial, no publicada */
+    DRAFT,
     
-    /** Traducción revisada y aprobada por humanos */
-    REVIEWED,
+    /** Traducción publicada y activa */
+    PUBLISHED,
     
-    /** Traducción rechazada/marcada como incorrecta */
-    REJECTED
+    /** Pendiente de revisión por moderador */
+    PENDING_REVIEW
 }

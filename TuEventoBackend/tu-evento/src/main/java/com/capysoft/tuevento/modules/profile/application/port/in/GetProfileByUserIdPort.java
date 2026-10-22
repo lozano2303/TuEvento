@@ -5,4 +5,6 @@ import com.capysoft.tuevento.modules.profile.application.dto.response.ProfileRes
 public interface GetProfileByUserIdPort {
 
     ProfileResponse getByUserId(Integer userId);
+    
+    ProfileResponse getByUserId(Integer userId, String languageCode);
 }

@@ -1,10 +1,12 @@
 import React, { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { changePassword } from "../services/Login.js";
 import { Eye, EyeOff, CheckCircle, Lock } from "lucide-react";
 import { PartyPopper, Sparkles } from "lucide-react";
 import BaseModal from "../components/common/BaseModal.jsx";
 
 export default function ChangePassword({ onClose }) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     oldPassword: "",
     newPassword: "",
@@ -32,17 +34,17 @@ export default function ChangePassword({ onClose }) {
 
   const validatePassword = (password) => {
     if (!password || password.trim() === "") {
-      return "La contraseña es obligatoria";
+      return t('changePassword.validation.currentRequired');
     }
     if (password.length < 8) {
-      return "La contraseña debe tener al menos 8 caracteres";
+      return t('changePassword.validation.newMin');
     }
     if (password.length > 100) {
-      return "La contraseña no puede tener más de 100 caracteres";
+      return t('login.validation.passwordMax');
     }
     const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordPattern.test(password)) {
-      return "La contraseña debe contener al menos una letra minúscula, una mayúscula, un número y un carácter especial (@$!%*?&)";
+      return t('changePassword.validation.newWeak');
     }
     return "";
   };
@@ -61,11 +63,11 @@ export default function ChangePassword({ onClose }) {
     if (newError) errors.newPassword = newError;
 
     if (formData.newPassword !== formData.confirmPassword) {
-      errors.confirmPassword = "Las contraseñas no coinciden";
+      errors.confirmPassword = t('changePassword.validation.passwordsNoMatch');
     }
 
     if (formData.oldPassword === formData.newPassword) {
-      errors.newPassword = "La nueva contraseña no puede ser igual a la anterior";
+      errors.newPassword = t('changePassword.validation.samePassword');
     }
 
     if (Object.keys(errors).length > 0) {
@@ -79,10 +81,10 @@ export default function ChangePassword({ onClose }) {
       if (result.success) {
         setShowSuccessNotification(true);
       } else {
-        setError(result.message || "Error al cambiar contraseña");
+        setError(result.message || t('changePassword.errors.changeError'));
       }
     } catch (err) {
-      setError("Error de conexión");
+      setError(t('changePassword.errors.connectionError'));
     } finally {
       setLoading(false);
     }
@@ -98,7 +100,7 @@ export default function ChangePassword({ onClose }) {
        (rgba 0,0,0,0.45) para mantener consistencia con el resto de modales. */
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/45">
       <div className="theme-modal-card rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold text-textPrimary mb-4">Cambiar Contraseña</h2>
+        <h2 className="text-xl font-bold text-textPrimary mb-4">{t('changePassword.title')}</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -108,7 +110,7 @@ export default function ChangePassword({ onClose }) {
               value={formData.oldPassword}
               onChange={handleInputChange}
               className="w-full bg-surfaceAlt border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm"
-              placeholder="Contraseña actual"
+              placeholder={t('changePassword.currentPassword')}
               required
             />
             {fieldErrors.oldPassword && <p className="text-error text-xs mt-1">{fieldErrors.oldPassword}</p>}
@@ -121,7 +123,7 @@ export default function ChangePassword({ onClose }) {
               value={formData.newPassword}
               onChange={handleInputChange}
               className="w-full bg-surfaceAlt border border-surfaceAlt rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm"
-              placeholder="Nueva contraseña"
+              placeholder={t('changePassword.newPassword')}
               required
             />
             <button
@@ -141,7 +143,7 @@ export default function ChangePassword({ onClose }) {
               value={formData.confirmPassword}
               onChange={handleInputChange}
               className="w-full bg-surfaceAlt border border-surfaceAlt rounded-lg px-4 pr-12 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm"
-              placeholder="Confirmar nueva contraseña"
+              placeholder={t('changePassword.confirmPassword')}
               required
             />
             <button
@@ -162,14 +164,14 @@ export default function ChangePassword({ onClose }) {
               onClick={onClose}
               className="flex-1 bg-surfaceAlt hover:brightness-110 text-textPrimary py-2 px-4 rounded-lg transition-all"
             >
-              Cancelar
+              {t('changePassword.cancel')}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="flex-1 bg-primary hover:bg-primaryDark disabled:opacity-50 disabled:cursor-not-allowed text-textPrimary py-2 px-4 rounded-lg transition-colors"
             >
-              {loading ? "Cambiando..." : "Cambiar"}
+              {loading ? t('changePassword.changing') : t('changePassword.change')}
             </button>
           </div>
         </form>
@@ -182,8 +184,8 @@ export default function ChangePassword({ onClose }) {
         hideOverlayClose
         variant="success"
         icon={<Lock className="w-8 h-8" />}
-        title="¡Contraseña Actualizada!"
-        subtitle="Tu contraseña ha sido cambiada exitosamente"
+        title={t('changePassword.success.title')}
+        subtitle={t('changePassword.success.subtitle')}
         decorIcons={
           <>
             <PartyPopper aria-hidden="true" className="absolute top-3 left-3 w-5 h-5 -rotate-12" style={{ color: 'rgba(255,255,255,0.5)' }} />
@@ -193,7 +195,7 @@ export default function ChangePassword({ onClose }) {
         }
         actions={[
           {
-            label: 'Entendido',
+            label: t('changePassword.success.close'),
             icon: <CheckCircle className="w-4 h-4" />,
             variant: 'primary',
             onClick: handleContinueAndClose,
@@ -207,14 +209,14 @@ export default function ChangePassword({ onClose }) {
                 <Lock className="w-5 h-5 text-accent" />
               </div>
             </div>
-            <p className="bm-label font-medium mb-1">Seguridad mejorada</p>
-            <p className="bm-hint">Tu cuenta ahora está más protegida</p>
+            <p className="bm-label font-medium mb-1">{t('changePassword.success.title')}</p>
+            <p className="bm-hint">{t('changePassword.success.subtitle')}</p>
           </div>
           <div className="bm-divider" />
           <p className="text-sm text-textSecondary">
-            🔐 <span className="font-medium text-textPrimary">Nueva contraseña configurada</span>
+            🔐 <span className="font-medium text-textPrimary">{t('changePassword.success.message')}</span>
           </p>
-          <p className="bm-hint">Recuerda usar esta nueva contraseña en futuros inicios de sesión</p>
+          <p className="bm-hint">{t('changePassword.success.message')}</p>
         </div>
       </BaseModal>
     </div>

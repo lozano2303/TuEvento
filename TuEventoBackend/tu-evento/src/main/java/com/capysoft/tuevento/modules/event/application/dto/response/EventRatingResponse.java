@@ -23,6 +23,11 @@ import java.time.LocalDateTime;
  * El frontend debe usar este campo para decidir si mostrar el botón "Editar",
  * en vez de calcular desde {@code createdAt} en la zona del navegador.
  * Es null en los comentarios que aún no se crearon con este campo (retrocompatible).
+ *
+ * <p>{@code translatedComment} contiene el comentario traducido al idioma solicitado.
+ * {@code languageCode} indica el idioma de la traducción (ej: 'en', 'fr').
+ * {@code translationGenerating} es true si la traducción está en progreso.
+ * Si el idioma solicitado es español, estos campos serán null y se debe usar {@code comment}.
  */
 @Getter
 @Builder
@@ -44,4 +49,12 @@ public class EventRatingResponse {
     private final Long          replyToUserId;
     /** Nombre del usuario al que se responde (para mostrar @Nombre). */
     private final String        replyToUserName;
+    
+    // ── Campos de traducción ──
+    /** Comentario traducido al idioma solicitado (null si es español o no hay traducción). */
+    private final String        translatedComment;
+    /** Código del idioma de la traducción (ej: 'en', 'fr', 'pt'). Null si es español. */
+    private final String        languageCode;
+    /** True si la traducción está siendo generada en este momento. */
+    private final Boolean       translationGenerating;
 }

@@ -23,6 +23,18 @@ public class EventResponse {
     private final Boolean isPublic;
     private final int availableSeats;
     private final Integer categoryId;
+    
+    /** URL de la primera imagen del evento (media_id más bajo). Null si no tiene imágenes. */
+    private final String coverUrl;
+    
+    // Translation fields - populated if language parameter is provided
+    private final String translatedName;
+    private final String translatedDescription;
+    private final String languageCode;
+    
+    /** Indicates if translation is being generated (lazy loading) */
+    private final Boolean translationGenerating;
+    
     /** Populated when status is REJECTED; null otherwise. */
     private final String rejectionReason;
     private final LocalDateTime createdAt;

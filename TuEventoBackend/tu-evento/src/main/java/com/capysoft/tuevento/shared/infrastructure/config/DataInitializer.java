@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class DataInitializer implements ApplicationRunner {
 
-    private static final String ADMIN_FULL_NAME = "Tu Evento Admin";
+    private static final String ADMIN_FULL_NAME = "Administrador Principal";
 
     private final UserJpaRepository             userJpaRepository;
     private final RoleJpaRepository             roleJpaRepository;
@@ -95,12 +95,16 @@ public class DataInitializer implements ApplicationRunner {
 
         if (!profileExists) {
             try {
+                // Get the Spanish language ID (default language)
+                Integer spanishLanguageId = 1; // Spanish is typically ID 1
+                
                 createProfilePort.create(CreateProfileRequest.builder()
                         .userId(userId)
                         .fullName(ADMIN_FULL_NAME)
                         .storedFileId(null)
+                        .preferredLanguageId(spanishLanguageId)
                         .build());
-                log.info("Admin profile created for userId={}", userId);
+                log.info("Admin profile created for userId={} with Spanish as preferred language", userId);
             } catch (Exception e) {
                 log.warn("Could not create admin profile (MinIO may not be available): {}", e.getMessage());
             }

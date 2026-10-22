@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, ArrowLeft, CreditCard, AlertCircle, Loader2, Ticket, Wallet } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { createOrder } from '../services/OrderService';
 import { createPayment } from '../services/PaymentService';
 import { getMyWallet } from '../services/WalletService';
@@ -25,6 +26,7 @@ import { getMyWallet } from '../services/WalletService';
 export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const { eventId, seatIds, cartItems = [], eventTitle = 'Evento' } = location.state || {};
 
@@ -116,10 +118,10 @@ export default function Checkout() {
           style={{ color: 'var(--color-textSecondary)' }}
         >
           <ArrowLeft className="w-4 h-4" />
-          Volver a selección
+          {t('checkout.backToSelection')}
         </button>
         <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--color-textPrimary)' }}>
-          Confirmar compra
+          {t('checkout.title')}
         </h1>
         <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>{eventTitle}</p>
       </div>
@@ -133,7 +135,7 @@ export default function Checkout() {
             style={{ background: 'var(--color-surface)', border: '1px solid rgba(167,139,250,0.15)' }}
           >
             <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--color-primary)' }} />
-            <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>Preparando tu orden…</p>
+            <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>{t('checkout.preparingOrder')}</p>
           </div>
         )}
 
@@ -147,7 +149,7 @@ export default function Checkout() {
               <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'var(--color-error)' }} />
               <div>
                 <p className="text-sm font-semibold mb-1" style={{ color: 'var(--color-error)' }}>
-                  No se pudo crear la orden
+                  {t('checkout.orderCreateError')}
                 </p>
                 <p className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>{error}</p>
               </div>
@@ -157,7 +159,7 @@ export default function Checkout() {
               className="w-full py-2 rounded-lg text-sm font-semibold"
               style={{ background: 'var(--color-surface)', color: 'var(--color-textPrimary)', border: '1px solid var(--color-error)' }}
             >
-              Volver a selección de sillas
+              {t('checkout.backToSeats')}
             </button>
           </div>
         )}
@@ -173,13 +175,13 @@ export default function Checkout() {
               <div className="flex items-center gap-2 mb-4">
                 <ShoppingCart className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                 <h2 className="text-sm font-semibold" style={{ color: 'var(--color-textPrimary)' }}>
-                  Sillas seleccionadas
+                  {t('checkout.selectedSeats')}
                 </h2>
                 <span
                   className="ml-auto text-xs px-2 py-0.5 rounded-full"
                   style={{ background: 'rgba(167,139,250,0.15)', color: 'var(--color-accent)' }}
                 >
-                  {cartItems.length} {cartItems.length === 1 ? 'silla' : 'sillas'}
+                  {cartItems.length} {cartItems.length === 1 ? t('checkout.seat') : t('checkout.seats')}
                 </span>
               </div>
               <div className="space-y-2">
@@ -203,7 +205,7 @@ export default function Checkout() {
                 style={{ borderTop: '1px solid rgba(167,139,250,0.15)' }}
               >
                 <span className="text-sm font-semibold" style={{ color: 'var(--color-textSecondary)' }}>
-                  Total
+                  {t('checkout.total')}
                 </span>
                 <span className="text-lg font-bold" style={{ color: 'var(--color-primary)' }}>
                   ${orderTotal.toLocaleString('es-CO')}
@@ -220,13 +222,13 @@ export default function Checkout() {
                 <div className="flex items-center gap-2">
                   <Wallet className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                   <h2 className="text-sm font-semibold" style={{ color: 'var(--color-textPrimary)' }}>
-                    Cartera
+                    {t('checkout.wallet')}
                   </h2>
                   <span
                     className="ml-auto text-xs px-2 py-0.5 rounded-full"
                     style={{ background: 'rgba(167,139,250,0.15)', color: 'var(--color-accent)' }}
                   >
-                    ${availableWallet.toLocaleString('es-CO')} disponibles
+                    ${availableWallet.toLocaleString('es-CO')} {t('checkout.available')}
                   </span>
                 </div>
 
@@ -241,7 +243,7 @@ export default function Checkout() {
                       border: `1px solid ${!useWallet ? 'var(--color-primary)' : 'rgba(167,139,250,0.2)'}`,
                     }}
                   >
-                    Pago normal
+                    {t('checkout.normalPayment')}
                   </button>
                   <button
                     onClick={() => setUseWallet(true)}
@@ -252,7 +254,7 @@ export default function Checkout() {
                       border: `1px solid ${useWallet ? 'var(--color-primary)' : 'rgba(167,139,250,0.2)'}`,
                     }}
                   >
-                    Usar cartera
+                    {t('checkout.useWallet')}
                   </button>
                 </div>
 
@@ -260,13 +262,13 @@ export default function Checkout() {
                 {useWallet && (
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span style={{ color: 'var(--color-textSecondary)' }}>Total de la orden</span>
+                      <span style={{ color: 'var(--color-textSecondary)' }}>{t('checkout.orderTotal')}</span>
                       <span style={{ color: 'var(--color-textPrimary)' }}>
                         ${orderTotal.toLocaleString('es-CO')}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span style={{ color: 'var(--color-textSecondary)' }}>Descuento cartera</span>
+                      <span style={{ color: 'var(--color-textSecondary)' }}>{t('checkout.walletDiscount')}</span>
                       <span style={{ color: 'var(--color-success, #34d399)' }}>
                         −${amountToApply.toLocaleString('es-CO')}
                       </span>
@@ -276,7 +278,7 @@ export default function Checkout() {
                       style={{ borderTop: '1px solid rgba(167,139,250,0.15)' }}
                     >
                       <span style={{ color: 'var(--color-textPrimary)' }}>
-                        {remainder === 0 ? 'A pagar (cartera cubre todo)' : 'Restante por pasarela'}
+                        {remainder === 0 ? t('checkout.walletCoversAll') : t('checkout.remainingGateway')}
                       </span>
                       <span style={{ color: 'var(--color-primary)' }}>
                         ${remainder.toLocaleString('es-CO')}
@@ -296,7 +298,7 @@ export default function Checkout() {
                 <div className="flex items-center gap-2 mb-3">
                   <CreditCard className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                   <h2 className="text-sm font-semibold" style={{ color: 'var(--color-textPrimary)' }}>
-                    Método de pago
+                    {t('checkout.paymentMethod')}
                   </h2>
                 </div>
                 <div
@@ -311,10 +313,10 @@ export default function Checkout() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold" style={{ color: 'var(--color-textPrimary)' }}>
-                      Código QR
+                      {t('checkout.qrCode')}
                     </p>
                     <p className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
-                      Escanea el QR con tu app bancaria
+                      {t('checkout.scanWithBank')}
                     </p>
                   </div>
                   <div
@@ -351,23 +353,23 @@ export default function Checkout() {
               {paying ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Procesando…
+                  {t('checkout.processing')}
                 </>
               ) : useWallet && remainder === 0 ? (
                 <>
                   <Wallet className="w-4 h-4" />
-                  Pagar con cartera ${orderTotal.toLocaleString('es-CO')}
+                  {t('checkout.payWithWallet')} ${orderTotal.toLocaleString('es-CO')}
                 </>
               ) : (
                 <>
                   <CreditCard className="w-4 h-4" />
-                  Pagar ${(useWallet ? remainder : orderTotal).toLocaleString('es-CO')}
+                  {t('checkout.pay')} ${(useWallet ? remainder : orderTotal).toLocaleString('es-CO')}
                 </>
               )}
             </button>
 
             <p className="text-center text-xs" style={{ color: 'var(--color-textMuted)' }}>
-              Al confirmar, tus sillas quedarán reservadas mientras se procesa el pago.
+              {t('checkout.reservationNote')}
             </p>
           </>
         )}

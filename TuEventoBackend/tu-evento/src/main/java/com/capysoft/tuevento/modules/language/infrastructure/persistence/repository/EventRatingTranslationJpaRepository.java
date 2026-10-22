@@ -1,0 +1,42 @@
+package com.capysoft.tuevento.modules.language.infrastructure.persistence.repository;
+
+import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.EventRatingTranslationEntity;
+import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface EventRatingTranslationJpaRepository extends JpaRepository<EventRatingTranslationEntity, Integer> {
+
+    @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId")
+    List<EventRatingTranslationEntity> findByRatingId(@Param("ratingId") Long ratingId);
+
+    @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId AND ert.languageId = :languageId")
+    Optional<EventRatingTranslationEntity> findByRatingIdAndLanguageId(@Param("ratingId") Long ratingId, 
+                                                                       @Param("languageId") Integer languageId);
+
+    @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.languageId = :languageId")
+    List<EventRatingTranslationEntity> findByLanguageId(@Param("languageId") Integer languageId);
+
+    @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.status = :status")
+    List<EventRatingTranslationEntity> findByStatus(@Param("status") TranslationStatus status);
+
+    @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId AND ert.status = :status")
+    List<EventRatingTranslationEntity> findByRatingIdAndStatus(@Param("ratingId") Long ratingId, @Param("status") TranslationStatus status);
+
+    @Query("SELECT ert FROM EventRatingTranslationEntity ert WHERE ert.ratingId IN :ratingIds AND ert.status = :status")
+    List<EventRatingTranslationEntity> findByRatingIdsAndStatus(@Param("ratingIds") List<Long> ratingIds, @Param("status") TranslationStatus status);
+
+    @Modifying
+    @Query("DELETE FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId")
+    void deleteByRatingId(@Param("ratingId") Long ratingId);
+
+    @Query("SELECT COUNT(ert) > 0 FROM EventRatingTranslationEntity ert WHERE ert.ratingId = :ratingId AND ert.languageId = :languageId")
+    boolean existsByRatingIdAndLanguageId(@Param("ratingId") Long ratingId, @Param("languageId") Integer languageId);
+}

@@ -40,12 +40,19 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class EventRatingNotificationListener {
 
     private final SendNotificationUseCase sendNotificationUseCase;
     private final EventRepository         eventRepository;
     private final ProfileJpaRepository    profileJpaRepository;
+
+    public EventRatingNotificationListener(SendNotificationUseCase sendNotificationUseCase,
+                                          EventRepository eventRepository,
+                                          ProfileJpaRepository profileJpaRepository) {
+        this.sendNotificationUseCase = sendNotificationUseCase;
+        this.eventRepository = eventRepository;
+        this.profileJpaRepository = profileJpaRepository;
+    }
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

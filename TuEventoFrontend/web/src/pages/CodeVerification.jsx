@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, Mail, ArrowRight, RefreshCw, PartyPopper, Sparkles } from "lucide-react";
 import { verifyActivationCode, resendActivationCode, resendActivationCodeByEmail } from "../services/Login.js";
+import LanguageSelector from "../components/common/LanguageSelector.jsx";
 import loginHero from "../assets/images/tu-evento-login-hero-left.png";
 
 export default function CodeVerification({ userID: propUserID, userEmail: propUserEmail, onVerificationSuccess, onBackToLogin }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -17,10 +20,6 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
   const [activationEmail, setActivationEmail] = useState(propUserEmail || "");
 
   useEffect(() => {
-    console.log('CodeVerification mounted');
-    console.log('propUserEmail:', propUserEmail);
-    console.log('propUserID:', propUserID);
-    
     if (propUserEmail) {
       setActivationEmail(propUserEmail);
       setNoUserID(false);
@@ -31,10 +30,6 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
       // Leer email de la URL
       const urlParams = new URLSearchParams(window.location.search);
       const urlEmail = urlParams.get('email');
-      
-      console.log('URL email:', urlEmail);
-      console.log('Stored email:', storedEmail);
-      console.log('Stored userID:', storedUserID);
       
       if (urlEmail) {
         setActivationEmail(urlEmail);
@@ -55,13 +50,14 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
   if (noUserID) {
     return (
       <div className="min-h-screen flex">
+      <LanguageSelector position="fixed-top-right" />
       {/* Columna izquierda - Ilustración con gradiente púrpura */}
       <div className="theme-auth-hero w-1/2 flex items-center justify-center p-8">
         <div className="text-center space-y-6 max-w-sm">
           <Mail className="w-16 h-16 text-textPrimary mx-auto" />
           <div className="text-textPrimary">
-            <h2 className="text-2xl font-bold mb-2">Reenviar Código</h2>
-            <p className="text-sm opacity-90">Ingresa tu email para recibir un nuevo código de activación.</p>
+            <h2 className="text-2xl font-bold mb-2">{t('codeVerification.title')}</h2>
+            <p className="text-sm opacity-90">{t('codeVerification.enterCode')}</p>
           </div>
         </div>
       </div>
@@ -69,8 +65,8 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
         <div className="w-1/2 bg-background flex items-center justify-center p-8">
           <div className="w-full max-w-sm space-y-6">
             <div className="text-center space-y-2">
-              <h1 className="text-xl md:text-2xl font-bold text-textPrimary mb-1">Activar Cuenta</h1>
-              <p className="text-textMuted text-xs md:text-sm">Ingresa tu email para reenviar el código de activación</p>
+              <h1 className="text-xl md:text-2xl font-bold text-textPrimary mb-1">{t('codeVerification.title')}</h1>
+              <p className="text-textMuted text-xs md:text-sm">{t('codeVerification.enterCode')}</p>
             </div>
 
             <form onSubmit={async (e) => {
@@ -80,12 +76,12 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
               try {
                 const result = await resendActivationCodeByEmail(activationEmail);
                 if (result.success) {
-                  setResendMessage("Código de activación enviado exitosamente. Revisa tu correo.");
+                  setResendMessage(t('codeVerification.success.message'));
                 } else {
-                  setResendMessage("Error al enviar el código. Intenta nuevamente.");
+                  setResendMessage(t('codeVerification.errors.resendError'));
                 }
               } catch (err) {
-                setResendMessage("Error de conexión. Intenta nuevamente.");
+                setResendMessage(t('codeVerification.errors.connectionError'));
               } finally {
                 setResendLoading(false);
               }
@@ -96,7 +92,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                   value={activationEmail}
                   onChange={(e) => setActivationEmail(e.target.value)}
                   className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all text-sm"
-                  placeholder="Correo electrónico"
+                  placeholder={t('codeVerification.code')}
                   required
                 />
               </div>
@@ -113,7 +109,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                 ) : (
                   <Mail className="w-4 h-4" />
                 )}
-                <span>{resendLoading ? "Enviando..." : "Enviar Código"}</span>
+                <span>{resendLoading ? t('codeVerification.resending') : t('codeVerification.resend')}</span>
               </button>
             </form>
 
@@ -123,7 +119,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                 onClick={() => onBackToLogin ? onBackToLogin() : navigate('/login')}
                 className="text-accent hover:text-primary"
               >
-                Volver al inicio de sesión
+                {t('codeVerification.backToLogin')}
               </button>
             </div>
           </div>
@@ -136,36 +132,32 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
     e.preventDefault();
     setError("");
     setLoading(true);
-    console.log('=== FRONTEND SUBMIT ===');
-    console.log('Email:', activationEmail || userID);
-    console.log('Code:', code);
-    console.log('Code length:', code.length);
     try {
       const result = await verifyActivationCode(activationEmail || userID, code);
       if (result.success) {
         setShowSuccessNotification(true);
       } else {
-        const errorMessage = result.message || "Código inválido";
+        const errorMessage = result.message || t('codeVerification.errors.invalidCode');
         setError(errorMessage);
 
         if (errorMessage.toLowerCase().includes('expir') ||
             errorMessage.toLowerCase().includes('inválido') ||
             errorMessage.toLowerCase().includes('invalid')) {
-          setResendMessage("¿Código expirado? Haz clic en 'Reenviar código' para recibir uno nuevo.");
+          setResendMessage(t('codeVerification.checkSpam'));
         }
       }
     } catch (err) {
       const errorMsg = err.message || "";
       if (errorMsg.includes("Invalid activation code") || errorMsg.includes("ACTIVATION_CODE_NOT_FOUND")) {
-        setError("Código de activación inválido");
+        setError(t('codeVerification.errors.invalidCode'));
       } else if (errorMsg.includes("expired") || errorMsg.includes("EXPIRED")) {
-        setError("El código ha expirado. Solicita uno nuevo.");
+        setError(t('codeVerification.errors.invalidCode'));
       } else if (errorMsg.includes("USER_NOT_FOUND")) {
-        setError("Usuario no encontrado");
+        setError(t('login.errors.emailNotRegistered'));
       } else if (errorMsg.toLowerCase().includes("cuenta ya está activada")) {
-        setError("Esta cuenta ya está activada");
+        setError(t('login.errors.emailAlreadyRegistered'));
       } else {
-        setError("Error al verificar el código");
+        setError(t('codeVerification.errors.verificationError'));
       }
     } finally {
       setLoading(false);
@@ -191,12 +183,12 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
     try {
       const result = await resendActivationCode(emailToUse);
       if (result.success) {
-        setResendMessage("Código reenviado exitosamente. Revisa tu correo.");
+        setResendMessage(t('codeVerification.success.message'));
       } else {
-        setError("Error al reenviar el código");
+        setError(t('codeVerification.errors.resendError'));
       }
     } catch (err) {
-      setError("Error de conexión al reenviar código");
+      setError(t('codeVerification.errors.connectionError'));
     } finally {
       setResendLoading(false);
     }
@@ -204,6 +196,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
 
   return (
     <div className="min-h-screen flex">
+      <LanguageSelector position="fixed-top-right" />
       {/* Columna izquierda — hero a pantalla completa */}
       <div className="relative w-1/2 overflow-hidden">
         <img
@@ -216,8 +209,8 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
       <div className="w-1/2 bg-background flex items-center justify-center p-8">
         <div className="w-full max-w-sm space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-xl md:text-2xl font-bold text-textPrimary mb-1">Verificar Cuenta</h1>
-            <p className="text-textMuted text-xs md:text-sm">Ingresa el código de activación enviado a tu correo</p>
+            <h1 className="text-xl md:text-2xl font-bold text-textPrimary mb-1">{t('codeVerification.title')}</h1>
+            <p className="text-textMuted text-xs md:text-sm">{t('codeVerification.subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -227,7 +220,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 className="w-full bg-surface border border-surfaceAlt rounded-lg px-4 py-3 text-textPrimary placeholder-textMuted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all text-sm"
-                placeholder="Código de activación"
+                placeholder={t('codeVerification.code')}
                 required
               />
             </div>
@@ -241,7 +234,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
               disabled={loading}
               className="w-full bg-gradient-to-r from-primary to-primaryDark hover:from-primaryDark hover:to-primaryDark disabled:opacity-50 disabled:cursor-not-allowed text-textPrimary font-semibold py-3 px-4 rounded-lg transition-all duration-300 text-sm"
             >
-              {loading ? "Verificando..." : "VERIFICAR"}
+              {loading ? t('codeVerification.verifying') : t('codeVerification.verify').toUpperCase()}
             </button>
 
             <div className="text-center">
@@ -256,7 +249,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                 ) : (
                   <Mail className="w-4 h-4" />
                 )}
-                <span>{resendLoading ? "Enviando..." : "Reenviar código"}</span>
+                <span>{resendLoading ? t('codeVerification.resending') : t('codeVerification.resend')}</span>
               </button>
             </div>
           </form>
@@ -267,7 +260,7 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
               onClick={() => onBackToLogin ? onBackToLogin() : navigate('/login')}
               className="text-accent hover:text-primary"
             >
-              Volver al inicio de sesión
+              {t('codeVerification.backToLogin')}
             </button>
           </div>
         </div>
@@ -286,8 +279,8 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                   <CheckCircle className="w-8 h-8" style={{ color: '#16a34a' }} />
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2 relative z-10" style={{ color: 'var(--color-onPrimary, #ffffff)' }}>¡Cuenta Activada!</h3>
-              <p className="modal-header-gradient-sub text-sm relative z-10">Tu cuenta ha sido verificada exitosamente</p>
+              <h3 className="text-xl font-bold mb-2 relative z-10" style={{ color: 'var(--color-onPrimary, #ffffff)' }}>{t('codeVerification.success.title')}</h3>
+              <p className="modal-header-gradient-sub text-sm relative z-10">{t('codeVerification.success.subtitle')}</p>
             </div>
             <div className="p-6 text-center">
               <div className="mb-6">
@@ -297,17 +290,17 @@ export default function CodeVerification({ userID: propUserID, userEmail: propUs
                       <CheckCircle className="w-5 h-5 text-success" />
                     </div>
                   </div>
-                  <p className="theme-label text-sm font-medium mb-1">Verificación completada</p>
-                  <p className="theme-hint text-xs">Ya puedes acceder a todas las funcionalidades</p>
+                  <p className="theme-label text-sm font-medium mb-1">{t('codeVerification.success.subtitle')}</p>
+                  <p className="theme-hint text-xs">{t('codeVerification.success.message')}</p>
                 </div>
                 <div className="text-textSecondary text-sm">
-                  <p className="mb-2">🎉 <span className="font-medium text-textPrimary">¡Bienvenido a TuEvento!</span></p>
-                  <p className="theme-hint text-xs">Ahora puedes iniciar sesión con tu cuenta</p>
+                  <p className="mb-2">🎉 <span className="font-medium text-textPrimary">{t('login.modals.loginSuccessSubtitle')}</span></p>
+                  <p className="theme-hint text-xs">{t('codeVerification.success.message')}</p>
                 </div>
               </div>
               <button onClick={handleContinueToLogin} className="modal-btn-cta">
                 <ArrowRight className="w-4 h-4" />
-                <span>Continuar al Login</span>
+                <span>{t('codeVerification.success.goToLogin')}</span>
               </button>
             </div>
           </div>
