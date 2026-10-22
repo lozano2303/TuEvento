@@ -270,7 +270,7 @@
     "team": {
       "badge": "Meet the team",
       "title": "Our Team",
-      "description": "A passionate team of 5 professionals dedicated to making every event memorable.",
+      "description": "A passionate team of 2 professionals dedicated to making every event memorable.",
       "counter": "{{current}} of {{total}}",
       "members": {
         "cristofer": {
@@ -283,6 +283,21 @@
           "role": "Software Developer",
           "description": "Responsible for implementing system logic, creating web and mobile graphical interfaces, and project documentation."
         }
+      }
+    },
+    "mockup": {
+      "editorTitle": "Floor plan editor",
+      "save": "Save",
+      "attendees": "{{count}} attendees",
+      "confirmed": "confirmed",
+      "live": "Live",
+      "sections": {
+        "vip": "VIP",
+        "general": "General",
+        "stage": "Stage",
+        "tableA": "Table A",
+        "tableB": "Table B",
+        "bar": "Bar"
       }
     }
   },

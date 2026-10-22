@@ -294,7 +294,7 @@
     "team": {
       "badge": "Conheça a equipe",
       "title": "Nossa Equipe",
-      "description": "Uma equipe apaixonada de 5 profissionais dedicados a tornar cada evento memorável.",
+      "description": "Uma equipe apaixonada de 2 profissionais dedicados a tornar cada evento memorável.",
       "counter": "{{current}} de {{total}}",
       "members": {
         "cristofer": {
@@ -307,6 +307,21 @@
           "role": "Desenvolvedor de Software",
           "description": "Responsável por implementar a lógica do sistema, criação de interfaces gráficas web e móveis, além da elaboração da documentação do projeto."
         }
+      }
+    },
+    "mockup": {
+      "editorTitle": "Editor de plantas",
+      "save": "Salvar",
+      "attendees": "{{count}} participantes",
+      "confirmed": "confirmados",
+      "live": "Ao vivo",
+      "sections": {
+        "vip": "VIP",
+        "general": "Geral",
+        "stage": "Palco",
+        "tableA": "Mesa A",
+        "tableB": "Mesa B",
+        "bar": "Bar"
       }
     }
   },
