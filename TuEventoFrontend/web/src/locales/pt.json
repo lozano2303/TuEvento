@@ -1450,5 +1450,11 @@
         "text": "Os dados são atualizados sempre que uma compra é aprovada. Para consultar o pagamento dos seus ganhos, entre em contato com a equipe da plataforma."
       }
     }
+  },
+  "languageGuard": {
+    "title": "Mude o idioma para espanhol",
+    "subtitle": "Esta seção só está disponível em espanhol",
+    "description": "A criação e edição de eventos só está disponível com o espanhol selecionado como idioma. Altere seu idioma para espanhol no seu perfil para continuar.",
+    "action": "Voltar"
   }
 }

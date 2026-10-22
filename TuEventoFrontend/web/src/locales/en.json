@@ -1452,5 +1452,11 @@
         "text": "Data updates every time a purchase is approved. To inquire about the payout of your earnings, contact the platform team."
       }
     }
+  },
+  "languageGuard": {
+    "title": "Switch the language to Spanish",
+    "subtitle": "This section is only available in Spanish",
+    "description": "Creating and editing events is only available with Spanish selected as your language. Change your language to Spanish in your profile to continue.",
+    "action": "Go back"
   }
 }

@@ -36,6 +36,7 @@ import OrganizerEarnings from './pages/OrganizerEarnings';
 import TerminosDeUso from './pages/TerminosDeUso';
 import Privacidad from './pages/Privacidad';
 import Notifications from './pages/Notifications';
+import SpanishOnlyRoute from './components/common/SpanishOnlyRoute';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -80,7 +81,9 @@ function AppContent() {
           <Route path="/events" element={<Events />} />
           <Route path="/events/create" element={
             <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
-              <EventCreateWizard />
+              <SpanishOnlyRoute>
+                <EventCreateWizard />
+              </SpanishOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/events/manage" element={
@@ -180,7 +183,9 @@ function AppContent() {
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/events/:eventId/layout" element={
             <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
-              <EventLayoutEditor />
+              <SpanishOnlyRoute>
+                <EventLayoutEditor />
+              </SpanishOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/wallet" element={
