@@ -55,6 +55,11 @@ app:
     secret: ${JWT_SECRET}
     access-token-expiration: 900000
     refresh-token-expiration: 604800000
+  qr:
+    # Secreto propio para firmar los QR de tickets (separado del JWT de sesión).
+    secret: ${QR_SECRET:${JWT_SECRET}}
+    # Vida del token QR en milisegundos (60s).
+    expiration: ${QR_EXPIRATION:60000}
   storage:
     enabled: true
     endpoint: ${APP_STORAGE_ENDPOINT:http://localhost:9000}
