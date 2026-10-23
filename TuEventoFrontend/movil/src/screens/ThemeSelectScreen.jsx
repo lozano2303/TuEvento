@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, SafeAreaView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../context/ThemeContext";
 import { getThemes, activateTheme } from "../services/themeService";
@@ -17,6 +18,7 @@ const THEME_PREVIEWS = {
 
 export default function ThemeSelectScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { palette, refreshPalette } = useTheme();
   const [themes, setThemes] = useState([]);
   const [activeThemeId, setActiveThemeId] = useState(null);
@@ -35,15 +37,15 @@ export default function ThemeSelectScreen() {
       setThemes(themesData);
       
       // Identificar tema activo por el nombre del palette actual
-      const activeTheme = themesData.find(t => 
-        t.name === palette.themeName || 
-        (palette.background === THEME_PREVIEWS[t.name]?.background)
+      const activeTheme = themesData.find(th => 
+        th.name === palette.themeName || 
+        (palette.background === THEME_PREVIEWS[th.name]?.background)
       );
       if (activeTheme) {
         setActiveThemeId(activeTheme.id);
       }
     } catch (err) {
-      setError("Error al cargar los temas");
+      setError(t("mobileTheme.loadError"));
       console.error(err);
     } finally {
       setLoading(false);
@@ -58,7 +60,7 @@ export default function ThemeSelectScreen() {
       const token = await AsyncStorage.getItem("accessToken");
       if (!token) {
         console.warn('[ThemeSelectScreen] No token available');
-        setError("No se encontró el token de autenticación");
+        setError(t("mobileTheme.noToken"));
         return;
       }
 
@@ -66,7 +68,7 @@ export default function ThemeSelectScreen() {
       await refreshPalette();
       setActiveThemeId(themeId);
     } catch (err) {
-      setError("Error al activar el tema");
+      setError(t("mobileTheme.activateError"));
       console.error(err);
     } finally {
       setActivating(null);
@@ -89,7 +91,7 @@ export default function ThemeSelectScreen() {
             <BackButton style={{ marginBottom: 0 }} />
             <View style={{ flex: 1, alignItems: "center" }}>
               <Text style={{ color: palette.textPrimary, fontSize: 26, fontWeight: "800" }}>
-                Apariencia
+                {t("settings.appearance")}
               </Text>
             </View>
             <View style={{ width: 40 }} />
@@ -112,11 +114,11 @@ export default function ThemeSelectScreen() {
                 fontWeight: "700",
                 marginLeft: 8
               }}>
-                Personaliza tu experiencia
+                {t("mobileTheme.subtitle")}
               </Text>
             </View>
             <Text style={{ color: palette.textSecondary, fontSize: 13, lineHeight: 20 }}>
-              Elige el tema que mejor se adapte a tus preferencias. Los cambios se aplicarán inmediatamente.
+              {t("settings.themeDesc")}
             </Text>
           </View>
 
@@ -141,7 +143,7 @@ export default function ThemeSelectScreen() {
             <View style={{ paddingVertical: 40, alignItems: "center" }}>
               <ActivityIndicator size="large" color={palette.primary} />
               <Text style={{ color: palette.textMuted, fontSize: 14, marginTop: 12 }}>
-                Cargando temas...
+                {t("profile.themeSection.loadingThemes")}
               </Text>
             </View>
           ) : (
@@ -198,7 +200,7 @@ export default function ThemeSelectScreen() {
                             fontWeight: "800",
                             letterSpacing: 0.5
                           }}>
-                            ACTIVO
+                            {t("profile.themeSection.active").toUpperCase()}
                           </Text>
                         </View>
                       ) : null}
@@ -246,7 +248,7 @@ export default function ThemeSelectScreen() {
                           fontSize: 12, 
                           fontWeight: "600" 
                         }}>
-                          Tema actual
+                          {t("mobileTheme.currentTheme")}
                         </Text>
                       </View>
                     )}

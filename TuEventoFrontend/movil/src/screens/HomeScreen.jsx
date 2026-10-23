@@ -8,10 +8,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useLanguage } from "../context/LanguageContext";
 import { getFileUrl } from "../services/storageService";
 import { getPublishedEvents } from "../services/eventService";
+import { useNotifications } from "../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
 
@@ -35,6 +38,9 @@ function getInitial(fullName) {
 export default function HomeScreen() {
   const { colors, syncTheme } = useTheme();
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const { language } = useLanguage();
+  const { unreadCount } = useNotifications();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const styles = createStyles(colors);
@@ -72,7 +78,7 @@ export default function HomeScreen() {
     const loadUpcomingEvents = async () => {
       try {
         setEventsLoading(true);
-        const data = await getPublishedEvents();
+        const data = await getPublishedEvents(language);
         
         const now = new Date();
         
@@ -105,7 +111,8 @@ export default function HomeScreen() {
       }
     };
     loadUpcomingEvents();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]);
 
   // Sincronizar tema con el backend al montar — garantiza que las
   // customizaciones del usuario se apliquen apenas llega al Home
@@ -134,8 +141,11 @@ export default function HomeScreen() {
   const displayName = getDisplayName(user?.fullName);
   const initial     = getInitial(user?.fullName);
 
+  const displayEventName = (event) =>
+    language !== "es" && event.translatedName ? event.translatedName : event.eventName;
+
   const formatDate = (startDate, finishDate) => {
-    if (!startDate) return "Fecha por confirmar";
+    if (!startDate) return t("events.dateToConfirm");
     
     const start = new Date(startDate);
     const finish = finishDate ? new Date(finishDate) : null;
@@ -191,32 +201,58 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* Avatar */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Perfil")}
-          activeOpacity={0.75}
-          style={{
-            width: 38, height: 38, borderRadius: 19,
-            backgroundColor: colors.primary + "40",
-            borderWidth: 2, borderColor: colors.accent + "80",
-            alignItems: "center", justifyContent: "center",
-            overflow: "hidden",
-          }}
-        >
-          {avatarLoading ? (
-            <ActivityIndicator color={colors.textPrimary} size="small" />
-          ) : avatarUrl ? (
-            <Image
-              source={{ uri: avatarUrl }}
-              style={{ width: "100%", height: "100%" }}
-              resizeMode="cover"
-            />
-          ) : (
-            <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "800" }}>
-              {getInitial(user?.fullName)}
-            </Text>
-          )}
-        </TouchableOpacity>
+        {/* Campana + Avatar */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          {/* Campana de notificaciones */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Notifications")}
+            activeOpacity={0.75}
+            style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
+            {unreadCount > 0 && (
+              <View style={{
+                position: "absolute", top: 0, right: 0,
+                backgroundColor: colors.error,
+                borderRadius: 9, minWidth: 18, height: 18,
+                alignItems: "center", justifyContent: "center",
+                paddingHorizontal: 4,
+                borderWidth: 1.5, borderColor: colors.background,
+              }}>
+                <Text style={{ color: "#fff", fontSize: 10, fontWeight: "800" }}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* Avatar */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Perfil")}
+            activeOpacity={0.75}
+            style={{
+              width: 38, height: 38, borderRadius: 19,
+              backgroundColor: colors.primary + "40",
+              borderWidth: 2, borderColor: colors.accent + "80",
+              alignItems: "center", justifyContent: "center",
+              overflow: "hidden",
+            }}
+          >
+            {avatarLoading ? (
+              <ActivityIndicator color={colors.textPrimary} size="small" />
+            ) : avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "800" }}>
+                {getInitial(user?.fullName)}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -226,19 +262,19 @@ export default function HomeScreen() {
         {/* ── Hero ── */}
         <Animated.View style={[{ paddingHorizontal: 24, paddingTop: 28, paddingBottom: 8 }, animStyle(heroAnim)]}>
           <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 8 }}>
-            Hola, {displayName} 👋
+            {t("mobileHome.greeting", { name: displayName })}
           </Text>
           <Text style={{ color: colors.textPrimary, fontSize: 26, fontWeight: "800", lineHeight: 34 }}>
-            Organiza y vive{"\n"}
-            <Text style={{ color: colors.primary }}>eventos</Text>
-            <Text style={{ color: colors.textPrimary }}> únicos.</Text>
+            {t("mobileHome.heroLine1")}{"\n"}
+            <Text style={{ color: colors.primary }}>{t("mobileHome.heroEvents")}</Text>
+            <Text style={{ color: colors.textPrimary }}>{t("mobileHome.heroLine2")}</Text>
           </Text>
         </Animated.View>
 
         {/* ── Bento accesos rápidos ── */}
         <Animated.View style={[{ paddingHorizontal: 24, marginTop: 24 }, animStyle(bentoAnim)]}>
           <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "700", marginBottom: 12 }}>
-            Accesos rápidos
+            {t("mobileHome.quickAccess")}
           </Text>
           <View style={{ flexDirection: "row", gap: 12 }}>
             {/* Card Buscar */}
@@ -261,7 +297,7 @@ export default function HomeScreen() {
               </View>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                 <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: "700" }}>
-                  Buscar{"\n"}eventos
+                  {t("mobileHome.searchEvents")}
                 </Text>
                 <View style={{
                   width: 26, height: 26, borderRadius: 13,
@@ -293,7 +329,7 @@ export default function HomeScreen() {
               </View>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                 <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: "700" }}>
-                  Mis{"\n"}tickets
+                  {t("mobileHome.myTickets")}
                 </Text>
                 <View style={{
                   width: 26, height: 26, borderRadius: 13,
@@ -311,7 +347,7 @@ export default function HomeScreen() {
         {!eventsLoading && processedEvents.length > 0 && (
           <Animated.View style={[{ marginTop: 28 }, animStyle(eventsAnim)]}>
             <Text style={styles.sectionTitle}>
-              Próximos eventos
+              {t("mobileHome.upcomingEvents")}
             </Text>
 
             <ScrollView
@@ -352,7 +388,7 @@ export default function HomeScreen() {
                   {/* Información del evento */}
                   <View style={styles.eventInfo}>
                     <Text style={styles.eventName} numberOfLines={2}>
-                      {event.eventName}
+                      {displayEventName(event)}
                     </Text>
                     <View style={styles.eventMetaRow}>
                       <Ionicons name="calendar-outline" size={12} color={colors.textSecondary} />

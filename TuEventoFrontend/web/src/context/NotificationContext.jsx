@@ -7,14 +7,20 @@ import {
   markAllAsRead 
 } from '../services/NotificationService';
 import { useTokenRefresh } from '../hooks/useTokenRefresh';
+import { refreshAccessToken } from '../services/httpClient';
+import { ORGANIZER_WELCOME_KEY } from '../components/common/OrganizerWelcomeModal';
 
 const NotificationContext = createContext(null);
 
-const WS_BASE_URL = import.meta.env.VITE_API_URL 
+const WS_BASE_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace('/api/v1', '')
   : 'http://localhost:8080';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+// Notificaciones que indican que el admin cambió el estado de un evento del organizador.
+// Al recibirlas se recarga la página para leer el estado real desde el backend.
+const EVENT_STATUS_NOTIFICATION_TYPES = ['EVENT_PUBLISHED', 'EVENT_REJECTED'];
 
 /**
  * Key stored in localStorage to remember that this user's organizer role
@@ -23,6 +29,16 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
  * the user explicitly dismisses the modal.
  */
 const roleRevokedAckKey = (userId) => `role_revoked_ack_${userId}`;
+
+/** Extrae el claim "role" del payload de un JWT (base64url), o null si no se puede leer. */
+function decodeJwtRole(token) {
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(payload)).role ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Refreshes the JWT via /auth/refresh and updates localStorage with the
@@ -59,7 +75,7 @@ async function refreshJwtAndUpdateRole() {
     localStorage.setItem('refreshToken', newRefresh);
 
     // Notify components (Navbar, etc.) that the role changed without a full page reload
-    window.dispatchEvent(new CustomEvent('roleChanged', { detail: { role: newRole } }));
+    window.dispatchEvent(new CustomEvent('roleChanged', { detail: { role: localStorage.getItem('role') } }));
 
     return accessToken;
   } catch {
@@ -68,11 +84,42 @@ async function refreshJwtAndUpdateRole() {
 }
 
 /**
+ * ROLE_UPDATED (p. ej. solicitud de organizador aprobada): renueva el JWT para
+ * obtener el rol nuevo desde la BD, lo guarda y lleva al inicio con recarga completa.
+ * Si el rol nuevo es ORGANIZER, deja marcado el modal de bienvenida (OrganizerWelcomeModal).
+ */
+async function handleSessionEvent(event) {
+  if (event?.type !== 'ROLE_UPDATED') return;
+  try {
+    const newToken = await refreshAccessToken();
+    const role = decodeJwtRole(newToken);
+    if (role) localStorage.setItem('role', role);
+    if (role === 'ORGANIZER') sessionStorage.setItem(ORGANIZER_WELCOME_KEY, 'true');
+  } catch {
+    // Si el refresh falla, la recarga deja que httpClient gestione la sesión.
+  }
+  window.location.href = '/';
+}
+
+/** Suscribe el canal de eventos de sesión del usuario: /topic/users/{userId}/session */
+function subscribeSessionEvents(client, userId, subscriptionsRef) {
+  const sub = client.subscribe(`/topic/users/${userId}/session`, (message) => {
+    try {
+      handleSessionEvent(JSON.parse(message.body));
+    } catch (err) {
+      // Error parsing session event
+    }
+  });
+  subscriptionsRef.current.set('session', sub);
+}
+
+/**
  * Provider de notificaciones que mantiene UN SOLO WebSocket centralizado.
  * Este WebSocket maneja:
  * - Notificaciones (siempre activo)
  * - Actualizaciones de sillas (dinámico, solo en páginas de eventos)
- * - Role-change signals (/topic/role-change/{userId})
+ * - Role-change signals (/topic/role-change/{userId}) — revocación de rol
+ * - Session events (/topic/users/{userId}/session) — aprobación de rol
  */
 export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
@@ -310,16 +357,19 @@ export function NotificationProvider({ children }) {
     const handleNewNotification = (notification) => {
       setNotifications(prev => [notification, ...prev]);
       setUnreadCount(prev => prev + 1);
+      if (EVENT_STATUS_NOTIFICATION_TYPES.includes(notification.type)) {
+        window.location.reload();
+      }
     };
 
     const handleRoleRevoked = async () => {
-      const newToken = await refreshJwtAndUpdateRole();
+      const freshToken = await refreshJwtAndUpdateRole();
       // Mark in localStorage so the modal re-appears after a hard reload too
       localStorage.setItem(roleRevokedAckKey(userId), 'pending');
       setRoleRevokedPending(true);
-      if (newToken && wsClientRef.current) {
+      if (freshToken && wsClientRef.current) {
         // Reconnect again with the brand-new token that carries the USER role
-        reconnectWebSocket(newToken);
+        reconnectWebSocket(freshToken);
       }
     };
 
@@ -338,7 +388,7 @@ export function NotificationProvider({ children }) {
         });
         subscriptionsRef.current.set('notifications', notifSubscription);
 
-        // Role-change subscription (permanent)
+        // Role-change subscription: ROLE_REVOKED (admin revoca el rol al organizador)
         const roleChangeDest = `/topic/role-change/${userId}`;
         const roleSubscription = client.subscribe(roleChangeDest, (message) => {
           try {
@@ -351,6 +401,9 @@ export function NotificationProvider({ children }) {
           }
         });
         subscriptionsRef.current.set('role-change', roleSubscription);
+
+        // Session events subscription: ROLE_UPDATED (solicitud de organizador aprobada)
+        subscribeSessionEvents(client, userId, subscriptionsRef);
       },
 
       onStompError: (frame) => {
@@ -402,6 +455,9 @@ export function NotificationProvider({ children }) {
     const handleNewNotification = (notification) => {
       setNotifications(prev => [notification, ...prev]);
       setUnreadCount(prev => prev + 1);
+      if (EVENT_STATUS_NOTIFICATION_TYPES.includes(notification.type)) {
+        window.location.reload();
+      }
     };
 
     // Handle role revocation signal from admin
@@ -435,7 +491,7 @@ export function NotificationProvider({ children }) {
 
         subscriptionsRef.current.set('notifications', notifSubscription);
 
-        // Role-change subscription (permanent)
+        // Role-change subscription: ROLE_REVOKED (admin revoca el rol al organizador)
         const roleChangeDest = `/topic/role-change/${userId}`;
         const roleSubscription = client.subscribe(roleChangeDest, (message) => {
           try {
@@ -448,6 +504,9 @@ export function NotificationProvider({ children }) {
           }
         });
         subscriptionsRef.current.set('role-change', roleSubscription);
+
+        // Session events subscription: ROLE_UPDATED (solicitud de organizador aprobada)
+        subscribeSessionEvents(client, userId, subscriptionsRef);
       },
 
       onStompError: (frame) => {

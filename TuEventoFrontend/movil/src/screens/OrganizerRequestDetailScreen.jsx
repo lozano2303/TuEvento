@@ -39,7 +39,7 @@ export default function OrganizerRequestDetailScreen() {
   const insets = useSafeAreaInsets();
   const route = useRoute();
 
-  const { petitionId, alias, applicationDate, status, storedFileId } =
+  const { petitionId, fullName, email, applicationDate, status, storedFileId } =
     route.params ?? {};
 
   // ── Estado del documento ──────────────────────────────────────────────────
@@ -478,14 +478,17 @@ export default function OrganizerRequestDetailScreen() {
       >
         {/* Info card */}
         <View style={styles.infoCard}>
-          {/* Alias */}
+          {/* Solicitante */}
           <View style={styles.infoRow}>
             <View style={styles.infoIconWrap}>
               <Ionicons name="person-outline" size={18} color={colors.accent} />
             </View>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.infoLabel}>Solicitante</Text>
-              <Text style={styles.infoValue}>{alias ?? "—"}</Text>
+              <Text style={styles.infoValue}>{fullName || email || "—"}</Text>
+              {fullName && email ? (
+                <Text style={styles.infoLabel}>{email}</Text>
+              ) : null}
             </View>
           </View>
 

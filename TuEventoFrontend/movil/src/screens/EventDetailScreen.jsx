@@ -14,8 +14,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import { getEventDetail, getEventMedia, getEventLayout, getEventSections } from "../services/eventService";
 import * as seatService from "../services/seatService";
 import { connectSeatSocket, disconnectSeatSocket } from "../services/websocketService";
@@ -31,6 +33,7 @@ const { width } = Dimensions.get("window");
  * Muestra código de silla, sección, precio y tiempo restante de reserva.
  */
 function CartItem({ seat, section, onRelease, isReleasing, colors, onExpire }) {
+  const { t } = useTranslation();
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
@@ -42,7 +45,7 @@ function CartItem({ seat, section, onRelease, isReleasing, colors, onExpire }) {
       const diffMs = until - now;
 
       if (diffMs <= 0) {
-        setTimeLeft('Expirado');
+        setTimeLeft(t("seats.expiredCountdown"));
         // Deselección optimista: liberar inmediatamente en el cliente
         // sin esperar el evento de WebSocket del scheduler
         if (onExpire) {
@@ -87,7 +90,7 @@ function CartItem({ seat, section, onRelease, isReleasing, colors, onExpire }) {
           color: colors.textSecondary,
           marginBottom: 4,
         }}>
-          {section?.sectionTypeName ?? 'Sección'}
+          {section?.sectionTypeName ?? t("seats.section")}
         </Text>
         <View style={{
           flexDirection: 'row',
@@ -143,6 +146,8 @@ function CartItem({ seat, section, onRelease, isReleasing, colors, onExpire }) {
 export default function EventDetailScreen() {
   const { colors } = useTheme();
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const { language } = useLanguage();
   const navigation = useNavigation();
   const route = useRoute();
   const styles = createStyles(colors);
@@ -214,8 +219,8 @@ export default function EventDetailScreen() {
         setLoading(true);
         setError(null);
 
-        // Cargar detalles del evento
-        const eventData = await getEventDetail(eventId);
+        // Cargar detalles del evento (con traducción dinámica según idioma activo)
+        const eventData = await getEventDetail(eventId, language);
         setEvent(eventData);
 
         // Cargar imágenes del evento
@@ -267,7 +272,8 @@ export default function EventDetailScreen() {
     if (eventId) {
       loadEventDetail();
     }
-  }, [eventId, currentUserId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId, currentUserId, language]);
 
   // Cargar sillas al seleccionar una sección
   useEffect(() => {
@@ -283,7 +289,7 @@ export default function EventDetailScreen() {
         // CASO 5: Detectar sección sin sillas disponibles
         const availableSeats = data.filter(s => s.status === 'AVAILABLE');
         if (availableSeats.length === 0) {
-          showToast('section-no-seats', 'Se agotaron las sillas disponibles en esta sección', 'warning');
+          showToast('section-no-seats', t("mobileSeats.sectionSoldOut"), 'warning');
         }
         
         // 🚀 DOD: Cargar sillas adicionales de la sección al store
@@ -295,7 +301,7 @@ export default function EventDetailScreen() {
         });
       } catch (err) {
         console.error("[EventDetailScreen] Error loading seats:", err);
-        Alert.alert("Error", "No se pudieron cargar las sillas");
+        Alert.alert(t("common.error"), t("mobileSeats.loadError"));
       }
     };
 
@@ -332,7 +338,7 @@ export default function EventDetailScreen() {
           if (client.ws) {
             client.ws.onclose = () => {
               if (!isCancelled && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                showToast('ws-disconnected', 'Se perdió la conexión en tiempo real, reconectando...', 'warning');
+                showToast('ws-disconnected', t("mobileSeats.wsDisconnected"), 'warning');
                 reconnectAttempts++;
                 setTimeout(connectWS, 2000 * reconnectAttempts); // Backoff exponencial
               }
@@ -345,7 +351,7 @@ export default function EventDetailScreen() {
       } catch (err) {
         console.warn('[EventDetailScreen] WebSocket connection failed:', err);
         if (!isCancelled && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-          showToast('ws-disconnected', 'Se perdió la conexión en tiempo real, reconectando...', 'warning');
+          showToast('ws-disconnected', t("mobileSeats.wsDisconnected"), 'warning');
           reconnectAttempts++;
           setTimeout(connectWS, 2000 * reconnectAttempts);
         }
@@ -367,13 +373,13 @@ export default function EventDetailScreen() {
   const handleReserveSeat = async (seatId) => {
     // CASO 9: Usuario anónimo intenta reservar
     if (!currentUserId) {
-      showToast('auth-required', 'Iniciá sesión para reservar sillas', 'warning');
+      showToast('auth-required', t("seats.loginRequired"), 'warning');
       return;
     }
 
     // CASO 11: Evento ya no disponible (COMPLETED/CANCELLED)
     if (event.status === 'COMPLETED' || event.status === 'CANCELLED') {
-      showToast('event-unavailable', 'Este evento ya no acepta reservas', 'error');
+      showToast('event-unavailable', t("seats.eventUnavailable"), 'error');
       return;
     }
 
@@ -397,15 +403,15 @@ export default function EventDetailScreen() {
       
       // CASO 10: Token expirado (401)
       if (err.message?.includes('401') || err.message?.toLowerCase().includes('unauthorized')) {
-        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
+        showToast('token-expired', t("auth.sessionExpired"), 'error');
       }
       // CASO 3: Silla ya reservada por otro (condición de carrera)
       else if (err.message?.includes('SEAT_NOT_AVAILABLE') || err.message?.includes('no está disponible')) {
-        showToast('seat-taken', 'Esta silla ya fue reservada por otra persona', 'warning');
+        showToast('seat-taken', t("seats.alreadyTaken"), 'warning');
       }
       // CASO 7: Error genérico
       else {
-        showToast('reserve-error', 'No se pudo reservar la silla, intentalo de nuevo', 'error');
+        showToast('reserve-error', t("mobileSeats.reserveError"), 'error');
       }
     }
   };
@@ -432,11 +438,11 @@ export default function EventDetailScreen() {
       
       // CASO 10: Token expirado (401)
       if (err.message?.includes('401') || err.message?.toLowerCase().includes('unauthorized')) {
-        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
+        showToast('token-expired', t("auth.sessionExpired"), 'error');
       }
       // CASO 7: Error genérico al liberar
       else {
-        showToast('release-error', 'No se pudo liberar la silla, intentalo de nuevo', 'error');
+        showToast('release-error', t("mobileSeats.releaseError"), 'error');
       }
     }
   };
@@ -445,7 +451,7 @@ export default function EventDetailScreen() {
   // El scheduler del backend se encargará de liberar la silla en su próximo ciclo (cada 10s)
   const handleSeatExpire = (seatId) => {
     // CASO 4: Silla expirada
-    showToast('seat-expired', 'Tu reserva expiró y la silla se liberó', 'info');
+    showToast('seat-expired', t("seats.expired"), 'info');
     
     updateSeat(seatId, {
       status: 'AVAILABLE',
@@ -462,7 +468,7 @@ export default function EventDetailScreen() {
     if (seat.status === 'AVAILABLE') {
       // CASO 1: Límite del stepper alcanzado
       if (cart.length >= selectedQuantity) {
-        showToast('stepper-limit', 'Agregá una silla más para poder seleccionar', 'warning');
+        showToast('stepper-limit', t("mobileSeats.addSeatFirst"), 'warning');
         return;
       }
       handleReserveSeat(seatId);
@@ -472,8 +478,13 @@ export default function EventDetailScreen() {
     // Resto de estados: no-op (silla no clickeable)
   };
 
+  // Contenido a mostrar: usa la traducción si el idioma no es español y existe.
+  const displayName = language !== "es" && event?.translatedName ? event.translatedName : event?.eventName;
+  const displayDescription = language !== "es" && event?.translatedDescription ? event.translatedDescription : event?.description;
+  const showTranslating = language !== "es" && event?.translationGenerating;
+
   const formatDate = (startDate, finishDate) => {
-    if (!startDate) return "Fecha por confirmar";
+    if (!startDate) return t("events.dateToConfirm");
 
     const start = new Date(startDate);
     const finish = finishDate ? new Date(finishDate) : null;
@@ -491,10 +502,10 @@ export default function EventDetailScreen() {
 
   const getStatusLabel = (status) => {
     const statusMap = {
-      DRAFT: "Borrador",
-      PUBLISHED: "Publicado",
-      CANCELLED: "Cancelado",
-      COMPLETED: "Finalizado",
+      DRAFT: t("events.status.draft"),
+      PUBLISHED: t("events.status.published"),
+      CANCELLED: t("events.status.cancelled"),
+      COMPLETED: t("events.status.completed"),
     };
     return statusMap[status] || status;
   };
@@ -523,13 +534,13 @@ export default function EventDetailScreen() {
           >
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Detalle del Evento</Text>
+          <Text style={styles.headerTitle}>{t("eventDetail.title")}</Text>
           <View style={{ width: 40 }} />
         </View>
 
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Cargando evento...</Text>
+          <Text style={styles.loadingText}>{t("eventDetail.loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -549,7 +560,7 @@ export default function EventDetailScreen() {
           >
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Detalle del Evento</Text>
+          <Text style={styles.headerTitle}>{t("eventDetail.title")}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -557,15 +568,15 @@ export default function EventDetailScreen() {
           <View style={styles.errorIconContainer}>
             <Ionicons name="alert-circle-outline" size={64} color={colors.error} />
           </View>
-          <Text style={styles.errorTitle}>Error al cargar</Text>
-          <Text style={styles.errorMessage}>{error || "Evento no encontrado"}</Text>
+          <Text style={styles.errorTitle}>{t("eventDetail.errorTitle")}</Text>
+          <Text style={styles.errorMessage}>{error || t("eventDetail.notFound")}</Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => navigation.goBack()}
             activeOpacity={0.75}
           >
             <Ionicons name="arrow-back" size={18} color={colors.textPrimary} />
-            <Text style={styles.retryButtonText}>Volver</Text>
+            <Text style={styles.retryButtonText}>{t("common.back")}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -619,7 +630,15 @@ export default function EventDetailScreen() {
         {/* Contenido del evento */}
         <View style={styles.content}>
           {/* Título */}
-          <Text style={styles.eventTitle}>{event.eventName}</Text>
+          <Text style={styles.eventTitle}>{displayName}</Text>
+
+          {/* Indicador de traducción en curso */}
+          {showTranslating && (
+            <View style={styles.translatingBanner}>
+              <ActivityIndicator size="small" color={colors.accent} />
+              <Text style={styles.translatingText}>{t("events.translation.generating")}</Text>
+            </View>
+          )}
 
           {/* Información básica */}
           <View style={styles.infoSection}>
@@ -629,7 +648,7 @@ export default function EventDetailScreen() {
                 <Ionicons name="calendar-outline" size={20} color={colors.accent} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Fecha</Text>
+                <Text style={styles.infoLabel}>{t("events.startDate")}</Text>
                 <Text style={styles.infoValue}>{formatDate(event.startDate, event.finishDate)}</Text>
               </View>
             </View>
@@ -641,7 +660,7 @@ export default function EventDetailScreen() {
                   <Ionicons name="location-outline" size={20} color={colors.accent} />
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Ubicación</Text>
+                  <Text style={styles.infoLabel}>{t("events.location")}</Text>
                   <Text style={styles.infoValue}>{event.siteName}</Text>
                 </View>
               </View>
@@ -653,28 +672,28 @@ export default function EventDetailScreen() {
                 <Ionicons name="people-outline" size={20} color={colors.accent} />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Disponibilidad</Text>
+                <Text style={styles.infoLabel}>{t("eventDetail.availability")}</Text>
                 <Text style={styles.infoValue}>
                   {event.availableSeats > 0 
-                    ? `${event.availableSeats} asientos disponibles` 
-                    : "Agotado"}
+                    ? t("events.availableSeats", { count: event.availableSeats })
+                    : t("events.soldOut")}
                 </Text>
               </View>
             </View>
           </View>
 
           {/* Descripción */}
-          {event.description && (
+          {displayDescription && (
             <View style={styles.descriptionSection}>
-              <Text style={styles.sectionTitle}>Descripción</Text>
-              <Text style={styles.descriptionText}>{event.description}</Text>
+              <Text style={styles.sectionTitle}>{t("events.description")}</Text>
+              <Text style={styles.descriptionText}>{displayDescription}</Text>
             </View>
           )}
 
           {/* Galería de imágenes (si hay más de una) */}
           {media.length > 1 && (
             <View style={styles.gallerySection}>
-              <Text style={styles.sectionTitle}>Galería</Text>
+              <Text style={styles.sectionTitle}>{t("eventDetail.gallery")}</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -702,17 +721,17 @@ export default function EventDetailScreen() {
           {/* Mapa de sillas */}
           {layout && layout.elements && layout.elements.length > 0 && (
             <View style={styles.seatMapSection}>
-              <Text style={styles.sectionTitle}>Mapa de Asientos</Text>
+              <Text style={styles.sectionTitle}>{t("seats.seatMap")}</Text>
               
               {/* Selector de cantidad estilo cine */}
               <View style={styles.quantitySelectorContainer}>
-                <Text style={styles.quantityLabel}>¿Cuántas sillas querés?</Text>
+                <Text style={styles.quantityLabel}>{t("seats.howMany")}</Text>
                 <View style={styles.quantityControls}>
                   <TouchableOpacity
                     onPress={() => {
                       // CASO 8: Bajar el stepper por debajo de lo reservado
                       if (selectedQuantity <= cart.length) {
-                        showToast('stepper-below-cart', 'Liberá una silla primero para bajar la cantidad', 'warning');
+                        showToast('stepper-below-cart', t("mobileSeats.releaseSeatFirst"), 'warning');
                         return;
                       }
                       if (selectedQuantity > 1) {
@@ -739,7 +758,7 @@ export default function EventDetailScreen() {
                     onPress={() => {
                       // CASO 2: Límite máximo global de sillas
                       if (selectedQuantity >= 10) {
-                        showToast('max-seats', 'Solo podés seleccionar un máximo de 10 sillas en este ticket', 'warning');
+                        showToast('max-seats', t("mobileSeats.maxSeats", { max: 10 }), 'warning');
                         return;
                       }
                       setSelectedQuantity(selectedQuantity + 1);
@@ -778,7 +797,7 @@ export default function EventDetailScreen() {
                         activeOpacity={0.7}
                       >
                         <Ionicons name="apps-outline" size={16} color={colors.textPrimary} />
-                        <Text style={styles.sectionChipAllText}>Ver todo</Text>
+                        <Text style={styles.sectionChipAllText}>{t("seats.viewAll")}</Text>
                       </TouchableOpacity>
                     )}
                     
@@ -984,7 +1003,7 @@ export default function EventDetailScreen() {
                   <View style={styles.cartHeader}>
                     <View style={styles.cartHeaderLeft}>
                       <Ionicons name="cart-outline" size={18} color={colors.primary} />
-                      <Text style={styles.cartTitle}>Tus Sillas</Text>
+                      <Text style={styles.cartTitle}>{t("seats.myCart")}</Text>
                     </View>
                     <Text style={styles.cartCount}>({cart.length})</Text>
                   </View>
@@ -1024,7 +1043,7 @@ export default function EventDetailScreen() {
                       return {
                         seatId:      s.seatId,
                         code:        s.code,
-                        sectionName: section?.sectionTypeName ?? "Sección",
+                        sectionName: section?.sectionTypeName ?? t("seats.section"),
                         price:       section?.price ?? 0,
                       };
                     });
@@ -1160,6 +1179,22 @@ function createStyles(colors) {
       color: colors.textPrimary,
       marginBottom: 20,
       lineHeight: 36,
+    },
+    translatingBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: colors.accent + "15",
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginTop: -8,
+      marginBottom: 20,
+    },
+    translatingText: {
+      fontSize: 12,
+      color: colors.accent,
+      fontWeight: "600",
     },
     infoSection: {
       gap: 16,

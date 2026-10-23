@@ -116,6 +116,11 @@ app:
     access-token-expiration: 900000       # 15 minutos
     refresh-token-expiration: 604800000   # 7 días
 
+  # ── QR de tickets ─────────────────────────────────────────
+  qr:
+    secret: ${QR_SECRET:${JWT_SECRET}}
+    expiration: ${QR_EXPIRATION:60000}    # 60 segundos
+
   # ── Almacenamiento S3 ─────────────────────────────────────
   storage:
     enabled: true

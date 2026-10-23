@@ -2,6 +2,24 @@ import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import * as Crypto from "expo-crypto";
+import Constants, { ExecutionEnvironment } from "expo-constants";
+
+/**
+ * Carga perezosa del SDK nativo de Google Sign-In.
+ * Si el binario instalado (dev client) se compiló antes de añadir la librería,
+ * el import estático tumba toda la app al arrancar; así solo falla el botón de Google.
+ */
+function loadGoogleSignin() {
+  // Expo Go no incluye módulos nativos de terceros: ni siquiera se intenta cargar.
+  if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+    throw new Error("GOOGLE_SIGNIN_EXPO_GO");
+  }
+  try {
+    return require("@react-native-google-signin/google-signin");
+  } catch (_) {
+    throw new Error("Google Sign-In no está disponible en este build. Recompila el dev client.");
+  }
+}
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
@@ -29,40 +47,43 @@ async function generateState() {
 
 export const oauthService = {
   /**
-   * Initiates the OAuth2 Authorization Code flow with Google.
+   * Inicia sesión con Google usando el SDK nativo (Google Sign-In / Credential Manager).
    *
-   * Returns { code, state } so the caller can pass both to authService.oauthLogin()
-   * and verify the state against the value included in the server response.
+   * Mismo contrato que la web (GSI): se obtiene un id_token cuyo audience es el
+   * Web client ID (webClientId) y se envía a POST /auth/google, donde el backend
+   * lo verifica contra GOOGLE_CLIENT_ID.
+   *
+   * Requiere un cliente OAuth tipo Android en Google Cloud con el package
+   * com.tuevento.movil y el SHA-1 del keystore con el que se firma el build.
+   *
+   * Devuelve { idToken }.
    */
   async loginWithGoogle() {
+    // Fuera del try para que el mensaje llegue intacto a mapErrorMessage.
+    const sdk = loadGoogleSignin();
+    let isErrorWithCode = () => false;
+    let statusCodes = {};
     try {
-      const state = await generateState();
+      const { GoogleSignin, isCancelledResponse, isSuccessResponse } = sdk;
+      ({ isErrorWithCode, statusCodes } = sdk);
 
-      const result = await AuthSession.startAsync({
-        authUrl: `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
-          client_id: GOOGLE_CLIENT_ID,
-          redirect_uri: redirectUrl,
-          response_type: "code",
-          scope: "openid profile email",
-          prompt: "consent",
-          state,
-        }).toString()}`,
-        returnUrl: redirectUrl,
-      });
+      GoogleSignin.configure({ webClientId: GOOGLE_CLIENT_ID });
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      // Cierra la sesión local previa para que siempre se muestre el selector de cuenta.
+      await GoogleSignin.signOut();
 
-      if (result.type === "success") {
-        // Verify that the state returned by Google matches what we sent.
-        // A mismatch indicates a possible CSRF / redirect injection attack.
-        if (result.params.state && result.params.state !== state) {
-          throw new Error("OAuth state mismatch — posible ataque CSRF");
-        }
-        return { code: result.params.code, state };
-      } else if (result.type === "dismiss") {
+      const response = await GoogleSignin.signIn();
+      if (isCancelledResponse(response)) {
         throw new Error("Usuario canceló el inicio de sesión");
-      } else {
+      }
+      if (!isSuccessResponse(response) || !response.data.idToken) {
         throw new Error("Error en el flujo OAuth de Google");
       }
+      return { idToken: response.data.idToken };
     } catch (error) {
+      if (isErrorWithCode(error) && error.code === statusCodes.IN_PROGRESS) {
+        throw new Error("Error en el flujo OAuth de Google: ya hay un inicio de sesión en curso");
+      }
       throw new Error(`Error OAuth Google: ${error.message}`);
     }
   },

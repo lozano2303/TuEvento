@@ -116,6 +116,16 @@ public class RegisterUserUseCase implements RegisterUserPort {
                 .occurredAt(LocalDateTime.now())
                 .build());
 
+        // Enviar el correo de activación. No hay listener para UserRegisteredEvent,
+        // así que se envía aquí directamente (mismo patrón que resendActivationCode).
+        // Un fallo de SMTP no debe tumbar el registro: el usuario puede reenviar el código.
+        try {
+            emailNotification.sendActivationEmail(request.getEmail(), alias, code);
+        } catch (Exception e) {
+            log.error("Failed to send activation email to {} on register — user created but email not sent: {}",
+                    request.getEmail(), e.getMessage());
+        }
+
         return RegisterUserResponse.builder()
                 .userId(user.getUserId())
                 .alias(alias)
