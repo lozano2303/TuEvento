@@ -1500,5 +1500,77 @@
     },
     "start": "Começar agora",
     "login": "Entrar"
+  },
+  "mobileProfile": {
+    "title": "Meu Perfil",
+    "sections": {
+      "organizer": "Organizador",
+      "admin": "Administração",
+      "account": "Conta"
+    },
+    "scan": {
+      "label": "Validar ingressos",
+      "desc": "Escanear códigos QR dos seus eventos"
+    },
+    "adminPanel": {
+      "label": "Painel de administração",
+      "desc": "Gestão da plataforma"
+    },
+    "menu": {
+      "profile": {
+        "label": "Meu perfil",
+        "sub": "Informações, foto e tema"
+      },
+      "tickets": {
+        "label": "Meus ingressos",
+        "sub": "Seus ingressos e códigos QR"
+      },
+      "wallet": {
+        "label": "Carteira",
+        "sub": "Saldo e movimentações"
+      },
+      "notifications": {
+        "label": "Notificações",
+        "sub": "Gerencie seus alertas"
+      }
+    },
+    "admin": {
+      "dashboard": {
+        "label": "Dashboard",
+        "sub": "Visão geral"
+      },
+      "financial": {
+        "label": "Controle Financeiro",
+        "sub": "Pagamentos e reembolsos"
+      },
+      "events": {
+        "label": "Eventos",
+        "sub": "Gerenciar e revisar eventos"
+      },
+      "reports": {
+        "label": "Relatórios",
+        "sub": "Estatísticas da plataforma"
+      },
+      "refunds": {
+        "label": "Reembolsos",
+        "sub": "Gerenciar reembolsos"
+      },
+      "requests": {
+        "label": "Solicitações",
+        "sub": "Solicitações de organizador"
+      },
+      "categories": {
+        "label": "Categorias",
+        "sub": "Gerenciar categorias"
+      },
+      "sectionTypes": {
+        "label": "Tipos de Seção",
+        "sub": "Gerenciar tipos de seção"
+      }
+    },
+    "comingSoon": "Em breve",
+    "comingSoonBadge": "EM BREVE",
+    "logout": "Sair",
+    "defaultUser": "Usuário"
   }
 }

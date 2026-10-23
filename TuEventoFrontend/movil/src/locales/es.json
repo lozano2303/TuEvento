@@ -1502,5 +1502,77 @@
     },
     "start": "Comenzar ahora",
     "login": "Iniciar sesión"
+  },
+  "mobileProfile": {
+    "title": "Mi Perfil",
+    "sections": {
+      "organizer": "Organizador",
+      "admin": "Administración",
+      "account": "Cuenta"
+    },
+    "scan": {
+      "label": "Validar entradas",
+      "desc": "Escanear códigos QR de tus eventos"
+    },
+    "adminPanel": {
+      "label": "Panel de administración",
+      "desc": "Gestión de la plataforma"
+    },
+    "menu": {
+      "profile": {
+        "label": "Mi perfil",
+        "sub": "Información, foto y tema"
+      },
+      "tickets": {
+        "label": "Mis entradas",
+        "sub": "Tus tickets y códigos QR"
+      },
+      "wallet": {
+        "label": "Cartera",
+        "sub": "Saldo y movimientos"
+      },
+      "notifications": {
+        "label": "Notificaciones",
+        "sub": "Gestiona tus alertas"
+      }
+    },
+    "admin": {
+      "dashboard": {
+        "label": "Dashboard",
+        "sub": "Vista general"
+      },
+      "financial": {
+        "label": "Control Financiero",
+        "sub": "Pagos y reembolsos"
+      },
+      "events": {
+        "label": "Eventos",
+        "sub": "Gestionar y revisar eventos"
+      },
+      "reports": {
+        "label": "Reportes",
+        "sub": "Estadísticas de la plataforma"
+      },
+      "refunds": {
+        "label": "Reembolsos",
+        "sub": "Gestionar reembolsos"
+      },
+      "requests": {
+        "label": "Solicitudes",
+        "sub": "Solicitudes de organizador"
+      },
+      "categories": {
+        "label": "Categorías",
+        "sub": "Gestionar categorías"
+      },
+      "sectionTypes": {
+        "label": "Tipos de Sección",
+        "sub": "Gestionar tipos de sección"
+      }
+    },
+    "comingSoon": "Próximamente",
+    "comingSoonBadge": "PRONTO",
+    "logout": "Cerrar sesión",
+    "defaultUser": "Usuario"
   }
 }

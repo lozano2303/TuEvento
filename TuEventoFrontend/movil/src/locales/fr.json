@@ -1500,5 +1500,77 @@
     },
     "start": "Commencer",
     "login": "Se connecter"
+  },
+  "mobileProfile": {
+    "title": "Mon profil",
+    "sections": {
+      "organizer": "Organisateur",
+      "admin": "Administration",
+      "account": "Compte"
+    },
+    "scan": {
+      "label": "Valider les billets",
+      "desc": "Scanner les codes QR de vos événements"
+    },
+    "adminPanel": {
+      "label": "Panneau d’administration",
+      "desc": "Gestion de la plateforme"
+    },
+    "menu": {
+      "profile": {
+        "label": "Mon profil",
+        "sub": "Infos, photo et thème"
+      },
+      "tickets": {
+        "label": "Mes billets",
+        "sub": "Vos billets et codes QR"
+      },
+      "wallet": {
+        "label": "Portefeuille",
+        "sub": "Solde et mouvements"
+      },
+      "notifications": {
+        "label": "Notifications",
+        "sub": "Gérez vos alertes"
+      }
+    },
+    "admin": {
+      "dashboard": {
+        "label": "Tableau de bord",
+        "sub": "Vue d’ensemble"
+      },
+      "financial": {
+        "label": "Contrôle financier",
+        "sub": "Paiements et remboursements"
+      },
+      "events": {
+        "label": "Événements",
+        "sub": "Gérer et examiner les événements"
+      },
+      "reports": {
+        "label": "Rapports",
+        "sub": "Statistiques de la plateforme"
+      },
+      "refunds": {
+        "label": "Remboursements",
+        "sub": "Gérer les remboursements"
+      },
+      "requests": {
+        "label": "Demandes",
+        "sub": "Demandes d’organisateur"
+      },
+      "categories": {
+        "label": "Catégories",
+        "sub": "Gérer les catégories"
+      },
+      "sectionTypes": {
+        "label": "Types de section",
+        "sub": "Gérer les types de section"
+      }
+    },
+    "comingSoon": "Bientôt disponible",
+    "comingSoonBadge": "BIENTÔT",
+    "logout": "Se déconnecter",
+    "defaultUser": "Utilisateur"
   }
 }

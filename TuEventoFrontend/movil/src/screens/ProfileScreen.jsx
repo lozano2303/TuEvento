@@ -9,6 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { getFileUrl } from "../services/storageService";
@@ -36,25 +37,26 @@ function getInitial(fullName) {
 
 // getRoleBadge se define dentro del componente para acceder a colors del tema
 
-// ─── Opciones del menú de perfil ─────────────────────────────────────────────
-const MENU_OPTIONS = [
-  { icon: "person-outline",        label: "Mi perfil",        sub: "Información, foto y tema",    route: "EditProfile"   },
-  { icon: "ticket-outline",        label: "Mis entradas",     sub: "Tus tickets y códigos QR",   route: "MyTickets"     },
-  { icon: "wallet-outline",        label: "Cartera",          sub: "Saldo y movimientos",        route: "Wallet"        },
-  { icon: "notifications-outline", label: "Notificaciones",   sub: "Gestiona tus alertas",       route: "Notifications" },
-];
-
 export default function ProfileScreen() {
   const { user, setShowLogoutModal } = useAuth();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
+  // ─── Opciones del menú de perfil ───────────────────────────────────────────
+  const MENU_OPTIONS = [
+    { icon: "person-outline",        label: t("mobileProfile.menu.profile.label"),       sub: t("mobileProfile.menu.profile.sub"),       route: "EditProfile"   },
+    { icon: "ticket-outline",        label: t("mobileProfile.menu.tickets.label"),       sub: t("mobileProfile.menu.tickets.sub"),       route: "MyTickets"     },
+    { icon: "wallet-outline",        label: t("mobileProfile.menu.wallet.label"),        sub: t("mobileProfile.menu.wallet.sub"),        route: "Wallet"        },
+    { icon: "notifications-outline", label: t("mobileProfile.menu.notifications.label"), sub: t("mobileProfile.menu.notifications.sub"), route: "Notifications" },
+  ];
+
   // getRoleBadge necesita colors del tema — se define aquí dentro
   const getRoleBadge = (role) => {
-    if (role === "ADMIN")     return { label: "Administrador", color: colors.error };
-    if (role === "ORGANIZER") return { label: "Organizador",   color: "#3B82F6" };
-    return { label: "Usuario", color: colors.accent };
+    if (role === "ADMIN")     return { label: t("profile.roles.admin"), color: colors.error };
+    if (role === "ORGANIZER") return { label: t("profile.roles.organizer"), color: "#3B82F6" };
+    return { label: t("profile.roles.user"), color: colors.accent };
   };
 
   // Animaciones de entrada
@@ -70,54 +72,14 @@ export default function ProfileScreen() {
 
   // Ítems del panel de administración (espejo del sidebar web)
   const ADMIN_ITEMS = [
-    {
-      icon: "grid-outline",
-      label: "Dashboard",
-      sub: "Vista general",
-      route: "AdminDashboard",
-    },
-    {
-      icon: "card-outline",
-      label: "Control Financiero",
-      sub: "Pagos y reembolsos",
-      route: "AdminFinancial",
-    },
-    {
-      icon: "calendar-outline",
-      label: "Eventos",
-      sub: "Gestionar y revisar eventos",
-      route: "AdminEvents",
-    },
-    {
-      icon: "bar-chart-outline",
-      label: "Reportes",
-      sub: "Estadísticas de la plataforma",
-      route: "AdminReports",
-    },
-    {
-      icon: "refresh-circle-outline",
-      label: "Reembolsos",
-      sub: "Gestionar reembolsos",
-      route: null,
-    },
-    {
-      icon: "people-outline",
-      label: "Solicitudes",
-      sub: "Solicitudes de organizador",
-      route: "OrganizerRequests",
-    },
-    {
-      icon: "pricetags-outline",
-      label: "Categorías",
-      sub: "Gestionar categorías",
-      route: "AdminCategories",
-    },
-    {
-      icon: "layers-outline",
-      label: "Tipos de Sección",
-      sub: "Gestionar tipos de sección",
-      route: "AdminSectionTypes",
-    },
+    { icon: "grid-outline",           label: t("mobileProfile.admin.dashboard.label"),    sub: t("mobileProfile.admin.dashboard.sub"),    route: "AdminDashboard" },
+    { icon: "card-outline",           label: t("mobileProfile.admin.financial.label"),    sub: t("mobileProfile.admin.financial.sub"),    route: "AdminFinancial" },
+    { icon: "calendar-outline",       label: t("mobileProfile.admin.events.label"),       sub: t("mobileProfile.admin.events.sub"),       route: "AdminEvents" },
+    { icon: "bar-chart-outline",      label: t("mobileProfile.admin.reports.label"),      sub: t("mobileProfile.admin.reports.sub"),      route: "AdminReports" },
+    { icon: "refresh-circle-outline", label: t("mobileProfile.admin.refunds.label"),      sub: t("mobileProfile.admin.refunds.sub"),      route: null },
+    { icon: "people-outline",         label: t("mobileProfile.admin.requests.label"),     sub: t("mobileProfile.admin.requests.sub"),     route: "OrganizerRequests" },
+    { icon: "pricetags-outline",      label: t("mobileProfile.admin.categories.label"),   sub: t("mobileProfile.admin.categories.sub"),   route: "AdminCategories" },
+    { icon: "layers-outline",         label: t("mobileProfile.admin.sectionTypes.label"), sub: t("mobileProfile.admin.sectionTypes.sub"), route: "AdminSectionTypes" },
   ];
 
   useEffect(() => {
@@ -193,7 +155,7 @@ export default function ProfileScreen() {
           }}
         >
           <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: "800", opacity: 0.9 }}>
-            Mi Perfil
+            {t("mobileProfile.title")}
           </Text>
         </View>
 
@@ -269,7 +231,7 @@ export default function ProfileScreen() {
                 color: colors.textSecondary, fontSize: 11, fontWeight: "700",
                 letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12,
               }}>
-                Organizador
+                {t("mobileProfile.sections.organizer")}
               </Text>
 
               <TouchableOpacity
@@ -294,10 +256,10 @@ export default function ProfileScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "600" }}>
-                    Validar entradas
+                    {t("mobileProfile.scan.label")}
                   </Text>
                   <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>
-                    Escanear códigos QR de tus eventos
+                    {t("mobileProfile.scan.desc")}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -312,7 +274,7 @@ export default function ProfileScreen() {
                 color: colors.textSecondary, fontSize: 11, fontWeight: "700",
                 letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12,
               }}>
-                Administración
+                {t("mobileProfile.sections.admin")}
               </Text>
 
               {/* ── Accordion trigger ── */}
@@ -342,10 +304,10 @@ export default function ProfileScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "600" }}>
-                    Panel de administración
+                    {t("mobileProfile.adminPanel.label")}
                   </Text>
                   <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>
-                    Gestión de la plataforma
+                    {t("mobileProfile.adminPanel.desc")}
                   </Text>
                 </View>
                 <Ionicons
@@ -399,7 +361,7 @@ export default function ProfileScreen() {
                             {item.label}
                           </Text>
                           <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }}>
-                            {disabled ? "Próximamente" : item.sub}
+                            {disabled ? t("mobileProfile.comingSoon") : item.sub}
                           </Text>
                         </View>
 
@@ -410,7 +372,7 @@ export default function ProfileScreen() {
                             borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3,
                           }}>
                             <Text style={{ color: colors.textMuted, fontSize: 9, fontWeight: "700" }}>
-                              PRONTO
+                              {t("mobileProfile.comingSoonBadge")}
                             </Text>
                           </View>
                         ) : (
@@ -428,7 +390,7 @@ export default function ProfileScreen() {
             color: colors.textSecondary, fontSize: 11, fontWeight: "700",
             letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12,
           }}>
-            Cuenta
+            {t("mobileProfile.sections.account")}
           </Text>
 
           {MENU_OPTIONS.map((opt, index) => (
@@ -493,7 +455,7 @@ export default function ProfileScreen() {
           >
             <Ionicons name="log-out-outline" size={20} color={colors.textPrimary} />
             <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "700" }}>
-              Cerrar sesión
+              {t("mobileProfile.logout")}
             </Text>
           </TouchableOpacity>
         </Animated.View>

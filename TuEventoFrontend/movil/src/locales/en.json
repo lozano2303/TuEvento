@@ -1502,5 +1502,77 @@
     },
     "start": "Start now",
     "login": "Log in"
+  },
+  "mobileProfile": {
+    "title": "My Profile",
+    "sections": {
+      "organizer": "Organizer",
+      "admin": "Administration",
+      "account": "Account"
+    },
+    "scan": {
+      "label": "Validate tickets",
+      "desc": "Scan QR codes for your events"
+    },
+    "adminPanel": {
+      "label": "Admin panel",
+      "desc": "Platform management"
+    },
+    "menu": {
+      "profile": {
+        "label": "My profile",
+        "sub": "Info, photo and theme"
+      },
+      "tickets": {
+        "label": "My tickets",
+        "sub": "Your tickets and QR codes"
+      },
+      "wallet": {
+        "label": "Wallet",
+        "sub": "Balance and transactions"
+      },
+      "notifications": {
+        "label": "Notifications",
+        "sub": "Manage your alerts"
+      }
+    },
+    "admin": {
+      "dashboard": {
+        "label": "Dashboard",
+        "sub": "Overview"
+      },
+      "financial": {
+        "label": "Financial Control",
+        "sub": "Payments and refunds"
+      },
+      "events": {
+        "label": "Events",
+        "sub": "Manage and review events"
+      },
+      "reports": {
+        "label": "Reports",
+        "sub": "Platform statistics"
+      },
+      "refunds": {
+        "label": "Refunds",
+        "sub": "Manage refunds"
+      },
+      "requests": {
+        "label": "Requests",
+        "sub": "Organizer requests"
+      },
+      "categories": {
+        "label": "Categories",
+        "sub": "Manage categories"
+      },
+      "sectionTypes": {
+        "label": "Section Types",
+        "sub": "Manage section types"
+      }
+    },
+    "comingSoon": "Coming soon",
+    "comingSoonBadge": "SOON",
+    "logout": "Log out",
+    "defaultUser": "User"
   }
 }
