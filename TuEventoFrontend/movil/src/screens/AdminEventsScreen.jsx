@@ -150,7 +150,11 @@ function EventDetailModal({ event, detail, media, loading, onClose, onAction, ac
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectInput, setShowRejectInput] = useState(false);
   const cfg = getCfg(event.status);
-  const coverUrl = media?.[0] ?? null;
+  // Imagen seleccionada en la galería; mientras carga la media se usa la portada del listado
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const images = media?.length ? media : (event.coverUrl ? [event.coverUrl] : []);
+  const coverUrl = images[selectedIdx] ?? images[0] ?? null;
+  const toDeviceUrl = (url) => url.replace("localhost", process.env.EXPO_PUBLIC_MINIO_HOST ?? "localhost");
 
   const handleTransition = (value) => {
     if (value === "REJECTED") { setShowRejectInput(true); return; }
@@ -201,7 +205,7 @@ function EventDetailModal({ event, detail, media, loading, onClose, onAction, ac
             <View style={{ borderRadius: 16, overflow: "hidden", height: 190 }}>
               {coverUrl ? (
                 <Image
-                  source={{ uri: coverUrl.replace("localhost", process.env.EXPO_PUBLIC_MINIO_HOST ?? "localhost") }}
+                  source={{ uri: toDeviceUrl(coverUrl) }}
                   style={{ width: "100%", height: "100%" }}
                   resizeMode="cover"
                 />
@@ -226,6 +230,26 @@ function EventDetailModal({ event, detail, media, loading, onClose, onAction, ac
                 <Text style={{ color: cfg.color, fontSize: 11, fontWeight: "700" }}>{cfg.label}</Text>
               </View>
             </View>
+
+            {/* ── Galería: miniaturas del resto de imágenes del evento ── */}
+            {images.length > 1 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {images.map((url, idx) => (
+                  <TouchableOpacity
+                    key={url}
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedIdx(idx)}
+                    style={{
+                      width: 72, height: 54, borderRadius: 10, overflow: "hidden",
+                      borderWidth: 2,
+                      borderColor: idx === selectedIdx ? colors.accent : "transparent",
+                    }}
+                  >
+                    <Image source={{ uri: toDeviceUrl(url) }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
 
             {/* Nombre + ID */}
             <View>
@@ -428,7 +452,9 @@ export default function AdminEventsScreen() {
       const [dr, mr] = await Promise.allSettled([getEventDetail(ev.eventId), getEventMedia(ev.eventId)]);
       if (dr.status === "fulfilled") setDetailData(dr.value?.data ?? dr.value ?? null);
       if (mr.status === "fulfilled") {
-        const urls = (mr.value?.data ?? []).sort((a, b) => a.mediaId - b.mediaId).map((m) => m.imgUrl).filter(Boolean);
+        // getEventMedia ya devuelve json.data (el array); se tolera también la forma { data: [...] }
+        const list = Array.isArray(mr.value) ? mr.value : (mr.value?.data ?? []);
+        const urls = [...list].sort((a, b) => a.mediaId - b.mediaId).map((m) => m.imgUrl).filter(Boolean);
         setMediaUrls(urls);
       }
     } catch { /* silencioso */ }
