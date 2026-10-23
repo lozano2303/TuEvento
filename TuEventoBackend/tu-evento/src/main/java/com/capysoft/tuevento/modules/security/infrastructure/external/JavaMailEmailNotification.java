@@ -25,83 +25,56 @@ public class JavaMailEmailNotification implements EmailNotificationPort {
 
     @Override
     public void sendActivationEmail(String toEmail, String alias, String activationCode) {
-        try {
-            String htmlTemplate = StreamUtils.copyToString(
-                    new ClassPathResource("mail/account-activation.html").getInputStream(),
-                    StandardCharsets.UTF_8);
-
-            String htmlContent = htmlTemplate
-                    .replace("{{username}}", alias)
-                    .replace("{{activationCode}}", activationCode)
-                    .replace("{{expirationHours}}", "24");
-
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(from);
-            helper.setTo(toEmail);
-            helper.setSubject("Tu Evento \u2014 Activa tu cuenta");
-            helper.setText(htmlContent, true);
-
-            mailSender.send(message);
-            // El código no se registra: quien lea los logs podría usarlo
-            log.info("Activation email sent to {}", toEmail);
-        } catch (Exception e) {
-            log.error("Failed to send activation email to {}", toEmail, e);
-            throw new RuntimeException("Failed to send activation email", e);
-        }
+        sendTemplatedEmail("activation", toEmail, "Tu Evento — Activa tu cuenta",
+                "mail/account-activation.html",
+                "{{username}}", alias,
+                "{{activationCode}}", activationCode,
+                "{{expirationHours}}", "24");
     }
 
     @Override
     public void sendPasswordRecoveryEmail(String toEmail, String alias, String recoveryCode) {
-        try {
-            String htmlTemplate = StreamUtils.copyToString(
-                    new ClassPathResource("mail/password-reset.html").getInputStream(),
-                    StandardCharsets.UTF_8);
-
-            String htmlContent = htmlTemplate
-                    .replace("{{username}}", alias)
-                    .replace("{{verificationCode}}", recoveryCode)
-                    .replace("{{expirationMinutes}}", "30");
-
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(from);
-            helper.setTo(toEmail);
-            helper.setSubject("Tu Evento \u2014 Recuperaci\u00f3n de contrase\u00f1a");
-            helper.setText(htmlContent, true);
-
-            mailSender.send(message);
-            // El código no se registra: quien lea los logs podría usarlo
-            log.info("Password recovery email sent to {}", toEmail);
-        } catch (Exception e) {
-            log.error("Failed to send password recovery email to {}", toEmail, e);
-            throw new RuntimeException("Failed to send password recovery email", e);
-        }
+        sendTemplatedEmail("password recovery", toEmail, "Tu Evento — Recuperación de contraseña",
+                "mail/password-reset.html",
+                "{{username}}", alias,
+                "{{verificationCode}}", recoveryCode,
+                "{{expirationMinutes}}", "30");
     }
 
     @Override
     public void sendReactivationEmail(String toEmail, String alias, String reactivationToken) {
-        try {
-            String htmlTemplate = StreamUtils.copyToString(
-                    new ClassPathResource("mail/account-reactivation.html").getInputStream(),
-                    StandardCharsets.UTF_8);
+        sendTemplatedEmail("reactivation", toEmail, "Tu Evento — Reactiva tu cuenta",
+                "mail/account-reactivation.html",
+                "{{username}}", alias,
+                "{{reactivationToken}}", reactivationToken,
+                "{{expirationMinutes}}", "30");
+    }
 
-            String htmlContent = htmlTemplate
-                    .replace("{{username}}", alias)
-                    .replace("{{reactivationToken}}", reactivationToken)
-                    .replace("{{expirationMinutes}}", "30");
+    /**
+     * Carga la plantilla HTML, aplica los reemplazos en orden (pares marcador/valor) y envía el correo.
+     * Los valores (códigos, tokens) nunca se registran: quien lea los logs podría usarlos.
+     */
+    private void sendTemplatedEmail(String kind, String toEmail, String subject, String templatePath,
+                                    String... replacements) {
+        try {
+            String htmlContent = StreamUtils.copyToString(
+                    new ClassPathResource(templatePath).getInputStream(), StandardCharsets.UTF_8);
+            for (int i = 0; i < replacements.length; i += 2) {
+                htmlContent = htmlContent.replace(replacements[i], replacements[i + 1]);
+            }
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(from);
             helper.setTo(toEmail);
-            helper.setSubject("Tu Evento \u2014 Reactiva tu cuenta");
+            helper.setSubject(subject);
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
+            log.info("{} email sent to {}", kind, toEmail);
         } catch (Exception e) {
-            log.error("Failed to send reactivation email to {}", toEmail, e);
-            throw new RuntimeException("Failed to send reactivation email", e);
+            log.error("Failed to send {} email to {}", kind, toEmail, e);
+            throw new RuntimeException("Failed to send " + kind + " email", e);
         }
     }
 }
