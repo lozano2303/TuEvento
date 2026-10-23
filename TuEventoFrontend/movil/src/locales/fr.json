@@ -1729,5 +1729,36 @@
     "searchEvents": "Chercher\ndes événements",
     "myTickets": "Mes\nbillets",
     "upcomingEvents": "Événements à venir"
+  },
+  "mobileQr": {
+    "titleOrder": "QR de la commande",
+    "titleTicket": "QR du billet",
+    "generateError": "Impossible de générer le QR.",
+    "expired": "QR expiré",
+    "expiresIn": "Expire dans",
+    "generateNew": "Générer un nouveau QR",
+    "regenerate": "Régénérer",
+    "securityNote": "Montrez ce code à l'organisateur pour valider votre billet. Il est à usage unique et se renouvelle toutes les quelques secondes par sécurité."
+  },
+  "mobileScan": {
+    "title": "Valider les billets",
+    "validateError": "Impossible de valider le QR.",
+    "cameraTitle": "Nous avons besoin de la caméra",
+    "cameraDesc": "Pour scanner les codes QR des billets, autorisez l'accès à la caméra.",
+    "allowCamera": "Autoriser la caméra",
+    "validTitle": "Billet valide !",
+    "alreadyScannedTitle": "Billet déjà scanné",
+    "invalidTitle": "QR invalide",
+    "canEnter": "Vous pouvez entrer",
+    "validated_one": "{{count}} billet validé",
+    "validated_other": "{{count}} billets validés",
+    "alreadyUsed_one": "{{count}} déjà utilisé",
+    "alreadyUsed_other": "{{count}} déjà utilisés",
+    "order": "Commande n°{{id}}",
+    "alreadyScanned_one": "Ce billet avait déjà été scanné. La réentrée n'est pas autorisée.",
+    "alreadyScanned_other": "Ces billets avaient déjà été scannés. La réentrée n'est pas autorisée.",
+    "scanAnother": "Scanner un autre",
+    "validating": "Validation…",
+    "pointCamera": "Visez le code QR du billet"
   }
 }

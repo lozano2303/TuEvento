@@ -1731,5 +1731,36 @@
     "searchEvents": "Buscar\neventos",
     "myTickets": "Mis\ntickets",
     "upcomingEvents": "Próximos eventos"
+  },
+  "mobileQr": {
+    "titleOrder": "QR de la orden",
+    "titleTicket": "QR de la entrada",
+    "generateError": "No se pudo generar el QR.",
+    "expired": "QR expirado",
+    "expiresIn": "Caduca en",
+    "generateNew": "Generar nuevo QR",
+    "regenerate": "Regenerar",
+    "securityNote": "Muestra este código al organizador para validar tu entrada. Es de un solo uso y se renueva cada pocos segundos por seguridad."
+  },
+  "mobileScan": {
+    "title": "Validar entradas",
+    "validateError": "No se pudo validar el QR.",
+    "cameraTitle": "Necesitamos la cámara",
+    "cameraDesc": "Para escanear los códigos QR de las entradas, concede el permiso de cámara.",
+    "allowCamera": "Permitir cámara",
+    "validTitle": "¡Entrada válida!",
+    "alreadyScannedTitle": "Entrada ya escaneada",
+    "invalidTitle": "QR no válido",
+    "canEnter": "Puedes ingresar",
+    "validated_one": "{{count}} entrada validada",
+    "validated_other": "{{count}} entradas validadas",
+    "alreadyUsed_one": "{{count}} ya usada",
+    "alreadyUsed_other": "{{count}} ya usadas",
+    "order": "Orden #{{id}}",
+    "alreadyScanned_one": "Esta entrada ya había sido escaneada. No se permite el reingreso.",
+    "alreadyScanned_other": "Estas entradas ya habían sido escaneadas. No se permite el reingreso.",
+    "scanAnother": "Escanear otra",
+    "validating": "Validando…",
+    "pointCamera": "Apunta al código QR de la entrada"
   }
 }

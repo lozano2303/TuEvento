@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { generateTicketQr, generateOrderQr } from "../services/ticketService";
 import { mapErrorMessage } from "../utils/errorMessages";
@@ -20,6 +21,7 @@ export default function TicketQrScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const route = useRoute();
+  const { t } = useTranslation();
 
   const { mode, id, title, subtitle } = route.params ?? {};
 
@@ -40,12 +42,12 @@ export default function TicketQrScreen() {
       setQr(data);
       setRemaining(data.expiresInSeconds ?? 60);
     } catch (e) {
-      setError(mapErrorMessage(e.message) || "No se pudo generar el QR.");
+      setError(mapErrorMessage(e.message) || t("mobileQr.generateError"));
       setQr(null);
     } finally {
       setLoading(false);
     }
-  }, [mode, id]);
+  }, [mode, id, t]);
 
   useEffect(() => { generate(); }, [generate]);
 
@@ -84,7 +86,7 @@ export default function TicketQrScreen() {
           <Ionicons name="arrow-back" size={20} color={colors.accent} />
         </TouchableOpacity>
         <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: "800", flex: 1 }}>
-          {mode === "order" ? "QR de la orden" : "QR de la entrada"}
+          {mode === "order" ? t("mobileQr.titleOrder") : t("mobileQr.titleTicket")}
         </Text>
       </View>
 
@@ -120,7 +122,7 @@ export default function TicketQrScreen() {
           {expired && (
             <View style={{ position: "absolute", alignItems: "center", gap: 6 }}>
               <Ionicons name="time-outline" size={36} color="#64748b" />
-              <Text style={{ color: "#334155", fontSize: 14, fontWeight: "700" }}>QR expirado</Text>
+              <Text style={{ color: "#334155", fontSize: 14, fontWeight: "700" }}>{t("mobileQr.expired")}</Text>
             </View>
           )}
         </View>
@@ -129,7 +131,7 @@ export default function TicketQrScreen() {
         {qr && !expired && (
           <View style={{ width: 240, gap: 8, alignItems: "center" }}>
             <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-              Caduca en <Text style={{ color: colors.accent, fontWeight: "800" }}>{remaining}s</Text>
+              {t("mobileQr.expiresIn")} <Text style={{ color: colors.accent, fontWeight: "800" }}>{remaining}s</Text>
             </Text>
             <View style={{ width: "100%", height: 6, borderRadius: 3, backgroundColor: colors.primary + "22", overflow: "hidden" }}>
               <View style={{ width: `${progress * 100}%`, height: "100%", backgroundColor: colors.primary }} />
@@ -152,7 +154,7 @@ export default function TicketQrScreen() {
           >
             <Ionicons name="refresh" size={16} color={expired ? colors.textPrimary : colors.accent} />
             <Text style={{ color: expired ? colors.textPrimary : colors.accent, fontSize: 14, fontWeight: "700" }}>
-              {expired ? "Generar nuevo QR" : "Regenerar"}
+              {expired ? t("mobileQr.generateNew") : t("mobileQr.regenerate")}
             </Text>
           </TouchableOpacity>
         )}
@@ -161,7 +163,7 @@ export default function TicketQrScreen() {
         <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, paddingHorizontal: 8 }}>
           <Ionicons name="shield-checkmark-outline" size={14} color={colors.textMuted} style={{ marginTop: 2 }} />
           <Text style={{ color: colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16 }}>
-            Muestra este código al organizador para validar tu entrada. Es de un solo uso y se renueva cada pocos segundos por seguridad.
+            {t("mobileQr.securityNote")}
           </Text>
         </View>
       </View>

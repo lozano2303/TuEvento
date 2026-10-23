@@ -1731,5 +1731,36 @@
     "searchEvents": "Search\nevents",
     "myTickets": "My\ntickets",
     "upcomingEvents": "Upcoming events"
+  },
+  "mobileQr": {
+    "titleOrder": "Order QR",
+    "titleTicket": "Ticket QR",
+    "generateError": "Could not generate the QR.",
+    "expired": "QR expired",
+    "expiresIn": "Expires in",
+    "generateNew": "Generate new QR",
+    "regenerate": "Regenerate",
+    "securityNote": "Show this code to the organizer to validate your ticket. It's single-use and refreshes every few seconds for security."
+  },
+  "mobileScan": {
+    "title": "Validate tickets",
+    "validateError": "Could not validate the QR.",
+    "cameraTitle": "We need the camera",
+    "cameraDesc": "To scan ticket QR codes, please grant camera permission.",
+    "allowCamera": "Allow camera",
+    "validTitle": "Valid ticket!",
+    "alreadyScannedTitle": "Ticket already scanned",
+    "invalidTitle": "Invalid QR",
+    "canEnter": "You may enter",
+    "validated_one": "{{count}} ticket validated",
+    "validated_other": "{{count}} tickets validated",
+    "alreadyUsed_one": "{{count}} already used",
+    "alreadyUsed_other": "{{count}} already used",
+    "order": "Order #{{id}}",
+    "alreadyScanned_one": "This ticket had already been scanned. Re-entry is not allowed.",
+    "alreadyScanned_other": "These tickets had already been scanned. Re-entry is not allowed.",
+    "scanAnother": "Scan another",
+    "validating": "Validating…",
+    "pointCamera": "Point at the ticket's QR code"
   }
 }
