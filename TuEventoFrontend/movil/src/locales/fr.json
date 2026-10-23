@@ -1704,5 +1704,20 @@
     "errorText": "Une erreur s'est produite lors du traitement du paiement. Vous pouvez réessayer.",
     "retry": "Réessayer",
     "backToEvents": "Retour aux événements"
+  },
+  "mobileActivate": {
+    "title": "Activez votre compte",
+    "sentToLabel": "Nous avons envoyé un code à :",
+    "codeLabel": "Code d'activation",
+    "codePlaceholder": "Saisissez le code",
+    "activating": "Vérification...",
+    "activateButton": "Activer le compte",
+    "resentMsg": "Nous avons envoyé un nouveau code à votre e-mail.",
+    "notReceived": "Vous n'avez pas reçu le code ?",
+    "sending": "Envoi…",
+    "resend": "Renvoyer le code",
+    "resendIn": "Renvoyer dans {{seconds}}s",
+    "codeRequired": "Le code est requis",
+    "codeLength": "Le code doit comporter exactement 8 caractères"
   }
 }

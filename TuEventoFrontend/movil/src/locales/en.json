@@ -1706,5 +1706,20 @@
     "errorText": "An error occurred while processing the payment. You can try again.",
     "retry": "Retry",
     "backToEvents": "Back to events"
+  },
+  "mobileActivate": {
+    "title": "Activate your account",
+    "sentToLabel": "We sent a code to:",
+    "codeLabel": "Activation code",
+    "codePlaceholder": "Enter the code",
+    "activating": "Verifying...",
+    "activateButton": "Activate account",
+    "resentMsg": "We sent a new code to your email.",
+    "notReceived": "Didn't receive the code?",
+    "sending": "Sending…",
+    "resend": "Resend code",
+    "resendIn": "Resend in {{seconds}}s",
+    "codeRequired": "The code is required",
+    "codeLength": "The code must be exactly 8 characters"
   }
 }
