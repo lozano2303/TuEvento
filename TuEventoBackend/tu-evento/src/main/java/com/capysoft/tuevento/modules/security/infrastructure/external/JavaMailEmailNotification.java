@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.security.infrastructure.external;
 
 import com.capysoft.tuevento.modules.security.application.port.out.EmailNotificationPort;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -12,6 +13,7 @@ import org.springframework.util.StreamUtils;
 import jakarta.mail.internet.MimeMessage;
 import java.nio.charset.StandardCharsets;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JavaMailEmailNotification implements EmailNotificationPort {
@@ -41,15 +43,10 @@ public class JavaMailEmailNotification implements EmailNotificationPort {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
-            System.out.println("=== ACTIVATION EMAIL SENT SUCCESSFULLY ===");
-            System.out.println("To: " + toEmail);
-            System.out.println("Alias: " + alias);
-            System.out.println("Activation Code: " + activationCode);
+            // El código no se registra: quien lea los logs podría usarlo
+            log.info("Activation email sent to {}", toEmail);
         } catch (Exception e) {
-            System.err.println("=== FAILED TO SEND ACTIVATION EMAIL ===");
-            System.err.println("To: " + toEmail);
-            System.err.println("Error: " + e.getClass().getName() + ": " + e.getMessage());
-            e.printStackTrace();
+            log.error("Failed to send activation email to {}", toEmail, e);
             throw new RuntimeException("Failed to send activation email", e);
         }
     }
@@ -74,15 +71,10 @@ public class JavaMailEmailNotification implements EmailNotificationPort {
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
-            System.out.println("=== PASSWORD RECOVERY EMAIL SENT SUCCESSFULLY ===");
-            System.out.println("To: " + toEmail);
-            System.out.println("Alias: " + alias);
-            System.out.println("Recovery Code: " + recoveryCode);
+            // El código no se registra: quien lea los logs podría usarlo
+            log.info("Password recovery email sent to {}", toEmail);
         } catch (Exception e) {
-            System.err.println("=== FAILED TO SEND PASSWORD RECOVERY EMAIL ===");
-            System.err.println("To: " + toEmail);
-            System.err.println("Error: " + e.getClass().getName() + ": " + e.getMessage());
-            e.printStackTrace();
+            log.error("Failed to send password recovery email to {}", toEmail, e);
             throw new RuntimeException("Failed to send password recovery email", e);
         }
     }
@@ -108,9 +100,7 @@ public class JavaMailEmailNotification implements EmailNotificationPort {
 
             mailSender.send(message);
         } catch (Exception e) {
-            System.err.println("=== FAILED TO SEND REACTIVATION EMAIL ===");
-            System.err.println("To: " + toEmail);
-            System.err.println("Error: " + e.getClass().getName() + ": " + e.getMessage());
+            log.error("Failed to send reactivation email to {}", toEmail, e);
             throw new RuntimeException("Failed to send reactivation email", e);
         }
     }
