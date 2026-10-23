@@ -168,7 +168,7 @@ export default function RegisterScreen() {
           </Text>
           <View style={inputStyle("fullName")}>
             <TextInput
-              placeholder="Ej: Juan Pérez"
+              placeholder={t("completeProfile.fullNamePlaceholder")}
               placeholderTextColor={colors.textMuted}
               value={form.fullName}
               onChangeText={(t) => update("fullName", t)}
@@ -207,7 +207,7 @@ export default function RegisterScreen() {
           </Text>
           <View style={inputStyle("password")}>
             <TextInput
-              placeholder="Mín. 8 chars, mayúscula, número y símbolo"
+              placeholder={t("mobileAuth.passwordPlaceholder")}
               placeholderTextColor={colors.textMuted}
               value={form.password}
               onChangeText={(t) => update("password", t)}

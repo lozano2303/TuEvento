@@ -1762,5 +1762,75 @@
     "scanAnother": "Escanear otra",
     "validating": "Validando…",
     "pointCamera": "Apunta al código QR de la entrada"
+  },
+  "mobileErrors": {
+    "unexpected": "Ocurrió un error inesperado",
+    "invalidCredentials": "Correo o contraseña incorrectos",
+    "notActivated": "Tu cuenta no está activada. Revisa tu correo",
+    "locked": "Tu cuenta está bloqueada temporalmente. Intenta más tarde",
+    "tooManyAttempts": "Demasiados intentos fallidos. Cuenta bloqueada temporalmente",
+    "gmailOnly": "Solo se aceptan correos @gmail.com",
+    "passwordWeak": "La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial",
+    "nameInvalid": "El nombre debe tener al menos dos palabras y solo letras",
+    "emailRegistered": "Ya existe una cuenta con ese correo",
+    "invalidActivationCode": "El código de activación es incorrecto",
+    "activationExpired": "El código de activación expiró. Solicita uno nuevo",
+    "alreadyActivated": "Tu cuenta ya está activada. Puedes iniciar sesión",
+    "userNotFound": "No encontramos una cuenta con ese correo",
+    "invalidRecoveryCode": "El código de recuperación es incorrecto",
+    "recoveryUsed": "Este código ya fue utilizado. Solicita uno nuevo",
+    "recoveryExpired": "El código de recuperación expiró. Solicita uno nuevo",
+    "passwordsNoMatch": "Las contraseñas no coinciden",
+    "ticketNotValidatable": "Esta entrada ya fue escaneada o no está disponible",
+    "eventNotActive": "El evento ya no está activo, no puedes generar el código",
+    "orderNoTickets": "No quedan entradas por validar en esta orden",
+    "qrInvalid": "El código QR no es válido o ya caducó",
+    "qrReplaced": "Este código QR ya no es válido. Pide uno nuevo",
+    "notOrganizer": "Solo el organizador de este evento puede validar esta entrada",
+    "unexpectedRetry": "Error inesperado. Intenta de nuevo",
+    "badRequest": "Error en la solicitud. Intenta de nuevo",
+    "connection": "Error de conexión. Verifica tu internet",
+    "fields": {
+      "emailRequired": "El correo es requerido",
+      "emailInvalid": "El correo no tiene un formato válido",
+      "emailTooLong": "El correo es demasiado largo (máx. 255 caracteres)",
+      "passwordRequired": "La contraseña es requerida",
+      "passwordSize": "La contraseña debe tener entre 8 y 100 caracteres",
+      "fullNameRequired": "El nombre completo es requerido",
+      "fullNameTooLong": "El nombre es demasiado largo (máx. 100 caracteres)",
+      "activationCodeRequired": "El código de activación es requerido",
+      "activationCodeLength": "El código debe tener exactamente 8 caracteres",
+      "invalidField": "Campo inválido: {{field}}"
+    },
+    "oauthCancelled": "Cancelaste el inicio de sesión",
+    "oauthFailed": "No se pudo iniciar sesión con la cuenta externa. Intenta de nuevo"
+  },
+  "mobileSeats": {
+    "sectionSoldOut": "Se agotaron las sillas disponibles en esta sección",
+    "loadError": "No se pudieron cargar las sillas",
+    "wsDisconnected": "Se perdió la conexión en tiempo real, reconectando...",
+    "sessionExpired": "Tu sesión expiró, iniciá sesión de nuevo",
+    "reserveError": "No se pudo reservar la silla, intentalo de nuevo",
+    "releaseError": "No se pudo liberar la silla, intentalo de nuevo",
+    "addSeatFirst": "Agregá una silla más para poder seleccionar",
+    "releaseSeatFirst": "Liberá una silla primero para bajar la cantidad",
+    "maxSeats": "Solo podés seleccionar un máximo de {{max}} sillas en este ticket"
+  },
+  "mobileTheme": {
+    "descriptions": {
+      "PRINCIPAL": "Identidad oficial de Tu Evento",
+      "DARK": "Oscuro neutro con grises profundos",
+      "LIGHT": "Claro y limpio para el día",
+      "PASTEL": "Suave y relajado",
+      "VIBRANT": "Colores saturados y energéticos",
+      "NATURE": "Verde orgánico y tierras",
+      "OCEAN": "Azules profundos y turquesas",
+      "SUNSET": "Cálido y acogedor"
+    },
+    "official": "Oficial",
+    "customize": "Personalizar"
+  },
+  "mobileAuth": {
+    "passwordPlaceholder": "Mín. 8 caracteres, mayúscula, número y símbolo"
   }
 }
