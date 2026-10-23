@@ -713,7 +713,8 @@ const ProfilePage = () => {
                 </button>
               </div>
 
-              {/* Zona de peligro — borde error sutil, sin gradiente rosa */}
+              {/* Zona de peligro — solo para no-admin */}
+              {userRole !== 'ADMIN' && (
               <div className="mt-5 rounded-xl p-5 bg-error/[0.04] border border-error/25">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
@@ -730,6 +731,7 @@ const ProfilePage = () => {
                   </button>
                 </div>
               </div>
+              )}
             </section>
           </div>
 

@@ -28,7 +28,7 @@ public final class NotificationMessageFactory {
             case NotificationTypeNames.NEW_REPLY        -> newReply(email, command);
             default -> new MessageContent(
                     "Notificación",
-                    email ? html("Tienes una nueva notificación en TuEvento.") : "Tienes una nueva notificación.");
+                    email ? html("&#128276;", "Tienes una nueva notificación en TuEvento.") : "Tienes una nueva notificación.");
         };
     }
 
@@ -37,7 +37,7 @@ public final class NotificationMessageFactory {
         if (email) {
             return new MessageContent(
                     "TuEvento — Pago aprobado",
-                    html("Tu pago fue aprobado.", breakdown));
+                    html("&#9989;", "Tu pago fue aprobado.", breakdown));
         }
         return new MessageContent("Pago aprobado", "Tu pago fue aprobado. " + breakdown);
     }
@@ -47,7 +47,7 @@ public final class NotificationMessageFactory {
         if (email) {
             return new MessageContent(
                     "TuEvento — Reembolso procesado",
-                    html("Tu reembolso fue procesado.", breakdown));
+                    html("&#128260;", "Tu reembolso fue procesado.", breakdown));
         }
         return new MessageContent("Reembolso procesado", "Tu reembolso fue procesado. " + breakdown);
     }
@@ -57,25 +57,25 @@ public final class NotificationMessageFactory {
         String reason = (command.getReason() == null || command.getReason().isBlank())
                 ? ""
                 : " Motivo: " + command.getReason() + ".";
-        String line = "Se acreditaron " + amount + " a tu cartera." + reason;
+        String line = "Se acreditaron <strong style=\"color:#c4b5fd;\">" + amount + "</strong> a tu cartera." + reason;
         if (email) {
-            return new MessageContent("TuEvento — Crédito en tu cartera", html(line));
+            return new MessageContent("TuEvento — Crédito en tu cartera", html("&#128176;", line));
         }
-        return new MessageContent("Crédito en tu cartera", line);
+        return new MessageContent("Crédito en tu cartera", "Se acreditaron " + amount + " a tu cartera." + reason);
     }
 
     private static MessageContent welcome(boolean email, SendNotificationCommand command) {
-        String userName = (command.getReason() != null && !command.getReason().isBlank()) 
-                ? command.getReason() 
+        String userName = (command.getReason() != null && !command.getReason().isBlank())
+                ? command.getReason()
                 : "Usuario";
         if (email) {
             return new MessageContent(
                     "Bienvenido a TuEvento",
-                    html(
-                        "¡Hola " + userName + "! Bienvenido a TuEvento, tu plataforma para descubrir y disfrutar eventos increíbles.",
+                    html("&#127881;",
+                        "¡Hola <strong style=\"color:#c4b5fd;\">" + userName + "</strong>! Bienvenido a TuEvento, tu plataforma para descubrir y disfrutar eventos increíbles.",
                         "En TuEvento puedes:",
-                        "• Explorar y comprar tickets para eventos de todo tipo",
-                        "• Solicitar ser organizador presentando tu cédula/pasaporte y documentos adicionales",
+                        "&#8226; Explorar y comprar tickets para eventos de todo tipo",
+                        "&#8226; Solicitar ser organizador presentando tu cédula/pasaporte y documentos adicionales",
                         "Estamos felices de tenerte con nosotros. ¡Comienza a explorar ahora!"
                     ));
         }
@@ -91,8 +91,8 @@ public final class NotificationMessageFactory {
         if (email) {
             return new MessageContent(
                     "TuEvento — Tu evento fue publicado",
-                    html(
-                        "¡Buenas noticias! El administrador aprobó tu evento <strong>" + name + "</strong>.",
+                    html("&#127881;",
+                        "¡Buenas noticias! El administrador aprobó tu evento <strong style=\"color:#c4b5fd;\">" + name + "</strong>.",
                         "Ya está visible para todos los usuarios en la plataforma.",
                         "Puedes verlo y gestionarlo desde <em>Mis eventos</em>."
                     ));
@@ -110,13 +110,12 @@ public final class NotificationMessageFactory {
         if (email) {
             return new MessageContent(
                     "TuEvento — Tu evento fue rechazado",
-                    html(
-                        "Tu evento <strong>" + name + "</strong> no fue aprobado.",
+                    html("&#10060;",
+                        "Tu evento <strong style=\"color:#c4b5fd;\">" + name + "</strong> no fue aprobado.",
                         "Motivo indicado por el administrador: " + reason,
                         "Puedes corregirlo y volver a enviarlo a revisión desde <em>Mis eventos</em>."
                     ));
         }
-        // Plain-text body for IN_APP — strip any residual markdown/HTML from reason
         String plainReason = command.getReason() != null ? command.getReason() : "Sin motivo especificado.";
         return new MessageContent(
                 "Evento rechazado",
@@ -133,14 +132,13 @@ public final class NotificationMessageFactory {
         if (email) {
             return new MessageContent(
                     "TuEvento — " + commenter + " comentó en tu evento",
-                    html(
-                        "¡Ey! <strong>" + commenter + "</strong> dejó un comentario en tu evento <strong>" + event + "</strong>.",
+                    html("&#128172;",
+                        "¡Ey! <strong style=\"color:#c4b5fd;\">" + commenter + "</strong> dejó un comentario en tu evento <strong style=\"color:#c4b5fd;\">" + event + "</strong>.",
                         comment.isBlank() ? null : "Esto fue lo que dijo: <em>\"" + comment + "\"</em>",
-                        "Entra y respóndele, ¡los organizadores que interactúan con su comunidad son los mejores! 🎉"
+                        "Entra y respóndele, ¡los organizadores que interactúan con su comunidad son los mejores!"
                     ));
         }
-        // IN_APP — subject es el título del bell; body es lo que se lee debajo
-        String subject = commenter + " comentó en \"" + command.getEventName() + "\" 💬";
+        String subject = commenter + " comentó en \"" + command.getEventName() + "\"";
         String body = comment.isBlank()
                 ? commenter + " dejó un comentario en tu evento. ¡Entra a verlo!"
                 : "\"" + command.getReason() + "\"";
@@ -154,14 +152,13 @@ public final class NotificationMessageFactory {
         if (email) {
             return new MessageContent(
                     "TuEvento — " + commenter + " respondió tu comentario",
-                    html(
-                        "¡Oye, te respondieron! <strong>" + commenter + "</strong> contestó tu comentario en el evento <strong>" + event + "</strong>.",
+                    html("&#128172;",
+                        "¡Oye, te respondieron! <strong style=\"color:#c4b5fd;\">" + commenter + "</strong> contestó tu comentario en el evento <strong style=\"color:#c4b5fd;\">" + event + "</strong>.",
                         comment.isBlank() ? null : "Lo que te dijo: <em>\"" + comment + "\"</em>",
-                        "No lo dejes hablando solo — entra y continúa la conversación. 🗨️"
+                        "No lo dejes hablando solo — entra y continúa la conversación."
                     ));
         }
-        // IN_APP
-        String subject = commenter + " respondió tu comentario 💬";
+        String subject = commenter + " respondió tu comentario";
         String body = comment.isBlank()
                 ? commenter + " respondió tu comentario en \"" + command.getEventName() + "\". ¡Entra a ver!"
                 : commenter + " en \"" + command.getEventName() + "\": \"" + command.getReason() + "\"";
@@ -197,20 +194,117 @@ public final class NotificationMessageFactory {
         return amount == null ? BigDecimal.ZERO : amount;
     }
 
-    private static String html(String... paragraphs) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<!DOCTYPE html>\n");
-        sb.append("<html>\n");
-        sb.append("<head><meta charset=\"UTF-8\"></head>\n");
-        sb.append("<body style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333;\">\n");
+    /**
+     * Genera un correo HTML con el mismo diseño visual que los templates
+     * account-activation.html y password-reset.html: fondo oscuro (#1a1030),
+     * cabecera con gradiente morado, contenido y pie de página.
+     *
+     * @param icon       Emoji o símbolo que aparece en el recuadro superior derecho del header.
+     * @param paragraphs Líneas de texto/HTML que componen el cuerpo del mensaje.
+     */
+    private static String html(String icon, String... paragraphs) {
+        int year = java.time.Year.now().getValue();
+        StringBuilder body = new StringBuilder();
         for (String p : paragraphs) {
             if (p != null && !p.isBlank()) {
-                sb.append("<p style=\"margin: 10px 0;\">").append(p).append("</p>\n");
+                body.append(
+                    "<tr>" +
+                    "<td style=\"font-size:15px; line-height:22px; color:#c4b5e0; " +
+                    "font-family: Arial, Helvetica, sans-serif; padding-bottom:16px;\">" +
+                    p +
+                    "</td>" +
+                    "</tr>\n");
             }
         }
-        sb.append("<p style=\"margin: 20px 0 0 0; color: #666; font-size: 0.9em;\">— TuEvento</p>\n");
-        sb.append("</body>\n</html>");
-        return sb.toString();
+        return
+            "<!DOCTYPE html>\n" +
+            "<html lang=\"es\" xmlns=\"http://www.w3.org/1999/xhtml\">\n" +
+            "<head>\n" +
+            "<meta charset=\"UTF-8\">\n" +
+            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
+            "<style>\n" +
+            "  body,table,td{font-family:Arial,Helvetica,sans-serif;}\n" +
+            "  body{margin:0;padding:0;background-color:#f2f0f7;}\n" +
+            "  table{border-collapse:collapse;}\n" +
+            "  a{text-decoration:none;}\n" +
+            "  @media only screen and (max-width:600px){\n" +
+            "    .ec{width:100%!important;}\n" +
+            "    .fp{padding-left:20px!important;padding-right:20px!important;}\n" +
+            "  }\n" +
+            "</style>\n" +
+            "</head>\n" +
+            "<body style=\"margin:0;padding:0;background-color:#f2f0f7;\">\n" +
+            "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" style=\"background-color:#f2f0f7;\">\n" +
+            "  <tr><td align=\"center\" style=\"padding:32px 16px;\">\n" +
+            "    <table role=\"presentation\" class=\"ec\" width=\"600\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"\n" +
+            "      style=\"width:600px;max-width:600px;background-color:#1a1030;border-radius:20px;overflow:hidden;box-shadow:0 8px 30px rgba(76,29,149,0.15);\">\n" +
+            // HEADER
+            "      <tr>\n" +
+            "        <td style=\"background-image:linear-gradient(135deg,#9333ea 0%,#6d28d9 100%);padding:44px 40px 40px 40px;\">\n" +
+            "          <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n" +
+            "            <tr>\n" +
+            "              <td valign=\"top\">\n" +
+            "                <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n" +
+            "                  <tr><td style=\"font-size:24px;font-weight:bold;color:#ffffff;\">&#10022;&nbsp; Tu Evento</td></tr>\n" +
+            "                  <tr><td style=\"padding-top:6px;font-size:13px;color:#e9d8fd;\">Todo tu evento, en un solo lugar</td></tr>\n" +
+            "                  <tr><td style=\"padding-top:40px;font-size:12px;letter-spacing:3px;color:rgba(255,255,255,0.25);\">&#8226;&#8226;&#8226;<br>&#8226;&#8226;&#8226;</td></tr>\n" +
+            "                </table>\n" +
+            "              </td>\n" +
+            "              <td align=\"right\" valign=\"middle\" width=\"130\">\n" +
+            "                <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n" +
+            "                  <tr><td align=\"center\" style=\"width:110px;height:100px;background-color:rgba(255,255,255,0.12);border-radius:22px;text-align:center;vertical-align:middle;font-size:42px;line-height:1;\">" + icon + "</td></tr>\n" +
+            "                </table>\n" +
+            "              </td>\n" +
+            "            </tr>\n" +
+            "          </table>\n" +
+            "        </td>\n" +
+            "      </tr>\n" +
+            // SEPARADOR DECORATIVO
+            "      <tr>\n" +
+            "        <td class=\"fp\" style=\"padding:4px 40px 0 40px;\">\n" +
+            "          <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n" +
+            "            <tr>\n" +
+            "              <td style=\"border-top:1px solid #3d2a5c;\" width=\"45%\">&nbsp;</td>\n" +
+            "              <td align=\"center\" style=\"font-size:16px;color:#a78bfa;padding:12px 12px;\" width=\"10%\">&#10022;</td>\n" +
+            "              <td style=\"border-top:1px solid #3d2a5c;\" width=\"45%\">&nbsp;</td>\n" +
+            "            </tr>\n" +
+            "          </table>\n" +
+            "        </td>\n" +
+            "      </tr>\n" +
+            // CONTENIDO
+            "      <tr>\n" +
+            "        <td class=\"fp\" style=\"padding:24px 40px 32px 40px;\">\n" +
+            "          <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n" +
+            body.toString() +
+            "          </table>\n" +
+            "        </td>\n" +
+            "      </tr>\n" +
+            // AVISO SEGURIDAD
+            "      <tr>\n" +
+            "        <td class=\"fp\" style=\"padding:0 40px 32px 40px;\">\n" +
+            "          <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"\n" +
+            "            style=\"background-color:#241640;border:1px solid #3d2a5c;border-radius:14px;\">\n" +
+            "            <tr><td style=\"padding:16px 20px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#9d8cb8;line-height:19px;\">\n" +
+            "              Este es un mensaje automático. Si no reconoces esta actividad, puedes ignorarlo.\n" +
+            "            </td></tr>\n" +
+            "          </table>\n" +
+            "        </td>\n" +
+            "      </tr>\n" +
+            // FOOTER
+            "      <tr>\n" +
+            "        <td style=\"border-top:1px solid #2d1f47;padding:24px 40px 32px 40px;\">\n" +
+            "          <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n" +
+            "            <tr><td align=\"center\" style=\"font-size:14px;font-weight:bold;color:#c4b5fd;padding-bottom:8px;\">&#10022;&nbsp; Tu Evento</td></tr>\n" +
+            "            <tr><td align=\"center\" style=\"font-size:12px;line-height:18px;color:#7a6a93;padding-bottom:4px;\">Este es un mensaje automático. Por favor, no respondas a este correo.</td></tr>\n" +
+            "            <tr><td align=\"center\" style=\"font-size:12px;color:#5f5279;\">&copy; " + year + " Tu Evento &mdash; Todos los derechos reservados</td></tr>\n" +
+            "          </table>\n" +
+            "        </td>\n" +
+            "      </tr>\n" +
+            "    </table>\n" +
+            "  </td></tr>\n" +
+            "</table>\n" +
+            "</body>\n" +
+            "</html>";
     }
 
     /**

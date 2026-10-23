@@ -56,6 +56,19 @@ function ProtectedRoute({ children, requiredRoles }) {
   return children;
 }
 
+/**
+ * Blocks ADMIN users from accessing regular user/organizer routes.
+ * Redirects them to /admin-panel if they try to navigate there manually.
+ */
+function UserOnlyRoute({ children }) {
+  const token = localStorage.getItem('token');
+  const role  = localStorage.getItem('role');
+
+  if (token && role === 'ADMIN') return <Navigate to="/admin-panel" replace />;
+
+  return children;
+}
+
 function AppContent() {
   const location = useLocation();
   // Rutas sin navbar — incluye el editor con ruta dinámica /events/:id/layout
@@ -75,10 +88,10 @@ function AppContent() {
       {showNavbar && <Navbar />}
       <div>
         <Routes>
-          <Route path="/" element={<LadingPage />} />
+          <Route path="/" element={<UserOnlyRoute><LadingPage /></UserOnlyRoute>} />
           <Route path="/login" element={<Login />} />
-          <Route path="/nosotros" element={<AboutUs />} />
-          <Route path="/events" element={<Events />} />
+          <Route path="/nosotros" element={<UserOnlyRoute><AboutUs /></UserOnlyRoute>} />
+          <Route path="/events" element={<UserOnlyRoute><Events /></UserOnlyRoute>} />
           <Route path="/events/create" element={
             <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
               <SpanishOnlyRoute>
@@ -96,7 +109,7 @@ function AppContent() {
               <OrganizerEarnings />
             </ProtectedRoute>
           } />
-          <Route path="/events/:eventId" element={<EventDetail />} />
+          <Route path="/events/:eventId" element={<UserOnlyRoute><EventDetail /></UserOnlyRoute>} />
           <Route path="/organizer-petition-form" element={
             <ProtectedRoute>
               <OrganizerPetitionForm />
@@ -164,12 +177,12 @@ function AppContent() {
           } />
           <Route path="/profile" element={
             <ProtectedRoute>
-              <ProfilePage />
+              <UserOnlyRoute><ProfilePage /></UserOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/notifications" element={
             <ProtectedRoute>
-              <Notifications />
+              <UserOnlyRoute><Notifications /></UserOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/verification" element={<CodeVerification />} />
@@ -190,22 +203,22 @@ function AppContent() {
           } />
           <Route path="/wallet" element={
             <ProtectedRoute>
-              <WalletPage />
+              <UserOnlyRoute><WalletPage /></UserOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/checkout" element={
             <ProtectedRoute>
-              <Checkout />
+              <UserOnlyRoute><Checkout /></UserOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/checkout/pending/:paymentId" element={
             <ProtectedRoute>
-              <PaymentPending />
+              <UserOnlyRoute><PaymentPending /></UserOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/checkout/confirmed/:paymentId" element={
             <ProtectedRoute>
-              <PaymentConfirmation />
+              <UserOnlyRoute><PaymentConfirmation /></UserOnlyRoute>
             </ProtectedRoute>
           } />
         </Routes>
