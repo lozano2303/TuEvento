@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity,
   ActivityIndicator, StatusBar, StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../context/ThemeContext";
+import { useNotifications } from "../context/NotificationContext";
 import { getOrganizerRequests } from "../services/adminService";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -99,21 +100,37 @@ export default function OrganizerRequestsScreen() {
     return { bg: "#F59E0B22", border: "#F59E0B55", text: "#F59E0B", label: "Pendiente" };
   };
 
-  const loadRequests = useCallback(async () => {
-    setLoading(true);
+  // silent: recarga en segundo plano sin spinner (al volver a la pantalla o por WebSocket)
+  const loadRequests = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const token = await AsyncStorage.getItem("accessToken");
       const data = await getOrganizerRequests(token);
       setRequests(data ?? []);
     } catch (e) {
-      setError("No se pudieron cargar las solicitudes. Intenta de nuevo.");
+      if (!silent) setError("No se pudieron cargar las solicitudes. Intenta de nuevo.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => { loadRequests(); }, [loadRequests]);
+
+  // Al volver del detalle (aprobar/rechazar) la lista refleja el estado real sin salir
+  const isFirstFocus = useRef(true);
+  useFocusEffect(useCallback(() => {
+    if (isFirstFocus.current) { isFirstFocus.current = false; return; }
+    loadRequests({ silent: true });
+  }, [loadRequests]));
+
+  // En vivo: los contadores cambian (WebSocket) cuando se crea, aprueba o rechaza una solicitud
+  const { adminPending } = useNotifications();
+  const isFirstCount = useRef(true);
+  useEffect(() => {
+    if (isFirstCount.current) { isFirstCount.current = false; return; }
+    loadRequests({ silent: true });
+  }, [adminPending, loadRequests]);
 
   // Filtrado local (sin re-fetch — la API devuelve todo)
   const filtered = requests.filter((r) => {
