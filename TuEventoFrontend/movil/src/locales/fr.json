@@ -1719,5 +1719,15 @@
     "resendIn": "Renvoyer dans {{seconds}}s",
     "codeRequired": "Le code est requis",
     "codeLength": "Le code doit comporter exactement 8 caractères"
+  },
+  "mobileHome": {
+    "greeting": "Salut, {{name}} 👋",
+    "heroLine1": "Organisez et vivez",
+    "heroEvents": "des événements",
+    "heroLine2": " uniques.",
+    "quickAccess": "Accès rapides",
+    "searchEvents": "Chercher\ndes événements",
+    "myTickets": "Mes\nbillets",
+    "upcomingEvents": "Événements à venir"
   }
 }
