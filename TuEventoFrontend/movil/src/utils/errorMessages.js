@@ -1,42 +1,67 @@
+import i18n from "../i18n";
+
+// Mensajes del backend → clave i18n (namespace mobileErrors). Se traducen al
+// momento de llamar para respetar el idioma activo de la UI.
 export const mapErrorMessage = (message) => {
-  if (!message) return "Ocurrió un error inesperado";
+  if (!message) return i18n.t("mobileErrors.unexpected");
 
   const map = {
     // Login
-    "Invalid email or password": "Correo o contraseña incorrectos",
-    "Account is not activated": "Tu cuenta no está activada. Revisa tu correo",
-    "Account is locked until": "Tu cuenta está bloqueada temporalmente. Intenta más tarde",
-    "Account locked due to too many failed attempts": "Demasiados intentos fallidos. Cuenta bloqueada temporalmente",
+    "Invalid email or password": "invalidCredentials",
+    "Account is not activated": "notActivated",
+    "Account is locked until": "locked",
+    "Account locked due to too many failed attempts": "tooManyAttempts",
     // Registro — BusinessException desde ValidationUtils y UseCase
-    "Only @gmail.com emails are accepted": "Solo se aceptan correos @gmail.com",
+    "Only @gmail.com emails are accepted": "gmailOnly",
     "Password must be at least 8 characters and include uppercase, lowercase, number and special character":
-      "La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial",
+      "passwordWeak",
     "Name must contain at least two words with letters only":
-      "El nombre debe tener al menos dos palabras y solo letras",
-    "Email is already registered": "Ya existe una cuenta con ese correo",
-    "User already exists": "Ya existe una cuenta con ese correo",
+      "nameInvalid",
+    "Email is already registered": "emailRegistered",
+    "User already exists": "emailRegistered",
     // Activación
-    "Invalid activation code": "El código de activación es incorrecto",
-    "Activation code has expired": "El código de activación expiró. Solicita uno nuevo",
-    "Account is already activated": "Tu cuenta ya está activada. Puedes iniciar sesión",
-    "User not found": "No encontramos una cuenta con ese correo",
+    "Invalid activation code": "invalidActivationCode",
+    "Activation code has expired": "activationExpired",
+    "Account is already activated": "alreadyActivated",
+    "User not found": "userNotFound",
     // Recuperación de contraseña
-    "This email is not registered in the system": "No encontramos una cuenta con ese correo",
-    "Invalid recovery code": "El código de recuperación es incorrecto",
-    "Recovery code has already been used": "Este código ya fue utilizado. Solicita uno nuevo",
-    "Recovery code has expired": "El código de recuperación expiró. Solicita uno nuevo",
-    "Passwords do not match": "Las contraseñas no coinciden",
+    "This email is not registered in the system": "userNotFound",
+    "Invalid recovery code": "invalidRecoveryCode",
+    "Recovery code has already been used": "recoveryUsed",
+    "Recovery code has expired": "recoveryExpired",
+    "Passwords do not match": "passwordsNoMatch",
+    // QR de tickets / escaneo
+    "Ticket is not in a state that can generate a QR":
+      "ticketNotValidatable",
+    "TICKET_NOT_VALIDATABLE": "ticketNotValidatable",
+    "The event is not active": "eventNotActive",
+    "EVENT_NOT_ACTIVE": "eventNotActive",
+    "This order has no remaining tickets to validate":
+      "orderNoTickets",
+    "ORDER_NO_VALIDATABLE_TICKETS": "orderNoTickets",
+    "QR code is invalid or has expired": "qrInvalid",
+    "QR_INVALID": "qrInvalid",
+    "QR code is no longer valid": "qrReplaced",
+    "QR_EXPIRED_OR_REPLACED": "qrReplaced",
+    "You are not the organizer of this event":
+      "notOrganizer",
+    // OAuth (errores lanzados por oauthService)
+    "Usuario canceló el inicio de sesión": "oauthCancelled",
+    "GOOGLE_SIGNIN_EXPO_GO": "googleExpoGo",
+    "OAuth state mismatch": "oauthFailed",
+    "Error en el flujo OAuth": "oauthFailed",
+    "Error OAuth": "oauthFailed",
     // Genéricos
-    "An unexpected error occurred": "Error inesperado. Intenta de nuevo",
-    "Malformed JSON request": "Error en la solicitud. Intenta de nuevo",
+    "An unexpected error occurred": "unexpectedRetry",
+    "Malformed JSON request": "badRequest",
   };
 
   // Coincidencia exacta
-  if (map[message]) return map[message];
+  if (map[message]) return i18n.t(`mobileErrors.${map[message]}`);
 
   // Coincidencia parcial
   for (const [key, value] of Object.entries(map)) {
-    if (message.toLowerCase().includes(key.toLowerCase())) return value;
+    if (message.toLowerCase().includes(key.toLowerCase())) return i18n.t(`mobileErrors.${value}`);
   }
 
   return message;
@@ -44,7 +69,7 @@ export const mapErrorMessage = (message) => {
 
 /**
  * Parsea errores de validación del backend (formato "field: msg, field: msg")
- * y los convierte en un objeto { field: mensajeEnEspañol }.
+ * y los convierte en un objeto { field: mensajeTraducido }.
  * Retorna null si el mensaje no es de validación por campos.
  */
 export const parseValidationErrors = (message) => {
@@ -56,21 +81,21 @@ export const parseValidationErrors = (message) => {
 
   const fieldMap = {
     email: {
-      "must not be blank": "El correo es requerido",
-      "must be a well-formed email address": "El correo no tiene un formato válido",
-      "size must be between": "El correo es demasiado largo (máx. 255 caracteres)",
+      "must not be blank": "fields.emailRequired",
+      "must be a well-formed email address": "fields.emailInvalid",
+      "size must be between": "fields.emailTooLong",
     },
     password: {
-      "must not be blank": "La contraseña es requerida",
-      "size must be between": "La contraseña debe tener entre 8 y 100 caracteres",
+      "must not be blank": "fields.passwordRequired",
+      "size must be between": "fields.passwordSize",
     },
     fullName: {
-      "must not be blank": "El nombre completo es requerido",
-      "size must be between": "El nombre es demasiado largo (máx. 100 caracteres)",
+      "must not be blank": "fields.fullNameRequired",
+      "size must be between": "fields.fullNameTooLong",
     },
     activationCode: {
-      "must not be blank": "El código de activación es requerido",
-      "size must be between": "El código debe tener exactamente 8 caracteres",
+      "must not be blank": "fields.activationCodeRequired",
+      "size must be between": "fields.activationCodeLength",
     },
   };
 
@@ -83,12 +108,12 @@ export const parseValidationErrors = (message) => {
     if (fieldMap[field]) {
       for (const [key, msg] of Object.entries(fieldMap[field])) {
         if (constraint.includes(key.toLowerCase())) {
-          fieldErrors[field] = msg;
+          fieldErrors[field] = i18n.t(`mobileErrors.${msg}`);
           break;
         }
       }
       if (!fieldErrors[field]) {
-        fieldErrors[field] = `Campo inválido: ${field}`;
+        fieldErrors[field] = i18n.t("mobileErrors.fields.invalidField", { field });
       }
     }
   }
@@ -104,6 +129,6 @@ export const parseApiError = async (response) => {
     }
     return null;
   } catch {
-    return "Error de conexión. Verifica tu internet";
+    return i18n.t("mobileErrors.connection");
   }
 };

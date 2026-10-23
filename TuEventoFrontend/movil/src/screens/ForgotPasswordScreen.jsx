@@ -4,8 +4,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
+import LanguageSelector from "../components/LanguageSelector";
 import ScreenLayout from "../components/ScreenLayout";
 import { darkColors } from "../theme/colors";
 
@@ -15,14 +17,15 @@ const GMAIL_PATTERN = /^[a-zA-Z0-9._%+\-]+@gmail\.com$/;
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const palette = darkColors;
   const [email, setEmail] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
-    if (!email.trim()) { setError("El correo es requerido"); return false; }
-    if (!GMAIL_PATTERN.test(email.trim())) { setError("Solo se aceptan correos @gmail.com"); return false; }
+    if (!email.trim()) { setError(t("login.validation.emailRequired")); return false; }
+    if (!GMAIL_PATTERN.test(email.trim())) { setError(t("login.validation.emailGmailOnly")); return false; }
     return true;
   };
 
@@ -57,10 +60,10 @@ export default function ForgotPasswordScreen() {
           <BackButton style={{ marginBottom: 0 }} />
           <View style={{ flex: 1, alignItems: "center" }}>
             <Text style={{ color: palette.textPrimary, fontSize: 26, fontWeight: "800" }}>
-              Recuperar acceso
+              {t("forgotPassword.title")}
             </Text>
           </View>
-          <View style={{ width: 40 }} />
+          <LanguageSelector />
         </View>
 
         {/* Header */}
@@ -69,12 +72,12 @@ export default function ForgotPasswordScreen() {
             <Ionicons name="lock-closed-outline" size={32} color={palette.primary} />
           </View>
           <Text style={{ color: palette.textSecondary, fontSize: 14, textAlign: "center", lineHeight: 22 }}>
-            Ingresa tu correo y te enviaremos un código para restablecer tu contraseña.
+            {t("forgotPassword.enterEmailDesc")}
           </Text>
         </View>
 
         {/* Email */}
-        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginBottom: 8 }}>Correo electrónico</Text>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginBottom: 8 }}>{t("forgotPassword.email")}</Text>
         <View style={{ backgroundColor: palette.surface, borderRadius: 12, borderWidth: error ? 1 : 0, borderColor: palette.error }}>
           <TextInput
             placeholder="tucorreo@gmail.com"
@@ -97,7 +100,7 @@ export default function ForgotPasswordScreen() {
         >
           <LinearGradient colors={palette.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: "center" }}>
             <Text style={{ color: palette.textPrimary, fontSize: 16, fontWeight: "700" }}>
-              {loading ? "Enviando..." : "Enviar código"}
+              {loading ? t("forgotPassword.sending") : t("forgotPassword.sendCode")}
             </Text>
           </LinearGradient>
         </TouchableOpacity>

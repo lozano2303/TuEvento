@@ -87,8 +87,9 @@ public class TextMaskingService {
         // Mask protected terms after (longer terms first)
         int termCounter = 1;
         for (String term : protectedTerms) {
-            // Word boundary pattern for case-insensitive matching
-            Pattern termPattern = Pattern.compile("\\b" + Pattern.quote(term) + "\\b", Pattern.CASE_INSENSITIVE);
+            // Coincidencia exacta (sensible a mayúsculas): la marca "Tu Evento" no debe
+            // atrapar la frase común "tu evento" / "Tu evento" ("your event"), que sí se traduce.
+            Pattern termPattern = Pattern.compile("\\b" + Pattern.quote(term) + "\\b");
             Matcher matcher = termPattern.matcher(result);
             
             while (matcher.find()) {
@@ -116,31 +117,43 @@ public class TextMaskingService {
         }
 
         String result = translatedText;
-        
-        // Check all placeholders are present
-        Set<String> allPlaceholders = new HashSet<>();
-        allPlaceholders.addAll(termMappings.keySet());
-        allPlaceholders.addAll(variableMappings.keySet());
-        
-        for (String placeholder : allPlaceholders) {
-            if (!result.contains(placeholder)) {
-                throw new MaskingException("Missing placeholder in translated text: " + placeholder);
-            }
-        }
 
         // Restore in INVERSE order: terms first, then variables
-        // Restore term mappings
         for (Map.Entry<String, String> entry : termMappings.entrySet()) {
-            result = result.replace(entry.getKey(), entry.getValue());
+            result = restorePlaceholder(result, entry.getKey(), entry.getValue());
         }
-
-        // Restore variable mappings
         for (Map.Entry<String, String> entry : variableMappings.entrySet()) {
-            result = result.replace(entry.getKey(), entry.getValue());
+            result = restorePlaceholder(result, entry.getKey(), entry.getValue());
         }
 
         return result;
     }
+
+    /**
+     * Reemplaza un marcador por su valor original tolerando las deformaciones que
+     * introduce el motor de traducción: LibreTranslate devuelve {{T_1}} como
+     * "{{T _ 1}", "{{T   1}" o "{{T 1}}" según el idioma destino.
+     *
+     * @throws MaskingException si el marcador no aparece en ninguna variante
+     */
+    private String restorePlaceholder(String text, String placeholder, String original) throws MaskingException {
+        Matcher parts = PLACEHOLDER_PARTS.matcher(placeholder);
+        if (!parts.matches()) {
+            throw new MaskingException("Invalid placeholder format: " + placeholder);
+        }
+        // {+ espacios LETRA [espacios/_]* NÚMERO (sin más dígitos) espacios }*
+        Pattern tolerant = Pattern.compile(
+                "\\{+\\s*" + parts.group(1) + "[\\s_]*" + parts.group(2) + "(?!\\d)\\s*\\}*",
+                Pattern.CASE_INSENSITIVE);
+        Matcher matcher = tolerant.matcher(text);
+        if (!matcher.find()) {
+            throw new MaskingException("Missing placeholder in translated text: " + placeholder);
+        }
+        return matcher.replaceAll(Matcher.quoteReplacement(original));
+    }
+
+    /** Descompone un marcador {{T_1}} / {{V_2}} en su letra y su número. */
+    private static final Pattern PLACEHOLDER_PARTS = Pattern.compile("\\{\\{([TV])_(\\d+)\\}\\}");
 
     /**
      * Excepción lanzada cuando falta un marcador en el texto traducido.

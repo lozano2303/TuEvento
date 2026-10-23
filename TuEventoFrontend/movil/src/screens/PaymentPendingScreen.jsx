@@ -12,6 +12,7 @@ import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { getPayment } from "../services/paymentService";
 import { getOrderTickets } from "../services/orderService";
@@ -30,6 +31,7 @@ function formatCurrency(amount) {
 
 export default function PaymentPendingScreen() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const route = useRoute();
@@ -41,6 +43,9 @@ export default function PaymentPendingScreen() {
   const [gatewayTxId, setGatewayTxId] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [browserOpen, setBrowserOpen] = useState(false);
+  const [walletOnly, setWalletOnly] = useState(
+    route.params?.walletOnly === true
+  );
   // 'rejected' | 'failed' | 'cancelled' | null
   const [failReason, setFailReason] = useState(null);
 
@@ -262,8 +267,9 @@ export default function PaymentPendingScreen() {
       try {
         const payment = await getPayment(paymentId);
 
-        // Abrir gateway automáticamente cuando tengamos gatewayTransactionId
-        if (payment.gatewayTransactionId && !gatewayOpenedRef.current) {
+        // Abrir gateway automáticamente — pero NO para pagos wallet_only_
+        const isWalletOnly = payment.gatewayTransactionId?.startsWith("wallet_only_");
+        if (payment.gatewayTransactionId && !gatewayOpenedRef.current && !isWalletOnly) {
           setGatewayTxId(payment.gatewayTransactionId);
           openGateway(payment.gatewayTransactionId);
         }
@@ -280,8 +286,6 @@ export default function PaymentPendingScreen() {
           applyTerminalStatus("REJECTED", "rejected");
         } else if (s === "ERROR") {
           stopPolling();
-          // Si llegó ERROR por polling sin que el browser lo haya manejado
-          // asumir fallo técnico (no cancelación por usuario)
           if (!failReason) applyTerminalStatus("ERROR", "failed");
         }
       } catch (err) {
@@ -305,37 +309,39 @@ export default function PaymentPendingScreen() {
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
 
-          <Text style={styles.title}>Procesando tu pago</Text>
+          <Text style={styles.title}>{t("mobilePayment.processingTitle")}</Text>
           <Text style={styles.subtitle}>
-            {browserOpen
-              ? "Completá el pago en la ventana que se abrió."
-              : "Abriendo la ventana de pago…"}
+            {walletOnly
+              ? t("mobilePayment.confirmingWallet")
+              : browserOpen
+              ? t("mobilePayment.completeInWindow")
+              : t("mobilePayment.openingWindow")}
           </Text>
 
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Evento</Text>
+              <Text style={styles.infoLabel}>{t("mobilePayment.event")}</Text>
               <Text style={styles.infoValue}>{eventTitle}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Sillas</Text>
+              <Text style={styles.infoLabel}>{t("mobilePayment.seats")}</Text>
               <Text style={styles.infoValue}>{cartItems.length}</Text>
             </View>
           </View>
 
-          {/* Re-abrir si el browser fue cerrado manualmente */}
-          {!browserOpen && gatewayOpenedRef.current && gatewayTxId && (
+          {/* Re-abrir si el browser fue cerrado manualmente — no aplica en wallet_only */}
+          {!walletOnly && !browserOpen && gatewayOpenedRef.current && gatewayTxId && (
             <TouchableOpacity
               onPress={() => { gatewayOpenedRef.current = false; openGateway(gatewayTxId); }}
               activeOpacity={0.75}
               style={styles.reopenBtn}
             >
-              <Text style={styles.reopenBtnText}>Volver a abrir la ventana de pago</Text>
+              <Text style={styles.reopenBtnText}>{t("mobilePayment.reopenWindow")}</Text>
             </TouchableOpacity>
           )}
 
           <Text style={styles.hint}>
-            No cierres la app mientras se procesa el pago.
+            {t("mobilePayment.dontClose")}
           </Text>
         </View>
       </View>
@@ -360,9 +366,9 @@ export default function PaymentPendingScreen() {
             <Ionicons name="checkmark-circle" size={52} color={colors.success} />
           </View>
 
-          <Text style={styles.title}>¡Pago aprobado!</Text>
+          <Text style={styles.title}>{t("mobilePayment.approvedTitle")}</Text>
           <Text style={styles.subtitle}>
-            Tu compra fue exitosa. Acá están tus tickets.
+            {t("mobilePayment.approvedSubtitle")}
           </Text>
 
           {tickets.length > 0 ? (
@@ -372,7 +378,7 @@ export default function PaymentPendingScreen() {
                   <Ionicons name="ticket-outline" size={18} color={colors.success} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.ticketCode}>
-                      {ticket.code ?? `Ticket #${ticket.ticketId}`}
+                      {ticket.code ?? `${t("mobilePayment.ticket")} #${ticket.ticketId}`}
                     </Text>
                     <Text style={styles.ticketPrice}>
                       {formatCurrency(ticket.totalPrice)} {ticket.currency ?? ""}
@@ -389,7 +395,7 @@ export default function PaymentPendingScreen() {
           ) : (
             <View style={[styles.infoCard, { borderColor: colors.success + "40" }]}>
               <Text style={[styles.subtitle, { fontSize: 13 }]}>
-                Tus tickets serán enviados a tu correo en breve.
+                {t("mobilePayment.ticketsByEmail")}
               </Text>
             </View>
           )}
@@ -400,7 +406,7 @@ export default function PaymentPendingScreen() {
             style={[styles.primaryBtn, { backgroundColor: colors.success }]}
           >
             <Ionicons name="home-outline" size={18} color="#FFFFFF" />
-            <Text style={styles.primaryBtnText}>Ver más eventos</Text>
+            <Text style={styles.primaryBtnText}>{t("mobilePayment.seeMoreEvents")}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -415,12 +421,12 @@ export default function PaymentPendingScreen() {
   const terminalIcon  = isRejected ? "close-circle"       : isCancelled ? "ban-outline"      : "alert-circle";
   const terminalColor = isRejected ? colors.error          : isCancelled ? "#F59E0B"           : colors.error;
   const terminalBg    = isRejected ? colors.errorBg        : isCancelled ? "#F59E0B22"         : colors.errorBg;
-  const terminalTitle = isRejected ? "Pago rechazado"      : isCancelled ? "Pago cancelado"    : "Error en el pago";
+  const terminalTitle = isRejected ? t("mobilePayment.rejectedTitle") : isCancelled ? t("mobilePayment.cancelledTitle") : t("mobilePayment.errorTitle");
   const terminalText  = isRejected
-    ? "El pago fue rechazado. Podés volver a intentarlo."
+    ? t("mobilePayment.rejectedText")
     : isCancelled
-    ? "Cancelaste la transacción. Podés volver a intentarlo cuando quieras."
-    : "Ocurrió un error al procesar el pago. Podés intentarlo nuevamente.";
+    ? t("mobilePayment.cancelledText")
+    : t("mobilePayment.errorText");
 
   return (
     <View style={styles.root}>
@@ -439,7 +445,7 @@ export default function PaymentPendingScreen() {
           style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
         >
           <Ionicons name="refresh-outline" size={18} color="#FFFFFF" />
-          <Text style={styles.primaryBtnText}>Reintentar</Text>
+          <Text style={styles.primaryBtnText}>{t("mobilePayment.retry")}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -447,7 +453,7 @@ export default function PaymentPendingScreen() {
           activeOpacity={0.75}
           style={styles.secondaryBtn}
         >
-          <Text style={styles.secondaryBtnText}>Volver a eventos</Text>
+          <Text style={styles.secondaryBtnText}>{t("mobilePayment.backToEvents")}</Text>
         </TouchableOpacity>
       </View>
     </View>

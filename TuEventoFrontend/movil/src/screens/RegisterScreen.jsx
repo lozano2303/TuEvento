@@ -7,10 +7,13 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../context/AuthContext";
 import { authService } from "../services/authService";
 import { oauthService } from "../services/oauthService";
 import { mapErrorMessage, parseValidationErrors } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
+import LanguageSelector from "../components/LanguageSelector";
 import ScreenLayout from "../components/ScreenLayout";
 import { darkColors } from "../theme/colors";
 
@@ -21,6 +24,8 @@ const FULL_NAME_PATTERN = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{2,}(\s[a-zA-Zá
 export default function RegisterScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+  const { setSession } = useAuth();
   const colors = darkColors;
   const [form, setForm] = useState({ fullName: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -28,6 +33,7 @@ export default function RegisterScreen() {
   const [apiError, setApiError] = useState(null);
   const [apiLoading, setApiLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(null);
+  const [resendLoading, setResendLoading] = useState(false);
 
   const update = (field, value) => {
     setForm({ ...form, [field]: value });
@@ -38,18 +44,18 @@ export default function RegisterScreen() {
   const validate = () => {
     const e = {};
     const name = form.fullName.trim();
-    if (!name) e.fullName = "El nombre completo es requerido";
-    else if (!FULL_NAME_PATTERN.test(name)) e.fullName = "Ingresa nombre y apellido (solo letras, mínimo dos palabras)";
-    else if (name.length > 100) e.fullName = "Máximo 100 caracteres";
+    if (!name) e.fullName = t("login.validation.nameRequired");
+    else if (!FULL_NAME_PATTERN.test(name)) e.fullName = t("login.validation.nameFirstLast");
+    else if (name.length > 100) e.fullName = t("login.validation.nameMax");
 
     const email = form.email.trim();
-    if (!email) e.email = "El correo es requerido";
-    else if (!GMAIL_PATTERN.test(email)) e.email = "Solo se aceptan correos @gmail.com";
+    if (!email) e.email = t("login.validation.emailRequired");
+    else if (!GMAIL_PATTERN.test(email)) e.email = t("login.validation.emailGmailOnly");
 
     const pw = form.password;
-    if (!pw) e.password = "La contraseña es requerida";
-    else if (!PASSWORD_PATTERN.test(pw)) e.password = "Mín. 8 chars, mayúscula, minúscula, número y símbolo";
-    else if (pw.length > 100) e.password = "Máximo 100 caracteres";
+    if (!pw) e.password = t("login.validation.passwordRequired");
+    else if (!PASSWORD_PATTERN.test(pw)) e.password = t("login.validation.passwordWeak");
+    else if (pw.length > 100) e.password = t("login.validation.passwordMax");
 
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -71,13 +77,41 @@ export default function RegisterScreen() {
     }
   };
 
+  // Reenviar correo de activación usando el correo del formulario (igual que la web).
+  const handleResendActivation = async () => {
+    const email = form.email.trim();
+    if (!email) {
+      setErrors({ ...errors, email: t("login.errors.enterEmailResend") });
+      return;
+    }
+    if (!GMAIL_PATTERN.test(email)) {
+      setErrors({ ...errors, email: t("login.validation.emailGmailOnly") });
+      return;
+    }
+    setResendLoading(true);
+    setApiError(null);
+    try {
+      await authService.resendActivation(email);
+      navigation.navigate("Activate", { email });
+    } catch (e) {
+      setApiError(mapErrorMessage(e.message));
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   const handleOAuthRegister = async (provider) => {
     setOauthLoading(provider);
     try {
-      const code = provider === "google"
-        ? await oauthService.loginWithGoogle()
-        : await oauthService.loginWithFacebook();
-      await authService.oauthLogin(provider, code);
+      let result;
+      if (provider === "google") {
+        const { idToken } = await oauthService.loginWithGoogle();
+        result = await authService.googleLogin(idToken);
+      } else {
+        const { code } = await oauthService.loginWithFacebook();
+        result = await authService.oauthLogin(provider, code);
+      }
+      await setSession(result);
       navigation.navigate("Main");
     } catch (e) {
       setApiError(mapErrorMessage(e.message));
@@ -123,10 +157,10 @@ export default function RegisterScreen() {
           <BackButton style={{ marginBottom: 0 }} />
           <View style={{ flex: 1, alignItems: "center" }}>
             <Text style={{ color: colors.textPrimary, fontSize: 26, fontWeight: "800" }}>
-              Crea tu cuenta
+              {t("login.createAccount")}
             </Text>
           </View>
-          <View style={{ width: 40 }} />
+          <LanguageSelector />
         </View>
 
         {/* Card glass del formulario */}
@@ -138,11 +172,11 @@ export default function RegisterScreen() {
         }}>
           {/* Nombre completo */}
           <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: "600", marginBottom: 8 }}>
-            Nombre completo
+            {t("login.fullName")}
           </Text>
           <View style={inputStyle("fullName")}>
             <TextInput
-              placeholder="Ej: Juan Pérez"
+              placeholder={t("completeProfile.fullNamePlaceholder")}
               placeholderTextColor={colors.textMuted}
               value={form.fullName}
               onChangeText={(t) => update("fullName", t)}
@@ -156,7 +190,7 @@ export default function RegisterScreen() {
 
           {/* Email */}
           <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: "600", marginTop: 18, marginBottom: 8 }}>
-            Correo electrónico
+            {t("login.email")}
           </Text>
           <View style={inputStyle("email")}>
             <TextInput
@@ -177,11 +211,11 @@ export default function RegisterScreen() {
 
           {/* Contraseña */}
           <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: "600", marginTop: 18, marginBottom: 8 }}>
-            Contraseña
+            {t("login.password")}
           </Text>
           <View style={inputStyle("password")}>
             <TextInput
-              placeholder="Mín. 8 chars, mayúscula, número y símbolo"
+              placeholder={t("mobileAuth.passwordPlaceholder")}
               placeholderTextColor={colors.textMuted}
               value={form.password}
               onChangeText={(t) => update("password", t)}
@@ -227,17 +261,34 @@ export default function RegisterScreen() {
               style={{ paddingVertical: 16, alignItems: "center" }}
             >
               <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "700" }}>
-                {apiLoading ? "Creando cuenta..." : "Crear cuenta"}
+                {apiLoading ? t("login.loading") : t("login.createAccount")}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
+
+          {/* Reenviar correo de activación (usa el correo del formulario) */}
+          <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", flexWrap: "wrap", marginTop: 16, gap: 5 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{t("login.notActivated")}</Text>
+            <TouchableOpacity onPress={handleResendActivation} disabled={resendLoading} activeOpacity={0.75}>
+              {resendLoading ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                  <ActivityIndicator size="small" color={colors.accent} />
+                  <Text style={{ color: colors.accent, fontSize: 13, fontWeight: "700" }}>{t("login.loading")}</Text>
+                </View>
+              ) : (
+                <Text style={{ color: colors.accent, fontSize: 13, fontWeight: "700" }}>
+                  {t("login.resendActivation")}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Divider */}
         <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 24 }}>
           <View style={{ flex: 1, height: 1, backgroundColor: colors.surfaceAlt }} />
           <Text style={{ color: colors.textMuted, marginHorizontal: 12, fontSize: 12 }}>
-            o regístrate con
+            {t("login.orContinueWith")}
           </Text>
           <View style={{ flex: 1, height: 1, backgroundColor: colors.surfaceAlt }} />
         </View>
@@ -258,7 +309,7 @@ export default function RegisterScreen() {
               ? <ActivityIndicator size="small" color="#EA4335" />
               : <Ionicons name="logo-google" size={20} color="#EA4335" />}
             <Text style={{ color: "#111827", fontSize: 15, fontWeight: "600" }}>
-              {oauthLoading === "google" ? "Conectando..." : "Continuar con Google"}
+              {oauthLoading === "google" ? t("login.loading") : `${t("login.signInWith")} ${t("login.google")}`}
             </Text>
           </TouchableOpacity>
 
@@ -276,7 +327,7 @@ export default function RegisterScreen() {
               ? <ActivityIndicator size="small" color="#FFFFFF" />
               : <Ionicons name="logo-facebook" size={20} color="#FFFFFF" />}
             <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600" }}>
-              {oauthLoading === "facebook" ? "Conectando..." : "Continuar con Facebook"}
+              {oauthLoading === "facebook" ? t("login.loading") : `${t("login.signInWith")} ${t("login.facebook")}`}
             </Text>
           </TouchableOpacity>
         </View>
@@ -284,16 +335,16 @@ export default function RegisterScreen() {
         {/* Login + Términos */}
         <View style={{ alignItems: "center", marginTop: 28, gap: 12, marginBottom: 16 }}>
           <View style={{ flexDirection: "row" }}>
-            <Text style={{ color: colors.textSecondary, fontSize: 14 }}>¿Ya tienes cuenta? </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{t("login.hasAccount")} </Text>
             <TouchableOpacity onPress={() => navigation.navigate("Login")}>
               <Text style={{ color: colors.primary, fontSize: 14, fontWeight: "600" }}>
-                Inicia sesión
+                {t("login.signInLink")}
               </Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate("Terms")}>
             <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-              Términos y condiciones
+              {t("login.termsAndConditions")}
             </Text>
           </TouchableOpacity>
         </View>

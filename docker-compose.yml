@@ -98,6 +98,25 @@ services:
     networks:
       - tuevento-network
 
+  # Alternativa a MinIO (S3 compatible, escrita en Rust).
+  # Se usa con STORAGE_PROVIDER=rustfs; el backend crea el bucket y aplica las
+  # políticas públicas al arrancar (no necesita un servicio init).
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: tuevento-rustfs
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-rustfsadmin}
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      - "9100:9000"
+      - "9101:9001"
+    volumes:
+      - rustfs_data:/data
+    networks:
+      - tuevento-network
+
   # ── Moderación de imágenes ──────────────────────────────────────────────────
   nsfw-classifier:
     build: ./nsfw-service
@@ -238,10 +257,13 @@ services:
       - tuevento-network
 
   # ── CI / CD ─────────────────────────────────────────────────────────────────
+  # Inactivos: el CI corre en GitHub Actions + SonarQube Cloud. Solo arrancan con
+  # `docker compose --profile ci up -d jenkins sonarqube` y no se reinician solos.
   jenkins:
     image: jenkins/jenkins:lts-jdk17
     container_name: tuevento-jenkins
-    restart: unless-stopped
+    profiles: ["ci"]
+    restart: "no"
     ports:
       - "8082:8080"
       - "50000:50000"
@@ -256,7 +278,8 @@ services:
   sonarqube:
     image: sonarqube:lts-community
     container_name: tuevento-sonarqube
-    restart: unless-stopped
+    profiles: ["ci"]
+    restart: "no"
     ports:
       - "9002:9000"
     environment:
@@ -298,6 +321,7 @@ volumes:
   postgres_data:
   postgres_fake_gateway_data:
   minio_data:
+  rustfs_data:
   redis_data:
   jenkins_data:
   sonarqube_data:

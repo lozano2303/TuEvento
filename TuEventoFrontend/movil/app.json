@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tuevento.movil"
+      "bundleIdentifier": "com.tuevento.movil",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Se usa la cámara para escanear los códigos QR de las entradas."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,11 +26,25 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.tuevento.movil"
+      "package": "com.tuevento.movil",
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Se usa la cámara para escanear los códigos QR de las entradas."
+        }
+      ],
+      "@react-native-google-signin/google-signin",
+      "expo-font",
+      "expo-web-browser"
+    ],
     "extra": {
       "eas": {
         "projectId": "1763adb5-d019-4e06-9435-f9da43b462db"

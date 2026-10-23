@@ -12,12 +12,14 @@ import com.capysoft.tuevento.modules.notification.domain.repository.ChannelRepos
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationRepository;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationTypeRepository;
 import com.capysoft.tuevento.modules.language.application.service.TranslationService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Optional;
@@ -53,6 +55,9 @@ class SendNotificationUseCaseIdempotencyTest {
 
     @BeforeEach
     void setUp() {
+        // El caso de uso registra callbacks afterCommit: simula la transacción que abre @Transactional
+        TransactionSynchronizationManager.initSynchronization();
+
         when(inAppPort.channelName()).thenReturn(NotificationChannelNames.IN_APP);
 
         useCase = new SendNotificationUseCase(
@@ -96,6 +101,11 @@ class SendNotificationUseCaseIdempotencyTest {
                     .idempotencyKey(n.getIdempotencyKey())
                     .build();
         });
+    }
+
+    @AfterEach
+    void tearDown() {
+        TransactionSynchronizationManager.clearSynchronization();
     }
 
     @Test
