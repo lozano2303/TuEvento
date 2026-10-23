@@ -45,14 +45,15 @@ class TextMaskingServiceTest {
     }
 
     @Test
-    void testCaseInsensitiveMatching() {
-        String text = "tu evento is great and TU EVENTO rocks!";
-        
+    void testCaseSensitiveMatchingKeepsCommonPhraseTranslatable() {
+        String text = "Tu evento fue aprobado en Tu Evento";
+
         TextMaskingService.MaskingResult result = service.maskText(text);
-        
-        // Should preserve original case in mappings
-        assertTrue(result.termMappings.containsValue("tu evento"));
-        assertTrue(result.termMappings.containsValue("TU EVENTO"));
+
+        // Solo la marca exacta se protege; "Tu evento" (frase común) queda para traducir
+        assertEquals(1, result.termMappings.size());
+        assertTrue(result.termMappings.containsValue("Tu Evento"));
+        assertTrue(result.maskedText.startsWith("Tu evento fue aprobado"));
     }
 
     @Test
@@ -81,6 +82,24 @@ class TextMaskingServiceTest {
         assertThrows(TextMaskingService.MaskingException.class, () -> {
             service.unmaskText(translatedMasked, maskResult.termMappings, maskResult.variableMappings);
         });
+    }
+
+    @Test
+    void testUnmaskToleratesPlaceholdersMangledByTranslator() throws TextMaskingService.MaskingException {
+        TextMaskingService.MaskingResult maskResult = service.maskText("Bienvenido a Tu Evento, {name}");
+
+        // Variantes reales devueltas por LibreTranslate para en / fr / pt
+        String[] translated = {
+                "Welcome to {{T _ 1}, {{V _ 1}}",
+                "Bienvenue à {{T   1}, {{V   1}}",
+                "Bem-vindo ao {{T 1}}, {{V 1}}",
+        };
+        for (String text : translated) {
+            String unmasked = service.unmaskText(text, maskResult.termMappings, maskResult.variableMappings);
+            assertTrue(unmasked.contains("Tu Evento"), unmasked);
+            assertTrue(unmasked.contains("{name}"), unmasked);
+            assertFalse(unmasked.contains("T_1") || unmasked.contains("{{"), unmasked);
+        }
     }
 
     @Test

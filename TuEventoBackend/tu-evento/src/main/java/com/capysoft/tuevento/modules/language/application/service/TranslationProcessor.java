@@ -182,7 +182,22 @@ public class TranslationProcessor {
         String translatedMaskedText = translationPort.translate(maskingResult.maskedText, sourceLang, targetLang);
         
         // 3. Restaurar marcadores
-        return maskingService.unmaskText(translatedMaskedText, 
-                maskingResult.termMappings, maskingResult.variableMappings);
+        try {
+            return maskingService.unmaskText(translatedMaskedText,
+                    maskingResult.termMappings, maskingResult.variableMappings);
+        } catch (TextMaskingService.MaskingException e) {
+            // 4. Respaldo: el motor a veces elimina el marcador (p. ej. al inicio de la frase).
+            //    Se traduce el texto sin enmascarar para no dejar el job fallando indefinidamente;
+            //    solo se acepta si las variables siguen intactas (una variable rota es peor).
+            log.warn("Placeholder lost translating {}->{} ({}); retrying without masking",
+                    sourceLang, targetLang, e.getMessage());
+            String plain = translationPort.translate(sourceText, sourceLang, targetLang);
+            boolean variablesKept = plain != null
+                    && maskingResult.variableMappings.values().stream().allMatch(plain::contains);
+            if (!variablesKept) {
+                throw e;
+            }
+            return plain;
+        }
     }
 }
