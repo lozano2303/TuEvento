@@ -1,4 +1,6 @@
+import "./src/i18n";
 import { AuthProvider } from "./src/context/AuthContext";
+import { LanguageProvider } from "./src/context/LanguageContext";
 import { ThemeProvider } from "./src/context/ThemeContext";
 import { NotificationProvider } from "./src/context/NotificationContext";
 import AppNavigator from "./src/navigation/AppNavigator";
@@ -10,11 +12,13 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <ThemeProvider>
-            <NotificationProvider>
-              <AppNavigator />
-            </NotificationProvider>
-          </ThemeProvider>
+          <LanguageProvider>
+            <ThemeProvider>
+              <NotificationProvider>
+                <AppNavigator />
+              </NotificationProvider>
+            </ThemeProvider>
+          </LanguageProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
