@@ -1574,5 +1574,63 @@
     "comingSoonBadge": "PRONTO",
     "logout": "Cerrar sesión",
     "defaultUser": "Usuario"
+  },
+  "mobileTickets": {
+    "title": "Mis entradas",
+    "order": "Orden",
+    "event": "Evento",
+    "ticketsCount_one": "{{count}} entrada",
+    "ticketsCount_other": "{{count}} entradas",
+    "qrOrder": "QR orden",
+    "toValidate_one": "{{count}} entrada por validar",
+    "toValidate_other": "{{count}} entradas por validar",
+    "emptyTitle": "Aún no tienes entradas",
+    "emptyDesc": "Cuando compres entradas para un evento aparecerán aquí con su código QR.",
+    "loadError": "No se pudieron cargar tus entradas.",
+    "status": {
+      "PAID": "Válido",
+      "USED": "Usado",
+      "REFUNDED": "Reembolsado",
+      "CANCELLED": "Cancelado",
+      "PENDING": "Pendiente",
+      "PROCESSING": "Procesando"
+    },
+    "eventState": {
+      "CANCELLED": "El evento fue cancelado. No es posible usar estas entradas ni generar su código QR.",
+      "COMPLETED": "El evento ya finalizó. Estas entradas ya no pueden usarse.",
+      "REJECTED": "El evento fue rechazado. Estas entradas no están disponibles.",
+      "DRAFT": "El evento aún no está publicado.",
+      "PENDING_REVIEW": "El evento aún no está publicado.",
+      "unavailable": "Este evento ya no está disponible, no es posible generar el código QR."
+    }
+  },
+  "mobileNotifications": {
+    "title": "Notificaciones",
+    "time": {
+      "now": "hace un momento",
+      "min": "hace {{count}} min",
+      "hour": "hace {{count}} h",
+      "day": "hace {{count}} d"
+    },
+    "close": "Cerrar",
+    "read": "Leída",
+    "id": "ID",
+    "filters": {
+      "all": "Todas",
+      "unread": "No leídas"
+    },
+    "markAllRead": "Marcar todas como leídas",
+    "empty": {
+      "allReadTitle": "Todo al día",
+      "noneTitle": "Sin notificaciones",
+      "allReadText": "No tienes notificaciones sin leer.",
+      "noneText": "Las notificaciones aparecerán aquí cuando las recibas."
+    },
+    "tips": {
+      "PAYMENT_APPROVED": "💡 Puedes ver tus tickets en tu perfil.",
+      "PAYMENT_REFUNDED": "💡 Los fondos estarán disponibles según el método de pago original.",
+      "WALLET_CREDITED": "💡 El saldo está disponible inmediatamente en tu cartera.",
+      "WELCOME": "💡 Explora eventos y compra tickets directamente desde la app."
+    }
   }
 }

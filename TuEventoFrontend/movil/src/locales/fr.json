@@ -1572,5 +1572,63 @@
     "comingSoonBadge": "BIENTÔT",
     "logout": "Se déconnecter",
     "defaultUser": "Utilisateur"
+  },
+  "mobileTickets": {
+    "title": "Mes billets",
+    "order": "Commande",
+    "event": "Événement",
+    "ticketsCount_one": "{{count}} billet",
+    "ticketsCount_other": "{{count}} billets",
+    "qrOrder": "QR commande",
+    "toValidate_one": "{{count}} billet à valider",
+    "toValidate_other": "{{count}} billets à valider",
+    "emptyTitle": "Pas encore de billets",
+    "emptyDesc": "Lorsque vous achetez des billets pour un événement, ils apparaissent ici avec leur code QR.",
+    "loadError": "Impossible de charger vos billets.",
+    "status": {
+      "PAID": "Valide",
+      "USED": "Utilisé",
+      "REFUNDED": "Remboursé",
+      "CANCELLED": "Annulé",
+      "PENDING": "En attente",
+      "PROCESSING": "En cours"
+    },
+    "eventState": {
+      "CANCELLED": "L'événement a été annulé. Ces billets ne peuvent pas être utilisés ni générer de code QR.",
+      "COMPLETED": "L'événement est terminé. Ces billets ne peuvent plus être utilisés.",
+      "REJECTED": "L'événement a été rejeté. Ces billets ne sont pas disponibles.",
+      "DRAFT": "L'événement n'est pas encore publié.",
+      "PENDING_REVIEW": "L'événement n'est pas encore publié.",
+      "unavailable": "Cet événement n'est plus disponible, le code QR ne peut pas être généré."
+    }
+  },
+  "mobileNotifications": {
+    "title": "Notifications",
+    "time": {
+      "now": "à l'instant",
+      "min": "il y a {{count}} min",
+      "hour": "il y a {{count}} h",
+      "day": "il y a {{count}} j"
+    },
+    "close": "Fermer",
+    "read": "Lue",
+    "id": "ID",
+    "filters": {
+      "all": "Toutes",
+      "unread": "Non lues"
+    },
+    "markAllRead": "Tout marquer comme lu",
+    "empty": {
+      "allReadTitle": "Tout est à jour",
+      "noneTitle": "Aucune notification",
+      "allReadText": "Vous n'avez aucune notification non lue.",
+      "noneText": "Les notifications apparaîtront ici lorsque vous les recevrez."
+    },
+    "tips": {
+      "PAYMENT_APPROVED": "💡 Vous pouvez voir vos billets dans votre profil.",
+      "PAYMENT_REFUNDED": "💡 Les fonds seront disponibles selon le mode de paiement original.",
+      "WALLET_CREDITED": "💡 Le solde est disponible immédiatement dans votre portefeuille.",
+      "WELCOME": "💡 Explorez les événements et achetez des billets directement depuis l'app."
+    }
   }
 }
