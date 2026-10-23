@@ -217,7 +217,7 @@ export function ThemeProvider({ children }) {
         // silencioso
       }
     };
-    loadBackendMap();
+    void loadBackendMap();
   }, []);
 
   // ── Efecto 3: sincroniza cuando el token cambia (login/logout en otra pestaña) ──

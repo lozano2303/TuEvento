@@ -68,7 +68,7 @@ export default function AdminSectionTypeTranslations() {
   }, [lang, navigate]);
 
   useEffect(() => {
-    loadSectionTypes();
+    void loadSectionTypes();
   }, [lang, filter]);
 
   // Polling para verificar si hay traducciones generándose

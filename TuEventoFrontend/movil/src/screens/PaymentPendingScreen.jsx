@@ -293,7 +293,7 @@ export default function PaymentPendingScreen() {
       }
     };
 
-    poll();
+    void poll();
     intervalRef.current = setInterval(poll, POLL_INTERVAL_MS);
     return () => stopPolling();
   }, [paymentId]);

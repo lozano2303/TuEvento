@@ -56,12 +56,12 @@ const AdminCommentTranslations = () => {
   const languageId = { en: 2, fr: 3, pt: 4 }[lang];
 
   useEffect(() => {
-    loadEvents();
+    void loadEvents();
   }, []);
 
   useEffect(() => {
     if (selectedEventId) {
-      loadComments();
+      void loadComments();
     }
   }, [lang, selectedEventId, filter]);
 
@@ -71,7 +71,7 @@ const AdminCommentTranslations = () => {
     const interval = setInterval(() => {
       const hasGenerating = comments.some(c => c.translationGenerating);
       if (hasGenerating) {
-        loadComments();
+        void loadComments();
       }
     }, 3000);
 

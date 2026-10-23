@@ -96,7 +96,7 @@ export default function EventLayoutEditor() {
   // ── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!eventId) { setLoadError('No se especificó un evento'); return; }
-    (async () => {
+    void (async () => {
       try {
         const eventRes = await EventService.getEventById(eventId);
         const eventData = eventRes.data;

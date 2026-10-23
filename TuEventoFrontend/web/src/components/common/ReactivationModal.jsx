@@ -219,7 +219,7 @@ export default function ReactivationModal({ isOpen, onClose, email }) {
                 setCodeError('');
                 setCanResend(false);
               }}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !confirmLoading) handleConfirm(); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !confirmLoading) void handleConfirm(); }}
               className="w-full rounded-xl px-4 py-3 text-center text-xl font-mono font-bold tracking-[0.35em] text-textPrimary disabled:opacity-50 focus:outline-none transition-all"
               style={{
                 background: 'color-mix(in srgb, var(--color-surfaceAlt) 60%, transparent)',

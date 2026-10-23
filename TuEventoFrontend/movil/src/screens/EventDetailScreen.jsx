@@ -270,7 +270,7 @@ export default function EventDetailScreen() {
     };
 
     if (eventId) {
-      loadEventDetail();
+      void loadEventDetail();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, currentUserId, language]);
@@ -305,7 +305,7 @@ export default function EventDetailScreen() {
       }
     };
 
-    loadSeatsForSection();
+    void loadSeatsForSection();
   }, [selectedSectionId, showToast]);
 
   // Conectar WebSocket al montar
@@ -358,7 +358,7 @@ export default function EventDetailScreen() {
       }
     };
 
-    connectWS();
+    void connectWS();
 
     return () => {
       isCancelled = true;
@@ -471,9 +471,9 @@ export default function EventDetailScreen() {
         showToast('stepper-limit', t("mobileSeats.addSeatFirst"), 'warning');
         return;
       }
-      handleReserveSeat(seatId);
+      void handleReserveSeat(seatId);
     } else if (seat.status === 'RESERVED' && seat.reservedBy === currentUserId) {
-      handleReleaseSeat(seatId);
+      void handleReleaseSeat(seatId);
     }
     // Resto de estados: no-op (silla no clickeable)
   };
