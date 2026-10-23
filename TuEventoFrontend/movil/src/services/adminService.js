@@ -7,7 +7,7 @@ const JSON_HEADERS = { "Content-Type": "application/json" };
 /**
  * Lista todas las solicitudes de organizador pendientes.
  * Requiere rol ADMIN.
- * @returns {Promise<Array<{organizerPetitionId, userId, alias, status, applicationDate, storedFileId}>>}
+ * @returns {Promise<Array<{organizerPetitionId, userId, fullName, email, documentType, status, applicationDate, storedFileId, profilePicture}>>}
  */
 export const getOrganizerRequests = async () => {
   const response = await httpRequest(`${BASE_URL}/admin/organizer-requests`);
