@@ -1481,5 +1481,24 @@
     "languageTitle": "Idioma do aplicativo",
     "languageDesc": "Selecione o idioma em que deseja ver o aplicativo.",
     "languageNote": "Se você estiver conectado, sua preferência é salva no seu perfil."
+  },
+  "mobileLanding": {
+    "tagline": "Projete, planeje e viva experiências únicas que fazem a diferença.",
+    "features": {
+      "create": {
+        "title": "Crie eventos",
+        "desc": "Organize cada detalhe facilmente"
+      },
+      "tickets": {
+        "title": "Venda ingressos",
+        "desc": "Gerencie ingressos digitais"
+      },
+      "connect": {
+        "title": "Conecte pessoas",
+        "desc": "Faça sua comunidade crescer"
+      }
+    },
+    "start": "Começar agora",
+    "login": "Entrar"
   }
 }

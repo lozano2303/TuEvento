@@ -1483,5 +1483,24 @@
     "languageTitle": "App language",
     "languageDesc": "Select the language you want to see the app in.",
     "languageNote": "If you are logged in, your preference is saved to your profile."
+  },
+  "mobileLanding": {
+    "tagline": "Design, plan and live unique experiences that make a difference.",
+    "features": {
+      "create": {
+        "title": "Create events",
+        "desc": "Organize every detail easily"
+      },
+      "tickets": {
+        "title": "Sell tickets",
+        "desc": "Manage digital tickets"
+      },
+      "connect": {
+        "title": "Connect people",
+        "desc": "Grow your community"
+      }
+    },
+    "start": "Start now",
+    "login": "Log in"
   }
 }
