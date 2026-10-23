@@ -41,7 +41,9 @@
           "cameraPermission": "Se usa la cámara para escanear los códigos QR de las entradas."
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "expo-font",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
