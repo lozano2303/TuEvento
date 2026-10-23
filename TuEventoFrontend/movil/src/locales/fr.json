@@ -867,7 +867,13 @@
     "deleteCommentTitle": "Supprimer ce commentaire?",
     "deleteCommentMessage": "Une fois supprimé, il n'y a pas de retour en arrière — le commentaire et ses réponses disparaîtront pour toujours. Continuer?",
     "yesDelete": "Oui, supprimer",
-    "noCancel": "Non, annuler"
+    "noCancel": "Non, annuler",
+    "title": "Détail de l'événement",
+    "loading": "Chargement de l'événement…",
+    "errorTitle": "Erreur de chargement",
+    "notFound": "Événement introuvable",
+    "availability": "Disponibilité",
+    "gallery": "Galerie"
   },
   "paymentApproved": {
     "title": "Paiement approuvé!",
