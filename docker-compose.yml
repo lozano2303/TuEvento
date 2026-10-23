@@ -257,10 +257,13 @@ services:
       - tuevento-network
 
   # ── CI / CD ─────────────────────────────────────────────────────────────────
+  # Inactivos: el CI corre en GitHub Actions + SonarQube Cloud. Solo arrancan con
+  # `docker compose --profile ci up -d jenkins sonarqube` y no se reinician solos.
   jenkins:
     image: jenkins/jenkins:lts-jdk17
     container_name: tuevento-jenkins
-    restart: unless-stopped
+    profiles: ["ci"]
+    restart: "no"
     ports:
       - "8082:8080"
       - "50000:50000"
@@ -275,7 +278,8 @@ services:
   sonarqube:
     image: sonarqube:lts-community
     container_name: tuevento-sonarqube
-    restart: unless-stopped
+    profiles: ["ci"]
+    restart: "no"
     ports:
       - "9002:9000"
     environment:
