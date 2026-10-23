@@ -24,7 +24,7 @@ public class GetOrganizersUseCase implements GetOrganizersPort {
     private final GeneratePublicUrlPort         generatePublicUrlPort;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<OrganizerUserResponse> getOrganizers() {
         return userJpaRepository.findAllByRoleCode("ORGANIZER").stream()
                 .map(userEntity -> {
