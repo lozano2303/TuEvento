@@ -63,12 +63,17 @@ public class S3Config {
     @Bean
     public ApplicationRunner bucketInitializer(S3Client s3Client) {
         return args -> {
-            boolean exists = s3Client.listBuckets()
-                    .buckets().stream()
-                    .anyMatch(b -> b.name().equals(bucketDefault));
-            if (!exists) {
+            try {
+                // headBucket es compatible con R2, MinIO y AWS S3.
+                // listBuckets() no está soportado en Cloudflare R2.
+                s3Client.headBucket(b -> b.bucket(bucketDefault));
+                System.out.println("Bucket '" + bucketDefault + "' verificado correctamente.");
+            } catch (software.amazon.awssdk.services.s3.model.NoSuchBucketException e) {
                 s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketDefault).build());
-                System.out.println("Bucket '" + bucketDefault + "' creado automáticamente en MinIO.");
+                System.out.println("Bucket '" + bucketDefault + "' creado automáticamente.");
+            } catch (Exception e) {
+                // En R2/S3 externo el bucket ya existe — loguear y continuar sin fallar
+                System.out.println("Bucket check: " + e.getMessage() + " — continuando.");
             }
         };
     }

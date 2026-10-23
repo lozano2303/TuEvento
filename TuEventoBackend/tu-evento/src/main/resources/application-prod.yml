@@ -20,9 +20,9 @@ spring:
       max-request-size: 12MB
 
   datasource:
-    # Render inyecta la URL completa via SPRING_DATASOURCE_URL
-    # Formato: postgres://user:password@host:5432/database
-    # Spring Boot necesita jdbc:postgresql://, no postgres://
+    # Render inyecta DATABASE_URL en formato postgres:// automáticamente.
+    # SPRING_DATASOURCE_URL debe configurarse manualmente en Render
+    # con el formato jdbc:postgresql:// (ver DEPLOYMENT.md sección 3.3.2)
     url: ${SPRING_DATASOURCE_URL}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
