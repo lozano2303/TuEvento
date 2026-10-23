@@ -3,12 +3,23 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 /**
+ * Construye el sufijo ?language=<code> para contenido dinámico.
+ * Español es el idioma fuente: con 'es' o null no se solicita traducción
+ * (mismo criterio que la web).
+ * @param {string|null} languageCode
+ * @returns {string} '' o '?language=<code>'
+ */
+const langQuery = (languageCode) =>
+  languageCode && languageCode !== "es" ? `?language=${languageCode}` : "";
+
+/**
  * Obtiene la lista de eventos públicos publicados.
  * Endpoint público - no requiere autenticación, pero si hay token lo envía.
- * 
+ *
+ * @param {string|null} languageCode - código de idioma para traducción dinámica
  * @returns {Promise<Array>} Array de EventSummaryResponse
  */
-export const getPublishedEvents = async () => {
+export const getPublishedEvents = async (languageCode = null) => {
   const token = await AsyncStorage.getItem("accessToken");
   
   const headers = {};
@@ -16,7 +27,7 @@ export const getPublishedEvents = async () => {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${BASE_URL}/events/public`, { headers });
+  const response = await fetch(`${BASE_URL}/events/public${langQuery(languageCode)}`, { headers });
   
   if (!response.ok) {
     throw new Error(`Error fetching published events: ${response.status}`);
@@ -32,7 +43,7 @@ export const getPublishedEvents = async () => {
  * @param {number} cityId - ID de la ciudad
  * @returns {Promise<Array>} Array de EventSummaryResponse
  */
-export const getPublishedEventsByCity = async (cityId) => {
+export const getPublishedEventsByCity = async (cityId, languageCode = null) => {
   const token = await AsyncStorage.getItem("accessToken");
   
   const headers = {};
@@ -40,7 +51,7 @@ export const getPublishedEventsByCity = async (cityId) => {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${BASE_URL}/events/public/city/${cityId}`, { headers });
+  const response = await fetch(`${BASE_URL}/events/public/city/${cityId}${langQuery(languageCode)}`, { headers });
   
   if (!response.ok) {
     throw new Error(`Error fetching events by city: ${response.status}`);
@@ -56,7 +67,7 @@ export const getPublishedEventsByCity = async (cityId) => {
  * @param {number} categoryId - ID de la categoría
  * @returns {Promise<Array>} Array de EventSummaryResponse
  */
-export const getPublishedEventsByCategory = async (categoryId) => {
+export const getPublishedEventsByCategory = async (categoryId, languageCode = null) => {
   const token = await AsyncStorage.getItem("accessToken");
   
   const headers = {};
@@ -64,7 +75,7 @@ export const getPublishedEventsByCategory = async (categoryId) => {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${BASE_URL}/events/public/category/${categoryId}`, { headers });
+  const response = await fetch(`${BASE_URL}/events/public/category/${categoryId}${langQuery(languageCode)}`, { headers });
   
   if (!response.ok) {
     throw new Error(`Error fetching events by category: ${response.status}`);
@@ -81,7 +92,7 @@ export const getPublishedEventsByCategory = async (categoryId) => {
  * @param {string} to - Fecha fin (formato ISO: YYYY-MM-DD)
  * @returns {Promise<Array>} Array de EventSummaryResponse
  */
-export const getPublishedEventsByDateRange = async (from, to) => {
+export const getPublishedEventsByDateRange = async (from, to, languageCode = null) => {
   const token = await AsyncStorage.getItem("accessToken");
   
   const headers = {};
@@ -89,8 +100,9 @@ export const getPublishedEventsByDateRange = async (from, to) => {
     headers.Authorization = `Bearer ${token}`;
   }
 
+  const langParam = languageCode && languageCode !== "es" ? `&language=${languageCode}` : "";
   const response = await fetch(
-    `${BASE_URL}/events/public/date-range?from=${from}&to=${to}`,
+    `${BASE_URL}/events/public/date-range?from=${from}&to=${to}${langParam}`,
     { headers }
   );
   
@@ -104,11 +116,12 @@ export const getPublishedEventsByDateRange = async (from, to) => {
 
 /**
  * Obtiene el detalle completo de un evento.
- * 
+ *
  * @param {number} eventId - ID del evento
- * @returns {Promise<Object>} EventResponse (detalle completo del evento)
+ * @param {string|null} languageCode - código de idioma para traducción dinámica
+ * @returns {Promise<Object>} EventResponse (incluye translatedName/translatedDescription/translationGenerating)
  */
-export const getEventDetail = async (eventId) => {
+export const getEventDetail = async (eventId, languageCode = null) => {
   const token = await AsyncStorage.getItem("accessToken");
   
   const headers = {};
@@ -116,7 +129,7 @@ export const getEventDetail = async (eventId) => {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${BASE_URL}/events/${eventId}`, { headers });
+  const response = await fetch(`${BASE_URL}/events/${eventId}${langQuery(languageCode)}`, { headers });
   
   if (!response.ok) {
     throw new Error(`Error fetching event detail: ${response.status}`);
