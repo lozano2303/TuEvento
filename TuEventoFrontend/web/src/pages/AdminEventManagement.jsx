@@ -572,7 +572,7 @@ export default function AdminEventManagement() {
                     const prev = pageNumbers[i - 1];
                     return (
                       <div key={n} className="flex items-center gap-1.5">
-                        {prev && n - prev > 1 && (
+                        {prev !== undefined && n - prev > 1 && (
                           <span className="text-textMuted text-xs px-1">…</span>
                         )}
                         <button
