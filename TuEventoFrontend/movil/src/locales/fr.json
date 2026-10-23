@@ -1803,7 +1803,8 @@
       "invalidField": "Champ invalide : {{field}}"
     },
     "oauthCancelled": "Vous avez annulé la connexion",
-    "oauthFailed": "Impossible de se connecter avec le compte externe. Veuillez réessayer"
+    "oauthFailed": "Impossible de se connecter avec le compte externe. Veuillez réessayer",
+    "googleExpoGo": "La connexion Google ne fonctionne pas dans Expo Go. Utilisez le build de développement (dev client)."
   },
   "mobileSeats": {
     "sectionSoldOut": "Il n'y a plus de places disponibles dans cette section",

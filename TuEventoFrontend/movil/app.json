@@ -27,7 +27,9 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.tuevento.movil",
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -38,7 +40,8 @@
         {
           "cameraPermission": "Se usa la cámara para escanear los códigos QR de las entradas."
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "eas": {

@@ -1803,7 +1803,8 @@
       "invalidField": "Invalid field: {{field}}"
     },
     "oauthCancelled": "You cancelled the sign-in",
-    "oauthFailed": "Could not sign in with the external account. Please try again"
+    "oauthFailed": "Could not sign in with the external account. Please try again",
+    "googleExpoGo": "Google sign-in does not work in Expo Go. Use the development build (dev client)."
   },
   "mobileSeats": {
     "sectionSoldOut": "No seats left available in this section",

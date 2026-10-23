@@ -8,6 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "../context/AuthContext";
 import { authService } from "../services/authService";
 import { oauthService } from "../services/oauthService";
 import { mapErrorMessage, parseValidationErrors } from "../utils/errorMessages";
@@ -24,6 +25,7 @@ export default function RegisterScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const { setSession } = useAuth();
   const colors = darkColors;
   const [form, setForm] = useState({ fullName: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -101,10 +103,15 @@ export default function RegisterScreen() {
   const handleOAuthRegister = async (provider) => {
     setOauthLoading(provider);
     try {
-      const code = provider === "google"
-        ? await oauthService.loginWithGoogle()
-        : await oauthService.loginWithFacebook();
-      await authService.oauthLogin(provider, code);
+      let result;
+      if (provider === "google") {
+        const { idToken } = await oauthService.loginWithGoogle();
+        result = await authService.googleLogin(idToken);
+      } else {
+        const { code } = await oauthService.loginWithFacebook();
+        result = await authService.oauthLogin(provider, code);
+      }
+      await setSession(result);
       navigation.navigate("Main");
     } catch (e) {
       setApiError(mapErrorMessage(e.message));

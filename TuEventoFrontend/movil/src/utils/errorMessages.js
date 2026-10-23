@@ -47,6 +47,7 @@ export const mapErrorMessage = (message) => {
       "notOrganizer",
     // OAuth (errores lanzados por oauthService)
     "Usuario canceló el inicio de sesión": "oauthCancelled",
+    "GOOGLE_SIGNIN_EXPO_GO": "googleExpoGo",
     "OAuth state mismatch": "oauthFailed",
     "Error en el flujo OAuth": "oauthFailed",
     "Error OAuth": "oauthFailed",

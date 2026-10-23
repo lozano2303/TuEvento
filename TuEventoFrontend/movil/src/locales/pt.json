@@ -1803,7 +1803,8 @@
       "invalidField": "Campo inválido: {{field}}"
     },
     "oauthCancelled": "Você cancelou o login",
-    "oauthFailed": "Não foi possível entrar com a conta externa. Tente novamente"
+    "oauthFailed": "Não foi possível entrar com a conta externa. Tente novamente",
+    "googleExpoGo": "O login com Google não funciona no Expo Go. Use o build de desenvolvimento (dev client)."
   },
   "mobileSeats": {
     "sectionSoldOut": "Os assentos disponíveis nesta seção esgotaram",
