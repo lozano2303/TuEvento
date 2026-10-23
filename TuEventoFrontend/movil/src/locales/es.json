@@ -352,7 +352,8 @@
       "autoReload": "La página se recargará automáticamente."
     },
     "soldOut": "Agotado",
-    "almostGone": "Últimos lugares"
+    "almostGone": "Últimos lugares",
+    "dateToConfirm": "Fecha por confirmar"
   },
   "myEvents": {
     "title": "Mis Eventos",
@@ -1465,5 +1466,16 @@
     "loadError": "Error al cargar los datos",
     "backToEvents": "Volver a eventos",
     "remainingBalance": "Tu saldo restante"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "appearance": "Apariencia",
+    "themeColor": "Tema de color",
+    "themeDesc": "Elige el tema que mejor se adapte a tus preferencias. El cambio se aplica de inmediato.",
+    "themeSaved": "El tema se guarda automáticamente y se restaura la próxima vez que abras la app.",
+    "languageSection": "Idioma",
+    "languageTitle": "Idioma de la aplicación",
+    "languageDesc": "Selecciona el idioma en el que quieres ver la aplicación.",
+    "languageNote": "Si tienes sesión iniciada, tu preferencia se guarda en tu perfil."
   }
 }
