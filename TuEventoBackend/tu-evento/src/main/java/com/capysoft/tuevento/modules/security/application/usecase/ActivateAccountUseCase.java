@@ -40,56 +40,30 @@ public class ActivateAccountUseCase implements ActivateAccountPort {
     @Override
     @Transactional
     public void activate(ActivateAccountRequest request) {
-        log.info("=== ACTIVATING ACCOUNT ===");
-        log.info("Email: {}", request.getEmail());
-        log.info("Activation Code: {}", request.getActivationCode());
-        
+        // Nunca se registra el código de activación: daría acceso a la cuenta a quien lea los logs
         // 1. Buscar por email
         LoginCredentials credentials = loginCredentialsRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "Usuario no encontrado"));
 
         User user = credentials.getUser();
-        log.info("User found: ID={}, Activated={}", user.getUserId(), user.getActivated());
-        
+        log.info("Activating account for user {}", user.getUserId());
+
         // 2. Verificar si ya está activado
         if (user.getActivated() != null && user.getActivated()) {
             throw new BusinessException("ACCOUNT_ALREADY_ACTIVATED", "La cuenta ya está activada");
         }
         
-        // 3. Buscar el código de activación por USUARIO y CÓDIGO (CORREGIDO)
-        log.info("Searching for activation code - UserID: {}, Code: {}", user.getUserId(), request.getActivationCode());
-
-        // Debug: listar todos los códigos del usuario NO ACTIVADOS
-        Optional<AccountActivation> allUserCodes = accountActivationRepository.findByUserAndActivatedFalse(user);
-        log.info("All non-activated codes for user {}: {}", user.getUserId(),
-            allUserCodes.isPresent() ? "FOUND" : "NOT FOUND");
-        if (allUserCodes.isPresent()) {
-            AccountActivation act = allUserCodes.get();
-            log.info("Stored code details - UserID: {}, Activated: {}, Code: {}, ExpiresAt: {}",
-                act.getUser().getUserId(), act.getActivated(), act.getActivationCode(), act.getExpiresAt());
-        }
-
+        // 3. Buscar el código de activación por USUARIO y CÓDIGO
         Optional<AccountActivation> activationOpt = accountActivationRepository
                 .findByUserAndActivationCodeAndActivatedFalse(user, request.getActivationCode());
 
-        log.info("Activation found: {}", activationOpt.isPresent());
-
         if (activationOpt.isEmpty()) {
-            log.warn("Invalid activation code for user {}: {}", user.getUserId(), request.getActivationCode());
-            // Intentar buscar por código solamente para debugging
-            Optional<AccountActivation> byCodeOnly = accountActivationRepository.findByActivationCode(request.getActivationCode());
-            log.info("Found by code only: {}", byCodeOnly.isPresent());
-            if (byCodeOnly.isPresent()) {
-                AccountActivation act = byCodeOnly.get();
-                log.info("Code details - UserID: {}, Activated: {}, Code: {}",
-                    act.getUser().getUserId(), act.getActivated(), act.getActivationCode());
-            }
+            log.warn("Invalid activation code for user {}", user.getUserId());
             throw new BusinessException("INVALID_ACTIVATION_CODE", "Código de activación inválido");
         }
-        
+
         AccountActivation activation = activationOpt.get();
-        log.info("Activation found: ID={}, ExpiresAt={}", activation.getAccountActivationId(), activation.getExpiresAt());
-        
+
         // 4. Verificar si expiró
         if (activation.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new BusinessException("ACTIVATION_CODE_EXPIRED", "El código de activación ha expirado");

@@ -146,10 +146,6 @@ public class RegisterUserUseCase implements RegisterUserPort {
         }
 
         String code = codeGenerator.generateActivationCode();
-        System.out.println("=== RESENDING ACTIVATION CODE ===");
-        System.out.println("Email: " + email);
-        System.out.println("New code: " + code);
-        System.out.println("User ID: " + existingCredentials.getUser().getUserId());
 
         // CORRECCIÓN: eliminar códigos anteriores antes de crear uno nuevo
         accountActivationRepository.deleteByUserId(existingCredentials.getUser().getUserId());
