@@ -13,6 +13,7 @@ import { authService } from "../services/authService";
 import { oauthService } from "../services/oauthService";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
+import LanguageSelector from "../components/LanguageSelector";
 import ScreenLayout from "../components/ScreenLayout";
 import { darkColors } from "../theme/colors";
 
@@ -124,7 +125,7 @@ export default function LoginScreen() {
               {t("login.signIn")}
             </Text>
           </View>
-          <View style={{ width: 40 }} />
+          <LanguageSelector />
         </View>
 
         {/* Card glass del formulario */}

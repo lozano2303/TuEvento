@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { decorativeStyle } from "../theme";
 import { darkColors } from "../theme/colors";
+import LanguageSelector from "../components/LanguageSelector";
 
 export default function LandingScreen() {
   const { width, height } = useWindowDimensions();
@@ -50,6 +51,11 @@ export default function LandingScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: palette.background }}>
       <StatusBar barStyle="light-content" backgroundColor={palette.background} />
+
+      {/* Selector de idioma (sin sesión, igual que la navbar web) */}
+      <View style={{ position: "absolute", top: insets.top + 12, right: 20, zIndex: 10 }}>
+        <LanguageSelector />
+      </View>
 
       {/* Fondo con gradiente */}
       <LinearGradient
