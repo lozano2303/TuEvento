@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
+import React from 'react'
 import { ThemeProvider } from './context/ThemeContext'
 import { NotificationProvider } from './context/NotificationContext'
 import Login from './pages/login'
@@ -28,6 +29,7 @@ import AdminSectionTypeTranslations from './pages/AdminSectionTypeTranslations';
 import AdminCommentTranslations from './pages/AdminCommentTranslations';
 import AdminProfileTranslations from './pages/AdminProfileTranslations';
 import AdminReports from './pages/AdminReports';
+import AdminOrganizerManagement from './pages/AdminOrganizerManagement';
 import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
 import PaymentPending from './pages/PaymentPending';
@@ -37,6 +39,8 @@ import TerminosDeUso from './pages/TerminosDeUso';
 import Privacidad from './pages/Privacidad';
 import Notifications from './pages/Notifications';
 import SpanishOnlyRoute from './components/common/SpanishOnlyRoute';
+import RoleRevokedModal from './components/common/RoleRevokedModal';
+import { useNotifications } from './context/NotificationContext';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -71,12 +75,30 @@ function UserOnlyRoute({ children }) {
 
 function AppContent() {
   const location = useLocation();
+  const { roleRevokedPending, clearRoleRevokedPending } = useNotifications();
+
+  // Check on mount if a role-revoked acknowledgement is pending from a previous session
+  // (e.g. the user was offline when the WS fired, then logged back in)
+  const [showRoleRevokedModal, setShowRoleRevokedModal] = React.useState(() => {
+    const userId = localStorage.getItem('userID');
+    return userId ? localStorage.getItem(`role_revoked_ack_${userId}`) === 'pending' : false;
+  });
+
+  React.useEffect(() => {
+    if (roleRevokedPending) setShowRoleRevokedModal(true);
+  }, [roleRevokedPending]);
+
+  const handleCloseRoleRevokedModal = () => {
+    setShowRoleRevokedModal(false);
+    clearRoleRevokedPending();
+  };
+
   // Rutas sin navbar — incluye el editor con ruta dinámica /events/:id/layout
   const showNavbar = ![
     '/login', '/verification', '/events/create',
     '/reactivate-account', '/complete-profile',
     '/admin-panel', '/admin-events', '/admin-dashboard', '/admin-financial', '/admin-reports',
-    '/admin-categories', '/admin-section-types',
+    '/admin-categories', '/admin-section-types', '/admin-organizers',
     '/checkout',
   ].includes(location.pathname)
     && !location.pathname.match(/^\/events\/[^/]+\/layout$/)
@@ -85,6 +107,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-background">
+      <RoleRevokedModal open={showRoleRevokedModal} onClose={handleCloseRoleRevokedModal} />
       {showNavbar && <Navbar />}
       <div>
         <Routes>
@@ -148,6 +171,11 @@ function AppContent() {
           <Route path="/admin-reports" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminReports />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-organizers" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminOrganizerManagement />
             </ProtectedRoute>
           } />
           <Route path="/admin-translations/:lang/events" element={

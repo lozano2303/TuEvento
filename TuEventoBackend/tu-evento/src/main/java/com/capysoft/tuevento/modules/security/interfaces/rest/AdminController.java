@@ -18,9 +18,12 @@ import com.capysoft.tuevento.modules.profile.infrastructure.persistence.reposito
 import com.capysoft.tuevento.modules.security.application.dto.response.ActivityItemResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminDashboardStatsResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerRequestResponse;
+import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerUserResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.ApproveOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizerRequestsPort;
+import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizersPort;
 import com.capysoft.tuevento.modules.security.application.port.in.RejectOrganizerRequestPort;
+import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganizerRolePort;
 import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
@@ -60,6 +63,10 @@ public class AdminController {
     private final RejectOrganizerRequestPort  rejectOrganizerRequestPort;
     private final GeneratePublicUrlPort       generatePublicUrlPort;
     private final OrganizerPetitionRepository organizerPetitionRepository;
+
+    // ── Organizer role management ─────────────────────────────────────────────
+    private final GetOrganizersPort           getOrganizersPort;
+    private final RevokeOrganizerRolePort     revokeOrganizerRolePort;
 
     // ── Events ────────────────────────────────────────────────────────────────
     private final GetAdminEventsPort          getAdminEventsPort;
@@ -147,6 +154,25 @@ public class AdminController {
 
         return ResponseEntity.ok(ApiResponse.ok("Document URL generated",
                 generatePublicUrlPort.generate(petition.getStoredFileId())));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Organizer role management endpoints
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Operation(summary = "List all users currently holding the ORGANIZER role")
+    @GetMapping("/organizer-users")
+    public ResponseEntity<ApiResponse<List<OrganizerUserResponse>>> getOrganizers() {
+        return ResponseEntity.ok(ApiResponse.ok("Organizers retrieved",
+                getOrganizersPort.getOrganizers()));
+    }
+
+    @Operation(summary = "Revoke the ORGANIZER role from a user (downgrades to USER). " +
+               "Sends in-app + email notification and pushes a WebSocket role-change signal.")
+    @DeleteMapping("/organizer-users/{userId}/revoke")
+    public ResponseEntity<ApiResponse<Void>> revokeOrganizerRole(@PathVariable Integer userId) {
+        revokeOrganizerRolePort.revoke(userId);
+        return ResponseEntity.ok(ApiResponse.ok("Organizer role revoked successfully"));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
