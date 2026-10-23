@@ -1809,7 +1809,6 @@
     "sectionSoldOut": "No seats left available in this section",
     "loadError": "Could not load the seats",
     "wsDisconnected": "Real-time connection lost, reconnecting...",
-    "sessionExpired": "Your session expired, please sign in again",
     "reserveError": "Could not reserve the seat, please try again",
     "releaseError": "Could not release the seat, please try again",
     "addSeatFirst": "Add one more seat to be able to select",
@@ -1871,5 +1870,11 @@
       "passwordRequired": "Enter your password to continue.",
       "error": "Could not deactivate the account. Please try again."
     }
+  },
+  "mobileNav": {
+    "logoutTitle": "Sign out?",
+    "logoutMessage": "Your session will end and you'll need to sign in again to access.",
+    "logoutConfirm": "Yes, sign out",
+    "accept": "OK"
   }
 }

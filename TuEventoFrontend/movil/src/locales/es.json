@@ -1809,7 +1809,6 @@
     "sectionSoldOut": "Se agotaron las sillas disponibles en esta sección",
     "loadError": "No se pudieron cargar las sillas",
     "wsDisconnected": "Se perdió la conexión en tiempo real, reconectando...",
-    "sessionExpired": "Tu sesión expiró, iniciá sesión de nuevo",
     "reserveError": "No se pudo reservar la silla, intentalo de nuevo",
     "releaseError": "No se pudo liberar la silla, intentalo de nuevo",
     "addSeatFirst": "Agregá una silla más para poder seleccionar",
@@ -1871,5 +1870,11 @@
       "passwordRequired": "Ingresa tu contraseña para continuar.",
       "error": "No se pudo desactivar la cuenta. Intenta de nuevo."
     }
+  },
+  "mobileNav": {
+    "logoutTitle": "¿Cerrar sesión?",
+    "logoutMessage": "Tu sesión se cerrará y tendrás que volver a iniciar sesión para acceder.",
+    "logoutConfirm": "Sí, cerrar sesión",
+    "accept": "Aceptar"
   }
 }

@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { View, Text, TouchableOpacity, Modal } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { navigationRef } from "./navigationRef";
@@ -43,6 +44,7 @@ const Tab   = createBottomTabNavigator();
 // ─── Modal de logout ──────────────────────────────────────────────────────────
 function LogoutModal({ visible, onConfirm, onCancel }) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <Modal transparent visible={visible} animationType="fade" statusBarTranslucent>
       <View style={{
@@ -59,13 +61,13 @@ function LogoutModal({ visible, onConfirm, onCancel }) {
             color: colors.textPrimary, fontSize: 20, fontWeight: "800",
             textAlign: "center", marginBottom: 10,
           }}>
-            ¿Cerrar sesión?
+            {t("mobileNav.logoutTitle")}
           </Text>
           <Text style={{
             color: colors.textSecondary, fontSize: 14, textAlign: "center",
             lineHeight: 22, marginBottom: 28,
           }}>
-            Tu sesión se cerrará y tendrás que volver a iniciar sesión para acceder.
+            {t("mobileNav.logoutMessage")}
           </Text>
           <TouchableOpacity
             onPress={onConfirm}
@@ -76,7 +78,7 @@ function LogoutModal({ visible, onConfirm, onCancel }) {
             }}
           >
             <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "700" }}>
-              Sí, cerrar sesión
+              {t("mobileNav.logoutConfirm")}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -89,7 +91,7 @@ function LogoutModal({ visible, onConfirm, onCancel }) {
             }}
           >
             <Text style={{ color: colors.accent, fontSize: 15, fontWeight: "600" }}>
-              Cancelar
+              {t("common.cancel")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -99,8 +101,13 @@ function LogoutModal({ visible, onConfirm, onCancel }) {
 }
 
 // ─── Tab bar personalizado ────────────────────────────────────────────────────
+// Los nombres de ruta se mantienen en español (se usan para navegar); la etiqueta
+// visible se traduce con las mismas claves navigation.* de la web.
+const TAB_LABEL_KEYS = { Inicio: "navigation.home", Eventos: "navigation.events", Perfil: "navigation.profile" };
+
 function CustomTabBar({ state, descriptors, navigation }) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={{
       flexDirection: "row",
@@ -162,7 +169,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
               }}>
                 <Ionicons name={iconName} size={18} color={colors.textPrimary} />
                 <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: "700" }}>
-                  {route.name}
+                  {TAB_LABEL_KEYS[route.name] ? t(TAB_LABEL_KEYS[route.name]) : route.name}
                 </Text>
               </View>
             ) : (

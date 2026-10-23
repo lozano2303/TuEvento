@@ -1809,7 +1809,6 @@
     "sectionSoldOut": "Il n'y a plus de places disponibles dans cette section",
     "loadError": "Impossible de charger les places",
     "wsDisconnected": "Connexion en temps réel perdue, reconnexion...",
-    "sessionExpired": "Votre session a expiré, reconnectez-vous",
     "reserveError": "Impossible de réserver la place, réessayez",
     "releaseError": "Impossible de libérer la place, réessayez",
     "addSeatFirst": "Ajoutez une place de plus pour pouvoir sélectionner",
@@ -1871,5 +1870,11 @@
       "passwordRequired": "Saisissez votre mot de passe pour continuer.",
       "error": "Impossible de désactiver le compte. Veuillez réessayer."
     }
+  },
+  "mobileNav": {
+    "logoutTitle": "Se déconnecter ?",
+    "logoutMessage": "Votre session sera fermée et vous devrez vous reconnecter pour y accéder.",
+    "logoutConfirm": "Oui, se déconnecter",
+    "accept": "Accepter"
   }
 }
