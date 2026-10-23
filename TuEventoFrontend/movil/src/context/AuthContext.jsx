@@ -43,7 +43,7 @@ export function AuthProvider({ children }) {
         setIsLoading(false);
       }
     };
-    restoreSession();
+    void restoreSession();
   }, []);
 
   const setSession = async (data) => {

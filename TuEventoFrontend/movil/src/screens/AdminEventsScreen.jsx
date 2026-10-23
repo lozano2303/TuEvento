@@ -644,8 +644,8 @@ export default function AdminEventsScreen() {
                           <TouchableOpacity
                             key={value}
                             onPress={() => {
-                              if (value === "REJECTED") { openDetail(ev); }
-                              else { handleAction(ev.eventId, value, null); }
+                              if (value === "REJECTED") { void openDetail(ev); }
+                              else { void handleAction(ev.eventId, value, null); }
                             }}
                             disabled={actionLoading}
                             activeOpacity={0.8}

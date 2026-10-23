@@ -56,7 +56,7 @@ export default function Checkout() {
         setLoading(false);
       }
     };
-    doCreateOrder();
+    void doCreateOrder();
   }, [eventId, seatIds]);
 
   // Consultar wallet una vez que la orden esté lista

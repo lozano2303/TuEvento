@@ -102,7 +102,7 @@ export default function AdminSidebar({ activePage }) {
     setShowUserMenu(false);
     if (action === 'profile') navigate('/profile');
     if (action === 'settings') navigate('/settings');
-    if (action === 'logout') handleLogout();
+    if (action === 'logout') void handleLogout();
   };
 
   useEffect(() => {

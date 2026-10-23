@@ -63,14 +63,14 @@ export default function EventsHomeScreen() {
   };
 
   useEffect(() => {
-    loadEvents();
+    void loadEvents();
     // Recargar cuando cambia el idioma para traer nombres traducidos.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    loadEvents(true);
+    void loadEvents(true);
   };
 
   const handleEventPress = (eventId) => {

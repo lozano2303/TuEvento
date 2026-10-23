@@ -23,7 +23,7 @@ public final class ValidationUtils {
     // Mínimo 2 palabras, cada una con al menos 3 letras (tildes y ñ incluidas).
     // Igual a la validación usada en el registro (CompleteProfile/RegisterScreen).
     private static final Pattern FULL_NAME_PATTERN =
-            Pattern.compile("^\\p{L}{3,}(\\s+\\p{L}{3,})+$");
+            Pattern.compile("^\\p{L}{3,}+(?:\\s++\\p{L}{3,}+)++$"); // posesivos: sin retroceso ni recursión
 
     // ── Forbidden words (bio) ─────────────────────────────────────────────────
     // Loaded once from resources/validation/forbidden-words-es.txt at class init.

@@ -86,7 +86,8 @@ public class AddEventRatingService implements AddEventRatingUseCase {
         // ── R5: antispam ─────────────────────────────────────────────────────
         LocalDateTime now = LocalDateTime.now(clock);
         ratingRepository.findLastByEventIdAndUserId(eventId, userId).ifPresent(last -> {
-            long secondsSinceLast = java.time.Duration.between(last.getCreatedAt(), now).getSeconds();
+            long secondsSinceLast = java.time.Duration.between(
+                    last.getCreatedAt().atZone(clock.getZone()), now.atZone(clock.getZone())).getSeconds();
             if (secondsSinceLast < ANTISPAM_SECONDS) {
                 throw new BusinessException("COMMENT_RATE_LIMITED",
                         "Please wait " + (ANTISPAM_SECONDS - secondsSinceLast)

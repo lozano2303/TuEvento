@@ -27,7 +27,7 @@ const CategorySelector = ({
     const hasGeneratingTranslations = categories.some(cat => cat.translationGenerating);
     if (hasGeneratingTranslations) {
       const timer = setTimeout(() => {
-        loadCategories(); // Recargar categorías
+        void loadCategories(); // Recargar categorías
       }, 20000); // 20 segundos
 
       return () => clearTimeout(timer);
@@ -52,7 +52,7 @@ const CategorySelector = ({
 
   // Cargar categorías cuando cambie el idioma
   useEffect(() => {
-    loadCategories();
+    void loadCategories();
   }, [currentLanguage]);
 
   const handleCategorySelect = (category) => {

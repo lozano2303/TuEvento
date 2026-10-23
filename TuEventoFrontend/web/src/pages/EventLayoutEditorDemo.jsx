@@ -95,7 +95,7 @@ export default function EventLayoutEditorDemo() {
   useEffect(() => {
     if (!eventId) return;
 
-    (async () => {
+    void (async () => {
       try {
         // 1. Cargar evento → obtener availableSeats y siteId
         const eventRes = await EventService.getEventById(eventId);
