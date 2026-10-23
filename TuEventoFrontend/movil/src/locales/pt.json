@@ -1809,7 +1809,6 @@
     "sectionSoldOut": "Os assentos disponíveis nesta seção esgotaram",
     "loadError": "Não foi possível carregar os assentos",
     "wsDisconnected": "Conexão em tempo real perdida, reconectando...",
-    "sessionExpired": "Sua sessão expirou, entre novamente",
     "reserveError": "Não foi possível reservar o assento, tente novamente",
     "releaseError": "Não foi possível liberar o assento, tente novamente",
     "addSeatFirst": "Adicione mais um assento para poder selecionar",
@@ -1871,5 +1870,11 @@
       "passwordRequired": "Digite sua senha para continuar.",
       "error": "Não foi possível desativar a conta. Tente novamente."
     }
+  },
+  "mobileNav": {
+    "logoutTitle": "Sair da conta?",
+    "logoutMessage": "Sua sessão será encerrada e você precisará entrar novamente para acessar.",
+    "logoutConfirm": "Sim, sair",
+    "accept": "Aceitar"
   }
 }

@@ -403,7 +403,7 @@ export default function EventDetailScreen() {
       
       // CASO 10: Token expirado (401)
       if (err.message?.includes('401') || err.message?.toLowerCase().includes('unauthorized')) {
-        showToast('token-expired', t("mobileSeats.sessionExpired"), 'error');
+        showToast('token-expired', t("auth.sessionExpired"), 'error');
       }
       // CASO 3: Silla ya reservada por otro (condición de carrera)
       else if (err.message?.includes('SEAT_NOT_AVAILABLE') || err.message?.includes('no está disponible')) {
@@ -438,7 +438,7 @@ export default function EventDetailScreen() {
       
       // CASO 10: Token expirado (401)
       if (err.message?.includes('401') || err.message?.toLowerCase().includes('unauthorized')) {
-        showToast('token-expired', t("mobileSeats.sessionExpired"), 'error');
+        showToast('token-expired', t("auth.sessionExpired"), 'error');
       }
       // CASO 7: Error genérico al liberar
       else {
