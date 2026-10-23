@@ -1,19 +1,24 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
 import com.capysoft.tuevento.modules.security.application.port.in.RejectOrganizerRequestPort;
+import com.capysoft.tuevento.modules.security.domain.event.OrganizerRejectedEvent;
 import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class RejectOrganizerRequestUseCase implements RejectOrganizerRequestPort {
 
     private final OrganizerPetitionRepository organizerPetitionRepository;
+    private final ApplicationEventPublisher   eventPublisher;
 
     @Override
     @Transactional
@@ -27,5 +32,11 @@ public class RejectOrganizerRequestUseCase implements RejectOrganizerRequestPort
 
         petition.setStatus("REJECTED");
         organizerPetitionRepository.save(petition);
+
+        eventPublisher.publishEvent(OrganizerRejectedEvent.builder()
+                .organizerPetitionId(organizerPetitionId)
+                .userId(petition.getUser().getUserId())
+                .occurredAt(LocalDateTime.now())
+                .build());
     }
 }
