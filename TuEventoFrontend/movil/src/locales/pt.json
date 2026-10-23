@@ -530,6 +530,7 @@
     },
     "biographyTranslatedAutomatically": "Biografia traduzida automaticamente",
     "cannotEditTranslated": "Você não pode editar uma biografia traduzida. Altere o idioma para espanhol para editá-la.",
+    "spanishOnlyEdit": "Seu perfil é salvo em espanhol e traduzido automaticamente. Mude o idioma para espanhol para editá-lo.",
     "fullNamePlaceholder": "Seu nome completo",
     "loadingLanguages": "Carregando idiomas…",
     "languageUpdated": "Idioma atualizado com sucesso",
