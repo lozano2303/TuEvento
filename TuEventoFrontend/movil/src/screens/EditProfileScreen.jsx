@@ -15,11 +15,14 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import { uploadFile, getFileUrl } from "../services/storageService";
 import { profileService } from "../services/profileService";
 import AppModal from "../components/AppModal";
+import { mapErrorMessage } from "../utils/errorMessages";
 
 const MAX_BIO = 255;
 
@@ -27,6 +30,8 @@ export default function EditProfileScreen({ navigation, route }) {
   const { colors } = useTheme();
   const { user, setUser, logout, setShowLogoutModal } = useAuth();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+  const { language } = useLanguage();
 
   // ── Estado de desactivación de cuenta ──────────────────────────────────────
   const [deactivateOpen, setDeactivateOpen] = useState(false);
@@ -45,6 +50,9 @@ export default function EditProfileScreen({ navigation, route }) {
   // ── Estado formulario ──────────────────────────────────────────────────────
   const [fullName, setFullName] = useState(user?.fullName ?? "");
   const [bio, setBio]           = useState("");
+  // Biografía traducida al idioma activo (solo lectura, igual que la web)
+  const [translatedBio, setTranslatedBio] = useState(null);
+  const [translationGenerating, setTranslationGenerating] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving]     = useState(false);
 
@@ -57,17 +65,19 @@ export default function EditProfileScreen({ navigation, route }) {
   const hideModal = () => setModal((prev) => ({ ...prev, visible: false }));
 
   const roleLabel =
-    user?.role === "ADMIN" ? "Administrador" :
-    user?.role === "ORGANIZER" ? "Organizador" : "Usuario";
+    user?.role === "ADMIN" ? t("profile.roles.admin") :
+    user?.role === "ORGANIZER" ? t("profile.roles.organizer") : t("profile.roles.user");
 
   // ── Cargar perfil (nombre + bio) ─────────────────────────────────────────────
   useEffect(() => {
     const load = async () => {
       try {
         const token = await AsyncStorage.getItem("accessToken");
-        const profile = await profileService.getByUserId(user.userId, token);
+        const profile = await profileService.getByUserId(user.userId, token, language);
         if (profile?.fullName) setFullName(profile.fullName);
         if (profile?.bio) setBio(profile.bio);
+        setTranslatedBio(profile?.translatedBio || null);
+        setTranslationGenerating(!!profile?.translationGenerating);
       } catch {
         // mantiene valores por defecto
       } finally {
@@ -76,7 +86,25 @@ export default function EditProfileScreen({ navigation, route }) {
     };
     if (user?.userId) load();
     else setLoadingProfile(false);
-  }, [user?.userId]);
+  }, [user?.userId, language]);
+
+  // Polling cada 3s mientras el backend genera la traducción de la biografía
+  useEffect(() => {
+    if (!translationGenerating || translatedBio || language === "es" || !user?.userId) return;
+    const interval = setInterval(async () => {
+      try {
+        const token = await AsyncStorage.getItem("accessToken");
+        const profile = await profileService.getByUserId(user.userId, token, language);
+        if (profile) {
+          setTranslatedBio(profile.translatedBio || null);
+          setTranslationGenerating(!!profile.translationGenerating);
+        }
+      } catch {
+        // error puntual — se reintenta en el próximo ciclo
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [translationGenerating, translatedBio, language, user?.userId]);
 
   // ── Estilos ───────────────────────────────────────────────────────────────
   const styles = StyleSheet.create({
@@ -173,7 +201,7 @@ export default function EditProfileScreen({ navigation, route }) {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      showModal("info", "Permiso requerido", "Necesitamos acceso a tu galería para cambiar la foto.");
+      showModal("info", t("mobileEditProfile.permissionTitle"), t("mobileEditProfile.permissionMsg"));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -194,9 +222,9 @@ export default function EditProfileScreen({ navigation, route }) {
       const newUrl = await getFileUrl(newStoredFileId, token);
       setAvatarUrl(newUrl);
       setUser((prev) => ({ ...prev, storedFileId: newStoredFileId }));
-      showModal("success", "¡Listo!", "Tu foto de perfil fue actualizada.");
+      showModal("success", t("mobileEditProfile.doneTitle"), t("profile.photoUpdated"));
     } catch (err) {
-      showModal("error", "Error", err.message ?? "No se pudo actualizar la foto.");
+      showModal("error", t("common.error"), err.message ? mapErrorMessage(err.message) : t("profile.photoUpdateError"));
     } finally {
       setUploading(false);
     }
@@ -205,7 +233,7 @@ export default function EditProfileScreen({ navigation, route }) {
   // ── Guardar nombre + bio ────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!user?.profileId) {
-      showModal("error", "Error", "No se encontró tu perfil.");
+      showModal("error", t("common.error"), t("profile.profileNotFound"));
       return;
     }
     setSaving(true);
@@ -217,9 +245,9 @@ export default function EditProfileScreen({ navigation, route }) {
         token
       );
       setUser((prev) => ({ ...prev, fullName: fullName.trim() }));
-      showModal("success", "Guardado", "Tu información fue actualizada correctamente.");
+      showModal("success", t("mobileEditProfile.savedTitle"), t("profile.profileSaved"));
     } catch (err) {
-      showModal("error", "Error", err.message ?? "No se pudo guardar la información.");
+      showModal("error", t("common.error"), err.message ? mapErrorMessage(err.message) : t("profile.saveError"));
     } finally {
       setSaving(false);
     }
@@ -243,7 +271,7 @@ export default function EditProfileScreen({ navigation, route }) {
 
   const handleDeactivate = async () => {
     if (!deactivatePassword.trim()) {
-      setDeactivateError("Ingresa tu contraseña para continuar.");
+      setDeactivateError(t("mobileEditProfile.deactivate.passwordRequired"));
       return;
     }
     setDeactivating(true);
@@ -254,7 +282,7 @@ export default function EditProfileScreen({ navigation, route }) {
       // Éxito → cerrar sesión y volver al login
       await logout();
     } catch (err) {
-      setDeactivateError(err.message || "No se pudo desactivar la cuenta. Intenta de nuevo.");
+      setDeactivateError(err.message ? mapErrorMessage(err.message) : t("mobileEditProfile.deactivate.error"));
       setDeactivating(false);
     }
   };
@@ -270,7 +298,7 @@ export default function EditProfileScreen({ navigation, route }) {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.75}>
           <Ionicons name="arrow-back" size={20} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mi perfil</Text>
+        <Text style={styles.headerTitle}>{t("profile.myProfile")}</Text>
       </View>
 
       <ScrollView
@@ -298,7 +326,7 @@ export default function EditProfileScreen({ navigation, route }) {
 
           <TouchableOpacity style={styles.changePhotoBtn} onPress={pickImage} disabled={uploading} activeOpacity={0.75}>
             <Ionicons name="camera-outline" size={15} color={colors.primary} />
-            <Text style={styles.changePhotoText}>{uploading ? "Subiendo..." : "Cambiar foto"}</Text>
+            <Text style={styles.changePhotoText}>{uploading ? t("mobileEditProfile.uploading") : t("mobileEditProfile.changePhoto")}</Text>
           </TouchableOpacity>
 
           {/* Email + badge de rol */}
@@ -315,7 +343,7 @@ export default function EditProfileScreen({ navigation, route }) {
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }}>
             <Ionicons name="person-outline" size={17} color={colors.primary} />
             <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "700" }}>
-              Información personal
+              {t("profile.personalInfo")}
             </Text>
           </View>
 
@@ -324,40 +352,64 @@ export default function EditProfileScreen({ navigation, route }) {
           ) : (
             <>
               {/* Nombre completo */}
-              <Text style={styles.label}>Nombre completo</Text>
+              <Text style={styles.label}>{t("profile.fullName")}</Text>
               <TextInput
                 value={fullName}
                 onChangeText={setFullName}
-                placeholder="Tu nombre completo"
+                placeholder={t("profile.fullNamePlaceholder")}
                 placeholderTextColor={colors.textMuted}
                 style={styles.input}
               />
 
               {/* Biografía */}
-              <Text style={[styles.label, { marginTop: 16 }]}>Biografía</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 16 }}>
+                <Text style={styles.label}>{t("profile.bio")}</Text>
+                {!!translatedBio && (
+                  <Text style={[styles.label, { color: colors.accent, textTransform: "none" }]}>
+                    {t("profile.translation.translated", { lang: language.toUpperCase() })}
+                  </Text>
+                )}
+              </View>
               <TextInput
-                value={bio}
-                onChangeText={(t) => t.length <= MAX_BIO && setBio(t)}
-                placeholder="Cuéntanos algo sobre ti…"
+                value={translatedBio ?? bio}
+                onChangeText={(text) => text.length <= MAX_BIO && setBio(text)}
+                placeholder={t("profile.bioPlaceholder")}
                 placeholderTextColor={colors.textMuted}
                 multiline
                 numberOfLines={3}
-                style={[styles.input, styles.inputMultiline]}
+                editable={!translatedBio}
+                style={[styles.input, styles.inputMultiline, !!translatedBio && { opacity: 0.75 }]}
               />
-              <Text style={styles.charCount}>{bio.length}/{MAX_BIO}</Text>
+              {translatedBio ? (
+                <Text style={[styles.charCount, { color: colors.accent }]}>{t("profile.biographyTranslatedAutomatically")}</Text>
+              ) : translationGenerating && language !== "es" ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 }}>
+                  <ActivityIndicator size="small" color={colors.accent} />
+                  <Text style={{ color: colors.textMuted, fontSize: 12, flex: 1 }}>
+                    {t("profile.translation.generating")} {t("profile.translation.autoUpdate")}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={styles.charCount}>{bio.length}/{MAX_BIO}</Text>
+              )}
 
               {/* Guardar */}
               <TouchableOpacity
-                style={[styles.saveBtn, saving && { opacity: 0.6 }]}
+                style={[styles.saveBtn, (saving || !!translatedBio) && { opacity: 0.6 }]}
                 onPress={handleSave}
-                disabled={saving}
+                disabled={saving || !!translatedBio}
                 activeOpacity={0.8}
               >
                 {saving
                   ? <ActivityIndicator color={colors.textPrimary} size="small" />
-                  : <Text style={styles.saveBtnText}>Guardar cambios</Text>
+                  : <Text style={styles.saveBtnText}>{t("profile.saveChanges")}</Text>
                 }
               </TouchableOpacity>
+              {!!translatedBio && (
+                <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 10, lineHeight: 17 }}>
+                  {t("profile.cannotEditTranslated")}
+                </Text>
+              )}
             </>
           )}
         </View>
@@ -374,10 +426,10 @@ export default function EditProfileScreen({ navigation, route }) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "600" }}>
-                Personalizar tema
+                {t("profile.customizePanel.customizeTheme")}
               </Text>
               <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
-                Elige y personaliza los colores de la app
+                {t("mobileEditProfile.themeDesc")}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
@@ -389,7 +441,7 @@ export default function EditProfileScreen({ navigation, route }) {
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }}>
             <Ionicons name="shield-checkmark-outline" size={17} color={colors.primary} />
             <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "700" }}>
-              Seguridad de la cuenta
+              {t("profile.accountSecurity")}
             </Text>
           </View>
 
@@ -400,10 +452,10 @@ export default function EditProfileScreen({ navigation, route }) {
           }}>
             <View style={{ flex: 1, paddingRight: 12 }}>
               <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "600" }}>
-                Cerrar sesión
+                {t("profile.logout")}
               </Text>
               <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
-                Salir de la cuenta en este dispositivo.
+                {t("profile.logoutDescription")}
               </Text>
             </View>
             <TouchableOpacity
@@ -416,7 +468,7 @@ export default function EditProfileScreen({ navigation, route }) {
               }}
             >
               <Ionicons name="log-out-outline" size={15} color={colors.accent} />
-              <Text style={{ color: colors.accent, fontSize: 13, fontWeight: "700" }}>Salir</Text>
+              <Text style={{ color: colors.accent, fontSize: 13, fontWeight: "700" }}>{t("mobileEditProfile.exit")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -427,10 +479,10 @@ export default function EditProfileScreen({ navigation, route }) {
             borderWidth: 1, borderColor: colors.error + "40",
           }}>
             <Text style={{ color: colors.error, fontSize: 13, fontWeight: "800" }}>
-              Zona de peligro
+              {t("profile.dangerZone")}
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 3, lineHeight: 18 }}>
-              Al desactivar tu cuenta se cerrará tu sesión de inmediato y no podrás ingresar hasta contactar soporte.
+              {t("mobileEditProfile.deactivateDesc")}
             </Text>
             <TouchableOpacity
               onPress={() => { setDeactivateOpen(true); setDeactivateStep(1); }}
@@ -442,7 +494,7 @@ export default function EditProfileScreen({ navigation, route }) {
               }}
             >
               <Text style={{ color: colors.error, fontSize: 13, fontWeight: "700" }}>
-                Desactivar cuenta
+                {t("profile.deactivateAccount")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -471,12 +523,12 @@ export default function EditProfileScreen({ navigation, route }) {
             </View>
 
             <Text style={{ color: colors.textPrimary, fontSize: 19, fontWeight: "800", textAlign: "center", marginBottom: 8 }}>
-              ¿Desactivar tu cuenta?
+              {t("mobileEditProfile.deactivate.title")}
             </Text>
             <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: "center", lineHeight: 20, marginBottom: 20 }}>
               {deactivateStep === 1
-                ? "Esta acción cerrará tu sesión de inmediato y desactivará tu cuenta temporalmente."
-                : "Ingresa tu contraseña para confirmar la desactivación."}
+                ? t("mobileEditProfile.deactivate.step1Desc")
+                : t("mobileEditProfile.deactivate.step2Desc")}
             </Text>
 
             {/* ── Paso 1: consecuencias ── */}
@@ -487,13 +539,13 @@ export default function EditProfileScreen({ navigation, route }) {
                   borderWidth: 1, borderColor: colors.primary + "25", marginBottom: 20, gap: 10,
                 }}>
                   {[
-                    "Tu sesión cerrará inmediatamente.",
-                    "No podrás iniciar sesión hasta contactar soporte.",
-                    "Tus datos se conservan, no se elimina nada.",
-                  ].map((t) => (
-                    <View key={t} style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
+                    t("mobileEditProfile.deactivate.consequence1"),
+                    t("mobileEditProfile.deactivate.consequence2"),
+                    t("mobileEditProfile.deactivate.consequence3"),
+                  ].map((line) => (
+                    <View key={line} style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
                       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent, marginTop: 6 }} />
-                      <Text style={{ color: colors.textSecondary, fontSize: 13, flex: 1, lineHeight: 19 }}>{t}</Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 13, flex: 1, lineHeight: 19 }}>{line}</Text>
                     </View>
                   ))}
                 </View>
@@ -503,14 +555,14 @@ export default function EditProfileScreen({ navigation, route }) {
                     onPress={closeDeactivate} activeOpacity={0.8}
                     style={{ flex: 1, paddingVertical: 13, borderRadius: 13, borderWidth: 1, borderColor: colors.primary + "40", alignItems: "center" }}
                   >
-                    <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>Cancelar</Text>
+                    <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>{t("common.cancel")}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => { setDeactivateStep(2); setDeactivateError(""); }}
                     activeOpacity={0.8}
                     style={{ flex: 1, paddingVertical: 13, borderRadius: 13, backgroundColor: colors.error, alignItems: "center" }}
                   >
-                    <Text style={{ color: "#fff", fontWeight: "700" }}>Continuar</Text>
+                    <Text style={{ color: "#fff", fontWeight: "700" }}>{t("mobileEditProfile.deactivate.continue")}</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -527,8 +579,8 @@ export default function EditProfileScreen({ navigation, route }) {
                 }}>
                   <TextInput
                     value={deactivatePassword}
-                    onChangeText={(t) => { setDeactivatePassword(t); setDeactivateError(""); }}
-                    placeholder="Contraseña actual"
+                    onChangeText={(text) => { setDeactivatePassword(text); setDeactivateError(""); }}
+                    placeholder={t("mobileEditProfile.deactivate.passwordPlaceholder")}
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry={!showPassword}
                     autoFocus
@@ -553,7 +605,7 @@ export default function EditProfileScreen({ navigation, route }) {
                     disabled={deactivating} activeOpacity={0.8}
                     style={{ flex: 1, paddingVertical: 13, borderRadius: 13, borderWidth: 1, borderColor: colors.primary + "40", alignItems: "center", opacity: deactivating ? 0.5 : 1 }}
                   >
-                    <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>Volver</Text>
+                    <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>{t("common.back")}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleDeactivate}
@@ -563,7 +615,7 @@ export default function EditProfileScreen({ navigation, route }) {
                   >
                     {deactivating
                       ? <ActivityIndicator size="small" color="#fff" />
-                      : <Text style={{ color: "#fff", fontWeight: "700" }}>Confirmar</Text>
+                      : <Text style={{ color: "#fff", fontWeight: "700" }}>{t("common.confirm")}</Text>
                     }
                   </TouchableOpacity>
                 </View>

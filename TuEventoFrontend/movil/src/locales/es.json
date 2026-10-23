@@ -1832,5 +1832,28 @@
   },
   "mobileAuth": {
     "passwordPlaceholder": "Mín. 8 caracteres, mayúscula, número y símbolo"
+  },
+  "mobileEditProfile": {
+    "changePhoto": "Cambiar foto",
+    "uploading": "Subiendo...",
+    "permissionTitle": "Permiso requerido",
+    "permissionMsg": "Necesitamos acceso a tu galería para cambiar la foto.",
+    "doneTitle": "¡Listo!",
+    "savedTitle": "Guardado",
+    "themeDesc": "Elige y personaliza los colores de la app",
+    "exit": "Salir",
+    "deactivateDesc": "Al desactivar tu cuenta se cerrará tu sesión de inmediato y no podrás ingresar hasta contactar soporte.",
+    "deactivate": {
+      "title": "¿Desactivar tu cuenta?",
+      "step1Desc": "Esta acción cerrará tu sesión de inmediato y desactivará tu cuenta temporalmente.",
+      "step2Desc": "Ingresa tu contraseña para confirmar la desactivación.",
+      "consequence1": "Tu sesión cerrará inmediatamente.",
+      "consequence2": "No podrás iniciar sesión hasta contactar soporte.",
+      "consequence3": "Tus datos se conservan, no se elimina nada.",
+      "continue": "Continuar",
+      "passwordPlaceholder": "Contraseña actual",
+      "passwordRequired": "Ingresa tu contraseña para continuar.",
+      "error": "No se pudo desactivar la cuenta. Intenta de nuevo."
+    }
   }
 }

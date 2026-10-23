@@ -1832,5 +1832,28 @@
   },
   "mobileAuth": {
     "passwordPlaceholder": "Min. 8 caractères, majuscule, chiffre et symbole"
+  },
+  "mobileEditProfile": {
+    "changePhoto": "Changer la photo",
+    "uploading": "Envoi...",
+    "permissionTitle": "Autorisation requise",
+    "permissionMsg": "Nous avons besoin d'accéder à votre galerie pour changer la photo.",
+    "doneTitle": "C'est fait !",
+    "savedTitle": "Enregistré",
+    "themeDesc": "Choisissez et personnalisez les couleurs de l'application",
+    "exit": "Quitter",
+    "deactivateDesc": "En désactivant votre compte, votre session sera fermée immédiatement et vous ne pourrez plus vous connecter avant d'avoir contacté le support.",
+    "deactivate": {
+      "title": "Désactiver votre compte ?",
+      "step1Desc": "Cette action fermera votre session immédiatement et désactivera temporairement votre compte.",
+      "step2Desc": "Saisissez votre mot de passe pour confirmer la désactivation.",
+      "consequence1": "Votre session sera fermée immédiatement.",
+      "consequence2": "Vous ne pourrez plus vous connecter avant d'avoir contacté le support.",
+      "consequence3": "Vos données sont conservées, rien n'est supprimé.",
+      "continue": "Continuer",
+      "passwordPlaceholder": "Mot de passe actuel",
+      "passwordRequired": "Saisissez votre mot de passe pour continuer.",
+      "error": "Impossible de désactiver le compte. Veuillez réessayer."
+    }
   }
 }
