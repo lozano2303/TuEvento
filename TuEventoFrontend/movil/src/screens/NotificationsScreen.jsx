@@ -13,21 +13,23 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { useNotifications } from "../context/NotificationContext";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatRelativeTime(isoStr) {
+// Tiempo relativo traducido. Recibe la función t para resolver las etiquetas.
+function formatRelativeTime(isoStr, t) {
   if (!isoStr) return "";
   const diff = Date.now() - new Date(isoStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1)  return "hace un momento";
-  if (mins < 60) return `hace ${mins} min`;
+  if (mins < 1)  return t("mobileNotifications.time.now");
+  if (mins < 60) return t("mobileNotifications.time.min", { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24)  return `hace ${hrs} h`;
+  if (hrs < 24)  return t("mobileNotifications.time.hour", { count: hrs });
   const days = Math.floor(hrs / 24);
-  if (days < 7)  return `hace ${days} d`;
+  if (days < 7)  return t("mobileNotifications.time.day", { count: days });
   return new Date(isoStr).toLocaleDateString("es-CO", {
     day: "2-digit", month: "short", year: "numeric",
   });
@@ -65,16 +67,13 @@ function getTypeConfig(type) {
 // ─── Modal de detalle ─────────────────────────────────────────────────────────
 
 function NotificationDetailModal({ notification, onClose, colors }) {
+  const { t } = useTranslation();
   const { icon, color } = getTypeConfig(notification.type);
   const body = stripHtml(notification.body);
   const isUnread = !notification.readAt;
 
-  const tips = {
-    PAYMENT_APPROVED: "💡 Podés ver tus tickets en tu perfil.",
-    PAYMENT_REFUNDED: "💡 Los fondos estarán disponibles según el método de pago original.",
-    WALLET_CREDITED:  "💡 El saldo está disponible inmediatamente en tu cartera.",
-    WELCOME:          "💡 Explorá eventos y comprá tickets directamente desde la app.",
-  };
+  const tipKey = `mobileNotifications.tips.${notification.type}`;
+  const tip = t(tipKey, { defaultValue: "" });
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -143,17 +142,17 @@ function NotificationDetailModal({ notification, onClose, colors }) {
             </Text>
 
             {/* Tip según tipo */}
-            {tips[notification.type] && (
+            {tip ? (
               <View style={{
                 backgroundColor: colors.surface, borderRadius: 12,
                 padding: 12, borderWidth: 1,
                 borderColor: colors.primary + "20",
               }}>
                 <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                  {tips[notification.type]}
+                  {tip}
                 </Text>
               </View>
-            )}
+            ) : null}
 
             {/* Metadata */}
             <View style={{
@@ -161,11 +160,11 @@ function NotificationDetailModal({ notification, onClose, colors }) {
               paddingTop: 12, flexDirection: "row", justifyContent: "space-between",
             }}>
               <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-                ID: #{notification.notificationUserId}
+                {t("mobileNotifications.id")}: #{notification.notificationUserId}
               </Text>
               {notification.readAt && (
                 <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-                  Leída: {formatFullDate(notification.readAt)}
+                  {t("mobileNotifications.read")}: {formatFullDate(notification.readAt)}
                 </Text>
               )}
             </View>
@@ -184,7 +183,7 @@ function NotificationDetailModal({ notification, onClose, colors }) {
               }}
             >
               <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
-                Cerrar
+                {t("mobileNotifications.close")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -197,6 +196,7 @@ function NotificationDetailModal({ notification, onClose, colors }) {
 // ─── Card de notificación ─────────────────────────────────────────────────────
 
 function NotificationCard({ notification, onMarkAsRead, colors }) {
+  const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
   const { icon, color } = getTypeConfig(notification.type);
   const isUnread = !notification.readAt;
@@ -258,7 +258,7 @@ function NotificationCard({ notification, onMarkAsRead, colors }) {
 
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 }}>
             <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-              {formatRelativeTime(notification.sentAt)}
+              {formatRelativeTime(notification.sentAt, t)}
             </Text>
             <Text style={{ color: colors.textMuted, fontSize: 11 }}>•</Text>
             <Text style={{ color: colors.textMuted, fontSize: 11, textTransform: "capitalize" }}>
@@ -283,6 +283,7 @@ function NotificationCard({ notification, onMarkAsRead, colors }) {
 
 export default function NotificationsScreen() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead, refresh } =
@@ -374,7 +375,7 @@ export default function NotificationsScreen() {
         >
           <Ionicons name="arrow-back" size={20} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notificaciones</Text>
+        <Text style={styles.headerTitle}>{t("mobileNotifications.title")}</Text>
         {unreadCount > 0 && (
           <View style={styles.badgeWrap}>
             <Text style={styles.badgeText}>
@@ -401,7 +402,7 @@ export default function NotificationsScreen() {
             styles.filterBtnText,
             { color: filter === "all" ? colors.textPrimary : colors.textSecondary },
           ]}>
-            Todas ({notifications.length})
+            {t("mobileNotifications.filters.all")} ({notifications.length})
           </Text>
         </TouchableOpacity>
 
@@ -420,7 +421,7 @@ export default function NotificationsScreen() {
             styles.filterBtnText,
             { color: filter === "unread" ? colors.textPrimary : colors.textSecondary },
           ]}>
-            No leídas ({unreadCount})
+            {t("mobileNotifications.filters.unread")} ({unreadCount})
           </Text>
         </TouchableOpacity>
       </View>
@@ -432,7 +433,7 @@ export default function NotificationsScreen() {
           activeOpacity={0.8}
           style={styles.markAllBtn}
         >
-          <Text style={styles.markAllText}>Marcar todas como leídas</Text>
+          <Text style={styles.markAllText}>{t("mobileNotifications.markAllRead")}</Text>
         </TouchableOpacity>
       )}
 
@@ -459,13 +460,13 @@ export default function NotificationsScreen() {
               <Ionicons name="notifications-off-outline" size={56} color={colors.textMuted} />
               <Text style={styles.emptyTitle}>
                 {filter === "unread"
-                  ? "Todo al día"
-                  : "Sin notificaciones"}
+                  ? t("mobileNotifications.empty.allReadTitle")
+                  : t("mobileNotifications.empty.noneTitle")}
               </Text>
               <Text style={styles.emptyText}>
                 {filter === "unread"
-                  ? "No tenés notificaciones sin leer."
-                  : "Las notificaciones aparecerán aquí cuando las recibas."}
+                  ? t("mobileNotifications.empty.allReadText")
+                  : t("mobileNotifications.empty.noneText")}
               </Text>
             </View>
           ) : (

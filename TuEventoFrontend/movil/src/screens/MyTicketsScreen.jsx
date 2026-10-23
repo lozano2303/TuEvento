@@ -6,6 +6,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { getMyOrders } from "../services/ticketService";
 
@@ -18,26 +19,24 @@ const fmtCOP = (n, currency = "COP") =>
 const fmtDate = (iso) =>
   !iso ? "" : new Date(iso).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" });
 
-const TICKET_STATUS = {
-  PAID:      { label: "Válido",      color: "#34d399" },
-  USED:      { label: "Usado",       color: "#64748b" },
-  REFUNDED:  { label: "Reembolsado", color: "#f59e0b" },
-  CANCELLED: { label: "Cancelado",   color: "#f87171" },
-  PENDING:   { label: "Pendiente",   color: "#94a3b8" },
-  PROCESSING:{ label: "Procesando",  color: "#94a3b8" },
+// Color por estado de ticket (el label viene de i18n).
+const TICKET_STATUS_COLOR = {
+  PAID: "#34d399", USED: "#64748b", REFUNDED: "#f59e0b",
+  CANCELLED: "#f87171", PENDING: "#94a3b8", PROCESSING: "#94a3b8",
 };
 
-// Mensaje a mostrar cuando el evento de la orden ya no está publicado.
-const EVENT_STATE = {
-  CANCELLED: { color: "#f87171", icon: "close-circle-outline", message: "El evento fue cancelado. No es posible usar estas entradas ni generar su código QR." },
-  COMPLETED: { color: "#64748b", icon: "flag-outline",         message: "El evento ya finalizó. Estas entradas ya no pueden usarse." },
-  REJECTED:  { color: "#f87171", icon: "ban-outline",          message: "El evento fue rechazado. Estas entradas no están disponibles." },
-  DRAFT:          { color: "#94a3b8", icon: "time-outline", message: "El evento aún no está publicado." },
-  PENDING_REVIEW: { color: "#94a3b8", icon: "time-outline", message: "El evento aún no está publicado." },
+// Color/ícono por estado de evento (el mensaje viene de i18n).
+const EVENT_STATE_STYLE = {
+  CANCELLED:      { color: "#f87171", icon: "close-circle-outline" },
+  COMPLETED:      { color: "#64748b", icon: "flag-outline" },
+  REJECTED:       { color: "#f87171", icon: "ban-outline" },
+  DRAFT:          { color: "#94a3b8", icon: "time-outline" },
+  PENDING_REVIEW: { color: "#94a3b8", icon: "time-outline" },
 };
 
 export default function MyTicketsScreen() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
@@ -51,7 +50,7 @@ export default function MyTicketsScreen() {
     try {
       setOrders(await getMyOrders("PAID"));
     } catch (e) {
-      setError(e.message || "No se pudieron cargar tus entradas.");
+      setError(e.message || t("mobileTickets.loadError"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -64,7 +63,9 @@ export default function MyTicketsScreen() {
   const onRefresh = () => { setRefreshing(true); load(); };
 
   const renderTicket = (order, ticket) => {
-    const st = TICKET_STATUS[ticket.status] ?? TICKET_STATUS.PENDING;
+    const stColor = TICKET_STATUS_COLOR[ticket.status] ?? TICKET_STATUS_COLOR.PENDING;
+    const stLabel = t(`mobileTickets.status.${ticket.status}`, { defaultValue: ticket.status });
+    const st = { color: stColor, label: stLabel };
     const usable = ticket.status === "PAID";
     return (
       <View
@@ -118,7 +119,10 @@ export default function MyTicketsScreen() {
 
     // El evento debe estar publicado para poder usar las entradas / generar QR.
     const eventActive = order.eventStatus === "PUBLISHED";
-    const eventState = EVENT_STATE[order.eventStatus] ?? null;
+    const eventState = EVENT_STATE_STYLE[order.eventStatus] ?? null;
+    const eventStateMsg = t(`mobileTickets.eventState.${order.eventStatus}`, {
+      defaultValue: t("mobileTickets.eventState.unavailable"),
+    });
     const canOrderQr = eventActive && remaining > 0;
 
     return (
@@ -133,17 +137,17 @@ export default function MyTicketsScreen() {
         <View style={{ padding: 14, flexDirection: "row", alignItems: "center", gap: 12 }}>
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.textMuted, fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6 }}>
-              Orden #{order.orderId}
+              {t("mobileTickets.order")} #{order.orderId}
             </Text>
             {/* Nombre del evento */}
             <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "800", marginTop: 2 }} numberOfLines={1}>
-              {order.eventName || "Evento"}
+              {order.eventName || t("mobileTickets.event")}
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>
               {fmtCOP(order.totalAmount, order.currency)}
             </Text>
             <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 2 }}>
-              {fmtDate(order.createdAt)} · {tickets.length} {tickets.length === 1 ? "entrada" : "entradas"}
+              {fmtDate(order.createdAt)} · {t("mobileTickets.ticketsCount", { count: tickets.length })}
             </Text>
           </View>
 
@@ -154,8 +158,8 @@ export default function MyTicketsScreen() {
               onPress={() => navigation.navigate("TicketQr", {
                 mode: "order",
                 id: order.orderId,
-                title: order.eventName || `Orden #${order.orderId}`,
-                subtitle: `${remaining} ${remaining === 1 ? "entrada" : "entradas"} por validar`,
+                title: order.eventName || `${t("mobileTickets.order")} #${order.orderId}`,
+                subtitle: t("mobileTickets.toValidate", { count: remaining }),
               })}
               activeOpacity={0.85}
               style={{
@@ -166,7 +170,7 @@ export default function MyTicketsScreen() {
               }}
             >
               <Ionicons name="qr-code" size={16} color={colors.textPrimary} />
-              <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: "700" }}>QR orden</Text>
+              <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: "700" }}>{t("mobileTickets.qrOrder")}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -184,7 +188,7 @@ export default function MyTicketsScreen() {
           }}>
             <Ionicons name={eventState?.icon ?? "information-circle-outline"} size={18} color={eventState?.color ?? colors.textMuted} />
             <Text style={{ color: colors.textSecondary, fontSize: 12, flex: 1, lineHeight: 17 }}>
-              {eventState?.message ?? "Este evento ya no está disponible, no es posible generar el código QR."}
+              {eventStateMsg}
             </Text>
           </View>
         )}
@@ -208,7 +212,7 @@ export default function MyTicketsScreen() {
         >
           <Ionicons name="arrow-back" size={20} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: "800", flex: 1 }}>Mis entradas</Text>
+        <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: "800", flex: 1 }}>{t("mobileTickets.title")}</Text>
       </View>
 
       {loading ? (
@@ -231,9 +235,9 @@ export default function MyTicketsScreen() {
           {!error && orders.length === 0 ? (
             <View style={{ alignItems: "center", gap: 12, paddingHorizontal: 40 }}>
               <Ionicons name="ticket-outline" size={64} color={colors.textMuted} />
-              <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: "700" }}>Aún no tienes entradas</Text>
+              <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: "700" }}>{t("mobileTickets.emptyTitle")}</Text>
               <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: "center", lineHeight: 20 }}>
-                Cuando compres entradas para un evento aparecerán aquí con su código QR.
+                {t("mobileTickets.emptyDesc")}
               </Text>
             </View>
           ) : (

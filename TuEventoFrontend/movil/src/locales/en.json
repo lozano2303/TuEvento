@@ -1574,5 +1574,63 @@
     "comingSoonBadge": "SOON",
     "logout": "Log out",
     "defaultUser": "User"
+  },
+  "mobileTickets": {
+    "title": "My tickets",
+    "order": "Order",
+    "event": "Event",
+    "ticketsCount_one": "{{count}} ticket",
+    "ticketsCount_other": "{{count}} tickets",
+    "qrOrder": "Order QR",
+    "toValidate_one": "{{count}} ticket to validate",
+    "toValidate_other": "{{count}} tickets to validate",
+    "emptyTitle": "No tickets yet",
+    "emptyDesc": "When you buy tickets for an event they will appear here with their QR code.",
+    "loadError": "Could not load your tickets.",
+    "status": {
+      "PAID": "Valid",
+      "USED": "Used",
+      "REFUNDED": "Refunded",
+      "CANCELLED": "Cancelled",
+      "PENDING": "Pending",
+      "PROCESSING": "Processing"
+    },
+    "eventState": {
+      "CANCELLED": "The event was cancelled. These tickets cannot be used or generate a QR code.",
+      "COMPLETED": "The event has ended. These tickets can no longer be used.",
+      "REJECTED": "The event was rejected. These tickets are not available.",
+      "DRAFT": "The event is not published yet.",
+      "PENDING_REVIEW": "The event is not published yet.",
+      "unavailable": "This event is no longer available, the QR code cannot be generated."
+    }
+  },
+  "mobileNotifications": {
+    "title": "Notifications",
+    "time": {
+      "now": "just now",
+      "min": "{{count}} min ago",
+      "hour": "{{count}} h ago",
+      "day": "{{count}} d ago"
+    },
+    "close": "Close",
+    "read": "Read",
+    "id": "ID",
+    "filters": {
+      "all": "All",
+      "unread": "Unread"
+    },
+    "markAllRead": "Mark all as read",
+    "empty": {
+      "allReadTitle": "All caught up",
+      "noneTitle": "No notifications",
+      "allReadText": "You have no unread notifications.",
+      "noneText": "Notifications will appear here when you receive them."
+    },
+    "tips": {
+      "PAYMENT_APPROVED": "💡 You can see your tickets in your profile.",
+      "PAYMENT_REFUNDED": "💡 Funds will be available according to the original payment method.",
+      "WALLET_CREDITED": "💡 The balance is available immediately in your wallet.",
+      "WELCOME": "💡 Browse events and buy tickets directly from the app."
+    }
   }
 }
