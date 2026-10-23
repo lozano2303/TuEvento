@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 024-migrate-organizer-petition-document-to-storage
+      author: capysoft
+      changes:
+        - addColumn:
+            tableName: organizer_petition
+            columns:
+              - column:
+                  name: stored_file_id
+                  type: INT
+        - addForeignKeyConstraint:
+            baseTableName: organizer_petition
+            baseColumnNames: stored_file_id
+            referencedTableName: stored_file
+            referencedColumnNames: stored_file_id
+            constraintName: fk_organizer_petition_stored_file
+        - dropColumn:
+            tableName: organizer_petition
+            columnName: document

@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 055-create-seat-block
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: seat_block
+            columns:
+              - column:
+                  name: seat_block_id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_section_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: capacity
+                  type: INT
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: seat_block
+            baseColumnNames: event_section_id
+            referencedTableName: event_section
+            referencedColumnNames: event_section_id
+            constraintName: fk_seat_block_event_section
+        - sql:
+            sql: "ALTER TABLE seat_block ADD CONSTRAINT chk_seat_block_capacity_positive CHECK (capacity > 0);"

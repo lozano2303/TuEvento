@@ -1,0 +1,554 @@
+﻿databaseChangeLog:
+  # First, clear any existing theme translations from old migration
+  - changeSet:
+      id: 096-clear-old-theme-translations
+      author: capysoft
+      changes:
+        - delete:
+            tableName: theme_translation
+            where: "source = 'MANUAL'"
+  
+  # PRINCIPAL Theme Translations
+  - changeSet:
+      id: 096-seed-theme-translation-principal-en
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'PRINCIPAL')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "Principal"
+              - column:
+                  name: translated_description
+                  value: "Official Your Event theme — platform identity"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-principal-fr
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'PRINCIPAL')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "Principal"
+              - column:
+                  name: translated_description
+                  value: "Thème officiel Your Event — identité de la plateforme"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-principal-pt
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'PRINCIPAL')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "Principal"
+              - column:
+                  name: translated_description
+                  value: "Tema oficial Your Event — identidade da plataforma"
+              - column:
+                  name: source
+                  value: "MANUAL"
+
+  # DARK Theme Translations
+  - changeSet:
+      id: 096-seed-theme-translation-dark-en
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'DARK')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "Dark"
+              - column:
+                  name: translated_description
+                  value: "Dark theme with deep grays and subtle accents"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-dark-fr
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'DARK')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "Sombre"
+              - column:
+                  name: translated_description
+                  value: "Thème sombre avec gris profonds et accents subtils"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-dark-pt
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'DARK')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "Escuro"
+              - column:
+                  name: translated_description
+                  value: "Tema escuro com cinzas profundos e acentos sutis"
+              - column:
+                  name: source
+                  value: "MANUAL"
+
+  # LIGHT Theme Translations
+  - changeSet:
+      id: 096-seed-theme-translation-light-en
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'LIGHT')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "Light"
+              - column:
+                  name: translated_description
+                  value: "Clean and bright theme with white backgrounds and soft grays"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-light-fr
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'LIGHT')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "Clair"
+              - column:
+                  name: translated_description
+                  value: "Thème propre et lumineux avec fonds blancs et gris doux"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-light-pt
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'LIGHT')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "Claro"
+              - column:
+                  name: translated_description
+                  value: "Tema limpo e brilhante com fundos brancos e cinzas suaves"
+              - column:
+                  name: source
+                  value: "MANUAL"
+
+  # PASTEL Theme Translations
+  - changeSet:
+      id: 096-seed-theme-translation-pastel-en
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'PASTEL')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "Pastel"
+              - column:
+                  name: translated_description
+                  value: "Soft and relaxed colors for a calm experience"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-pastel-fr
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'PASTEL')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "Pastel"
+              - column:
+                  name: translated_description
+                  value: "Couleurs douces et relaxées pour une expérience tranquille"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-pastel-pt
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'PASTEL')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "Pastel"
+              - column:
+                  name: translated_description
+                  value: "Cores suaves e relaxadas para uma experiência tranquila"
+              - column:
+                  name: source
+                  value: "MANUAL"
+
+  # VIBRANT Theme Translations
+  - changeSet:
+      id: 096-seed-theme-translation-vibrant-en
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'VIBRANT')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "Vibrant"
+              - column:
+                  name: translated_description
+                  value: "Saturated and energetic colors to stand out"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-vibrant-fr
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'VIBRANT')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "Vibrant"
+              - column:
+                  name: translated_description
+                  value: "Couleurs saturées et énergiques pour se démarquer"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-vibrant-pt
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'VIBRANT')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "Vibrante"
+              - column:
+                  name: translated_description
+                  value: "Cores saturadas e energéticas para se destacar"
+              - column:
+                  name: source
+                  value: "MANUAL"
+
+  # NATURE Theme Translations
+  - changeSet:
+      id: 096-seed-theme-translation-nature-en
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'NATURE')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "Nature"
+              - column:
+                  name: translated_description
+                  value: "Organic greens and earth tones for a natural experience"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-nature-fr
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'NATURE')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "Nature"
+              - column:
+                  name: translated_description
+                  value: "Verts organiques et tons terre pour une expérience naturelle"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-nature-pt
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'NATURE')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "Natureza"
+              - column:
+                  name: translated_description
+                  value: "Verdes orgânicos e tons terrosos para uma experiência natural"
+              - column:
+                  name: source
+                  value: "MANUAL"
+
+  # OCEAN Theme Translations
+  - changeSet:
+      id: 096-seed-theme-translation-ocean-en
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'OCEAN')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "Ocean"
+              - column:
+                  name: translated_description
+                  value: "Deep blues and turquoise for a marine experience"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-ocean-fr
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'OCEAN')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "Océan"
+              - column:
+                  name: translated_description
+                  value: "Bleus profonds et turquoise pour une expérience marine"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-ocean-pt
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'OCEAN')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "Oceano"
+              - column:
+                  name: translated_description
+                  value: "Azuis profundos e turquesa para uma experiência marinha"
+              - column:
+                  name: source
+                  value: "MANUAL"
+
+  # SUNSET Theme Translations
+  - changeSet:
+      id: 096-seed-theme-translation-sunset-en
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'SUNSET')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'en')"
+              - column:
+                  name: translated_name
+                  value: "Sunset"
+              - column:
+                  name: translated_description
+                  value: "Warm oranges and pinks for a vibrant and cozy experience"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-sunset-fr
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'SUNSET')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'fr')"
+              - column:
+                  name: translated_name
+                  value: "Coucher de soleil"
+              - column:
+                  name: translated_description
+                  value: "Oranges chauds et roses pour une expérience vibrante et accueillante"
+              - column:
+                  name: source
+                  value: "MANUAL"
+  - changeSet:
+      id: 096-seed-theme-translation-sunset-pt
+      author: capysoft
+      changes:
+        - insert:
+            tableName: theme_translation
+            columns:
+              - column:
+                  name: theme_id
+                  valueComputed: "(SELECT theme_id FROM theme WHERE name = 'SUNSET')"
+              - column:
+                  name: language_id
+                  valueComputed: "(SELECT language_id FROM language WHERE code = 'pt')"
+              - column:
+                  name: translated_name
+                  value: "Pôr do sol"
+              - column:
+                  name: translated_description
+                  value: "Laranjas quentes e rosas para uma experiência vibrante e acolhedora"
+              - column:
+                  name: source
+                  value: "MANUAL"
+

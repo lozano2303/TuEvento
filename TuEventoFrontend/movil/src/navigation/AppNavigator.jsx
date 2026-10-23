@@ -1,0 +1,284 @@
+import { useRef } from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Ionicons } from "@expo/vector-icons";
+import { View, Text, TouchableOpacity, Modal } from "react-native";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+import { useNotifications } from "../context/NotificationContext";
+import { navigationRef } from "./navigationRef";
+import LandingScreen        from "../screens/LandingScreen";
+import LoginScreen          from "../screens/LoginScreen";
+import RegisterScreen       from "../screens/RegisterScreen";
+import ActivateScreen       from "../screens/ActivateScreen";
+import TermsScreen          from "../screens/TermsScreen";
+import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
+import ResetPasswordScreen  from "../screens/ResetPasswordScreen";
+import HomeScreen           from "../screens/HomeScreen";
+import EventsHomeScreen     from "../screens/EventsHomeScreen";
+import EventDetailScreen    from "../screens/EventDetailScreen";
+import ProfileScreen        from "../screens/ProfileScreen";
+import SettingsScreen             from "../screens/SettingsScreen";
+import ThemeCustomizeScreen       from "../screens/ThemeCustomizeScreen";
+import EditProfileScreen          from "../screens/EditProfileScreen";
+import OrganizerRequestsScreen    from "../screens/OrganizerRequestsScreen";
+import OrganizerRequestDetailScreen from "../screens/OrganizerRequestDetailScreen";
+import CheckoutScreen              from "../screens/CheckoutScreen";
+import PaymentPendingScreen        from "../screens/PaymentPendingScreen";
+import WalletScreen                from "../screens/WalletScreen";
+import NotificationsScreen         from "../screens/NotificationsScreen";
+import AdminEventsScreen           from "../screens/AdminEventsScreen";
+import AdminDashboardScreen        from "../screens/AdminDashboardScreen";
+import AdminFinancialScreen        from "../screens/AdminFinancialScreen";
+import AdminReportsScreen          from "../screens/AdminReportsScreen";
+import AdminCategoriesScreen       from "../screens/AdminCategoriesScreen";
+import AdminSectionTypesScreen     from "../screens/AdminSectionTypesScreen";
+import MyTicketsScreen             from "../screens/MyTicketsScreen";
+import TicketQrScreen              from "../screens/TicketQrScreen";
+import ScanTicketScreen            from "../screens/ScanTicketScreen";
+
+const Stack = createNativeStackNavigator();
+const Tab   = createBottomTabNavigator();
+
+// ─── Modal de logout ──────────────────────────────────────────────────────────
+function LogoutModal({ visible, onConfirm, onCancel }) {
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  return (
+    <Modal transparent visible={visible} animationType="fade" statusBarTranslucent>
+      <View style={{
+        flex: 1, backgroundColor: "rgba(0,0,0,0.55)",
+        justifyContent: "center", alignItems: "center",
+        paddingHorizontal: 32,
+      }}>
+        <View style={{
+          backgroundColor: colors.surface, borderRadius: 20,
+          padding: 28, width: "100%",
+          borderWidth: 1, borderColor: colors.surfaceAlt,
+        }}>
+          <Text style={{
+            color: colors.textPrimary, fontSize: 20, fontWeight: "800",
+            textAlign: "center", marginBottom: 10,
+          }}>
+            {t("mobileNav.logoutTitle")}
+          </Text>
+          <Text style={{
+            color: colors.textSecondary, fontSize: 14, textAlign: "center",
+            lineHeight: 22, marginBottom: 28,
+          }}>
+            {t("mobileNav.logoutMessage")}
+          </Text>
+          <TouchableOpacity
+            onPress={onConfirm}
+            activeOpacity={0.75}
+            style={{
+              backgroundColor: colors.primary, borderRadius: 14,
+              paddingVertical: 14, alignItems: "center", marginBottom: 12,
+            }}
+          >
+            <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "700" }}>
+              {t("mobileNav.logoutConfirm")}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={onCancel}
+            activeOpacity={0.75}
+            style={{
+              borderRadius: 14, paddingVertical: 14,
+              alignItems: "center", borderWidth: 1,
+              borderColor: colors.surfaceAlt,
+            }}
+          >
+            <Text style={{ color: colors.accent, fontSize: 15, fontWeight: "600" }}>
+              {t("common.cancel")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Tab bar personalizado ────────────────────────────────────────────────────
+// Los nombres de ruta se mantienen en español (se usan para navegar); la etiqueta
+// visible se traduce con las mismas claves navigation.* de la web.
+const TAB_LABEL_KEYS = { Inicio: "navigation.home", Eventos: "navigation.events", Perfil: "navigation.profile" };
+
+function CustomTabBar({ state, descriptors, navigation }) {
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  // Punto rojo en Perfil cuando el admin tiene solicitudes o eventos por revisar
+  const { adminPendingTotal } = useNotifications();
+  return (
+    <View style={{
+      flexDirection: "row",
+      backgroundColor: colors.surface + "F0",
+      borderTopWidth: 1,
+      borderTopColor: colors.primary + "30",
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+    }}>
+      {state.routes.map((route, index) => {
+        const isFocused = state.index === index;
+
+        const iconName = (() => {
+          if (route.name === "Inicio")   return isFocused ? "home"     : "home-outline";
+          if (route.name === "Eventos")  return isFocused ? "calendar" : "calendar-outline";
+          if (route.name === "Perfil")   return isFocused ? "person"   : "person-outline";
+          return "ellipse-outline";
+        })();
+
+        const showDot = route.name === "Perfil" && adminPendingTotal > 0;
+        const dot = showDot ? (
+          <View style={{
+            position: "absolute", top: -2, right: -3,
+            width: 9, height: 9, borderRadius: 5,
+            backgroundColor: colors.error,
+            borderWidth: 1.5, borderColor: colors.surface,
+          }} />
+        ) : null;
+
+        const onPress = () => {
+          const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
+          if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name);
+        };
+
+        if (route.name === "Eventos") {
+          return (
+            <View key={route.key} style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+              <TouchableOpacity
+                onPress={onPress}
+                activeOpacity={0.75}
+                style={{
+                  width: 52, height: 52, borderRadius: 26,
+                  backgroundColor: colors.primary,
+                  alignItems: "center", justifyContent: "center",
+                  marginBottom: 14,
+                  shadowColor: colors.primary,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.5, shadowRadius: 8, elevation: 8,
+                }}
+              >
+                <Ionicons name={iconName} size={26} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+          );
+        }
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            onPress={onPress}
+            activeOpacity={0.75}
+            style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 4 }}
+          >
+            {isFocused ? (
+              <View style={{
+                flexDirection: "row", alignItems: "center", gap: 6,
+                backgroundColor: colors.primary,
+                borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7,
+              }}>
+                <View>
+                  <Ionicons name={iconName} size={18} color={colors.textPrimary} />
+                  {dot}
+                </View>
+                <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: "700" }}>
+                  {TAB_LABEL_KEYS[route.name] ? t(TAB_LABEL_KEYS[route.name]) : route.name}
+                </Text>
+              </View>
+            ) : (
+              <View style={{ alignItems: "center", paddingVertical: 4 }}>
+                <View>
+                  <Ionicons name={iconName} size={22} color={colors.textMuted} />
+                  {dot}
+                </View>
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+// ─── Tabs principales ─────────────────────────────────────────────────────────
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
+    >
+      <Tab.Screen name="Inicio"   component={HomeScreen} />
+      <Tab.Screen name="Eventos"  component={EventsHomeScreen} />
+      <Tab.Screen name="Perfil"   component={ProfileScreen} />
+    </Tab.Navigator>
+  );
+}
+
+// ─── Navigator raíz ───────────────────────────────────────────────────────────
+export default function AppNavigator() {
+  const { logout, showLogoutModal, setShowLogoutModal } = useAuth();
+  const isLoggingOut = useRef(false);
+
+  const handleLogoutConfirm = async () => {
+    setShowLogoutModal(false);
+    isLoggingOut.current = true;
+    if (navigationRef.isReady()) {
+      navigationRef.reset({ index: 0, routes: [{ name: "Login" }] });
+    }
+    await logout();
+    isLoggingOut.current = false;
+  };
+
+  return (
+    <NavigationContainer ref={navigationRef}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Landing"        component={LandingScreen} />
+        <Stack.Screen name="Login"          component={LoginScreen} />
+        <Stack.Screen name="Register"       component={RegisterScreen} />
+        <Stack.Screen name="Terms"          component={TermsScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="ResetPassword"  component={ResetPasswordScreen} />
+        <Stack.Screen name="Activate"       component={ActivateScreen} />
+        <Stack.Screen name="Settings"       component={SettingsScreen} />
+        <Stack.Screen name="ThemeCustomize" component={ThemeCustomizeScreen} />
+        <Stack.Screen name="EditProfile"    component={EditProfileScreen} />
+        <Stack.Screen name="EventDetail"    component={EventDetailScreen} />
+        <Stack.Screen name="OrganizerRequests"      component={OrganizerRequestsScreen} />
+        <Stack.Screen name="OrganizerRequestDetail"  component={OrganizerRequestDetailScreen} />
+        <Stack.Screen name="Checkout"                component={CheckoutScreen} />
+        <Stack.Screen name="PaymentPending"          component={PaymentPendingScreen} />
+        <Stack.Screen name="Wallet"                  component={WalletScreen} />
+        <Stack.Screen name="Notifications"           component={NotificationsScreen} />
+        <Stack.Screen name="AdminEvents"             component={AdminEventsScreen} />
+        <Stack.Screen name="AdminDashboard"          component={AdminDashboardScreen} />
+        <Stack.Screen name="AdminFinancial"          component={AdminFinancialScreen} />
+        <Stack.Screen name="AdminReports"            component={AdminReportsScreen} />
+        <Stack.Screen name="AdminCategories"         component={AdminCategoriesScreen} />
+        <Stack.Screen name="AdminSectionTypes"       component={AdminSectionTypesScreen} />
+        <Stack.Screen name="MyTickets"               component={MyTicketsScreen} />
+        <Stack.Screen name="TicketQr"                component={TicketQrScreen} />
+        <Stack.Screen name="ScanTicket"              component={ScanTicketScreen} />
+        <Stack.Screen
+          name="Main"
+          component={MainTabs}
+          options={{ gestureEnabled: false }}
+          listeners={() => ({
+            beforeRemove: (e) => {
+              if (isLoggingOut.current) return;
+              e.preventDefault();
+              setShowLogoutModal(true);
+            },
+          })}
+        />
+      </Stack.Navigator>
+      <LogoutModal
+        visible={showLogoutModal}
+        onConfirm={handleLogoutConfirm}
+        onCancel={() => setShowLogoutModal(false)}
+      />
+    </NavigationContainer>
+  );
+}

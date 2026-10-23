@@ -1,0 +1,1492 @@
+{
+  "common": {
+    "loading": "Chargement…",
+    "error": "Erreur",
+    "success": "Succès",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "noResults": "Aucun résultat",
+    "tryAgain": "Réessayer"
+  },
+  "comments": {
+    "languageRestriction": "Pour commenter, vous devez avoir l'espagnol comme langue préférée dans votre profil.",
+    "translated": "Traduit de l'espagnol",
+    "translating": "Traduction du commentaire…",
+    "loadingComments": "Chargement des commentaires…",
+    "noComments": "Pas encore de commentaires",
+    "writeComment": "Écrire un commentaire…",
+    "reply": "Répondre",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "publish": "Publier",
+    "replyTo": "Répondre à",
+    "editing": "Modification du commentaire",
+    "organizer": "Organisateur",
+    "edited": "Modifié",
+    "selectRating": "Sélectionnez une note de 1 à 5 étoiles avant de publier"
+  },
+  "seats": {
+    "selectSeats": "Sélectionnez vos Places",
+    "availableSeats": "Places disponibles",
+    "reservedSeats": "Places réservées",
+    "soldSeats": "Places vendues",
+    "myReservations": "Mes réservations",
+    "quantity": "Quantité",
+    "howMany": "Combien de places voulez-vous?",
+    "selected": "{{count}} sur {{total}} sélectionnées",
+    "sections": "Sections",
+    "seatMap": "Plan des Places",
+    "myCart": "Votre Panier",
+    "noSeatsSelected": "Vous n'avez sélectionné aucune place",
+    "section": "Section",
+    "price": "Prix",
+    "reserve": "Réserver",
+    "release": "Libérer",
+    "expired": "Votre réservation a expiré et la place a été libérée",
+    "alreadyTaken": "Cette place a déjà été réservée par quelqu'un d'autre",
+    "loginRequired": "Connectez-vous pour réserver des places",
+    "eventUnavailable": "Cet événement n'accepte plus de réservations",
+    "total": "Total",
+    "continueToPayment": "Continuer au paiement"
+  },
+  "landing": {
+    "hero": {
+      "eyebrow": "Gestion d’événements · Simple · Puissant",
+      "welcomeBack": "Bon retour, {{name}}",
+      "titleGuest": {
+        "line1": "Créez des événements",
+        "accent": "que les gens",
+        "line2": "retiennent."
+      },
+      "titleAuth": {
+        "line1": "Votre prochain",
+        "accent": "événement",
+        "line2": "vous attend."
+      },
+      "subtitleGuest": "Concevez, planifiez et vivez des expériences uniques qui font la différence. Chaque détail compte et notre kit le rend possible.",
+      "subtitleAuth": "Explorez les événements de votre ville, organisez le vôtre ou gérez vos billets. Tout au même endroit.",
+      "viewEvents": "Voir les événements",
+      "createEvent": "Créer un événement",
+      "startFree": "Commencer gratuitement",
+      "trust": {
+        "free": "Gratuit pour commencer",
+        "noCard": "Sans carte bancaire",
+        "support": "Support en espagnol"
+      },
+      "stats": {
+        "editor": "Éditeur visuel",
+        "secure": "Sécurisé",
+        "available": "Disponible"
+      }
+    },
+    "heroCard": {
+      "editor": {
+        "title": "Éditeur de plans",
+        "desc": "Concevez votre espace en temps réel"
+      },
+      "tickets": {
+        "title": "Vente de billets",
+        "desc": "Paiements sécurisés et sans souci"
+      },
+      "badge": {
+        "title": "Billet confirmé",
+        "sub": "VIP · Rangée A"
+      }
+    },
+    "value": {
+      "section1": {
+        "eyebrow": "Tout sur une plateforme",
+        "title": "Organisez, concevez et vivez",
+        "titleAccent": "des événements sans limites.",
+        "description": "Créez des événements mémorables avec notre créateur de plans interactif en ligne. Concevez des espaces personnalisés, gérez les participants et visualisez chaque détail de votre événement en temps réel, le tout sur une seule plateforme.",
+        "items": {
+          "editor": "Éditeur de plans drag & drop en temps réel",
+          "analytics": "Panneau d’analytique pour chaque événement",
+          "notifications": "Notifications automatiques à vos participants"
+        },
+        "tags": {
+          "plan": "Plan interactif",
+          "tickets": "Vente de billets",
+          "analytics": "Analytique"
+        }
+      },
+      "section2": {
+        "eyebrow": "Découvrez des expériences",
+        "title": "Demande d’",
+        "titleAccent": "événements exceptionnels.",
+        "description": "Si vous cherchez de nouvelles expériences, consultez notre liste d’événements disponibles. Explorez toutes les options et trouvez le plan parfait pour vous.",
+        "items": {
+          "filter": "Filtrez par ville, catégorie et date",
+          "buy": "Achetez des billets rapidement et en toute sécurité",
+          "alerts": "Recevez des alertes pour les événements qui vous intéressent"
+        },
+        "tags": {
+          "search": "Recherche avancée",
+          "location": "Par lieu",
+          "category": "Par catégorie"
+        },
+        "button": "Voir les événements disponibles"
+      }
+    },
+    "steps": {
+      "eyebrow": "Simple par conception",
+      "title": "Votre événement prêt en quatre étapes",
+      "subtitle": "De l’idée à l’événement réel, sans aucune connaissance technique.",
+      "step1": {
+        "title": "Créez votre compte",
+        "desc": "Inscrivez-vous en quelques secondes. Sans carte bancaire, sans étapes inutiles."
+      },
+      "step2": {
+        "title": "Concevez l’espace",
+        "desc": "Utilisez l’éditeur de plans pour créer sections, sièges et zones personnalisées."
+      },
+      "step3": {
+        "title": "Vendez des billets",
+        "desc": "Activez la vente de billets et gérez les paiements en toute sécurité."
+      },
+      "step4": {
+        "title": "Vivez l’événement",
+        "desc": "Gérez les participants en temps réel et recevez les retours de votre audience."
+      }
+    },
+    "featuresList": {
+      "eyebrow": "Outils inclus",
+      "title": "Tout ce dont vous avez besoin,",
+      "titleAccent": "prêt dès le premier jour",
+      "subtitle": "Sans plugins supplémentaires, sans intégrations compliquées. Chaque outil est conçu pour que vous vous concentriez sur votre événement, pas sur la technologie.",
+      "planEditor": {
+        "title": "Éditeur de plans",
+        "desc": "Créez la disposition de votre événement avec un éditeur visuel drag & drop en temps réel."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "desc": "Rappels, changements et confirmations parviennent automatiquement à vos participants."
+      },
+      "payments": {
+        "title": "Paiements intégrés",
+        "desc": "Passerelle de paiement sécurisée. Encaissez les billets et recevez votre argent sans intermédiaires."
+      },
+      "analytics": {
+        "title": "Analytique",
+        "desc": "Métriques de ventes et de présence dans un panneau clair pour mieux décider."
+      },
+      "geolocation": {
+        "title": "Géolocalisation",
+        "desc": "Les participants découvrent les événements près d’eux en filtrant par ville et catégorie."
+      },
+      "categories": {
+        "title": "Catégories",
+        "desc": "Classez votre événement parmi musique, culture, sport, gastronomie et bien plus."
+      }
+    },
+    "reviews": {
+      "eyebrow": "Utilisateurs réels",
+      "title": "Ce que l’on dit des événements sur TuEvento",
+      "subtitle": "Avis vérifiés de participants à des événements publiés.",
+      "anonymous": "Utilisateur",
+      "organizer": "Organisateur",
+      "cta": "Voir tous les événements et leurs avis"
+    },
+    "platforms": {
+      "eyebrow": "Disponible sur",
+      "title": "Où que vous soyez, TuEvento vous suit",
+      "subtitle": "Accédez depuis le navigateur ou téléchargez l’app Android. La même expérience sur tous les appareils.",
+      "popular": "Populaire",
+      "web": {
+        "title": "Version Web",
+        "desc": "Fonctionne sur tout navigateur moderne. Rien à installer, ouvrez la page et c’est parti.",
+        "button": "Ouvrir l’app web"
+      },
+      "android": {
+        "title": "Application Android",
+        "desc": "Téléchargez l’APK et accédez aux notifications push, au scanner de billets et aux fonctions natives.",
+        "button": "Télécharger l’APK"
+      }
+    },
+    "apkModal": {
+      "title": "Application mobile TuEvento",
+      "subtitle": "Disponible pour appareils Android",
+      "description": "Téléchargez l’application mobile pour accéder à toutes les fonctions de TuEvento depuis votre appareil Android. Notifications push, scanner de billets et plus.",
+      "download": "Télécharger l’APK",
+      "cancel": "Annuler"
+    }
+  },
+  "about": {
+    "hero": {
+      "badge": "Plateforme d'Événements Innovante",
+      "title": "À propos de",
+      "titleAccent": "Nous",
+      "description": "Chez \"Tu Evento\" nous transformons les idées en expériences inoubliables. Nous sommes une plateforme spécialisée dans la mise en page virtuelle d'espaces pour événements, permettant aux organisateurs de planifier visuellement la disposition de leurs lieux : tables, scènes, pistes de danse, zones VIP et plus.",
+      "features": {
+        "visualization": "Visualisation 2D",
+        "planning": "Planification Précise",
+        "experiences": "Expériences Uniques"
+      },
+      "stats": {
+        "editor": "Éditeur visuel",
+        "secure": "Sécurisé",
+        "available": "Disponible",
+        "platforms": "Plateformes"
+      }
+    },
+    "story": {
+      "badge": "Notre Parcours",
+      "title": "Notre Histoire",
+      "description": "Tout a commencé avec une idée simple : rendre l'organisation d'événements plus facile, efficace et accessible à tous. Depuis nos débuts, nous avons travaillé sans relâche pour créer une plateforme qui combine technologie innovante avec une expérience utilisateur exceptionnelle.",
+      "vision": {
+        "title": "Notre Vision",
+        "description": "Être la plateforme leader en gestion d'événements, facilitant les connexions significatives entre organisateurs et participants, propulsant l'industrie du divertissement et renforçant les communautés à travers des expériences inoubliables.",
+        "feature": "Innovation Constante"
+      },
+      "mission": {
+        "title": "Notre Mission",
+        "description": "Fournir des outils intuitifs et puissants qui permettent aux organisateurs de créer des événements exceptionnels et aux participants de découvrir des expériences qui enrichissent leurs vies, tout en maintenant les plus hauts standards de qualité et sécurité.",
+        "feature": "Passion pour les Événements"
+      }
+    },
+    "values": {
+      "badge": "Ce qui nous définit",
+      "title": "Nos Valeurs",
+      "items": {
+        "excellence": {
+          "title": "Excellence",
+          "description": "Nous nous engageons à la plus haute qualité dans tout ce que nous faisons, du développement logiciel au support client."
+        },
+        "collaboration": {
+          "title": "Collaboration",
+          "description": "Nous croyons au pouvoir du travail d'équipe et de la collaboration pour atteindre des objectifs communs et créer de la valeur pour tous."
+        },
+        "integrity": {
+          "title": "Intégrité",
+          "description": "Nous opérons avec honnêteté, transparence et éthique dans toutes nos interactions et décisions."
+        }
+      }
+    },
+    "organize": {
+      "title": "Organisez vos événements",
+      "description": "Organisez vos événements en minutes, pas en heures. Avec nos outils virtuels, simplifiez la planification et concentrez-vous sur l'important.",
+      "features": {
+        "saveTime": {
+          "title": "Économisez du temps",
+          "description": "Planifiez en minutes avec nos outils intuitifs"
+        },
+        "virtualTools": {
+          "title": "Outils virtuels",
+          "description": "Mise en page 2D et visualisation en temps réel"
+        },
+        "focus": {
+          "title": "Concentrez-vous sur l'essentiel",
+          "description": "Consacrez plus de temps à créer des expériences mémorables"
+        }
+      }
+    },
+    "team": {
+      "badge": "Rencontrez l'équipe",
+      "title": "Notre Équipe",
+      "description": "Une équipe passionnée de 2 professionnels dédiés à rendre chaque événement mémorable.",
+      "counter": "{{current}} de {{total}}",
+      "members": {
+        "cristofer": {
+          "name": "Cristofer David Lozano Contreras",
+          "role": "Développeur Logiciel",
+          "description": "Chargé de surveiller le suivi de l'équipe, développeur Backend, concepteur de base de données, support pour la visualisation mobile et documentation."
+        },
+        "jhampier": {
+          "name": "Jhampier Santos Ortiz",
+          "role": "Développeur Logiciel",
+          "description": "Responsable de l'implémentation de la logique système, création d'interfaces graphiques web et mobiles, et élaboration de la documentation du projet."
+        }
+      }
+    },
+    "mockup": {
+      "editorTitle": "Éditeur de plans",
+      "save": "Enregistrer",
+      "attendees": "{{count}} participants",
+      "confirmed": "confirmés",
+      "live": "En direct",
+      "sections": {
+        "vip": "VIP",
+        "general": "Général",
+        "stage": "Scène",
+        "tableA": "Table A",
+        "tableB": "Table B",
+        "bar": "Bar"
+      }
+    }
+  },
+  "auth": {
+    "login": "Se connecter",
+    "logout": "Se déconnecter",
+    "register": "S'inscrire",
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "forgotPassword": "Mot de passe oublié?",
+    "rememberMe": "Se souvenir de moi",
+    "noAccount": "Pas de compte?",
+    "hasAccount": "Vous avez déjà un compte?",
+    "sessionExpired": "Votre session a expiré, veuillez vous reconnecter"
+  },
+  "events": {
+    "title": "Événements",
+    "pageTitle": "ÉVÉNEMENTS",
+    "searchPlaceholder": "Rechercher des événements...",
+    "searchButton": "Rechercher",
+    "loadingEvents": "Chargement des événements...",
+    "noEventsFound": "Aucun événement trouvé",
+    "noEventsMessage": "Essayez une autre recherche ou changez la date.",
+    "viewDetails": "Voir les détails",
+    "draft": "Brouillon",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cet événement ?",
+    "deleteSuccess": "Événement supprimé avec succès",
+    "deleteError": "Erreur lors de la suppression de l'événement",
+    "connectionError": "Erreur de connexion lors du chargement des événements",
+    "noEvents": "Aucun événement disponible",
+    "createEvent": "Créer un événement",
+    "editEvent": "Modifier l'événement",
+    "eventDetails": "Détails de l'événement",
+    "eventName": "Nom de l'événement",
+    "description": "Description",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "location": "Lieu",
+    "availableSeats": "{{count}} places disponibles",
+    "backToEvents": "Retour aux événements",
+    "noImages": "Cet événement n'a pas encore d'images",
+    "status": {
+      "draft": "Brouillon",
+      "published": "Publié",
+      "cancelled": "Annulé",
+      "completed": "Terminé"
+    },
+    "translation": {
+      "translated": "Traduit ({{lang}})",
+      "generating": "Génération de la traduction...",
+      "autoReload": "La page se rechargera automatiquement."
+    },
+    "soldOut": "Complet",
+    "almostGone": "Dernières places"
+  },
+  "myEvents": {
+    "title": "Mes Événements",
+    "subtitle": "Gérez et modifiez vos événements",
+    "createNew": "Créer un nouvel événement",
+    "createFirst": "Créer le premier événement",
+    "loading": "Chargement des événements…",
+    "noEvents": {
+      "title": "Vous n'avez pas encore d'événements",
+      "subtitle": "Créez votre premier événement pour commencer"
+    },
+    "editRestriction": "Pour créer et modifier des événements, changez la langue en espagnol dans votre profil",
+    "filters": {
+      "all": "Tous"
+    },
+    "table": {
+      "headers": {
+        "event": "Événement",
+        "status": "Statut",
+        "dates": "Dates",
+        "seats": "Places",
+        "actions": "Actions"
+      },
+      "noEventsInStatus": "Aucun événement avec le statut {{status}}.",
+      "noEvents": "Aucun événement"
+    },
+    "actions": {
+      "viewDetail": "Voir les détails de l'événement",
+      "editLayout": "Modifier la disposition de l'événement",
+      "editLayoutRestricted": "La disposition ne peut être modifiée qu'en statut Brouillon",
+      "editInfo": "Modifier les informations de l'événement",
+      "editInfoRestricted": "Les informations ne peuvent être modifiées qu'en statut Brouillon",
+      "manageImages": "Gérer les images de l'événement",
+      "manageImagesRestricted": "Les images ne peuvent être modifiées qu'en statut Brouillon",
+      "deleteEvent": "Supprimer l'événement",
+      "deleteEventRestricted": "Seuls les événements en Brouillon peuvent être supprimés"
+    },
+    "status": {
+      "pendingReview": "En attente d'approbation",
+      "rejected": "Rejeté — vérifiez la raison"
+    },
+    "eventStatus": {
+      "DRAFT": "Brouillon",
+      "PENDING_REVIEW": "En révision",
+      "PUBLISHED": "Publié",
+      "REJECTED": "Rejeté",
+      "CANCELLED": "Annulé",
+      "COMPLETED": "Terminé"
+    },
+    "statusActions": {
+      "backToDraft": "Retour au brouillon",
+      "submitReview": "Soumettre pour révision",
+      "publish": "Publier",
+      "reject": "Rejeter",
+      "cancel": "Annuler",
+      "markCompleted": "Marquer comme terminé"
+    },
+    "transitionConfirm": {
+      "PENDING_REVIEW": {
+        "title": "Soumettre cet événement pour révision?",
+        "body": "L'événement sera en attente d'approbation par un administrateur. Vous ne pourrez pas le modifier ni modifier les images pendant la révision. Vous pouvez le retirer à tout moment si vous devez apporter des modifications.",
+        "confirm": "Oui, soumettre pour révision"
+      },
+      "DRAFT": {
+        "title": "Retirer l'événement de la révision?",
+        "body": "L'événement retournera au statut Brouillon et vous pourrez le modifier à nouveau. Vous devrez le soumettre pour révision à nouveau lorsqu'il sera prêt.",
+        "confirm": "Oui, retirer la soumission",
+        "titleCorrect": "Corriger cet événement?",
+        "bodyCorrect": "L'événement retournera au statut Brouillon pour que vous puissiez le corriger et le soumettre à nouveau pour révision."
+      },
+      "CANCELLED": {
+        "title": "Annuler cet événement?",
+        "body": "L'événement ne sera plus disponible publiquement. Cette action ne peut pas être annulée. Si des billets ont déjà été vendus, le processus de remboursement devra être géré séparément.",
+        "confirm": "Oui, annuler l'événement"
+      },
+      "COMPLETED": {
+        "title": "Marquer cet événement comme terminé?",
+        "body": "Cela indique que l'événement est terminé. Vous ne pourrez plus le modifier ni changer son statut après cela.",
+        "confirm": "Oui, marquer comme terminé"
+      },
+      "cancel": "Annuler",
+      "changing": "Changement…"
+    },
+    "visibility": {
+      "public": "Public",
+      "private": "Privé",
+      "active": "Actif"
+    },
+    "detailModal": {
+      "close": "Fermer",
+      "active": "Actif",
+      "private": "Privé",
+      "loadingDetails": "Chargement des détails…",
+      "descriptionLabel": "Description de l'événement",
+      "fields": {
+        "startDate": "DATE ET HEURE DE DÉBUT",
+        "eventType": "TYPE D'ÉVÉNEMENT",
+        "city": "VILLE",
+        "finishDate": "DATE DE FIN",
+        "availableSeats": "PLACES DISPONIBLES",
+        "status": "STATUT",
+        "public": "Public",
+        "private": "Privé"
+      },
+      "banners": {
+        "pendingReview": "Votre événement est en cours de révision. Nous le publierons une fois que l'administrateur l'aura approuvé.",
+        "rejectedTitle": "Événement rejeté",
+        "rejectedAction": "Fermez ce panneau, corrigez l'événement et soumettez-le à nouveau pour révision."
+      },
+      "submitReview": "Soumettre pour révision"
+    },
+    "myEarnings": "Mes revenus"
+  },
+  "profile": {
+    "myProfile": "Mon profil",
+    "editProfile": "Modifier le profil",
+    "personalInfo": "Informations Personnelles",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "fullName": "Nom Complet",
+    "phone": "Téléphone",
+    "city": "Ville",
+    "bio": "Biographie",
+    "bioPlaceholder": "Parlez-nous de vous…",
+    "language": "Langue préférée",
+    "languagePreferred": "Langue Préférée",
+    "preferences": "Préférences",
+    "theme": "Thème Visuel",
+    "saveChanges": "Enregistrer les modifications",
+    "saving": "Enregistrement...",
+    "updateSuccess": "Profil mis à jour avec succès",
+    "updateError": "Impossible de mettre à jour le profil",
+    "accountSecurity": "Sécurité du Compte",
+    "logout": "Déconnexion",
+    "logoutDescription": "Se déconnecter de cet appareil.",
+    "dangerZone": "Zone de Danger",
+    "deactivateWarning": "Une fois que vous désactivez votre compte, vous ne pouvez pas annuler cette action.",
+    "deactivateAccount": "Désactiver le Compte",
+    "roles": {
+      "admin": "Administrateur",
+      "organizer": "Organisateur",
+      "user": "Utilisateur"
+    },
+    "translation": {
+      "translated": "Traduit ({{lang}})",
+      "generating": "Génération de la traduction de la biographie...",
+      "autoUpdate": "Elle se mettra à jour automatiquement une fois prête."
+    },
+    "biographyTranslatedAutomatically": "Biographie traduite automatiquement",
+    "cannotEditTranslated": "Vous ne pouvez pas modifier une biographie traduite. Changez la langue en espagnol pour la modifier.",
+    "spanishOnlyEdit": "Votre profil est enregistré en espagnol et traduit automatiquement. Passez la langue en espagnol pour le modifier.",
+    "fullNamePlaceholder": "Votre nom complet",
+    "loadingLanguages": "Chargement des langues…",
+    "languageUpdated": "Langue mise à jour avec succès",
+    "languageUpdateError": "Impossible de mettre à jour la langue",
+    "photoUpdateError": "Impossible de mettre à jour la photo.",
+    "photoUpdated": "Photo mise à jour.",
+    "profileNotFound": "Votre profil est introuvable.",
+    "photoLoadError": "Impossible de charger votre photo.",
+    "saveError": "Erreur lors de l'enregistrement du profil",
+    "profileSaved": "Profil enregistré avec succès",
+    "onlyImageFormats": "Seulement JPG, PNG ou WEBP.",
+    "maxFileSize": "Max. {{size}} Mo.",
+    "imageRequirements": "Seulement JPG, PNG ou WEBP. Max. {{size}} Mo. Pas de contenu adulte.",
+    "imageRequirementsLabel": "Exigences d'image",
+    "themeSection": {
+      "loadingThemes": "Chargement des thèmes…",
+      "active": "Actif",
+      "applyTheme": "Appliquer le thème",
+      "applying": "Application en cours…",
+      "previousTheme": "Thème précédent",
+      "nextTheme": "Thème suivant",
+      "goToTheme": "Aller au thème {{number}}",
+      "customizeColors": "Personnaliser les couleurs",
+      "activateToCustomize": "Activez ce thème pour le personnaliser",
+      "unsavedChanges": "Enregistrez les modifications pour appliquer la nouvelle langue",
+      "saveLanguage": "Enregistrer la langue",
+      "savingLanguage": "Enregistrement…"
+    },
+    "customizePanel": {
+      "officialThemeTitle": "Thème Officiel",
+      "officialThemeDesc": "Le thème PRINCIPAL est l'identité officielle de Tu Evento et ne peut pas être personnalisé.",
+      "customizeTheme": "Personnaliser le thème",
+      "resetAll": "Tout réinitialiser",
+      "closePanel": "Fermer le panneau",
+      "closeEditor": "Fermer l'éditeur",
+      "groups": {
+        "backgrounds": "Arrière-plans",
+        "primary": "Primaires",
+        "texts": "Textes",
+        "states": "États"
+      },
+      "properties": {
+        "background": "Arrière-plan principal",
+        "surface": "Surface",
+        "surfaceAlt": "Surface alternative",
+        "primary": "Couleur primaire",
+        "primaryDark": "Primaire foncé",
+        "accent": "Accent",
+        "textPrimary": "Texte principal",
+        "textSecondary": "Texte secondaire",
+        "textMuted": "Texte atténué",
+        "error": "Erreur",
+        "errorBg": "Arrière-plan d'erreur",
+        "success": "Succès",
+        "successBg": "Arrière-plan de succès"
+      },
+      "contrast": {
+        "ratio": "Rapport de contraste: {{ratio}}:1",
+        "aaa": "AAA",
+        "aa": "AA",
+        "aaLarge": "AA Large",
+        "fail": "Pas de contraste",
+        "lowContrast": "Faible contraste",
+        "lowContrastWarning": "cette couleur peut être difficile à lire sur l'arrière-plan actuel ({{ratio}}:1, minimum WCAG AA 4.5:1). Vous pouvez l'enregistrer quand même.",
+        "suggested": "Suggéré:",
+        "useThis": "← utiliser celui-ci",
+        "resetToBase": "Réinitialiser à la valeur de base"
+      },
+      "editor": {
+        "colorPicker": "Ouvrir le sélecteur de couleur",
+        "colorPickerLabel": "Sélecteur de couleur pour {{property}}",
+        "hexLabel": "Valeur hexadécimale de la couleur",
+        "hexPlaceholder": "#RRVVBB",
+        "invalidFormat": "Format invalide — utilisez #RVB, #RRVVBB ou rgba(…)",
+        "colorSwatch": "Couleur {{hex}}",
+        "cancel": "Annuler",
+        "apply": "Appliquer",
+        "saving": "Enregistrement…",
+        "saveError": "Impossible d'enregistrer. Réessayez."
+      },
+      "log": {
+        "title": "Historique des modifications",
+        "loading": "Chargement de l'historique…",
+        "empty": "Aucune modification enregistrée",
+        "resetAction": "Réinitialisé à la valeur de base",
+        "updateAction": "Mis à jour"
+      },
+      "footer": {
+        "contrastInfo": "Les valeurs de contraste suivent la norme WCAG 2.1 AA (minimum 4.5:1 pour le texte normal). Les avertissements sont indicatifs — vous pouvez enregistrer n'importe quelle couleur."
+      },
+      "badges": {
+        "custom": "Personnalisé",
+        "active": "Actif"
+      },
+      "errors": {
+        "resetError": "Impossible de réinitialiser \"{{property}}\".",
+        "resetAllError": "Erreur lors de la réinitialisation de toutes les couleurs."
+      }
+    }
+  },
+  "categories": {
+    "title": "Catégories",
+    "allCategories": "Toutes les catégories",
+    "selectCategory": "Sélectionnez une catégorie",
+    "noCategories": "Aucune catégorie disponible",
+    "createCategory": "Créer une Catégorie",
+    "editCategory": "Modifier la Catégorie",
+    "deleteCategory": "Supprimer la Catégorie",
+    "name": "Nom",
+    "description": "Description",
+    "namePlaceholder": "Nom de la catégorie",
+    "descriptionPlaceholder": "Description optionnelle",
+    "parentCategory": "Catégorie parent",
+    "selectParent": "Sélectionner catégorie parent (optionnel)",
+    "noParent": "Sans catégorie parent",
+    "rootCategory": "Catégorie racine",
+    "creating": "Création...",
+    "saving": "Enregistrement...",
+    "deleting": "Suppression...",
+    "required": "requis",
+    "translation": {
+      "translated": "Traduit ({{lang}})",
+      "generating": "Génération de la traduction..."
+    },
+    "errors": {
+      "create": "Échec de la création de la catégorie",
+      "update": "Échec de la mise à jour de la catégorie",
+      "delete": "Échec de la suppression de la catégorie",
+      "load": "Échec du chargement des catégories"
+    }
+  },
+  "cart": {
+    "myCart": "Mon panier",
+    "emptyCart": "Votre panier est vide",
+    "total": "Total",
+    "checkout": "Passer à la caisse",
+    "continueShopping": "Continuer les achats"
+  },
+  "payment": {
+    "paymentMethod": "Méthode de paiement",
+    "card": "Carte",
+    "cash": "Espèces",
+    "processing": "Traitement du paiement…",
+    "success": "Paiement réussi",
+    "failed": "Le paiement a échoué",
+    "pending": "Paiement en attente"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "about": "À propos",
+    "events": "Événements",
+    "myEvents": "Mes Événements",
+    "createEvent": "Créer un Événement",
+    "profile": "Profil",
+    "viewAll": "Voir tout",
+    "organizerPetition": "Demande d'Organisateur"
+  },
+  "userMenu": {
+    "profile": "Profil",
+    "profileDesc": "Voir et modifier votre compte",
+    "notifications": "Notifications",
+    "notificationsDesc": "Voir toutes vos notifications",
+    "wallet": "Portefeuille",
+    "walletDesc": "Solde et transactions",
+    "adminPanel": "Panneau de Gestion",
+    "adminPanelDesc": "Gérer la plateforme",
+    "login": "Se connecter"
+  },
+  "footer": {
+    "tagline": "La plateforme pour découvrir, créer et gérer des événements en direct de manière simple et professionnelle.",
+    "navigation": "Navigation",
+    "legal": "Légal",
+    "termsOfService": "Conditions d'utilisation",
+    "privacy": "Confidentialité",
+    "copyright": "© {{year}} Tu Evento · Tous droits réservés",
+    "madeWith": "Fait avec ♥ par CapySoft"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Restez à jour avec toutes vos notifications",
+    "filters": {
+      "all": "Toutes",
+      "unread": "Non lues"
+    },
+    "actions": {
+      "markAllRead": "Tout marquer comme lu"
+    },
+    "loading": "Chargement des notifications...",
+    "empty": {
+      "title": "Vous n'avez pas de notifications",
+      "subtitle": "Les notifications apparaîtront ici lorsque vous les recevrez",
+      "unreadTitle": "Vous n'avez pas de notifications non lues",
+      "unreadSubtitle": "Toutes vos notifications sont à jour"
+    },
+    "types": {
+      "PAYMENT_APPROVED": "Paiement approuvé",
+      "PAYMENT_REFUNDED": "Paiement remboursé",
+      "WALLET_CREDITED": "Portefeuille crédité",
+      "WELCOME": "Bienvenue",
+      "EVENT_PUBLISHED": "Événement publié",
+      "EVENT_REJECTED": "Événement rejeté"
+    },
+    "translating": "Traduction...",
+    "details": {
+      "close": "Fermer",
+      "readAt": "Lu",
+      "wallet": "Portefeuille",
+      "card": "Carte/QR",
+      "total": "Total",
+      "tips": {
+        "paymentApproved": "Vous pouvez voir vos billets dans votre profil",
+        "paymentRefunded": "Les fonds seront disponibles selon le mode de paiement d'origine",
+        "walletCredited": "Le solde est disponible immédiatement",
+        "welcomeTitle": "Que pouvez-vous faire sur TuEvento?",
+        "welcomeItem1": "Explorer et acheter des billets pour des événements",
+        "welcomeItem2": "Demander à devenir organisateur avec votre carte d'identité/passeport et documents supplémentaires"
+      }
+    },
+    "dropdown": {
+      "viewAll": "Voir toutes les notifications",
+      "noNotifications": "Vous n'avez pas de notifications",
+      "loading": "Chargement des notifications..."
+    }
+  },
+  "organizerPetition": {
+    "title": "Demande d'Organisateur",
+    "subtitle": "Téléchargez un document d'identité pour vérifier votre compte et pouvoir créer des événements sur la plateforme.",
+    "status": {
+      "pending": "Votre demande est en cours d'examen",
+      "pendingSince": "Soumise le {{date}}",
+      "rejected": "Votre demande a été rejetée",
+      "rejectedRetry": "Vous pouvez réessayer",
+      "approved": "Document vérifié"
+    },
+    "fileUpload": {
+      "dragDrop": "Glissez et déposez votre document ici",
+      "clickSelect": "Ou cliquez pour sélectionner un fichier manuellement",
+      "selectFile": "Sélectionner un fichier",
+      "formatInfo": "PDF • Max 5 Mo",
+      "fileLoaded": "Fichier chargé",
+      "uploaded": "Téléchargé"
+    },
+    "buttons": {
+      "send": "Envoyer la demande",
+      "sending": "Envoi...",
+      "inReview": "En cours d'examen",
+      "approved": "Approuvé"
+    },
+    "documents": {
+      "title": "Documents requis",
+      "required": "Obligatoires",
+      "optional": "Optionnels",
+      "items": {
+        "idCard": "Carte d'identité / CNI",
+        "passport": "Passeport valide (Étrangers)",
+        "officialId": "Document d'identité officiel",
+        "backgroundCheck": "Certificat d'antécédents",
+        "courseCerts": "Certificats de cours",
+        "references": "Références professionnelles"
+      }
+    },
+    "info": {
+      "processingTime": "Vos informations seront traitées dans un délai de 24 à 48 heures ouvrables par notre équipe de sécurité."
+    },
+    "errors": {
+      "selectDocument": "Sélectionnez un document",
+      "submitError": "Erreur lors de l'envoi de la demande"
+    },
+    "welcome": {
+      "title": "Vous êtes maintenant organisateur !",
+      "subtitle": "Votre demande a été approuvée. Vous avez désormais accès à ces fonctionnalités :",
+      "createFirst": "Créer mon premier événement",
+      "later": "Compris",
+      "features": {
+        "createEvents": {
+          "title": "Créer des événements",
+          "desc": "Concevez le lieu, configurez les sections et les sièges, puis publiez vos événements."
+        },
+        "manageEvents": {
+          "title": "Gérer vos événements",
+          "desc": "Modifiez, soumettez à validation et suivez le statut de chaque événement."
+        },
+        "earnings": {
+          "title": "Voir vos revenus",
+          "desc": "Consultez les ventes et les revenus de vos événements."
+        },
+        "scanTickets": {
+          "title": "Valider les billets",
+          "desc": "Scannez les QR codes des participants depuis l’application mobile."
+        }
+      }
+    }
+  },
+  "checkout": {
+    "title": "Confirmer l'achat",
+    "backToSelection": "Retour à la sélection",
+    "preparingOrder": "Préparation de votre commande…",
+    "orderCreateError": "Impossible de créer la commande",
+    "backToSeats": "Retour à la sélection des places",
+    "selectedSeats": "Places sélectionnées",
+    "seat": "place",
+    "seats": "places",
+    "total": "Total",
+    "wallet": "Portefeuille",
+    "available": "disponibles",
+    "normalPayment": "Paiement normal",
+    "useWallet": "Utiliser le portefeuille",
+    "orderTotal": "Total de la commande",
+    "walletDiscount": "Réduction portefeuille",
+    "remainingGateway": "Restant via passerelle",
+    "walletCoversAll": "À payer (le portefeuille couvre tout)",
+    "paymentMethod": "Méthode de paiement",
+    "qrCode": "Code QR",
+    "scanWithBank": "Scannez le QR avec votre application bancaire",
+    "pay": "Payer",
+    "payWithWallet": "Payer avec le portefeuille",
+    "processing": "Traitement…",
+    "reservationNote": "En confirmant, vos places seront réservées pendant le traitement du paiement."
+  },
+  "paymentPending": {
+    "title": "Traitement de votre paiement",
+    "completePaymentInWindow": "Complétez le paiement dans la fenêtre qui s'est ouverte.",
+    "confirmingWalletPayment": "Confirmation de votre paiement par portefeuille…",
+    "openingPaymentWindow": "Ouverture de la fenêtre de paiement…",
+    "event": "Événement",
+    "seats": "Places",
+    "reopenPaymentWindow": "Rouvrir la fenêtre de paiement",
+    "doNotCloseTab": "Ne fermez pas cet onglet pendant le traitement du paiement.",
+    "paymentCancelled": "Paiement annulé",
+    "paymentRejected": "Paiement refusé",
+    "paymentError": "Erreur de paiement",
+    "cancelledMessage": "Vous avez annulé la transaction. Vous pouvez réessayer quand vous voulez.",
+    "rejectedMessage": "Le paiement a été refusé. Vous pouvez réessayer.",
+    "errorMessage": "Une erreur s'est produite lors du traitement du paiement. Vous pouvez réessayer.",
+    "retry": "Réessayer",
+    "backToEvents": "Retour aux événements"
+  },
+  "eventDetail": {
+    "continueToPayment": "Continuer au paiement",
+    "backToEvents": "Retour aux événements",
+    "availableSeats": "{{count}} places disponibles",
+    "published": "Publié",
+    "loadingEvent": "Chargement de l'événement…",
+    "eventNotFound": "Événement introuvable",
+    "noImages": "Cet événement n'a pas encore d'images",
+    "seatSelection": "Sélectionnez vos Places",
+    "howManySeats": "Combien de places voulez-vous?",
+    "selected": "{{count}} sur {{total}} sélectionnées",
+    "noSeatsSelected": "Vous n'avez sélectionné aucune place",
+    "loginToComment": "pour laisser un commentaire",
+    "loadingComments": "Chargement des commentaires…",
+    "noCommentsYet": "Pas encore de commentaires. Soyez le premier!",
+    "edited": "modifié",
+    "you": "Vous",
+    "organizer": "Organisateur",
+    "commentsCount": "Commentaires",
+    "reply": "Répondre",
+    "writeComment": "Écrivez votre commentaire sur l'événement…",
+    "publishingComment": "Envoi du commentaire…",
+    "publishComment": "Publier le commentaire",
+    "deleteCommentTitle": "Supprimer ce commentaire?",
+    "deleteCommentMessage": "Une fois supprimé, il n'y a pas de retour en arrière — le commentaire et ses réponses disparaîtront pour toujours. Continuer?",
+    "yesDelete": "Oui, supprimer",
+    "noCancel": "Non, annuler"
+  },
+  "paymentApproved": {
+    "title": "Paiement approuvé!",
+    "subtitle": "Votre achat a réussi. Voici vos billets.",
+    "yourTickets": "Vos billets",
+    "ticketNumber": "Billet #{{id}}",
+    "ticketsEmail": "Vos billets seront envoyés à votre e-mail sous peu.",
+    "viewMoreEvents": "Voir plus d'événements"
+  },
+  "wallet": {
+    "noCredit": "Vous n'avez pas encore de crédit accumulé",
+    "noCreditMessage": "Votre solde de portefeuille sera généré lorsque vous annulerez un achat ou recevrez un remboursement.",
+    "myBalance": "Mon Solde",
+    "availableBalance": "Votre solde disponible",
+    "description": "Gardez le contrôle de vos fonds et profitez d'une expérience sécurisée, rapide et sans complications pour vos achats d'événements.",
+    "currentBalance": "SOLDE ACTUEL",
+    "pendingPurchases": "en achats en attente",
+    "availableForPurchases": "Solde disponible pour vos achats",
+    "protectedCredit": "Crédit interne protégé",
+    "useBalance": "Utiliser le solde pour un achat",
+    "movementHistory": "Historique des transactions",
+    "viewLess": "Voir moins",
+    "viewAll": "Voir tout",
+    "concept": "CONCEPT",
+    "date": "DATE",
+    "status": "STATUT",
+    "amount": "MONTANT",
+    "noMovements": "Aucune transaction enregistrée",
+    "statusCompleted": "Terminé",
+    "statusPending": "En attente",
+    "statusFailed": "Échoué",
+    "howToUse": "Comment l'utiliser?",
+    "howToUseText": "Utilisez votre solde disponible pour acheter des billets, des services et plus lors de nos événements.",
+    "protectedBalance": "Solde Protégé",
+    "protectedBalanceText": "Votre argent est en sécurité avec notre technologie de cryptage et nos processus vérifiés.",
+    "help": "Des questions?",
+    "helpText": "Si vous avez des questions sur votre solde ou vos transactions, contactez notre équipe de support.",
+    "movements": {
+      "reversal": "Annulation",
+      "creditCancellation": "Crédit d'annulation",
+      "appliedToPurchase": "Appliqué à l'achat",
+      "adminAdjustment": "Ajustement administratif",
+      "movement": "Transaction"
+    }
+  },
+  "terms": {
+    "title": "Conditions d'Utilisation",
+    "subtitle": "Tu Evento",
+    "lastUpdate": "Dernière mise à jour: 24 septembre 2026",
+    "backToHome": "Retour à l'accueil",
+    "disclaimer": "Ce document est un projet préliminaire élaboré pour le projet académique \"Tu Evento\" (SENA). Il ne constitue pas un conseil juridique certifié. Un examen par un professionnel du droit est recommandé avant un déploiement en production avec de vrais utilisateurs.",
+    "section1": {
+      "title": "1. Acceptation des conditions",
+      "p1": "En vous inscrivant et en utilisant la plateforme \"Tu Evento\" (ci-après, \"la Plateforme\"), exploitée par l'équipe CapySoft, vous acceptez les présentes Conditions d'Utilisation. Si vous n'êtes pas d'accord avec l'un de ces points, nous vous demandons de ne pas utiliser la Plateforme.",
+      "p2": "Tu Evento est un projet développé dans le cadre d'une formation du SENA (Service National d'Apprentissage), actuellement disponible pour les utilisateurs en Colombie."
+    },
+    "section2": {
+      "title": "2. Description du service",
+      "intro": "Tu Evento est une plateforme web et mobile qui permet:",
+      "item1": "Aux organisateurs: créer, publier et gérer des événements, définir les prix, les zones et la disponibilité des billets, et gérer leur vente.",
+      "item2": "Aux participants: explorer les événements, acheter des billets, recevoir leur billet numérique avec code QR, et valider leur entrée à l'événement avec ce code."
+    },
+    "section3": {
+      "title": "3. Inscription de compte",
+      "p1": "Pour utiliser certaines fonctions de la Plateforme, vous devez créer un compte, soit avec un e-mail et un mot de passe, soit en liant votre compte Google ou Facebook.",
+      "intro": "Vous êtes responsable de:",
+      "item1": "Fournir des informations véridiques lors de l'inscription.",
+      "item2": "Maintenir la confidentialité de votre mot de passe.",
+      "item3": "Toute utilisation faite de votre compte.",
+      "p2": "Vous pouvez demander la désactivation ou la suppression de votre compte à tout moment depuis la Plateforme."
+    },
+    "section4": {
+      "title": "4. Contenu publié par les utilisateurs",
+      "intro": "Si vous publiez du contenu sur la Plateforme (photo de profil, images d'événement, description, etc.), vous déclarez que:",
+      "item1": "Vous avez les droits nécessaires pour publier ce contenu.",
+      "item2": "Le contenu ne viole pas les droits de tiers ni la loi colombienne.",
+      "item3": "Le contenu n'inclut pas de matériel sexuel, violent, discriminatoire ou qui viole de quelque manière que ce soit les directives communautaires de la Plateforme.",
+      "p1": "Toutes les images téléchargées sur la Plateforme passent par un processus automatique de modération de contenu. Nous nous réservons le droit de rejeter ou de supprimer tout contenu qui ne respecte pas ces conditions, ainsi que de suspendre les comptes qui les violent de manière répétée."
+    },
+    "section5": {
+      "title": "5. Achat de billets et paiements",
+      "item1": "Les paiements au sein de la Plateforme sont traités via la passerelle de paiement Wompi. Tu Evento ne stocke pas les données complètes de votre carte ou moyen de paiement; ce traitement est effectué par Wompi selon ses propres politiques de sécurité.",
+      "item2": "Lors de l'achat d'un billet, vous recevrez un billet numérique avec un code QR unique, qui sera validé à l'entrée de l'événement.",
+      "item3": "Les politiques de remboursement, de modification ou d'annulation d'un événement sont définies par chaque organisateur, sauf disposition contraire de la loi applicable. Nous recommandons de vérifier les conditions spécifiques de chaque événement avant d'acheter.",
+      "item4": "Tu Evento agit comme intermédiaire technologique entre organisateurs et participants; la responsabilité de la réalisation, de la qualité et des conditions de l'événement incombe à l'organisateur qui le publie."
+    },
+    "section6": {
+      "title": "6. Responsabilités de l'organisateur",
+      "intro": "Si vous publiez un événement en tant qu'organisateur, vous vous engagez à:",
+      "item1": "Fournir des informations véridiques sur l'événement (date, lieu, prix, capacité disponible).",
+      "item2": "Respecter la réglementation en vigueur applicable à la tenue d'événements publics en Colombie.",
+      "item3": "Répondre aux participants de la bonne exécution de l'événement publié."
+    },
+    "section7": {
+      "title": "7. Utilisation abusive de la plateforme",
+      "intro": "Il est interdit de:",
+      "item1": "Créer des événements faux ou frauduleux.",
+      "item2": "Utiliser la Plateforme pour des activités illégales.",
+      "item3": "Tenter de violer la sécurité du système.",
+      "item4": "Usurper l'identité d'une autre personne ou organisation.",
+      "p1": "Le non-respect de ces points peut entraîner la suspension ou la suppression de votre compte."
+    },
+    "section8": {
+      "title": "8. Propriété intellectuelle",
+      "p1": "Le nom \"Tu Evento\", son logo, son design et son interface sont la propriété de l'équipe CapySoft. Le contenu que vous publiez (photos, descriptions d'événements) reste votre propriété, mais vous nous accordez une licence pour l'afficher au sein de la Plateforme dans le but d'exploiter le service."
+    },
+    "section9": {
+      "title": "9. Limitation de responsabilité",
+      "p1": "Tu Evento est offert \"tel quel\" (as-is). Étant un projet en développement continu, nous ne garantissons pas la disponibilité ininterrompue du service. Nous ne sommes pas responsables des dommages résultant de l'annulation d'un événement par l'organisateur, ni de l'utilisation abusive que ferait un tiers des informations publiées sur la Plateforme."
+    },
+    "section10": {
+      "title": "10. Modifications",
+      "p1": "Nous pouvons mettre à jour ces Conditions d'Utilisation à tout moment. Les changements importants seront notifiés au sein de la Plateforme. L'utilisation continue du service après une mise à jour implique l'acceptation des nouvelles conditions."
+    },
+    "section11": {
+      "title": "11. Contact",
+      "p1": "Pour des questions sur ces conditions, vous pouvez nous écrire à:",
+      "email": "soporte.capysoft@gmail.com"
+    }
+  },
+  "privacy": {
+    "title": "Politique de Confidentialité",
+    "subtitle": "Tu Evento",
+    "lastUpdate": "Dernière mise à jour: 24 septembre 2026",
+    "backToHome": "Retour à l'accueil",
+    "disclaimer": "Ce document est un projet préliminaire élaboré pour le projet académique \"Tu Evento\" (SENA). Il ne constitue pas un conseil juridique certifié. Un examen par un professionnel du droit est recommandé avant un déploiement en production avec de vrais utilisateurs.",
+    "intro": "Chez Tu Evento, développé par l'équipe CapySoft, nous nous engageons à protéger vos informations personnelles conformément à la loi 1581 de 2012 et au décret 1377 de 2013 de Colombie sur la protection des données personnelles.",
+    "section1": {
+      "title": "1. Responsable du traitement des données",
+      "p1": "Tu Evento (équipe CapySoft) est responsable du traitement des données personnelles collectées via sa plateforme web et mobile.",
+      "p2": "E-mail de contact pour les questions de confidentialité:",
+      "email": "soporte.capysoft@gmail.com"
+    },
+    "section2": {
+      "title": "2. Données que nous collectons",
+      "intro": "Nous collectons les données suivantes selon votre utilisation de la Plateforme:",
+      "register": {
+        "title": "Lors de l'inscription:",
+        "item1": "E-mail et mot de passe (stockés de manière cryptée), ou",
+        "item2": "Données de base de votre compte Google ou Facebook si vous vous inscrivez via ces comptes (nom et e-mail associés à ce compte)."
+      },
+      "profile": {
+        "title": "Dans votre profil (facultatif, vous les saisissez):",
+        "item1": "Nom.",
+        "item2": "Description/biographie.",
+        "item3": "Photo de profil."
+      },
+      "purchase": {
+        "title": "Lors de l'achat de billets:",
+        "item1": "Historique des achats et billets acquis au sein de la Plateforme.",
+        "item2": "Données de paiement: traitées directement par notre passerelle de paiement Wompi; Tu Evento ne stocke pas les données complètes de votre carte."
+      },
+      "event": {
+        "title": "Lors de la publication d'un événement (organisateurs):",
+        "item1": "Informations de l'événement (date, lieu, prix, images) et données de contact associées à l'événement."
+      },
+      "technical": {
+        "title": "Données techniques:",
+        "item1": "Préférences de langue et de thème visuel au sein de la Plateforme.",
+        "item2": "Informations de session nécessaires pour maintenir votre connexion active (jetons d'authentification)."
+      }
+    },
+    "section3": {
+      "title": "3. Finalité du traitement",
+      "intro": "Nous utilisons vos données pour:",
+      "item1": "Créer et gérer votre compte.",
+      "item2": "Vous permettre d'acheter ou de vendre des billets d'événements.",
+      "item3": "Générer et valider vos billets avec code QR.",
+      "item4": "Vous envoyer des notifications liées à vos achats ou événements.",
+      "item5": "Modérer le contenu publié (photos de profil et d'événements) pour éviter le contenu inapproprié.",
+      "item6": "Améliorer la sécurité et le fonctionnement de la Plateforme.",
+      "p1": "Nous n'utilisons pas vos données à des fins autres que celles décrites ici sans votre consentement."
+    },
+    "section4": {
+      "title": "4. Stockage et conservation",
+      "item1": "Les images que vous téléchargez (photo de profil, images d'événements) sont stockées dans notre infrastructure de stockage de fichiers tant que votre compte ou l'événement correspondant restent actifs.",
+      "item2": "Si vous supprimez votre compte ou un événement, nous procéderons à la suppression ou à l'anonymisation des données associées, sauf celles que nous devons conserver par obligation légale (par exemple, les enregistrements de transactions de paiement)."
+    },
+    "section5": {
+      "title": "5. Avec qui nous partageons vos données",
+      "item1": "Wompi: pour le traitement des paiements, sous ses propres politiques de confidentialité et de sécurité.",
+      "item2": "Fournisseurs d'authentification (Google, Facebook): uniquement pour valider votre identité lors de la connexion avec ces comptes, si vous choisissez de les utiliser.",
+      "item3": "Nous ne vendons ni ne partageons vos données personnelles avec des tiers à des fins publicitaires."
+    },
+    "section6": {
+      "title": "6. Vos droits",
+      "intro": "En tant que titulaire de vos données, vous pouvez à tout moment:",
+      "item1": "Demander l'accès aux données que nous avons sur vous.",
+      "item2": "Demander la correction de données inexactes.",
+      "item3": "Demander la suppression de votre compte et de vos données personnelles.",
+      "item4": "Révoquer votre autorisation pour le traitement de vos données, sauf s'il existe une obligation légale de les conserver.",
+      "p1": "Vous pouvez exercer ces droits depuis votre profil sur la Plateforme ou en écrivant à",
+      "email": "soporte.capysoft@gmail.com"
+    },
+    "section7": {
+      "title": "7. Sécurité de l'information",
+      "intro": "Nous mettons en œuvre des mesures techniques pour protéger vos informations, notamment:",
+      "item1": "Mots de passe stockés de manière cryptée (jamais en texte clair).",
+      "item2": "Authentification via des jetons (JWT) avec expiration et renouvellement sécurisés.",
+      "item3": "Modération automatique de contenu pour empêcher la publication d'images inappropriées.",
+      "p1": "Aucun système n'est infaillible à 100%; en cas d'incident de sécurité affectant vos données, nous vous en informerons conformément aux exigences de la réglementation applicable."
+    },
+    "section8": {
+      "title": "8. Mineurs",
+      "p1": "La Plateforme n'est pas destinée aux mineurs de moins de 18 ans. Si vous avez connaissance qu'un mineur a créé un compte sans l'autorisation de ses parents ou tuteurs, contactez-nous pour procéder à sa suppression."
+    },
+    "section9": {
+      "title": "9. Modifications de cette politique",
+      "p1": "Nous pouvons mettre à jour cette Politique de Confidentialité. Tout changement pertinent sera notifié au sein de la Plateforme avant qu'il n'entre en vigueur."
+    },
+    "section10": {
+      "title": "10. Contact",
+      "p1": "Pour exercer vos droits ou résoudre des questions sur le traitement de vos données:",
+      "email": "soporte.capysoft@gmail.com"
+    }
+  },
+  "login": {
+    "welcomeBack": "BIENVENUE DE RETOUR",
+    "signIn": "Se Connecter",
+    "signUp": "S'Inscrire",
+    "enterDetails": "Entrez vos données personnelles pour accéder à votre compte.",
+    "fullName": "Nom complet",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "loading": "Chargement...",
+    "signInButton": "SE CONNECTER",
+    "signUpButton": "S'INSCRIRE",
+    "forgotPassword": "Vous ne vous souvenez pas de votre mot de passe?",
+    "recoverIt": "Récupérez-le",
+    "orContinueWith": "ou continuez avec",
+    "google": "Google",
+    "facebook": "Facebook",
+    "signInWith": "Se connecter avec",
+    "noAccount": "Vous n'avez pas de compte?",
+    "hasAccount": "Vous avez déjà un compte?",
+    "createAccount": "Créer un compte",
+    "signInLink": "Se connecter",
+    "bySigningIn": "En vous connectant, vous acceptez nos",
+    "bySigningUp": "En vous inscrivant, vous acceptez nos",
+    "termsAndConditions": "Termes et conditions",
+    "notActivated": "Vous n'avez pas activé votre compte?",
+    "resendActivation": "Renvoyer l'e-mail d'activation",
+    "mustBeGmail": "Doit être @gmail.com",
+    "passwordStrength": {
+      "veryWeak": "Très faible",
+      "weak": "Faible",
+      "good": "Bon",
+      "strong": "Fort",
+      "mustContain": "Doit contenir",
+      "characters": "caractères",
+      "uppercase": "majuscule",
+      "lowercase": "minuscule",
+      "number": "chiffre",
+      "specialChar": "caractère spécial (@$!%*?&)"
+    },
+    "validation": {
+      "emailRequired": "L'e-mail est obligatoire",
+      "emailMax": "Maximum 255 caractères",
+      "emailInvalid": "Format d'e-mail invalide",
+      "emailGmailOnly": "Seuls les e-mails @gmail.com sont acceptés",
+      "passwordRequired": "Le mot de passe est obligatoire",
+      "passwordMin": "Minimum 8 caractères",
+      "passwordMax": "Maximum 100 caractères",
+      "passwordWeak": "Doit contenir minuscule, majuscule, chiffre et caractère spécial (@$!%*?&)",
+      "nameRequired": "Le nom complet est obligatoire",
+      "nameMax": "Maximum 100 caractères",
+      "nameLettersOnly": "Seulement lettres, espaces et accents",
+      "nameFirstLast": "Entrez prénom et nom",
+      "nameMinPerWord": "Chaque nom doit avoir au moins 3 caractères",
+      "confirmRequired": "Confirmer le mot de passe est obligatoire",
+      "confirmMatch": "Les mots de passe ne correspondent pas",
+      "passwordsNoMatch": "Les mots de passe ne correspondent pas"
+    },
+    "errors": {
+      "emailNotRegistered": "Cet e-mail n'est pas enregistré dans le système",
+      "invalidCredentials": "E-mail ou mot de passe incorrect",
+      "emailAlreadyRegistered": "Cet e-mail est déjà enregistré et activé. Connectez-vous avec vos identifiants.",
+      "emailNotActivated": "Cet e-mail est déjà enregistré mais pas activé. Si vous voulez activer votre compte, cliquez sur Renvoyer l'e-mail d'activation",
+      "accountNotActivated": "Compte non activé",
+      "accountInactive": "Votre compte est inactif. Voulez-vous le réactiver?",
+      "accountBlocked": "Votre compte a été bloqué. Veuillez contacter le support.",
+      "connectionError": "Erreur de connexion",
+      "loginError": "Erreur de connexion",
+      "registerError": "Erreur d'inscription",
+      "googleLoginError": "Impossible de se connecter avec Google. Réessayez.",
+      "resendError": "Erreur de connexion lors du renvoi du code d'activation",
+      "enterEmailResend": "Veuillez entrer votre e-mail pour renvoyer le code d'activation."
+    },
+    "modals": {
+      "termsTitle": "Termes et Conditions d'Utilisation",
+      "understood": "Compris",
+      "lastUpdate": "Dernière mise à jour:",
+      "successTitle": "Inscription Réussie!",
+      "successSubtitle": "Votre compte a été créé avec succès",
+      "checkInbox": "Vérifiez votre boîte de réception",
+      "sentCodeTo": "Nous vous avons envoyé un code d'activation à",
+      "checkSpam": "Vous ne le trouvez pas? Vérifiez votre dossier spam",
+      "continueVerification": "Continuer vers la Vérification",
+      "loginSuccessTitle": "Bon Retour!",
+      "loginSuccessSubtitle": "Vous vous êtes connecté avec succès",
+      "sessionStarted": "Session démarrée",
+      "accessAll": "Accédez à toutes les fonctionnalités de TuEvento",
+      "hello": "Bonjour",
+      "goHome": "Aller à l'Accueil"
+    },
+    "profile": {
+      "title": "Profil Utilisateur",
+      "welcomeBack": "Bon retour",
+      "name": "Nom",
+      "alias": "Pseudo",
+      "email": "E-mail",
+      "id": "ID",
+      "notDefined": "Non défini",
+      "logout": "Se Déconnecter"
+    },
+    "terms": {
+      "section1Title": "1. Acceptation des termes",
+      "section1Text": "En accédant, en s'inscrivant ou en utilisant l'application \"Tu Evento\" (dans sa version web ou Android), développée par CapySoft, l'utilisateur accepte expressément les présentes Conditions Générales.",
+      "section2Title": "2. Définitions",
+      "app": "Application / Plateforme :",
+      "appDesc": "\"Tu Evento\" dans sa version web et mobile.",
+      "user": "Utilisateur :",
+      "userDesc": "Personne qui accède et utilise l'application.",
+      "organizer": "Organisateur :",
+      "organizerDesc": "Utilisateur autorisé à créer et publier des événements.",
+      "attendee": "Participant :",
+      "attendeeDesc": "Utilisateur qui réserve ou participe à des événements.",
+      "admin": "Administrateur :",
+      "adminDesc": "Utilisateur avec des autorisations de gestion spéciales.",
+      "section3Title": "3. Utilisation de la plateforme",
+      "section3Item1": "Nécessite une connexion Internet stable.",
+      "section3Item2": "Les utilisateurs doivent s'inscrire avec des données véridiques.",
+      "section3Item3": "Le système ne gère pas les paiements en ligne.",
+      "section4Title": "4. Inscription et comptes",
+      "section4Item1": "Compte avec e-mail valide et mot de passe sécurisé.",
+      "section4Item2": "Inscription possible via Google/Facebook (OAuth).",
+      "section4Item3": "L'utilisateur est responsable de ses identifiants.",
+      "section5Title": "5. Réservations et billets",
+      "section5Item1": "Réservation en état d'attente jusqu'à validation du paiement.",
+      "section5Item2": "Un code QR unique et non transférable est généré lors de la confirmation.",
+      "section5Item3": "La falsification du QR implique un refus d'accès.",
+      "section6Title": "6. Responsabilités de l'utilisateur",
+      "section6Item1": "Utilisation correcte et licite de la plateforme.",
+      "section6Item2": "Ne pas diffuser d'informations fausses ou offensantes.",
+      "section6Item3": "Ne pas compromettre la sécurité du système.",
+      "section7Title": "7. Limitation des responsabilités",
+      "section7Text": "CapySoft n'est pas responsable des pannes de connexion, des informations fausses de tiers ou des annulations indépendantes du contrôle de la plateforme.",
+      "section8Title": "8. Sécurité et confidentialité",
+      "section8Item1": "Authentification à deux étapes lors de l'inscription normale.",
+      "section8Item2": "En OAuth, la sécurité dépend du fournisseur externe.",
+      "section9Title": "9. Propriété intellectuelle",
+      "section9Text": "La reproduction ou la modification sans autorisation expresse est interdite.",
+      "section10Title": "10. Modifications",
+      "section10Text": "CapySoft peut modifier ces Conditions à tout moment.",
+      "section11Title": "11. Législation applicable",
+      "section11Text": "Régi par les lois en vigueur en Colombie."
+    }
+  },
+  "forgotPassword": {
+    "title": "Récupérer le Mot de Passe",
+    "subtitle": "Nous vous aiderons à récupérer l'accès à votre compte",
+    "enterEmail": "Entrez votre e-mail",
+    "enterEmailDesc": "Nous vous enverrons un code de vérification pour réinitialiser votre mot de passe",
+    "email": "E-mail",
+    "sendCode": "Envoyer le code",
+    "sending": "Envoi...",
+    "enterCode": "Entrez le code",
+    "enterCodeDesc": "Vérifiez votre e-mail et entrez le code à 6 chiffres que nous vous avons envoyé",
+    "verificationCode": "Code de vérification",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "resetting": "Réinitialisation...",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "backToLogin": "Retour à la connexion",
+    "passwordStrength": {
+      "veryWeak": "Très faible",
+      "weak": "Faible",
+      "good": "Bon",
+      "strong": "Fort"
+    },
+    "validation": {
+      "emailRequired": "L'e-mail est obligatoire",
+      "emailInvalid": "Format d'e-mail invalide",
+      "codeRequired": "Le code de vérification est obligatoire",
+      "codeLength": "Le code doit avoir 6 chiffres",
+      "passwordRequired": "Le mot de passe est obligatoire",
+      "passwordMin": "Minimum 8 caractères",
+      "passwordWeak": "Doit contenir minuscule, majuscule, chiffre et caractère spécial",
+      "confirmRequired": "Confirmer le mot de passe est obligatoire",
+      "passwordsNoMatch": "Les mots de passe ne correspondent pas"
+    },
+    "success": {
+      "title": "Mot de Passe Réinitialisé!",
+      "subtitle": "Votre mot de passe a été mis à jour avec succès",
+      "message": "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe",
+      "goToLogin": "Aller à la Connexion"
+    },
+    "errors": {
+      "sendError": "Erreur lors de l'envoi de l'e-mail",
+      "resetError": "Erreur lors de la réinitialisation du mot de passe",
+      "connectionError": "Erreur de connexion"
+    }
+  },
+  "codeVerification": {
+    "title": "Vérification du Compte",
+    "subtitle": "Activez votre compte TuEvento",
+    "enterCode": "Entrez le code à 6 chiffres",
+    "sentTo": "Nous avons envoyé un code de vérification à",
+    "code": "Code de vérification",
+    "verify": "Vérifier",
+    "verifying": "Vérification...",
+    "notReceived": "Vous n'avez pas reçu le code?",
+    "resend": "Renvoyer",
+    "resending": "Renvoi...",
+    "checkSpam": "Vérifiez votre dossier spam ou courrier indésirable",
+    "backToLogin": "Retour à la connexion",
+    "validation": {
+      "codeRequired": "Le code de vérification est obligatoire",
+      "codeLength": "Le code doit avoir 6 chiffres",
+      "codeDigits": "Le code ne peut contenir que des chiffres"
+    },
+    "success": {
+      "title": "Compte Activé!",
+      "subtitle": "Votre compte a été vérifié avec succès",
+      "message": "Vous pouvez maintenant vous connecter et profiter de toutes les fonctionnalités de TuEvento",
+      "goToLogin": "Aller à la Connexion"
+    },
+    "errors": {
+      "verificationError": "Erreur lors de la vérification du code",
+      "invalidCode": "Code invalide ou expiré",
+      "resendError": "Erreur lors du renvoi du code",
+      "connectionError": "Erreur de connexion"
+    }
+  },
+  "changePassword": {
+    "title": "Changer le Mot de Passe",
+    "subtitle": "Mettez à jour votre mot de passe d'accès",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "change": "Changer le mot de passe",
+    "changing": "Changement...",
+    "cancel": "Annuler",
+    "passwordStrength": {
+      "veryWeak": "Très faible",
+      "weak": "Faible",
+      "good": "Bon",
+      "strong": "Fort"
+    },
+    "validation": {
+      "currentRequired": "Le mot de passe actuel est obligatoire",
+      "newRequired": "Le nouveau mot de passe est obligatoire",
+      "newMin": "Minimum 8 caractères",
+      "newWeak": "Doit contenir minuscule, majuscule, chiffre et caractère spécial",
+      "confirmRequired": "Confirmer le mot de passe est obligatoire",
+      "passwordsNoMatch": "Les mots de passe ne correspondent pas",
+      "samePassword": "Le nouveau mot de passe doit être différent de l'actuel"
+    },
+    "success": {
+      "title": "Mot de Passe Mis à Jour!",
+      "subtitle": "Votre mot de passe a été changé avec succès",
+      "message": "Pour la sécurité, nous recommandons de vous déconnecter sur d'autres appareils",
+      "close": "Fermer"
+    },
+    "errors": {
+      "changeError": "Erreur lors du changement de mot de passe",
+      "wrongPassword": "Le mot de passe actuel est incorrect",
+      "connectionError": "Erreur de connexion"
+    }
+  },
+  "reactivateAccount": {
+    "title": "Réactiver le Compte",
+    "subtitle": "Votre compte est inactif",
+    "message": "Il semble que votre compte ait été désactivé. Si vous souhaitez réutiliser TuEvento, vous pouvez le réactiver maintenant.",
+    "reactivate": "Réactiver mon compte",
+    "reactivating": "Réactivation...",
+    "cancel": "Annuler",
+    "verifying": "Vérification de votre code de réactivation…",
+    "accountReactivated": "Compte réactivé !",
+    "accountActive": "Votre compte est à nouveau actif.",
+    "canLogin": "Vous pouvez maintenant vous connecter avec votre email et mot de passe habituels. Toutes vos données ont été préservées.",
+    "codeInvalidated": "Le code de réactivation a été invalidé et ne peut plus être utilisé.",
+    "goToLogin": "Aller à la connexion",
+    "codeNotValid": "Code non valide",
+    "couldNotReactivate": "Impossible de réactiver le compte.",
+    "requestNewCode": "Voulez-vous demander un nouveau code ?",
+    "emailSent": "Email envoyé. Si l'email correspond à un compte désactivé, vous recevrez le nouveau code dans quelques minutes.",
+    "backToLogin": "Retour à la connexion",
+    "success": {
+      "title": "Compte Réactivé!",
+      "subtitle": "Votre compte a été activé avec succès",
+      "message": "Vous pouvez maintenant vous connecter et profiter de TuEvento",
+      "goToLogin": "Aller à la Connexion"
+    },
+    "errors": {
+      "reactivateError": "Erreur lors de la réactivation du compte",
+      "emailRequired": "L'e-mail est requis",
+      "connectionError": "Erreur de connexion",
+      "expired": "Le code de réactivation a expiré. Les codes sont valides pendant 30 minutes. Demandez-en un nouveau ci-dessous.",
+      "used": "Ce code a déjà été utilisé. Si votre compte n'a toujours pas d'accès, demandez un nouveau code.",
+      "invalid": "Le code de réactivation n'est pas valide. Assurez-vous de copier le code complet de l'email.",
+      "generic": "Impossible de réactiver le compte. Veuillez réessayer.",
+      "resendError": "Impossible d'envoyer l'email. Réessayez."
+    }
+  },
+  "completeProfile": {
+    "title": "Compléter le Profil",
+    "updateName": "Mettez à jour votre nom",
+    "welcome": "Bienvenue !",
+    "subtitle": "Juste une étape de plus",
+    "message": "Pour finaliser votre inscription, nous avons besoin que vous entriez votre nom complet",
+    "invalidName": "Votre nom actuel n'a pas le format correct. Entrez votre vrai nom complet pour continuer.",
+    "fullName": "Nom complet",
+    "fullNamePlaceholder": "Ex. Maria Garcia",
+    "continue": "Continuer",
+    "continuing": "Enregistrement…",
+    "validation": {
+      "nameRequired": "Le nom complet est obligatoire.",
+      "nameMin": "Entrez prénom et nom.",
+      "nameMinPerWord": "Chaque nom doit avoir au moins 3 caractères.",
+      "nameLettersOnly": "Seulement lettres et espaces — pas de chiffres ni symboles.",
+      "nameMax": "Le nom ne peut pas dépasser 100 caractères."
+    },
+    "errors": {
+      "updateError": "Impossible d'enregistrer le nom. Réessayez.",
+      "connectionError": "Erreur de connexion"
+    }
+  },
+  "organizerEarnings": {
+    "loadError": "Impossible de charger les revenus",
+    "retry": "Réessayer",
+    "empty": {
+      "title": "Pas encore de revenus",
+      "description": "Lorsque quelqu’un achète des billets pour l’un de vos événements publiés, les revenus apparaîtront ici automatiquement.",
+      "goToEvents": "Aller à mes événements"
+    },
+    "hero": {
+      "badge": "Panneau des revenus",
+      "title": "Vos",
+      "titleAccent": "revenus",
+      "description": "Vous voyez ici un résumé de ce que vous avez encaissé sur vos événements. Ces informations sont en lecture seule — le versement réel est géré directement par la plateforme."
+    },
+    "kpi": {
+      "totalRevenue": {
+        "label": "Total encaissé",
+        "sub": "Total généré sur tous vos événements"
+      },
+      "ticketsSold": {
+        "label": "Billets vendus",
+        "sub": "Transactions terminées"
+      },
+      "eventsWithSales": {
+        "label": "Événements avec ventes",
+        "sub": "Avec au moins un billet vendu"
+      }
+    },
+    "table": {
+      "title": "Détail par événement",
+      "manageEvents": "Gérer les événements",
+      "columns": {
+        "event": "Événement",
+        "tickets": "Billets vendus",
+        "revenue": "Encaissé"
+      },
+      "total": "Total"
+    },
+    "info": {
+      "howCalculated": {
+        "title": "Comment est-ce calculé ?",
+        "text": "Tous les paiements approuvés de vos événements sont additionnés. Le montant affiché reflète le total facturé aux participants."
+      },
+      "realTime": {
+        "title": "Informations en temps réel",
+        "text": "Les données se mettent à jour à chaque achat approuvé. Pour toute question sur le versement de vos revenus, contactez l’équipe de la plateforme."
+      }
+    }
+  },
+  "languageGuard": {
+    "title": "Passez la langue en espagnol",
+    "subtitle": "Cette section est uniquement disponible en espagnol",
+    "description": "La création et la modification d’événements ne sont disponibles qu’avec l’espagnol sélectionné comme langue. Changez votre langue en espagnol dans votre profil pour continuer.",
+    "action": "Retour"
+  },
+  "paymentConfirmation": {
+    "loading": "Chargement de votre confirmation…",
+    "notApproved": "Le paiement n’est pas approuvé",
+    "loadError": "Erreur lors du chargement des données",
+    "backToEvents": "Retour aux événements",
+    "remainingBalance": "Votre solde restant"
+  }
+}

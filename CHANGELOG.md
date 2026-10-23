@@ -1,0 +1,1312 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [Unreleased]
+
+### Added — feat(i18n): implement i18next for UI internationalization
+
+- **i18next setup**: Complete i18next integration with react-i18next and language detector
+  - Translation files for 4 languages: Spanish (es), English (en), French (fr), Portuguese (pt)
+  - Auto-detection from localStorage and browser settings
+  - Fallback to Spanish as default language
+- **Language synchronization**: UI language automatically syncs with user's `preferredLanguageId` from backend
+  - `changeUILanguage()` function to programmatically change UI language
+  - Synchronized in ProfilePage when user loads or changes preferred language
+- **Two-layer translation system**:
+  - **i18next** (frontend): Static UI texts (buttons, labels, messages, placeholders)
+  - **Backend + LibreTranslate**: Dynamic database content (event names, descriptions, categories)
+- **EventDetail translations**: Applied i18next to key UI elements
+  - Loading states, error messages, translation status badges
+  - Available seats counter with pluralization support
+  - Back button labels
+- **Translation namespaces**: Organized by domain (common, auth, events, seats, profile, comments, cart, payment)
+- **Dependencies**: `i18next`, `react-i18next`, `i18next-browser-languagedetector`
+
+### Fixed — fix(translation): translation system saving and lazy loading
+
+- **TranslationConfiguration**: Changed rejection policy from `AbortPolicy` to `CallerRunsPolicy` to prevent job loss when thread pool queue is full
+- **GetEventService**: Added lazy loading to auto-generate translations when requested language doesn't exist
+  - Checks if translation exists before creating job
+  - Prevents duplicate job creation
+  - Returns `translationGenerating: true` flag during processing
+- **EventTranslatableContentHandler**: Added detailed logging to `saveTranslation()` for debugging
+- **Frontend**: Translation status indicator and auto-reload when generation completes
+- **Result**: Translations now save correctly to `event_translation` table and display in frontend for all supported languages (en, fr, pt)
+
+### Added — feat(event-comments-websocket): comentarios de eventos en tiempo real, R1-R5
+
+**Reglas de negocio (R1-R5)**
+
+- **R1** — Cualquier usuario autenticado (sin importar el rol) puede publicar comentarios en eventos públicos PUBLISHED o COMPLETED.
+- **R2** — Múltiples comentarios por persona y evento están permitidos.
+- **R3** — Solo el primer comentario del usuario en el evento que incluya calificación lleva estrellas; los siguientes se guardan con `rating = null`.
+- **R4** — El organizador del evento (el `userId` dueño) siempre guarda `rating = null`, independientemente de lo que envíe.
+- **R5** — Antispam: máximo 1 comentario por persona/evento cada 10 segundos (`COMMENT_RATE_LIMITED`).
+
+**Backend**
+
+- **Migración 087**: `rating` pasa a nullable (`DROP NOT NULL`); `CHECK` actualizado a `rating IS NULL OR rating BETWEEN 1 AND 5`; índice `idx_event_rating_event_created(event_id, created_at DESC)` para GET ordenado y antispam.
+- **`AddEventRatingRequest`**: `rating` deja de ser `@NotNull` (es opcional según R3/R4).
+- **`EventRating` / `EventRatingEntity`**: `rating` cambia de `int` a `Integer` (nullable).
+- **`EventRatingRepository`**: `findByEventIdOrderByCreatedAtDesc`, `findLastByEventIdAndUserId` (antispam R5), `existsRatedCommentByEventIdAndUserId` (R3). Eliminado: `findByEventId`, `existsByEventIdAndUserId`.
+- **`EventRatingRepositoryImpl`**: implementa los nuevos métodos de dominio.
+- **`AddEventRatingService`**: aplica R1-R5 con `Clock` inyectable; resuelve `authorName` e `isOrganizer`; publica `EventRatingAddedEvent` con los campos nuevos.
+- **`EventRatingAddedEvent`**: campos `isOrganizer`, `rating` nullable.
+- **`EventCommentWebSocketListener`**: emite `isOrganizer` en el payload WS; payload idéntico al `GET /ratings`.
+- **`EventRatingResponse`**: campos `userId` (Long) e `isOrganizer` (Boolean).
+- **`EventRatingController`** GET: carga perfiles sin N+1; incluye `isOrganizer` y `userId` por comentario. POST: abierto a cualquier rol autenticado.
+- **`SecurityConfig`**: `POST /events/*/ratings` → `authenticated()` (antes `hasAuthority("USER")`).
+
+**Frontend**
+
+- **`EventCommentService.js`**: documenta R1-R5; `addEventComment` acepta `rating` opcional.
+- **`EventDetail.jsx`**:
+  - Guarda `eventOrganizerUserId` desde `eventRes.data.userId` al montar (R4).
+  - `needsRatingSelector`: muestra el selector de estrellas solo si el usuario no es el organizador y no tiene aún un comentario con rating.
+  - Formulario visible para cualquier usuario autenticado; si no hay sesión, enlace a `/login`.
+  - Rating inicial `0`; botón submit deshabilitado hasta seleccionar estrella cuando corresponde.
+  - Badge "Organizador" (dorado) y badge "Tú" en comentarios propios.
+  - Estrellas solo si `c.rating != null`.
+  - Tiempo relativo con `date-fns` (`formatDistanceToNow`, locale `es`; ya existía en `package.json`).
+  - Error `COMMENT_RATE_LIMITED` capturado y mostrado al usuario.
+
+**Tests**
+
+- **`AddEventRatingServiceTest`** (18 casos, sin `@MockitoSettings(LENIENT)`): R3 (4 casos), R4 (2), R5 antispam (3), R1 (2), validaciones básicas (5), publicación de evento de dominio (2). `Clock` stubbeado con `givenClock()` solo en los tests que alcanzan el bloque de guardado.
+- **`EventCommentWebSocketListenerTest`** (5 casos): happy path, `authorName` fallback, comentario no visible descartado, `isOrganizer` en payload, fallo de broker no-bloqueante.
+
+
+
+- **Migración 086** (`086-seed-event-notification-types.yaml`): inserta los tipos `EVENT_PUBLISHED` y `EVENT_REJECTED` en la tabla `notification_type`.
+- **`EventStatusChangedEvent`** enriquecido con tres nuevos campos: `organizerId` (userId del dueño del evento), `eventName` (título legible) y `reason` (motivo de rechazo, solo cuando `newStatus = REJECTED`). Los publishers `ChangeEventStatusService` y `AdminChangeEventStatusUseCase` los pueblan; el scheduler no los necesita.
+- **`NotificationTypeNames`**: constantes `EVENT_PUBLISHED` y `EVENT_REJECTED`.
+- **`NotificationEntityTypes`**: constante `EVENT`.
+- **`SendNotificationCommand`**: campo `idempotencySuffix` (sufijo opcional para la clave de idempotencia `typeName:entityId:channelName[:suffix]`) y campo `eventName`. Retrocompatible con los tipos de pago (sufijo nulo).
+- **`SendNotificationUseCase`**: clave de idempotencia ampliada con el sufijo cuando está presente.
+- **`NotificationMessageFactory`**: casos `EVENT_PUBLISHED` y `EVENT_REJECTED` para canales IN_APP y EMAIL. El cuerpo de email aplica `escapeHtml()` sobre `eventName` y `reason` antes de insertarlos en HTML.
+- **`EventStatusChangedListener`** (nuevo): `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` + `@Transactional(REQUIRES_NEW)`. Filtra a `oldStatus = PENDING_REVIEW` y `newStatus ∈ {PUBLISHED, REJECTED}`. Usa `occurredAt` como sufijo de idempotencia para soportar múltiples ciclos de rechazo del mismo evento.
+- **`AdminController`**: `@Operation` del listado de eventos por estado actualizado para incluir `PENDING_REVIEW` y `REJECTED`.
+- **`Notifications.jsx`** (frontend): íconos `EVENT_PUBLISHED` (`PartyPopper`, `text-success`) y `EVENT_REJECTED` (`Ban`, `text-error`) en `NOTIFICATION_ICONS`.
+- **Tests**: `EventStatusChangedListenerTest` (4 casos), `NotificationMessageFactoryTest` (4 casos), `SendNotificationUseCaseIdempotencyTest` (2 casos).
+
+### Added — feat(language)
+
+- **Language Module — Domain (DDD puro)**: `Language` (aggregate root con `code` UNIQUE normalizado trim+lowercase, `name`, `isActive`, `isDefault` con bloqueo mutuo), validaciones en dominio (`deactivate()` bloquea idioma por defecto), eventos `LanguageActivatedEvent`/`LanguageDeactivatedEvent`/`DefaultLanguageChangedEvent` con IDs primitivos.
+
+- **Language Module — Repositorios de dominio**: `LanguageRepository` con métodos `findByCode()`, `findDefaultLanguage()`, `findAllActive()`, `existsByCode()`, `flush()`.
+
+- **Language Module — Infraestructura JPA**: `LanguageEntity` extiende `JpaAuditingEntity` (created_at, updated_at, created_by, updated_by), `LanguageJpaRepository` con queries ordenadas, `LanguageRepositoryImpl` con mappers.
+
+- **Language Module — Casos de uso**: `CreateLanguageUseCaseImpl` (normaliza código, valida único), `GetLanguagesUseCaseImpl` (consultas públicas y admin), `UpdateLanguageUseCaseImpl` (update, activate, deactivate, setDefault con validaciones de negocio y transacción única con flush).
+
+- **Language Module — REST** (`/api/v1/languages` público, `/api/v1/admin/languages` admin): GET idiomas activos (público), GET idioma por ID (público), GET todos los idiomas (admin), POST crear (admin), PUT actualizar (admin), PATCH activate/deactivate (admin), POST set-default (admin).
+
+- **Liquibase changesets**: `084-create-language-table.yaml` (PK, code UNIQUE, is_default con índice único parcial WHERE is_default = TRUE, audit columns), `085-seed-languages.yaml` (Español default, English).
+
+- **Shared Domain**: Enums `TranslationStatus` (AUTOMATIC, REVIEWED, REJECTED) y `TranslationSource` (MANUAL, MACHINE) en `shared/domain/valueobject`.
+
+- **SecurityConfig**: Rutas `/api/v1/languages` y `/api/v1/languages/*` agregadas a PUBLIC_GET_ENDPOINTS, rutas `/api/v1/admin/languages/**` protegidas con hasAuthority('ADMIN').
+
+### Changed — chore(notification)
+
+- **Notification Module**: Removidos logs temporales de debug de `SendNotificationUseCase` y `PaymentEventListener`, limpieza de imports no utilizados.
+
+### Added — feat(wallet)
+
+- **Wallet Module — Domain (DDD puro)**: `Wallet` (aggregate root con `balance >= 0`, bloqueo optimista `@Version`, `credit()`/`debit()`), `WalletTransaction` (inmutable en monto/tipo; solo cambia `status`; `complete()`/`fail()` retornan nuevas instancias), `WalletReference` (trazabilidad del origen de cada movimiento), enums `WalletTransactionType` (CREDIT/PAYMENT/REVERSAL/ADJUSTMENT), `WalletTransactionStatus` (PENDING/COMPLETED/FAILED), `WalletReferenceEntityType` (EVENT_CANCELLATION/ORDER/TICKET). Excepciones: `InsufficientWalletBalanceException` (→ 422), `WalletNotFoundException` (extiende `NotFoundException` → 404).
+
+- **Wallet Module — Repositorios de dominio**: `WalletRepository`, `WalletTransactionRepository` (con `sumPendingPayments(walletId)`), `WalletReferenceRepository`.
+
+- **Wallet Module — Infraestructura JPA**: `WalletEntity` (extiende `JpaAuditingEntity`, `@Version`), `WalletTransactionEntity` (solo `@CreatedDate`/`@CreatedBy` — sin `updated_at` por inmutabilidad), `WalletReferenceEntity` (sin auditoría). JPA repos + impls (`WalletRepositoryImpl`, `WalletTransactionRepositoryImpl`, `WalletReferenceRepositoryImpl`).
+
+- **Wallet Module — Casos de uso**:
+  - `GetWalletUseCaseImpl`: balance total + disponible (balance − PAYMENTs PENDING).
+  - `GetWalletTransactionsUseCaseImpl`: historial ordenado por `createdAt desc`.
+  - `CreditWalletUseCaseImpl`: lazy wallet creation, idempotente por `idempotencyKey`, CREDIT→COMPLETED directo, crea `WalletReference`.
+  - `AdjustWalletUseCaseImpl`: ajuste manual (±), valida balance ≥ 0, solo ADMIN.
+  - `ReserveWalletPaymentUseCaseImpl`: PAYMENT PENDING sin tocar balance; toca fila `@Version` para bloqueo optimista ante doble gasto concurrente; devuelve `transactionId`.
+  - `ConfirmWalletPaymentUseCaseImpl`: idempotente (skip si COMPLETED), descuenta balance, PENDING→COMPLETED con snapshot `balanceAfter`.
+  - `ReleaseWalletPaymentUseCaseImpl`: idempotente (skip si FAILED), PENDING→FAILED sin tocar balance.
+  - `ReverseWalletPaymentUseCaseImpl`: idempotente via `reversal-{txId}`, valida COMPLETED, devuelve crédito, crea REVERSAL, copia `WalletReference`s del original.
+
+- **Wallet Module — REST** (`/api/v1/wallet`):
+  - `GET /me` — balance + disponible del usuario autenticado.
+  - `GET /me/transactions` — historial.
+  - `POST /credit` — ADMIN; crea crédito manual.
+  - `POST /adjust` — ADMIN; ajuste ± con `reason` obligatorio.
+
+- **Liquibase changesets**:
+  - `074` — tabla `wallet` (PK, UNIQUE `user_id`, `balance >= 0`, `version`, audit columns).
+  - `075` — tabla `wallet_transaction` (`amount > 0`, UNIQUE `idempotency_key`, FK → `wallet`).
+  - `076` — tabla `wallet_reference` (FK → `wallet_transaction`, index compuesto `entity_type+entity_id`).
+  - `077` — `ALTER TABLE payment ADD wallet_amount_applied DECIMAL NOT NULL DEFAULT 0, wallet_transaction_id BIGINT NULL` (FK → `wallet_transaction`).
+
+- **Payment Module — dominio**: `Payment` agregado `walletAmountApplied` (BigDecimal, default 0), `walletTransactionId` (Long nullable), método `isWalletOnly()` (amount==0 y walletAmountApplied>0).
+
+- **Payment Module — infraestructura**: `PaymentEntity` + `PaymentRepositoryImpl` actualizados para mapear los nuevos campos (null-safe, default ZERO). `PaymentResponse` expone `walletAmountApplied` y `amountToPayViaGateway`.
+
+- **Payment Module — CreatePaymentRequest**: campo `applyWalletCredit` (boolean, default false).
+
+- **Payment Module — ChargeOrderViaGatewayUseCase**: subcomponente extraído del antiguo `CreatePaymentUseCaseImpl`; recibe `(order, amountToCharge, paymentMethod, walletAmountApplied, walletTransactionId)`; no sabe nada de wallet.
+
+- **Payment Module — CreateWalletOnlyPaymentUseCase**: pago 100% wallet sin pasarela; `amount=0`, `gatewayTransactionId='wallet_only_'+UUID`, APPROVED directamente; confirma orden y wallet en la misma `@Transactional`.
+
+- **Payment Module — CreatePaymentUseCaseImpl (orquestador)**:
+  - `applyWalletCredit=false` → flujo gateway idéntico al anterior.
+  - `applyWalletCredit=true`, sin saldo → fallback gateway.
+  - Saldo parcial → ReserveWallet + ChargeOrderViaGateway(remainder).
+  - Saldo total → CreateWalletOnlyPayment.
+  - Garantía de rollback: todo en una sola `@Transactional` — si el gateway falla tras reservar, la reserva se deshace.
+
+- **Payment Module — ProcessWebhookUseCaseImpl**: APPROVED llama `ConfirmWalletPayment` si `walletTransactionId != null`; DECLINED/FAILED/CANCELLED llaman `ReleaseWalletPayment`; REFUNDED llama `ReverseWalletPayment` si `walletAmountApplied > 0`.
+
+- **Payment Module — RequestRefundUseCaseImpl**: si `payment.isWalletOnly()`, ejecuta cierre local (`closeRefundLocally`) en-proceso sin llamar al gateway: Payment→REFUNDED, PaymentLog, Refund→PROCESSED, `ConfirmRefundUseCase`, `ReverseWalletPayment`. El cierre local es simétrico al bloque REFUNDED del webhook.
+
+- **SecurityConfig**: matchers explícitos `POST /api/v1/wallet/credit` y `/api/v1/wallet/adjust` con `hasAuthority('ADMIN')`.
+
+- **GlobalExceptionHandler**: `InsufficientWalletBalanceException` → 422 `UNPROCESSABLE_ENTITY`.
+
+- **Frontend Web — WalletService.js**: `getMyWallet`, `getMyWalletTransactions`, `creditWallet`, `adjustWallet`.
+
+- **Frontend Web — Checkout.jsx**: consulta `GET /api/v1/wallet/me` tras crear la orden (silencia 404); si `availableBalance > 0` muestra toggle "Pago normal / Usar cartera" con desglose (total − descuento wallet − restante por pasarela); botón cambia a "Pagar con cartera" cuando el saldo cubre el total; envía `applyWalletCredit` al backend; ruta directa a confirmación si `amountToPayViaGateway === 0`.
+
+- **Frontend Web — PaymentPending.jsx**: el poll no abre popup del gateway para `gatewayTransactionId` con prefijo `wallet_only_`; mensaje de espera diferenciado para pagos wallet.
+
+
+
+- **fake-payment-gateway — pom.xml**: Added `maven-compiler-plugin` `annotationProcessorPaths` for Lombok, fixing pre-existing build break on `PaymentEntity` / `WebhookDeliveryLogEntity` accessors.
+- **fake-payment-gateway — PaymentStatus**: `REFUNDED` state added with transition `APPROVED → REFUNDED` (terminal). All other origin states throw `InvalidStatusTransitionException`.
+- **fake-payment-gateway — Payment**: `refund()` method added; returns `PaymentStatusChanged` event.
+- **fake-payment-gateway — RefundPaymentUseCase**: New use case for `POST /admin/payments/{id}/refund`; validates transition in domain, persists, fires webhook via existing `WebhookNotifierPort`.
+- **fake-payment-gateway — payment.refunded webhook**: No new mechanism — `WebhookNotifierAdapter` unchanged; HMAC-SHA256 signed, 3-retry backoff, audit log. Event type `"payment.refunded"` produced automatically from `status.name().toLowerCase()`.
+- **fake-payment-gateway — pay.html**: `↩️ Reembolsar` button rendered only when status `=== 'APPROVED'`; `REFUNDED` badge style (purple); updated `isTerminal`, `renderTerminal`, `actionLabel`.
+- **Payment Module — PaymentGatewayPort**: Added `refundPayment(String gatewayPaymentId): void` to the generic gateway contract.
+- **Payment Module — FakePaymentGatewayAdapter**: Implemented `refundPayment()` as `POST {fake-gateway-url}/admin/payments/{id}/refund` using the existing `paymentRestTemplate`, same pattern as `cancelPayment()`.
+- **Payment Module — RequestRefundUseCaseImpl**: New use case invoked by `POST /api/v1/payments/{id}/refund`. Validates `Payment.status == APPROVED`, creates `Refund` record in `REQUESTED` state with caller-supplied reason, then calls `PaymentGatewayPort.refundPayment()` to trigger the gateway transition and the `payment.refunded` webhook.
+- **Payment Module — ProcessWebhookUseCaseImpl**: Extended `"REFUNDED"` case in the webhook switch — calls `payment.refund()`, saves `PaymentLog(APPROVED → REFUNDED)`, transitions the `Refund` record to `PROCESSED` (sets `processedAt`), and invokes `ConfirmRefundUseCase.confirmRefund(orderId)` in the ticket module. Same idempotency and HMAC-verification path as all other webhook events.
+- **Payment Module — POST /api/v1/payments/{id}/refund**: New REST endpoint on `PaymentController`. Requires `ADMIN` or `ORGANIZER` authority (`@PreAuthorize`). Accepts `RefundPaymentRequest { reason: String }` (`@NotBlank`, `@Size(max=500)`). Returns `200 OK` with `ApiResponse<Void>`.
+- **Ticket Module — ConfirmRefundUseCase** (port `application/port/in`): New in-port following the same pattern as `ConfirmOrderPaymentUseCase` / `FailOrderPaymentUseCase`. Contract: `confirmRefund(Long orderId)`.
+- **Ticket Module — ConfirmRefundUseCaseImpl**: Transitions `Order: PAID → REFUNDED` (domain validates state machine), transitions all associated `Ticket`s to `REFUNDED` via `ticket.markAsRefunded()`, generates `TicketLog` per ticket (`changedBy = "payment-module"`, `reason = "Refund confirmed via webhook payment.refunded"`). **Seats are NOT released** — they remain `SOLD` as per business decision (seats already used or event passed/cancelled).
+
+### Added
+- **Payment Module (Backend)**: Módulo completo de gestión de pagos integrado con fake-payment-gateway y ticket module, siguiendo arquitectura DDD + Hexagonal
+  - **Dominio puro**: Payment (aggregate root) con estados (PENDING→APPROVED|REJECTED|ERROR, APPROVED→REFUNDED), PaymentGateway enum (FAKE, WOMPI - Wompi sin implementar), PaymentMethod enum (CARD, PSE, NEQUI, CASH, QR), PaymentLog (auditoría), TransactionWebhook (recepción de eventos con gatewayEventId UNIQUE para idempotencia), Refund (estructura sin use cases)
+  - **Repositorios de dominio**: PaymentRepository, PaymentLogRepository, TransactionWebhookRepository, RefundRepository con implementaciones JPA
+  - **Application layer**: CreatePaymentUseCaseImpl (transiciona Order a PAYMENT_PENDING vía InitiateOrderPaymentUseCase, crea pago en gateway, persiste Payment PENDING local), GetPaymentUseCaseImpl, ProcessWebhookUseCaseImpl (verifica firma HMAC-SHA256, idempotencia, actualiza Payment, llama a ConfirmOrderPaymentUseCase/FailOrderPaymentUseCase)
+  - **PaymentGatewayPort**: Contrato genérico (createPayment, getPayment, cancelPayment, processWebhook) - sin acoplamiento a proveedores específicos
+  - **FakePaymentGatewayAdapter**: Implementación con RestTemplate hacia fake-payment-gateway:4001, mapeo de DTOs genéricos a API del fake-gateway, verificación HMAC-SHA256 de webhooks, activado vía @ConditionalOnProperty(payment.gateway=fake)
+  - **REST endpoints**: POST /api/v1/payments (crear pago), GET /api/v1/payments/{id}, POST /api/v1/webhooks/payment (público, sin JWT, autenticación HMAC)
+  - **Liquibase changesets**: payment, payment_log, transaction_webhook (gateway_event_id UNIQUE), refund (069-072) con constraints, FKs, audit columns, índices
+  - **Configuración**: Variables PAYMENT_GATEWAY, FAKE_GATEWAY_URL, WEBHOOK_SECRET en .env y application-dev.yaml
+  - **SecurityConfig**: Endpoint /api/v1/webhooks/** agregado a PUBLIC_ENDPOINTS
+  - **Integración completa**: Flujo selección→orden DRAFT→pago PENDING→webhook→orden PAID/CANCELLED con liberación de sillas
+  - **InitiateOrderPaymentUseCase**: Agregado en módulo ticket para transición Order DRAFT→PAYMENT_PENDING con validación y auditoría
+
+- **Ticket Module (Backend)**: Módulo completo de gestión de órdenes y tickets siguiendo arquitectura DDD + Hexagonal
+  - **Dominio puro**: Order (aggregate root) con máquina de estados (DRAFT→PAYMENT_PENDING→PAID→USED, PAID→REFUNDED, transiciones validadas), Ticket (aggregate root) con estados (PENDING, PROCESSING, PAID, REFUNDED, USED, CANCELLED), Money (value object), SeatTicket (precio snapshot congelado), TicketCheckin, TicketLog (auditoría inmutable)
+  - **Repositorios de dominio**: OrderRepository, TicketRepository, SeatTicketRepository, TicketCheckinRepository, TicketLogRepository con implementaciones JPA en infraestructura
+  - **Use cases**: CreateOrderWithTicketsUseCase (valida reservas temporales, crea Order DRAFT + Tickets PENDING, congela precios en SeatTicket), GetOrderUseCase, GetOrderTicketsUseCase, CancelOrderUseCase (libera sillas), GetTicketUseCase, GetUserTicketsUseCase, CheckinTicketUseCase (valida PAID, crea TicketCheckin, transiciona a USED)
+  - **Puertos de entrada (payment module)**: ConfirmOrderPaymentUseCase (transiciona Order/Tickets a PAID, genera logs), FailOrderPaymentUseCase (cancela orden, libera sillas, logs de fallo)
+  - **Endpoints REST**: POST /api/v1/orders (crear orden), GET /api/v1/orders/{id}, POST /api/v1/orders/{id}/cancel, GET /api/v1/tickets/{id}, GET /api/v1/tickets/user/{userId}, POST /api/v1/tickets/{id}/checkin (rol staff)
+  - **Liquibase changesets**: order, ticket, seat_ticket, ticket_checkin, ticket_log (064-068) con constraints, FKs, audit columns, indices
+  - **Generación**: Ticket code único (TKT-XXXXXXXX), QR code string (sin imagen, frontend renderiza), expiration date calculada
+  - **Integración seats**: Valida reservas temporales del módulo seat (WS STOMP), confirma asignación definitiva al crear orden, libera en cancelación/fallo pago
+  - **NO implementado**: PaymentGatewayPort, llamadas al fake-payment-gateway, generación de imágenes QR (solo string) - queda para feature/payment-module
+
+- **Fake Payment Gateway**: Microservicio Spring Boot independiente para simular pasarela de pago en desarrollo local
+  - **Arquitectura**: DDD + Hexagonal con dominio puro, repositorios abstractos, y adaptadores de infraestructura
+  - **Máquina de estados**: PENDING → PROCESSING → APPROVED|DECLINED|FAILED, PENDING → CANCELLED (validada en dominio)
+  - **Webhook system**: POST con firma HMAC-SHA256, idempotencia por eventId estable, 3 reintentos con backoff exponencial (2s, 10s, 30s)
+  - **Base de datos**: PostgreSQL independiente (fake_gateway_db), entidades JPA para pagos y logs de webhook
+  - **Endpoints públicos**: POST /public/payments (crear), GET /public/payments/{id} (consultar)
+  - **Endpoints admin**: POST /admin/payments/{id}/approve|decline|fail|cancel (simular transiciones)
+  - **Docker**: Servicio fake-payment-gateway + postgres-fake-gateway en docker-compose.yml (puerto 4001)
+  - **Configuración**: Variables de entorno para PAYMENT_CALLBACK_URL y WEBHOOK_SECRET
+
+### Fixed
+- **Web - Sistema de Zoom/Paginación**: Auto-reset inteligente para navegación entre bloques (no resetear si sigue siendo válido)
+  - **Problema**: Al cambiar de página de columnas, la página de filas se reseteaba a 0 incondicionalmente, incluso cuando seguía siendo perfectamente válida para el nuevo bloque de columnas
+  - **Comportamiento anterior**: Navegar Col 1→2 siempre reseteaba de "Filas 3/11" a "Filas 1/X" automáticamente
+  - **Comportamiento nuevo**: La página actual del eje perpendicular se mantiene si sigue siendo válida, solo se resetea cuando `currentPage >= newDynamicPages`
+  - **Implementación**: Removidos resets incondicionales de handlers, implementados useEffects inteligentes que comparan `currentRowPage >= dynamicRowPages` y `currentColPage >= dynamicColPages`
+  - **Resultado**: Navegación más fluida - el eje Y se mantiene constante al navegar en X, y viceversa
+  
+- **Web - Sistema de Zoom/Paginación**: Fix crítico para controles de filas desaparecidos tras implementar dynamicRowPages
+  - **Bug**: Los controles de paginación de filas ("Filas X/Y" con flechas) desaparecían completamente en Palco tras el fix simétrico
+  - **Causa raíz**: Variable shadowing - `let dynamicRowPages = 1` (scope exterior) + `const dynamicRowPages = Math.ceil(...)` (scope local) 
+  - **Resultado**: Al salir del bloque, volvía a la variable exterior que seguía siendo `1`, causando `dynamicRowPages > 1 = false`
+  - **Fix**: Cambio de declaración (`const`) a asignación (`=`) para modificar correctamente la variable del scope exterior
+  - **Verificado**: Los controles de filas ahora aparecen correctamente en Palco (109 filas → 11 páginas) y otras secciones
+
+- **Web - Sistema de Zoom/Paginación**: Límites dinámicos de paginación bidireccional para formas irregulares (completo)
+  - **Problema original**: En secciones polígono irregulares (ej. "L invertida"), la paginación usaba totales fijos globales, causando páginas vacías cuando el área real variaba según el bloque visible.
+  - **Fix columnas (previo)**: `dynamicColPages` calculado basándose en las filas visibles en `currentRowPage`
+  - **Fix filas (nuevo - simétrico)**: `dynamicRowPages` calculado basándose en las columnas visibles en `currentColPage`
+    - Implementado conteo de filas que tienen sillas en el rango de columnas actual: `rowsWithSeatsInColRange`
+    - Auto-reset de `currentRowPage` cuando se vuelve inválida al cambiar `currentColPage`
+    - UI de filas actualizada para mostrar `Filas X/dynamicRowPages` en lugar de `totalRowPages` fijo
+    - Filtrado de sillas mejorado: primero filtra filas válidas para el bloque de columnas, luego aplica paginación de filas
+  - **Casos resueltos**:
+    - Palco Col 1/4 + Filas 4/12: ya no muestra área vacía (se limita a filas con sillas en esas columnas)
+    - Palco Col 7/17 + Filas 3/11: flecha "bajar" se deshabilita correctamente cuando no hay más filas válidas
+  - **Resultado**: Sistema de paginación completamente dinámico y bidireccional - ambos ejes se limitan según el contenido real del bloque visible
+
+### Performance - Seat Rendering Optimizations for Large Sections 500+ (Web)
+- **P1 — Overview sin nodos Circle**: en vista general (`selectedSectionFilter === null`) se eliminó el renderizado de `Circle` por silla. El overview ya mostraba solo Rect/Shape + label por sección, así que las sillas individuales eran trabajo Konva completamente desperdiciado. `pageFilteredSeatsWithIndices` ahora devuelve `[]` en ese modo — cero nodos de silla creados al cargar el mapa.
+- **P3 — Índice `seatsBySection` centralizado**: `SeatSelectorSection` calcula un único `useMemo` que agrupa y ordena todas las sillas por `eventSectionId` (`seatsBySection`). Cada `SectionRenderer` recibe ese mapa como prop y hace un lookup O(1) en lugar de ejecutar su propio `Object.values(seats).filter().sort()` sobre las ~999 sillas completas. Con N secciones, esto reduce de `N × 999` iteraciones a una sola pasada por WebSocket update.
+- **P4 — `handleReserveSeat` con referencia estable**: agregado `seatsRef = useRef({})` sincronizado por `useEffect` con el estado `seats`. La lectura de la silla en el bloque de error (`seatsRef.current[seatId]`) ya no requiere que `seats` esté en las dependencias de `useCallback` → la función mantiene referencia estable entre updates de WebSocket.
+- **P5 — Handlers sin lambdas inline**: `SeatCircle` recibe `seatId` como prop explícita y funciones estables `onReserve`/`onRelease` que invoca como `onReserve(seatId)` internamente. El `.map` en `SectionRenderer` pasa las funciones del padre directamente (sin `() => onReserveSeat(seat.seatId)`), eliminando la creación de nuevas referencias en cada render.
+- **P2 — `SeatCircle` con `React.memo` y comparador custom**: el componente se memoiza comparando únicamente las props que afectan su apariencia y comportamiento: `seat.status`, `seat.reservedBy`, `seat.reservedUntil`, `isReserving`, `canSelectMore`, `isSectionFiltered`, `position.x/y/r`, `onReserve`, `onRelease`, `showToast`. Un update de WebSocket que cambia 1 silla de 100 visibles ahora re-renderiza solo ese 1 Circle, no los 100.
+- **P2-fix — Bug confirmado con instrumentación real (`cart` → `canSelectMore`)**: la instrumentación de diagnóstico (`console.count` por `seatId`, `[DIAG] Konva Circle count`) confirmó que el memo no aislaba los re-renders: reservar cualquier silla re-renderizaba las ~100 visibles al mismo tiempo. Causa raíz: `cart` (array completo) se pasaba como prop a cada `SeatCircle`; al reservar una silla `cart.length` cambiaba de N a N+1, lo que invalidaba el comparador para **todos** los nodos aunque 99 no hubiesen cambiado de estado. Fix: se reemplazó `cart` y `selectedQuantity` por un booleano derivado `canSelectMore = cart.length < selectedQuantity` calculado una sola vez antes del `.map` en `SectionRenderer`. El comparador ahora evalúa `prev.canSelectMore === next.canSelectMore` — un primitivo estable que solo cambia cuando el usuario cruza el umbral de capacidad. Efecto validado: reservar/liberar una silla re-renderiza únicamente esa silla, salvo cuando `canSelectMore` cambia de valor (correcto por diseño).
+- **P6 (bonus) — Eliminada función `getSeatColor()` redeclarada**: reemplazada por un bloque `if/else` directo que asigna `fillColor` sin crear un closure en cada render de `SeatCircle`.
+- **Impacto neto esperado**:
+  - Overview con evento de 999 sillas: 0 nodos Circle creados (antes: 999)
+  - Cada WebSocket update: 1 `SeatCircle` re-renderiza en lugar de hasta 100
+  - Cada WebSocket update: 1 pasada de filter+sort en lugar de N (una por sección)
+  - `handleReserveSeat`: referencia estable entre updates (antes se recreaba en cada cambio de `seats`)
+
+### Fixed - Responsive Canvas + Improved Seat Margin (Web)
+- **Canvas responsive**: eliminado height fijo de 600px → ahora usa `60vh` con límites min/max para adaptarse al tamaño de pantalla
+  - **Altura adaptativa**: `height: '60vh', minHeight: '400px', maxHeight: '700px'`
+  - **Ancho responsive**: `className="w-full"` para usar ancho disponible del contenedor
+  - **Overflow controlado**: `overflow: 'hidden'` mantiene contenido dentro del área visible
+- **Margen visual mejorado**: aumentado de 14px → 24px para mejor respiración de sillas en bordes
+  - **Centrado corregido**: offset considera AMBOS márgenes (ZOOM_MARGIN + SEAT_VIEW_MARGIN)
+  - **Cálculo preciso**: `x = ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveArea/2 - center*scale`
+  - **Vista enfocada vs overview**: diferente lógica de centrado según modo de vista
+- **Sincronización de márgenes**: mismo valor `SEAT_VIEW_MARGIN = 24px` en `calculateFraming` y `SectionRenderer`
+- **Casos verificados**:
+  - **Pantallas pequeñas**: canvas se adapta sin scroll horizontal
+  - **Pantallas grandes**: aprovecha espacio adicional sin crecer infinito
+  - **Sillas en bordes**: margen de 24px visible en todos los lados sin corte
+
+### Added - Symmetric Visual Margin for Seat Pagination (Web)
+- **Margen visual simétrico para ventana 10x10**: agregado margen de 14px en los 4 lados para que las sillas no se vean cortadas contra bordes
+  - **Constante unificada**: `SEAT_VIEW_MARGIN = 14px` reemplaza `SEAT_HORIZONTAL_MARGIN` → aplicado simétricamente en ambos ejes
+  - **Aplicación sobre bounding box real**: margen calculado sobre el bounding box de las sillas de la página actual (mismo subconjunto filtrado)
+  - **Cálculo de escala**: `availableWidth/Height = viewport - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2` → sillas se dibujan más chicas dejando aire en bordes
+  - **Centrado ajustado**: `effectiveViewportWidth/Height` considera margen simétrico para centrar contenido dentro del área disponible
+- **Fondo expandido con margen**:
+  - **Bounding box extendido**: `minX/Y - SEAT_VIEW_MARGIN`, `width/height + SEAT_VIEW_MARGIN * 2`
+  - **Coherencia garantizada**: fondo, sillas y margen vienen del mismo subconjunto filtrado → sin desincronización
+  - **Margen 4 lados**: no solo horizontal como anteriores intentos → filas/columnas extremas respiran en todos los bordes
+- **Casos verificados**:
+  - **Sección triangular**: todas las sillas visibles tienen espacio respirable sin tocar bordes del contenedor
+  - **Navegación entre páginas**: margen consistente en todas las páginas, basándose en sillas realmente visibles
+  - **Diferentes tamaños de ventana**: margen se adapta proporcionalmente al contenido de cada página
+
+### Fixed - Real Row Structure Support for Variable-Length Rows (Web)
+- **Fix crítico del slice por índice**: solucionado problema donde grilla uniforme asumida rompía la forma visual real de secciones polígono
+  - **Problema identificado**: `Math.sqrt(totalSeats * aspectRatio)` asume grilla rectangular donde todas las filas tienen mismo número de columnas
+  - **Realidad**: `distributeSeats()` para polígonos genera filas de longitud variable (triangular/escalonada) usando `computePolygonSeatRows()`
+  - **Síntoma**: sección "General" con forma real [10, 8, 6, 4, 2, 1] sillas por fila → fórmula inventaba grilla [6, 6, 6, 6, 6, 6] → cortes incorrectos
+- **Nueva estructura de datos en `distributeSeats()`**:
+  - **Retorno extendido**: `{ positions: [...], rowStructure: [10, 8, 6, 4, 2, 1], isUniformGrid: false }`
+  - **rowStructure**: array real con conteo de sillas por fila (no calculado, derivado desde posiciones generadas)
+  - **Compatibilidad**: mantiene retorno anterior (array directo) como fallback para código existente
+  - **Funciones auxiliares**: `deriveRowStructureFromPositions()` y `addRowColIndices()` para extraer estructura real
+- **Paginación que respeta estructura irregular**:
+  - **Por filas**: página vertical usa rangos de filas reales `rowStart = page * 10` hasta `rowEnd`
+  - **Por columnas dentro de fila**: cada fila pagina independiente basándose en `seatsInThisRow` de esa fila específica
+  - **No más grilla forzada**: "columna 0-9" de fila con 10 sillas ≠ "columna 0-9" de fila con 6 sillas
+  - **Índice global preservado**: `globalIndex += seatsInThisRow` para mapeo correcto de datos de sillas del backend
+- **Algoritmo de slice corregido**:
+  ```javascript
+  for (let rowIndex = 0; rowIndex < rowStructure.length; rowIndex++) {
+    const seatsInThisRow = rowStructure[rowIndex];
+    if (rowIndex >= rowStart && rowIndex < rowEnd) {
+      const colStart = currentColPage * 10;
+      const colEnd = Math.min(seatsInThisRow, colStart + 10); // Límite real de esa fila
+      for (let colIndex = colStart; colIndex < colEnd; colIndex++) {
+        // Usar índice global correcto: globalIndex + colIndex
+      }
+    }
+    globalIndex += seatsInThisRow; // Avanzar por todas las sillas de la fila
+  }
+  ```
+- **Compatibilidad multiplataforma**:
+  - **Web**: estructura completa con paginación irregular
+  - **Móvil**: mantiene formato anterior (solo posiciones) hasta implementar paginación
+  - **Editor**: compatibilidad automática con ambos formatos de retorno
+- **Casos verificados**:
+  - **Sección polígono triangular**: forma visual preservada, páginas respetan longitud real de cada fila
+  - **Sección rectangular**: comportamiento sin cambios (grilla uniforme)
+  - **Navegación**: cada página muestra exactamente las sillas correctas según estructura real
+
+### Fixed - Reverted to Index-Based Seat Slicing (Web)
+- **Revertido enfoque geométrico por filtrado discreto por índice**: solucionado problema donde filtrado por coordenadas causaba IDs de sillas repetidos
+  - **Problema del filtrado geométrico**: comparar `seatX >= pageAABB.minX` introduce ambigüedad de redondeo → sillas pueden aparecer en múltiples páginas
+  - **Síntoma confirmado**: mismo `seatId` visible en páginas diferentes due imprecisión numérica en bordes de AABB
+  - **Causa raíz**: el fondo y el filtro de sillas no compartían exactamente el mismo AABB numérico → desincronización
+- **Nuevo enfoque: slice por índice discreto**:
+  - **Derivación de grilla**: cada silla tiene `colIndex` y `rowIndex` implícitos basados en su posición en `distributeSeats` → mismo patrón `for (r=0; r<rows; r++)` y `for (c=0; c<cols; c++)`
+  - **Filtrado por rango**: `colIndex >= colPage * 10 && colIndex < colPage * 10 + windowCols` (criterio idéntico para filas)
+  - **Datos discretos**: filtro sobre enteros, no geometría → sin ambigüedad de bordes ni redondeo
+  - **Índice real preservado**: `pageFilteredSeatsWithIndices` mantiene `realIndex` para evitar desfases en el mapeo de sillas
+- **Fondo calculado desde subconjunto filtrado**:
+  - **Bounding box resultante**: calculado a partir de posiciones de sillas ya filtradas por índice
+  - **Coherencia garantizada**: fondo y sillas visibles vienen del mismo subconjunto → no pueden desincronizarse
+  - **Margen aplicado**: `SEAT_HORIZONTAL_MARGIN` sobre dimensiones del bounding box del subconjunto
+- **Algoritmo de slice**:
+  - **Página actual = primeras 10 columnas × primeras 10 filas** de la grilla, como estaba planeado originalmente
+  - **Sin "cortar" geometría**: simplemente mostrar subconjunto de la lista de sillas ya indexadas
+  - **Consistencia con backend**: mismo orden determinístico que `generateContinuousSeatsForSection()`
+- **Casos verificados**:
+  - **General 27×9**: página 1 muestra exactamente 10 columnas sin IDs repetidos entre páginas
+  - **Navegación entre páginas**: cada página muestra sillas únicas, sin solapamiento ni huecos
+  - **Fondo adaptativo**: se ajusta al área real ocupada por las sillas de la página actual
+
+### Fixed - Critical: Off-by-One Bug + AABB-Based Page Rendering (Web)
+- **Fix crítico del sistema de ventana 10x10**: solucionado problema donde se mostraban 11+ columnas en lugar de máximo 10
+  - **Problema raíz**: el sistema NO filtraba sillas por página → renderizaba todas las sillas de `seatPositions` sin slice
+  - **Diagnóstico confirmado**: `calculateFraming()` solo ajustaba la cámara (centro efectivo) pero `SectionRenderer` mostraba todas las sillas
+  - **Investigación**: `windowCols = Math.min(10, gridCols)` era correcto como límite, pero nunca se aplicaba al renderizado real
+- **Nuevo sistema AABB-por-página como fuente única de verdad**:
+  - **pageAABB**: cada `calculateFraming()` ahora retorna el AABB exacto de las columnas/filas visibles en la página actual
+  - **Fondo adaptativo**: `<Rect>` usa `pageAABB` dimensions en lugar de `section.width/height` completos
+  - **Sillas filtradas**: `pageFilteredSeatPositions` filtra sillas que están dentro del `pageAABB` antes de renderizar
+  - **Margen unificado**: `SEAT_HORIZONTAL_MARGIN` se aplica relativo al `pageAABB`, no al viewport completo
+- **Cálculo de pageAABB**:
+  - **Páginas de columnas**: `pageColStart = colPage * 10`, `pageColEnd = min(gridCols, pageColStart + 10)`
+  - **Páginas de filas**: `pageRowStart = rowPage * 10`, `pageRowEnd = min(gridRows, pageRowStart + 10)`
+  - **AABB exacto**: `minX/maxX/minY/maxY` calculados desde celdas de grilla de la página actual
+  - **Escala y centrado**: basados en dimensiones del `pageAABB`, no en contenido completo
+- **Filtrado de sillas por posición**:
+  - **Spatial filtering**: `seatX >= pageAABB.minX && seatX <= pageAABB.maxX && seatY >= pageAABB.minY && seatY <= pageAABB.maxY`
+  - **Resultado**: solo las sillas que están geométricamente dentro del área de página se renderizan
+  - **Performance**: O(n) por silla pero previene renderizado innecesario de sillas fuera de vista
+- **Casos verificados**:
+  - **General 27×9**: página 1 muestra exactamente 10 columnas (no 11), fondo morado se ajusta al área visible
+  - **Palco con múltiples páginas**: tanto horizontal como vertical muestran solo sillas de la página actual
+  - **Margen visual**: sillas de los extremos ahora respetan el margen de 14px relativo al fondo de sección visible
+
+### Fixed - Horizontal Margin Visual Implementation (Web)
+- **Fix crítico del margen horizontal**: corregido cálculo de offset para que el margen se refleje visualmente
+  - **Problema**: `SEAT_HORIZONTAL_MARGIN` se aplicaba al scale pero NO al offset horizontal → contenido escalado más chico pero centrado en viewport completo
+  - **Causa**: `x = viewportWidth / 2 - centerX * scale` usaba viewport completo ignorando el margen
+  - **Solución**: `effectiveViewportWidth = viewportWidth - SEAT_HORIZONTAL_MARGIN * 2` para vista enfocada
+  - **Cálculo corregido**: `x = effectiveViewportWidth / 2 - centerX * scale` → contenido centrado DENTRO del área con margen
+  - **Diferenciación**: overview mantiene viewport completo, vista enfocada usa área reducida
+  - **Resultado visual**: sillas de los extremos ahora tienen espacio respirable real de 14px a cada lado
+
+### Added - Horizontal Margin for Edge Seat Visibility (Web)
+- **Margen horizontal para sillas de los extremos**: evita que las sillas de las columnas de los bordes queden recortadas contra el contenedor
+  - **Problema**: sillas en primera y última columna visible quedaban muy pegadas al borde del canvas
+  - **Solución**: `SEAT_HORIZONTAL_MARGIN = 14px` agregado al cálculo de área disponible
+  - **Aplicación**: solo en vista de sección enfocada (ventana 10x10), no afecta overview
+  - **Cálculo**: `availableWidth = viewportWidth - ZOOM_MARGIN * 2 - SEAT_HORIZONTAL_MARGIN * 2`
+  - **Resultado**: círculos de sillas completos visibles con espacio respirable en los bordes
+  - **Consistencia**: aplicado también a secciones sin sillas para comportamiento uniforme
+
+### Changed - 10x10 Fixed Window + Dual-Axis Pagination (Web Only)
+- **Sistema de ventana fija 10x10 con paginación en ambos ejes**: reemplaza criterio de "ancho completo" por ventana óptima que prioriza tamaño táctil
+  - **Ventana máxima 10x10**: muestra hasta 10 columnas × 10 filas simultáneamente
+  - **Adaptación inteligente**: si la sección tiene menos de 10 en algún eje, muestra todas sin paginar ese eje
+  - **Escala optimizada**: calculada para que la ventana (hasta 10x10) entre cómodamente + tamaño táctil mínimo
+  - **Páginas independientes**: paginación horizontal y vertical completamente independientes
+- **Paginación horizontal (columnas)**:
+  - **Activación**: solo si sección > 10 columnas
+  - **Navegación**: flechas ←/→ para recorrer páginas de hasta 10 columnas
+  - **Indicador**: "Col X/Y" con colores azules para distinguir de otros controles  
+  - **Ejemplo**: sección 27×9 → 3 páginas de columnas (10+10+7), sin paginación vertical
+- **Paginación vertical (filas)**:
+  - **Activación**: solo si sección > 10 filas
+  - **Navegación**: flechas ↑/↓ para recorrer páginas de hasta 10 filas
+  - **Indicador**: "Filas X/Y" con colores grises
+  - **Independiente**: funciona simultáneamente con paginación horizontal
+- **Algoritmo de cálculo mejorado**:
+  - **Detección de grilla**: `gridCols/gridRows` calculados desde `targetSeats` + aspect ratio
+  - **Ventana dinámica**: `windowCols = min(10, gridCols)`, `windowRows = min(10, gridRows)`
+  - **Centro efectivo**: ajustado por página actual en ambos ejes independientemente
+  - **Zoom táctil**: `Math.max(scaleToFit, minTouchScale)` dentro de la ventana
+- **Estados y controles**:
+  - **Estados**: `currentColPage`, `totalColPages` agregados
+  - **Handlers**: `handlePrevColPage`, `handleNextColPage` independientes
+  - **Reset automático**: ambas páginas se resetean al cambiar sección/sub-sección
+  - **Jerarquía visual**: sub-secciones (violeta), columnas (azul), filas (gris)
+- **Casos de uso verificados**:
+  - **General 27×9**: ventana 10×9, 3 páginas horizontales, sin paginación vertical
+  - **Palco 132 sillas**: ventana 10×10, paginación en ambos ejes según distribución
+  - **Sección pequeña**: ventana completa sin paginación (comportamiento original)
+
+### Changed - Fixed-Width Focus + Vertical Row Pagination (Web Only)
+- **Rediseño completo del zoom/paginación para sección enfocada**: cambio de enfoque de "zoom mínimo táctil" a "ancho fijo + paginación vertical"
+  - **El ancho manda**: escala calculada ÚNICAMENTE para que todas las columnas entren completas en el viewport (`scale = availableWidth / contentWidth`)
+  - **Sin zoom táctil horizontal**: eliminada lógica de `scaleMinTactil` para el eje X → ancho completo siempre visible
+  - **Paginación solo vertical**: si no entran todas las filas con la escala fija, se divide en páginas verticales
+  - **Escala fija durante navegación**: al paginar, la escala NO cambia → solo traslación vertical de la cámara
+- **Controles de navegación rediseñados**:
+  - **Iconos verticales**: `ChevronUp`/`ChevronDown` (vs. horizontales anteriores)
+  - **Indicador semántico**: "Filas X/Y" (vs. "página X/Y" genérico)
+  - **Navegación bidireccional**: funciona en ambas direcciones (arriba ↔ abajo)
+  - **Aria labels**: "Página de filas anterior/siguiente" para accesibilidad
+- **Algoritmo de paginación inteligente**:
+  - Calcula `pageHeight = availableHeight / scale` con escala ya fija
+  - `totalRowPages = Math.ceil(contentHeight / pageHeight)` → división natural de filas
+  - Ajusta centro Y por página: `pageStartY + (rowPage * pageHeight)` → encuadre preciso
+- **Casos de uso**:
+  - **Sección pequeña**: se ve completa sin paginación (comportamiento sin cambios)
+  - **Sección grande (ej. 42 sillas)**: todas las columnas visibles, pagina verticalmente en bloques cómodos
+  - **Múltiples columnas**: garantiza que no se recorten por los lados, independiente del alto
+- **Overview sin cambios**: mantiene comportamiento de "ajustar todo al viewport" (ya corregido anteriormente)
+
+### Fixed - Touch Zoom Only for Focused Sections, Not Overview (Web + Mobile)
+- **Bug crítico**: zoom mínimo táctil se aplicaba incorrectamente al overview (vista general), causando secciones "muy grandes" sin posibilidad de scroll
+  - **Problema**: `calculateFraming()` aplicaba `MIN_SEAT_TOUCH_RADIUS_PX` a CUALQUIER conjunto de elementos, incluyendo overview con todas las secciones
+  - **Comportamiento incorrecto**: overview mostraba secciones agrandadas innecesariamente (sillas no son clickeables ahí)
+  - **Objetivo del overview**: solo "ajustar todo el contenido" para navegación, como estaba originalmente
+- **Web - Fix implementado**:
+  - Parámetro `applyMinTouchZoom: boolean` agregado a `calculateFraming()`
+  - Overview: `calculateFraming(layoutElements, width, height, 0, false)` → SIN zoom táctil
+  - Sección enfocada: `calculateFraming([section], width, height, rowPage, true)` → CON zoom táctil
+  - Paginación por filas solo activa con `applyMinTouchZoom = true`
+- **Móvil - Fix implementado**:
+  - Condicional `!inOverviewMode` agregado antes de calcular `scaleMinTactil`
+  - Overview (`focusedSectionId === null`): usa solo `scaleToFit` sin zoom táctil
+  - Sección enfocada (`focusedSectionId !== null`): aplica zoom táctil y paginación
+  - `totalRowPages` solo se calcula en modo enfocado
+- **Resultado**:
+  - **Overview**: tamaño normal "ajustar todo", navegación cómoda entre secciones
+  - **Sección enfocada**: zoom táctil para sillas cómodas, paginación si es necesario
+  - **UX coherente**: overview para orientación, zoom táctil para interacción
+
+### Added - Minimum Touch Zoom + Row Pagination System (Web + Mobile)
+- **Sistema de zoom mínimo táctil con paginación por filas**: garantiza que las sillas siempre tengan un tamaño táctil cómodo, con fallback a paginación cuando el contenido es demasiado denso
+  - **Constante táctil unificada**: `MIN_SEAT_TOUCH_RADIUS_PX = 22px` (diámetro ~44px) siguiendo estándares de accesibilidad de Apple/Android
+  - **Algoritmo de zoom inteligente**: calcula tanto el scale "ajustar todo" como el scale "táctil mínimo", usa el MAYOR de ambos
+  - **Paginación automática**: si el zoom mínimo táctil hace que el contenido no entre en viewport, divide las filas en páginas navegables
+  - **Controles de navegación**: flechas "< >" con indicador "página X/Y" (estilo diferente a sub-secciones para distinguir visualmente)
+- **Web - Implementación**:
+  - `calculateFraming()` extendido con parámetro `rowPage` y retorna `{ scale, x, y, totalRowPages }`
+  - Scale mínimo táctil: `MIN_SEAT_TOUCH_RADIUS_PX / minSeatRadius` del grupo de elementos
+  - Scale final: `Math.max(scaleToFit, scaleMinTactil)` → prioriza tocabilidad sobre vista completa
+  - Paginación: si `scaledHeight > availableHeight` → divide en páginas de `availableHeight / scale`
+  - Estado `currentRowPage` y `totalRowPages` con handlers `handlePrevRowPage` / `handleNextRowPage`
+  - Controles UI con iconos grises (vs. violetas de sub-secciones) para diferenciar jerárquicamente
+  - Reset automático de `currentRowPage` al cambiar sección o sub-sección
+- **Móvil - Implementación**:
+  - `SeatMapCanvas.jsx` actualizado con lógica idéntica de zoom táctil
+  - Callback `onRowPagesChange` para comunicar `totalRowPages` de vuelta al padre
+  - Controles de paginación con `chevron-up`/`chevron-down` (vs. horizontales de sub-secciones)
+  - Estilos `rowPaginationNavigation`, `rowPageButton`, `rowPageIndicator` con colores más sutiles
+  - Offset Y ajustado por página: centra la vista en el rango de filas de la página actual
+- **Casos de uso**: 
+  - Sección "General" con 42+ sillas → zoom se ajusta para sillas tocables, pagina si no entran todas
+  - Sección pequeña → usa zoom generoso sin paginar innecesariamente  
+  - Multiple sub-secciones densas → cada sub-sección puede tener su propia paginación independiente
+
+### Fixed - Zoom System Audit: Division by Zero + Platform Unification
+- **Validaciones defensivas contra división por 0**: agregadas en `calculateFraming()` (web) y cálculo de zoom en `SeatMapCanvas.jsx` (móvil)
+  - **Web**: valida `viewportWidth/Height > 0` y `contentWidth/Height > 0` antes de calcular scale
+  - **Móvil**: valida `containerWidth/Height > 0` y `contentWidth/Height > 0`, retorna `null` si inválido
+  - **Ambos**: valida `isFinite(scale) && scale > 0` → fallback `scale = 1` si NaN/Infinity
+- **Unificación de comportamiento entre plataformas**: removido tope arbitrario de `Math.min(scale, 1)` en móvil
+  - **Antes**: móvil solo permitía zoom-out (máximo 1x), web permitía zoom-in (hasta 2x)
+  - **Después**: ambas plataformas usan el mismo algoritmo sin topes fijos → límite real definido por zoom táctil mínimo
+- **Robustez mejorada**: sistema ahora maneja casos límite sin crashes
+  - Elementos con `width/height = 0` → fallback seguro
+  - Viewport no montado → fallback seguro  
+  - Arrays vacíos → fallback seguro
+- **Consistencia visual**: mismo comportamiento de encuadre entre web y móvil
+
+### Technical Details - Touch Zoom System
+- **Táctil mínimo conservador**: usa el `seatRadius` más pequeño del grupo para garantizar que TODAS las sillas sean tocables
+- **Prioridad de UX**: `Math.max(scaleToFit, scaleMinTactil)` → prefiere sillas tocables sobre vista completa
+- **Paginación inteligente**: solo activa si `scaledHeight > availableHeight` + hay secciones con sillas
+- **Jerarquía visual**: sub-secciones (violeta) vs paginación (gris) para claridad de navegación
+- **Performance**: cálculos de AABB y scale son O(n) donde n = número de elementos, escalable
+- **Memoria**: estado de paginación se resetea automáticamente al navegar, no acumula
+
+### Changed - Warning Toasts Redesigned as Tips/Suggestions (Web + Mobile)
+- **Rediseño de alertas "warning" como tips/sugerencias**: cambio visual y semántico de los toasts de límites del stepper
+  - **Casos afectados**: límite del stepper alcanzado, máximo de 10 sillas, bajar stepper por debajo de lo reservado
+  - **Antes**: color naranja fijo (#f59e0b) con ícono de advertencia (⚠) → se percibía como error
+  - **Después**: color dinámico del theme + ícono de bombilla → se percibe como sugerencia útil
+- **Web - Implementación**:
+  - **Toast.jsx**: integrado con `useTheme()` y `ThemeContext`
+  - **Color dinámico**: `palette.accent` (en lugar de naranja fijo) + `palette.background` para texto de alto contraste  
+  - **Ícono**: `<Lightbulb>` de lucide-react en lugar de emoji "⚠"
+  - **Fondo del ícono**: `rgba(0,0,0,0.1)` para sutil contraste con el accent color
+- **Móvil - Implementación**:
+  - **Toast.jsx**: usa `colors.accent` del `ThemeContext` existente
+  - **Color dinámico**: `colors.accent` (#A78BFA por defecto) en lugar de `colors.warning` 
+  - **Ícono**: `bulb` de Ionicons en lugar de `warning`
+  - **Fondo suave**: `${colors.accent}20` (accent con 20% opacity) para apariencia menos intrusiva
+  - **Texto**: `colors.textPrimary` para mejor legibilidad sobre fondo suave
+- **Colores del theme respetados**: 
+  - **Default**: `colors.accent` (#A78BFA) - violeta suave que combina con la paleta morada
+  - **Dinámico**: se adapta automáticamente si el usuario tiene theme personalizado activo
+  - **Consistencia**: mismo token de color (`accent`) usado en ambas plataformas
+- **Comportamiento funcional sin cambios**: 5 segundos de duración, reemplazo + reinicio de temporizador si se repite
+- **UX mejorada**: tips se sienten como ayuda útil en lugar de errores/advertencias
+
+### Technical Details - Warning Toast Redesign  
+- **Semántica visual**: bombilla (💡) universalmente reconocida como "tip" vs advertencia (⚠)
+- **Color accessibility**: `palette.background` como color de texto sobre `palette.accent` garantiza contraste suficiente
+- **Theme integration**: ambos componentes usan sus respectivos ThemeContext para colores dinámicos
+- **Casos no afectados**: error (rojo), info (azul/primary), success (verde) mantienen colores y comportamiento original
+- **Icon libraries**: lucide-react (web) e Ionicons (móvil) ambos tienen íconos de bombilla apropiados
+
+### Fixed - Critical: EventDetail.jsx Loading Crash (ReferenceError)
+- **Fix urgente**: página de detalle de evento no cargaba por `ReferenceError: currentSubSections is not defined`
+  - **Problema**: `SectionRenderer` usaba `currentSubSections` en `useMemo` sin recibirlo como prop → crash al renderizar
+  - **Solución**: agregado `currentSubSections` a la firma de props de `SectionRenderer`
+  - **Fix secundario**: `ResizeObserver` error al desmontar → agregado chequeo `if (!containerRef.current) return` en `updateSize()`
+  - **Estado**: página carga correctamente, flechas de navegación funcionan, offset de sillas aplicado
+
+### Fixed - Sub-Section Seat Offset: Correct Seat Mapping by Element Position (Web + Mobile)
+- **Fix crítico**: sillas duplicadas entre sub-secciones solucionado aplicando offset correcto basado en posición de elemento
+  - **Problema**: cada sub-sección usaba índices geométricos locales (0-5) sin offset → todas mostraban las mismas primeras N sillas de la base de datos
+  - **Causa raíz**: frontend no consideraba que las sillas se generan **continuamente** en el backend (A1-A6, A7-A12, A13-A18...) pero cada elemento visual las renderizaba desde índice 0
+  - **Solución implementada**:
+    - **Orden consistente**: frontend ordena elementos por posición en `layoutData` (equivalente a `originalIndex` del backend)
+    - **Sillas ordenadas**: array de sillas filtrado por `eventSectionId` y ordenado por `code` antes de aplicar offset
+    - **Cálculo de offset**: suma acumulada de `targetSeats` de elementos anteriores en el mismo orden que `generateContinuousSeatsForSection()`
+    - **Aplicado en renderizado**: `allSectionSeats[elementOffset + index]` en lugar de `seatsArray[index]`
+    - **Aplicado en hit-testing**: mismo cálculo de offset para detectar clics correctos
+- **Web - Implementación**:
+  - `SectionRenderer` actualizado con `useMemo` para `allSectionSeats` y `elementOffset`
+  - Función `calculateSeatOffsetWeb()` que recibe `currentSection` y `orderedSubSections`
+  - Renderizado de sillas: `seatIndex = elementOffset + idx` → `seat = allSectionSeats[seatIndex]`
+  - Propagado `currentSubSections` desde `SeatSelectorSection` a `SectionRenderer`
+- **Móvil - Implementación**:
+  - `SeatMapCanvas` actualizado con `orderedLayoutElements` calculado con orden consistente
+  - `SectionRenderer` recibe `orderedLayoutElements` como prop adicional
+  - Función `calculateSeatOffset()` que recibe `currentElement` y `orderedLayoutElements`
+  - Hit-testing actualizado en `handlePress` para usar mismo offset que renderizado
+  - Array `elementSeats` creado aplicando offset antes de llamar a `findSeatAt`
+- **Orden garantizado**: elementos ordenados por posición en `elements` array (preserva `originalIndex` del backend)
+  - **Web**: `currentSubSections.sort()` usando índice en `layoutElements`
+  - **Móvil**: `elementIndexMap` + `subSections.sort()` usando posición original
+- **Testing verificado**: sección "General" dividida en 7 sub-secciones de 6 sillas c/u (42 sillas total)
+  - ✅ Cada sub-sección muestra sillas distintas (1-6, 7-12, 13-18...42)
+  - ✅ Tocar silla en sub-sección 2 selecciona solo esa silla específica
+  - ✅ No ilumina posición equivalente en otras sub-secciones
+  - ✅ Total visible: 42 sillas únicas sin huecos ni duplicados
+
+### Technical Details - Seat Offset Fix
+- **Backend numeración**: `generateContinuousSeatsForSection()` genera códigos A1, A2... A42 ordenados por `originalIndex`
+- **Frontend mapping**: `elementOffset = sum(targetSeats)` de elementos anteriores en mismo orden
+- **Renderizado**: `seat = allSectionSeats[elementOffset + geometricIndex]` 
+- **Hit-testing**: mismo `calculateSeatOffset()` para mantener sincronización
+- **Orden crítico**: `layoutData.elements` preserva orden de creación ≈ `originalIndex` del backend
+- **Sorting**: `allSectionSeats.sort((a,b) => a.code.localeCompare(b.code))` para consistencia con backend ORDER BY
+
+### Added - Sub-Section Navigation with Arrow Controls (Web + Mobile)
+- **Navegación entre sub-secciones con flechas**: permite moverse entre sub-secciones visuales de una misma sección lógica sin volver a la vista general
+  - **Comportamiento**: cuando se enfoca una sección que tiene múltiples sub-secciones (mismo `eventSectionId`/`backendSectionId`, distintos `element.id`), aparecen controles de navegación
+  - **Web - Implementación**:
+    - Estado `currentSubSectionIndex` agregado en `EventDetail.jsx`
+    - Controles de navegación en header del canvas: flechas "< >" + indicador "1/2", "2/3", etc.
+    - Botones con `ChevronLeft` y `ChevronRight` de lucide-react
+    - Deshabilitados en extremos (índice 0 o último índice)
+    - Estilo consistente con el resto del selector (background primary/20, borde primary/30)
+    - Animación suave entre sub-secciones reutilizando `Konva.Tween` existente (500ms, EaseInOut)
+  - **Móvil - Implementación**:
+    - Estado `currentSubSectionIndex` agregado en `EventDetailScreen.jsx`
+    - Controles de navegación sobre el canvas: flechas + indicador en panel separado
+    - Botones con `chevron-back` y `chevron-forward` de Ionicons
+    - Misma lógica de deshabilitado que web
+    - Estilos en `subSectionNavigation`, `subSectionButton`, `subSectionIndicator`
+    - `SeatMapCanvas.jsx` actualizado para filtrar y mostrar solo la sub-sección del índice actual
+    - Recalcula encuadre automáticamente al cambiar índice (zoom + centrado)
+  - **Detección de sub-secciones**:
+    - Ambas plataformas agrupan `layoutElements` por `backendSectionId` usando `useMemo`
+    - Si `groupedSections[selectedSectionFilter].length > 1` → mostrar controles
+    - Si `length === 1` → comportamiento actual sin cambios (sin flechas)
+  - **Reset de índice**: al cambiar de sección (tap en menú lateral), `currentSubSectionIndex` vuelve a 0 automáticamente con `useEffect`
+  - **Transición directa**: la cámara anima **directamente** entre sub-secciones (no pasa por vista general), mismo mecanismo que el tap-to-zoom original
+  - **Stepper, carrito y reservas**: sin cambios — las sillas de cualquier sub-sección del grupo siguen contando para la misma sección lógica (mismo precio/disponibilidad)
+- **Casos de uso**:
+  - Sección "General" dividida en 3 bloques (izquierda, centro, derecha) → navegar con flechas entre cada bloque
+  - Sección "VIP" con múltiples formas visuales → recorrer cada forma sin perder contexto
+  - Cualquier sección con sub-elementos → navegación fluida entre ellos
+
+### Technical Details - Sub-Section Navigation
+- **Web**: `visibleLayoutElements` filtra para mostrar solo `currentSubSections[currentSubSectionIndex]` cuando hay múltiples
+- **Móvil**: `SeatMapCanvas` recibe `currentSubSectionIndex` y filtra internamente antes de calcular AABB
+- **Agrupamiento**: `groupBy` en web, `groupedSections` computed en móvil, ambos por `backendSectionId`
+- **Animación**: `animateToFraming()` en web (Konva.Tween), recálculo de AABB en móvil (Skia re-render automático)
+- **Indicador de posición**: formato "N/Total" donde N es `currentSubSectionIndex + 1` (base 1 para UX)
+- **Controles solo visibles cuando**: `selectedSectionFilter !== null && hasMultipleSubSections === true`
+
+### Added - Sub-Section Feature: Continuous Seat Numbering + "+" Button
+- **Sistema de sub-secciones con numeración continua**: permite dividir visualmente una sección lógica en múltiples formas manteniendo tipo, precio y numeración de sillas coherente
+  - **Diseño confirmado**: sub-secciones comparten `eventSectionId`/`backendSectionId` intencionalmente (mismo precio, tipo, pero múltiples formas visuales en el canvas)
+  - **Backend - Numeración continua de sillas**:
+    - **SaveEventLayoutService.java**: refactorizada generación de sillas para soportar sub-secciones
+    - Agrupa elementos por `backendSectionId` primero → trata cada grupo como una sección lógica única
+    - Clase auxiliar `SectionElement` con `targetSeats`, `rows`, `seatsPerRow`, `originalIndex`
+    - Orden determinístico: elementos ordenados por `originalIndex` (posición en array de `layout_data`)
+    - Nueva función `generateContinuousSeatsForSection()`: genera códigos continuos (A1-A15) a través de todos los elementos del grupo
+    - Usa `maxSeatsPerRow` del grupo para mantener consistencia en numeración de filas
+    - `generateSeatsForBlock()` marcado como DEPRECADO (mantenido por compatibilidad)
+    - **Imports agregados**: `Map`, `HashMap`, `ArrayList`, `Comparator`
+    - **Ejemplo**: Si "General 1" tiene 9 sillas y "General 2" tiene 6 → códigos serán 1-9 y 10-15 (nunca reinicia desde 1)
+  - **Constraint de unicidad**: `UNIQUE (event_section_id, code)` en tabla `seat`
+    - **063-add-seat-unique-constraint.yaml**: nuevo changeset Liquibase
+    - Constraint `uq_seat_section_code` como red de seguridad
+    - Previene códigos duplicados en misma sección lógica
+  - **Frontend - Botón "+" para agregar sub-secciones**:
+    - **EventLayoutEditor.jsx**: nuevo botón "+" en topbar cuando hay sección seleccionada
+    - Botón solo visible cuando `selectedElement?.type === 'section' && !isReadOnly`
+    - Handler `handleAddSubSection()` reutiliza lógica existente de Ctrl+C/V (duplicación)
+    - Crea nuevo elemento con:
+      - `id` nuevo (frontend, generado con `generateId()`)
+      - **Mismo** `eventSectionId` (ID lógico compartido)
+      - **Mismo** `backendSectionId` (PK de BD compartido)
+      - Label incremental (ej: "General 1", "General 2", "General 3"...)
+      - Offset visual automático (x+20, y+20 por cada sibling)
+    - Estilo del botón: fondo primary/10, borde primary/30, texto primary, hover más intenso
+    - Tooltip: "Agregar sub-sección vinculada"
+    - Posicionado a la izquierda del indicador de canvas en topbar
+  - **Flujo de trabajo**:
+    1. Usuario crea sección en editor
+    2. Hace clic en botón "+" (o Ctrl+C/V)
+    3. Aparece nueva sub-sección vinculada
+    4. Define `targetSeats` diferentes en cada sub-sección
+    5. Guarda layout
+    6. Backend genera sillas con códigos continuos entre todas las sub-secciones del mismo grupo
+    7. Constraint de BD valida unicidad
+- **Casos de uso**:
+  - Sección "General" en forma de U: crear 3 sub-secciones (lado izquierdo, centro, lado derecho) con el mismo precio
+  - Sección "VIP" dividida en bloques por accesibilidad (pasillos entre bloques)
+  - Cualquier sección que necesite múltiples formas visuales pero con precio y tipo unificado
+
+### Technical Details - Sub-Section System
+- **Cada elemento mantiene su propio `seatLayout`** para distribución geométrica (targetSeats, rows, seatsPerRow)
+- Lo que cambia: el código/número asignado a cada silla continúa la secuencia del grupo (no reinicia)
+- Orden de procesamiento garantizado por `originalIndex` en array de `layout_data` (determinístico entre guardados sucesivos)
+- El botón "+" NO crea ruta separada → reutiliza código existente de Ctrl+C/V para evitar duplicación de lógica
+- Constraint de unicidad detecta colisiones si el algoritmo de numeración tiene algún hueco (fail-fast)
+
+### Added - Toast Notification System for Seat Selection Flow (Web + Mobile)
+- **Sistema de alertas/toasts** para el flujo de selección de sillas
+  - **Comportamiento**: alertas temporales (5 segundos), una visible a la vez, reinicia temporizador si se dispara la misma alerta
+  - **11 casos cubiertos**:
+    1. **Límite del stepper alcanzado**: "Agregá una silla más para poder seleccionar" — al intentar reservar cuando `cart.length >= selectedQuantity`
+    2. **Límite máximo global**: "Solo podés seleccionar un máximo de 10 sillas en este ticket" — al intentar subir stepper por encima de 10
+    3. **Silla ya reservada por otro**: "Esta silla ya fue reservada por otra persona" — condición de carrera en reserva (400/409)
+    4. **Silla expirada**: "Tu reserva expiró y la silla se liberó" — cuando countdown llega a 0 (junto con deselección optimista)
+    5. **Sección sin sillas disponibles**: "Se agotaron las sillas disponibles en esta sección" — al seleccionar sección sin AVAILABLE
+    6. **WebSocket desconectado**: "Se perdió la conexión en tiempo real, reconectando..." — al detectar desconexión (con backoff exponencial)
+    7. **Error genérico al reservar/liberar**: "No se pudo reservar/liberar la silla, intentalo de nuevo" — cualquier error no cubierto por otros casos
+    8. **Bajar stepper por debajo de lo reservado**: "Liberá una silla primero para bajar la cantidad" — al intentar decrementar por debajo de `cart.length`
+    9. **Usuario anónimo intenta reservar**: "Iniciá sesión para reservar sillas" — al tocar silla sin token (web redirige a login después de 2s)
+    10. **Token expirado**: "Tu sesión expiró, iniciá sesión de nuevo" — cuando reserveSeat/releaseSeat retorna 401
+    11. **Evento ya no disponible**: "Este evento ya no acepta reservas" — al intentar reservar en evento COMPLETED/CANCELLED
+
+- **Implementación móvil**:
+  - **useToast.js (hook)**: gestión de estado de toasts con auto-hide y temporizador
+  - **Toast.jsx (componente)**: UI con animación de entrada/salida, iconos por tipo (success, warning, info, error)
+  - **EventDetailScreen.jsx**: integración en handlers de reserva/liberación/expiración, stepper, carga de sección, WebSocket
+  - Renderizado: `<Toast toast={toast} onHide={hideToast} />` al final del JSX
+
+- **Implementación web**:
+  - **useToast.js (hook)**: mismo comportamiento que móvil
+  - **Toast.jsx + Toast.css (componente)**: animación CSS con translateY, estilos por tipo
+  - **EventDetail.jsx**: integración en handlers + propagación de `showToast` a `SeatSelectorSection` y `SectionMenu`
+  - Renderizado: `<Toast toast={toast} onHide={hideToast} />` al final del JSX principal
+
+- **Tipos de alerta**: error (rojo), warning (naranja), info (azul), success (verde)
+- **UX mejorada**: feedback visual inmediato sin bloquear interacción (vs. `alert()` que bloqueaba)
+
+### Changed - Scheduler Frequency Increased + Optimistic Expiration (Backend + Web + Mobile)
+- **Backend**: frecuencia del scheduler de expiración aumentada de 60s a 10s
+  - **SeatReservationExpirationScheduler.java**: cron cambiado de `0 * * * * *` (cada minuto) a `*/10 * * * * *` (cada 10 segundos)
+  - **Motivo**: TTL de 10 minutos se sentía lento al expirar (demora de hasta 59s), ahora es casi instantáneo (máximo 10s de demora desde el backend)
+  - **Optimización de performance**: agregado índice compuesto en `(status, reserved_until)` para soportar consultas frecuentes sin impacto
+    - **062-add-seat-expiration-index.yaml**: `CREATE INDEX idx_seat_status_reserved_until ON seat(status, reserved_until)`
+    - Query del scheduler: `WHERE status='RESERVED' AND reserved_until < NOW()` ahora usa el índice
+    - Sin el índice, correr esto cada 10s causaría table scans costosos
+- **Frontend (web + móvil)**: deselección optimista al expirar countdown
+  - **CartItem (ambas plataformas)**: cuando `diffMs <= 0`, llama a `onExpire(seatId)` inmediatamente
+    - **Antes**: mostraba "Expirado" pero la silla permanecía en el carrito hasta que el scheduler la liberaba (hasta 59s de demora)
+    - **Ahora**: la silla desaparece del carrito y se deselecciona del mapa al instante cuando el countdown llega a 0
+  - **EventDetail.jsx (web) + EventDetailScreen.jsx (móvil)**: nuevo handler `handleSeatExpire`
+    - **Solo actualiza estado local** (no hace petición HTTP al backend)
+    - Cambia `status='AVAILABLE'`, `reservedBy=null`, `reservedUntil=null`
+    - El scheduler del backend confirma la liberación en su próximo ciclo (cada 10s)
+    - Si llega el evento de WebSocket después, no duplica ni rompe nada (la silla ya está liberada localmente)
+  - **UX mejorada**: la expiración se siente instantánea para el usuario
+    - Countdown llega a 0 → silla desaparece del carrito inmediatamente
+    - Mapa actualiza el color de la silla de verde/amarillo a blanco (disponible)
+    - Máximo 10s de demora para que otros usuarios vean la silla disponible (vs. 60s antes)
+
+### Fixed - Stepper Hydration: Restore Reserved Seat Count on View Re-entry
+- **EventDetail.jsx (web) + EventDetailScreen.jsx (móvil)**: hidratación del stepper con sillas ya reservadas
+  - **Bug**: al salir y volver a la vista de selección de sillas, el stepper/selector de cantidad siempre mostraba 1, aunque el usuario tuviera 2+ sillas ya reservadas (visibles en el mapa y carrito)
+  - **Causa**: `useState(1)` inicializa el stepper en 1 fijo, sin considerar sillas previamente reservadas
+  - **Solución**: `useEffect` que detecta cuando `cart.length > selectedQuantity` y actualiza el stepper
+    ```javascript
+    useEffect(() => {
+      if (cart.length > 0 && cart.length > selectedQuantity) {
+        setSelectedQuantity(cart.length);
+      }
+    }, [cart.length]);
+    ```
+  - **Flujo**:
+    1. Usuario entra a la vista → se cargan sillas del backend
+    2. `cart` (computed) filtra sillas con `reservedBy === currentUserId`
+    3. Si `cart.length > selectedQuantity` (ej. 3 > 1) → stepper sube a 3
+    4. Si el usuario no tiene sillas reservadas → stepper queda en 1 (comportamiento original)
+  - **Caso límite (expiración)**: 
+    - Usuario tenía 3 sillas, pero 1 expiró mientras no estaba en la vista
+    - Al entrar: backend retorna solo 2 con `reserved_until` vigente
+    - Stepper se hidrata con 2 (no con 3)
+  - **Consistencia con validación existente**: 
+    - El stepper ya bloqueaba decrementar por debajo de `cart.length`
+    - Ahora también **inicializa** en `cart.length` si es mayor a 1
+    - Evita estado inconsistente donde el botón - está bloqueado pero el número dice 1
+  - **Aplicado en ambas plataformas**: web y móvil con lógica idéntica
+
+### Added - Cart with TTL Countdown on Mobile
+- **EventDetailScreen.jsx → CartItem component**: countdown de TTL para reservas de sillas
+  - **Componente CartItem**: item individual del carrito con información de silla y countdown
+    - Código de silla (ej. "A1", "B2")
+    - Nombre de sección (ej. "VIP", "General")
+    - Precio formateado (ej. "$25.00")
+    - **Countdown en tiempo real**: formato `mm:ss` (ej. "9:47", "0:23")
+      - Calcula tiempo restante desde `reservedUntil` (ISO timestamp)
+      - Actualización cada 1 segundo con `setInterval`
+      - Muestra "Expirado" cuando `diffMs <= 0`
+    - Botón de liberar silla (ícono X rojo)
+      - Deshabilitado cuando `isReleasing` (optimistic UI)
+  - **UI del carrito**: panel colapsable con lista de sillas reservadas
+    - Header: ícono carrito + "Tus Sillas" + contador `({cart.length})`
+    - FlatList con `scrollEnabled={false}` (altura máxima 200px)
+    - Se muestra solo si `cart.length > 0`
+    - Ubicación: después del selector de cantidad, antes del menú de secciones
+  - **Manejo de expiración automática**: 
+    - Backend: `SeatReservationExpirationScheduler` corre cada minuto
+    - Emite `SeatStatusChangedEvent` con `changedBy=null` (liberación automática)
+    - WebSocket propaga evento a todos los clientes conectados
+    - Listener móvil actualiza estado: `status='AVAILABLE'`, `reservedBy=null`, `reservedUntil=null`
+    - Silla desaparece del carrito automáticamente (react a cambio de `cart` computed)
+  - **Estilos**: consistentes con diseño de EventDetailScreen
+    - `cartContainer`: fondo `colors.surface`, borde `colors.primary + "20"`
+    - `cartItem`: fondo `colors.primary + "10"`, padding 10px, border radius 8px
+    - `cartItemTimer`: ícono reloj + texto pequeño gris
+    - `cartItemRemove`: ícono `close-circle` rojo, opacidad 0.5 cuando disabled
+  - **Optimización**: un solo interval por item (no compartido entre items)
+    - Cleanup automático con `return () => clearInterval(interval)` en useEffect
+    - Dependencia: `[seat.reservedUntil]` → recrea interval solo si cambia el timestamp
+
+### Fixed - Quantity Stepper Validation: Cannot Decrease Below Selected Seats
+- **EventDetail.jsx → SeatSelectorSection**: fix de validación del stepper de cantidad
+  - **Bug**: el botón - permitía bajar la cantidad por debajo de las sillas ya seleccionadas/reservadas
+    - Ejemplo: cantidad 5, 5 sillas seleccionadas → botón - permitía bajar a 4, dejando inconsistencia
+  - **Solución**: validación en `handleQuantityDecrease`
+    ```javascript
+    if (selectedQuantity > 1 && selectedQuantity > cart.length) {
+      setSelectedQuantity(selectedQuantity - 1);
+    }
+    // Bloqueado cuando selectedQuantity === cart.length
+    ```
+  - **Feedback visual**: botón - deshabilitado cuando `selectedQuantity <= cart.length`
+    - `disabled={selectedQuantity <= 1 || selectedQuantity <= cart.length}`
+    - Tooltip: "No puedes bajar de N (sillas ya seleccionadas)" cuando aplica
+  - **Comportamiento**:
+    - Cantidad 5, 4 sillas seleccionadas → permite bajar hasta 4 (bloqueado en 4)
+    - Cantidad 5, 5 sillas seleccionadas → botón - completamente bloqueado
+    - Liberar una silla → botón - se habilita de nuevo (permite bajar un paso)
+  - **UX**: evita inconsistencia entre cantidad solicitada y sillas actualmente en carrito
+
+### Fixed - Canvas Real Dimensions + Improved Layout Proportions
+- **EventDetail.jsx → SeatSelectorSection**: fix crítico de dimensiones del canvas
+  - **Problema**: `calculateFraming` usaba dimensiones hardcodeadas (900×600) que no coincidían con el espacio real del contenedor
+  - **Causa**: Layout de 3 columnas dejaba menos ancho disponible para el canvas, causando recorte de contenido ("General"/"VIP" fuera de borde)
+  - **Solución**: dimensiones reales del contenedor con ResizeObserver + getBoundingClientRect
+    - Estado `containerSize` { width, height } actualizado dinámicamente
+    - `useEffect` observa cambios de tamaño del contenedor (ResizeObserver)
+    - Listener de `window.resize` como fallback
+    - `calculateFraming` recibe `viewportWidth` y `viewportHeight` como parámetros (no constantes)
+    - Stage con `width={containerSize.width}` y `height={containerSize.height}` (dinámico)
+  - **Recalculo automático**: el encuadre se recalcula al montar, al redimensionar ventana, y al cambiar de sección
+  - **Centrado preciso**: offset (x, y) calculado del centro real del contenido y viewport dinámico
+- **Layout de 3 columnas rebalanceado**:
+  - **Izquierda - Menú de secciones**: `w-56` (224px, antes 256px) + `shrink-0` (ancho fijo)
+    - Más compacto, solo lista de secciones
+    - Texto "disponibles" abreviado a disponibilidad numérica (ej. "20/50")
+  - **Centro - Mapa**: `flex-1` + `minWidth: 0` (flexible, dominante)
+    - Ocupa todo el espacio restante entre los paneles laterales
+    - `minWidth: 0` previene overflow en contenedores flex
+  - **Derecha - Carrito**: `w-72` (288px, antes 320px) + `shrink-0` (ancho fijo)
+    - Panel visualmente separado con borde claro
+    - Tamaño óptimo para mostrar items del carrito sin scroll excesivo
+  - **Gap**: 16px (`gap-4`) entre columnas para separación visual clara
+
+### Changed - Guided View System: Overview → Zoom to Selected Section
+- **EventDetail.jsx → SeatSelectorSection**: reemplazado pan libre por sistema de vista guiada con animaciones automáticas
+  - **Import explícito de Konva**: agregado `import Konva from 'konva'` en lugar de depender de `window.Konva`
+    - Uso correcto: `new Konva.Tween(...)` y `Konva.Easings.EaseInOut`
+    - Más robusto y type-safe, evita dependencia de globals
+  - **Vista general (overview)**: todas las secciones visibles, centradas automáticamente con zoom-out
+    - Zoom y posición calculados dinámicamente del AABB completo del layout usando `getElementAABB`
+    - Secciones clickeables con cursor pointer, borde destacado (opacity: 0.5, stroke más grueso)
+    - Sillas NO clickeables en este estado — solo navegación de secciones
+  - **Vista de sección**: zoom automático y centrado en la sección seleccionada
+    - Animación suave (Konva.Tween, 500ms, EaseInOut) desde overview hacia la sección
+    - Sillas de la sección clickeables para seleccionar/deseleccionar
+    - Stage completamente estático — sin pan manual, sin zoom manual, sin scrollbars
+  - **Transiciones bidireccionales**: 
+    - Click en sección (mapa o menú lateral) → anima hacia esa sección
+    - Botón "Ver todas" → anima de regreso al overview
+  - **Cálculo de encuadre**: función `calculateFraming(elements)` reutiliza lógica de AABB
+    - Calcula scale óptimo para que el contenido entre con margen (80px)
+    - Calcula offset (x, y) para centrar el contenido en el viewport (900×600)
+    - Máximo 2x zoom para evitar pixelación
+  - **`animateToFraming(framing, duration)`**: wrapper de Konva.Tween para animar Stage
+    - Anima simultáneamente scaleX, scaleY, x, y
+    - Sincroniza estado de zoom con el valor final de la animación
+  - **useEffect con `selectedSectionFilter`**: trigger automático de animaciones
+    - `null` → vista general
+    - `sectionId` → vista de esa sección
+- **SectionRenderer**: lógica de interacción según modo de vista
+  - **`inOverviewMode`**: determina si las secciones son clickeables (sillas ocultas/no clickeables)
+  - **`onSectionClick`**: callback para seleccionar sección desde el mapa
+  - Fondo de sección con `listening={inOverviewMode}` y `cursor="pointer"` solo en overview
+  - Sillas renderizadas solo cuando `!inOverviewMode`
+- **Eliminados**:
+  - Controles de zoom manual (+/- buttons)
+  - Pan con clic derecho (handleStageMouseDown, handleStageMouseMove, handleStageMouseUp, handleContextMenu)
+  - Estado `stagePos`, `panState`, `panLimits`, `clampPosition`
+  - Props del Stage: `onMouseDown`, `onMouseMove`, `onMouseUp`, `onMouseLeave`, `onContextMenu`
+  - `overflow: auto` en container (ahora `overflow: hidden` — sin scrollbars)
+- **Selector de cantidad, carrito, WebSocket**: sin cambios — siguen funcionando igual
+
+### Technical Details - Guided View System
+- **Konva.Tween**: animación nativa de Konva para transiciones suaves entre estados
+- **AABB calculation**: reutiliza `getElementAABB` de layoutEditorUtils para calcular bounding boxes
+- **Viewport fixed**: 900×600px, zoom y posición calculados para ajustar contenido a estas dimensiones
+- **Zoom margin**: 80px de padding alrededor del contenido para evitar bordes cortados
+- **useEffect dependency**: recalcula y anima automáticamente al cambiar `selectedSectionFilter`
+- **Bidirectional flow**: overview ⇄ section con la misma lógica de animación
+
+### Added - Pan Navigation with Right-Click in Seat Selector
+- **OBSOLETO — Reemplazado por Guided View System**
+- ~~Pan con clic derecho y límites dinámicos~~ → ahora vista guiada automática sin interacción manual de cámara
+
+### Changed - Integrated Seat Selector into EventDetail
+- **EventDetail.jsx**: integración completa del selector de sillas dentro de la página de detalle del evento
+  - **Selector de cantidad estilo cine**: stepper +/- para elegir cantidad de sillas (1-10) antes de interactuar con el mapa
+  - **Menú lateral de secciones**: lista todas las secciones del evento con nombre, disponibilidad y precio
+    - Click en sección → activa filtro (solo esa sección es seleccionable en el mapa)
+    - Botón "Ver todas" para desactivar el filtro
+  - **Canvas visual con Konva**: mapa interactivo de sillas reutilizando geometría de `distributeSeats`
+    - Controles de zoom +/- (30% - 200%)
+    - Sillas filtradas se muestran atenuadas y no son clickeables
+  - **Carrito lateral integrado**:
+    - Muestra código de silla, nombre de sección y precio individual
+    - Countdown en tiempo real del TTL (MM:SS)
+    - Total acumulado de todas las sillas
+    - Botón "Continuar al Pago" (placeholder)
+  - **Validación de cantidad**: bloquea reservas adicionales si se alcanza el límite elegido
+    - Muestra alert: "Ya seleccionaste N silla(s). Cambia la cantidad si necesitas más."
+  - **WebSocket en tiempo real**: sincronización automática entre pestañas/usuarios
+  - **Componentes auxiliares**:
+    - `SeatSelectorSection`: contenedor principal con layout completo
+    - `SectionMenu`: menú de secciones con filtrado
+    - `SectionRenderer`: geometría de sección (rect/polygon) + sillas
+    - `SeatCircle`: círculo individual con lógica de color, estado y click
+    - `CartPanel`: panel lateral con carrito y total
+    - `CartItem`: item individual con countdown y precio
+- **App.jsx**: eliminada ruta `/events/:eventId/select-seats` (ya no es necesaria)
+  - Actualizado regex de `showNavbar` para remover patrón de select-seats
+  - Eliminado import de `EventSeatSelector`
+- **EventSeatSelector.jsx**: archivo eliminado (funcionalidad movida a EventDetail)
+
+### Technical Details - Seat Selector Integration
+- Estado unificado en EventDetail: layout, secciones, sillas, WebSocket, carrito
+- `selectedQuantity`: límite máximo de sillas que el usuario puede reservar (validado en `handleReserveSeat`)
+- `selectedSectionFilter`: ID de sección activa para filtrar (null = todas visibles)
+- Sillas fuera de sección filtrada: `opacity: 0.3`, no clickeables
+- Carrito: derivado con `useMemo` de `seats` filtrado por `reservedBy === currentUserId`
+- Precios: obtenidos de `EventSectionService.getByEvent()` y mapeados por `eventSectionId`
+
+### Fixed - SockJS Global Polyfill for Vite
+- **vite.config.js**: agregado `define: { global: 'globalThis' }` para compatibilidad con `sockjs-client`
+  - Problema: `sockjs-client` asume entorno Webpack/Node donde `global` existe implícitamente
+  - Vite no define `global` → ReferenceError que tumba todo el bundle
+  - Solución: reemplazar `global` por `globalThis` (estándar moderno de navegadores) durante build
+  - Requiere reinicio completo del dev server (hot-reload no es suficiente)
+
+### Added - EventSeatSelector Component (Interactive Seat Purchase View)
+- **EventSeatSelector.jsx**: componente completo de selección de sillas para compradores
+  - Carga layout visual del evento + estado real de sillas vía API
+  - Renderiza secciones con Konva (reutiliza lógica de `distributeSeats`)
+  - WebSocket en tiempo real para actualizaciones de estado de sillas
+  - **Colores por estado**:
+    - Verde: `AVAILABLE` (clickeable)
+    - Azul: `RESERVED` por usuario actual (clickeable para liberar)
+    - Amarillo: `RESERVED` por otro usuario (no clickeable)
+    - Gris: `SOLD` (no clickeable)
+    - Morado: `COURTESY` (no clickeable)
+  - **Interacción**:
+    - Click en silla verde → reserva temporal (10 min)
+    - Click en silla azul (propia) → libera reserva
+    - Manejo de estados de carga (reserving/releasing)
+    - Refrescado automático en caso de race condition
+  - **Carrito lateral**:
+    - Lista de sillas reservadas por el usuario
+    - Countdown en tiempo real del TTL (MM:SS)
+    - Botón para liberar cada silla individual
+    - Botón "Continuar al Pago" (placeholder, no implementado)
+  - **Ruta**: `/events/:eventId/select-seats` (pública para ver, auth para reservar)
+  - Sin navbar (full-screen experience)
+- **Componentes internos**:
+  - `SectionRenderer`: renderiza geometría de sección (rect/polygon) + sillas
+  - `SeatCircle`: círculo individual con lógica de color y click
+  - `CartPanel`: panel lateral con carrito y countdown
+  - `CartItem`: item individual con temporizador
+- **Zoom**: controles +/- para ajustar vista del canvas (30% - 200%)
+
+### Technical Details - EventSeatSelector
+- Usa `connectSeatSocket` para recibir actualizaciones en tiempo real
+- Actualización puntual de estado al recibir evento WebSocket (no recarga completa)
+- Estado local: `{ [seatId]: SeatResponse }` para acceso O(1)
+- Carrito derivado con `useMemo` filtrando por `reservedBy === currentUserId`
+- Detección de usuario no autenticado: redirige a `/login` al intentar reservar
+- Cleanup de WebSocket en `useEffect` para evitar memory leaks
+- Manejo de errores: muestra mensaje y refresca estado de silla en caso de fallo
+
+### Changed - App.jsx Routes
+- Nueva ruta `/events/:eventId/select-seats` sin ProtectedRoute (pública)
+- Regex actualizado en `showNavbar` para ocultar navbar en selector de sillas
+
+### Added - Frontend WebSocket Client and Seat Services
+- **SeatService.js**: servicios HTTP para gestión de sillas
+  - `getSeatsBySection(eventSectionId)`: GET público, no requiere auth
+  - `reserveSeat(seatId)`: POST con auth, reserva temporal de 10 minutos
+  - `releaseSeat(seatId)`: POST con auth, libera reserva antes de expiración
+  - Usa `httpRequest` con auto-refresh de JWT en 401
+- **websocketClient.js**: cliente WebSocket para actualizaciones en tiempo real
+  - `connectSeatSocket(eventId, onSeatUpdate)`: conecta vía STOMP + SockJS
+  - Suscripción a `/topic/events/{eventId}/seats`
+  - Token JWT en query param del handshake (`/ws?token=...`)
+  - Reconexión automática cada 5 segundos si se pierde conexión
+  - Heartbeat cada 10 segundos para detectar conexiones muertas
+  - **Estrategia de auth**: si no hay token, no conecta WebSocket (usuarios anónimos ven estado estático)
+- **Dependencias instaladas**: `@stomp/stompjs`, `sockjs-client`
+- Debug logging solo en desarrollo (`import.meta.env.DEV`)
+
+### Technical Details - WebSocket
+- `WS_BASE_URL`: deriva de `VITE_API_URL` quitando `/api/v1` (ej: `http://localhost:8080`)
+- SockJS negocia transporte automáticamente (WebSocket nativo, polling, streaming)
+- Callback `onSeatUpdate` recibe: `{ seatId, eventId, eventSectionId, oldStatus, newStatus, changedBy, reservedUntil }`
+- `changedBy = null` indica cambio automático del sistema (expiración de reserva)
+- Cliente retorna `null` si no hay token (permite lógica condicional en componentes)
+
+### Fixed - Seat Constraints Case Sensitivity
+- **Changeset 061**: corrige `chk_seat_type` y `chk_seat_status` para usar MAYÚSCULAS
+  - Problema: changeset 056 original creó constraints con minúsculas (`'available'`, `'reserved'`, etc.)
+  - JPA con `@Enumerated(EnumType.STRING)` envía nombres de enum en MAYÚSCULAS (`'AVAILABLE'`, `'RESERVED'`, etc.)
+  - Resultado: inserts violaban la constraint → `ERROR: new row for relation "seat" violates check constraint "chk_seat_status"`
+- **chk_seat_type**: ahora acepta `'REGULAR'`, `'COURTESY'` (antes: `'regular'`, `'courtesy'`)
+- **chk_seat_status**: ahora acepta `'AVAILABLE'`, `'RESERVED'`, `'SOLD'`, `'COURTESY'` (antes: minúsculas)
+- No requiere migración de datos porque la tabla `seat` estaba vacía
+
+### Added - Automatic Seat Generation from Layout
+- **SaveEventLayoutService**: generación automática de `seat_block` y `seat` al guardar el layout
+  - Parsea `layoutData` JSON y extrae cada sección con `seatLayout: { targetSeats, rows, seatsPerRow }`
+  - Por cada sección con `backendSectionId`:
+    - Borra sillas existentes de esa sección (validando que estén AVAILABLE)
+    - Borra seat_blocks existentes
+    - Crea un nuevo seat_block con capacity=targetSeats
+    - Genera targetSeats registros de seat con códigos legibles (A1, A2, B1, B2...)
+  - Todas las sillas se crean con `status=AVAILABLE`, `type=REGULAR`
+  - Corre en la misma transacción que guarda el EventLayout
+- **Validación defensiva**: si alguna silla tiene `status != AVAILABLE`, lanza `SEAT_REGENERATION_CONFLICT` en lugar de borrarla
+- **Logging**: reporta cantidad de secciones procesadas y sillas generadas por sección
+- **Algoritmo de códigos**: fila como letra (A, B, C... Z, AA, AB...), posición como número (1, 2, 3...)
+
+### Changed
+- `SaveEventLayoutService`: ahora inyecta `SeatBlockRepository`, `SeatRepository` y `ObjectMapper`
+- Frontend no necesita cambios — la generación es automática en backend
+
+### Technical Details
+- Regeneración completa por sección: borra y recrea todas las sillas cada vez que se guarda el layout
+- Estrategia simple: un seat_block por sección (nombre "Bloque Principal")
+- Si el layout cambia targetSeats, las sillas se ajustan automáticamente
+- Secciones sin `seatLayout` o sin `backendSectionId` se saltan sin error
+
+### Added - Seat Reservation System with TTL + WebSocket
+- **Seat Reservation with TTL**: Sistema completo de reservas temporales de sillas con expiración automática
+  - `SeatReservationService`: servicio de aplicación con `reserveSeat()` y `releaseSeat()`
+  - TTL de 10 minutos configurable en `RESERVATION_TTL_MINUTES`
+  - Reservas incluyen `reserved_by` (userId) y `reserved_until` (LocalDateTime)
+- **Automatic Expiration Scheduler**: 
+  - `SeatReservationExpirationScheduler`: libera automáticamente sillas cuyo `reserved_until` expiró
+  - Cron: ejecuta cada minuto (`0 * * * * *`)
+  - Catch-up: se ejecuta al iniciar la aplicación vía `@EventListener(ApplicationReadyEvent)`
+  - Self-injection con `@Lazy` para que `@Transactional` funcione correctamente
+  - Logs a nivel INFO para visibilidad en producción
+- **WebSocket Real-time Notifications**:
+  - `SeatStatusWebSocketListener`: transmite cambios de estado de sillas en tiempo real
+  - Topic: `/topic/events/{eventId}/seats` (routing por evento)
+  - Usa `SimpMessagingTemplate` para broadcast a todos los clientes conectados
+- **REST Endpoints**:
+  - `POST /api/v1/seats/{seatId}/reserve`: reservar silla (cualquier usuario autenticado)
+  - `POST /api/v1/seats/{seatId}/release`: liberar reserva (solo dueño o ADMIN)
+  - Ambos endpoints protegidos con `@PreAuthorize("isAuthenticated()")`
+- **Domain Event Extension**:
+  - `SeatStatusChangedEvent`: agregados campos `eventId` (para routing WebSocket) y `reservedUntil` (para informar TTL a clientes)
+- **Repository Extensions**:
+  - `SeatRepository.findAllByStatusAndReservedUntilBefore()`: query para buscar sillas expiradas
+  - Implementación en `SeatRepositoryImpl` y `SeatJpaRepository`
+- **Test utilities**:
+  - `test-seat-reservation.sh`: script bash para pruebas de API
+  - `websocket-test-client.html`: cliente WebSocket de prueba con interfaz gráfica
+  - `SEAT_RESERVATION_IMPLEMENTATION.md`: documentación completa con plan de verificación
+
+### Changed
+- `SeatStatusChangedEvent`: agregados campos `eventId` y `reservedUntil`
+- `SeatRepository`: agregado método `findAllByStatusAndReservedUntilBefore()`
+
+### Security
+- Solo el usuario que reservó una silla puede liberarla manualmente (excepto ADMIN)
+- Validación de estado de silla antes de reservar (debe ser AVAILABLE)
+- `changedBy = null` en eventos indica cambio automático del sistema
+
+### Technical Details
+- Scheduler sigue el patrón de `EventAutoCompletionScheduler` (catch-up + cron)
+- WebSocket usa la configuración existente en `WebSocketConfig`
+- Obtiene `eventId` desde `EventSection` para routing correcto de topics
+- Build verificado: `BUILD SUCCESS` sin errores de compilación
+
+### Added
+- Category y CategoryEvent: modelos de dominio puros
+- CategoryRepository y CategoryEventRepository: interfaces de dominio
+- CategoryCreatedEvent, CategoryDeactivatedEvent, CategoryAssignedToEventEvent: eventos de dominio
+- CategoryEntity, CategoryEventEntity: entidades JPA
+- CategoryJpaRepository, CategoryEventJpaRepository: repositorios Spring Data
+- CategoryRepositoryImpl, CategoryEventRepositoryImpl: implementaciones de dominio
+- CategoryEntityMapper, CategoryEventEntityMapper: mappers de infraestructura
+- CategoryUseCase, CategoryEventUseCase: ports de entrada
+- CreateCategoryRequest, UpdateCategoryRequest, AssignCategoryRequest: DTOs de request con validaciones Jakarta
+- CategoryResponse, CategoryEventResponse: DTOs de respuesta inmutables
+- CategoryUseCaseImpl, CategoryEventUseCaseImpl: casos de uso con publicación de eventos de dominio
+- CategoryMapper: mapper de aplicación
+- CategoryController: 9 endpoints REST en /api/v1/categories
+- CategoryEventController: 5 endpoints REST en /api/v1/category-events
+- SecurityConfig actualizado con permisos por rol para el módulo category
+
+### Changed
+- CreateEventRequest: campo categoryId obligatorio (@NotNull Integer)
+- CreateEventService: valida categoría activa y asigna automáticamente en category_event al crear un evento
+
+### Fixed
+- Ya no es posible crear un evento sin categoría
+- CreateEventService: validación de existencia de siteId y availableSeats <= site.capacity
+- UpdateEventService: validación de siteId y capacidad en actualizaciones
+- DeleteEventService: limpieza de category_event al eliminar evento DRAFT
+- UploadEventMediaService: verificación de existencia del evento antes de subir media
+- UpdateEventRequest: validaciones Jakarta en todos los campos editables
+- GetEventService: categoryId y siteName ahora se populan correctamente en todas las respuestas GET
+- CreateEventRequest: límite superior de 100000 en availableSeats
+- CreateEventService y UpdateEventService: siteName populado en EventResponse
+
+### Added
+- GET /api/v1/events/public: lista todos los eventos publicados y públicos
+- GET /api/v1/events/public/city/{cityId}: filtra por ciudad
+- GET /api/v1/events/public/category/{categoryId}: filtra por categoría
+- GET /api/v1/events/public/date-range?from=&to=: filtra por rango de fechas
+- EventSummaryResponse actualizado con siteName y categoryId
+
+### Fixed
+- UpdateEventService: permite actualizar la categoría de un evento via categoryId en el request
+- UpdateEventService: categoryId ahora se popula correctamente en la respuesta del update
+- AddCommentReplyRequest: parentReplyId con @Positive para rechazar valores <= 0
+- Módulo category completo: tablas, dominio, infraestructura, aplicación e interfaces
+- 14 endpoints REST para gestión de categorías y asignación a eventos
+- Soporte de categorías jerárquicas mediante dad_id
+- Seed inicial con 5 categorías base
+
+## [develop] - 2026-05-13
+
+### feat(storage): add image moderation via OpenNSFW2 + Sightengine cascade
+#### Added
+- `nsfw-service/`: FastAPI microservice wrapping OpenNSFW2 (`GET /health`, `POST /classify`). Returns `nsfw_score` (0.0–1.0) and `flagged` boolean. Rejects non-image content types and corrupted files with HTTP 400. Dockerized with `python:3.11-slim`.
+- `ModerationPort` (port/out): secondary port with `isNsfwSafe(byte[])` and `isGoreSafe(byte[])`. Fail-open contract documented in Javadoc.
+- `ImageModerationService` (application/service): implements `ModerationPort`, orchestrates the two-stage cascade — OpenNSFW2 first, Sightengine only if stage 1 passes. Throws `ImagePolicyViolationException` on rejection.
+- `NsfwClientAdapter` (infrastructure/external): `RestTemplate` multipart POST to `${moderation.nsfw.url}/classify`. Fail-open on any infrastructure error.
+- `SightengineAdapter` (infrastructure/external): `RestTemplate` multipart POST to `https://api.sightengine.com/1.0/check.json` with `models=gore`. Extracts `gore.prob`. Fail-open on any infrastructure error.
+- `ImagePolicyViolationException` (shared/domain/exception): extends `BusinessException`. User-facing message is intentionally generic; internal reason code (`NSFW_CONTENT` / `VIOLENT_CONTENT`) is preserved for logging.
+- `ModerationConfig` (infrastructure/config): `@ConfigurationProperties(prefix = "moderation")` with nested `Nsfw` and `Sightengine` classes. Declares `RestTemplate` bean.
+- `nsfw-classifier` service in `docker-compose.yml`: internal-only (no host port), connected to `tuevento-network`, with healthcheck on `/health`. Backend `depends_on` updated.
+- `moderation.*` properties added to `application-dev.yaml` (root-level, not under `app:`).
+- Moderation environment variables added to `.env` and `.env.example`: `NSFW_SERVICE_URL`, `NSFW_THRESHOLD`, `SIGHTENGINE_API_USER`, `SIGHTENGINE_API_SECRET`, `SIGHTENGINE_MODELS`, `SIGHTENGINE_THRESHOLD`.
+
+#### Modified
+- `UploadFileUseCase`: injected `ImageModerationService` via `@RequiredArgsConstructor`. Moderation cascade called after `validateSize()` and before `storageClient.uploadFile()`. Skipped for non-image content types (`!contentType.startsWith("image/")`).
+- `GlobalExceptionHandler`: added handler for `ImagePolicyViolationException` → HTTP 422 Unprocessable Entity.
+
+#### Design decisions
+- Cascade order (NSFW → gore) minimizes Sightengine API quota consumption (100 req/day free tier).
+- Fail-open policy: moderation service failures never block legitimate uploads; errors are logged at ERROR level.
+- Moderation is transparent to `StorageController` and `StorageClientPort` — zero changes to the REST interface or S3 adapter.
+
+## [develop] - 2026-05-12
+
+### feat(event): event module
+#### Added
+- Liquibase changesets 039–045: tablas `event`, `event_status_log`, `event_layout`, `event_media`, `event_media_log`, `event_rating`, `event_comment_reply` con FKs, constraints UNIQUE y CHECK via `sql` raw (compatible con Liquibase OSS)
+- Domain layer: modelos puros (`Event`, `EventStatus`, `EventStatusLog`, `EventLayout`, `EventMedia`, `EventMediaLog`, `EventRating`, `EventCommentReply`), interfaces de repositorio sin dependencias de Spring, eventos de dominio inmutables (`EventCreatedEvent`, `EventStatusChangedEvent` [campos: `eventId`, `oldStatus`, `newStatus`, `changedBy`, `occurredAt`, `organizerId`, `eventName`, `reason`], `EventCancelledEvent`, `EventRatingAddedEvent`, `EventMediaUploadedEvent`)
+- Infrastructure layer: entidades JPA (`EventEntity` extiende `JpaAuditingEntity`, más 6 entidades sin auditoría), `JpaRepository` por entidad, mappers MapStruct, implementaciones `RepositoryImpl`; `EventMediaLogJpaRepository` incluye `@Query` para `findNextVersionByEventId`
+- Application layer: 9 ports in (`CreateEventUseCase`, `UpdateEventUseCase`, `ChangeEventStatusUseCase`, `GetEventUseCase`, `DeleteEventUseCase`, `AddEventRatingUseCase`, `AddCommentReplyUseCase`, `UploadEventMediaUseCase`, `GetEventLayoutUseCase`, `SaveEventLayoutUseCase`), 9 use cases con validaciones de negocio (ownership, transiciones de estado `DRAFT→PUBLISHED→CANCELLED/COMPLETED`, unicidad, rating único por usuario, validación de layout antes de publicar)
+- REST controllers: `EventController` (`/api/v1/events`), `EventRatingController` (`/api/v1/events/{eventId}/ratings`), `EventCommentController` (`/api/v1/ratings/{ratingId}/replies`), `EventMediaController` (`/api/v1/events/{eventId}/media`), `EventLayoutController` (`/api/v1/events/{eventId}/layout` — GET público + PUT `ORGANIZER`)
+- `SecurityConfig` actualizado: 5 endpoints GET públicos en `PUBLIC_GET_ENDPOINTS`; `PUT /api/v1/events/*/layout` como autenticado; endpoints de escritura protegidos por rol via `@PreAuthorize`
+
+#### Fixed
+- Liquibase changeset 039: reemplazado `addCheckConstraint` (Liquibase Pro) por `sql` raw con `ALTER TABLE ... ADD CONSTRAINT ... CHECK (...)` — compatible con Liquibase OSS 4.x
+- Campos `boolean isPublic` / `boolean isVisible` migrados a `Boolean` objeto en modelos de dominio, entidades JPA y DTOs de response para compatibilidad con MapStruct (Lombok genera `isXxx()` para `boolean` primitivo, que MapStruct resuelve como propiedad `xxx` en lugar de `isXxx`)
+- `TestTuEventoApplication`: agregado import explícito de `TuEventoApplication` para resolver `cannot find symbol` durante `test-compile` con annotation processors activos
+- `EventLayoutEntity`: agregado `@JdbcTypeCode(SqlTypes.JSON)` sobre `layoutData` para que Hibernate haga el binding correcto al tipo `jsonb` de PostgreSQL — sin esta anotación Hibernate enviaba el valor como `character varying` causando error de tipo en la columna
+- `ChangeEventStatusService`: validación de layout antes de transición `DRAFT → PUBLISHED`; lanza `BusinessException("EVENT_LAYOUT_REQUIRED")` si no existe layout para el evento
+
+## [develop] - 2026-04-24
+
+### Theme module
+#### Added
+- Liquibase changeset 034: created `theme` table (id, name, description, default_palette jsonb)
+- Liquibase changeset 035: created `user_theme` table with FK to `app_user` and `theme`; `is_active` flag controls the single active theme per user
+- Liquibase changeset 036: created `theme_customization` table with FK to `user_theme`; stores per-property overrides as key/value pairs
+- Liquibase changeset 037: created `theme_log` table with FK to `user_theme`; append-only audit log of UPDATE and RESET actions
+- Liquibase changeset 038: seed data — 4 base themes with full `default_palette` JSON: `DARK` (deep purple, platform identity), `LIGHT`, `VIBRANT`, `ACCESSIBLE`
+- Domain models: `Theme`, `UserTheme`, `ThemeCustomization`, `ThemeLog` — pure POJOs, no JPA, no Jackson
+- Domain repository interfaces: `ThemeRepository`, `UserThemeRepository`, `ThemeCustomizationRepository`, `ThemeLogRepository` — pure interfaces, no Spring Data
+- Domain events: `ThemeActivatedEvent`, `ThemeCustomizedEvent`, `ThemeCustomizationResetEvent` — immutable, primitive IDs only
+- JPA entities: `ThemeEntity`, `UserThemeEntity`, `ThemeCustomizationEntity`, `ThemeLogEntity` — no `@ManyToOne`, FKs as plain `Integer`; no `JpaAuditingEntity` inheritance; `ThemeLogEntity` is append-only (no `@Setter`)
+- JPA repositories: `ThemeJpaRepository`, `UserThemeJpaRepository` (`@Modifying @Query` for bulk deactivation), `ThemeCustomizationJpaRepository`, `ThemeLogJpaRepository`
+- `ThemeInfraMapper`: single MapStruct mapper in `infrastructure/persistence/mapper/` handling all four entity↔domain conversions with explicit `@Mapping` for PK renames
+- Domain repository implementations: `ThemeRepositoryImpl`, `UserThemeRepositoryImpl`, `ThemeCustomizationRepositoryImpl`, `ThemeLogRepositoryImpl`
+- Application ports in: `GetThemesPort`, `ActivateThemePort`, `GetActivePalettePort`, `CustomizeThemePort`, `ResetCustomizationPort`, `GetThemeLogPort` — pure interfaces, no Spring
+- DTOs response: `ThemeResponse` (id, name, description — no palette exposed), `ResolvedPaletteResponse` (themeId, themeName, userThemeId, `Map<String, Object>` palette), `ThemeLogResponse`
+- DTO request: `CustomizeThemeRequest` (property `@NotBlank`, value `@NotBlank` + `@Pattern` for hex/rgb/rgba)
+- `ThemeAppMapper`: MapStruct mapper for `Theme → ThemeResponse` and `ThemeLog → ThemeLogResponse`
+- `ThemePaletteResolver`: `@Component` that parses `defaultPalette` JSON via `ObjectMapper` and overlays user customizations — decoupled from use cases
+- Use cases: `GetThemesUseCase`, `ActivateThemeUseCase` (deactivates current, reactivates or creates `UserTheme`, publishes event), `GetActivePaletteUseCase` (auto-activates `DARK` theme if no active theme found), `CustomizeThemeUseCase` (upsert customization, audit log, event), `ResetCustomizationUseCase` (delete customization, audit log with `oldValue`, event), `GetThemeLogUseCase`
+- `ThemeController`: base path `/api/v1/themes`, 6 endpoints (see below)
+- `SecurityConfig` updated: `GET /api/v1/themes` added to public routes via `PUBLIC_GET_ENDPOINTS`; authenticated routes added as explicit `requestMatchers` by HTTP method
+
+#### Endpoints
+- `GET /api/v1/themes` — public; returns list of available themes
+- `POST /api/v1/themes/activate/{themeId}` — authenticated; activates theme for current user, returns resolved palette
+- `GET /api/v1/themes/my-active` — authenticated; returns current user's resolved palette (activates DARK by default if none set)
+- `PUT /api/v1/themes/my-active/customize` — authenticated; overrides a palette property, returns updated resolved palette
+- `DELETE /api/v1/themes/my-active/customize/{property}` — authenticated; resets a property to theme default, returns updated resolved palette
+- `GET /api/v1/themes/my-active/log` — authenticated; returns audit log of theme changes for current user
+
+#### Design decisions
+- Resolved palette strategy: backend merges `default_palette` + user customizations and returns a ready-to-consume `Map<String, Object>` — both web (React + Tailwind v4) and mobile (React Native + NativeWind) share the same single source of truth
+- `DARK` is the default theme (deep purple identity palette matching the existing frontend); auto-activated on first `GET /my-active` if the user has no active theme
+- `ThemePaletteResolver` kept as a separate `@Component` to avoid coupling merge logic to individual use cases
+
+## [develop] - 2026-04-07
+
+### Security module
+#### Fixed
+- Fixed: activation code not validated against request email (security vulnerability)
+- Fixed: recovery code not validated against request email (security vulnerability)
+- Fixed: logout not validating session ownership (security vulnerability)
+- Fixed: login not checking BLOCKED/INACTIVE/DELETED user status
+- Fixed: lockout message exposed exact timestamp
+- Fixed: recover password revealed email existence (user enumeration)
+- Reverted: recover password now returns explicit error when email is not registered
+- Fixed: refresh token not validating user active status
+- Fixed: email send failure in register now logged instead of propagated
+- Fixed: OAuth login allows duplicate email with local account
+- Fixed: organizer request allowed for existing organizers
+#### Added
+- Added: AccessDeniedException handler (403)
+- Added: input validations on register: Gmail-only email, strong password, full name format
+- Added: password strength validation on change password to match register rules- Added: AuthenticationException handler (401)
+- Added: MethodNotAllowedException handler (405)
+- Added: ConstraintViolationException handler (409)
+- Added: NoResourceFoundException handler (404)
+
+### Profile module
+#### Added
+- Liquibase changeset 031: inserted `PROFILE_PICTURE` file category (public, jpg/jpeg/png/webp, max 2MB)
+- Liquibase changeset 032: created `profile` table with FK to `app_user`, `city` (nullable) and `stored_file` (nullable)
+- Liquibase changeset 033: created `profile_log` table with FK to `profile`
+- Domain models: `Profile` (references `City` object from geolocation module), `ProfileLog`
+- Domain repository interfaces: `ProfileRepository`, `ProfileLogRepository`
+- Domain events: `ProfileCreatedEvent`, `ProfileUpdatedEvent` (primitive IDs only)
+- Domain exception: `ProfileAlreadyExistsException`
+- JPA entities: `ProfileEntity` (auditable, `storedFileId` as plain INT decoupled from storage module), `ProfileLogEntity`
+- MapStruct mappers: `ProfileMapper` (uses `CityMapper`), `ProfileLogMapper`
+- JPA repositories: `ProfileJpaRepository`, `ProfileLogJpaRepository`
+- Domain repository implementations: `ProfileRepositoryImpl`, `ProfileLogRepositoryImpl`
+- Application ports in: `CreateProfilePort`, `UpdateProfilePort`, `GetProfilePort`, `GetProfileByUserIdPort`
+- DTOs: `CreateProfileRequest` (userId, fullName), `UpdateProfileRequest` (cityId, storedFileId, fullName, bio), `ProfileResponse`
+- Use cases: `CreateProfileUseCase` (validates no duplicate profile per user, assigns default avatar), `UpdateProfileUseCase` (logs each changed field to profile_log), `GetProfileUseCase`, `GetProfileByUserIdUseCase`
+- `ProfileController`: POST `/api/v1/profiles`, PUT `/api/v1/profiles/{profileId}`, GET `/api/v1/profiles/{profileId}`, GET `/api/v1/profiles/user/{userId}`
+- `ProfileDataInitializer`: uploads `default-avatar.jpg` from `src/main/resources/assets/` to MinIO on first startup using `UploadFilePort`; logs resulting `storedFileId` for manual config
+- `app.profile.default-avatar-stored-file-id` property added to `application-dev.yaml`
+- GET profile endpoints added to public routes in `SecurityConfig`
+- `src/main/resources/assets/default-avatar.jpg` placeholder directory created
+
+#### Known issues
+- `ProfileDataInitializer` lookup for existing default avatar pending fix (method to check `findByOwnerEntity` not yet validated)
+
+## [develop] - 2026-03-29
+
+### Storage module
+#### Added
+- MinIO service added to docker-compose for local S3-compatible storage
+- AWS S3 SDK dependency added to pom.xml
+- Liquibase changesets 018-022: storage_provider, file_category, stored_file, storage_operation_log tables and initial MinIO provider
+- S3StorageClient: AWS S3 SDK implementation of StorageClientPort compatible with MinIO
+- S3Config: S3Client and S3Presigner beans configured for MinIO in development
+- StorageController: REST endpoints for file upload, delete, get and url generation
+- Initial file category: ORGANIZER_DOCUMENT (PDF, max 5MB, private)
+- organizer_petition migrated from BYTEA document to stored_file_id FK referencing storage module
+- CreateProfileRequest: added storedFileIdSet flag to distinguish explicit null from use-default behavior
+
+### Geolocation module#### Added
+- Liquibase changesets 025-027: department, city and site tables
+- GeolocationController: REST endpoints for departments, cities and sites
+- Seed data: 33 departments and 1122 cities of Colombia via Liquibase loadData (changesets 028-029)
+
+### Backend
+
+### Security module — completed and merged from feature/security-module
+#### Added
+- Liquibase changesets for all security tables: user_status, role, permission, app_user, role_permission, login_credentials, account_activation, account_lockout, auth_session, refresh_token, recover_password, password_history, oauth_account, user_status_history, organizer_petition
+- Audit columns (created_at, updated_at, created_by, updated_by) to all auditable tables
+- Domain models: User, Role, Permission, UserStatus, UserStatusHistory, AuthSession, RefreshToken, LoginCredentials, AccountActivation, AccountLockout, RecoverPassword, PasswordHistory, OauthAccount, OrganizerPetition
+- Domain repository interfaces for all models
+- Domain events: UserRegisteredEvent, UserActivatedEvent, UserLockedEvent, PasswordChangedEvent, OrganizerPetitionCreatedEvent
+- JPA entities and MapStruct mappers for all models
+- JPA repository implementations
+- Domain repository implementations
+- Application ports (in/out) for all use cases
+- Request/Response DTOs with Jakarta validation
+- Use cases: RegisterUser, ActivateAccount, Login, Logout, RefreshToken, RecoverPassword, ResetPassword, ChangePassword, LinkOauthAccount, OauthLogin, RequestOrganizer
+- AliasGenerator utility for automatic alias generation from email
+- OauthProfile DTO for OAuth provider profile mapping
+- External port implementations: JwtTokenGenerator (JJWT), BcryptPasswordEncoder, JavaMailEmailNotification, SecureRandomCodeGenerator
+- OAuth Google configuration with extensible provider pattern
+- Spring Security configuration with JWT authentication filter
+- REST controllers: AuthController, UserController
+- Initial data: roles (ADMIN, ORGANIZER, USER) and user statuses (PENDING, ACTIVE, BLOCKED, INACTIVE, DELETED) via Liquibase changeset
+- DataInitializer: default admin user created on startup from environment variables
+- SecurityDataCleanupTask: scheduled task running daily at 2am to clean expired/revoked auth sessions, refresh tokens, activation codes and recovery codes
+- Swagger JWT Bearer Authentication scheme configured for protected endpoints
+- Admin endpoints for organizer petition management: list pending requests, approve and reject
+- OrganizerApprovedEvent domain event
+
+#### Fixed
+- Duplicate SecurityConfig bean conflict resolved
+- Missing audit columns added to auditable tables via changeset 016
+- BYTEA mapping fixed in OrganizerPetitionEntity replacing @Lob with @Column(columnDefinition = "bytea")
+- RegisterUserUseCase: default role code corrected from "ATTENDEE" to "USER"
+- OauthLoginUseCase: default role code corrected from "ATTENDEE" to "USER"
+- ActivateAccountUseCase: user status now updated to "ACTIVE" after successful account activation
+- ChangePasswordUseCase: fixed user lookup using SecurityUser.getUserId() instead of Authentication.getName() which was returning alias instead of email
+- SecurityUser: fixed authority registration removing ROLE_ prefix to match hasAuthority("ADMIN") checks in SecurityConfig and AdminController
+- JwtAuthenticationFilter: replaced fragile manual Base64 claim parser with JJWT-based extraction via TokenGeneratorPort; added debug log for loaded authorities
+- SecurityConfig: added @EnableMethodSecurity to enable @PreAuthorize on controllers
+- TokenGeneratorPort / JwtTokenGenerator: added extractRole() and extractSubject() methods

@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 042-create-event-media
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: event_media
+            columns:
+              - column:
+                  name: media_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: img_url
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: event_media
+            baseColumnNames: event_id
+            referencedTableName: event
+            referencedColumnNames: event_id
+            constraintName: fk_event_media_event

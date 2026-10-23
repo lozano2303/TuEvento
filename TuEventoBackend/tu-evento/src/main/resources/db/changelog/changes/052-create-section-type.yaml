@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 052-create-section-type
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: section_type
+            columns:
+              - column:
+                  name: section_type_id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false

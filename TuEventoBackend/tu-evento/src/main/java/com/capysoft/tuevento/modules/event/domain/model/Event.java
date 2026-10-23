@@ -1,0 +1,31 @@
+package com.capysoft.tuevento.modules.event.domain.model;
+
+import lombok.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Event {
+
+    private Long eventId;
+    private Long userId;
+    private Long siteId;
+    private String eventName;
+    private String description;
+    private LocalDate startDate;
+    private LocalDate finishDate;
+    private EventStatus status;
+    private Boolean isPublic;
+    private int availableSeats;
+    /** Populated when status is REJECTED; null otherwise. */
+    private String rejectionReason;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private String createdBy;
+    private String updatedBy;
+}

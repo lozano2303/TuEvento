@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: 071-create-transaction-webhook-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: transaction_webhook
+            columns:
+              - column:
+                  name: webhook_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: payment_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: gateway_event_id
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: payload
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: received_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: transaction_webhook
+            baseColumnNames: payment_id
+            referencedTableName: payment
+            referencedColumnNames: payment_id
+            constraintName: fk_transaction_webhook_payment
+        - createIndex:
+            tableName: transaction_webhook
+            indexName: idx_transaction_webhook_payment_id
+            columns:
+              - column:
+                  name: payment_id
+        - createIndex:
+            tableName: transaction_webhook
+            indexName: idx_transaction_webhook_gateway_event_id
+            columns:
+              - column:
+                  name: gateway_event_id

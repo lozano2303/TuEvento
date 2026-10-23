@@ -1,0 +1,103 @@
+package com.capysoft.tuevento.modules.event.infrastructure.persistence.repository;
+
+import com.capysoft.tuevento.modules.event.application.mapper.EventEntityMapper;
+import com.capysoft.tuevento.modules.event.domain.model.Event;
+import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
+import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+@RequiredArgsConstructor
+public class EventRepositoryImpl implements EventRepository {
+
+    private final EventJpaRepository jpaRepository;
+    private final EventEntityMapper  mapper;
+
+    @Override
+    public Event save(Event event) {
+        return mapper.toDomain(jpaRepository.save(mapper.toEntity(event)));
+    }
+
+    @Override
+    public Optional<Event> findById(Long eventId) {
+        return jpaRepository.findById(eventId).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<Event> findByUserId(Long userId) {
+        return jpaRepository.findByUserId(userId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> findBySiteId(Long siteId) {
+        return jpaRepository.findBySiteId(siteId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> findByStatus(EventStatus status) {
+        return jpaRepository.findByStatus(status).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public boolean existsByEventNameAndStartDateAndSiteId(String eventName, LocalDate startDate, Long siteId) {
+        return jpaRepository.existsByEventNameAndStartDateAndSiteId(eventName, startDate, siteId);
+    }
+
+    @Override
+    public void delete(Long eventId) {
+        jpaRepository.deleteById(eventId);
+    }
+
+    @Override
+    public List<Event> findAll() {
+        return jpaRepository.findAll().stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> findAllPublished() {
+        // Only returns active events: PUBLISHED + is_public + finish_date >= today
+        return jpaRepository.findActivePublished(LocalDate.now())
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> findByCityId(Long cityId) {
+        return jpaRepository.findPublishedByCityId(LocalDate.now(), cityId)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> findByCategoryId(Integer categoryId) {
+        return jpaRepository.findPublishedByCategoryId(LocalDate.now(), categoryId)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> findByDateRange(LocalDate from, LocalDate to) {
+        return jpaRepository.findPublishedByDateRange(LocalDate.now(), from, to)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> searchPublishedByText(String q) {
+        return jpaRepository.searchPublishedByText(LocalDate.now(), q)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> searchPublishedByTextAndDate(String q, LocalDate date) {
+        return jpaRepository.searchPublishedByTextAndDate(LocalDate.now(), q, date)
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> findAllPublishedExpiredBefore(LocalDate date) {
+        return jpaRepository.findByStatusAndFinishDateBefore(EventStatus.PUBLISHED, date)
+                .stream().map(mapper::toDomain).toList();
+    }
+}

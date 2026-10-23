@@ -1,1 +1,11 @@
 .env
+node_modules/
+*.log
+
+.kilo/
+postgres*.tar
+
+TuEventoFrontend/web/dist/
+
+nsfw-service/requirements.txt
+TuEventoBackend/tu-evento/jar-listing.txt
