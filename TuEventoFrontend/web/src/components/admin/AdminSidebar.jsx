@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, 
-  Users, LogOut, User, Settings, ChevronDown, Layers, Languages,
+  Users, LogOut, Settings, ChevronDown, Layers, Languages,
   FileText, Globe
 } from 'lucide-react';
 import { performLogout } from '../../services/httpClient';
@@ -227,20 +227,6 @@ export default function AdminSidebar({ activePage }) {
         {/* Dropdown Menu */}
         {showUserMenu && (
           <div className="absolute bottom-full left-0 right-0 mb-2 mx-2 bg-surface border border-surfaceAlt rounded-xl overflow-hidden shadow-xl z-50 user-menu-container">
-            <button
-              onClick={() => handleMenuClick('profile')}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-textSecondary hover:bg-surfaceAlt/40 hover:text-textPrimary transition-colors"
-            >
-              <User className="w-4 h-4" />
-              Perfil
-            </button>
-            <button
-              onClick={() => handleMenuClick('settings')}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-textSecondary hover:bg-surfaceAlt/40 hover:text-textPrimary transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-              Configuración
-            </button>
             <div className="border-t border-surfaceAlt/40">
               <button
                 onClick={() => handleMenuClick('logout')}
