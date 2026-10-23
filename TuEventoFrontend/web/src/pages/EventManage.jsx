@@ -1,0 +1,1454 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useLanguageSync } from '../hooks/useLanguageSync';
+import { useEventTranslation } from '../hooks/useEventTranslation';
+import {
+  Plus, LayoutDashboard, Pencil, Trash2, AlertTriangle, ImagePlus,
+  Eye, Calendar, Tag, Globe, Lock, Rocket, ChevronLeft, ChevronRight,
+  FileText, MapPin, Users, Clock, XCircle, TrendingUp,
+} from 'lucide-react';
+import * as EventService from '../services/EventService';
+import * as CategoryService from '../services/CategoryService';
+import { getEventMedia, uploadEventMedia } from '../services/EventMediaService';
+import StatusDropdown from '../components/event-manage/StatusDropdown';
+import Modal from '../components/common/Modal';
+import { STATUS_BADGE, TRANSITION_INFO, VALID_TRANSITIONS } from '../constants/eventStatus';
+import { normalizeImage } from '../utils/imageNormalize';
+import { mapBackendDateError } from '../components/event-wizard/StepGeneralInfo';
+
+// ── Constantes ────────────────────────────────────────────────────────────────
+// STATUS_BADGE y STATUS_LABEL se importan desde constants/eventStatus.js
+// STATUS_OPTIONS ya no se usa — StatusDropdown filtra por VALID_TRANSITIONS internamente
+
+/** Returns "YYYY-MM-DD" for today in local timezone. */
+const todayStr = () => new Date().toLocaleDateString('en-CA');
+
+/** Returns "YYYY-MM-DD" for today + 2 years (mirrors backend MAX_YEARS_AHEAD). */
+const maxStartStr = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 2);
+  return d.toLocaleDateString('en-CA');
+};
+
+/**
+ * Validates the two date fields for the edit modal.
+ * Only validates a date that was explicitly changed by the organizer.
+ * Returns an errors object { startDate?, finishDate? }.
+ */
+function validateEditDates(editForm, originalForm) {
+  const e = {};
+  const today = todayStr();
+  const maxStart = maxStartStr();
+
+  const startChanged  = editForm.startDate  !== originalForm.startDate;
+  const finishChanged = editForm.finishDate !== originalForm.finishDate;
+
+  if (!startChanged && !finishChanged) return e; // no dates touched — skip all checks
+
+  if (startChanged) {
+    if (!editForm.startDate) {
+      e.startDate = 'La fecha de inicio es obligatoria';
+    } else if (editForm.startDate < today) {
+      e.startDate = 'La fecha de inicio no puede estar en el pasado';
+    } else if (editForm.startDate > maxStart) {
+      e.startDate = 'La fecha de inicio es demasiado lejana (máximo 2 años)';
+    }
+  }
+
+  const effectiveStart = editForm.startDate || originalForm.startDate;
+  if (finishChanged) {
+    if (!editForm.finishDate) {
+      e.finishDate = 'La fecha de fin es obligatoria';
+    } else if (effectiveStart && editForm.finishDate < effectiveStart) {
+      e.finishDate = 'La fecha de fin debe ser posterior a la de inicio';
+    }
+  } else if (startChanged && editForm.startDate && editForm.finishDate) {
+    // Start changed but finish didn't — check cross-field still holds
+    if (editForm.finishDate < editForm.startDate) {
+      e.finishDate = 'La fecha de fin debe ser posterior a la de inicio';
+    }
+  }
+
+  return e;
+}
+
+const inputClass =
+  'w-full bg-background border border-surfaceAlt rounded-lg px-3 py-2 text-sm text-textPrimary ' +
+  'focus:outline-none focus:border-accent transition-colors';
+const labelClass = 'block text-xs font-semibold text-textMuted uppercase tracking-wider mb-1';
+
+// ── Componente principal ──────────────────────────────────────────────────────
+export default function EventManage() {
+  const navigate  = useNavigate();
+  const userId    = localStorage.getItem('userID');
+  const { t } = useTranslation();
+  
+  // Sincronización de idioma con el perfil del usuario
+  const currentLanguage = useLanguageSync();
+  
+  // Verificar si está en español para permitir edición
+  const isSpanishLanguage = currentLanguage === 'es';
+
+  // Hook personalizado para manejar eventos con traducción
+  const { 
+    events, 
+    setEvents, 
+    updateEvent, 
+    loadEventsWithTranslation, 
+    isPolling 
+  } = useEventTranslation([], currentLanguage);
+
+  const [isLoading,  setIsLoading]  = useState(true);
+  const [error,      setError]      = useState(null);
+
+  // Estado dropdown de cambio de estado por fila
+  const [openStatusMenu, setOpenStatusMenu] = useState(null); // eventId | null
+  const [statusBusy,     setStatusBusy]     = useState({});   // { [eventId]: bool }
+
+  // Modal de confirmación de eliminación
+  const [deleteTarget, setDeleteTarget] = useState(null); // event | null
+  const [isDeleting,   setIsDeleting]   = useState(false);
+
+  // Modal de confirmación de transición de estado
+  const [pendingTransition, setPendingTransition] = useState(null); // { event, newStatus } | null
+  const [transitionBusy,    setTransitionBusy]    = useState(false);
+
+  // Modal de error genérico (reemplaza alert())
+  const [errorModal, setErrorModal] = useState(null); // { title, message } | null
+
+  // Modal de edición de info general
+  const [editTarget,       setEditTarget]       = useState(null);
+  const [editModalOpen,    setEditModalOpen]    = useState(false);
+  const [isLoadingEditForm, setIsLoadingEditForm] = useState(false);
+  const [editForm,         setEditForm]         = useState({});
+  const [originalEditForm, setOriginalEditForm] = useState({}); // snapshot at open — for "did date change?" check
+  const [editDateErrors,   setEditDateErrors]   = useState({});
+  const [categories,       setCategories]       = useState([]);
+  const [isSubmitting,     setIsSubmitting]     = useState(false);
+  const [editError,        setEditError]        = useState(null);
+
+  // Modal de gestión de imágenes
+  const [mediaTarget,      setMediaTarget]      = useState(null);
+  const [mediaList,        setMediaList]        = useState([]);
+  const [isLoadingMedia,   setIsLoadingMedia]   = useState(false);
+  const [mediaFiles,       setMediaFiles]       = useState([]);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [mediaUploadError, setMediaUploadError] = useState(null);
+  const mediaInputRef = useRef(null);
+
+  // Filtro de estado — frontend sobre datos ya cargados
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  // Modal de detalle de evento
+  const [detailTarget,    setDetailTarget]    = useState(null);  // event summary
+  const [detailFull,      setDetailFull]      = useState(null);  // EventResponse completo
+  const [detailMedia,     setDetailMedia]     = useState([]);    // string[] de URLs
+  const [detailLoading,   setDetailLoading]   = useState(false);
+  const [detailCarousel,  setDetailCarousel]  = useState(0);
+
+  // ── Carga inicial ────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!userId) { setError('No hay sesión activa'); setIsLoading(false); return; }
+    
+    loadEventsWithTranslation(userId)
+      .then(() => setIsLoading(false))
+      .catch((err) => {
+        setError(err.message);
+        setIsLoading(false);
+      });
+  }, [userId, loadEventsWithTranslation]);
+
+  // Cargar categorías una sola vez para el modal de edición
+  useEffect(() => {
+    CategoryService.getActiveCategories?.()
+      .then((res) => setCategories(res.data ?? []))
+      .catch(() => setCategories([]));
+  }, []);
+
+  // ── Cambio de estado — paso 1: solicitar confirmación ───────────────────
+  const handleTransitionRequest = useCallback((event, newStatus) => {
+    setOpenStatusMenu(null);
+    setPendingTransition({ event, newStatus });
+  }, []);
+
+  // ── Cambio de estado — paso 2: ejecutar tras confirmación ────────────────
+  const confirmTransition = useCallback(async () => {
+    if (!pendingTransition) return;
+    const { event, newStatus } = pendingTransition;
+    setPendingTransition(null);
+    setTransitionBusy(true);
+    setStatusBusy((prev) => ({ ...prev, [event.eventId]: true }));
+    try {
+      await EventService.changeEventStatus(event.eventId, newStatus);
+      setEvents((prev) =>
+        prev.map((e) => e.eventId === event.eventId ? { ...e, status: newStatus } : e)
+      );
+    } catch (err) {
+      // Traducir errores del backend a mensajes claros para el usuario
+      let message = err.message;
+      if (message.includes('cannot be published without a layout') || message.includes('EVENT_LAYOUT_REQUIRED')) {
+        message = 'Este evento no tiene un layout guardado todavía. Ve a "Editar layout" y guarda al menos una sección antes de publicar.';
+      } else if (message.includes('at least one section with seats') || message.includes('EVENT_SECTIONS_REQUIRED')) {
+        message = 'Este evento no tiene ninguna sección con sillas configurada. Ve a "Editar layout", agrega al menos una sección y guarda antes de publicar.';
+      } else if (message.includes('EVENT_PUBLISH_MEDIA_COUNT_INVALID') || message.includes('at least 3 images') || message.includes('at most 9 images')) {
+        // El backend incluye el conteo actual en el mensaje: "currently has N"
+        const match = message.match(/currently has (\d+)/);
+        const count = match ? parseInt(match[1], 10) : null;
+        const isTooFew = message.includes('at least 3') || (count !== null && count < 3);
+        if (isTooFew) {
+          const detail = count !== null ? ` Actualmente tienes ${count}.` : '';
+          message = `Necesitas entre 3 y 9 imágenes para publicar tu evento.${detail} Ve a "Gestionar imágenes" y sube más fotos.`;
+        } else {
+          const detail = count !== null ? ` Actualmente tienes ${count}.` : '';
+          message = `El evento no puede tener más de 9 imágenes para publicarse.${detail} Elimina algunas desde "Gestionar imágenes".`;
+        }
+      } else {
+        // Map backend date validation codes to Spanish messages
+        const code = err.code ?? err.response?.data?.code;
+        const mapped = mapBackendDateError(code);
+        if (mapped) message = mapped;
+        // Organizer tried to jump directly to PUBLISHED (bypassing review)
+        if (!mapped && (message.includes('EVENT_INVALID_STATUS_TRANSITION') || message.includes('is not allowed'))) {
+          message = 'Este evento no se puede publicar directamente. Usa "Enviar a revisión" para que un administrador lo apruebe.';
+        }
+      }
+      setErrorModal({ title: 'No se pudo cambiar el estado', message });
+    } finally {
+      setTransitionBusy(false);
+      setStatusBusy((prev) => ({ ...prev, [event.eventId]: false }));
+    }
+  }, [pendingTransition]);
+
+  // ── Eliminar ─────────────────────────────────────────────────────────────
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await EventService.deleteEvent(deleteTarget.eventId);
+      setEvents((prev) => prev.filter((e) => e.eventId !== deleteTarget.eventId));
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteTarget(null);
+      setErrorModal({ title: 'No se pudo eliminar', message: err.message });
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [deleteTarget]);
+
+  // ── Editar info general — carga EventResponse completo (tiene description) ──
+  const openEdit = async (eventSummary) => {
+    setEditTarget(eventSummary);
+    setEditModalOpen(true);
+    setIsLoadingEditForm(true);
+    setEditError(null);
+    setEditDateErrors({});
+    try {
+      const res  = await EventService.getEventById(eventSummary.eventId);
+      const full = res.data; // EventResponse — sí incluye description
+      const form = {
+        eventName:      full.eventName      ?? '',
+        description:    full.description    ?? '',
+        startDate:      full.startDate      ?? '',
+        finishDate:     full.finishDate     ?? '',
+        isPublic:       full.isPublic       ?? true,
+        availableSeats: full.availableSeats ?? '',
+        categoryId:     full.categoryId     ?? '',
+      };
+      setEditForm(form);
+      setOriginalEditForm(form); // snapshot for "did date change?" guard
+    } catch (err) {
+      setEditError('No se pudo cargar la información completa del evento');
+      setEditModalOpen(false);
+    } finally {
+      setIsLoadingEditForm(false);
+    }
+  };
+
+  const handleEditSubmit = useCallback(async () => {
+    if (!editTarget) return;
+
+    // Client-side date validation — only validates dates that were modified
+    const dateErrors = validateEditDates(editForm, originalEditForm);
+    setEditDateErrors(dateErrors);
+    if (Object.keys(dateErrors).length > 0) return;
+
+    setIsSubmitting(true);
+    setEditError(null);
+    try {
+      // Payload completo — no usar && para no omitir campos vacíos intencionales
+      // (p.ej. description borrada a propósito debe llegar al backend como "")
+      const payload = {
+        eventName:      editForm.eventName,
+        description:    editForm.description,
+        startDate:      editForm.startDate      || undefined,
+        finishDate:     editForm.finishDate     || undefined,
+        isPublic:       editForm.isPublic,
+        availableSeats: editForm.availableSeats ? Number(editForm.availableSeats) : undefined,
+        categoryId:     editForm.categoryId     ? Number(editForm.categoryId)     : undefined,
+      };
+      const res = await EventService.updateEvent(editTarget.eventId, payload);
+      const updated = res.data;
+      setEvents((prev) =>
+        prev.map((e) => e.eventId === editTarget.eventId ? { ...e, ...updated } : e)
+      );
+      setEditModalOpen(false);
+      setEditTarget(null);
+      setEditDateErrors({});
+    } catch (err) {
+      // Map backend error codes to Spanish user-facing messages
+      const code    = err.code ?? err.response?.data?.code;
+      const mapped  = mapBackendDateError(code);
+      setEditError(mapped ?? err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [editTarget, editForm, originalEditForm]);
+
+  // El cierre por click fuera lo maneja StatusDropdown internamente vía su propio useEffect.
+
+  // ── Detalle de evento ────────────────────────────────────────────────────
+  const openDetail = async (event) => {
+    setDetailTarget(event);
+    setDetailFull(null);
+    setDetailMedia([]);
+    setDetailCarousel(0);
+    // Carga en paralelo EventResponse completo + imágenes
+    setDetailLoading(true);
+    try {
+      const [detailRes, mediaRes] = await Promise.allSettled([
+        EventService.getEventById(event.eventId, currentLanguage), // Pasar el idioma para obtener traducción
+        getEventMedia(event.eventId),
+      ]);
+      if (detailRes.status === 'fulfilled') setDetailFull(detailRes.value?.data ?? null);
+      if (mediaRes.status === 'fulfilled') {
+        const urls = (mediaRes.value?.data ?? [])
+          .sort((a, b) => a.mediaId - b.mediaId)
+          .map((m) => m.imgUrl)
+          .filter(Boolean);
+        setDetailMedia(urls);
+      }
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeDetail = () => {
+    setDetailTarget(null);
+    setDetailFull(null);
+    setDetailMedia([]);
+    setDetailCarousel(0);
+  };
+
+  // ── Enviar a revisión desde modal de detalle ─────────────────────────────
+  const handlePublishFromDetail = () => {
+    if (!detailTarget) return;
+    closeDetail();
+    handleTransitionRequest(detailTarget, 'PENDING_REVIEW');
+  };
+
+  // ── Gestión de imágenes ───────────────────────────────────────────────────
+  const openMedia = async (event) => {
+    setMediaTarget(event);
+    setMediaFiles([]);
+    setMediaUploadError(null);
+    setIsLoadingMedia(true);
+    try {
+      const res = await getEventMedia(event.eventId);
+      setMediaList(res.data ?? []);
+    } catch {
+      setMediaList([]);
+    } finally {
+      setIsLoadingMedia(false);
+    }
+  };
+
+  const MAX_MEDIA_SIZE_MB = 10;
+  const MAX_MEDIA_SIZE_BYTES = MAX_MEDIA_SIZE_MB * 1024 * 1024;
+  const MAX_MEDIA_COUNT = 9;
+
+  const handleMediaFileSelect = async (e) => {
+    const files = Array.from(e.target.files ?? []);
+    if (mediaInputRef.current) mediaInputRef.current.value = '';
+    if (files.length === 0) return;
+
+    // ── Guard: límite máximo de 9 imágenes por evento ────────────────────
+    // totalActual = imágenes ya en BD + las que ya están en cola pendiente de subir
+    const totalActual = mediaList.length + mediaFiles.length;
+    const remaining = MAX_MEDIA_COUNT - totalActual;
+
+    if (remaining <= 0) {
+      setMediaUploadError(
+        `Ya tienes ${totalActual} imagen${totalActual !== 1 ? 'es' : ''} — el máximo permitido es ${MAX_MEDIA_COUNT}. Elimina alguna antes de agregar más.`,
+      );
+      return;
+    }
+
+    // Si las nuevas seleccionadas superan el espacio disponible, recortamos y avisamos
+    const accepted = files.slice(0, remaining);
+    const rejected = files.length - accepted.length;
+
+    // Validar tamaño antes de procesar
+    const oversized = accepted.filter((f) => f.size > MAX_MEDIA_SIZE_BYTES);
+    if (oversized.length > 0) {
+      const names = oversized.map((f) => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)} MB)`).join(', ');
+      setMediaUploadError(
+        `${oversized.length > 1 ? 'Las siguientes imágenes superan' : 'La imagen supera'} el límite de ${MAX_MEDIA_SIZE_MB} MB: ${names}`,
+      );
+    }
+
+    const valid = accepted.filter((f) => f.size <= MAX_MEDIA_SIZE_BYTES);
+    if (valid.length === 0) return;
+
+    // Si se recortaron archivos por el límite de 9, informar cuántos se aceptaron
+    if (rejected > 0) {
+      setMediaUploadError(
+        `Ya tienes ${totalActual} imagen${totalActual !== 1 ? 'es' : ''}, puedes agregar máximo ${remaining} más. Se seleccionaron solo las primeras ${accepted.length}.`,
+      );
+    } else {
+      setMediaUploadError(null);
+    }
+
+    // Normalizar cada imagen a 1280×1280 en el browser antes de agregar al estado
+    try {
+      const normalized = await Promise.all(valid.map((f) => normalizeImage(f)));
+      const selected = normalized.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      setMediaFiles((prev) => [...prev, ...selected]);
+    } catch (err) {
+      setMediaUploadError(err.message);
+    }
+  };
+
+  const handleMediaRemoveFile = (idx) => {
+    setMediaFiles((prev) => {
+      URL.revokeObjectURL(prev[idx].preview);
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
+
+  const handleMediaUpload = async () => {
+    if (!mediaTarget || mediaFiles.length === 0) return;
+    setIsUploadingMedia(true);
+    setMediaUploadError(null);
+    try {
+      for (const { file } of mediaFiles) {
+        await uploadEventMedia(mediaTarget.eventId, file);
+      }
+      // Recargar la lista
+      const res = await getEventMedia(mediaTarget.eventId);
+      setMediaList(res.data ?? []);
+      setMediaFiles([]);
+    } catch (err) {
+      let uploadErrMsg = `No se pudo subir: ${err.message}`;
+      if (err.message?.includes('EVENT_UPDATE_NOT_ALLOWED') || err.message?.includes('Only DRAFT events')) {
+        uploadErrMsg = 'Las imágenes solo se pueden modificar cuando el evento está en estado Borrador.';
+      }
+      setMediaUploadError(uploadErrMsg);
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
+  // ── Render ───────────────────────────────────────────────────────────────
+  const btnBase = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors';
+
+  // Eventos filtrados por estado — frontend, sin llamada adicional al backend
+  const FILTER_OPTIONS = [
+    { value: 'ALL',            label: t('myEvents.filters.all') },
+    { value: 'DRAFT',          label: t(STATUS_BADGE.DRAFT.labelKey) },
+    { value: 'PENDING_REVIEW', label: t(STATUS_BADGE.PENDING_REVIEW.labelKey) },
+    { value: 'PUBLISHED',      label: t(STATUS_BADGE.PUBLISHED.labelKey) },
+    { value: 'REJECTED',       label: t(STATUS_BADGE.REJECTED.labelKey) },
+    { value: 'CANCELLED',      label: t(STATUS_BADGE.CANCELLED.labelKey) },
+    { value: 'COMPLETED',      label: t(STATUS_BADGE.COMPLETED.labelKey) },
+  ];
+  const visibleEvents = statusFilter === 'ALL'
+    ? events
+    : events.filter((e) => e.status === statusFilter);
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-8">
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-textPrimary">{t('myEvents.title')}</h1>
+          <p className="text-sm text-textMuted mt-0.5">{t('myEvents.subtitle')}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/organizer/earnings')}
+            className={`${btnBase} bg-surfaceAlt text-textSecondary hover:text-accent hover:bg-accent/10 border border-surfaceAlt`}
+          >
+            <TrendingUp className="w-4 h-4" /> {t('myEvents.myEarnings')}
+          </button>
+          <button
+            onClick={() => isSpanishLanguage && navigate('/events/create')}
+            disabled={!isSpanishLanguage}
+            className={`${btnBase} ${
+              isSpanishLanguage 
+                ? 'bg-primary text-white hover:bg-primaryDark cursor-pointer' 
+                : 'bg-surfaceAlt text-textMuted cursor-not-allowed opacity-60'
+            }`}
+            title={!isSpanishLanguage ? t('myEvents.editRestriction') : ''}
+          >
+            <Plus className="w-4 h-4" /> {t('myEvents.createNew')}
+          </button>
+        </div>
+      </div>
+
+      {/* Restricción de edición cuando no está en español */}
+      {!isSpanishLanguage && (
+        <div className="flex items-center gap-3 bg-warning/10 border border-warning/30 text-warning rounded-xl px-4 py-3 text-sm mb-6">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          {t('myEvents.editRestriction')}
+        </div>
+      )}
+
+      {/* Loading */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-24 text-textMuted text-sm">
+          {t('myEvents.loading')}
+        </div>
+      )}
+
+      {/* Error */}
+      {!isLoading && error && (
+        <div className="flex items-center gap-3 bg-error/10 border border-error/30 text-error rounded-xl px-4 py-3 text-sm">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {/* Vacío */}
+      {!isLoading && !error && events.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-surfaceAlt flex items-center justify-center">
+            <LayoutDashboard className="w-8 h-8 text-textMuted" />
+          </div>
+          <div>
+            <p className="text-textPrimary font-semibold text-lg">{t('myEvents.noEvents.title')}</p>
+            <p className="text-textMuted text-sm mt-1">{t('myEvents.noEvents.subtitle')}</p>
+          </div>
+          <button
+            onClick={() => isSpanishLanguage && navigate('/events/create')}
+            disabled={!isSpanishLanguage}
+            className={`${btnBase} ${
+              isSpanishLanguage 
+                ? 'bg-primary text-white hover:bg-primaryDark cursor-pointer' 
+                : 'bg-surfaceAlt text-textMuted cursor-not-allowed opacity-60'
+            } px-5 py-2.5 text-sm`}
+            title={!isSpanishLanguage ? t('myEvents.editRestriction') : ''}
+          >
+            <Plus className="w-4 h-4" /> {t('myEvents.createFirst')}
+          </button>
+        </div>
+      )}
+
+      {/* Chips de filtro por estado */}
+      {!isLoading && !error && events.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {FILTER_OPTIONS.map(({ value, label }) => {
+            const isActive = statusFilter === value;
+            return (
+              <button
+                key={value}
+                onClick={() => setStatusFilter(value)}
+                className="px-3 py-1 rounded-full text-xs font-semibold transition-colors border"
+                style={{
+                  background:  isActive ? 'var(--color-primary)' : 'var(--color-surfaceAlt)',
+                  color:       isActive ? '#fff'                  : 'var(--color-textMuted)',
+                  borderColor: isActive ? 'var(--color-primary)'  : 'transparent',
+                }}
+              >
+                {label}
+                {value !== 'ALL' && (
+                  <span className="ml-1.5 opacity-70">
+                    ({events.filter((e) => e.status === value).length})
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Tabla */}
+      {!isLoading && !error && events.length > 0 && (
+        <div className="bg-surface border border-surfaceAlt rounded-2xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-surfaceAlt bg-surfaceAlt/50">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider">{t('myEvents.table.headers.event')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider">{t('myEvents.table.headers.status')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider hidden md:table-cell">{t('myEvents.table.headers.dates')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-textMuted uppercase tracking-wider hidden lg:table-cell">{t('myEvents.table.headers.seats')}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-textMuted uppercase tracking-wider">{t('myEvents.table.headers.actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleEvents.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-sm text-textMuted">
+                    {statusFilter === 'ALL' 
+                      ? t('myEvents.table.noEvents')
+                      : t('myEvents.table.noEventsInStatus', { 
+                          status: FILTER_OPTIONS.find(o => o.value === statusFilter)?.label 
+                        })
+                    }
+                  </td>
+                </tr>
+              ) : visibleEvents.map((event, idx) => {
+                const badge  = STATUS_BADGE[event.status] ?? STATUS_BADGE.DRAFT;
+                const busy   = statusBusy[event.eventId] ?? false;
+                return (
+                  <tr
+                    key={event.eventId}
+                    className={`border-b border-surfaceAlt last:border-0 ${idx % 2 === 0 ? '' : 'bg-surfaceAlt/20'}`}
+                  >
+                    {/* Nombre */}
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-textPrimary truncate max-w-[200px]">
+                        {/* Mostrar nombre traducido si está disponible, sino el original */}
+                        {event.translatedName || event.eventName}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-[11px] text-textMuted">#{event.eventId}</p>
+                        {/* Indicador de traducción */}
+                        {currentLanguage !== 'es' && (
+                          <>
+                            {event.translationGenerating && !event.translatedName ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-accent/10 text-accent border border-accent/20">
+                                <span className="w-2 h-2 border border-accent/30 border-t-accent rounded-full animate-spin" />
+                                {t('events.translation.generating')}
+                              </span>
+                            ) : event.translatedName ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium bg-success/10 text-success border border-success/20">
+                                ✓ {t('events.translation.translated', { lang: currentLanguage.toUpperCase() })}
+                              </span>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+                      {/* Inline status notices under the event name */}
+                      {event.status === 'PENDING_REVIEW' && (
+                        <p className="text-[10px] text-yellow-400 mt-0.5 flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5 flex-shrink-0" />
+                          {t('myEvents.status.pendingReview')}
+                        </p>
+                      )}
+                      {event.status === 'REJECTED' && (
+                        <p className="text-[10px] text-red-400 mt-0.5 flex items-center gap-1">
+                          <XCircle className="w-2.5 h-2.5 flex-shrink-0" />
+                          {t('myEvents.status.rejected')}
+                        </p>
+                      )}
+                    </td>
+
+                    {/* Estado — portal dropdown */}
+                    <td className="px-4 py-3">
+                      <StatusDropdown
+                        event={event}
+                        badge={badge}
+                        busy={busy}
+                        isOpen={openStatusMenu === event.eventId}
+                        onToggle={setOpenStatusMenu}
+                        onSelect={handleTransitionRequest}
+                      />
+                    </td>
+
+                    {/* Fechas */}
+                    <td className="px-4 py-3 hidden md:table-cell text-textSecondary text-xs">
+                      {event.startDate
+                        ? `${event.startDate} → ${event.finishDate ?? '—'}`
+                        : '—'}
+                    </td>
+
+                    {/* Sillas */}
+                    <td className="px-4 py-3 hidden lg:table-cell text-textSecondary text-xs">
+                      {event.availableSeats ?? '—'}
+                    </td>
+
+                    {/* Acciones */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        {/* Ver detalle */}
+                        <button
+                          onClick={() => openDetail(event)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-accent hover:bg-accent/10 transition-colors"
+                          title={t('myEvents.actions.viewDetail')}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Editar layout — solo disponible en DRAFT y si está en español */}
+                        <button
+                          onClick={() => (event.status === 'DRAFT' && isSpanishLanguage) && navigate(`/events/${event.eventId}/layout`)}
+                          disabled={event.status !== 'DRAFT' || !isSpanishLanguage}
+                          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
+                            ${(event.status === 'DRAFT' && isSpanishLanguage)
+                              ? 'text-textMuted hover:text-accent hover:bg-accent/10 cursor-pointer'
+                              : 'text-textMuted/30 cursor-not-allowed'}`}
+                          title={
+                            event.status !== 'DRAFT' 
+                              ? t('myEvents.actions.editLayoutRestricted')
+                              : !isSpanishLanguage 
+                              ? t('myEvents.editRestriction')
+                              : t('myEvents.actions.editLayout')
+                          }
+                        >
+                          <LayoutDashboard className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Editar info */}
+                        <button
+                          onClick={() => (event.status === 'DRAFT' && isSpanishLanguage) && openEdit(event)}
+                          disabled={event.status !== 'DRAFT' || !isSpanishLanguage}
+                          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
+                            ${(event.status === 'DRAFT' && isSpanishLanguage)
+                              ? 'text-textMuted hover:text-primary hover:bg-primary/10 cursor-pointer'
+                              : 'text-textMuted/30 cursor-not-allowed'}`}
+                          title={
+                            event.status !== 'DRAFT' 
+                              ? t('myEvents.actions.editInfoRestricted')
+                              : !isSpanishLanguage 
+                              ? t('myEvents.editRestriction')
+                              : t('myEvents.actions.editInfo')
+                          }
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Gestionar imágenes — solo disponible en DRAFT y si está en español */}
+                        <button
+                          onClick={() => (event.status === 'DRAFT' && isSpanishLanguage) && openMedia(event)}
+                          disabled={event.status !== 'DRAFT' || !isSpanishLanguage}
+                          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
+                            ${(event.status === 'DRAFT' && isSpanishLanguage)
+                              ? 'text-textMuted hover:text-accent hover:bg-accent/10 cursor-pointer'
+                              : 'text-textMuted/30 cursor-not-allowed'}`}
+                          title={
+                            event.status !== 'DRAFT' 
+                              ? t('myEvents.actions.manageImagesRestricted')
+                              : !isSpanishLanguage 
+                              ? t('myEvents.editRestriction')
+                              : t('myEvents.actions.manageImages')
+                          }
+                        >
+                          <ImagePlus className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Eliminar — solo disponible en DRAFT y si está en español */}
+                        <button
+                          onClick={() => (event.status === 'DRAFT' && isSpanishLanguage) && setDeleteTarget(event)}
+                          disabled={event.status !== 'DRAFT' || !isSpanishLanguage}
+                          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors
+                            ${(event.status === 'DRAFT' && isSpanishLanguage)
+                              ? 'text-textMuted hover:text-error hover:bg-error/10 cursor-pointer'
+                              : 'text-textMuted/30 cursor-not-allowed'}`}
+                          title={
+                            event.status !== 'DRAFT' 
+                              ? t('myEvents.actions.deleteEventRestricted')
+                              : !isSpanishLanguage 
+                              ? t('myEvents.editRestriction')
+                              : t('myEvents.actions.deleteEvent')
+                          }
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          Modal de detalle de evento — layout igual a la imagen de referencia
+      ══════════════════════════════════════════════════════════════════ */}
+      {detailTarget && (() => {
+        // Datos combinados: summary (siempre disponible) + fullDetail (llega async)
+        const ev          = detailTarget;
+        const full        = detailFull;
+        const badge       = STATUS_BADGE[ev.status] ?? STATUS_BADGE.DRAFT;
+        const canSubmitReview = VALID_TRANSITIONS[ev.status]?.includes('PENDING_REVIEW');
+        const fmtDate     = (d) => d
+          ? new Date(d + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+          : '—';
+
+        // Usar traducción si está disponible
+        const displayName = full?.translatedName || full?.eventName || ev.eventName;
+        const displayDescription = full?.translatedDescription || full?.description || ev.description;
+
+        // Campos del grid
+        const gridFields = [
+          {
+            icon: Calendar,
+            label: t('myEvents.detailModal.fields.startDate'),
+            value: fmtDate(ev.startDate),
+            sub:   null,
+          },
+          {
+            icon: Tag,
+            label: t('myEvents.detailModal.fields.eventType'),
+            value: full?.categoryName ?? ev.categoryName ?? null,
+            pill:  true,
+          },
+          {
+            icon: MapPin,
+            label: t('myEvents.detailModal.fields.city'),
+            value: full?.siteName ?? ev.siteName ?? '—',
+          },
+          {
+            icon: Calendar,
+            label: t('myEvents.detailModal.fields.finishDate'),
+            value: fmtDate(ev.finishDate),
+          },
+          {
+            icon: Users,
+            label: t('myEvents.detailModal.fields.availableSeats'),
+            value: ev.availableSeats != null ? ev.availableSeats.toLocaleString('es-CO') : '—',
+          },
+          {
+            icon: ev.isPublic ? Globe : Lock,
+            label: t('myEvents.detailModal.fields.status'),
+            value: ev.isPublic ? t('myEvents.visibility.public') : t('myEvents.visibility.private'),
+            accent: ev.isPublic,
+          },
+        ];
+
+        return (
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={(e) => { if (e.target === e.currentTarget) closeDetail(); }}
+            role="presentation"
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="detail-modal-title"
+              className="bg-surface border border-surfaceAlt rounded-2xl w-full max-w-2xl flex flex-col max-h-[92vh] shadow-2xl"
+              style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}
+            >
+              {/* ── Header ── */}
+              <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-surfaceAlt flex-shrink-0">
+                {/* Avatar inicial */}
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border border-surfaceAlt"
+                  style={{ background: 'var(--color-surfaceAlt)' }}
+                >
+                  <span className="text-base font-bold text-textSecondary select-none">
+                    {displayName?.charAt(0).toUpperCase() ?? '?'}
+                  </span>
+                </div>
+
+                {/* Nombre */}
+                <p id="detail-modal-title" className="flex-1 font-bold text-base text-textPrimary truncate min-w-0">
+                  {displayName}
+                </p>
+
+                {/* Badges */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {/* Badge estado del evento */}
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badge.cls}`}>
+                    {t(badge.labelKey)}
+                  </span>
+                  {/* Badge visibilidad */}
+                  {ev.isPublic != null && (
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border
+                      ${ev.isPublic
+                        ? 'bg-success/10 text-success border-success/30'
+                        : 'bg-surfaceAlt/60 text-textMuted border-surfaceAlt'}`}>
+                      {ev.isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                      {ev.isPublic ? t('myEvents.visibility.active') : t('myEvents.visibility.private')}
+                    </span>
+                  )}
+                  {/* Cerrar */}
+                  <button
+                    onClick={closeDetail}
+                    className="ml-1 w-7 h-7 flex items-center justify-center rounded-lg text-textMuted hover:text-textPrimary hover:bg-surfaceAlt transition-colors"
+                    aria-label={t('myEvents.detailModal.close')}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              {/* ── Cuerpo scrollable ── */}
+              <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+
+                {/* ── Fila superior: info + galería ── */}
+                <div className="flex gap-4">
+
+                  {/* Columna izquierda — título + meta + descripción corta */}
+                  <div className="flex-1 min-w-0 flex flex-col gap-2">
+                    <h2 className="text-xl font-bold text-textPrimary leading-tight">
+                      {displayName}
+                    </h2>
+
+                    {/* Meta en línea: fecha · hora · ciudad */}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-textSecondary">
+                      {ev.startDate && (
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-textMuted" />
+                          {fmtDate(ev.startDate)}
+                        </span>
+                      )}
+                      {(full?.siteName ?? ev.siteName) && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-textMuted" />
+                          {full?.siteName ?? ev.siteName}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Descripción corta */}
+                    {displayDescription && (
+                      <p className="text-sm text-textSecondary leading-relaxed line-clamp-3">
+                        {displayDescription}
+                      </p>
+                    )}
+
+                    {detailLoading && (
+                      <div className="flex items-center gap-2 text-xs text-textMuted mt-1">
+                        <span className="w-3 h-3 border border-accent/30 border-t-accent rounded-full animate-spin" />
+                        {t('myEvents.detailModal.loadingDetails')}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Columna derecha — galería */}
+                  <div className="w-44 flex-shrink-0 flex flex-col gap-2">
+                    {/* Imagen principal */}
+                    <div
+                      className="relative rounded-xl overflow-hidden bg-surfaceAlt"
+                      style={{ aspectRatio: '4/3' }}
+                    >
+                      {detailMedia.length > 0 ? (
+                        <img
+                          src={detailMedia[detailCarousel]}
+                          alt={`${displayName} — ${detailCarousel + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImagePlus className="w-6 h-6 text-textMuted/40" />
+                        </div>
+                      )}
+                      {/* Contador */}
+                      {detailMedia.length > 1 && (
+                        <div className="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full">
+                          {detailCarousel + 1}/{detailMedia.length}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Miniaturas */}
+                    {detailMedia.length > 1 && (
+                      <div className="flex gap-1.5 justify-center">
+                        {detailMedia.slice(0, 4).map((url, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setDetailCarousel(i)}
+                            className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 transition-all"
+                            style={i === detailCarousel
+                              ? { outline: '2px solid var(--color-accent)', outlineOffset: '1px' }
+                              : { opacity: 0.5 }}
+                            aria-label={`Imagen ${i + 1}`}
+                            aria-pressed={i === detailCarousel}
+                          >
+                            <img src={url} alt="" className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Banner de estado de revisión ── */}
+                {ev.status === 'PENDING_REVIEW' && (
+                  <div className="flex items-start gap-3 rounded-xl p-3.5 border border-yellow-500/30"
+                    style={{ background: 'color-mix(in srgb, var(--color-warning, #eab308) 8%, transparent)' }}>
+                    <Clock className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-yellow-300 leading-snug">
+                      {t('myEvents.detailModal.banners.pendingReview')}
+                    </p>
+                  </div>
+                )}
+                {ev.status === 'REJECTED' && (
+                  <div className="flex items-start gap-3 rounded-xl p-3.5 border border-red-500/30"
+                    style={{ background: 'color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent)' }}>
+                    <XCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-red-400 mb-1">{t('myEvents.detailModal.banners.rejectedTitle')}</p>
+                      {(full?.rejectionReason) && (
+                        <p className="text-xs text-red-300 leading-snug">{full.rejectionReason}</p>
+                      )}
+                      <p className="text-xs text-red-300/70 mt-1 leading-snug">
+                        {t('myEvents.detailModal.banners.rejectedAction')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Descripción expandida con ícono ── */}
+                {displayDescription && (
+                  <div
+                    className="flex items-start gap-3 rounded-xl p-3.5 border"
+                    style={{ background: 'var(--color-surfaceAlt)', borderColor: 'var(--color-surfaceAlt)' }}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border border-surfaceAlt/50"
+                      style={{ background: 'color-mix(in srgb, var(--color-accent) 8%, transparent)' }}
+                    >
+                      <FileText className="w-4 h-4 text-accent" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-textMuted mb-1">
+                        {t('myEvents.detailModal.descriptionLabel')}
+                      </p>
+                      <p className="text-sm text-textSecondary leading-relaxed whitespace-pre-wrap">
+                        {displayDescription}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Grid 2×N de campos ── */}
+                <div className="grid grid-cols-2 gap-2">
+                  {gridFields.map(({ icon: Icon, label, value, pill, accent }) => (
+                    <div
+                      key={label}
+                      className="flex items-center gap-3 rounded-xl p-3 border"
+                      style={{ background: 'var(--color-surfaceAlt)', borderColor: 'var(--color-surfaceAlt)' }}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'color-mix(in srgb, var(--color-accent) 8%, transparent)' }}
+                      >
+                        <Icon className="w-3.5 h-3.5 text-accent" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[8px] font-bold uppercase tracking-widest text-textMuted">
+                          {label}
+                        </p>
+                        {pill && value ? (
+                          <span className="inline-block mt-0.5 px-2 py-0.5 rounded-md text-xs font-semibold border"
+                            style={{
+                              background: 'color-mix(in srgb, var(--color-accent) 10%, transparent)',
+                              color: 'var(--color-accent)',
+                              borderColor: 'color-mix(in srgb, var(--color-accent) 25%, transparent)',
+                            }}>
+                            {value}
+                          </span>
+                        ) : (
+                          <p className={`text-sm font-bold mt-0.5 ${accent ? 'text-success' : 'text-textPrimary'}`}>
+                            {value ?? '—'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── Footer: botón Enviar a revisión (solo desde DRAFT) ── */}
+              {canSubmitReview && (
+                <div className="px-5 py-4 border-t border-surfaceAlt flex-shrink-0">
+                  <button
+                    onClick={handlePublishFromDetail}
+                    className="w-full py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all hover:brightness-110"
+                    style={{ background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%)' }}
+                  >
+                    <Rocket className="w-4 h-4" />
+                    {t('myEvents.detailModal.submitReview')}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Modal: confirmar eliminación ────────────────────────────────── */}
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => !isDeleting && setDeleteTarget(null)}
+        title="¿Eliminar este evento?"
+        maxWidth="max-w-sm"
+        hideClose={isDeleting}
+        footer={
+          <>
+            <button
+              onClick={() => setDeleteTarget(null)}
+              disabled={isDeleting}
+              className="px-4 py-2 rounded-xl text-sm font-medium text-textSecondary bg-surfaceAlt hover:bg-surfaceAlt/80 transition-colors disabled:opacity-60"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-error text-white hover:bg-error/80 transition-colors disabled:opacity-60"
+            >
+              {isDeleting ? 'Eliminando…' : 'Sí, eliminar'}
+            </button>
+          </>
+        }
+      >
+        <div className="flex items-start gap-3 px-5 py-4">
+          <div className="w-10 h-10 rounded-xl bg-error/15 border border-error/30 flex items-center justify-center flex-shrink-0">
+            <Trash2 className="w-5 h-5 text-error" />
+          </div>
+          <p className="text-sm text-textMuted mt-1">
+            <span className="font-medium text-textSecondary">{deleteTarget?.eventName}</span>{' '}
+            será eliminado de forma permanente. Esta acción no se puede deshacer.
+          </p>
+        </div>
+      </Modal>
+
+      {/* ── Modal: editar info general ──────────────────────────────────── */}
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => { if (!isSubmitting) { setEditModalOpen(false); setEditTarget(null); setEditDateErrors({}); } }}
+        title="Editar evento"
+        hideClose={isSubmitting}
+        footer={
+          <>
+            <button
+              onClick={() => { setEditModalOpen(false); setEditTarget(null); setEditDateErrors({}); }}
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-xl text-sm font-medium text-textSecondary bg-surfaceAlt hover:bg-surfaceAlt/80 transition-colors disabled:opacity-60"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleEditSubmit}
+              disabled={isSubmitting || isLoadingEditForm}
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primaryDark transition-colors disabled:opacity-60"
+            >
+              {isSubmitting ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+          </>
+        }
+      >
+        <div className="p-5 space-y-4">
+          {/* Loading skeleton mientras carga EventResponse completo */}
+          {isLoadingEditForm ? (
+            <div className="flex flex-col gap-3 animate-pulse">
+              {[100, 60, 80].map((w, i) => (
+                <div key={i} className="h-9 rounded-lg bg-surfaceAlt" style={{ width: `${w}%` }} />
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Nombre */}
+              <div>
+                <label className={labelClass}>Nombre del evento</label>
+                <input
+                  type="text" className={inputClass}
+                  value={editForm.eventName}
+                  onChange={(e) => setEditForm((f) => ({ ...f, eventName: e.target.value }))}
+                  maxLength={100}
+                />
+              </div>
+
+              {/* Descripción */}
+              <div>
+                <label className={labelClass}>Descripción</label>
+                <textarea
+                  className={`${inputClass} resize-none`}
+                  rows={3}
+                  value={editForm.description}
+                  onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                  maxLength={255}
+                />
+              </div>
+
+              {/* Fechas */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Fecha inicio</label>
+                  <input
+                    type="date" className={inputClass}
+                    value={editForm.startDate}
+                    min={todayStr()}
+                    max={maxStartStr()}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // If new start is after current finish, clear finish to avoid silent error
+                      setEditForm((f) => ({
+                        ...f,
+                        startDate:  val,
+                        finishDate: f.finishDate && val > f.finishDate ? '' : f.finishDate,
+                      }));
+                      setEditDateErrors((prev) => ({ ...prev, startDate: undefined }));
+                    }}
+                  />
+                  {editDateErrors.startDate && (
+                    <p className="text-xs mt-1" style={{ color: 'var(--color-error)' }}>
+                      {editDateErrors.startDate}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className={labelClass}>Fecha fin</label>
+                  <input
+                    type="date" className={inputClass}
+                    value={editForm.finishDate}
+                    min={editForm.startDate || todayStr()}
+                    onChange={(e) => {
+                      setEditForm((f) => ({ ...f, finishDate: e.target.value }));
+                      setEditDateErrors((prev) => ({ ...prev, finishDate: undefined }));
+                    }}
+                  />
+                  {editDateErrors.finishDate && (
+                    <p className="text-xs mt-1" style={{ color: 'var(--color-error)' }}>
+                      {editDateErrors.finishDate}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Sillas y categoría */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Sillas disponibles</label>
+                  <input
+                    type="number" className={inputClass} min={1} max={100000}
+                    value={editForm.availableSeats}
+                    onChange={(e) => setEditForm((f) => ({ ...f, availableSeats: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Categoría</label>
+                  <select
+                    className={inputClass}
+                    value={editForm.categoryId}
+                    onChange={(e) => setEditForm((f) => ({ ...f, categoryId: e.target.value }))}
+                  >
+                    <option value="">Sin cambiar</option>
+                    {categories.map((c) => (
+                      <option key={c.categoryId} value={c.categoryId}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Visibilidad */}
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox" id="isPublic"
+                  className="w-4 h-4 accent-accent"
+                  checked={editForm.isPublic}
+                  onChange={(e) => setEditForm((f) => ({ ...f, isPublic: e.target.checked }))}
+                />
+                <label htmlFor="isPublic" className="text-sm text-textSecondary cursor-pointer">
+                  Evento público (visible para todos)
+                </label>
+              </div>
+
+              {/* Error */}
+              {editError && (
+                <div className="flex items-center gap-2 bg-error/10 border border-error/30 text-error rounded-xl px-3 py-2 text-xs">
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                  {editError}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </Modal>
+      {/* ── Modal: confirmar transición de estado ──────────────────────── */}
+      {pendingTransition && (() => {
+        const status = pendingTransition.newStatus;
+        // When reverting to DRAFT from REJECTED, show a more specific title
+        const isCorrection = status === 'DRAFT' && pendingTransition.event?.status === 'REJECTED';
+        const title = isCorrection
+          ? t('myEvents.transitionConfirm.DRAFT.titleCorrect')
+          : t(`myEvents.transitionConfirm.${status}.title`);
+        const body = isCorrection
+          ? t('myEvents.transitionConfirm.DRAFT.bodyCorrect')
+          : t(`myEvents.transitionConfirm.${status}.body`);
+        const confirmLabel = t(`myEvents.transitionConfirm.${status}.confirm`);
+        
+        // Clases de estilo por estado
+        const confirmClassMap = {
+          PENDING_REVIEW: 'bg-yellow-600 hover:bg-yellow-500 text-white',
+          DRAFT: 'bg-gray-600 hover:bg-gray-500 text-white',
+          CANCELLED: 'bg-red-600 hover:bg-red-500 text-white',
+          COMPLETED: 'bg-blue-600 hover:bg-blue-500 text-white',
+        };
+        
+        return (
+          <Modal
+            isOpen
+            onClose={() => !transitionBusy && setPendingTransition(null)}
+            title={title}
+            maxWidth="max-w-md"
+            hideClose={transitionBusy}
+            footer={
+              <>
+                <button
+                  onClick={() => setPendingTransition(null)}
+                  disabled={transitionBusy}
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-textSecondary bg-surfaceAlt hover:bg-surfaceAlt/80 transition-colors disabled:opacity-60"
+                >
+                  {t('myEvents.transitionConfirm.cancel')}
+                </button>
+                <button
+                  onClick={confirmTransition}
+                  disabled={transitionBusy}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-60 ${confirmClassMap[status]}`}
+                >
+                  {transitionBusy ? t('myEvents.transitionConfirm.changing') : confirmLabel}
+                </button>
+              </>
+            }
+          >
+            <p className="text-sm text-textSecondary px-5 py-4 leading-relaxed">{body}</p>
+          </Modal>
+        );
+      })()}
+
+      {/* ── Modal: error genérico (reemplaza alert()) ───────────────────── */}
+      <Modal
+        isOpen={!!errorModal}
+        onClose={() => setErrorModal(null)}
+        title={errorModal?.title ?? 'Error'}
+        maxWidth="max-w-sm"
+        footer={
+          <button
+            onClick={() => setErrorModal(null)}
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-surfaceAlt text-textSecondary hover:bg-surfaceAlt/80 transition-colors"
+          >
+            Entendido
+          </button>
+        }
+      >
+        <p className="text-sm text-textSecondary px-5 py-4 leading-relaxed">{errorModal?.message}</p>
+      </Modal>
+
+      {/* ── Modal: gestionar imágenes ────────────────────────────────────── */}
+      <Modal
+        isOpen={!!mediaTarget}
+        onClose={() => { setMediaTarget(null); setMediaFiles([]); setMediaUploadError(null); }}
+        title={`Imágenes — ${mediaTarget?.eventName ?? ''}`}
+        footer={
+          mediaFiles.length > 0 ? (
+            <>
+              <button
+                onClick={() => setMediaFiles([])}
+                disabled={isUploadingMedia}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-textSecondary bg-surfaceAlt hover:bg-surfaceAlt/80 transition-colors disabled:opacity-60"
+              >
+                Cancelar selección
+              </button>
+              <button
+                onClick={handleMediaUpload}
+                disabled={isUploadingMedia}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primaryDark transition-colors disabled:opacity-60 flex items-center gap-2"
+              >
+                {isUploadingMedia ? (
+                  <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Subiendo…</>
+                ) : (
+                  <><ImagePlus className="w-3.5 h-3.5" /> Subir {mediaFiles.length} imagen{mediaFiles.length !== 1 ? 'es' : ''}</>
+                )}
+              </button>
+            </>
+          ) : null
+        }
+      >
+        <div className="p-5 space-y-4">
+          {/* Imágenes existentes */}
+          {isLoadingMedia ? (
+            <div className="flex justify-center py-6">
+              <span className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+            </div>
+          ) : mediaList.length > 0 ? (
+            <div>
+              <p className="text-[10px] font-semibold text-textMuted uppercase tracking-wider mb-2">
+                Imágenes subidas ({mediaList.length})
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {mediaList.map((m) => (
+                  <div key={m.mediaId} className="aspect-square rounded-lg overflow-hidden">
+                    <img src={m.imgUrl} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-textMuted text-center py-4">Este evento aún no tiene imágenes</p>
+          )}
+
+          {/* Agregar más imágenes — solo en DRAFT */}
+          <div>
+            <p className="text-[10px] font-semibold text-textMuted uppercase tracking-wider mb-2">
+              Agregar imágenes
+            </p>
+            {mediaTarget?.status !== 'DRAFT' ? (
+              <div className="flex items-center gap-2 rounded-xl border border-surfaceAlt px-3 py-2.5 text-xs text-textMuted"
+                style={{ background: 'var(--color-surfaceAlt)' }}>
+                <ImagePlus className="w-3.5 h-3.5 flex-shrink-0" />
+                Las imágenes solo se pueden modificar en estado Borrador.
+              </div>
+            ) : (
+              <>
+                <input
+                  ref={mediaInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  id="manage-media-upload"
+                  className="hidden"
+                  onChange={handleMediaFileSelect}
+                />
+                <label
+                  htmlFor="manage-media-upload"
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-dashed cursor-pointer transition-colors border-surfaceAlt hover:border-accent text-textMuted hover:text-accent text-sm"
+                >
+                  <ImagePlus className="w-4 h-4" /> Seleccionar imágenes
+                </label>
+              </>
+            )}
+          </div>
+
+          {/* Preview de archivos seleccionados */}
+          {mediaFiles.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold text-textMuted uppercase tracking-wider mb-2">
+                Pendientes de subir ({mediaFiles.length})
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {mediaFiles.map(({ preview }, idx) => (
+                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden" style={{ background: 'var(--color-surface)' }}>
+                    <img src={preview} alt="" className="w-full h-full object-contain" />
+                    <button
+                      onClick={() => handleMediaRemoveFile(idx)}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-error transition-colors"
+                    >
+                      <span className="text-[10px] leading-none">✕</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {mediaUploadError && (
+            <p className="text-xs text-error bg-error/10 border border-error/30 rounded-xl px-3 py-2">
+              {mediaUploadError}
+            </p>
+          )}
+        </div>
+      </Modal>
+    </div>
+  );
+}

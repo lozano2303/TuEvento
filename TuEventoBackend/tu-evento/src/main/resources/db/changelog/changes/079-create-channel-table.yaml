@@ -1,0 +1,91 @@
+databaseChangeLog:
+  - changeSet:
+      id: 079-create-channel-table
+      author: capysoft
+      comment: "Canales de notificación. config JSONB solo datos no sensibles (nunca credenciales)."
+      changes:
+        - createTable:
+            tableName: channel
+            columns:
+              - column:
+                  name: channel_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: description
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: config
+                  type: jsonb
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(100)
+              - column:
+                  name: updated_by
+                  type: VARCHAR(100)
+        - insert:
+            tableName: channel
+            columns:
+              - column:
+                  name: name
+                  value: IN_APP
+              - column:
+                  name: description
+                  value: Notificación visible en la aplicación
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()
+        - insert:
+            tableName: channel
+            columns:
+              - column:
+                  name: name
+                  value: EMAIL
+              - column:
+                  name: description
+                  value: Correo electrónico (Gmail SMTP)
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: config
+                  value: '{"fromName":"TuEvento"}'
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()

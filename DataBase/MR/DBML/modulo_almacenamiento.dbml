@@ -1,0 +1,68 @@
+Enum storage_op_status_enum {
+  success
+  failed
+}
+
+Enum storage_operation_enum {
+  upload
+  download
+  delete
+  update
+}
+
+Table storage_provider {
+  storage_provider_id int [pk, increment]
+  name varchar(100) [not null]
+  code varchar(20) [not null, unique]
+  is_active boolean [default: false]
+  config jsonb [not null]
+}
+
+Table file_category {
+  file_category_id int [pk, increment]
+  storage_provider_id int [not null]
+  name varchar(100) [not null]
+  code varchar(50) [not null, unique]
+  is_public boolean [default: false]
+  allowed_extensions varchar(100)
+  max_size_mb int [not null]
+}
+
+Table stored_file {
+  stored_file_id int [pk, increment]
+  file_category_id int [not null]
+  uploaded_by int [not null]
+  s3_key varchar(512) [not null, unique]
+  original_filename varchar(255) [not null]
+  content_type varchar(100) [not null]
+  size_bytes bigint [not null]
+  public_url varchar(512)
+  owner_entity_id int [note: "no es FK real: apunta a distintas tablas segun owner_entity_type (polimorfico)"]
+  owner_entity_type varchar(50)
+  deleted boolean [default: false]
+  uploaded_at timestamp [default: `now()`]
+}
+
+Table storage_operation_log {
+  log_id int [pk, increment]
+  stored_file_id int [not null]
+  performed_by int
+  operation storage_operation_enum [not null]
+  status storage_op_status_enum [not null]
+  error_message varchar(500)
+  occurred_at timestamp [default: `now()`]
+}
+
+Table user {
+  user_id int [pk, increment]
+  user_status_id int [not null, note: "FK obligatoria: todo usuario nace con un estado (ej. pending_activation)"]
+  role_id int [not null]
+  alias varchar(50) [not null, unique]
+  activated boolean [default: false]
+}
+
+Ref: file_category.storage_provider_id > storage_provider.storage_provider_id
+Ref: storage_operation_log.performed_by > user.user_id
+Ref: storage_operation_log.stored_file_id > stored_file.stored_file_id
+Ref: stored_file.file_category_id > file_category.file_category_id
+Ref: stored_file.uploaded_by > user.user_id

@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 079-add-event-review-flow
+      author: capysoft
+      comment: >
+        Phase 1 of the event review flow.
+        1. Drop the existing CHECK constraint on event.status that only allows
+           DRAFT / PUBLISHED / CANCELLED / COMPLETED, and replace it with one
+           that also accepts PENDING_REVIEW and REJECTED.
+        2. Add a nullable rejection_reason (TEXT) column to the event table so
+           that the admin can store a human-readable reason when rejecting an event.
+      changes:
+        # ── 1. Widen the status CHECK constraint ─────────────────────────────
+        - sql:
+            sql: >
+              ALTER TABLE event
+              DROP CONSTRAINT IF EXISTS chk_event_status;
+        - sql:
+            sql: >
+              ALTER TABLE event
+              ADD CONSTRAINT chk_event_status
+              CHECK (status IN ('DRAFT','PENDING_REVIEW','PUBLISHED','REJECTED','CANCELLED','COMPLETED'));
+
+        # ── 2. Add rejection_reason column ────────────────────────────────────
+        - addColumn:
+            tableName: event
+            columns:
+              - column:
+                  name: rejection_reason
+                  type: TEXT
+                  constraints:
+                    nullable: true

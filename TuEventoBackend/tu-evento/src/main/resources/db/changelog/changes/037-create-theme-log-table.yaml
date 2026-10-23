@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 037-create-theme-log-table
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: theme_log
+            columns:
+              - column:
+                  name: log_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_theme_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: property
+                  type: VARCHAR(100)
+              - column:
+                  name: old_value
+                  type: VARCHAR(255)
+              - column:
+                  name: new_value
+                  type: VARCHAR(255)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+        - addForeignKeyConstraint:
+            baseTableName: theme_log
+            baseColumnNames: user_theme_id
+            referencedTableName: user_theme
+            referencedColumnNames: user_theme_id
+            constraintName: fk_theme_log_user_theme

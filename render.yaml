@@ -1,0 +1,192 @@
+# ============================================================
+# render.yaml — TuEvento · Fase 1: Backend + Base de Datos
+# ============================================================
+# Despliegue gestionado como Infrastructure as Code (IaC).
+# Render lee este archivo desde la raíz del repositorio.
+#
+# FASE 1 (este archivo): Backend API + PostgreSQL
+# FASE 2 (próxima):      Frontend Web (React/Nginx)
+# FASE 3 (próxima):      Fake Payment Gateway + nsfw-classifier
+#
+# Documentación: https://render.com/docs/infrastructure-as-code
+# ============================================================
+
+databases:
+  # ─── PostgreSQL — Base de Datos Principal ─────────────────
+  - name: tuevento-db
+    databaseName: tuevento
+    user: tuevento_user
+    # plan: free          # Free tier: 1 GB RAM, 1 GB storage, expira 90 días
+    # plan: starter       # $7/mes — persistencia permanente (recomendado para staging)
+    plan: free
+    region: oregon        # us-west-2; cambiar a "frankfurt" si el equipo es de Europa/Latam
+    ipAllowList: []       # [] = solo servicios internos de Render pueden conectarse
+
+
+services:
+  # ─── Backend API — Spring Boot ────────────────────────────
+  - type: web
+    name: tuevento-backend
+    runtime: docker
+    # Render construye la imagen desde el Dockerfile en esta ruta
+    dockerfilePath: ./TuEventoBackend/tu-evento/Dockerfile
+    dockerContext: ./TuEventoBackend/tu-evento
+    region: oregon
+    # Rama de despliegue — cambiar a "main" cuando se promueva a producción
+    branch: develop
+    # plan: free          # Free tier: 512 MB RAM, 0.1 CPU, se duerme tras 15 min de inactividad
+    # plan: starter       # $7/mes — sin sleep, 512 MB RAM
+    plan: free
+    # Puerto expuesto por el contenedor (debe coincidir con EXPOSE en Dockerfile)
+    # Render inyecta PORT automáticamente; el backend usa SERVER_PORT
+    healthCheckPath: /actuator/health
+
+    envVars:
+      # ── Perfil Spring ──────────────────────────────────────
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
+      - key: SERVER_PORT
+        value: "8080"
+
+      # ── Base de datos (referencia interna a tuevento-db) ───
+      # fromDatabase inyecta la URL de conexión automáticamente
+      # Render la da en formato postgres:// — Spring necesita jdbc:postgresql://
+      - key: DATABASE_URL_JDBC
+        fromDatabase:
+          name: tuevento-db
+          property: connectionString
+        # IMPORTANTE: después de aplicar el Blueprint, ir a
+        # tuevento-backend → Environment y cambiar el valor de DATABASE_URL_JDBC
+        # reemplazando "postgres://" por "jdbc:postgresql://"
+
+      # Render incluye user y password en la connectionString,
+      # pero Spring Boot los necesita separados:
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tuevento-db
+          property: user
+
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tuevento-db
+          property: password
+
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tuevento-db
+          property: database
+
+      # ── Redis — Upstash (free tier, externo) ───────────────
+      # Después de crear tu instancia en https://upstash.com
+      # pega los valores reales en el Dashboard de Render → Environment
+      - key: SPRING_REDIS_HOST
+        sync: false   # Render te pide el valor al hacer deploy; NO lo guarda en el repo
+
+      - key: SPRING_REDIS_PORT
+        value: "6379"
+
+      - key: SPRING_REDIS_PASSWORD
+        sync: false
+
+      - key: SPRING_REDIS_SSL
+        value: "true"   # Upstash requiere TLS
+
+      # ── JWT ────────────────────────────────────────────────
+      - key: JWT_SECRET
+        sync: false   # Mínimo 32 caracteres aleatorios, nunca en el repo
+
+      # ── Correo SMTP (Gmail) ────────────────────────────────
+      - key: MAIL_USERNAME
+        sync: false
+
+      - key: MAIL_PASSWORD
+        sync: false   # App Password de Google (no la contraseña de la cuenta)
+
+      # ── OAuth — Google ─────────────────────────────────────
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+      - key: APP_OAUTH_GOOGLE_REDIRECT_URI
+        value: https://tuevento-backend.onrender.com
+        # Actualizar con la URL real asignada por Render o tu dominio
+
+      # ── OAuth — Facebook ───────────────────────────────────
+      - key: FACEBOOK_CLIENT_ID
+        sync: false
+
+      - key: FACEBOOK_CLIENT_SECRET
+        sync: false
+
+      - key: APP_OAUTH_FACEBOOK_REDIRECT_URI
+        value: https://tuevento-backend.onrender.com
+
+      # ── Almacenamiento AWS S3 / MinIO ──────────────────────
+      - key: APP_STORAGE_ENDPOINT
+        sync: false   # URL del endpoint S3/MinIO (ej: https://s3.amazonaws.com)
+
+      - key: MINIO_PUBLIC_URL
+        sync: false   # URL pública para presigned URLs del navegador
+
+      - key: MINIO_ROOT_USER
+        sync: false   # AWS Access Key ID
+
+      - key: MINIO_ROOT_PASSWORD
+        sync: false   # AWS Secret Access Key
+
+      # ── Admin inicial ──────────────────────────────────────
+      - key: ADMIN_EMAIL
+        sync: false
+
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      - key: ADMIN_ALIAS
+        value: AdminTuEvento
+
+      # ── CORS ───────────────────────────────────────────────
+      - key: APP_CORS_ALLOWED_ORIGINS
+        value: https://tuevento-frontend.onrender.com
+        # Actualizar con la URL real del frontend cuando se despliegue
+
+      # ── Perfil del avatar por defecto ─────────────────────
+      - key: APP_PROFILE_DEFAULT_AVATAR_ID
+        value: "1"
+
+      # ── Moderación de imágenes ────────────────────────────
+      # nsfw-classifier no se despliega en Fase 1; se desactiva fail-open
+      - key: NSFW_SERVICE_URL
+        value: http://localhost:8001   # Apuntará al servicio en Fase 3
+
+      - key: NSFW_THRESHOLD
+        value: "0.6"
+
+      - key: SIGHTENGINE_API_USER
+        sync: false
+
+      - key: SIGHTENGINE_API_SECRET
+        sync: false
+
+      - key: SIGHTENGINE_MODELS
+        value: gore,nudity,weapon
+
+      - key: SIGHTENGINE_THRESHOLD
+        value: "0.6"
+
+      # ── Pasarela de pagos ──────────────────────────────────
+      - key: PAYMENT_GATEWAY
+        value: fake
+
+      - key: FAKE_GATEWAY_URL
+        value: https://tuevento-fake-gateway.onrender.com
+        # Actualizar en Fase 3 cuando se despliegue el fake-gateway
+
+      - key: WEBHOOK_SECRET
+        sync: false   # Mínimo 32 caracteres aleatorios
+
+      # ── Notificaciones ─────────────────────────────────────
+      - key: NOTIFICATION_EMAIL_ENABLED
+        value: "true"

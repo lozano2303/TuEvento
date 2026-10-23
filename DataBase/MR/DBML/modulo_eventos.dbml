@@ -1,0 +1,104 @@
+Enum event_status_enum {
+  draft
+  published
+  cancelled
+  finished
+}
+
+Table event {
+  event_id int [pk, increment]
+  user_id int [not null, note: "organizador"]
+  site_id int [not null]
+  event_name varchar(100) [not null]
+  description varchar(255) [not null]
+  start_date date [not null]
+  finish_date date [not null]
+  status event_status_enum [not null, default: 'draft']
+  is_public boolean [default: true]
+  available_seats int [not null]
+}
+
+Table event_layout {
+  event_layout_id int [pk, increment]
+  event_id int [not null, unique, note: "1:1 con event"]
+  layout_data jsonb [not null]
+}
+
+Table event_rating {
+  rating_id int [pk, increment]
+  event_id int [not null]
+  user_id int [not null]
+  rating int [not null, note: "CHECK (rating BETWEEN 1 AND 5)"]
+  comment text [not null]
+  is_visible boolean [default: true]
+  created_at timestamp [default: `now()`]
+  Indexes {
+    (event_id, user_id) [unique]
+  }
+}
+
+Table event_comment_reply {
+  reply_id int [pk, increment]
+  parent_reply_id int [note: "auto-referencia; NULL si es respuesta de primer nivel"]
+  rating_id int [not null]
+  user_id int [not null]
+  reply_text text [not null]
+  is_visible boolean [default: true]
+  created_at timestamp [default: `now()`]
+}
+
+Table event_media {
+  media_id int [pk, increment]
+  event_id int [not null]
+  img_url varchar(255) [not null]
+}
+
+Table event_media_log {
+  media_log_id int [pk, increment]
+  event_id int [not null]
+  media_id int [not null]
+  img_url varchar(255) [not null]
+  version int [not null]
+  is_visible boolean [default: true]
+}
+
+Table event_status_log {
+  status_log_id int [pk, increment]
+  event_id int [not null]
+  old_status event_status_enum
+  new_status event_status_enum [not null]
+  changed_at timestamp [default: `now()`]
+  changed_by int
+}
+
+Table user {
+  user_id int [pk, increment]
+  user_status_id int [not null, note: "FK obligatoria: todo usuario nace con un estado (ej. pending_activation)"]
+  role_id int [not null]
+  alias varchar(50) [not null, unique]
+  activated boolean [default: false]
+}
+
+Table site {
+  site_id int [pk, increment]
+  city_id int [not null]
+  name varchar(150) [not null]
+  address varchar(200) [not null]
+  capacity int
+  latitude decimal(9,6)
+  longitude decimal(9,6)
+}
+
+Ref: event.site_id > site.site_id
+Ref: event.user_id > user.user_id
+Ref: event_comment_reply.parent_reply_id > event_comment_reply.reply_id
+Ref: event_comment_reply.rating_id > event_rating.rating_id
+Ref: event_comment_reply.user_id > user.user_id
+Ref: event_layout.event_id > event.event_id
+Ref: event_media.event_id > event.event_id
+Ref: event_media_log.event_id > event.event_id
+Ref: event_media_log.media_id > event_media.media_id
+Ref: event_rating.event_id > event.event_id
+Ref: event_rating.user_id > user.user_id
+Ref: event_status_log.changed_by > user.user_id
+Ref: event_status_log.event_id > event.event_id

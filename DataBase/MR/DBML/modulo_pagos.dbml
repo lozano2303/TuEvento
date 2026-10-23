@@ -1,0 +1,121 @@
+Enum event_status_enum {
+  draft
+  published
+  cancelled
+  finished
+}
+
+Enum order_status_enum {
+  created
+  pending_payment
+  paid
+  cancelled
+  refunded
+}
+
+Enum payment_gateway_enum {
+  stripe
+  paypal
+  mercadopago
+  wompi
+}
+
+Enum payment_method_enum {
+  credit_card
+  debit_card
+  pse
+  wallet
+  cash
+}
+
+Enum payment_status_enum {
+  pending
+  approved
+  rejected
+  refunded
+  failed
+}
+
+Enum refund_status_enum {
+  requested
+  approved
+  rejected
+  completed
+}
+
+Table order {
+  order_id int [pk, increment]
+  user_id int [not null]
+  event_id int [not null]
+  total_amount decimal(10,2) [not null]
+  currency varchar(3) [default: 'COP']
+  status order_status_enum [not null, default: 'created']
+  created_at timestamp [default: `now()`]
+  Note: '''"order" es palabra reservada en SQL estandar; en la implementacion (CREATE TABLE) se recomienda usarla entre comillas/backticks o renombrar a "orders".'''
+}
+
+Table payment {
+  payment_id int [pk, increment]
+  order_id int [not null]
+  gateway payment_gateway_enum [not null]
+  gateway_transaction_id varchar(100)
+  status payment_status_enum [not null, default: 'pending']
+  amount decimal(10,2) [not null]
+  payment_method payment_method_enum [not null]
+  processed_at timestamp
+}
+
+Table payment_log {
+  payment_log_id int [pk, increment]
+  payment_id int [not null]
+  old_status payment_status_enum
+  new_status payment_status_enum [not null]
+  changed_at timestamp [default: `now()`]
+  reason text
+  Note: '''fix: el MER original repetia la columna changed_at dos veces; se dejo una sola.'''
+}
+
+Table refund {
+  refund_id int [pk, increment]
+  payment_id int [not null]
+  status refund_status_enum [not null, default: 'requested']
+  reason text
+  requested_at timestamp [default: `now()`]
+  processed_at timestamp
+}
+
+Table transaction_webhook {
+  webhook_id int [pk, increment]
+  payment_id int [not null]
+  payload jsonb [not null]
+  received_at timestamp [default: `now()`]
+}
+
+Table event {
+  event_id int [pk, increment]
+  user_id int [not null, note: "organizador"]
+  site_id int [not null]
+  event_name varchar(100) [not null]
+  description varchar(255) [not null]
+  start_date date [not null]
+  finish_date date [not null]
+  status event_status_enum [not null, default: 'draft']
+  is_public boolean [default: true]
+  available_seats int [not null]
+}
+
+Table user {
+  user_id int [pk, increment]
+  user_status_id int [not null, note: "FK obligatoria: todo usuario nace con un estado (ej. pending_activation)"]
+  role_id int [not null]
+  alias varchar(50) [not null, unique]
+  activated boolean [default: false]
+}
+
+Ref: event.user_id > user.user_id
+Ref: order.event_id > event.event_id
+Ref: order.user_id > user.user_id
+Ref: payment.order_id > order.order_id
+Ref: payment_log.payment_id > payment.payment_id
+Ref: refund.payment_id > payment.payment_id
+Ref: transaction_webhook.payment_id > payment.payment_id

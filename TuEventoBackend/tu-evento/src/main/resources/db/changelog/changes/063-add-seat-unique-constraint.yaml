@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 063-add-seat-unique-constraint
+      author: capysoft
+      comment: "Agregar constraint de unicidad (event_section_id, code) en tabla seat para prevenir códigos duplicados en la misma sección lógica"
+      changes:
+        - addUniqueConstraint:
+            tableName: seat
+            columnNames: event_section_id, code
+            constraintName: uq_seat_section_code
+      rollback:
+        - dropUniqueConstraint:
+            tableName: seat
+            constraintName: uq_seat_section_code

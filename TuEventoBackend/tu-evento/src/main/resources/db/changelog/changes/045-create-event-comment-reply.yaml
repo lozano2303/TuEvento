@@ -1,0 +1,63 @@
+databaseChangeLog:
+  - changeSet:
+      id: 045-create-event-comment-reply
+      author: capysoft
+      changes:
+        - createTable:
+            tableName: event_comment_reply
+            columns:
+              - column:
+                  name: reply_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: parent_reply_id
+                  type: BIGINT
+              - column:
+                  name: rating_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reply_text
+                  type: VARCHAR
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_visible
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: event_comment_reply
+            baseColumnNames: parent_reply_id
+            referencedTableName: event_comment_reply
+            referencedColumnNames: reply_id
+            constraintName: fk_event_comment_reply_parent
+        - addForeignKeyConstraint:
+            baseTableName: event_comment_reply
+            baseColumnNames: rating_id
+            referencedTableName: event_rating
+            referencedColumnNames: rating_id
+            constraintName: fk_event_comment_reply_rating
+        - addForeignKeyConstraint:
+            baseTableName: event_comment_reply
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_event_comment_reply_user

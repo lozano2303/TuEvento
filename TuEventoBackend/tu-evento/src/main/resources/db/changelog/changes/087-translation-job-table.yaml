@@ -1,0 +1,118 @@
+databaseChangeLog:
+  - changeSet:
+      id: 087-translation-job-table
+      author: system
+      changes:
+        - createTable:
+            tableName: translation_job
+            columns:
+              - column:
+                  name: job_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: entity_type
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entity_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_language_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_translation_job_source_language
+                    references: language(language_id)
+              - column:
+                  name: target_language_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_translation_job_target_language
+                    references: language(language_id)
+              - column:
+                  name: source_hash
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: provider
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attempts
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_error
+                  type: VARCHAR(1000)
+              - column:
+                  name: next_retry_at
+                  type: TIMESTAMP
+              - column:
+                  name: completed_at
+                  type: TIMESTAMP
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by
+                  type: VARCHAR(255)
+                  defaultValue: "system"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_by
+                  type: VARCHAR(255)
+                  defaultValue: "system"
+                  constraints:
+                    nullable: false
+
+        - addUniqueConstraint:
+            tableName: translation_job
+            columnNames: entity_type, entity_id, target_language_id
+            constraintName: uk_translation_job_entity_target
+
+        - createIndex:
+            tableName: translation_job
+            indexName: idx_translation_job_status_retry
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: next_retry_at
+
+        - createIndex:
+            tableName: translation_job
+            indexName: idx_translation_job_entity
+            columns:
+              - column:
+                  name: entity_type
+              - column:
+                  name: entity_id
+
+        - sql:
+            sql: "ALTER TABLE translation_job ADD CONSTRAINT ck_translation_job_status CHECK (status IN ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'))"

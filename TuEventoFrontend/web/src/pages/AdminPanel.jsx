@@ -1,0 +1,415 @@
+import { useState, useEffect } from 'react';
+import { Eye, X } from 'lucide-react';
+import { approveOrganizerRequest, rejectOrganizerRequest } from '../services/OrganizerPetitionService';
+import { httpRequest } from '../services/httpClient';
+import ConfirmModal from '../components/common/ConfirmModal';
+import AdminSidebar from '../components/admin/AdminSidebar';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+export default function AdminPanel() {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+  const [error, setError] = useState(null);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [documentUrl, setDocumentUrl] = useState(null);
+  const [documentLoading, setDocumentLoading] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(null); // { type: 'approve'|'reject', req }
+
+  useEffect(() => {
+    fetchRequests(filter);
+  }, [filter]);
+
+  const fetchRequests = async (activeFilter = 'all') => {
+    setLoading(true);
+    setError(null);
+    try {
+      const statusMap = { pending: 'PENDING', approved: 'APPROVED', rejected: 'REJECTED' };
+      const statusParam = statusMap[activeFilter];
+      const url = statusParam
+        ? `${API_URL}/admin/organizer-requests?status=${statusParam}`
+        : `${API_URL}/admin/organizer-requests`;
+      const response = await httpRequest(url, { method: 'GET' });
+      const data = await response.json();
+      if (response.ok) {
+        setRequests(data.data || []);
+      } else {
+        setError(data.message || 'Error al cargar solicitudes');
+      }
+    } catch (err) {
+      setError('Error de conexión: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const statusStyle = (status) => {
+    if (status === 'PENDING')  return { bg: 'bg-amber-500',   label: 'Pendiente' };
+    if (status === 'APPROVED') return { bg: 'bg-emerald-500', label: 'Aprobado'  };
+    if (status === 'REJECTED') return { bg: 'bg-rose-500',    label: 'Rechazado' };
+    return { bg: 'bg-slate-600', label: status };
+  };
+
+  const filters = [
+    { key: 'all',      label: 'Todas'     },
+    { key: 'pending',  label: 'Pendientes'},
+    { key: 'approved', label: 'Aprobadas' },
+    { key: 'rejected', label: 'Rechazadas'},
+  ];
+
+  const fetchDocumentUrl = async (req) => {
+    if (!req) return;
+    if (!req.storedFileId) {
+      setDocumentLoading(false);
+      return;
+    }
+    setDocumentLoading(true);
+    try {
+      const response = await httpRequest(`${API_URL}/admin/organizer-requests/${req.organizerPetitionId}/document`, {
+        method: 'GET',
+      });
+      const data = await response.json();
+      if (response.ok && data.data?.publicUrl) {
+        setDocumentUrl(data.data.publicUrl);
+      } else {
+        setError('No se pudo obtener la URL del documento');
+      }
+    } catch (err) {
+      setError('Error al obtener documento: ' + err.message);
+    } finally {
+      setDocumentLoading(false);
+    }
+  };
+
+  const handleViewDocument = (req) => {
+    setSelectedRequest(req);
+    setDocumentUrl(null);
+    setShowDocumentModal(true);
+    fetchDocumentUrl(req);
+  };
+
+  const handleApprove = async (req) => {
+    if (!req || req.status !== 'PENDING') return;
+    setConfirmModal({ type: 'approve', req });
+  };
+
+  const handleReject = async (req) => {
+    if (!req) return;
+    setConfirmModal({ type: 'reject', req });
+  };
+
+  const executeConfirmedAction = async () => {
+    if (!confirmModal) return;
+    const { type, req } = confirmModal;
+    setActionLoading(true);
+    setError(null);
+    try {
+      if (type === 'approve') {
+        await approveOrganizerRequest(req.organizerPetitionId);
+      } else {
+        await rejectOrganizerRequest(req.organizerPetitionId);
+      }
+      setConfirmModal(null);
+      closeDocumentModal();
+      await fetchRequests(filter);
+    } catch (err) {
+      setError(err.message || `Error al ${type === 'approve' ? 'aprobar' : 'rechazar'} solicitud`);
+      setConfirmModal(null);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleOpenDocument = () => {
+    if (documentUrl) {
+      window.open(documentUrl, '_blank');
+    }
+  };
+
+  const closeDocumentModal = () => {
+    setShowDocumentModal(false);
+    setDocumentUrl(null);
+    setSelectedRequest(null);
+  };
+
+  return (
+    <div className="min-h-screen flex bg-background text-textPrimary font-sans">
+      <AdminSidebar activePage="requests" />
+
+      {/* Main */}
+      <main className="flex-1 overflow-y-auto bg-background">
+        <div className="p-8 max-w-6xl mx-auto w-full">
+
+          {/* Page header */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-black uppercase tracking-wide text-textPrimary mb-1">
+              Solicitudes de Organizadores
+            </h1>
+            <p className="text-textSecondary text-sm leading-relaxed max-w-xl">
+              Revisa y gestiona las solicitudes enviadas por usuarios que desean crear eventos en la
+              plataforma. Verifica su documentación antes de aprobar su acceso.
+            </p>
+          </div>
+
+          {/* Filter pills */}
+          <div className="flex items-center gap-2 mb-6">
+            {filters.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setFilter(key)}
+                className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all
+                  ${filter === key
+                    ? 'bg-primary text-textPrimary'
+                    : 'bg-surfaceAlt/60 text-textSecondary hover:bg-surfaceAlt'
+                  }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Table card */}
+          <div className="rounded-xl overflow-hidden border border-surfaceAlt bg-surface">
+            {error ? (
+              <div className="p-10 text-center text-error text-sm">{error}</div>
+            ) : loading ? (
+              <div className="p-10 text-center text-textMuted text-sm">Cargando...</div>
+            ) : requests.length === 0 ? (
+              <div className="p-10 text-center text-textMuted text-sm">
+                No hay solicitudes para mostrar
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-surfaceAlt">
+                      {['Usuario','Correo','Documento','Fecha','Estado','Acciones'].map((h, i) => (
+                        <th
+                          key={i}
+                          className={`px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-primary
+                            ${i === 4 ? 'text-center' : i === 5 ? 'text-right' : ''}`}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {requests.map((req, idx) => {
+                      const { bg, label } = statusStyle(req.status);
+                      return (
+                        <tr
+                          key={req.organizerPetitionId}
+                          className={`border-b border-surfaceAlt hover:bg-surfaceAlt/20 transition-colors
+                            ${idx % 2 !== 0 ? 'bg-white/[0.02]' : ''}`}
+                        >
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-surfaceAlt overflow-hidden flex-shrink-0">
+                                {req.profilePicture
+                                  ? <img src={req.profilePicture} alt={req.fullName} className="w-full h-full object-cover" />
+                                  : <div className="w-full h-full flex items-center justify-center text-xs font-bold text-textSecondary">
+                                      {req.fullName?.charAt(0) || '?'}
+                                    </div>
+                                }
+                              </div>
+                              <span className="text-sm font-semibold text-textPrimary">{req.fullName}</span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 text-sm text-textSecondary">{req.email}</td>
+                          <td className="px-5 py-3.5">
+                            <span className="px-2.5 py-1 bg-surfaceAlt text-textSecondary rounded-full text-xs font-medium">
+                              {req.documentType || 'Cédula'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5 text-sm text-textSecondary">
+                            {req.applicationDate ? new Date(req.applicationDate).toLocaleDateString('es-CO') : '-'}
+                          </td>
+                          <td className="px-5 py-3.5 text-center">
+                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold text-white ${bg}`}>
+                              {label}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5 text-right">
+                            <button
+                              onClick={() => handleViewDocument(req)}
+                              className="p-1.5 hover:bg-primary/20 rounded-full transition-colors text-primary"
+                              title="Ver solicitud"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Pagination */}
+            <div className="px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-surfaceAlt">
+              <p className="text-xs text-textMuted">
+                Mostrando {requests.length} solicitudes
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button className="h-8 w-8 flex items-center justify-center rounded-full bg-surfaceAlt/50 text-textMuted cursor-not-allowed text-sm">‹</button>
+                <button className="h-8 w-8 flex items-center justify-center rounded-full bg-primary text-textPrimary font-bold text-xs">1</button>
+                <button className="h-8 w-8 flex items-center justify-center rounded-full bg-surfaceAlt/50 hover:bg-surfaceAlt text-textSecondary text-xs transition-colors">2</button>
+                <button className="h-8 w-8 flex items-center justify-center rounded-full bg-surfaceAlt/50 hover:bg-surfaceAlt text-textSecondary text-xs transition-colors">3</button>
+                <button className="h-8 px-3 flex items-center justify-center rounded-full bg-surfaceAlt/50 hover:bg-surfaceAlt text-textSecondary text-xs transition-colors">
+                  Siguiente ›
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Document Modal */}
+          {showDocumentModal && selectedRequest && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl shadow-black/60 max-w-lg w-full flex flex-col">
+
+                {/* Modal Header */}
+                <div className="flex items-center justify-between px-6 py-5 border-b border-surfaceAlt">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primaryDark flex items-center justify-center text-textPrimary font-bold text-sm flex-shrink-0 overflow-hidden">
+                      {selectedRequest.profilePicture
+                        ? <img src={selectedRequest.profilePicture} alt={selectedRequest.fullName} className="w-full h-full object-cover" />
+                        : selectedRequest.fullName?.charAt(0).toUpperCase() || '?'
+                      }
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-textPrimary leading-tight">{selectedRequest.fullName}</h2>
+                      <p className="text-xs text-textSecondary">{selectedRequest.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={closeDocumentModal}
+                    className="p-1.5 hover:bg-surfaceAlt rounded-full transition-colors text-textMuted hover:text-textPrimary"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Info Grid */}
+                <div className="px-6 py-4 grid grid-cols-2 gap-3">
+                  <div className="bg-surfaceAlt/50 rounded-xl p-3 border border-surfaceAlt">
+                    <p className="text-[10px] uppercase tracking-widest text-textMuted font-semibold mb-1">Tipo de documento</p>
+                    <p className="text-sm font-semibold text-textPrimary">{selectedRequest.documentType || 'Cédula'}</p>
+                  </div>
+                  <div className="bg-surfaceAlt/50 rounded-xl p-3 border border-surfaceAlt">
+                    <p className="text-[10px] uppercase tracking-widest text-textMuted font-semibold mb-1">Fecha de solicitud</p>
+                    <p className="text-sm font-semibold text-textPrimary">
+                      {selectedRequest.applicationDate
+                        ? new Date(selectedRequest.applicationDate).toLocaleDateString('es-CO')
+                        : '-'}
+                    </p>
+                  </div>
+                  <div className="bg-surfaceAlt/50 rounded-xl p-3 border border-surfaceAlt col-span-2">
+                    <p className="text-[10px] uppercase tracking-widest text-textMuted font-semibold mb-1">Estado actual</p>
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold text-white ${statusStyle(selectedRequest.status).bg}`}>
+                      {statusStyle(selectedRequest.status).label}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Document Button */}
+                <div className="px-6 pb-2">
+                  <button
+                    onClick={handleOpenDocument}
+                    disabled={!documentUrl || documentLoading}
+                    className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl border transition-all group
+                      ${documentUrl
+                        ? 'bg-primary/10 border-primary/30 hover:bg-primary/20 hover:border-primary/60 cursor-pointer'
+                        : 'bg-surfaceAlt/30 border-surfaceAlt cursor-not-allowed opacity-50'
+                      }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0
+                        ${documentUrl ? 'bg-primary/20' : 'bg-surfaceAlt/50'}`}>
+                        <svg className={`w-4 h-4 ${documentUrl ? 'text-primary' : 'text-textMuted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="text-left">
+                        <p className={`text-sm font-semibold ${documentUrl ? 'text-textPrimary' : 'text-textMuted'}`}>
+                          {documentLoading ? 'Cargando documento...' : documentUrl ? 'Ver documento adjunto' : 'Sin documento disponible'}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {documentUrl ? 'Se abrirá en una nueva pestaña' : ''}
+                        </p>
+                      </div>
+                    </div>
+                    {documentLoading && (
+                      <svg className="w-4 h-4 text-slate-500 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4z" />
+                      </svg>
+                    )}
+                    {!documentLoading && documentUrl && (
+                      <svg className="w-4 h-4 text-primary group-hover:translate-x-0.5 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+
+                {/* Actions */}
+                <div className="px-6 py-5 flex gap-3">
+                  <button
+                    onClick={() => handleApprove(selectedRequest)}
+                    disabled={selectedRequest.status !== 'PENDING' || actionLoading}
+                    className={`flex-1 py-2.5 rounded-full text-sm font-bold border transition-all
+                      ${selectedRequest.status === 'PENDING' && !actionLoading
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500 hover:text-white hover:border-emerald-500'
+                        : 'bg-emerald-500/10 text-emerald-400/60 border-emerald-500/10 cursor-not-allowed'
+                      }`}
+                  >
+                    {actionLoading ? 'Procesando...' : 'Aceptar'}
+                  </button>
+                  <button
+                    onClick={() => handleReject(selectedRequest)}
+                    disabled={selectedRequest.status !== 'PENDING' || actionLoading}
+                    className={`flex-1 py-2.5 rounded-full text-sm font-bold border transition-all
+                      ${selectedRequest.status === 'PENDING' && !actionLoading
+                        ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500 hover:text-white hover:border-rose-500'
+                        : 'bg-rose-500/10 text-rose-400/60 border-rose-500/10 cursor-not-allowed'
+                      }`}
+                  >
+                    Rechazar
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+        </div>
+      </main>
+
+      {/* ── Confirm Modal: Aprobar / Rechazar ─────────────────────────────── */}
+      <ConfirmModal
+        isOpen={!!confirmModal}
+        title={
+          confirmModal?.type === 'approve'
+            ? `¿Aprobar a ${confirmModal.req.fullName || 'este usuario'}?`
+            : `¿Rechazar a ${confirmModal?.req.fullName || 'este usuario'}?`
+        }
+        message={
+          confirmModal?.type === 'approve'
+            ? 'El usuario recibirá el rol de Organizador al iniciar sesión nuevamente.'
+            : 'El usuario podrá enviar un nuevo documento de solicitud.'
+        }
+        confirmLabel={confirmModal?.type === 'approve' ? 'Aprobar' : 'Rechazar'}
+        cancelLabel="Cancelar"
+        confirmStyle={confirmModal?.type === 'approve' ? 'primary' : 'danger'}
+        loading={actionLoading}
+        onConfirm={executeConfirmedAction}
+        onCancel={() => setConfirmModal(null)}
+      />
+    </div>
+  );
+}
