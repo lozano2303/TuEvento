@@ -2,6 +2,7 @@ package com.capysoft.tuevento.shared.infrastructure.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -24,6 +25,7 @@ import java.net.URI;
  *               external clients (e.g. mobile devices on the same network).
  */
 @Configuration
+@ConditionalOnProperty(name = "app.storage.provider", havingValue = "minio", matchIfMissing = true)
 public class S3Config {
 
     @Value("${app.storage.endpoint}")
