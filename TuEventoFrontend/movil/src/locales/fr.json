@@ -1630,5 +1630,30 @@
       "WALLET_CREDITED": "💡 Le solde est disponible immédiatement dans votre portefeuille.",
       "WELCOME": "💡 Explorez les événements et achetez des billets directement depuis l'app."
     }
+  },
+  "mobileWallet": {
+    "title": "Mon portefeuille",
+    "availableBalance": "Solde disponible",
+    "pendingPurchases": "{{amount}} en achats en attente",
+    "protectedCredit": "Crédit interne protégé",
+    "useBalance": "Utiliser le solde pour un achat",
+    "history": "Historique",
+    "movements_one": "{{count}} mouvement",
+    "movements_other": "{{count}} mouvements",
+    "noBalanceTitle": "Pas encore de solde",
+    "noBalanceText": "Votre solde de portefeuille sera généré lorsque vous recevrez un remboursement ou un crédit pour l'annulation d'un événement.",
+    "noMovements": "Aucun mouvement dans votre portefeuille pour l'instant.",
+    "loadError": "Erreur lors du chargement du portefeuille",
+    "txType": {
+      "CREDIT": "Crédit",
+      "REVERSAL": "Annulation",
+      "PAYMENT": "Achat",
+      "ADJUSTMENT": "Ajustement"
+    },
+    "txStatus": {
+      "COMPLETED": "Terminé",
+      "PENDING": "En attente",
+      "FAILED": "Échoué"
+    }
   }
 }

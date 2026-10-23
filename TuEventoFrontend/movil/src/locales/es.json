@@ -1632,5 +1632,30 @@
       "WALLET_CREDITED": "💡 El saldo está disponible inmediatamente en tu cartera.",
       "WELCOME": "💡 Explora eventos y compra tickets directamente desde la app."
     }
+  },
+  "mobileWallet": {
+    "title": "Mi Cartera",
+    "availableBalance": "Saldo disponible",
+    "pendingPurchases": "{{amount}} en compras pendientes",
+    "protectedCredit": "Crédito interno protegido",
+    "useBalance": "Usar saldo en una compra",
+    "history": "Historial",
+    "movements_one": "{{count}} movimiento",
+    "movements_other": "{{count}} movimientos",
+    "noBalanceTitle": "Aún no tienes saldo",
+    "noBalanceText": "Tu saldo de cartera se generará cuando recibas un reembolso o crédito por cancelación de evento.",
+    "noMovements": "Aún no hay movimientos en tu cartera.",
+    "loadError": "Error al cargar la cartera",
+    "txType": {
+      "CREDIT": "Crédito",
+      "REVERSAL": "Reversión",
+      "PAYMENT": "Compra",
+      "ADJUSTMENT": "Ajuste"
+    },
+    "txStatus": {
+      "COMPLETED": "Completado",
+      "PENDING": "Pendiente",
+      "FAILED": "Fallido"
+    }
   }
 }
