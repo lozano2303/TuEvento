@@ -103,9 +103,8 @@ public class EventRatingTranslatableContentHandler implements TranslatableConten
         translation.setStatus(status);
         
         // 5. Guardar
-        EventRatingTranslation saved = eventRatingTranslationRepository.save(translation);
-        log.info("=== TRANSLATION SAVED === EventRating: {}, Lang: {}, ID: {}", 
-                entityId, languageCode, saved.getTranslationId());
+        eventRatingTranslationRepository.save(translation);
+        log.info("=== TRANSLATION SAVED === EventRating: {}, Lang: {}", entityId, languageCode);
     }
 
     @Override

@@ -61,7 +61,9 @@ public class EditEventRatingService implements EditEventRatingUseCase {
 
         // ── Regla B: ventana de 2 horas ──────────────────────────────────────
         LocalDateTime now = LocalDateTime.now(clock);
-        long hoursSinceCreated = Duration.between(existing.getCreatedAt(), now).toHours();
+        // Con zona horaria: la duración es correcta aunque la zona del reloj tenga cambios de hora
+        long hoursSinceCreated = Duration.between(
+                existing.getCreatedAt().atZone(clock.getZone()), now.atZone(clock.getZone())).toHours();
         if (hoursSinceCreated >= EDIT_WINDOW_HOURS) {
             throw new BusinessException("COMMENT_EDIT_WINDOW_EXPIRED",
                     "The edit window of " + EDIT_WINDOW_HOURS
