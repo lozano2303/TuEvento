@@ -33,6 +33,16 @@ export default function Navbar() {
     }
   }, []);
 
+  // Re-read role from localStorage when admin revokes organizer role via WS
+  useEffect(() => {
+    const handleRoleChanged = () => {
+      const storedRole = localStorage.getItem('role');
+      setUserData(prev => prev ? { ...prev, role: storedRole } : prev);
+    };
+    window.addEventListener('roleChanged', handleRoleChanged);
+    return () => window.removeEventListener('roleChanged', handleRoleChanged);
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isModalOpen && !event.target.closest('.user-modal')) {
@@ -66,6 +76,9 @@ export default function Navbar() {
       getEventsByUser(userData.userId)
         .then((res) => setHasEvents((res.data?.length ?? 0) > 0))
         .catch(() => setHasEvents(false));
+    } else {
+      // Reset when role changes away from ORGANIZER
+      setHasEvents(false);
     }
   }, [userData, isOrganizer]);
 

@@ -58,6 +58,9 @@ async function refreshJwtAndUpdateRole() {
     localStorage.setItem('token', accessToken);
     localStorage.setItem('refreshToken', newRefresh);
 
+    // Notify components (Navbar, etc.) that the role changed without a full page reload
+    window.dispatchEvent(new CustomEvent('roleChanged', { detail: { role: newRole } }));
+
     return accessToken;
   } catch {
     return null;
