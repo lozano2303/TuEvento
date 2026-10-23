@@ -1828,7 +1828,23 @@
       "SUNSET": "Warm and cozy"
     },
     "official": "Official",
-    "customize": "Customize"
+    "customize": "Customize",
+    "loadError": "Error loading themes",
+    "noToken": "Authentication token not found",
+    "activateError": "Error activating the theme",
+    "subtitle": "Personalize your experience",
+    "currentTheme": "Current theme",
+    "sampleText": "Text",
+    "sampleState": "Status",
+    "customizeHint": "Tap any property to change its color. Changes apply instantly and sync with your account.",
+    "resetInfo": "You can reset each color to the theme's original value at any time.",
+    "preview": "Preview",
+    "colors": "Colors",
+    "hexManual": "Manual hex",
+    "invalidHex": "Invalid format — use #RGB or #RRGGBB",
+    "reset": "Reset",
+    "applyError": "Could not apply the color. Please try again.",
+    "resetError": "Could not reset the color. Please try again."
   },
   "mobileAuth": {
     "passwordPlaceholder": "Min. 8 characters, uppercase, number and symbol"

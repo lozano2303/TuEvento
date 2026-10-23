@@ -1828,7 +1828,23 @@
       "SUNSET": "Quente e acolhedor"
     },
     "official": "Oficial",
-    "customize": "Personalizar"
+    "customize": "Personalizar",
+    "loadError": "Erro ao carregar os temas",
+    "noToken": "Token de autenticação não encontrado",
+    "activateError": "Erro ao ativar o tema",
+    "subtitle": "Personalize sua experiência",
+    "currentTheme": "Tema atual",
+    "sampleText": "Texto",
+    "sampleState": "Status",
+    "customizeHint": "Toque em qualquer propriedade para mudar sua cor. As alterações são aplicadas na hora e sincronizadas com sua conta.",
+    "resetInfo": "Você pode restaurar cada cor ao valor original do tema a qualquer momento.",
+    "preview": "Pré-visualização",
+    "colors": "Cores",
+    "hexManual": "Hex manual",
+    "invalidHex": "Formato inválido — use #RGB ou #RRGGBB",
+    "reset": "Restaurar",
+    "applyError": "Não foi possível aplicar a cor. Tente novamente.",
+    "resetError": "Não foi possível restaurar a cor. Tente novamente."
   },
   "mobileAuth": {
     "passwordPlaceholder": "Mín. 8 caracteres, maiúscula, número e símbolo"
