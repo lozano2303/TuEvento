@@ -56,6 +56,9 @@ export default function EditProfileScreen({ navigation, route }) {
   // Biografía traducida al idioma activo (solo lectura, igual que la web)
   const [translatedBio, setTranslatedBio] = useState(null);
   const [translationGenerating, setTranslationGenerating] = useState(false);
+  // El perfil se guarda en español (idioma fuente de las traducciones): fuera de
+  // español solo se puede consultar, exista o no la traducción.
+  const editLocked = language !== "es";
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving]     = useState(false);
 
@@ -243,6 +246,7 @@ export default function EditProfileScreen({ navigation, route }) {
 
   // ── Guardar nombre + bio ────────────────────────────────────────────────────
   const handleSave = async () => {
+    if (editLocked) return;
     if (!user?.profileId) {
       showModal("error", t("common.error"), t("profile.profileNotFound"));
       return;
@@ -390,7 +394,8 @@ export default function EditProfileScreen({ navigation, route }) {
                 onChangeText={setFullName}
                 placeholder={t("profile.fullNamePlaceholder")}
                 placeholderTextColor={colors.textMuted}
-                style={styles.input}
+                editable={!editLocked}
+                style={[styles.input, editLocked && { opacity: 0.75 }]}
               />
 
               {/* Biografía */}
@@ -409,8 +414,8 @@ export default function EditProfileScreen({ navigation, route }) {
                 placeholderTextColor={colors.textMuted}
                 multiline
                 numberOfLines={3}
-                editable={!translatedBio}
-                style={[styles.input, styles.inputMultiline, !!translatedBio && { opacity: 0.75 }]}
+                editable={!editLocked}
+                style={[styles.input, styles.inputMultiline, editLocked && { opacity: 0.75 }]}
               />
               {translatedBio ? (
                 <Text style={[styles.charCount, { color: colors.accent }]}>{t("profile.biographyTranslatedAutomatically")}</Text>
@@ -427,9 +432,9 @@ export default function EditProfileScreen({ navigation, route }) {
 
               {/* Guardar */}
               <TouchableOpacity
-                style={[styles.saveBtn, (saving || !!translatedBio) && { opacity: 0.6 }]}
+                style={[styles.saveBtn, (saving || editLocked) && { opacity: 0.6 }]}
                 onPress={handleSave}
-                disabled={saving || !!translatedBio}
+                disabled={saving || editLocked}
                 activeOpacity={0.8}
               >
                 {saving
@@ -437,9 +442,9 @@ export default function EditProfileScreen({ navigation, route }) {
                   : <Text style={styles.saveBtnText}>{t("profile.saveChanges")}</Text>
                 }
               </TouchableOpacity>
-              {!!translatedBio && (
+              {editLocked && (
                 <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 10, lineHeight: 17 }}>
-                  {t("profile.cannotEditTranslated")}
+                  {t("profile.spanishOnlyEdit")}
                 </Text>
               )}
             </>
