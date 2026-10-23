@@ -1,0 +1,94 @@
+# Integración continua de TuEvento: tests del backend + análisis en SonarQube Cloud,
+# build de la web y bundle de la app móvil. Reemplaza al pipeline de Jenkins (inactivo).
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+# Cancela ejecuciones anteriores de la misma rama/PR cuando llega un push nuevo
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  backend:
+    name: Backend (tests + SonarQube)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: TuEventoBackend/tu-evento
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Sonar necesita el historial completo para blame y código nuevo
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Tests y cobertura (JaCoCo)
+        run: ./mvnw -B verify
+
+      - name: Copiar dependencias para el análisis Java
+        run: ./mvnw -B -q dependency:copy-dependencies -DincludeScope=compile
+
+      - name: Análisis SonarQube Cloud
+        # Los PRs desde forks no reciben secrets: se omite el análisis en ese caso
+        if: ${{ env.SONAR_TOKEN != '' }}
+        # Fijada por SHA: esta acción de terceros recibe el SONAR_TOKEN
+        uses: SonarSource/sonarqube-scan-action@2f77a1ec69fb1d595b06f35ab27e97605bdef703 # v5.3.2
+        with:
+          projectBaseDir: .
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  web:
+    name: Web (build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: TuEventoFrontend/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: TuEventoFrontend/web/package-lock.json
+
+      - run: npm ci
+      - run: npm run build
+
+  mobile:
+    name: Móvil (bundle Expo)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: TuEventoFrontend/movil
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: TuEventoFrontend/movil/package-lock.json
+
+      - run: npm ci
+      # Genera el bundle JS de Android: falla si hay imports rotos o errores de sintaxis
+      - run: npx expo export --platform android --output-dir dist
