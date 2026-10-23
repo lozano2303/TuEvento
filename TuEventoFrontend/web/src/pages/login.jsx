@@ -135,7 +135,7 @@ export default function Login() {
         return;
       }
 
-      (async () => {
+      void (async () => {
         try {
           const profileResult = await getProfileByUserId(userID);
           if (profileResult.success && profileResult.data?.fullName) {

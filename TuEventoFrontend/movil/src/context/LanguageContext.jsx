@@ -37,7 +37,7 @@ export function LanguageProvider({ children }) {
 
   // 1. Aplicar idioma persistido al arrancar.
   useEffect(() => {
-    (async () => {
+    void (async () => {
       await bootstrapLanguage();
       setLanguage(i18n.language);
       setReady(true);
@@ -46,7 +46,7 @@ export function LanguageProvider({ children }) {
 
   // Cargar catálogo de idiomas activos (para mapear id <-> code).
   useEffect(() => {
-    (async () => {
+    void (async () => {
       try {
         setLanguages(await getActiveLanguages());
       } catch {
@@ -58,7 +58,7 @@ export function LanguageProvider({ children }) {
   // 2. Sincronizar con el idioma preferido del perfil cuando hay sesión.
   useEffect(() => {
     if (!user?.userId) return;
-    (async () => {
+    void (async () => {
       try {
         const token = await AsyncStorage.getItem('accessToken');
         if (!token) return;

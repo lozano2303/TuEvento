@@ -177,7 +177,7 @@ export default function EditorToolbar({
             </pre>
             <div className="px-4 py-3 border-t border-surfaceAlt flex justify-end gap-2">
               <button
-                onClick={() => { navigator.clipboard.writeText(layoutJson); }}
+                onClick={() => { navigator.clipboard.writeText(layoutJson).catch(err => console.error('No se pudo copiar el JSON:', err)); }}
                 className="text-xs px-3 py-1.5 rounded-lg bg-surfaceAlt text-textSecondary hover:text-textPrimary transition-colors"
               >
                 Copiar

@@ -65,7 +65,7 @@ export function ThemeProvider({ children }) {
         }
       }
     };
-    loadTheme();
+    void loadTheme();
   }, [user]);
 
   // ── Al arrancar: cargar mapa nombre → id numérico del backend para applyTheme ──
@@ -82,7 +82,7 @@ export function ThemeProvider({ children }) {
         // silencioso
       }
     };
-    loadBackendMap();
+    void loadBackendMap();
   }, []);
 
   // ── Polling cada 30 segundos — sincroniza paleta resuelta con el backend ──

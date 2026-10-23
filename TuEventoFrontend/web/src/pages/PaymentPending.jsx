@@ -144,7 +144,7 @@ export default function PaymentPending() {
       }
     };
 
-    poll();
+    void poll();
     intervalRef.current = setInterval(poll, POLL_INTERVAL_MS);
     return () => stopPolling();
   }, [paymentId, navigate, stopPolling, loadTickets, openPopup]);

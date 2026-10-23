@@ -68,7 +68,7 @@ export default function AdminCategoryTranslations() {
   }, [lang, navigate]);
 
   useEffect(() => {
-    loadCategories();
+    void loadCategories();
   }, [lang, filter]);
 
   // Polling para verificar si hay traducciones generándose

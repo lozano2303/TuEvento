@@ -70,7 +70,7 @@ export default function HomeScreen() {
         setAvatarLoading(false);
       }
     };
-    loadAvatar();
+    void loadAvatar();
   }, [user?.storedFileId]);
 
   // Cargar eventos próximos
@@ -110,7 +110,7 @@ export default function HomeScreen() {
         setEventsLoading(false);
       }
     };
-    loadUpcomingEvents();
+    void loadUpcomingEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
 

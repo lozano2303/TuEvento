@@ -24,7 +24,7 @@ export default function AdminSectionTypeManagement() {
   });
 
   useEffect(() => {
-    fetchSectionTypes();
+    void fetchSectionTypes();
   }, []);
 
   const fetchSectionTypes = async () => {
