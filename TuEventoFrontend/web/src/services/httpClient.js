@@ -75,7 +75,7 @@ export async function performLogout() {
  * Retorna el nuevo access token en éxito.
  * Lanza un error en cualquier otro caso (el caller hará logout).
  */
-async function refreshAccessToken() {
+export async function refreshAccessToken() {
   // Si ya hay un refresh en vuelo, encolar en esa misma promesa
   if (refreshPromise) return refreshPromise;
 
