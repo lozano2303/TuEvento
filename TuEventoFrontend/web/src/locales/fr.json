@@ -527,6 +527,7 @@
     },
     "biographyTranslatedAutomatically": "Biographie traduite automatiquement",
     "cannotEditTranslated": "Vous ne pouvez pas modifier une biographie traduite. Changez la langue en espagnol pour la modifier.",
+    "spanishOnlyEdit": "Votre profil est enregistré en espagnol et traduit automatiquement. Passez la langue en espagnol pour le modifier.",
     "fullNamePlaceholder": "Votre nom complet",
     "loadingLanguages": "Chargement des langues…",
     "languageUpdated": "Langue mise à jour avec succès",
@@ -794,6 +795,30 @@
     "errors": {
       "selectDocument": "Sélectionnez un document",
       "submitError": "Erreur lors de l'envoi de la demande"
+    },
+    "welcome": {
+      "title": "Vous êtes maintenant organisateur !",
+      "subtitle": "Votre demande a été approuvée. Vous avez désormais accès à ces fonctionnalités :",
+      "createFirst": "Créer mon premier événement",
+      "later": "Compris",
+      "features": {
+        "createEvents": {
+          "title": "Créer des événements",
+          "desc": "Concevez le lieu, configurez les sections et les sièges, puis publiez vos événements."
+        },
+        "manageEvents": {
+          "title": "Gérer vos événements",
+          "desc": "Modifiez, soumettez à validation et suivez le statut de chaque événement."
+        },
+        "earnings": {
+          "title": "Voir vos revenus",
+          "desc": "Consultez les ventes et les revenus de vos événements."
+        },
+        "scanTickets": {
+          "title": "Valider les billets",
+          "desc": "Scannez les QR codes des participants depuis l’application mobile."
+        }
+      }
     }
   },
   "checkout": {

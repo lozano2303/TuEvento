@@ -4,8 +4,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
+import LanguageSelector from "../components/LanguageSelector";
 import ScreenLayout from "../components/ScreenLayout";
 import { darkColors } from "../theme/colors";
 
@@ -16,6 +18,7 @@ export default function ResetPasswordScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const route = useRoute();
+  const { t } = useTranslation();
   const palette = darkColors;
   const email = route.params?.email || "";
   const [form, setForm] = useState({ code: "", newPassword: "", confirmPassword: "" });
@@ -34,15 +37,15 @@ export default function ResetPasswordScreen() {
 
   const validate = () => {
     const e = {};
-    if (!form.code.trim()) e.code = "El código de recuperación es requerido";
-    else if (form.code.trim().length !== 8) e.code = "El código debe tener exactamente 8 caracteres";
+    if (!form.code.trim()) e.code = t("forgotPassword.validation.codeRequired");
+    else if (form.code.trim().length !== 8) e.code = t("mobileActivate.codeLength");
 
-    if (!form.newPassword) e.newPassword = "La contraseña es requerida";
-    else if (!PASSWORD_PATTERN.test(form.newPassword)) e.newPassword = "Debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial";
-    else if (form.newPassword.length > 100) e.newPassword = "La contraseña no puede superar los 100 caracteres";
+    if (!form.newPassword) e.newPassword = t("forgotPassword.validation.passwordRequired");
+    else if (!PASSWORD_PATTERN.test(form.newPassword)) e.newPassword = t("forgotPassword.validation.passwordWeak");
+    else if (form.newPassword.length > 100) e.newPassword = t("login.validation.passwordMax");
 
-    if (!form.confirmPassword) e.confirmPassword = "Confirma tu contraseña";
-    else if (form.newPassword !== form.confirmPassword) e.confirmPassword = "Las contraseñas no coinciden";
+    if (!form.confirmPassword) e.confirmPassword = t("forgotPassword.validation.confirmRequired");
+    else if (form.newPassword !== form.confirmPassword) e.confirmPassword = t("forgotPassword.validation.passwordsNoMatch");
 
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -83,13 +86,13 @@ export default function ResetPasswordScreen() {
         <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: palette.successBg, alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
           <Ionicons name="checkmark-circle" size={48} color={palette.success} />
         </View>
-        <Text style={{ color: palette.textPrimary, fontSize: 24, fontWeight: "800", marginBottom: 12 }}>¡Contraseña restablecida!</Text>
+        <Text style={{ color: palette.textPrimary, fontSize: 24, fontWeight: "800", marginBottom: 12 }}>{t("forgotPassword.success.title")}</Text>
         <Text style={{ color: palette.textSecondary, fontSize: 14, textAlign: "center", lineHeight: 22, marginBottom: 32 }}>
-          Tu contraseña fue actualizada exitosamente. Ya puedes iniciar sesión.
+          {t("forgotPassword.success.message")}
         </Text>
         <TouchableOpacity onPress={() => navigation.navigate("Login")} activeOpacity={0.85} style={{ borderRadius: 14, overflow: "hidden", width: "100%" }}>
           <LinearGradient colors={palette.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: "center" }}>
-            <Text style={{ color: palette.textPrimary, fontSize: 16, fontWeight: "700" }}>Ir al inicio de sesión</Text>
+            <Text style={{ color: palette.textPrimary, fontSize: 16, fontWeight: "700" }}>{t("forgotPassword.success.goToLogin")}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -114,10 +117,10 @@ export default function ResetPasswordScreen() {
           <BackButton style={{ marginBottom: 0 }} />
           <View style={{ flex: 1, alignItems: "center" }}>
             <Text style={{ color: palette.textPrimary, fontSize: 26, fontWeight: "800" }}>
-              Nueva contraseña
+              {t("forgotPassword.newPassword")}
             </Text>
           </View>
-          <View style={{ width: 40 }} />
+          <LanguageSelector />
         </View>
 
         {/* Header */}
@@ -126,16 +129,16 @@ export default function ResetPasswordScreen() {
             <Ionicons name="key-outline" size={32} color={palette.primary} />
           </View>
           <Text style={{ color: palette.textSecondary, fontSize: 14, textAlign: "center", lineHeight: 22 }}>
-            Ingresa el código que enviamos a{"\n"}
+            {t("forgotPassword.enterCodeDesc")}{"\n"}
             <Text style={{ color: palette.accent, fontWeight: "600" }}>{email}</Text>
           </Text>
         </View>
 
         {/* Código */}
-        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginBottom: 8 }}>Código de verificación</Text>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginBottom: 8 }}>{t("forgotPassword.verificationCode")}</Text>
         <View style={inputStyle("code")}>
           <TextInput
-            placeholder="Código de 8 caracteres"
+            placeholder={t("mobileActivate.codePlaceholder")}
             placeholderTextColor={palette.textMuted}
             value={form.code}
             onChangeText={(t) => update("code", t)}
@@ -146,10 +149,10 @@ export default function ResetPasswordScreen() {
         {errors.code && <Text style={{ color: palette.error, fontSize: 13, marginTop: 4 }}>{errors.code}</Text>}
 
         {/* Nueva contraseña */}
-        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>Nueva contraseña</Text>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>{t("forgotPassword.newPassword")}</Text>
         <View style={[inputStyle("newPassword"), { flexDirection: "row", alignItems: "center" }]}>
           <TextInput
-            placeholder="Mín. 8 chars, mayúscula, número y símbolo"
+            placeholder={t("mobileAuth.passwordPlaceholder")}
             placeholderTextColor={palette.textMuted}
             value={form.newPassword}
             onChangeText={(t) => update("newPassword", t)}
@@ -163,10 +166,10 @@ export default function ResetPasswordScreen() {
         {errors.newPassword && <Text style={{ color: palette.error, fontSize: 13, marginTop: 4 }}>{errors.newPassword}</Text>}
 
         {/* Confirmar contraseña */}
-        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>Confirmar contraseña</Text>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>{t("forgotPassword.confirmPassword")}</Text>
         <View style={[inputStyle("confirmPassword"), { flexDirection: "row", alignItems: "center" }]}>
           <TextInput
-            placeholder="Repite tu nueva contraseña"
+            placeholder={t("forgotPassword.confirmPassword")}
             placeholderTextColor={palette.textMuted}
             value={form.confirmPassword}
             onChangeText={(t) => update("confirmPassword", t)}
@@ -195,7 +198,7 @@ export default function ResetPasswordScreen() {
         >
           <LinearGradient colors={palette.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: "center" }}>
             <Text style={{ color: palette.textPrimary, fontSize: 16, fontWeight: "700" }}>
-              {loading ? "Restableciendo..." : "Restablecer contraseña"}
+              {loading ? t("forgotPassword.resetting") : t("forgotPassword.resetPassword")}
             </Text>
           </LinearGradient>
         </TouchableOpacity>

@@ -89,7 +89,7 @@ class TranslationServiceTest {
             List<TranslationJob> jobList = (List<TranslationJob>) jobs;
             return jobList.size() == 1 && 
                    jobList.get(0).getEntityType().equals(entityType) &&
-                   jobList.get(0).getEntityId().equals(entityId) &&
+                   jobList.get(0).getEntityId().equals(entityId.intValue()) && // entityId del job es Integer
                    jobList.get(0).getStatus() == TranslationJobStatus.PENDING;
         }));
     }

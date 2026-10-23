@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb;AUTO_SERVER=TRUE
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;NON_KEYWORDS=ROW,VALUE,USER,KEY,YEAR,MONTH,DAY
     username: sa
     password:
     driver-class-name: org.h2.Driver
@@ -16,7 +16,7 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
       - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
-      - org.springframework.session.data.redis.config.annotation.web.http.RedisHttpSessionConfiguration
+      - org.springframework.boot.autoconfigure.session.SessionAutoConfiguration
       - org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
 
 app:
@@ -30,11 +30,18 @@ app:
     allowed-origins: "http://localhost:3000"
   storage:
     enabled: false
+    # Valores ficticios: S3Config solo construye el cliente, no se conecta al arrancar
+    endpoint: http://localhost:9000
+    access-key: test
+    secret-key: test
+    region: us-east-1
+    bucket-default: tuevento
   admin:
     email: admin@test.com
     password: admin123
     alias: admin
   oauth:
+    allowed-frontend-redirect-uris: "http://localhost:3000/login"
     google:
       client-id: test
       client-secret: test
@@ -49,8 +56,32 @@ app:
       auth-uri: https://www.facebook.com/v18.0/dialog/oauth
       token-uri: https://graph.facebook.com/v18.0/oauth/access_token
       profile-uri: https://graph.facebook.com/me
+  google:
+    client-id: test
   profile:
     default-avatar-stored-file-id: 1
 
 server:
   port: 0
+# Valores ficticios para que el contexto arranque sin servicios externos
+moderation:
+  nsfw:
+    url: http://localhost:8001
+    threshold: 0.4
+  sightengine:
+    api-user: test
+    api-secret: test
+    models: gore,nudity,weapon
+    threshold: 0.4
+    nudity-threshold: 0.15
+
+payment:
+  gateway: fake
+  fake-gateway:
+    url: http://localhost:4001
+  webhook:
+    secret: test-webhook-secret
+
+notification:
+  email:
+    enabled: false

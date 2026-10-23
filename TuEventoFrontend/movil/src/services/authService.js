@@ -29,6 +29,20 @@ export const authService = {
     return json.data;
   },
 
+  // Login con Google: envía el id_token nativo al backend (POST /auth/google),
+  // el mismo endpoint que usa la web con GSI.
+  async googleLogin(idToken) {
+    const res = await fetch(`${BASE_URL}/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) throw new Error(json.message || "OAuth login failed");
+    // json.data shape: { accessToken, refreshToken, userId, alias, role, needsOnboarding, profileId }
+    return json.data;
+  },
+
   async register(fullName, email, password) {
     const res = await fetch(`${BASE_URL}/register`, {
       method: "POST",
@@ -48,6 +62,18 @@ export const authService = {
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.message);
+    return json.data;
+  },
+
+  // Reenvía el código de activación al correo (POST /auth/resend-activation).
+  async resendActivation(email) {
+    const res = await fetch(`${BASE_URL}/resend-activation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success) throw new Error(json.message || "No se pudo reenviar el código");
     return json.data;
   },
 

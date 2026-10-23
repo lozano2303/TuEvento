@@ -7,12 +7,58 @@ import {
   markAllAsRead 
 } from '../services/NotificationService';
 import { useTokenRefresh } from '../hooks/useTokenRefresh';
+import { refreshAccessToken } from '../services/httpClient';
+import { ORGANIZER_WELCOME_KEY } from '../components/common/OrganizerWelcomeModal';
 
 const NotificationContext = createContext(null);
 
-const WS_BASE_URL = import.meta.env.VITE_API_URL 
+const WS_BASE_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace('/api/v1', '')
   : 'http://localhost:8080';
+
+// Notificaciones que indican que el admin cambió el estado de un evento del organizador.
+// Al recibirlas se recarga la página para leer el estado real desde el backend.
+const EVENT_STATUS_NOTIFICATION_TYPES = ['EVENT_PUBLISHED', 'EVENT_REJECTED'];
+
+/** Extrae el claim "role" del payload de un JWT (base64url), o null si no se puede leer. */
+function decodeJwtRole(token) {
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(payload)).role ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * ROLE_UPDATED (p. ej. solicitud de organizador aprobada): renueva el JWT para
+ * obtener el rol nuevo desde la BD, lo guarda y lleva al inicio con recarga completa.
+ * Si el rol nuevo es ORGANIZER, deja marcado el modal de bienvenida (OrganizerWelcomeModal).
+ */
+async function handleSessionEvent(event) {
+  if (event?.type !== 'ROLE_UPDATED') return;
+  try {
+    const newToken = await refreshAccessToken();
+    const role = decodeJwtRole(newToken);
+    if (role) localStorage.setItem('role', role);
+    if (role === 'ORGANIZER') sessionStorage.setItem(ORGANIZER_WELCOME_KEY, 'true');
+  } catch {
+    // Si el refresh falla, la recarga deja que httpClient gestione la sesión.
+  }
+  window.location.href = '/';
+}
+
+/** Suscribe el canal de eventos de sesión del usuario: /topic/users/{userId}/session */
+function subscribeSessionEvents(client, userId, subscriptionsRef) {
+  const sub = client.subscribe(`/topic/users/${userId}/session`, (message) => {
+    try {
+      handleSessionEvent(JSON.parse(message.body));
+    } catch (err) {
+      // Error parsing session event
+    }
+  });
+  subscriptionsRef.current.set('session', sub);
+}
 
 /**
  * Provider de notificaciones que mantiene UN SOLO WebSocket centralizado.
@@ -255,6 +301,9 @@ export function NotificationProvider({ children }) {
     const handleNewNotification = (notification) => {
       setNotifications(prev => [notification, ...prev]);
       setUnreadCount(prev => prev + 1);
+      if (EVENT_STATUS_NOTIFICATION_TYPES.includes(notification.type)) {
+        window.location.reload();
+      }
     };
 
     const client = new Client({
@@ -273,6 +322,8 @@ export function NotificationProvider({ children }) {
         });
 
         subscriptionsRef.current.set('notifications', notifSubscription);
+
+        subscribeSessionEvents(client, userId, subscriptionsRef);
       },
 
       onStompError: (frame) => {
@@ -324,6 +375,9 @@ export function NotificationProvider({ children }) {
     const handleNewNotification = (notification) => {
       setNotifications(prev => [notification, ...prev]);
       setUnreadCount(prev => prev + 1);
+      if (EVENT_STATUS_NOTIFICATION_TYPES.includes(notification.type)) {
+        window.location.reload();
+      }
     };
 
     // Crear cliente WebSocket centralizado
@@ -346,6 +400,8 @@ export function NotificationProvider({ children }) {
         });
 
         subscriptionsRef.current.set('notifications', notifSubscription);
+
+        subscribeSessionEvents(client, userId, subscriptionsRef);
       },
 
       onStompError: (frame) => {

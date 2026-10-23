@@ -17,8 +17,10 @@ import com.capysoft.tuevento.modules.payment.domain.model.RefundStatus;
 import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
 import com.capysoft.tuevento.modules.security.application.dto.response.ActivityItemResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminDashboardStatsResponse;
+import com.capysoft.tuevento.modules.security.application.dto.response.AdminPendingCountsResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerRequestResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.ApproveOrganizerRequestPort;
+import com.capysoft.tuevento.modules.security.application.port.in.GetAdminPendingCountsPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizerRequestsPort;
 import com.capysoft.tuevento.modules.security.application.port.in.RejectOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
@@ -58,6 +60,7 @@ public class AdminController {
     private final GetOrganizerRequestsPort    getOrganizerRequestsPort;
     private final ApproveOrganizerRequestPort approveOrganizerRequestPort;
     private final RejectOrganizerRequestPort  rejectOrganizerRequestPort;
+    private final GetAdminPendingCountsPort   getAdminPendingCountsPort;
     private final GeneratePublicUrlPort       generatePublicUrlPort;
     private final OrganizerPetitionRepository organizerPetitionRepository;
 
@@ -107,6 +110,13 @@ public class AdminController {
                 .processedRefunds(refundJpaRepository.countByStatus(RefundStatus.PROCESSED))
                 .build();
         return ResponseEntity.ok(ApiResponse.ok("Dashboard stats retrieved", stats));
+    }
+
+    @Operation(summary = "Get counts of items awaiting admin action (organizer requests and events in review). "
+            + "Live updates are pushed to /topic/admin/pending-counts")
+    @GetMapping("/pending-counts")
+    public ResponseEntity<ApiResponse<AdminPendingCountsResponse>> getPendingCounts() {
+        return ResponseEntity.ok(ApiResponse.ok("Pending counts retrieved", getAdminPendingCountsPort.getCounts()));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
