@@ -1706,5 +1706,20 @@
     "errorText": "Ocurrió un error al procesar el pago. Podés intentarlo nuevamente.",
     "retry": "Reintentar",
     "backToEvents": "Volver a eventos"
+  },
+  "mobileActivate": {
+    "title": "Activa tu cuenta",
+    "sentToLabel": "Enviamos un código a:",
+    "codeLabel": "Código de activación",
+    "codePlaceholder": "Ingresa el código",
+    "activating": "Verificando...",
+    "activateButton": "Activar cuenta",
+    "resentMsg": "Te enviamos un nuevo código a tu correo.",
+    "notReceived": "¿No recibiste el código?",
+    "sending": "Enviando…",
+    "resend": "Reenviar código",
+    "resendIn": "Reenviar en {{seconds}}s",
+    "codeRequired": "El código es requerido",
+    "codeLength": "El código debe tener exactamente 8 caracteres"
   }
 }

@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { authService } from "../services/authService";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
@@ -16,6 +17,7 @@ export default function ActivateScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const route = useRoute();
+  const { t } = useTranslation();
   const palette = darkColors;
   const email = route.params?.email || "";
   const [code, setCode] = useState("");
@@ -42,8 +44,8 @@ export default function ActivateScreen() {
   };
 
   const handleActivate = async () => {
-    if (!code.trim()) { setError("El código es requerido"); return; }
-    if (code.trim().length !== 8) { setError("El código debe tener exactamente 8 caracteres"); return; }
+    if (!code.trim()) { setError(t("mobileActivate.codeRequired")); return; }
+    if (code.trim().length !== 8) { setError(t("mobileActivate.codeLength")); return; }
     setLoading(true);
     setError(null);
     try {
@@ -63,7 +65,7 @@ export default function ActivateScreen() {
     setError(null);
     try {
       await authService.resendActivation(email);
-      setResendMsg("Te enviamos un nuevo código a tu correo.");
+      setResendMsg(t("mobileActivate.resentMsg"));
       startCooldown();
     } catch (e) {
       setError(mapErrorMessage(e.message));
@@ -79,7 +81,7 @@ export default function ActivateScreen() {
           <BackButton style={{ marginBottom: 0 }} />
           <View style={{ flex: 1, alignItems: "center" }}>
             <Text style={{ color: palette.textPrimary, fontSize: 26, fontWeight: "800" }}>
-              Activa tu cuenta
+              {t("mobileActivate.title")}
             </Text>
           </View>
           <View style={{ width: 40 }} />
@@ -87,13 +89,13 @@ export default function ActivateScreen() {
 
         <Ionicons name="mail-outline" size={48} color={palette.primary} style={{ marginBottom: 20 }} />
 
-        <Text style={{ color: palette.textSecondary, fontSize: 14, marginBottom: 8 }}>Enviamos un código a:</Text>
+        <Text style={{ color: palette.textSecondary, fontSize: 14, marginBottom: 8 }}>{t("mobileActivate.sentToLabel")}</Text>
         <Text style={{ color: palette.accent, fontSize: 15, fontWeight: "600", marginBottom: 32 }}>{email}</Text>
 
-        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginBottom: 8 }}>Código de activación</Text>
+        <Text style={{ color: palette.textPrimary, fontWeight: "600", marginBottom: 8 }}>{t("mobileActivate.codeLabel")}</Text>
         <View style={{ backgroundColor: palette.surface, borderRadius: 12, borderWidth: error ? 1 : 0, borderColor: palette.error }}>
           <TextInput
-            placeholder="Ingresa el código"
+            placeholder={t("mobileActivate.codePlaceholder")}
             placeholderTextColor={palette.textMuted}
             value={code}
             onChangeText={setCode}
@@ -115,7 +117,7 @@ export default function ActivateScreen() {
         >
           <LinearGradient colors={palette.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ paddingVertical: 16, alignItems: "center" }}>
             <Text style={{ color: palette.textPrimary, fontSize: 16, fontWeight: "700" }}>
-              {loading ? "Verificando..." : "Activar cuenta"}
+              {loading ? t("mobileActivate.activating") : t("mobileActivate.activateButton")}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -130,7 +132,7 @@ export default function ActivateScreen() {
 
         {/* Reenviar código */}
         <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: resendMsg ? 16 : 28, gap: 6 }}>
-          <Text style={{ color: palette.textSecondary, fontSize: 13 }}>¿No recibiste el código?</Text>
+          <Text style={{ color: palette.textSecondary, fontSize: 13 }}>{t("mobileActivate.notReceived")}</Text>
           <TouchableOpacity
             onPress={handleResend}
             disabled={resendLoading || cooldown > 0}
@@ -139,11 +141,11 @@ export default function ActivateScreen() {
             {resendLoading ? (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
                 <ActivityIndicator size="small" color={palette.accent} />
-                <Text style={{ color: palette.accent, fontSize: 13, fontWeight: "700" }}>Enviando…</Text>
+                <Text style={{ color: palette.accent, fontSize: 13, fontWeight: "700" }}>{t("mobileActivate.sending")}</Text>
               </View>
             ) : (
               <Text style={{ color: cooldown > 0 ? palette.textMuted : palette.accent, fontSize: 13, fontWeight: "700" }}>
-                {cooldown > 0 ? `Reenviar en ${cooldown}s` : "Reenviar código"}
+                {cooldown > 0 ? t("mobileActivate.resendIn", { seconds: cooldown }) : t("mobileActivate.resend")}
               </Text>
             )}
           </TouchableOpacity>
