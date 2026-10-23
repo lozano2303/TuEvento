@@ -51,10 +51,14 @@ services:
 
       # ── Base de datos (referencia interna a tuevento-db) ───
       # fromDatabase inyecta la URL de conexión automáticamente
-      - key: SPRING_DATASOURCE_URL
+      # Render la da en formato postgres:// — Spring necesita jdbc:postgresql://
+      - key: DATABASE_URL_JDBC
         fromDatabase:
           name: tuevento-db
           property: connectionString
+        # IMPORTANTE: después de aplicar el Blueprint, ir a
+        # tuevento-backend → Environment y cambiar el valor de DATABASE_URL_JDBC
+        # reemplazando "postgres://" por "jdbc:postgresql://"
 
       # Render incluye user y password en la connectionString,
       # pero Spring Boot los necesita separados:
