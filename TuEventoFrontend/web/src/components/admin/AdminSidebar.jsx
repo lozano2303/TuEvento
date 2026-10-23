@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, 
   Users, LogOut, Settings, ChevronDown, Layers, Languages,
-  FileText, Globe
+  FileText, Globe, ShieldCheck
 } from 'lucide-react';
 import { performLogout } from '../../services/httpClient';
 import { useNavigate } from 'react-router-dom';
@@ -68,6 +68,12 @@ export default function AdminSidebar({ activePage }) {
       icon: Users, 
       label: 'Solicitudes', 
       href: '/admin-panel' 
+    },
+    {
+      id: 'organizer-management',
+      icon: ShieldCheck,
+      label: 'Organizadores',
+      href: '/admin-organizers'
     },
     { 
       id: 'categories', 
