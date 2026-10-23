@@ -867,7 +867,13 @@
     "deleteCommentTitle": "Excluir este comentário?",
     "deleteCommentMessage": "Uma vez excluído não há volta — o comentário e suas respostas desaparecerão para sempre. Continuar?",
     "yesDelete": "Sim, excluir",
-    "noCancel": "Não, cancelar"
+    "noCancel": "Não, cancelar",
+    "title": "Detalhe do evento",
+    "loading": "Carregando evento…",
+    "errorTitle": "Erro ao carregar",
+    "notFound": "Evento não encontrado",
+    "availability": "Disponibilidade",
+    "gallery": "Galeria"
   },
   "paymentApproved": {
     "title": "Pagamento aprovado!",

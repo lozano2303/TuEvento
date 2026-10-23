@@ -869,7 +869,13 @@
     "deleteCommentTitle": "Delete this comment?",
     "deleteCommentMessage": "Once deleted there's no going back — the comment and its replies will disappear forever. Continue?",
     "yesDelete": "Yes, delete",
-    "noCancel": "No, cancel"
+    "noCancel": "No, cancel",
+    "title": "Event detail",
+    "loading": "Loading event…",
+    "errorTitle": "Loading error",
+    "notFound": "Event not found",
+    "availability": "Availability",
+    "gallery": "Gallery"
   },
   "paymentApproved": {
     "title": "Payment approved!",
