@@ -21,7 +21,10 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { uploadFile, getFileUrl } from "../services/storageService";
 import { profileService } from "../services/profileService";
+import { getActiveLanguages } from "../services/languageService";
+import { changeUILanguage } from "../i18n";
 import AppModal from "../components/AppModal";
+import { LANGUAGES } from "../components/LanguageSelector";
 import { mapErrorMessage } from "../utils/errorMessages";
 
 const MAX_BIO = 255;
@@ -31,7 +34,7 @@ export default function EditProfileScreen({ navigation, route }) {
   const { user, setUser, logout, setShowLogoutModal } = useAuth();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const { language } = useLanguage();
+  const { language, languages } = useLanguage();
 
   // ── Estado de desactivación de cuenta ──────────────────────────────────────
   const [deactivateOpen, setDeactivateOpen] = useState(false);
@@ -55,6 +58,14 @@ export default function EditProfileScreen({ navigation, route }) {
   const [translationGenerating, setTranslationGenerating] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [saving, setSaving]     = useState(false);
+
+  // ── Estado idioma preferido (se aplica al guardar, igual que la web) ────────
+  const [selectedLanguage, setSelectedLanguage] = useState(language);
+  const [savingLanguage, setSavingLanguage]     = useState(false);
+  const [languageSaveResult, setLanguageSaveResult] = useState(null); // "success" | "error"
+
+  // Si el idioma activo cambia (p. ej. sincronización con el perfil), seguirlo.
+  useEffect(() => { setSelectedLanguage(language); }, [language]);
 
   // ── Estado del modal ───────────────────────────────────────────────────────
   const [modal, setModal] = useState({
@@ -253,6 +264,27 @@ export default function EditProfileScreen({ navigation, route }) {
     }
   };
 
+  // ── Guardar idioma preferido ────────────────────────────────────────────────
+  // Persiste en el perfil y luego cambia la UI (el mensaje se traduce al nuevo idioma).
+  const handleSaveLanguage = async () => {
+    if (!user?.profileId || selectedLanguage === language) return;
+    setSavingLanguage(true);
+    setLanguageSaveResult(null);
+    try {
+      const list = languages.length ? languages : await getActiveLanguages();
+      const match = list.find((l) => l.code === selectedLanguage);
+      if (!match) throw new Error("Language not found");
+      const token = await AsyncStorage.getItem("accessToken");
+      await profileService.updateProfile(user.profileId, { preferredLanguageId: match.languageId }, token);
+      await changeUILanguage(selectedLanguage);
+      setLanguageSaveResult("success");
+    } catch {
+      setLanguageSaveResult("error");
+    } finally {
+      setSavingLanguage(false);
+    }
+  };
+
   // ── Cerrar sesión ───────────────────────────────────────────────────────────
   const handleLogout = () => {
     // Reutiliza el modal global de logout gestionado por AppNavigator
@@ -411,6 +443,102 @@ export default function EditProfileScreen({ navigation, route }) {
                 </Text>
               )}
             </>
+          )}
+        </View>
+
+        {/* ── Idioma preferido ── */}
+        <View style={styles.section}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <Ionicons name="language-outline" size={17} color={colors.primary} />
+            <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "700" }}>
+              {t("profile.languagePreferred")}
+            </Text>
+          </View>
+
+          <View style={{ gap: 8 }}>
+            {LANGUAGES.map((lng) => {
+              const isSelected = selectedLanguage === lng.code;
+              return (
+                <TouchableOpacity
+                  key={lng.code}
+                  onPress={() => { setSelectedLanguage(lng.code); setLanguageSaveResult(null); }}
+                  disabled={savingLanguage}
+                  activeOpacity={0.75}
+                  style={{
+                    flexDirection: "row", alignItems: "center", gap: 10,
+                    paddingHorizontal: 14, paddingVertical: 11, borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: isSelected ? colors.primary + "66" : colors.surfaceAlt,
+                    backgroundColor: isSelected ? colors.primary + "1A" : colors.background,
+                    opacity: savingLanguage ? 0.5 : 1,
+                  }}
+                >
+                  <Text style={{ fontSize: 18 }}>{lng.flag}</Text>
+                  <Text style={{
+                    flex: 1, fontSize: 14, fontWeight: "500",
+                    color: isSelected ? colors.textPrimary : colors.textSecondary,
+                  }}>
+                    {lng.label} ({lng.code.toUpperCase()})
+                  </Text>
+                  {/* Radio */}
+                  <View style={{
+                    width: 16, height: 16, borderRadius: 8, borderWidth: 2,
+                    borderColor: isSelected ? colors.primary : colors.surfaceAlt,
+                    backgroundColor: isSelected ? colors.primary : "transparent",
+                    alignItems: "center", justifyContent: "center",
+                  }}>
+                    {isSelected && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textPrimary }} />}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Cambios sin guardar */}
+          {selectedLanguage !== language && !languageSaveResult && (
+            <View style={{
+              flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 12,
+              paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10,
+              backgroundColor: colors.accent + "1A", borderWidth: 1, borderColor: colors.accent + "4D",
+            }}>
+              <Ionicons name="information-circle" size={15} color={colors.accent} />
+              <Text style={{ color: colors.accent, fontSize: 12, flex: 1 }}>{t("profile.themeSection.unsavedChanges")}</Text>
+            </View>
+          )}
+
+          {/* Resultado del guardado */}
+          {languageSaveResult && (
+            <View style={{
+              flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12,
+              paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10,
+              backgroundColor: (languageSaveResult === "success" ? colors.success : colors.error) + "1A",
+              borderWidth: 1,
+              borderColor: (languageSaveResult === "success" ? colors.success : colors.error) + "4D",
+            }}>
+              <Ionicons
+                name={languageSaveResult === "success" ? "checkmark-circle" : "alert-circle"}
+                size={15}
+                color={languageSaveResult === "success" ? colors.success : colors.error}
+              />
+              <Text style={{ color: languageSaveResult === "success" ? colors.success : colors.error, fontSize: 12, flex: 1 }}>
+                {languageSaveResult === "success" ? t("profile.languageUpdated") : t("profile.languageUpdateError")}
+              </Text>
+            </View>
+          )}
+
+          {/* Guardar idioma */}
+          {selectedLanguage !== language && (
+            <TouchableOpacity
+              style={[styles.saveBtn, savingLanguage && { opacity: 0.6 }]}
+              onPress={handleSaveLanguage}
+              disabled={savingLanguage}
+              activeOpacity={0.8}
+            >
+              {savingLanguage
+                ? <ActivityIndicator color={colors.textPrimary} size="small" />
+                : <Text style={styles.saveBtnText}>{t("profile.themeSection.saveLanguage")}</Text>
+              }
+            </TouchableOpacity>
           )}
         </View>
 
