@@ -1803,7 +1803,8 @@
       "invalidField": "Campo inválido: {{field}}"
     },
     "oauthCancelled": "Cancelaste el inicio de sesión",
-    "oauthFailed": "No se pudo iniciar sesión con la cuenta externa. Intenta de nuevo"
+    "oauthFailed": "No se pudo iniciar sesión con la cuenta externa. Intenta de nuevo",
+    "googleExpoGo": "El inicio de sesión con Google no funciona en Expo Go. Usa el build de desarrollo (dev client)."
   },
   "mobileSeats": {
     "sectionSoldOut": "Se agotaron las sillas disponibles en esta sección",

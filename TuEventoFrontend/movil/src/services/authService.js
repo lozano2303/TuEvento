@@ -29,6 +29,20 @@ export const authService = {
     return json.data;
   },
 
+  // Login con Google: envía el id_token nativo al backend (POST /auth/google),
+  // el mismo endpoint que usa la web con GSI.
+  async googleLogin(idToken) {
+    const res = await fetch(`${BASE_URL}/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) throw new Error(json.message || "OAuth login failed");
+    // json.data shape: { accessToken, refreshToken, userId, alias, role, needsOnboarding, profileId }
+    return json.data;
+  },
+
   async register(fullName, email, password) {
     const res = await fetch(`${BASE_URL}/register`, {
       method: "POST",

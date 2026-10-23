@@ -66,13 +66,16 @@ export default function LoginScreen() {
   const handleOAuthLogin = async (provider) => {
     setOauthLoading(provider);
     try {
-      // oauthService now returns { code, state } instead of just the code string.
-      // The state was generated client-side and included in the authorization URL;
-      // the provider returns it unchanged so we can verify it server-side.
-      const { code } = provider === "google"
-        ? await oauthService.loginWithGoogle()
-        : await oauthService.loginWithFacebook();
-      const result = await authService.oauthLogin(provider, code);
+      // Google: id_token nativo → POST /auth/google (mismo flujo que la web).
+      // Facebook: authorization code → callback del backend.
+      let result;
+      if (provider === "google") {
+        const { idToken } = await oauthService.loginWithGoogle();
+        result = await authService.googleLogin(idToken);
+      } else {
+        const { code } = await oauthService.loginWithFacebook();
+        result = await authService.oauthLogin(provider, code);
+      }
       await setSession(result);
       navigation.navigate("Main");
     } catch (e) {
