@@ -796,6 +796,30 @@
     "errors": {
       "selectDocument": "Selecciona un documento",
       "submitError": "Error al enviar la solicitud"
+    },
+    "welcome": {
+      "title": "¡Ya eres organizador!",
+      "subtitle": "Tu solicitud fue aprobada. Ahora puedes acceder a estas funciones:",
+      "createFirst": "Crear mi primer evento",
+      "later": "Entendido",
+      "features": {
+        "createEvents": {
+          "title": "Crear eventos",
+          "desc": "Diseña el venue, configura secciones y asientos y publica tus eventos."
+        },
+        "manageEvents": {
+          "title": "Gestionar tus eventos",
+          "desc": "Edita, envía a revisión y sigue el estado de cada evento."
+        },
+        "earnings": {
+          "title": "Ver tus ganancias",
+          "desc": "Consulta las ventas y los ingresos de tus eventos."
+        },
+        "scanTickets": {
+          "title": "Validar entradas",
+          "desc": "Escanea los códigos QR de los asistentes desde la app móvil."
+        }
+      }
     }
   },
   "checkout": {

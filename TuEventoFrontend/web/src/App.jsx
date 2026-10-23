@@ -37,6 +37,7 @@ import TerminosDeUso from './pages/TerminosDeUso';
 import Privacidad from './pages/Privacidad';
 import Notifications from './pages/Notifications';
 import SpanishOnlyRoute from './components/common/SpanishOnlyRoute';
+import OrganizerWelcomeModal from './components/common/OrganizerWelcomeModal';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -73,6 +74,8 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-background">
       {showNavbar && <Navbar />}
+      {/* Bienvenida tras aprobarse la solicitud de organizador (se activa vía WebSocket) */}
+      <OrganizerWelcomeModal />
       <div>
         <Routes>
           <Route path="/" element={<LadingPage />} />
