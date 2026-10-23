@@ -15,6 +15,10 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
 
     @Query("SELECT u FROM UserEntity u JOIN FETCH u.role WHERE u.alias = :alias")
     Optional<UserEntity> findByAlias(@Param("alias") String alias);
+
+    /** Eager load of role + userStatus by ID — use this instead of findById() when the entity will be modified or mapped to domain. */
+    @Query("SELECT u FROM UserEntity u JOIN FETCH u.role JOIN FETCH u.userStatus WHERE u.userId = :userId")
+    Optional<UserEntity> findByIdEager(@Param("userId") Integer userId);
     
     @Query("SELECT COUNT(u) > 0 FROM UserEntity u WHERE u.alias = :alias")
     boolean existsByAlias(@Param("alias") String alias);
