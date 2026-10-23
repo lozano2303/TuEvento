@@ -140,6 +140,9 @@ class TranslationProcessorTest {
                 .thenReturn("Bienvenido"); // Missing placeholders
         when(maskingService.unmaskText(eq("Bienvenido"), anyMap(), anyMap()))
                 .thenThrow(new TextMaskingService.MaskingException("Missing placeholder in translated text: {{T_1}}"));
+        // El respaldo sin enmascarar también pierde la variable {name} → el job debe fallar
+        when(translationPort.translate("Welcome to Tu Evento, {name}!", "es", "en"))
+                .thenReturn("Bienvenido");
 
         // When
         translationProcessor.processTranslationJobs("event", 100L);
@@ -148,6 +151,7 @@ class TranslationProcessorTest {
         verify(translationJobRepository).claimJob(1);
         verify(contentHandler).loadSourceTexts(100L);
         verify(translationPort).translate("Welcome to {{T_1}}, {{V_1}}!", "es", "en");
+        verify(translationPort).translate("Welcome to Tu Evento, {name}!", "es", "en");
         verify(maskingService).unmaskText("Bienvenido", 
                 Map.of("{{T_1}}", "Tu Evento"), 
                 Map.of("{{V_1}}", "{name}"));
@@ -156,7 +160,49 @@ class TranslationProcessorTest {
         verify(translationJobRepository).save(job);
     }
 
-    private TranslationJob createMockJob(Integer jobId, String entityType, Integer entityId, 
+    @Test
+    void testMissingPlaceholderFallsBackToUnmaskedTranslation() throws Exception {
+        // Given
+        TranslationJob job = createMockJob(1, "event", 100, 1, 2);
+        Language sourceLanguage = createMockLanguage(1, "es");
+        Language targetLanguage = createMockLanguage(2, "en");
+
+        Map<String, String> sourceTexts = new HashMap<>();
+        sourceTexts.put("title", "Tu Evento aprobó a {name}");
+
+        TextMaskingService.MaskingResult maskingResult = new TextMaskingService.MaskingResult(
+                "{{T_1}} aprobó a {{V_1}}",
+                Map.of("{{T_1}}", "Tu Evento"),
+                Map.of("{{V_1}}", "{name}")
+        );
+
+        when(translationJobRepository.findByEntityAndStatus("event", 100, TranslationJobStatus.PENDING))
+                .thenReturn(List.of(job));
+        when(translationJobRepository.claimJob(1)).thenReturn(true);
+        when(languageRepository.findById(1)).thenReturn(Optional.of(sourceLanguage));
+        when(languageRepository.findById(2)).thenReturn(Optional.of(targetLanguage));
+        when(contentHandler.findTranslationStatus(100L, "en")).thenReturn(Optional.empty());
+        when(contentHandler.loadSourceTexts(100L)).thenReturn(sourceTexts);
+        when(maskingService.maskText("Tu Evento aprobó a {name}")).thenReturn(maskingResult);
+        // El motor elimina el marcador del inicio de la frase
+        when(translationPort.translate("{{T_1}} aprobó a {{V_1}}", "es", "en"))
+                .thenReturn("approved {{V_1}}");
+        when(maskingService.unmaskText(eq("approved {{V_1}}"), anyMap(), anyMap()))
+                .thenThrow(new TextMaskingService.MaskingException("Missing placeholder in translated text: {{T_1}}"));
+        // Respaldo sin enmascarar conserva la variable → se acepta
+        when(translationPort.translate("Tu Evento aprobó a {name}", "es", "en"))
+                .thenReturn("Tu Evento approved {name}");
+
+        // When
+        translationProcessor.processTranslationJobs("event", 100L);
+
+        // Then
+        verify(contentHandler).saveTranslation(eq(100L), eq("en"),
+                argThat(m -> "Tu Evento approved {name}".equals(m.get("title"))), any(), any());
+        verify(job, never()).markFailed(anyString(), anyInt());
+    }
+
+    private TranslationJob createMockJob(Integer jobId, String entityType, Integer entityId,
                                        Integer sourceLanguageId, Integer targetLanguageId) {
         TranslationJob job = mock(TranslationJob.class);
         when(job.getJobId()).thenReturn(jobId);
