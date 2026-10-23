@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { scanQr } from "../services/ticketService";
 import { mapErrorMessage } from "../utils/errorMessages";
@@ -19,6 +20,7 @@ export default function ScanTicketScreen() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning]   = useState(true);   // cámara activa esperando QR
@@ -39,11 +41,11 @@ export default function ScanTicketScreen() {
       const res = await scanQr(data);
       setResult(res);
     } catch (e) {
-      setError(mapErrorMessage(e.message) || "No se pudo validar el QR.");
+      setError(mapErrorMessage(e.message) || t("mobileScan.validateError"));
     } finally {
       setSubmitting(false);
     }
-  }, [submitting]);
+  }, [submitting, t]);
 
   const reset = () => {
     setResult(null);
@@ -64,7 +66,7 @@ export default function ScanTicketScreen() {
       >
         <Ionicons name="arrow-back" size={20} color={colors.accent} />
       </TouchableOpacity>
-      <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: "800", flex: 1 }}>Validar entradas</Text>
+      <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: "800", flex: 1 }}>{t("mobileScan.title")}</Text>
     </View>
   );
 
@@ -89,17 +91,17 @@ export default function ScanTicketScreen() {
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 16, paddingHorizontal: 40 }}>
           <Ionicons name="camera-outline" size={64} color={colors.textMuted} />
           <Text style={{ color: colors.textPrimary, fontSize: 18, fontWeight: "700", textAlign: "center" }}>
-            Necesitamos la cámara
+            {t("mobileScan.cameraTitle")}
           </Text>
           <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: "center", lineHeight: 20 }}>
-            Para escanear los códigos QR de las entradas, concede el permiso de cámara.
+            {t("mobileScan.cameraDesc")}
           </Text>
           <TouchableOpacity
             onPress={requestPermission}
             activeOpacity={0.85}
             style={{ backgroundColor: colors.primary, borderRadius: 14, paddingHorizontal: 24, paddingVertical: 14 }}
           >
-            <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700" }}>Permitir cámara</Text>
+            <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700" }}>{t("mobileScan.allowCamera")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -119,9 +121,9 @@ export default function ScanTicketScreen() {
     if (result) kind = validated > 0 ? "success" : "warning";
 
     const STYLE = {
-      success: { color: "#34d399", icon: "checkmark-circle",  title: "¡Entrada válida!" },
-      warning: { color: "#f59e0b", icon: "alert-circle",      title: "Entrada ya escaneada" },
-      error:   { color: colors.error, icon: "close-circle",   title: "QR no válido" },
+      success: { color: "#34d399", icon: "checkmark-circle",  title: t("mobileScan.validTitle") },
+      warning: { color: "#f59e0b", icon: "alert-circle",      title: t("mobileScan.alreadyScannedTitle") },
+      error:   { color: colors.error, icon: "close-circle",   title: t("mobileScan.invalidTitle") },
     }[kind];
 
     return (
@@ -144,17 +146,15 @@ export default function ScanTicketScreen() {
           {kind === "success" && (
             <View style={{ alignItems: "center", gap: 6 }}>
               <Text style={{ color: "#34d399", fontSize: 16, fontWeight: "700", textAlign: "center" }}>
-                Puedes ingresar
+                {t("mobileScan.canEnter")}
               </Text>
               <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: "center" }}>
-                {validated === 1
-                  ? "1 entrada validada"
-                  : `${validated} entradas validadas`}
-                {alreadyUsed > 0 && ` · ${alreadyUsed} ya usada${alreadyUsed === 1 ? "" : "s"}`}
+                {t("mobileScan.validated", { count: validated })}
+                {alreadyUsed > 0 && ` · ${t("mobileScan.alreadyUsed", { count: alreadyUsed })}`}
               </Text>
               {result?.orderId != null && (
                 <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
-                  Orden #{result.orderId}
+                  {t("mobileScan.order", { id: result.orderId })}
                 </Text>
               )}
             </View>
@@ -162,9 +162,7 @@ export default function ScanTicketScreen() {
 
           {kind === "warning" && (
             <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: "center", lineHeight: 22 }}>
-              {alreadyUsed === 1
-                ? "Esta entrada ya había sido escaneada. No se permite el reingreso."
-                : "Estas entradas ya habían sido escaneadas. No se permite el reingreso."}
+              {t("mobileScan.alreadyScanned", { count: alreadyUsed })}
             </Text>
           )}
 
@@ -184,7 +182,7 @@ export default function ScanTicketScreen() {
             }}
           >
             <Ionicons name="qr-code-outline" size={16} color={colors.textPrimary} />
-            <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700" }}>Escanear otra</Text>
+            <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700" }}>{t("mobileScan.scanAnother")}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -218,12 +216,12 @@ export default function ScanTicketScreen() {
           {submitting ? (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#000000AA", borderRadius: 14, paddingHorizontal: 18, paddingVertical: 12 }}>
               <ActivityIndicator size="small" color="#fff" />
-              <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>Validando…</Text>
+              <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>{t("mobileScan.validating")}</Text>
             </View>
           ) : (
             <View style={{ backgroundColor: "#000000AA", borderRadius: 14, paddingHorizontal: 18, paddingVertical: 12 }}>
               <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600", textAlign: "center" }}>
-                Apunta al código QR de la entrada
+                {t("mobileScan.pointCamera")}
               </Text>
             </View>
           )}
