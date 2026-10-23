@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { createOrder } from "../services/orderService";
 import { createPayment } from "../services/paymentService";
@@ -27,6 +28,7 @@ function formatCurrency(amount) {
 
 export default function CheckoutScreen() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const route = useRoute();
@@ -208,7 +210,7 @@ export default function CheckoutScreen() {
         const result = await createOrder({ eventId, seatIds });
         setOrder(result);
       } catch (e) {
-        setError(e.message || "No se pudo crear la orden.");
+        setError(e.message || t("mobileCheckout.createError"));
       } finally {
         setLoadingOrder(false);
       }
@@ -264,7 +266,7 @@ export default function CheckoutScreen() {
         eventTitle,
       });
     } catch (e) {
-      setError(e.message || "No se pudo iniciar el pago. Intentá de nuevo.");
+      setError(e.message || t("mobileCheckout.payError"));
       setPaying(false);
     }
   };
@@ -276,7 +278,7 @@ export default function CheckoutScreen() {
       return (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.centeredText}>Preparando tu orden…</Text>
+          <Text style={styles.centeredText}>{t("mobileCheckout.preparing")}</Text>
         </View>
       );
     }
@@ -296,7 +298,7 @@ export default function CheckoutScreen() {
             }}
           >
             <Text style={{ color: colors.textPrimary, fontWeight: "700" }}>
-              Volver a selección
+              {t("mobileCheckout.backToSelection")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -315,10 +317,10 @@ export default function CheckoutScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="ticket-outline" size={18} color={colors.accent} />
-            <Text style={styles.cardTitle}>Sillas seleccionadas</Text>
+            <Text style={styles.cardTitle}>{t("mobileCheckout.selectedSeats")}</Text>
             <View style={styles.badge}>
               <Text style={styles.badgeText}>
-                {cartItems.length} {cartItems.length === 1 ? "silla" : "sillas"}
+                {t("mobileCheckout.seats", { count: cartItems.length })}
               </Text>
             </View>
           </View>
@@ -344,7 +346,7 @@ export default function CheckoutScreen() {
           <View style={styles.divider} />
 
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalLabel}>{t("mobileCheckout.total")}</Text>
             <Text style={styles.totalAmount}>{formatCurrency(orderTotal)}</Text>
           </View>
         </View>
@@ -354,10 +356,10 @@ export default function CheckoutScreen() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Ionicons name="wallet-outline" size={18} color={colors.accent} />
-              <Text style={styles.cardTitle}>Cartera</Text>
+              <Text style={styles.cardTitle}>{t("mobileCheckout.wallet")}</Text>
               <View style={styles.walletBalanceBadge}>
                 <Text style={styles.walletBalanceText}>
-                  {formatCurrency(available)} disponibles
+                  {t("mobileCheckout.available", { amount: formatCurrency(available) })}
                 </Text>
               </View>
             </View>
@@ -379,7 +381,7 @@ export default function CheckoutScreen() {
                   styles.toggleBtnText,
                   { color: !useWallet ? colors.textPrimary : colors.textSecondary },
                 ]}>
-                  Pago normal
+                  {t("mobileCheckout.normalPayment")}
                 </Text>
               </TouchableOpacity>
 
@@ -398,7 +400,7 @@ export default function CheckoutScreen() {
                   styles.toggleBtnText,
                   { color: useWallet ? colors.textPrimary : colors.textSecondary },
                 ]}>
-                  Usar cartera
+                  {t("mobileCheckout.useWallet")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -407,13 +409,13 @@ export default function CheckoutScreen() {
             {useWallet && (
               <View style={{ marginTop: 14, gap: 0 }}>
                 <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>Total de la orden</Text>
+                  <Text style={styles.breakdownLabel}>{t("mobileCheckout.orderTotal")}</Text>
                   <Text style={[styles.breakdownValue, { color: colors.textPrimary }]}>
                     {formatCurrency(orderTotal)}
                   </Text>
                 </View>
                 <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>Descuento cartera</Text>
+                  <Text style={styles.breakdownLabel}>{t("mobileCheckout.walletDiscount")}</Text>
                   <Text style={[styles.breakdownValue, { color: colors.success }]}>
                     −{formatCurrency(amountToApply)}
                   </Text>
@@ -421,7 +423,7 @@ export default function CheckoutScreen() {
                 <View style={styles.breakdownDivider} />
                 <View style={styles.breakdownRow}>
                   <Text style={styles.breakdownTotalLabel}>
-                    {remainder === 0 ? "Cubierto por cartera" : "Restante por pasarela"}
+                    {remainder === 0 ? t("mobileCheckout.coveredByWallet") : t("mobileCheckout.remainingGateway")}
                   </Text>
                   <Text style={styles.breakdownTotalValue}>
                     {formatCurrency(remainder)}
@@ -437,15 +439,15 @@ export default function CheckoutScreen() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Ionicons name="card-outline" size={18} color={colors.accent} />
-              <Text style={styles.cardTitle}>Método de pago</Text>
+              <Text style={styles.cardTitle}>{t("mobileCheckout.paymentMethod")}</Text>
             </View>
             <View style={styles.paymentMethod}>
               <View style={styles.paymentMethodIcon}>
                 <Text style={{ fontSize: 20 }}>📱</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.paymentMethodName}>Código QR</Text>
-                <Text style={styles.paymentMethodSub}>Escanea el QR con tu app bancaria</Text>
+                <Text style={styles.paymentMethodName}>{t("mobileCheckout.qrCode")}</Text>
+                <Text style={styles.paymentMethodSub}>{t("mobileCheckout.qrSub")}</Text>
               </View>
               <View style={styles.radioOuter}>
                 <View style={styles.radioInner} />
@@ -469,10 +471,10 @@ export default function CheckoutScreen() {
   const btnColor   = useWallet && remainder === 0 ? colors.primary : colors.success;
   const btnIcon    = useWallet && remainder === 0 ? "wallet-outline" : "checkmark-circle-outline";
   const btnLabel   = paying
-    ? "Procesando…"
+    ? t("mobileCheckout.processing")
     : useWallet && remainder === 0
-    ? `Pagar con cartera ${formatCurrency(orderTotal)}`
-    : `Pagar ${formatCurrency(useWallet ? remainder : orderTotal)}`;
+    ? t("mobileCheckout.payWithWallet", { amount: formatCurrency(orderTotal) })
+    : t("mobileCheckout.pay", { amount: formatCurrency(useWallet ? remainder : orderTotal) });
 
   return (
     <View style={styles.root}>
@@ -487,7 +489,7 @@ export default function CheckoutScreen() {
         >
           <Ionicons name="arrow-back" size={20} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Confirmar compra</Text>
+        <Text style={styles.headerTitle}>{t("mobileCheckout.title")}</Text>
       </View>
 
       {renderContent()}
@@ -509,7 +511,7 @@ export default function CheckoutScreen() {
             <Text style={styles.payBtnText}>{btnLabel}</Text>
           </TouchableOpacity>
           <Text style={styles.hint}>
-            Al confirmar, tus sillas quedan reservadas mientras se procesa el pago.
+            {t("mobileCheckout.reserveHint")}
           </Text>
         </View>
       )}
