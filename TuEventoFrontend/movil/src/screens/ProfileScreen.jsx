@@ -111,7 +111,7 @@ export default function ProfileScreen() {
         setAvatarLoading(false);
       }
     };
-    loadAvatar();
+    void loadAvatar();
   }, [user?.storedFileId]);
 
   useEffect(() => {

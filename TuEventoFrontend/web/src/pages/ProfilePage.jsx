@@ -172,7 +172,7 @@ const ProfilePage = () => {
       }
     };
     
-    loadThemesWithLanguage();
+    void loadThemesWithLanguage();
   }, [currentLanguage]); // Recargar cuando cambie el idioma
 
   // ── Carga idiomas primero ─────────────────────────────────────────────────
@@ -273,7 +273,7 @@ const ProfilePage = () => {
       }
     };
     
-    loadProfileWithUserLanguage();
+    void loadProfileWithUserLanguage();
   }, [languages]); // Depende de languages
 
   useEffect(() => {

@@ -14,7 +14,7 @@ const OrganizerPetitionForm = () => {
   const [petitionStatus, setPetitionStatus] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => { checkPetitionStatus(); }, []);
+  useEffect(() => { void checkPetitionStatus(); }, []);
 
   const checkPetitionStatus = async () => {
     try {

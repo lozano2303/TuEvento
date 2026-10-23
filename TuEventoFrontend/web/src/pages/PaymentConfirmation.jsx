@@ -67,7 +67,7 @@ export default function PaymentConfirmation() {
       }
     };
 
-    loadData();
+    void loadData();
   }, [paymentId, navigate, t]);
 
   const handleGoToEvent = () => {

@@ -70,7 +70,7 @@ const TuEvento = () => {
       }
     };
 
-    loadEvents();
+    void loadEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLanguage]); // Recargar eventos cuando cambie el idioma
 
@@ -259,7 +259,7 @@ const TuEvento = () => {
                   placeholder={t('events.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleServerFilter(); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') void handleServerFilter(); }}
                   className="bg-transparent text-sm outline-none w-full"
                   style={{ color: 'var(--color-textPrimary)' }}
                 />

@@ -32,8 +32,8 @@ export default function AdminCategoryManagement() {
   };
 
   useEffect(() => {
-    fetchCategories();
-    fetchRootCategories();
+    void fetchCategories();
+    void fetchRootCategories();
   }, []);
 
   const fetchCategories = async () => {

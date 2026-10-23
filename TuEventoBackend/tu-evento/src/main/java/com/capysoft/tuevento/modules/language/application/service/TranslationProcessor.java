@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
@@ -90,7 +89,9 @@ public class TranslationProcessor {
         }
     }
 
-    @Transactional
+    // Sin @Transactional a propósito: se invoca desde la propia clase (sin proxy) y una
+    // transacción abierta durante la llamada a LibreTranslate retendría conexiones. Cada
+    // operación del repositorio (claimJob atómico, save) es transaccional por sí misma.
     private void processJob(TranslationJob job, TranslatableContentHandler handler) {
         // 1. Reclamar job atómicamente
         boolean claimed = translationJobRepository.claimJob(job.getJobId());
