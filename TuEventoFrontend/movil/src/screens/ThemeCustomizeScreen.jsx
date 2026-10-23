@@ -18,6 +18,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../context/ThemeContext";
 import { customizeTheme, resetCustomization, getCustomizationLog, getActivePalette } from "../services/themeService";
@@ -65,34 +66,22 @@ const THEME_SWATCHES = {
 
 // ─── Grupos de propiedades personalizables ────────────────────────────────────
 const PROPERTY_GROUPS = [
-  { label: "Fondos",    icon: "layers-outline",       properties: ["background", "surface", "surfaceAlt"] },
-  { label: "Primarios", icon: "color-palette-outline", properties: ["primary", "primaryDark", "accent"] },
-  { label: "Textos",    icon: "text-outline",          properties: ["textPrimary", "textSecondary", "textMuted"] },
-  { label: "Estados",   icon: "alert-circle-outline",  properties: ["error", "errorBg", "success", "successBg"] },
+  { key: "backgrounds", icon: "layers-outline",       properties: ["background", "surface", "surfaceAlt"] },
+  { key: "primary",     icon: "color-palette-outline", properties: ["primary", "primaryDark", "accent"] },
+  { key: "texts",       icon: "text-outline",          properties: ["textPrimary", "textSecondary", "textMuted"] },
+  { key: "states",      icon: "alert-circle-outline",  properties: ["error", "errorBg", "success", "successBg"] },
 ];
 
-// ─── Labels en español ────────────────────────────────────────────────────────
-const PROPERTY_LABELS = {
-  background:    "Fondo principal",
-  surface:       "Superficie",
-  surfaceAlt:    "Superficie alternativa",
-  primary:       "Color primario",
-  primaryDark:   "Primario oscuro",
-  accent:        "Acento",
-  textPrimary:   "Texto principal",
-  textSecondary: "Texto secundario",
-  textMuted:     "Texto sutil",
-  error:         "Error",
-  errorBg:       "Fondo de error",
-  success:       "Éxito",
-  successBg:     "Fondo de éxito",
-};
+// ─── Labels traducidos (mismas claves que la web) ──────────────────────────────────────────
+const propertyLabel = (t, property) =>
+  t(`profile.customizePanel.properties.${property}`, { defaultValue: property });
 
 // ─── Regex de validación hex ──────────────────────────────────────────────────
 const HEX_REGEX = /^#([A-Fa-f0-9]{3,4}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/;
 
 // ─── Mini mockup contextual ───────────────────────────────────────────────────
 function ContextPreview({ property, previewColor, colors }) {
+  const { t } = useTranslation();
   const isBg      = ["background", "surface", "surfaceAlt"].includes(property);
   const isPrimary = ["primary", "primaryDark", "accent"].includes(property);
   const isText    = ["textPrimary", "textSecondary", "textMuted"].includes(property);
@@ -116,14 +105,14 @@ function ContextPreview({ property, previewColor, colors }) {
   if (isText) {
     return (
       <View style={[ctxStyles.textBox, { backgroundColor: colors.surface }]}>
-        <Text style={[ctxStyles.textSample, { color: previewColor }]}>Texto</Text>
+        <Text style={[ctxStyles.textSample, { color: previewColor }]}>{t("mobileTheme.sampleText")}</Text>
       </View>
     );
   }
   if (isState) {
     return (
       <View style={[ctxStyles.stateBadge, { backgroundColor: previewColor + "33", borderColor: previewColor + "88" }]}>
-        <Text style={[ctxStyles.stateBadgeText, { color: previewColor }]}>Estado</Text>
+        <Text style={[ctxStyles.stateBadgeText, { color: previewColor }]}>{t("mobileTheme.sampleState")}</Text>
       </View>
     );
   }
@@ -144,6 +133,7 @@ const ctxStyles = StyleSheet.create({
 
 // ─── Fila de propiedad ────────────────────────────────────────────────────────
 function PropertyRow({ property, value, isCustomized, colors, styles, onPress }) {
+  const { t } = useTranslation();
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -160,11 +150,11 @@ function PropertyRow({ property, value, isCustomized, colors, styles, onPress })
       <View style={styles.propertyInfo}>
         <View style={styles.propertyLabelRow}>
           <Text style={[styles.propertyLabel, { color: colors.textPrimary }]}>
-            {PROPERTY_LABELS[property] ?? property}
+            {propertyLabel(t, property)}
           </Text>
           {isCustomized && (
             <View style={[styles.customBadge, { backgroundColor: colors.accent + "28", borderColor: colors.accent + "55" }]}>
-              <Text style={[styles.customBadgeText, { color: colors.accent }]}>CUSTOM</Text>
+              <Text style={[styles.customBadgeText, { color: colors.accent }]}>{t("profile.customizePanel.badges.custom").toUpperCase()}</Text>
             </View>
           )}
         </View>
@@ -178,6 +168,7 @@ function PropertyRow({ property, value, isCustomized, colors, styles, onPress })
 
 // ─── Entrada del historial ────────────────────────────────────────────────────
 function LogEntry({ entry, colors }) {
+  const { t } = useTranslation();
   const isUpdate = entry.action === "UPDATE";
   const date     = new Date(entry.createdAt).toLocaleDateString("es-CO", {
     day: "2-digit", month: "short", year: "numeric",
@@ -197,7 +188,7 @@ function LogEntry({ entry, colors }) {
       {/* Contenido */}
       <View style={logStyles.content}>
         <Text style={[logStyles.propLabel, { color: colors.textPrimary }]}>
-          {PROPERTY_LABELS[entry.property] ?? entry.property}
+          {propertyLabel(t, entry.property)}
         </Text>
 
         {isUpdate ? (
@@ -211,7 +202,7 @@ function LogEntry({ entry, colors }) {
           </View>
         ) : (
           <Text style={[logStyles.resetLabel, { color: colors.textMuted }]}>
-            Restablecido al valor base
+            {t("profile.customizePanel.log.resetAction")}
           </Text>
         )}
       </View>
@@ -240,6 +231,7 @@ export default function ThemeCustomizeScreen() {
   const insets = useSafeAreaInsets();
   const { colors, palette, applyPalette } = useTheme();
   const { themeName } = route.params ?? {};
+  const { t } = useTranslation();
 
   // ── Guard: PRINCIPAL no es personalizable ──
   if (themeName === "PRINCIPAL") {
@@ -249,10 +241,10 @@ export default function ThemeCustomizeScreen() {
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
           <Text style={{ color: colors.accent, fontSize: 48, marginBottom: 16 }}>⭐</Text>
           <Text style={{ color: colors.textPrimary, fontSize: 20, fontWeight: "600", textAlign: "center", marginBottom: 8 }}>
-            Tema Oficial
+            {t("profile.customizePanel.officialThemeTitle")}
           </Text>
           <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: "center" }}>
-            El tema PRINCIPAL es la identidad oficial de Tu Evento y no puede ser personalizado.
+            {t("profile.customizePanel.officialThemeDesc")}
           </Text>
         </View>
       </SafeAreaView>
@@ -385,7 +377,7 @@ export default function ThemeCustomizeScreen() {
       ]);
       setModalVisible(false);
     } catch (e) {
-      setApplyError("No se pudo aplicar el color. Intenta de nuevo.");
+      setApplyError(t("mobileTheme.applyError"));
     } finally {
       setLoading(false);
     }
@@ -424,7 +416,7 @@ export default function ThemeCustomizeScreen() {
       ]);
       setModalVisible(false);
     } catch (e) {
-      setApplyError("No se pudo resetear el color. Intenta de nuevo.");
+      setApplyError(t("mobileTheme.resetError"));
     } finally {
       setLoading(false);
     }
@@ -450,7 +442,7 @@ export default function ThemeCustomizeScreen() {
       const logData = await getCustomizationLog(token);
       if (Array.isArray(logData)) setLog(logData);
     } catch (e) {
-      setResetAllError("No se pudo restablecer todo. Intenta de nuevo.");
+      setResetAllError(t("profile.customizePanel.errors.resetAllError"));
     } finally {
       setResetAllLoading(false);
     }
@@ -481,7 +473,7 @@ export default function ThemeCustomizeScreen() {
         <BackButton style={{ marginBottom: 0 }} />
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-            Personalizar tema
+            {t("profile.customizePanel.customizeTheme")}
           </Text>
           {themeName ? (
             <Text style={[styles.headerSub, { color: colors.accent }]}>{themeName}</Text>
@@ -499,7 +491,7 @@ export default function ThemeCustomizeScreen() {
             {resetAllLoading ? (
               <ActivityIndicator size={12} color={colors.error} />
             ) : (
-              <Text style={[styles.resetAllText, { color: colors.error }]}>Resetear todo</Text>
+              <Text style={[styles.resetAllText, { color: colors.error }]}>{t("profile.customizePanel.resetAll")}</Text>
             )}
           </TouchableOpacity>
         ) : (
@@ -527,16 +519,16 @@ export default function ThemeCustomizeScreen() {
           }}
         >
           <Text style={[styles.description, { color: colors.textMuted }]}>
-            Toca cualquier propiedad para cambiar su color. Los cambios se aplican al instante y se sincronizan con tu cuenta.
+            {t("mobileTheme.customizeHint")}
           </Text>
 
           {/* Grupos */}
           {PROPERTY_GROUPS.map((group) => (
-            <View key={group.label} style={styles.group}>
+            <View key={group.key} style={styles.group}>
               <View style={styles.groupHeader}>
                 <Ionicons name={group.icon} size={14} color={colors.accent} style={{ marginRight: 6 }} />
                 <Text style={[styles.groupLabel, { color: colors.textSecondary }]}>
-                  {group.label.toUpperCase()}
+                  {t(`profile.customizePanel.groups.${group.key}`).toUpperCase()}
                 </Text>
               </View>
 
@@ -569,7 +561,7 @@ export default function ThemeCustomizeScreen() {
           <View style={[styles.infoBox, { backgroundColor: colors.surface + "80", borderColor: colors.primary + "25" }]}>
             <Ionicons name="information-circle-outline" size={18} color={colors.accent} style={{ marginTop: 1 }} />
             <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-              Puedes restablecer cada color al valor original del tema en cualquier momento.
+              {t("mobileTheme.resetInfo")}
             </Text>
           </View>
 
@@ -584,7 +576,7 @@ export default function ThemeCustomizeScreen() {
               <View style={styles.logToggleLeft}>
                 <Ionicons name="time-outline" size={16} color={colors.accent} style={{ marginRight: 8 }} />
                 <Text style={[styles.logToggleLabel, { color: colors.textPrimary }]}>
-                  Historial de cambios
+                  {t("profile.customizePanel.log.title")}
                 </Text>
                 {log.length > 0 && (
                   <View style={[styles.logCountBadge, { backgroundColor: colors.primary + "30" }]}>
@@ -602,7 +594,7 @@ export default function ThemeCustomizeScreen() {
               <View style={[styles.logBody, { borderTopColor: colors.primary + "18" }]}>
                 {log.length === 0 ? (
                   <Text style={[styles.logEmpty, { color: colors.textMuted }]}>
-                    Sin cambios registrados
+                    {t("profile.customizePanel.log.empty")}
                   </Text>
                 ) : (
                   log.map((entry, idx) => (
@@ -642,7 +634,7 @@ export default function ThemeCustomizeScreen() {
             {/* Header del modal */}
             <View style={[styles.modalHeader, { borderBottomColor: colors.primary + "20" }]}>
               <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
-                {selectedProperty ? (PROPERTY_LABELS[selectedProperty] ?? selectedProperty) : ""}
+                {selectedProperty ? propertyLabel(t, selectedProperty) : ""}
               </Text>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
@@ -664,7 +656,7 @@ export default function ThemeCustomizeScreen() {
                   <Text style={[styles.previewHex, { color: colors.textMuted }]}>{previewColor}</Text>
                 </View>
                 <View style={styles.previewContext}>
-                  <Text style={[styles.previewContextLabel, { color: colors.textMuted }]}>Vista previa</Text>
+                  <Text style={[styles.previewContextLabel, { color: colors.textMuted }]}>{t("mobileTheme.preview")}</Text>
                   {selectedProperty && (
                     <ContextPreview property={selectedProperty} previewColor={previewColor} colors={colors} />
                   )}
@@ -672,7 +664,7 @@ export default function ThemeCustomizeScreen() {
               </View>
 
               {/* Grilla de swatches */}
-              <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>COLORES</Text>
+              <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t("mobileTheme.colors").toUpperCase()}</Text>
               <FlatList
                 data={THEME_SWATCHES[themeName] ?? THEME_SWATCHES.DARK}
                 renderItem={renderSwatch}
@@ -684,7 +676,7 @@ export default function ThemeCustomizeScreen() {
               />
 
               {/* Input hex manual */}
-              <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>HEX MANUAL</Text>
+              <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{t("mobileTheme.hexManual").toUpperCase()}</Text>
               <View style={[
                 styles.hexInputWrapper,
                 {
@@ -706,7 +698,7 @@ export default function ThemeCustomizeScreen() {
               </View>
               {hexError && (
                 <Text style={[styles.hexErrorText, { color: colors.error }]}>
-                  Formato inválido — usa #RGB o #RRGGBB
+                  {t("mobileTheme.invalidHex")}
                 </Text>
               )}
 
@@ -731,7 +723,7 @@ export default function ThemeCustomizeScreen() {
                   ) : (
                     <>
                       <Ionicons name="refresh-outline" size={16} color={colors.textSecondary} style={{ marginRight: 6 }} />
-                      <Text style={[styles.btnResetText, { color: colors.textSecondary }]}>Resetear</Text>
+                      <Text style={[styles.btnResetText, { color: colors.textSecondary }]}>{t("mobileTheme.reset")}</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -754,7 +746,7 @@ export default function ThemeCustomizeScreen() {
                   ) : (
                     <>
                       <Ionicons name="checkmark" size={16} color={colors.textPrimary} style={{ marginRight: 6 }} />
-                      <Text style={[styles.btnApplyText, { color: colors.textPrimary }]}>Aplicar</Text>
+                      <Text style={[styles.btnApplyText, { color: colors.textPrimary }]}>{t("profile.customizePanel.editor.apply")}</Text>
                     </>
                   )}
                 </TouchableOpacity>

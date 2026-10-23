@@ -1828,7 +1828,23 @@
       "SUNSET": "Chaleureux et accueillant"
     },
     "official": "Officiel",
-    "customize": "Personnaliser"
+    "customize": "Personnaliser",
+    "loadError": "Erreur lors du chargement des thèmes",
+    "noToken": "Jeton d'authentification introuvable",
+    "activateError": "Erreur lors de l'activation du thème",
+    "subtitle": "Personnalisez votre expérience",
+    "currentTheme": "Thème actuel",
+    "sampleText": "Texte",
+    "sampleState": "Statut",
+    "customizeHint": "Touchez une propriété pour changer sa couleur. Les modifications s'appliquent instantanément et se synchronisent avec votre compte.",
+    "resetInfo": "Vous pouvez rétablir chaque couleur à la valeur d'origine du thème à tout moment.",
+    "preview": "Aperçu",
+    "colors": "Couleurs",
+    "hexManual": "Hex manuel",
+    "invalidHex": "Format invalide — utilisez #RGB ou #RRGGBB",
+    "reset": "Rétablir",
+    "applyError": "Impossible d'appliquer la couleur. Veuillez réessayer.",
+    "resetError": "Impossible de rétablir la couleur. Veuillez réessayer."
   },
   "mobileAuth": {
     "passwordPlaceholder": "Min. 8 caractères, majuscule, chiffre et symbole"

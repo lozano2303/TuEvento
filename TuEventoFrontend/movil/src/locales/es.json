@@ -1828,7 +1828,23 @@
       "SUNSET": "Cálido y acogedor"
     },
     "official": "Oficial",
-    "customize": "Personalizar"
+    "customize": "Personalizar",
+    "loadError": "Error al cargar los temas",
+    "noToken": "No se encontró el token de autenticación",
+    "activateError": "Error al activar el tema",
+    "subtitle": "Personaliza tu experiencia",
+    "currentTheme": "Tema actual",
+    "sampleText": "Texto",
+    "sampleState": "Estado",
+    "customizeHint": "Toca cualquier propiedad para cambiar su color. Los cambios se aplican al instante y se sincronizan con tu cuenta.",
+    "resetInfo": "Puedes restablecer cada color al valor original del tema en cualquier momento.",
+    "preview": "Vista previa",
+    "colors": "Colores",
+    "hexManual": "Hex manual",
+    "invalidHex": "Formato inválido — usa #RGB o #RRGGBB",
+    "reset": "Restablecer",
+    "applyError": "No se pudo aplicar el color. Intenta de nuevo.",
+    "resetError": "No se pudo restablecer el color. Intenta de nuevo."
   },
   "mobileAuth": {
     "passwordPlaceholder": "Mín. 8 caracteres, mayúscula, número y símbolo"
