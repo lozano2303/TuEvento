@@ -2,9 +2,8 @@ package com.capysoft.tuevento.modules.security.application.usecase;
 
 import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganizerRolePort;
 import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedEvent;
-import com.capysoft.tuevento.modules.security.domain.model.User;
-import com.capysoft.tuevento.modules.security.domain.repository.RoleRepository;
-import com.capysoft.tuevento.modules.security.domain.repository.UserRepository;
+import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.RoleJpaRepository;
+import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -18,30 +17,30 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class RevokeOrganizerRoleUseCase implements RevokeOrganizerRolePort {
 
-    private final UserRepository           userRepository;
-    private final RoleRepository           roleRepository;
+    private final UserJpaRepository         userJpaRepository;
+    private final RoleJpaRepository         roleJpaRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
     public void revoke(Integer userId) {
-        User user = userRepository.findById(userId)
+        var userEntity = userJpaRepository.findByIdEager(userId)
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
 
-        if (!"ORGANIZER".equals(user.getRole().getCode())) {
+        if (!"ORGANIZER".equals(userEntity.getRole().getCode())) {
             throw new BusinessException("USER_NOT_ORGANIZER",
                     "User " + userId + " does not have the ORGANIZER role");
         }
 
-        var userRole = roleRepository.findByCode("USER")
+        var userRole = roleJpaRepository.findByCode("USER")
                 .orElseThrow(() -> new NotFoundException("ROLE_NOT_FOUND", "USER role not found"));
 
-        user.setRole(userRole);
-        userRepository.save(user);
+        userEntity.setRole(userRole);
+        userJpaRepository.save(userEntity);
 
         eventPublisher.publishEvent(OrganizerRoleRevokedEvent.builder()
                 .userId(userId)
-                .alias(user.getAlias())
+                .alias(userEntity.getAlias())
                 .occurredAt(LocalDateTime.now())
                 .build());
     }
