@@ -58,7 +58,9 @@
     "loginRequired": "Connectez-vous pour réserver des places",
     "eventUnavailable": "Cet événement n'accepte plus de réservations",
     "total": "Total",
-    "continueToPayment": "Continuer au paiement"
+    "continueToPayment": "Continuer au paiement",
+    "viewAll": "Voir tout",
+    "expiredCountdown": "Expiré"
   },
   "landing": {
     "hero": {
@@ -1760,5 +1762,75 @@
     "scanAnother": "Scanner un autre",
     "validating": "Validation…",
     "pointCamera": "Visez le code QR du billet"
+  },
+  "mobileErrors": {
+    "unexpected": "Une erreur inattendue s'est produite",
+    "invalidCredentials": "E-mail ou mot de passe incorrect",
+    "notActivated": "Votre compte n'est pas activé. Vérifiez votre e-mail",
+    "locked": "Votre compte est temporairement bloqué. Réessayez plus tard",
+    "tooManyAttempts": "Trop de tentatives échouées. Compte temporairement bloqué",
+    "gmailOnly": "Seules les adresses @gmail.com sont acceptées",
+    "passwordWeak": "Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial",
+    "nameInvalid": "Le nom doit comporter au moins deux mots et uniquement des lettres",
+    "emailRegistered": "Un compte avec cet e-mail existe déjà",
+    "invalidActivationCode": "Le code d'activation est incorrect",
+    "activationExpired": "Le code d'activation a expiré. Demandez-en un nouveau",
+    "alreadyActivated": "Votre compte est déjà activé. Vous pouvez vous connecter",
+    "userNotFound": "Nous n'avons trouvé aucun compte avec cet e-mail",
+    "invalidRecoveryCode": "Le code de récupération est incorrect",
+    "recoveryUsed": "Ce code a déjà été utilisé. Demandez-en un nouveau",
+    "recoveryExpired": "Le code de récupération a expiré. Demandez-en un nouveau",
+    "passwordsNoMatch": "Les mots de passe ne correspondent pas",
+    "ticketNotValidatable": "Ce billet a déjà été scanné ou n'est pas disponible",
+    "eventNotActive": "L'événement n'est plus actif, vous ne pouvez pas générer le code",
+    "orderNoTickets": "Il ne reste aucun billet à valider dans cette commande",
+    "qrInvalid": "Le code QR est invalide ou a expiré",
+    "qrReplaced": "Ce code QR n'est plus valide. Demandez-en un nouveau",
+    "notOrganizer": "Seul l'organisateur de cet événement peut valider ce billet",
+    "unexpectedRetry": "Erreur inattendue. Veuillez réessayer",
+    "badRequest": "Erreur de requête. Veuillez réessayer",
+    "connection": "Erreur de connexion. Vérifiez votre internet",
+    "fields": {
+      "emailRequired": "L'e-mail est requis",
+      "emailInvalid": "Le format de l'e-mail est invalide",
+      "emailTooLong": "L'e-mail est trop long (max. 255 caractères)",
+      "passwordRequired": "Le mot de passe est requis",
+      "passwordSize": "Le mot de passe doit contenir entre 8 et 100 caractères",
+      "fullNameRequired": "Le nom complet est requis",
+      "fullNameTooLong": "Le nom est trop long (max. 100 caractères)",
+      "activationCodeRequired": "Le code d'activation est requis",
+      "activationCodeLength": "Le code doit contenir exactement 8 caractères",
+      "invalidField": "Champ invalide : {{field}}"
+    },
+    "oauthCancelled": "Vous avez annulé la connexion",
+    "oauthFailed": "Impossible de se connecter avec le compte externe. Veuillez réessayer"
+  },
+  "mobileSeats": {
+    "sectionSoldOut": "Il n'y a plus de places disponibles dans cette section",
+    "loadError": "Impossible de charger les places",
+    "wsDisconnected": "Connexion en temps réel perdue, reconnexion...",
+    "sessionExpired": "Votre session a expiré, reconnectez-vous",
+    "reserveError": "Impossible de réserver la place, réessayez",
+    "releaseError": "Impossible de libérer la place, réessayez",
+    "addSeatFirst": "Ajoutez une place de plus pour pouvoir sélectionner",
+    "releaseSeatFirst": "Libérez d'abord une place pour réduire la quantité",
+    "maxSeats": "Vous pouvez sélectionner au maximum {{max}} places par billet"
+  },
+  "mobileTheme": {
+    "descriptions": {
+      "PRINCIPAL": "Identité officielle de Tu Evento",
+      "DARK": "Sombre neutre aux gris profonds",
+      "LIGHT": "Clair et épuré pour la journée",
+      "PASTEL": "Doux et apaisant",
+      "VIBRANT": "Couleurs saturées et énergiques",
+      "NATURE": "Verts organiques et tons terre",
+      "OCEAN": "Bleus profonds et turquoises",
+      "SUNSET": "Chaleureux et accueillant"
+    },
+    "official": "Officiel",
+    "customize": "Personnaliser"
+  },
+  "mobileAuth": {
+    "passwordPlaceholder": "Min. 8 caractères, majuscule, chiffre et symbole"
   }
 }

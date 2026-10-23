@@ -19,18 +19,6 @@ const LANGUAGES = [
   { code: "pt", flag: "🇧🇷", label: "Português" },
 ];
 
-// ─── Descripciones cortas por tema ───────────────────────────────────────────
-const THEME_DESCRIPTIONS = {
-  PRINCIPAL: "Identidad oficial de Tu Evento",
-  DARK:      "Oscuro neutro con grises profundos",
-  LIGHT:     "Claro y limpio para el día",
-  PASTEL:    "Suave y relajado",
-  VIBRANT:   "Colores saturados y energéticos",
-  NATURE:    "Verde orgánico y tierras",
-  OCEAN:     "Azules profundos y turquesas",
-  SUNSET:    "Cálido y acogedor",
-};
-
 // ─── Colores de preview hardcodeados por tema ─────────────────────────────────
 const THEME_PREVIEWS = {
   PRINCIPAL: { background: "#1E0A3C", primary: "#7C3AED", accent: "#A78BFA" },
@@ -166,7 +154,7 @@ export default function SettingsScreen() {
             const isActive    = theme.id === activeThemeId;
             const themeKey    = (theme.id ?? theme.name)?.toUpperCase();
             const preview     = THEME_PREVIEWS[themeKey] ?? THEME_PREVIEWS.PRINCIPAL;
-            const description = THEME_DESCRIPTIONS[themeKey] ?? "";
+            const description = t(`mobileTheme.descriptions.${themeKey}`, { defaultValue: "" });
 
             return (
               <TouchableOpacity
@@ -193,12 +181,12 @@ export default function SettingsScreen() {
                 <View style={styles.themeBadges}>
                   {isActive && (
                     <View style={styles.activeBadge}>
-                      <Text style={styles.activeBadgeText}>ACTIVO</Text>
+                      <Text style={styles.activeBadgeText}>{t("profile.themeSection.active").toUpperCase()}</Text>
                     </View>
                   )}
                   {isActive && themeKey === "PRINCIPAL" && (
                     <View style={styles.officialBadge}>
-                      <Text style={styles.officialBadgeText}>OFICIAL</Text>
+                      <Text style={styles.officialBadgeText}>{t("mobileTheme.official").toUpperCase()}</Text>
                     </View>
                   )}
                   {isActive && themeKey !== "PRINCIPAL" && (
@@ -212,7 +200,7 @@ export default function SettingsScreen() {
                         })
                       }
                     >
-                      <Text style={styles.customizeButtonText}>PERSONALIZAR</Text>
+                      <Text style={styles.customizeButtonText}>{t("mobileTheme.customize").toUpperCase()}</Text>
                     </TouchableOpacity>
                   )}
                 </View>

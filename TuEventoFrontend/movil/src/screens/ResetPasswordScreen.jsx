@@ -151,7 +151,7 @@ export default function ResetPasswordScreen() {
         <Text style={{ color: palette.textPrimary, fontWeight: "600", marginTop: 20, marginBottom: 8 }}>{t("forgotPassword.newPassword")}</Text>
         <View style={[inputStyle("newPassword"), { flexDirection: "row", alignItems: "center" }]}>
           <TextInput
-            placeholder={t("login.validation.passwordWeak")}
+            placeholder={t("mobileAuth.passwordPlaceholder")}
             placeholderTextColor={palette.textMuted}
             value={form.newPassword}
             onChangeText={(t) => update("newPassword", t)}

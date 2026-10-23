@@ -33,6 +33,7 @@ const { width } = Dimensions.get("window");
  * Muestra código de silla, sección, precio y tiempo restante de reserva.
  */
 function CartItem({ seat, section, onRelease, isReleasing, colors, onExpire }) {
+  const { t } = useTranslation();
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
@@ -44,7 +45,7 @@ function CartItem({ seat, section, onRelease, isReleasing, colors, onExpire }) {
       const diffMs = until - now;
 
       if (diffMs <= 0) {
-        setTimeLeft('Expirado');
+        setTimeLeft(t("seats.expiredCountdown"));
         // Deselección optimista: liberar inmediatamente en el cliente
         // sin esperar el evento de WebSocket del scheduler
         if (onExpire) {
@@ -89,7 +90,7 @@ function CartItem({ seat, section, onRelease, isReleasing, colors, onExpire }) {
           color: colors.textSecondary,
           marginBottom: 4,
         }}>
-          {section?.sectionTypeName ?? 'Sección'}
+          {section?.sectionTypeName ?? t("seats.section")}
         </Text>
         <View style={{
           flexDirection: 'row',
@@ -288,7 +289,7 @@ export default function EventDetailScreen() {
         // CASO 5: Detectar sección sin sillas disponibles
         const availableSeats = data.filter(s => s.status === 'AVAILABLE');
         if (availableSeats.length === 0) {
-          showToast('section-no-seats', 'Se agotaron las sillas disponibles en esta sección', 'warning');
+          showToast('section-no-seats', t("mobileSeats.sectionSoldOut"), 'warning');
         }
         
         // 🚀 DOD: Cargar sillas adicionales de la sección al store
@@ -300,7 +301,7 @@ export default function EventDetailScreen() {
         });
       } catch (err) {
         console.error("[EventDetailScreen] Error loading seats:", err);
-        Alert.alert("Error", "No se pudieron cargar las sillas");
+        Alert.alert(t("common.error"), t("mobileSeats.loadError"));
       }
     };
 
@@ -337,7 +338,7 @@ export default function EventDetailScreen() {
           if (client.ws) {
             client.ws.onclose = () => {
               if (!isCancelled && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                showToast('ws-disconnected', 'Se perdió la conexión en tiempo real, reconectando...', 'warning');
+                showToast('ws-disconnected', t("mobileSeats.wsDisconnected"), 'warning');
                 reconnectAttempts++;
                 setTimeout(connectWS, 2000 * reconnectAttempts); // Backoff exponencial
               }
@@ -350,7 +351,7 @@ export default function EventDetailScreen() {
       } catch (err) {
         console.warn('[EventDetailScreen] WebSocket connection failed:', err);
         if (!isCancelled && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-          showToast('ws-disconnected', 'Se perdió la conexión en tiempo real, reconectando...', 'warning');
+          showToast('ws-disconnected', t("mobileSeats.wsDisconnected"), 'warning');
           reconnectAttempts++;
           setTimeout(connectWS, 2000 * reconnectAttempts);
         }
@@ -372,13 +373,13 @@ export default function EventDetailScreen() {
   const handleReserveSeat = async (seatId) => {
     // CASO 9: Usuario anónimo intenta reservar
     if (!currentUserId) {
-      showToast('auth-required', 'Iniciá sesión para reservar sillas', 'warning');
+      showToast('auth-required', t("seats.loginRequired"), 'warning');
       return;
     }
 
     // CASO 11: Evento ya no disponible (COMPLETED/CANCELLED)
     if (event.status === 'COMPLETED' || event.status === 'CANCELLED') {
-      showToast('event-unavailable', 'Este evento ya no acepta reservas', 'error');
+      showToast('event-unavailable', t("seats.eventUnavailable"), 'error');
       return;
     }
 
@@ -402,15 +403,15 @@ export default function EventDetailScreen() {
       
       // CASO 10: Token expirado (401)
       if (err.message?.includes('401') || err.message?.toLowerCase().includes('unauthorized')) {
-        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
+        showToast('token-expired', t("mobileSeats.sessionExpired"), 'error');
       }
       // CASO 3: Silla ya reservada por otro (condición de carrera)
       else if (err.message?.includes('SEAT_NOT_AVAILABLE') || err.message?.includes('no está disponible')) {
-        showToast('seat-taken', 'Esta silla ya fue reservada por otra persona', 'warning');
+        showToast('seat-taken', t("seats.alreadyTaken"), 'warning');
       }
       // CASO 7: Error genérico
       else {
-        showToast('reserve-error', 'No se pudo reservar la silla, intentalo de nuevo', 'error');
+        showToast('reserve-error', t("mobileSeats.reserveError"), 'error');
       }
     }
   };
@@ -437,11 +438,11 @@ export default function EventDetailScreen() {
       
       // CASO 10: Token expirado (401)
       if (err.message?.includes('401') || err.message?.toLowerCase().includes('unauthorized')) {
-        showToast('token-expired', 'Tu sesión expiró, iniciá sesión de nuevo', 'error');
+        showToast('token-expired', t("mobileSeats.sessionExpired"), 'error');
       }
       // CASO 7: Error genérico al liberar
       else {
-        showToast('release-error', 'No se pudo liberar la silla, intentalo de nuevo', 'error');
+        showToast('release-error', t("mobileSeats.releaseError"), 'error');
       }
     }
   };
@@ -450,7 +451,7 @@ export default function EventDetailScreen() {
   // El scheduler del backend se encargará de liberar la silla en su próximo ciclo (cada 10s)
   const handleSeatExpire = (seatId) => {
     // CASO 4: Silla expirada
-    showToast('seat-expired', 'Tu reserva expiró y la silla se liberó', 'info');
+    showToast('seat-expired', t("seats.expired"), 'info');
     
     updateSeat(seatId, {
       status: 'AVAILABLE',
@@ -467,7 +468,7 @@ export default function EventDetailScreen() {
     if (seat.status === 'AVAILABLE') {
       // CASO 1: Límite del stepper alcanzado
       if (cart.length >= selectedQuantity) {
-        showToast('stepper-limit', 'Agregá una silla más para poder seleccionar', 'warning');
+        showToast('stepper-limit', t("mobileSeats.addSeatFirst"), 'warning');
         return;
       }
       handleReserveSeat(seatId);
@@ -720,17 +721,17 @@ export default function EventDetailScreen() {
           {/* Mapa de sillas */}
           {layout && layout.elements && layout.elements.length > 0 && (
             <View style={styles.seatMapSection}>
-              <Text style={styles.sectionTitle}>Mapa de Asientos</Text>
+              <Text style={styles.sectionTitle}>{t("seats.seatMap")}</Text>
               
               {/* Selector de cantidad estilo cine */}
               <View style={styles.quantitySelectorContainer}>
-                <Text style={styles.quantityLabel}>¿Cuántas sillas querés?</Text>
+                <Text style={styles.quantityLabel}>{t("seats.howMany")}</Text>
                 <View style={styles.quantityControls}>
                   <TouchableOpacity
                     onPress={() => {
                       // CASO 8: Bajar el stepper por debajo de lo reservado
                       if (selectedQuantity <= cart.length) {
-                        showToast('stepper-below-cart', 'Liberá una silla primero para bajar la cantidad', 'warning');
+                        showToast('stepper-below-cart', t("mobileSeats.releaseSeatFirst"), 'warning');
                         return;
                       }
                       if (selectedQuantity > 1) {
@@ -757,7 +758,7 @@ export default function EventDetailScreen() {
                     onPress={() => {
                       // CASO 2: Límite máximo global de sillas
                       if (selectedQuantity >= 10) {
-                        showToast('max-seats', 'Solo podés seleccionar un máximo de 10 sillas en este ticket', 'warning');
+                        showToast('max-seats', t("mobileSeats.maxSeats", { max: 10 }), 'warning');
                         return;
                       }
                       setSelectedQuantity(selectedQuantity + 1);
@@ -796,7 +797,7 @@ export default function EventDetailScreen() {
                         activeOpacity={0.7}
                       >
                         <Ionicons name="apps-outline" size={16} color={colors.textPrimary} />
-                        <Text style={styles.sectionChipAllText}>Ver todo</Text>
+                        <Text style={styles.sectionChipAllText}>{t("seats.viewAll")}</Text>
                       </TouchableOpacity>
                     )}
                     
@@ -1002,7 +1003,7 @@ export default function EventDetailScreen() {
                   <View style={styles.cartHeader}>
                     <View style={styles.cartHeaderLeft}>
                       <Ionicons name="cart-outline" size={18} color={colors.primary} />
-                      <Text style={styles.cartTitle}>Tus Sillas</Text>
+                      <Text style={styles.cartTitle}>{t("seats.myCart")}</Text>
                     </View>
                     <Text style={styles.cartCount}>({cart.length})</Text>
                   </View>
@@ -1042,7 +1043,7 @@ export default function EventDetailScreen() {
                       return {
                         seatId:      s.seatId,
                         code:        s.code,
-                        sectionName: section?.sectionTypeName ?? "Sección",
+                        sectionName: section?.sectionTypeName ?? t("seats.section"),
                         price:       section?.price ?? 0,
                       };
                     });

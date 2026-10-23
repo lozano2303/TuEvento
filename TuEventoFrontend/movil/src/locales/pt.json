@@ -58,7 +58,9 @@
     "loginRequired": "Faça login para reservar lugares",
     "eventUnavailable": "Este evento não aceita mais reservas",
     "total": "Total",
-    "continueToPayment": "Continuar para o pagamento"
+    "continueToPayment": "Continuar para o pagamento",
+    "viewAll": "Ver todos",
+    "expiredCountdown": "Expirado"
   },
   "landing": {
     "hero": {
@@ -1760,5 +1762,75 @@
     "scanAnother": "Escanear outro",
     "validating": "Validando…",
     "pointCamera": "Aponte para o código QR do ingresso"
+  },
+  "mobileErrors": {
+    "unexpected": "Ocorreu um erro inesperado",
+    "invalidCredentials": "E-mail ou senha incorretos",
+    "notActivated": "Sua conta não está ativada. Verifique seu e-mail",
+    "locked": "Sua conta está temporariamente bloqueada. Tente mais tarde",
+    "tooManyAttempts": "Muitas tentativas falhas. Conta temporariamente bloqueada",
+    "gmailOnly": "Apenas e-mails @gmail.com são aceitos",
+    "passwordWeak": "A senha deve ter no mínimo 8 caracteres, uma letra maiúscula, uma minúscula, um número e um caractere especial",
+    "nameInvalid": "O nome deve ter pelo menos duas palavras e apenas letras",
+    "emailRegistered": "Já existe uma conta com esse e-mail",
+    "invalidActivationCode": "O código de ativação está incorreto",
+    "activationExpired": "O código de ativação expirou. Solicite um novo",
+    "alreadyActivated": "Sua conta já está ativada. Você pode entrar",
+    "userNotFound": "Não encontramos uma conta com esse e-mail",
+    "invalidRecoveryCode": "O código de recuperação está incorreto",
+    "recoveryUsed": "Este código já foi utilizado. Solicite um novo",
+    "recoveryExpired": "O código de recuperação expirou. Solicite um novo",
+    "passwordsNoMatch": "As senhas não coincidem",
+    "ticketNotValidatable": "Este ingresso já foi escaneado ou não está disponível",
+    "eventNotActive": "O evento não está mais ativo, você não pode gerar o código",
+    "orderNoTickets": "Não restam ingressos para validar neste pedido",
+    "qrInvalid": "O código QR é inválido ou expirou",
+    "qrReplaced": "Este código QR não é mais válido. Solicite um novo",
+    "notOrganizer": "Apenas o organizador deste evento pode validar este ingresso",
+    "unexpectedRetry": "Erro inesperado. Tente novamente",
+    "badRequest": "Erro na solicitação. Tente novamente",
+    "connection": "Erro de conexão. Verifique sua internet",
+    "fields": {
+      "emailRequired": "O e-mail é obrigatório",
+      "emailInvalid": "O formato do e-mail é inválido",
+      "emailTooLong": "O e-mail é muito longo (máx. 255 caracteres)",
+      "passwordRequired": "A senha é obrigatória",
+      "passwordSize": "A senha deve ter entre 8 e 100 caracteres",
+      "fullNameRequired": "O nome completo é obrigatório",
+      "fullNameTooLong": "O nome é muito longo (máx. 100 caracteres)",
+      "activationCodeRequired": "O código de ativação é obrigatório",
+      "activationCodeLength": "O código deve ter exatamente 8 caracteres",
+      "invalidField": "Campo inválido: {{field}}"
+    },
+    "oauthCancelled": "Você cancelou o login",
+    "oauthFailed": "Não foi possível entrar com a conta externa. Tente novamente"
+  },
+  "mobileSeats": {
+    "sectionSoldOut": "Os assentos disponíveis nesta seção esgotaram",
+    "loadError": "Não foi possível carregar os assentos",
+    "wsDisconnected": "Conexão em tempo real perdida, reconectando...",
+    "sessionExpired": "Sua sessão expirou, entre novamente",
+    "reserveError": "Não foi possível reservar o assento, tente novamente",
+    "releaseError": "Não foi possível liberar o assento, tente novamente",
+    "addSeatFirst": "Adicione mais um assento para poder selecionar",
+    "releaseSeatFirst": "Libere um assento primeiro para diminuir a quantidade",
+    "maxSeats": "Você pode selecionar no máximo {{max}} assentos por ingresso"
+  },
+  "mobileTheme": {
+    "descriptions": {
+      "PRINCIPAL": "Identidade oficial do Tu Evento",
+      "DARK": "Escuro neutro com cinzas profundos",
+      "LIGHT": "Claro e limpo para o dia",
+      "PASTEL": "Suave e relaxante",
+      "VIBRANT": "Cores saturadas e energéticas",
+      "NATURE": "Verdes orgânicos e tons terrosos",
+      "OCEAN": "Azuis profundos e turquesas",
+      "SUNSET": "Quente e acolhedor"
+    },
+    "official": "Oficial",
+    "customize": "Personalizar"
+  },
+  "mobileAuth": {
+    "passwordPlaceholder": "Mín. 8 caracteres, maiúscula, número e símbolo"
   }
 }

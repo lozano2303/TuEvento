@@ -1762,5 +1762,75 @@
     "scanAnother": "Scan another",
     "validating": "Validating…",
     "pointCamera": "Point at the ticket's QR code"
+  },
+  "mobileErrors": {
+    "unexpected": "An unexpected error occurred",
+    "invalidCredentials": "Incorrect email or password",
+    "notActivated": "Your account is not activated. Check your email",
+    "locked": "Your account is temporarily locked. Try again later",
+    "tooManyAttempts": "Too many failed attempts. Account temporarily locked",
+    "gmailOnly": "Only @gmail.com emails are accepted",
+    "passwordWeak": "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number and a special character",
+    "nameInvalid": "Name must have at least two words and letters only",
+    "emailRegistered": "An account with that email already exists",
+    "invalidActivationCode": "The activation code is incorrect",
+    "activationExpired": "The activation code has expired. Request a new one",
+    "alreadyActivated": "Your account is already activated. You can sign in",
+    "userNotFound": "We couldn't find an account with that email",
+    "invalidRecoveryCode": "The recovery code is incorrect",
+    "recoveryUsed": "This code has already been used. Request a new one",
+    "recoveryExpired": "The recovery code has expired. Request a new one",
+    "passwordsNoMatch": "Passwords do not match",
+    "ticketNotValidatable": "This ticket has already been scanned or is not available",
+    "eventNotActive": "The event is no longer active, you can't generate the code",
+    "orderNoTickets": "There are no tickets left to validate in this order",
+    "qrInvalid": "The QR code is invalid or has expired",
+    "qrReplaced": "This QR code is no longer valid. Request a new one",
+    "notOrganizer": "Only the organizer of this event can validate this ticket",
+    "unexpectedRetry": "Unexpected error. Please try again",
+    "badRequest": "Request error. Please try again",
+    "connection": "Connection error. Check your internet",
+    "fields": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Email format is invalid",
+      "emailTooLong": "Email is too long (max. 255 characters)",
+      "passwordRequired": "Password is required",
+      "passwordSize": "Password must be between 8 and 100 characters",
+      "fullNameRequired": "Full name is required",
+      "fullNameTooLong": "Name is too long (max. 100 characters)",
+      "activationCodeRequired": "Activation code is required",
+      "activationCodeLength": "The code must be exactly 8 characters",
+      "invalidField": "Invalid field: {{field}}"
+    },
+    "oauthCancelled": "You cancelled the sign-in",
+    "oauthFailed": "Could not sign in with the external account. Please try again"
+  },
+  "mobileSeats": {
+    "sectionSoldOut": "No seats left available in this section",
+    "loadError": "Could not load the seats",
+    "wsDisconnected": "Real-time connection lost, reconnecting...",
+    "sessionExpired": "Your session expired, please sign in again",
+    "reserveError": "Could not reserve the seat, please try again",
+    "releaseError": "Could not release the seat, please try again",
+    "addSeatFirst": "Add one more seat to be able to select",
+    "releaseSeatFirst": "Release a seat first to lower the quantity",
+    "maxSeats": "You can select a maximum of {{max}} seats per ticket"
+  },
+  "mobileTheme": {
+    "descriptions": {
+      "PRINCIPAL": "Tu Evento's official identity",
+      "DARK": "Neutral dark with deep grays",
+      "LIGHT": "Clean and bright for daytime",
+      "PASTEL": "Soft and relaxed",
+      "VIBRANT": "Saturated, energetic colors",
+      "NATURE": "Organic greens and earth tones",
+      "OCEAN": "Deep blues and turquoises",
+      "SUNSET": "Warm and cozy"
+    },
+    "official": "Official",
+    "customize": "Customize"
+  },
+  "mobileAuth": {
+    "passwordPlaceholder": "Min. 8 characters, uppercase, number and symbol"
   }
 }
