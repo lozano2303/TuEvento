@@ -67,6 +67,14 @@ app:
     secret-key: ${MINIO_ROOT_PASSWORD}
     region: us-east-1
     bucket-default: tuevento
+    # Strategy de almacenamiento: minio (por defecto) | rustfs
+    provider: ${STORAGE_PROVIDER:minio}
+    rustfs:
+      endpoint: ${RUSTFS_ENDPOINT:http://localhost:9100}
+      public-url: ${RUSTFS_PUBLIC_URL:http://localhost:9100}
+      access-key: ${RUSTFS_ACCESS_KEY:rustfsadmin}
+      secret-key: ${RUSTFS_SECRET_KEY:rustfsadmin}
+      region: us-east-1
   oauth:
     # Comma-separated — @Value with List<String> requires this format (not YAML sequence)
     allowed-frontend-redirect-uris: "http://localhost:5173/login,http://localhost:3000/login"
