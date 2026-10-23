@@ -146,7 +146,7 @@ export default function AdminDashboard() {
 
   // Cargar stats
   useEffect(() => {
-    (async () => {
+    void (async () => {
       try {
         const res  = await httpRequest(`${API_URL}/admin/stats`, { method: 'GET' });
         const data = await res.json();
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
 
   // Cargar actividad reciente desde el endpoint dedicado
   useEffect(() => {
-    (async () => {
+    void (async () => {
       try {
         const res  = await httpRequest(`${API_URL}/admin/activity?limit=5`, { method: 'GET' });
         const data = await res.json();

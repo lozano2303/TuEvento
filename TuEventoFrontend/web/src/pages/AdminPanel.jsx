@@ -20,7 +20,7 @@ export default function AdminPanel() {
   const [confirmModal, setConfirmModal] = useState(null); // { type: 'approve'|'reject', req }
 
   useEffect(() => {
-    fetchRequests(filter);
+    void fetchRequests(filter);
   }, [filter]);
 
   const fetchRequests = async (activeFilter = 'all') => {
@@ -88,7 +88,7 @@ export default function AdminPanel() {
     setSelectedRequest(req);
     setDocumentUrl(null);
     setShowDocumentModal(true);
-    fetchDocumentUrl(req);
+    void fetchDocumentUrl(req);
   };
 
   const handleApprove = async (req) => {

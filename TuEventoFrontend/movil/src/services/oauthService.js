@@ -61,7 +61,7 @@ export const oauthService = {
   async loginWithGoogle() {
     // Fuera del try para que el mensaje llegue intacto a mapErrorMessage.
     const sdk = loadGoogleSignin();
-    let isErrorWithCode = () => false;
+    let isErrorWithCode = (_error) => false; // se reemplaza por el del SDK si carga
     let statusCodes = {};
     try {
       const { GoogleSignin, isCancelledResponse, isSuccessResponse } = sdk;

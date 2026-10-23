@@ -52,7 +52,7 @@ async function handleSessionEvent(event) {
 function subscribeSessionEvents(client, userId, subscriptionsRef) {
   const sub = client.subscribe(`/topic/users/${userId}/session`, (message) => {
     try {
-      handleSessionEvent(JSON.parse(message.body));
+      void handleSessionEvent(JSON.parse(message.body));
     } catch (err) {
       // Error parsing session event
     }

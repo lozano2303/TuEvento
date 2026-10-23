@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -84,7 +85,7 @@ public class TranslationJobRepositoryImpl implements TranslationJobRepository {
 
     @Override
     public TranslationJob save(TranslationJob job) {
-        TranslationJobEntity entity = mapper.toEntity(job);
+        TranslationJobEntity entity = Objects.requireNonNull(mapper.toEntity(job), "job must not be null");
         
         // Cargar las entidades de idioma si no están presentes
         if (entity.getSourceLanguage() == null && job.getSourceLanguageId() != null) {

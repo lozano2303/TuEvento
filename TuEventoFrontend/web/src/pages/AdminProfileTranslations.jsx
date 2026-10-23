@@ -52,14 +52,14 @@ const AdminProfileTranslations = () => {
   const languageId = { en: 2, fr: 3, pt: 4 }[lang];
 
   useEffect(() => {
-    loadProfiles();
+    void loadProfiles();
   }, [lang, filter]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const hasGenerating = profiles.some(p => p.translationGenerating);
       if (hasGenerating) {
-        loadProfiles();
+        void loadProfiles();
       }
     }, 3000);
 

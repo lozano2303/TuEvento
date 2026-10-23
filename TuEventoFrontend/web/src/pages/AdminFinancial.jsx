@@ -54,7 +54,7 @@ export default function AdminFinancial() {
   const [error,        setError]        = useState(null);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       try {
         const res  = await httpRequest(`${API_URL}/admin/stats`, { method: 'GET' });
         const data = await res.json();

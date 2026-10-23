@@ -345,7 +345,7 @@ export default function ThemeCustomizePanel({ themeName, onClose }) {
       } catch { /* non-critical */ }
       finally { setLogLoading(false); }
     };
-    load();
+    void load();
   }, []);
 
   // ── Editor open/close ────────────────────────────────────────────────────

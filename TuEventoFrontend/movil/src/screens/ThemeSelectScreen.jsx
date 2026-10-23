@@ -27,7 +27,7 @@ export default function ThemeSelectScreen() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadThemes();
+    void loadThemes();
   }, []);
 
   const loadThemes = async () => {

@@ -175,7 +175,7 @@ export function NotificationProvider({ children }) {
     } else {
       setAdminPending(EMPTY_ADMIN_PENDING);
     }
-    connect();
+    void connect();
 
     return () => {
       // Solo limpiar el WS, no el estado (evita parpadeo en re-renders)

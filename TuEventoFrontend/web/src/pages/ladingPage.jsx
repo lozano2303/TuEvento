@@ -83,7 +83,7 @@ export default function LadingPage() {
       } catch { /* sin datos, sección oculta */ }
       finally { if (!cancelled) setReviewsLoading(false); }
     }
-    load();
+    void load();
     return () => { cancelled = true; };
   }, []);
 

@@ -98,7 +98,7 @@ export default function EditProfileScreen({ navigation, route }) {
         setLoadingProfile(false);
       }
     };
-    if (user?.userId) load();
+    if (user?.userId) void load();
     else setLoadingProfile(false);
   }, [user?.userId, language]);
 

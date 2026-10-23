@@ -180,7 +180,7 @@ export default function WalletPage() {
       }
     };
 
-    fetchData();
+    void fetchData();
   }, []);
 
   // Procesamiento de transacciones para UI

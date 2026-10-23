@@ -103,9 +103,8 @@ public class ProfileTranslatableContentHandler implements TranslatableContentHan
         translation.setStatus(status);
         
         // 5. Guardar
-        ProfileTranslation saved = profileTranslationRepository.save(translation);
-        log.info("=== TRANSLATION SAVED === Profile: {}, Lang: {}, ID: {}", 
-                entityId, languageCode, saved.getTranslationId());
+        profileTranslationRepository.save(translation);
+        log.info("=== TRANSLATION SAVED === Profile: {}, Lang: {}", entityId, languageCode);
     }
 
     @Override

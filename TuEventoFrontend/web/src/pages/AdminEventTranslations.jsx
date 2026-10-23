@@ -72,7 +72,7 @@ export default function AdminEventTranslations() {
 
   // Cargar eventos con traducciones
   useEffect(() => {
-    loadEvents();
+    void loadEvents();
   }, [lang, filter]); // Recargar cuando cambie idioma o filtro
 
   const loadEvents = async () => {
