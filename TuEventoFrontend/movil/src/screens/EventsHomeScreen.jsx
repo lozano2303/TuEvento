@@ -13,7 +13,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
+import { useLanguage } from "../context/LanguageContext";
 import { getPublishedEvents } from "../services/eventService";
 
 /**
@@ -23,6 +25,8 @@ import { getPublishedEvents } from "../services/eventService";
  */
 export default function EventsHomeScreen() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
+  const { language } = useLanguage();
   const navigation = useNavigation();
   const styles = createStyles(colors);
 
@@ -37,7 +41,7 @@ export default function EventsHomeScreen() {
       if (!isRefresh) setLoading(true);
       setError(null);
       
-      const data = await getPublishedEvents();
+      const data = await getPublishedEvents(language);
       setEvents(data || []);
 
       // Procesar URLs de imágenes (reemplazar localhost por MinIO host)
@@ -60,7 +64,9 @@ export default function EventsHomeScreen() {
 
   useEffect(() => {
     loadEvents();
-  }, []);
+    // Recargar cuando cambia el idioma para traer nombres traducidos.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -75,8 +81,12 @@ export default function EventsHomeScreen() {
     navigation.navigate("EventSearch");
   };
 
+  // Nombre a mostrar: usa la traducción si el idioma no es español y existe.
+  const displayName = (item) =>
+    language !== "es" && item.translatedName ? item.translatedName : item.eventName;
+
   const formatDate = (startDate, finishDate) => {
-    if (!startDate) return "Fecha por confirmar";
+    if (!startDate) return t("events.dateToConfirm");
     
     const start = new Date(startDate);
     const finish = finishDate ? new Date(finishDate) : null;
@@ -126,7 +136,7 @@ export default function EventsHomeScreen() {
       {/* Información del evento */}
       <View style={styles.eventInfo}>
         <Text style={styles.eventName} numberOfLines={2}>
-          {item.eventName}
+          {displayName(item)}
         </Text>
         
         <View style={styles.eventMeta}>
@@ -150,7 +160,7 @@ export default function EventsHomeScreen() {
         {/* Indicador de disponibilidad */}
         {item.availableSeats === 0 && (
           <View style={styles.soldOutBadge}>
-            <Text style={styles.soldOutText}>Agotado</Text>
+            <Text style={styles.soldOutText}>{t("events.soldOut")}</Text>
           </View>
         )}
       </View>
@@ -167,10 +177,9 @@ export default function EventsHomeScreen() {
       <View style={styles.emptyIconContainer}>
         <Ionicons name="calendar-outline" size={64} color={colors.textMuted} />
       </View>
-      <Text style={styles.emptyTitle}>No hay eventos disponibles</Text>
+      <Text style={styles.emptyTitle}>{t("events.noEvents")}</Text>
       <Text style={styles.emptyMessage}>
-        Por ahora no hay eventos publicados.{"\n"}
-        Vuelve pronto para ver nuevas opciones.
+        {t("events.noEventsMessage")}
       </Text>
       <TouchableOpacity
         style={styles.refreshButton}
@@ -178,7 +187,7 @@ export default function EventsHomeScreen() {
         activeOpacity={0.75}
       >
         <Ionicons name="refresh" size={18} color={colors.textPrimary} />
-        <Text style={styles.refreshButtonText}>Actualizar</Text>
+        <Text style={styles.refreshButtonText}>{t("common.tryAgain")}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -188,7 +197,7 @@ export default function EventsHomeScreen() {
       <View style={styles.emptyIconContainer}>
         <Ionicons name="alert-circle-outline" size={64} color={colors.error} />
       </View>
-      <Text style={styles.emptyTitle}>Error al cargar eventos</Text>
+      <Text style={styles.emptyTitle}>{t("events.connectionError")}</Text>
       <Text style={styles.emptyMessage}>{error}</Text>
       <TouchableOpacity
         style={styles.refreshButton}
@@ -196,7 +205,7 @@ export default function EventsHomeScreen() {
         activeOpacity={0.75}
       >
         <Ionicons name="refresh" size={18} color={colors.textPrimary} />
-        <Text style={styles.refreshButtonText}>Reintentar</Text>
+        <Text style={styles.refreshButtonText}>{t("common.tryAgain")}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -206,11 +215,11 @@ export default function EventsHomeScreen() {
       <SafeAreaView style={styles.container} edges={["top"]}>
         <StatusBar barStyle="light-content" backgroundColor={colors.background} />
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Eventos</Text>
+          <Text style={styles.headerTitle}>{t("events.title")}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Cargando eventos...</Text>
+          <Text style={styles.loadingText}>{t("events.loadingEvents")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -222,7 +231,7 @@ export default function EventsHomeScreen() {
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Eventos</Text>
+        <Text style={styles.headerTitle}>{t("events.title")}</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.headerButton}
