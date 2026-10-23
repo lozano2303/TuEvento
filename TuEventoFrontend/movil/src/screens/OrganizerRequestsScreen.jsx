@@ -175,7 +175,8 @@ export default function OrganizerRequestsScreen() {
               onPress={() =>
                 navigation.navigate("OrganizerRequestDetail", {
                   petitionId:      item.organizerPetitionId,
-                  alias:           item.alias,
+                  fullName:        item.fullName,
+                  email:           item.email,
                   applicationDate: item.applicationDate,
                   status:          item.status,
                   storedFileId:    item.storedFileId ?? null,
@@ -187,7 +188,8 @@ export default function OrganizerRequestsScreen() {
               </View>
 
               <View style={styles.cardBody}>
-                <Text style={styles.cardAlias}>{item.alias}</Text>
+                {/* El backend envía fullName (perfil); si el usuario no tiene perfil, se usa el email */}
+                <Text style={styles.cardAlias}>{item.fullName || item.email || "—"}</Text>
                 <Text style={styles.cardDate}>{formatDate(item.applicationDate)}</Text>
 
                 <View style={styles.cardFooter}>
