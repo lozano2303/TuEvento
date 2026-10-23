@@ -88,18 +88,8 @@ export default function AdminCategoryTranslations() {
 
       try {
         const response = await getCategoryTranslations(lang, filter);
-        const updatedCategories = response.data || [];
-        
-        // Verificar si alguna traducción completó
-        const stillGenerating = updatedCategories.some(cat => cat.translationGenerating);
-        
-        if (!stillGenerating) {
-          // Todas las traducciones completaron
-          setCategories(updatedCategories);
-        } else {
-          // Actualizar solo si hubo cambios
-          setCategories(updatedCategories);
-        }
+        // Al actualizar, el efecto se re-evalúa y deja de consultar cuando ya no hay traducciones en curso
+        setCategories(response.data || []);
       } catch (err) {
         console.error('Error checking translation status:', err);
       }
