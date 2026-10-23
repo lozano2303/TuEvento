@@ -43,8 +43,22 @@ export default function LadingPage() {
     const token = localStorage.getItem('token');
     const uid   = localStorage.getItem('userID');
     if (token && uid) {
-      setUserData({ userId: uid, alias: localStorage.getItem('alias'), fullName: localStorage.getItem('name') });
+      setUserData({
+        userId: uid,
+        alias: localStorage.getItem('alias'),
+        fullName: localStorage.getItem('name'),
+        role: localStorage.getItem('role'),
+      });
     }
+  }, []);
+
+  // Re-read role when admin revokes organizer via WS
+  useEffect(() => {
+    const handleRoleChanged = () => {
+      setUserData(prev => prev ? { ...prev, role: localStorage.getItem('role') } : prev);
+    };
+    window.addEventListener('roleChanged', handleRoleChanged);
+    return () => window.removeEventListener('roleChanged', handleRoleChanged);
   }, []);
 
   /* Ratings reales */
@@ -238,9 +252,15 @@ export default function LadingPage() {
                     <button className="lp2-btn-primary lp2-btn-primary-glow" onClick={() => navigate('/events')}>
                       Ver eventos <ArrowRight className="w-4 h-4" />
                     </button>
-                    <button className="lp2-btn-secondary" onClick={() => navigate('/events/create')}>
-                      Crear evento <ChevronRight className="w-4 h-4" />
-                    </button>
+                    {userData.role === 'ORGANIZER' ? (
+                      <button className="lp2-btn-secondary" onClick={() => navigate('/events/create')}>
+                        Crear evento <ChevronRight className="w-4 h-4" />
+                      </button>
+                    ) : userData.role !== 'ADMIN' && (
+                      <button className="lp2-btn-secondary" onClick={() => navigate('/organizer-petition-form')}>
+                        Ser organizador <ChevronRight className="w-4 h-4" />
+                      </button>
+                    )}
                   </>
                 ) : (
                   <>
