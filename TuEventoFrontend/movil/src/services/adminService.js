@@ -17,6 +17,18 @@ export const getOrganizerRequests = async () => {
 };
 
 /**
+ * Contadores de pendientes del admin (solicitudes de organizador y eventos en revisión).
+ * Las actualizaciones en vivo llegan por WebSocket en /topic/admin/pending-counts.
+ * @returns {Promise<{organizerRequests: number, eventsInReview: number}>}
+ */
+export const getAdminPendingCounts = async () => {
+  const response = await httpRequest(`${BASE_URL}/admin/pending-counts`);
+  if (!response.ok) throw new Error(`Error fetching pending counts: ${response.status}`);
+  const json = await response.json();
+  return json.data;
+};
+
+/**
  * Obtiene la URL presignada de un archivo almacenado.
  * @returns {Promise<{storedFileId: number, publicUrl: string}>}
  */

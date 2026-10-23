@@ -7,6 +7,7 @@ import { View, Text, TouchableOpacity, Modal } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useNotifications } from "../context/NotificationContext";
 import { navigationRef } from "./navigationRef";
 import LandingScreen        from "../screens/LandingScreen";
 import LoginScreen          from "../screens/LoginScreen";
@@ -108,6 +109,8 @@ const TAB_LABEL_KEYS = { Inicio: "navigation.home", Eventos: "navigation.events"
 function CustomTabBar({ state, descriptors, navigation }) {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  // Punto rojo en Perfil cuando el admin tiene solicitudes o eventos por revisar
+  const { adminPendingTotal } = useNotifications();
   return (
     <View style={{
       flexDirection: "row",
@@ -126,6 +129,16 @@ function CustomTabBar({ state, descriptors, navigation }) {
           if (route.name === "Perfil")   return isFocused ? "person"   : "person-outline";
           return "ellipse-outline";
         })();
+
+        const showDot = route.name === "Perfil" && adminPendingTotal > 0;
+        const dot = showDot ? (
+          <View style={{
+            position: "absolute", top: -2, right: -3,
+            width: 9, height: 9, borderRadius: 5,
+            backgroundColor: colors.error,
+            borderWidth: 1.5, borderColor: colors.surface,
+          }} />
+        ) : null;
 
         const onPress = () => {
           const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
@@ -167,14 +180,20 @@ function CustomTabBar({ state, descriptors, navigation }) {
                 backgroundColor: colors.primary,
                 borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7,
               }}>
-                <Ionicons name={iconName} size={18} color={colors.textPrimary} />
+                <View>
+                  <Ionicons name={iconName} size={18} color={colors.textPrimary} />
+                  {dot}
+                </View>
                 <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: "700" }}>
                   {TAB_LABEL_KEYS[route.name] ? t(TAB_LABEL_KEYS[route.name]) : route.name}
                 </Text>
               </View>
             ) : (
               <View style={{ alignItems: "center", paddingVertical: 4 }}>
-                <Ionicons name={iconName} size={22} color={colors.textMuted} />
+                <View>
+                  <Ionicons name={iconName} size={22} color={colors.textMuted} />
+                  {dot}
+                </View>
               </View>
             )}
           </TouchableOpacity>

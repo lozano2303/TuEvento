@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { jwtDecode } from "jwt-decode";
 
 /**
  * httpClient — wrapper de fetch con refresh automático de JWT (espejo del web).
@@ -43,6 +44,23 @@ async function refreshAccessToken() {
     return await refreshPromise;
   } finally {
     refreshPromise = null;
+  }
+}
+
+/**
+ * Devuelve un access token vigente: si el guardado expira en menos de 30 s,
+ * lo renueva con el refresh token. Retorna null si no hay sesión o el refresh falla.
+ * Lo usa el WebSocket antes de cada (re)conexión, que no pasa por httpRequest.
+ */
+export async function getValidAccessToken() {
+  const token = await AsyncStorage.getItem("accessToken");
+  if (!token) return null;
+  try {
+    const { exp } = jwtDecode(token);
+    if (exp && exp * 1000 - Date.now() > 30_000) return token;
+    return await refreshAccessToken();
+  } catch {
+    return null;
   }
 }
 

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity,
   StatusBar, Animated, Image, ActivityIndicator, LayoutAnimation,
@@ -6,12 +6,13 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useNotifications } from "../context/NotificationContext";
 import { getFileUrl } from "../services/storageService";
 
 // Habilitar LayoutAnimation en Android
@@ -69,6 +70,18 @@ export default function ProfileScreen() {
 
   // Estado del accordion de administración
   const [adminExpanded, setAdminExpanded] = useState(false);
+
+  // Pendientes del admin en vivo (WebSocket): punto rojo y contador por ítem
+  const { adminPending, adminPendingTotal, refreshAdminPending } = useNotifications();
+
+  // Respaldo del WebSocket: al entrar a Perfil se relee el estado real del backend
+  useFocusEffect(useCallback(() => {
+    if (user?.role === "ADMIN") refreshAdminPending();
+  }, [user?.role, refreshAdminPending]));
+  const PENDING_BY_ROUTE = {
+    AdminEvents:       adminPending.eventsInReview,
+    OrganizerRequests: adminPending.organizerRequests,
+  };
 
   // Ítems del panel de administración (espejo del sidebar web)
   const ADMIN_ITEMS = [
@@ -301,6 +314,14 @@ export default function ProfileScreen() {
                   marginRight: 14,
                 }}>
                   <Ionicons name="shield-outline" size={20} color={colors.error} />
+                  {adminPendingTotal > 0 && (
+                    <View style={{
+                      position: "absolute", top: -3, right: -3,
+                      width: 11, height: 11, borderRadius: 6,
+                      backgroundColor: colors.error,
+                      borderWidth: 2, borderColor: colors.surface,
+                    }} />
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "600" }}>
@@ -376,7 +397,21 @@ export default function ProfileScreen() {
                             </Text>
                           </View>
                         ) : (
-                          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                            {PENDING_BY_ROUTE[item.route] > 0 && (
+                              <View style={{
+                                minWidth: 20, height: 20, borderRadius: 10,
+                                paddingHorizontal: 6,
+                                backgroundColor: colors.error,
+                                alignItems: "center", justifyContent: "center",
+                              }}>
+                                <Text style={{ color: "#FFFFFF", fontSize: 11, fontWeight: "700" }}>
+                                  {PENDING_BY_ROUTE[item.route] > 99 ? "99+" : PENDING_BY_ROUTE[item.route]}
+                                </Text>
+                              </View>
+                            )}
+                            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                          </View>
                         )}
                       </TouchableOpacity>
                     );

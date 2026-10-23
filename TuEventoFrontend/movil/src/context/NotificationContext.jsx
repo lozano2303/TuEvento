@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { useAuth } from "./AuthContext";
@@ -8,8 +7,12 @@ import {
   markAsRead,
   markAllAsRead,
 } from "../services/notificationService";
+import { getAdminPendingCounts } from "../services/adminService";
+import { getValidAccessToken } from "../services/httpClient";
 
 const NotificationContext = createContext(null);
+
+const EMPTY_ADMIN_PENDING = { organizerRequests: 0, eventsInReview: 0 };
 
 function getWsBaseUrl() {
   const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080/api/v1";
@@ -22,6 +25,9 @@ export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount]     = useState(0);
   const [loading, setLoading]             = useState(false);
+  // Pendientes del admin (punto rojo en Perfil): solo se cargan para rol ADMIN
+  const [adminPending, setAdminPending]   = useState(EMPTY_ADMIN_PENDING);
+  const isAdmin = user?.role === "ADMIN";
 
   const wsClientRef      = useRef(null);
   const connectedUserRef = useRef(null); // userId actualmente conectado
@@ -44,6 +50,15 @@ export function NotificationProvider({ children }) {
       console.warn("[NotificationContext] Error loading:", err.message);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  // ── Pendientes del admin (REST) — carga inicial, reconexión y foco de Perfil ─
+  const refreshAdminPending = useCallback(async () => {
+    try {
+      setAdminPending(await getAdminPendingCounts());
+    } catch (err) {
+      console.warn("[NotificationContext] Error loading admin pending:", err.message);
     }
   }, []);
 
@@ -91,6 +106,7 @@ export function NotificationProvider({ children }) {
       subscriptionsRef.current.clear();
       setNotifications([]);
       setUnreadCount(0);
+      setAdminPending(EMPTY_ADMIN_PENDING);
       return;
     }
 
@@ -104,7 +120,7 @@ export function NotificationProvider({ children }) {
     connectedUserRef.current = userId;
 
     const connect = async () => {
-      const token = await AsyncStorage.getItem("accessToken");
+      let token = await getValidAccessToken();
       if (!token) return;
 
       const WS_BASE = getWsBaseUrl();
@@ -115,6 +131,11 @@ export function NotificationProvider({ children }) {
       };
 
       const client = new Client({
+        // Antes de cada (re)conexión se obtiene un token vigente: el JWT dura 15 min y,
+        // si la conexión se cae, reintentar con el token original fallaría para siempre.
+        beforeConnect: async () => {
+          token = (await getValidAccessToken()) ?? token;
+        },
         webSocketFactory: () => new SockJS(`${WS_BASE}/ws?token=${token}`),
         onConnect: () => {
           const sub = client.subscribe(
@@ -124,6 +145,16 @@ export function NotificationProvider({ children }) {
             }
           );
           subscriptionsRef.current.set("notifications", sub);
+
+          // Admin: contadores de solicitudes y eventos en revisión en vivo
+          if (isAdmin) {
+            const adminSub = client.subscribe("/topic/admin/pending-counts", (msg) => {
+              try { setAdminPending(JSON.parse(msg.body)); } catch { /* silencioso */ }
+            });
+            subscriptionsRef.current.set("adminPending", adminSub);
+            // Tras una reconexión pudo cambiar algo mientras no había conexión
+            refreshAdminPending();
+          }
         },
         onStompError:    (f) => console.warn("[WS] STOMP error:", f.headers["message"]),
         onWebSocketError:(e) => console.warn("[WS] error:", e),
@@ -137,22 +168,32 @@ export function NotificationProvider({ children }) {
       wsClientRef.current = client;
     };
 
-    // Cargar notificaciones + conectar WS
+    // Cargar notificaciones (+ pendientes del admin) y conectar WS
     loadNotifications();
+    if (isAdmin) {
+      refreshAdminPending();
+    } else {
+      setAdminPending(EMPTY_ADMIN_PENDING);
+    }
     connect();
 
     return () => {
       // Solo limpiar el WS, no el estado (evita parpadeo en re-renders)
       wsClientRef.current?.deactivate();
       wsClientRef.current = null;
+      // Si el efecto se re-ejecuta (p. ej. cambia el rol), debe poder reconectar
+      connectedUserRef.current = null;
       subscriptionsRef.current.clear();
     };
-  }, [user?.userId, loadNotifications]);
+  }, [user?.userId, isAdmin, loadNotifications, refreshAdminPending]);
 
   const value = {
     notifications,
     unreadCount,
     loading,
+    adminPending,
+    adminPendingTotal: adminPending.organizerRequests + adminPending.eventsInReview,
+    refreshAdminPending,
     markAsRead: markNotificationAsRead,
     markAllAsRead: markAllNotificationsAsRead,
     refresh: loadNotifications,
