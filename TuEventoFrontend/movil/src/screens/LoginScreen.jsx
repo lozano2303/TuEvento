@@ -7,17 +7,20 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { authService } from "../services/authService";
 import { oauthService } from "../services/oauthService";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
+import LanguageSelector from "../components/LanguageSelector";
 import ScreenLayout from "../components/ScreenLayout";
 import { darkColors } from "../theme/colors";
 
 export default function LoginScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const { login, setSession, loading, error } = useAuth();
   const colors = darkColors;
   const [email, setEmail] = useState("");
@@ -36,30 +39,43 @@ export default function LoginScreen() {
 
   const validate = () => {
     const e = {};
-    if (!email)    e.email    = "El correo es requerido";
-    if (!password) e.password = "La contraseña es requerida";
+    if (!email)    e.email    = t("login.validation.emailRequired");
+    if (!password) e.password = t("login.validation.passwordRequired");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const handleLogin = async () => {
     if (!validate()) return;
-    try {
-      const result = await login(email, password);
-      if (result.success) navigation.navigate("Main");
-    } finally {}
+    const result = await login(email, password);
+    if (result.success) {
+      navigation.navigate("Main");
+      return;
+    }
+    // Si la cuenta no está activada, reenviar el código y llevar a verificación
+    // (mismo comportamiento que la web).
+    const msg = (result.message || "").toLowerCase();
+    const notActivated = ["no activada", "not activated", "activar", "revisa tu correo"]
+      .some((s) => msg.includes(s));
+    if (notActivated) {
+      try { await authService.resendActivation(email.trim()); } catch (_) { /* no bloquear el flujo */ }
+      navigation.navigate("Activate", { email: email.trim() });
+    }
   };
 
   const handleOAuthLogin = async (provider) => {
     setOauthLoading(provider);
     try {
-      // oauthService now returns { code, state } instead of just the code string.
-      // The state was generated client-side and included in the authorization URL;
-      // the provider returns it unchanged so we can verify it server-side.
-      const { code } = provider === "google"
-        ? await oauthService.loginWithGoogle()
-        : await oauthService.loginWithFacebook();
-      const result = await authService.oauthLogin(provider, code);
+      // Google: id_token nativo → POST /auth/google (mismo flujo que la web).
+      // Facebook: authorization code → callback del backend.
+      let result;
+      if (provider === "google") {
+        const { idToken } = await oauthService.loginWithGoogle();
+        result = await authService.googleLogin(idToken);
+      } else {
+        const { code } = await oauthService.loginWithFacebook();
+        result = await authService.oauthLogin(provider, code);
+      }
       await setSession(result);
       navigation.navigate("Main");
     } catch (e) {
@@ -109,10 +125,10 @@ export default function LoginScreen() {
           />
           <View style={{ flex: 1, alignItems: "center" }}>
             <Text style={{ color: colors.textPrimary, fontSize: 26, fontWeight: "800" }}>
-              Iniciar sesión
+              {t("login.signIn")}
             </Text>
           </View>
-          <View style={{ width: 40 }} />
+          <LanguageSelector />
         </View>
 
         {/* Card glass del formulario */}
@@ -124,7 +140,7 @@ export default function LoginScreen() {
         }}>
           {/* Email */}
           <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: "600", marginBottom: 8 }}>
-            Correo electrónico
+            {t("login.email")}
           </Text>
           <View style={inputStyle("email")}>
             <TextInput
@@ -143,11 +159,11 @@ export default function LoginScreen() {
 
           {/* Password */}
           <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: "600", marginTop: 18, marginBottom: 8 }}>
-            Contraseña
+            {t("login.password")}
           </Text>
           <View style={inputStyle("password")}>
             <TextInput
-              placeholder="Tu contraseña"
+              placeholder={t("login.password")}
               placeholderTextColor={colors.textMuted}
               value={password}
               onChangeText={(t) => { setPassword(t); setErrors({ ...errors, password: null }); }}
@@ -192,7 +208,7 @@ export default function LoginScreen() {
               style={{ paddingVertical: 16, alignItems: "center" }}
             >
               <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: "700" }}>
-                {loading ? "Iniciando sesión..." : "Iniciar sesión"}
+                {loading ? t("login.loading") : t("login.signIn")}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -203,7 +219,7 @@ export default function LoginScreen() {
             style={{ alignItems: "center", marginTop: 16 }}
           >
             <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>
-              ¿Olvidaste tu contraseña?
+              {t("login.forgotPassword")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -212,7 +228,7 @@ export default function LoginScreen() {
         <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 24 }}>
           <View style={{ flex: 1, height: 1, backgroundColor: colors.surfaceAlt }} />
           <Text style={{ color: colors.textMuted, marginHorizontal: 12, fontSize: 12 }}>
-            o continúa con
+            {t("login.orContinueWith")}
           </Text>
           <View style={{ flex: 1, height: 1, backgroundColor: colors.surfaceAlt }} />
         </View>
@@ -233,7 +249,7 @@ export default function LoginScreen() {
               ? <ActivityIndicator size="small" color="#EA4335" />
               : <Ionicons name="logo-google" size={20} color="#EA4335" />}
             <Text style={{ color: "#111827", fontSize: 15, fontWeight: "600" }}>
-              {oauthLoading === "google" ? "Conectando..." : "Continuar con Google"}
+              {oauthLoading === "google" ? t("login.loading") : `${t("login.signInWith")} ${t("login.google")}`}
             </Text>
           </TouchableOpacity>
 
@@ -251,7 +267,7 @@ export default function LoginScreen() {
               ? <ActivityIndicator size="small" color="#FFFFFF" />
               : <Ionicons name="logo-facebook" size={20} color="#FFFFFF" />}
             <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600" }}>
-              {oauthLoading === "facebook" ? "Conectando..." : "Continuar con Facebook"}
+              {oauthLoading === "facebook" ? t("login.loading") : `${t("login.signInWith")} ${t("login.facebook")}`}
             </Text>
           </TouchableOpacity>
         </View>
@@ -259,16 +275,16 @@ export default function LoginScreen() {
         {/* Registro + Términos */}
         <View style={{ alignItems: "center", marginTop: 28, gap: 12, marginBottom: 16 }}>
           <View style={{ flexDirection: "row" }}>
-            <Text style={{ color: colors.textSecondary, fontSize: 14 }}>¿No tienes cuenta? </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{t("login.noAccount")} </Text>
             <TouchableOpacity onPress={() => navigation.navigate("Register")}>
               <Text style={{ color: colors.primary, fontSize: 14, fontWeight: "600" }}>
-                Regístrate
+                {t("login.createAccount")}
               </Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate("Terms")}>
             <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-              Términos y condiciones
+              {t("login.termsAndConditions")}
             </Text>
           </TouchableOpacity>
         </View>

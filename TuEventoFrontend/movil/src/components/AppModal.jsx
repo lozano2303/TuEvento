@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 
 // ─── Configuración de íconos y colores por type ───────────────────────────────
@@ -23,13 +24,14 @@ export default function AppModal({
   type = "info",
   title,
   message,
-  confirmText = "Aceptar",
-  cancelText  = "Cancelar",
+  confirmText,
+  cancelText,
   onConfirm,
   onCancel,
   loading = false,
 }) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   const config     = TYPE_CONFIG[type] ?? TYPE_CONFIG.info;
   const accentColor = colors[config.colorKey];
@@ -126,7 +128,7 @@ export default function AppModal({
             {loading ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={styles.btnConfirmText}>{confirmText}</Text>
+              <Text style={styles.btnConfirmText}>{confirmText ?? t("mobileNav.accept")}</Text>
             )}
           </TouchableOpacity>
 
@@ -138,7 +140,7 @@ export default function AppModal({
               disabled={loading}
               style={styles.btnCancel}
             >
-              <Text style={styles.btnCancelText}>{cancelText}</Text>
+              <Text style={styles.btnCancelText}>{cancelText ?? t("common.cancel")}</Text>
             </TouchableOpacity>
           )}
 

@@ -53,6 +53,9 @@ const ProfilePage = () => {
   const { t } = useTranslation();
   const { refreshPalette, activeThemeId } = useTheme();
   const currentLanguage = useLanguageSync(); // Sincroniza automáticamente con el idioma preferido
+  // El perfil se guarda en español (idioma fuente de las traducciones): fuera de
+  // español solo se puede consultar, exista o no la traducción.
+  const editLocked = (currentLanguage || 'es').split('-')[0] !== 'es'; // 'es-CO' del navegador cuenta como español
 
   // ── Estado ─────────────────────────────────────────────────────────────────
   const [profile, setProfile] = useState(null); // Estado completo del perfil con traducciones
@@ -360,7 +363,7 @@ const ProfilePage = () => {
   };
 
   const handleSave = async () => {
-    if (!profileId) return;
+    if (editLocked || !profileId) return;
     setLoading(true);
     setSaveMessage(null);
     try {
@@ -605,12 +608,13 @@ const ProfilePage = () => {
                     {t('profile.fullName')}
                   </label>
                   <input
-                    className={inputCls}
+                    className={`${inputCls} ${editLocked ? 'opacity-75' : ''}`}
                     type="text"
                     name="nombreCompleto"
                     value={formData.nombreCompleto}
                     onChange={handleInputChange}
                     placeholder={t('profile.fullNamePlaceholder')}
+                    readOnly={editLocked}
                   />
                 </div>
 
@@ -625,14 +629,14 @@ const ProfilePage = () => {
                     )}
                   </label>
                   <textarea
-                    className={`${inputCls} resize-none ${profile?.translatedBio ? 'opacity-75' : ''}`}
+                    className={`${inputCls} resize-none ${editLocked ? 'opacity-75' : ''}`}
                     name="bio"
                     rows={3}
                     value={formData.bio}
                     onChange={handleInputChange}
                     placeholder={t('profile.bioPlaceholder')}
                     maxLength={255}
-                    readOnly={!!profile?.translatedBio} // Solo lectura si está traducida
+                    readOnly={editLocked} // Solo lectura fuera de español
                   />
                   <div className="flex justify-between items-center mt-1">
                     <p className="text-xs text-textMuted">{formData.bio.length}/255</p>
@@ -660,7 +664,7 @@ const ProfilePage = () => {
 
               <button
                 onClick={handleSave}
-                disabled={loading || !!profile?.translatedBio}
+                disabled={loading || editLocked}
                 className="mt-6 px-6 py-2.5 rounded-xl text-sm font-bold bg-primary hover:bg-primaryDark text-textPrimary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ boxShadow: 'color-mix(in srgb, var(--color-primary) 30%, transparent) 0 2px 12px' }}
               >
@@ -682,9 +686,9 @@ const ProfilePage = () => {
                 </div>
               )}
               
-              {profile?.translatedBio && (
+              {editLocked && (
                 <p className="mt-2 text-xs text-textMuted">
-                  {t('profile.cannotEditTranslated')}
+                  {t('profile.spanishOnlyEdit')}
                 </p>
               )}
             </section>

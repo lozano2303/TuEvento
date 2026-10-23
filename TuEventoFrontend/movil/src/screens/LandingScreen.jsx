@@ -11,13 +11,16 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { decorativeStyle } from "../theme";
 import { darkColors } from "../theme/colors";
+import LanguageSelector from "../components/LanguageSelector";
 
 export default function LandingScreen() {
   const { width, height } = useWindowDimensions();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const palette = darkColors;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(40)).current;
@@ -48,6 +51,11 @@ export default function LandingScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: palette.background }}>
       <StatusBar barStyle="light-content" backgroundColor={palette.background} />
+
+      {/* Selector de idioma (sin sesión, igual que la navbar web) */}
+      <View style={{ position: "absolute", top: insets.top + 12, right: 20, zIndex: 10 }}>
+        <LanguageSelector />
+      </View>
 
       {/* Fondo con gradiente */}
       <LinearGradient
@@ -129,8 +137,7 @@ export default function LandingScreen() {
               paddingHorizontal: 20,
             }}
           >
-            Diseña, planifica y vive experiencias{"\n"}
-            únicas que marquen la diferencia.
+            {t("mobileLanding.tagline")}
           </Text>
         </Animated.View>
 
@@ -144,9 +151,9 @@ export default function LandingScreen() {
             }}
         >
           {[
-            { emoji: "🗓️", title: "Crea eventos", desc: "Organiza cada detalle fácilmente" },
-            { emoji: "🎟️", title: "Vende tickets", desc: "Gestiona entradas digitales" },
-            { emoji: "👥", title: "Conecta personas", desc: "Haz crecer tu comunidad" },
+            { emoji: "🗓️", title: t("mobileLanding.features.create.title"),  desc: t("mobileLanding.features.create.desc") },
+            { emoji: "🎟️", title: t("mobileLanding.features.tickets.title"), desc: t("mobileLanding.features.tickets.desc") },
+            { emoji: "👥", title: t("mobileLanding.features.connect.title"), desc: t("mobileLanding.features.connect.desc") },
           ].map((item, index) => (
             <View
               key={index}
@@ -216,7 +223,7 @@ export default function LandingScreen() {
               style={{ paddingVertical: 16, alignItems: "center" }}
             >
               <Text style={{ color: palette.textPrimary, fontSize: 16, fontWeight: "700" }}>
-                Comenzar ahora
+                {t("mobileLanding.start")}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -234,7 +241,7 @@ export default function LandingScreen() {
             }}
           >
             <Text style={{ color: palette.accent, fontSize: 16, fontWeight: "600" }}>
-              Iniciar sesión
+              {t("mobileLanding.login")}
             </Text>
           </TouchableOpacity>
         </Animated.View>
