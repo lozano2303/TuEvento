@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { authService } from "../services/authService";
 import { mapErrorMessage } from "../utils/errorMessages";
 import BackButton from "../components/BackButton";
+import LanguageSelector from "../components/LanguageSelector";
 import ScreenLayout from "../components/ScreenLayout";
 import { darkColors } from "../theme/colors";
 
@@ -84,7 +85,7 @@ export default function ActivateScreen() {
               {t("mobileActivate.title")}
             </Text>
           </View>
-          <View style={{ width: 40 }} />
+          <LanguageSelector />
         </View>
 
         <Ionicons name="mail-outline" size={48} color={palette.primary} style={{ marginBottom: 20 }} />

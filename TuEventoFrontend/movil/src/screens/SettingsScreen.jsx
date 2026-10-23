@@ -10,14 +10,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
 import BackButton from "../components/BackButton";
-
-// ─── Idiomas disponibles (bandera + etiqueta nativa) ──────────────────────────
-const LANGUAGES = [
-  { code: "es", flag: "🇪🇸", label: "Español" },
-  { code: "en", flag: "🇺🇸", label: "English" },
-  { code: "fr", flag: "🇫🇷", label: "Français" },
-  { code: "pt", flag: "🇧🇷", label: "Português" },
-];
+import { LANGUAGES } from "../components/LanguageSelector";
 
 // ─── Colores de preview hardcodeados por tema ─────────────────────────────────
 const THEME_PREVIEWS = {
