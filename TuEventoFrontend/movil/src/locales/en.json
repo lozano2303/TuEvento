@@ -1832,5 +1832,28 @@
   },
   "mobileAuth": {
     "passwordPlaceholder": "Min. 8 characters, uppercase, number and symbol"
+  },
+  "mobileEditProfile": {
+    "changePhoto": "Change photo",
+    "uploading": "Uploading...",
+    "permissionTitle": "Permission required",
+    "permissionMsg": "We need access to your gallery to change your photo.",
+    "doneTitle": "Done!",
+    "savedTitle": "Saved",
+    "themeDesc": "Choose and customize the app colors",
+    "exit": "Sign out",
+    "deactivateDesc": "Deactivating your account will sign you out immediately and you won't be able to sign in until you contact support.",
+    "deactivate": {
+      "title": "Deactivate your account?",
+      "step1Desc": "This will sign you out immediately and temporarily deactivate your account.",
+      "step2Desc": "Enter your password to confirm the deactivation.",
+      "consequence1": "Your session will end immediately.",
+      "consequence2": "You won't be able to sign in until you contact support.",
+      "consequence3": "Your data is kept, nothing is deleted.",
+      "continue": "Continue",
+      "passwordPlaceholder": "Current password",
+      "passwordRequired": "Enter your password to continue.",
+      "error": "Could not deactivate the account. Please try again."
+    }
   }
 }
