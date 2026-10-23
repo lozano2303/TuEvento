@@ -12,6 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { getMyWallet, getMyWalletTransactions } from "../services/walletService";
 
@@ -46,31 +47,17 @@ function txIcon(type) {
   }
 }
 
-function txLabel(type) {
-  switch (type) {
-    case "CREDIT":     return "Crédito";
-    case "REVERSAL":   return "Reversión";
-    case "PAYMENT":    return "Compra";
-    case "ADJUSTMENT": return "Ajuste";
-    default:           return type;
-  }
-}
-
-function statusLabel(status) {
-  switch (status) {
-    case "COMPLETED": return "Completado";
-    case "PENDING":   return "Pendiente";
-    case "FAILED":    return "Fallido";
-    default:          return status;
-  }
-}
-
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function WalletScreen() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+
+  // Etiquetas traducidas (con fallback al código crudo si no hay clave).
+  const txLabel = (type) => t(`mobileWallet.txType.${type}`, { defaultValue: type });
+  const statusLabel = (status) => t(`mobileWallet.txStatus.${status}`, { defaultValue: status });
 
   const [wallet, setWallet]           = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -252,7 +239,7 @@ export default function WalletScreen() {
       if (walletData.status === "fulfilled") setWallet(walletData.value);
       if (txData.status === "fulfilled") setTransactions(txData.value ?? []);
     } catch (e) {
-      setError(e.message || "Error al cargar la cartera");
+      setError(e.message || t("mobileWallet.loadError"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -275,7 +262,7 @@ export default function WalletScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.75} style={styles.backButton}>
             <Ionicons name="arrow-back" size={20} color={colors.accent} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Mi Cartera</Text>
+          <Text style={styles.headerTitle}>{t("mobileWallet.title")}</Text>
         </View>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -293,7 +280,7 @@ export default function WalletScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.75} style={styles.backButton}>
             <Ionicons name="arrow-back" size={20} color={colors.accent} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Mi Cartera</Text>
+          <Text style={styles.headerTitle}>{t("mobileWallet.title")}</Text>
         </View>
         <ScrollView
           contentContainerStyle={[styles.scrollContent, { flex: 1, justifyContent: "center" }]}
@@ -301,9 +288,9 @@ export default function WalletScreen() {
         >
           <View style={styles.emptyWrap}>
             <Ionicons name="wallet-outline" size={64} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>Aún no tenés saldo</Text>
+            <Text style={styles.emptyTitle}>{t("mobileWallet.noBalanceTitle")}</Text>
             <Text style={styles.emptyText}>
-              Tu saldo de cartera se generará cuando recibas un reembolso o crédito por cancelación de evento.
+              {t("mobileWallet.noBalanceText")}
             </Text>
           </View>
         </ScrollView>
@@ -325,7 +312,7 @@ export default function WalletScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.75} style={styles.backButton}>
           <Ionicons name="arrow-back" size={20} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mi Cartera</Text>
+        <Text style={styles.headerTitle}>{t("mobileWallet.title")}</Text>
       </View>
 
       <ScrollView
@@ -337,7 +324,7 @@ export default function WalletScreen() {
 
         {/* ── Tarjeta de balance ────────────────────────────────────────── */}
         <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Saldo disponible</Text>
+          <Text style={styles.balanceLabel}>{t("mobileWallet.availableBalance")}</Text>
 
           <View>
             <Text style={styles.balanceAmount}>{formatCurrency(available)}</Text>
@@ -348,14 +335,14 @@ export default function WalletScreen() {
             <View style={styles.availableRow}>
               <Ionicons name="time-outline" size={14} color={colors.accent} />
               <Text style={styles.availableText}>
-                {formatCurrency(reserved)} en compras pendientes
+                {t("mobileWallet.pendingPurchases", { amount: formatCurrency(reserved) })}
               </Text>
             </View>
           )}
 
           <View style={styles.protectedBadge}>
             <Ionicons name="shield-checkmark-outline" size={13} color={colors.success} />
-            <Text style={styles.protectedText}>Crédito interno protegido</Text>
+            <Text style={styles.protectedText}>{t("mobileWallet.protectedCredit")}</Text>
           </View>
 
           {/* CTA: ir a explorar eventos */}
@@ -365,22 +352,22 @@ export default function WalletScreen() {
             style={styles.ctaBtn}
           >
             <Ionicons name="wallet-outline" size={16} color={colors.textPrimary} />
-            <Text style={styles.ctaBtnText}>Usar saldo en una compra</Text>
+            <Text style={styles.ctaBtnText}>{t("mobileWallet.useBalance")}</Text>
             <Ionicons name="chevron-forward" size={14} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
 
         {/* ── Historial de movimientos ──────────────────────────────────── */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Historial</Text>
-          <Text style={styles.sectionCount}>{transactions.length} movimientos</Text>
+          <Text style={styles.sectionTitle}>{t("mobileWallet.history")}</Text>
+          <Text style={styles.sectionCount}>{t("mobileWallet.movements", { count: transactions.length })}</Text>
         </View>
 
         {transactions.length === 0 ? (
           <View style={[styles.emptyWrap, { paddingVertical: 32 }]}>
             <Ionicons name="receipt-outline" size={40} color={colors.textMuted} />
             <Text style={[styles.emptyText, { fontSize: 13 }]}>
-              Aún no hay movimientos en tu cartera.
+              {t("mobileWallet.noMovements")}
             </Text>
           </View>
         ) : (

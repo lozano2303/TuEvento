@@ -1632,5 +1632,30 @@
       "WALLET_CREDITED": "💡 The balance is available immediately in your wallet.",
       "WELCOME": "💡 Browse events and buy tickets directly from the app."
     }
+  },
+  "mobileWallet": {
+    "title": "My Wallet",
+    "availableBalance": "Available balance",
+    "pendingPurchases": "{{amount}} in pending purchases",
+    "protectedCredit": "Protected internal credit",
+    "useBalance": "Use balance in a purchase",
+    "history": "History",
+    "movements_one": "{{count}} movement",
+    "movements_other": "{{count}} movements",
+    "noBalanceTitle": "No balance yet",
+    "noBalanceText": "Your wallet balance will be generated when you receive a refund or credit for an event cancellation.",
+    "noMovements": "No movements in your wallet yet.",
+    "loadError": "Error loading the wallet",
+    "txType": {
+      "CREDIT": "Credit",
+      "REVERSAL": "Reversal",
+      "PAYMENT": "Purchase",
+      "ADJUSTMENT": "Adjustment"
+    },
+    "txStatus": {
+      "COMPLETED": "Completed",
+      "PENDING": "Pending",
+      "FAILED": "Failed"
+    }
   }
 }
