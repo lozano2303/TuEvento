@@ -215,7 +215,7 @@ export default function CheckoutScreen() {
         setLoadingOrder(false);
       }
     };
-    doCreate();
+    void doCreate();
   }, [eventId]);
 
   // Consultar wallet una vez que la orden esté lista

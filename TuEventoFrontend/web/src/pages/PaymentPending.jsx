@@ -8,6 +8,7 @@ import PaymentApprovedSummary from '../components/PaymentApprovedSummary';
 
 const POLL_INTERVAL_MS  = 3000;
 const GATEWAY_BASE_URL  = import.meta.env.VITE_GATEWAY_URL || 'http://localhost:4001';
+const GATEWAY_ORIGIN    = new URL(GATEWAY_BASE_URL).origin;
 const POPUP_OPTIONS     = 'width=480,height=640,left=200,top=80,resizable=no,scrollbars=yes';
 
 /**
@@ -87,6 +88,8 @@ export default function PaymentPending() {
   // Escuchar mensajes del popup (postMessage desde pay.html)
   useEffect(() => {
     const handleMessage = (event) => {
+      // Solo se aceptan mensajes del popup de la pasarela; cualquier otra ventana se ignora
+      if (event.origin !== GATEWAY_ORIGIN) return;
       if (event.data?.type !== 'GATEWAY_ACTION') return;
       const action = event.data.action;
       if (action === 'cancel') {
@@ -141,7 +144,7 @@ export default function PaymentPending() {
       }
     };
 
-    poll();
+    void poll();
     intervalRef.current = setInterval(poll, POLL_INTERVAL_MS);
     return () => stopPolling();
   }, [paymentId, navigate, stopPolling, loadTickets, openPopup]);

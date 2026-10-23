@@ -43,7 +43,7 @@ export const useLanguageSync = () => {
       }
     };
 
-    syncLanguage();
+    void syncLanguage();
   }, []); // Solo ejecutar una vez al montar
 
   return i18n.language;

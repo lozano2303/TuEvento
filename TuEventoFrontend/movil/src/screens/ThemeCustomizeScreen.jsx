@@ -301,7 +301,7 @@ export default function ThemeCustomizeScreen() {
         // silencioso — no es crítico
       }
     };
-    loadCustomizations();
+    void loadCustomizations();
   }, []);
 
   // ── Toggle historial con animación del chevron ──

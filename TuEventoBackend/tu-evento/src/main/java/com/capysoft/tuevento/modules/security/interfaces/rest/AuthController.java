@@ -73,19 +73,9 @@ public class AuthController {
     @PostMapping("/activate")
     public ResponseEntity<ApiResponse<Void>> activate(
             @Valid @RequestBody ActivateAccountRequest request) {
-        try {
-            System.out.println("=== AUTH CONTROLLER ACTIVATE ===");
-            System.out.println("Email: " + request.getEmail());
-            System.out.println("Activation Code: " + request.getActivationCode());
-            System.out.println("About to call activateAccountPort.activate()");
-            activateAccountPort.activate(request);
-            System.out.println("activateAccountPort.activate() completed successfully");
-            return ResponseEntity.ok(ApiResponse.ok("Account activated successfully"));
-        } catch (Exception e) {
-            System.out.println("ERROR IN AUTH CONTROLLER: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
-        }
+        // Los errores los traduce el GlobalExceptionHandler; no se registra el código recibido
+        activateAccountPort.activate(request);
+        return ResponseEntity.ok(ApiResponse.ok("Account activated successfully"));
     }
 
     @Operation(summary = "Login with email and password")
