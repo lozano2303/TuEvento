@@ -47,10 +47,10 @@ EXPOSE 8080
 #   -XX:MaxRAMPercentage=75.0    → usa hasta el 75% de la RAM disponible para el heap
 #                                   (deja margen para metaspace, threads, etc.)
 #   -Djava.security.egd=...      → evita bloqueos de SecureRandom en contenedores sin /dev/random
-#   -Dspring.profiles.active=prod → activa el perfil de producción
-ENTRYPOINT ["java", \
-  "-XX:+UseContainerSupport", \
-  "-XX:MaxRAMPercentage=75.0", \
-  "-Djava.security.egd=file:/dev/./urandom", \
-  "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-prod}", \
-  "-jar", "app.jar"]
+#   $JAVA_OPTS                   → flags extra en tiempo de ejecución (p. ej. -Xmx);
+#                                   un -Xmx explícito tiene prioridad sobre MaxRAMPercentage
+# Spring Boot lee SPRING_PROFILES_ACTIVE directamente del entorno (prod por defecto).
+# Se usa sh -c para expandir $JAVA_OPTS; exec deja a java como PID 1 y recibe SIGTERM.
+ENV SPRING_PROFILES_ACTIVE=prod \
+    JAVA_OPTS=""
+ENTRYPOINT ["sh", "-c", "exec java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom $JAVA_OPTS -jar app.jar"]
