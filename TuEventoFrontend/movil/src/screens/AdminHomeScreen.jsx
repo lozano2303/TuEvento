@@ -19,6 +19,7 @@ const ADMIN_ITEMS = [
   { icon: "person-circle-outline",  key: "users",        route: "AdminUsers" },
   { icon: "pricetags-outline",      key: "categories",   route: "AdminCategories" },
   { icon: "layers-outline",         key: "sectionTypes", route: "AdminSectionTypes" },
+  { icon: "language-outline",       key: "translations", route: "AdminTranslations" },
 ];
 
 /**
