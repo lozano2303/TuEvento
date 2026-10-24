@@ -9,8 +9,8 @@ import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganizerRolePort;
 import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedEvent;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerRoleRevocationRepository;
-import com.capysoft.tuevento.modules.security.domain.repository.RoleRepository;
-import com.capysoft.tuevento.modules.security.domain.repository.UserRepository;
+import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.RoleJpaRepository;
+import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +23,10 @@ import java.time.LocalDateTime;
 /**
  * Quita el rol de organizador a un usuario y lo devuelve a USER.
  *
- * <p>El motivo queda en organizer_role_revocation y se notifica al usuario. El aviso
- * ROLE_UPDATED por WebSocket hace que sus sesiones abiertas renueven el JWT con el rol nuevo.
+ * <p>Trabaja directo con las entidades JPA (sin los mappers de dominio) para evitar
+ * errores de entidades detached. El motivo queda en organizer_role_revocation y viaja
+ * en {@link OrganizerRoleRevokedEvent}: el listener lo notifica al usuario y le envía
+ * ROLE_REVOKED por /topic/role-change/{userId}.
  *
  * <p>Sus eventos activos se cierran en la misma transacción: los PUBLISHED se cancelan
  * (los compradores reciben el reembolso en su cartera y quien esté viendo el evento ve el
@@ -34,13 +36,12 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class RevokeOrganizerRoleUseCase implements RevokeOrganizerRolePort {
 
-    private static final String ORGANIZER_ROLE = "ORGANIZER";
-    private static final String USER_ROLE      = "USER";
+    private static final int REASON_MIN_LENGTH = 10;
 
-    private final UserRepository                    userRepository;
-    private final RoleRepository                    roleRepository;
-    private final OrganizerRoleRevocationRepository revocationRepository;
+    private final UserJpaRepository                 userJpaRepository;
+    private final RoleJpaRepository                 roleJpaRepository;
     private final ApplicationEventPublisher         eventPublisher;
+    private final OrganizerRoleRevocationRepository revocationRepository;
     private final EventRepository                   eventRepository;
     private final AdminChangeEventStatusPort        adminChangeEventStatusPort;
 
@@ -48,28 +49,30 @@ public class RevokeOrganizerRoleUseCase implements RevokeOrganizerRolePort {
     @Transactional
     public void revoke(Integer userId, String reason, Integer adminUserId) {
         String trimmedReason = reason == null ? "" : reason.trim();
-        if (trimmedReason.length() < 10) {
+        if (trimmedReason.length() < REASON_MIN_LENGTH) {
             throw new BusinessException("REVOCATION_REASON_REQUIRED",
-                    "A reason of at least 10 characters is required");
+                    "A reason of at least " + REASON_MIN_LENGTH + " characters is required");
         }
 
-        var user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found with id: " + userId));
+        var userEntity = userJpaRepository.findByIdEager(userId)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
 
-        if (user.getRole() == null || !ORGANIZER_ROLE.equals(user.getRole().getCode())) {
-            throw new BusinessException("USER_NOT_ORGANIZER", "Only organizers can have the organizer role revoked");
+        if (userEntity.getRole() == null || !"ORGANIZER".equals(userEntity.getRole().getCode())) {
+            throw new BusinessException("USER_NOT_ORGANIZER",
+                    "User " + userId + " does not have the ORGANIZER role");
         }
 
-        var userRole = roleRepository.findByCode(USER_ROLE)
+        var userRole = roleJpaRepository.findByCode("USER")
                 .orElseThrow(() -> new NotFoundException("ROLE_NOT_FOUND", "USER role not found"));
 
-        user.setRole(userRole);
-        userRepository.save(user);
+        userEntity.setRole(userRole);
+        userJpaRepository.save(userEntity);
         revocationRepository.record(userId, adminUserId, trimmedReason);
         closeActiveEvents(userId, adminUserId, trimmedReason);
 
         eventPublisher.publishEvent(OrganizerRoleRevokedEvent.builder()
                 .userId(userId)
+                .alias(userEntity.getAlias())
                 .revokedBy(adminUserId)
                 .reason(trimmedReason)
                 .occurredAt(LocalDateTime.now())
@@ -77,7 +80,7 @@ public class RevokeOrganizerRoleUseCase implements RevokeOrganizerRolePort {
     }
 
     private void closeActiveEvents(Integer userId, Integer adminUserId, String reason) {
-        Long adminId = adminUserId.longValue();
+        Long adminId = adminUserId == null ? null : adminUserId.longValue();
         for (Event event : eventRepository.findByUserId(userId.longValue())) {
             if (event.getStatus() == EventStatus.PUBLISHED) {
                 adminChangeEventStatusPort.execute(event.getEventId(),

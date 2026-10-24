@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 101-seed-organizer-role-revoked-notification-type
+      author: capysoft
+      comment: >
+        Seeds the ORGANIZER_ROLE_REVOKED notification type.
+        Sent to a user when an admin revokes their ORGANIZER role and downgrades them to USER.
+      changes:
+        - insert:
+            tableName: notification_type
+            columns:
+              - column:
+                  name: name
+                  value: ORGANIZER_ROLE_REVOKED
+              - column:
+                  name: description
+                  value: Un administrador revocó el rol de organizador del usuario
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()

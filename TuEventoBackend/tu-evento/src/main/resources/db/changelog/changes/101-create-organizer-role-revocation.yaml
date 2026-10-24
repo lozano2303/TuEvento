@@ -48,26 +48,3 @@ databaseChangeLog:
               - column:
                   name: user_id
 
-  - changeSet:
-      id: 101-seed-organizer-role-revoked-notification-type
-      author: capysoft
-      comment: Notificación al usuario cuando un admin le quita el rol de organizador, con el motivo.
-      changes:
-        - insert:
-            tableName: notification_type
-            columns:
-              - column:
-                  name: name
-                  value: ORGANIZER_ROLE_REVOKED
-              - column:
-                  name: description
-                  value: Un administrador quitó el rol de organizador al usuario
-              - column:
-                  name: active
-                  valueBoolean: true
-              - column:
-                  name: created_at
-                  valueComputed: NOW()
-              - column:
-                  name: updated_at
-                  valueComputed: NOW()

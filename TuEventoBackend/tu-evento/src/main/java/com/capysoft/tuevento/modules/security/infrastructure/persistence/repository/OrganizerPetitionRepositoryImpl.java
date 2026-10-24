@@ -25,7 +25,7 @@ public class OrganizerPetitionRepositoryImpl implements OrganizerPetitionReposit
     @Override
     @Transactional(readOnly = true)
     public Optional<OrganizerPetition> findById(Integer organizerPetitionId) {
-        return jpaRepository.findById(organizerPetitionId).map(mapper::toDomain);
+        return jpaRepository.findByIdEager(organizerPetitionId).map(mapper::toDomain);
     }
 
     @Override

@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
  *   <li>SUBSCRIBE: se rechazan destinos con comodines o rutas no normalizadas, porque el
  *       broker simple los interpreta como patrones Ant ({@code /topic/users/*}/session
  *       recibiría los mensajes de todos). Los canales personales
- *       ({@code /topic/users/{id}/**}, {@code /topic/notifications/{id}}) solo los puede
+ *       ({@code /topic/users/{id}/**}, {@code /topic/notifications/{id}}, {@code /topic/role-change/{id}}) solo los puede
  *       escuchar su dueño; el Principal lo crea UserHandshakeHandler con el userId del JWT.</li>
  * </ul>
  */
@@ -31,7 +31,7 @@ public class UserTopicSubscriptionInterceptor implements ChannelInterceptor {
     private static final String APP_PREFIX = "/app/";
 
     private static final Pattern USER_TOPIC =
-            Pattern.compile("^/topic/(?:users|notifications)/([^/]+)(?:/.*)?$");
+            Pattern.compile("^/topic/(?:users|notifications|role-change)/([^/]+)(?:/.*)?$");
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {

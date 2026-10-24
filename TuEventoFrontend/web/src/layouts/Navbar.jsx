@@ -1,4 +1,4 @@
-import { Calendar, User, Plus, Wallet, Menu, X, Bell } from "lucide-react";
+import { User, Plus, Wallet, Menu, X, Bell, LayoutDashboard } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -31,6 +31,16 @@ export default function Navbar() {
         email: storedEmail
       });
     }
+  }, []);
+
+  // Re-read role from localStorage when admin revokes organizer role via WS
+  useEffect(() => {
+    const handleRoleChanged = () => {
+      const storedRole = localStorage.getItem('role');
+      setUserData(prev => prev ? { ...prev, role: storedRole } : prev);
+    };
+    window.addEventListener('roleChanged', handleRoleChanged);
+    return () => window.removeEventListener('roleChanged', handleRoleChanged);
   }, []);
 
   useEffect(() => {
@@ -66,6 +76,9 @@ export default function Navbar() {
       getEventsByUser(userData.userId)
         .then((res) => setHasEvents((res.data?.length ?? 0) > 0))
         .catch(() => setHasEvents(false));
+    } else {
+      // Reset when role changes away from ORGANIZER
+      setHasEvents(false);
     }
   }, [userData, isOrganizer]);
 
@@ -100,11 +113,15 @@ const displayName = (() => {
             </span>
           </Link>
 
-          {/* Links centrales — solo desktop */}
+          {/* Links centrales — solo desktop, solo para no-admin */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium flex-1 justify-center">
-            <Link to="/" className="text-textSecondary hover:text-accent transition-colors">{t('navigation.home')}</Link>
-            <Link to="/nosotros" className="text-textSecondary hover:text-accent transition-colors">{t('navigation.about')}</Link>
-            <Link to="/events" className="text-textSecondary hover:text-accent transition-colors">{t('navigation.events')}</Link>
+            {!isAdmin && (
+              <>
+                <Link to="/" className="text-textSecondary hover:text-accent transition-colors">{t('navigation.home')}</Link>
+                <Link to="/nosotros" className="text-textSecondary hover:text-accent transition-colors">{t('navigation.about')}</Link>
+                <Link to="/events" className="text-textSecondary hover:text-accent transition-colors">{t('navigation.events')}</Link>
+              </>
+            )}
             {userData && isOrganizer && (
               <button
                 onClick={() => navigate(hasEvents ? '/events/manage' : '/events/create')}
@@ -152,51 +169,6 @@ const displayName = (() => {
                 {isModalOpen && (
                   <div className="theme-dropdown user-modal absolute right-0 mt-2 w-[230px] rounded-2xl shadow-2xl z-50 overflow-hidden">
 
-                    <Link
-                      to="/profile"
-                      onClick={() => setIsModalOpen(false)}
-                      className="theme-menu-item flex items-center gap-3 px-4 py-3.5 transition-colors theme-menu-divider"
-                    >
-                      <div className="theme-menu-item-icon w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0">
-                        <User className="w-[17px] h-[17px] text-accent" />
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.profile')}</p>
-                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.profileDesc')}</p>
-                      </div>
-                      <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-                    </Link>
-
-                    <Link
-                      to="/notifications"
-                      onClick={() => setIsModalOpen(false)}
-                      className="theme-menu-item flex items-center gap-3 px-4 py-3.5 transition-colors theme-menu-divider"
-                    >
-                      <div className="theme-menu-item-icon w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0">
-                        <Bell className="w-[17px] h-[17px] text-accent" />
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.notifications')}</p>
-                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.notificationsDesc')}</p>
-                      </div>
-                      <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-                    </Link>
-
-                    <Link
-                      to="/wallet"
-                      onClick={() => setIsModalOpen(false)}
-                      className="theme-menu-item-wallet flex items-center gap-3 px-4 py-3.5 transition-colors"
-                    >
-                      <div className="theme-menu-item-icon-info w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0">
-                        <Wallet className="w-[17px] h-[17px] text-accent" />
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.wallet')}</p>
-                        <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.walletDesc')}</p>
-                      </div>
-                      <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-                    </Link>
-
                     {isAdmin && (
                       <Link
                         to="/admin-panel"
@@ -204,7 +176,7 @@ const displayName = (() => {
                         className="theme-menu-item-admin flex items-center gap-3 px-4 py-3.5 transition-colors theme-menu-divider-error"
                       >
                         <div className="theme-menu-item-icon-error w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0">
-                          <Calendar className="w-[17px] h-[17px] text-error" />
+                          <LayoutDashboard className="w-[17px] h-[17px] text-error" />
                         </div>
                         <div>
                           <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.adminPanel')}</p>
@@ -212,6 +184,55 @@ const displayName = (() => {
                         </div>
                         <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-error)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
                       </Link>
+                    )}
+
+                    {!isAdmin && (
+                      <>
+                        <Link
+                          to="/profile"
+                          onClick={() => setIsModalOpen(false)}
+                          className="theme-menu-item flex items-center gap-3 px-4 py-3.5 transition-colors theme-menu-divider"
+                        >
+                          <div className="theme-menu-item-icon w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0">
+                            <User className="w-[17px] h-[17px] text-accent" />
+                          </div>
+                          <div>
+                            <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.profile')}</p>
+                            <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.profileDesc')}</p>
+                          </div>
+                          <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                        </Link>
+
+                        <Link
+                          to="/notifications"
+                          onClick={() => setIsModalOpen(false)}
+                          className="theme-menu-item flex items-center gap-3 px-4 py-3.5 transition-colors theme-menu-divider"
+                        >
+                          <div className="theme-menu-item-icon w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0">
+                            <Bell className="w-[17px] h-[17px] text-accent" />
+                          </div>
+                          <div>
+                            <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.notifications')}</p>
+                            <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.notificationsDesc')}</p>
+                          </div>
+                          <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-primary)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                        </Link>
+
+                        <Link
+                          to="/wallet"
+                          onClick={() => setIsModalOpen(false)}
+                          className="theme-menu-item-wallet flex items-center gap-3 px-4 py-3.5 transition-colors"
+                        >
+                          <div className="theme-menu-item-icon-info w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0">
+                            <Wallet className="w-[17px] h-[17px] text-accent" />
+                          </div>
+                          <div>
+                            <p className="text-[14px] font-semibold text-textPrimary leading-tight">{t('userMenu.wallet')}</p>
+                            <p className="text-[11px] text-textMuted leading-tight mt-0.5">{t('userMenu.walletDesc')}</p>
+                          </div>
+                          <svg className="ml-auto flex-shrink-0" width="14" height="14" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                        </Link>
+                      </>
                     )}
 
                   </div>
@@ -239,18 +260,22 @@ const displayName = (() => {
         {/* Menú móvil desplegable */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-surface border-t border-surfaceAlt px-4 py-3 flex flex-col gap-1">
-            <Link to="/" onClick={() => setIsMobileMenuOpen(false)}
-              className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
-              {t('navigation.home')}
-            </Link>
-            <Link to="/nosotros" onClick={() => setIsMobileMenuOpen(false)}
-              className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
-              {t('navigation.about')}
-            </Link>
-            <Link to="/events" onClick={() => setIsMobileMenuOpen(false)}
-              className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
-              {t('navigation.events')}
-            </Link>
+            {!isAdmin && (
+              <>
+                <Link to="/" onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
+                  {t('navigation.home')}
+                </Link>
+                <Link to="/nosotros" onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
+                  {t('navigation.about')}
+                </Link>
+                <Link to="/events" onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl">
+                  {t('navigation.events')}
+                </Link>
+              </>
+            )}
             {userData && isOrganizer && (
               <button onClick={() => handleNavClick(hasEvents ? '/events/manage' : '/events/create')}
                 className="flex items-center gap-2 text-textSecondary hover:text-accent hover:bg-surfaceAlt transition-colors text-sm font-medium px-3 py-2.5 rounded-xl w-full text-left bg-transparent border-none cursor-pointer">
