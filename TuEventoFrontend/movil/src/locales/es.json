@@ -1933,5 +1933,27 @@
     "results_other": "{{count}} eventos",
     "clearFilters": "Limpiar filtros",
     "noMatches": "Prueba con otra búsqueda o quita algunos filtros."
+  },
+  "mobileCart": {
+    "reservationHint": "Tus sillas quedan reservadas por tiempo limitado. Completa el pago antes de que venzan.",
+    "total": "Total",
+    "selectMore_one": "Selecciona {{count}} silla más para continuar",
+    "selectMore_other": "Selecciona {{count}} sillas más para continuar",
+    "pay_one": "Ir al pago · {{count}} silla",
+    "pay_other": "Ir al pago · {{count}} sillas",
+    "selectedOf": "{{count}} de {{total}} seleccionadas"
+  },
+  "mobileComments": {
+    "login": "Inicia sesión",
+    "yourRating": "Tu calificación",
+    "errors": {
+      "sessionExpired": "Tu sesión expiró. Inicia sesión de nuevo.",
+      "rateLimited": "Espera unos segundos antes de volver a comentar.",
+      "ratingRequired": "Selecciona una calificación de 1 a 5 estrellas antes de publicar.",
+      "parentInvalid": "Este comentario no puede recibir respuestas.",
+      "editExpired": "El tiempo para editar este comentario ha expirado.",
+      "forbidden": "No tienes permiso para hacer esto.",
+      "generic": "No se pudo completar la acción. Intenta de nuevo."
+    }
   }
 }
