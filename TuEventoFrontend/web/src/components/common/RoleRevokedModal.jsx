@@ -34,8 +34,10 @@ export default function RoleRevokedModal({ open, onClose }) {
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-[90] p-4"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+      onKeyDown={(e) => { if (e.key === 'Escape') handleClose(); }}
     >
       <div className="bg-surface rounded-2xl border border-rose-500/30 shadow-2xl shadow-rose-900/20 w-full max-w-md flex flex-col overflow-hidden">
 
