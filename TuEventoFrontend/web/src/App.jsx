@@ -31,7 +31,6 @@ import AdminSectionTypeTranslations from './pages/AdminSectionTypeTranslations';
 import AdminCommentTranslations from './pages/AdminCommentTranslations';
 import AdminProfileTranslations from './pages/AdminProfileTranslations';
 import AdminReports from './pages/AdminReports';
-import AdminOrganizerManagement from './pages/AdminOrganizerManagement';
 import WalletPage from './pages/WalletPage';
 import Checkout from './pages/Checkout';
 import PaymentPending from './pages/PaymentPending';
@@ -101,7 +100,7 @@ function AppContent() {
     '/login', '/verification', '/events/create',
     '/reactivate-account', '/complete-profile',
     '/admin-panel', '/admin-events', '/admin-dashboard', '/admin-financial', '/admin-reports',
-    '/admin-categories', '/admin-section-types', '/admin-organizers', '/admin-users', '/admin-refunds',
+    '/admin-categories', '/admin-section-types', '/admin-users', '/admin-refunds',
     '/checkout',
   ].includes(location.pathname)
     && !location.pathname.match(/^\/events\/[^/]+\/layout$/)
@@ -186,11 +185,6 @@ function AppContent() {
           <Route path="/admin-reports" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminReports />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin-organizers" element={
-            <ProtectedRoute requiredRoles={['ADMIN']}>
-              <AdminOrganizerManagement />
             </ProtectedRoute>
           } />
           <Route path="/admin-translations/:lang/events" element={

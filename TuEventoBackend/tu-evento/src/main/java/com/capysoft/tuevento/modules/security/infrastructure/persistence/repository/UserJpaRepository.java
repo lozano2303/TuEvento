@@ -56,15 +56,4 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
             """)
     List<AdminUserResponse> searchForAdmin(@Param("q") String q, @Param("role") String role, Pageable pageable);
 
-    /** All users currently holding a specific role code. Eagerly fetches role + userStatus to avoid LazyInitializationException. */
-    @Query("SELECT u FROM UserEntity u JOIN FETCH u.role r JOIN FETCH u.userStatus WHERE r.code = :roleCode")
-    List<UserEntity> findAllByRoleCode(@Param("roleCode") String roleCode);
-
-    /** Count events for a given user — avoids loading the full event list just for a count. */
-    @Query("SELECT COUNT(e) FROM com.capysoft.tuevento.modules.event.infrastructure.persistence.entity.EventEntity e WHERE e.userId = :userId")
-    long countEventsByUserId(@Param("userId") Long userId);
-
-    /** Count published events for a given user. */
-    @Query(value = "SELECT COUNT(*) FROM event WHERE user_id = :userId AND status = 'PUBLISHED'", nativeQuery = true)
-    long countPublishedEventsByUserId(@Param("userId") Long userId);
 }
