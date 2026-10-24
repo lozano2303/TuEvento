@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.capysoft.tuevento.modules.security.application.dto.response.AdminUserResponse;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.UserEntity;
 
 public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
@@ -29,4 +30,22 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
     /** Most recent N registered users — used for admin activity feed. */
     @Query("SELECT u FROM UserEntity u ORDER BY u.createdAt DESC")
     List<UserEntity> findTopByOrderByCreatedAtDesc(Pageable pageable);
+
+    /**
+     * Listado de usuarios para el panel admin con nombre (profile) y email (login_credentials).
+     * {@code q} ya llega en minúsculas con comodines ("%texto%"); "" desactiva cada filtro.
+     */
+    @Query("""
+            SELECT u.userId AS userId, u.alias AS alias, p.fullName AS fullName, c.email AS email,
+                   r.code AS role, s.code AS status, u.createdAt AS createdAt
+            FROM UserEntity u
+            JOIN u.role r
+            JOIN u.userStatus s
+            LEFT JOIN ProfileEntity p ON p.userId = u.userId
+            LEFT JOIN LoginCredentialsEntity c ON c.user = u
+            WHERE (:role = '' OR r.code = :role)
+              AND (:q = '' OR LOWER(u.alias) LIKE :q OR LOWER(p.fullName) LIKE :q OR LOWER(c.email) LIKE :q)
+            ORDER BY u.createdAt DESC
+            """)
+    List<AdminUserResponse> searchForAdmin(@Param("q") String q, @Param("role") String role, Pageable pageable);
 }

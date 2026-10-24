@@ -1571,6 +1571,10 @@
       "sectionTypes": {
         "label": "Tipos de Sección",
         "sub": "Gestionar tipos de sección"
+      },
+      "users": {
+        "label": "Usuarios",
+        "sub": "Roles y organizadores"
       }
     },
     "comingSoon": "Próximamente",
@@ -1956,5 +1960,43 @@
     "cancelConfirmMessage": "Esta acción no se puede deshacer. Todos los compradores recibirán el reembolso en su cartera y quienes estén viendo el evento serán avisados.",
     "cancelConfirmBack": "Volver",
     "cancelConfirmYes": "Sí, cancelar"
+  },
+  "adminUsers": {
+    "title": "Gestión de usuarios",
+    "subtitle": "Busca usuarios y gestiona sus roles. Al quitar el rol de organizador, el usuario recibe el motivo por notificación.",
+    "searchPlaceholder": "Buscar por nombre, alias o correo...",
+    "loading": "Cargando usuarios...",
+    "empty": "No hay usuarios que coincidan con la búsqueda.",
+    "roles": {
+      "ALL": "Todos",
+      "ORGANIZER": "Organizadores",
+      "USER": "Usuarios",
+      "ADMIN": "Administradores"
+    },
+    "statuses": {
+      "PENDING": "Pendiente",
+      "ACTIVE": "Activo",
+      "BLOCKED": "Bloqueado",
+      "INACTIVE": "Inactivo",
+      "DELETED": "Eliminado"
+    },
+    "columns": {
+      "user": "Usuario",
+      "email": "Correo",
+      "role": "Rol",
+      "status": "Estado",
+      "joined": "Registro",
+      "actions": "Acciones"
+    },
+    "revokeButton": "Quitar organizador",
+    "revokeTitle": "¿Quitar el rol de organizador a {{name}}?",
+    "revokeMessage": "La cuenta volverá a ser de usuario normal y ya no podrá crear ni gestionar eventos. Le enviaremos el motivo por notificación y correo.",
+    "reasonLabel": "Motivo",
+    "reasonPlaceholder": "Explica al usuario por qué se le quita el rol...",
+    "reasonMin": "Mínimo {{count}} caracteres",
+    "cancel": "Cancelar",
+    "revokeConfirm": "Quitar rol",
+    "revokeSuccess": "{{name}} ya no es organizador.",
+    "revokeError": "No se pudo quitar el rol de organizador."
   }
 }

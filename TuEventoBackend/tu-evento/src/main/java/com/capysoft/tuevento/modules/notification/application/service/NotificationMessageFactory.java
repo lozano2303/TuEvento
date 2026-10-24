@@ -26,6 +26,7 @@ public final class NotificationMessageFactory {
             case NotificationTypeNames.EVENT_REJECTED   -> eventRejected(email, command);
             case NotificationTypeNames.NEW_COMMENT      -> newComment(email, command);
             case NotificationTypeNames.NEW_REPLY        -> newReply(email, command);
+            case NotificationTypeNames.ORGANIZER_ROLE_REVOKED -> organizerRoleRevoked(email, command);
             default -> new MessageContent(
                     "Notificación",
                     email ? html("Tienes una nueva notificación en TuEvento.") : "Tienes una nueva notificación.");
@@ -191,6 +192,24 @@ public final class NotificationMessageFactory {
         BigDecimal value = zeroIfNull(amount).setScale(2, RoundingMode.HALF_UP);
         String code = currency == null || currency.isBlank() ? "COP" : currency;
         return value.toPlainString() + " " + code;
+    }
+
+    private static MessageContent organizerRoleRevoked(boolean email, SendNotificationCommand command) {
+        String plainReason = command.getReason() != null && !command.getReason().isBlank()
+                ? command.getReason()
+                : "Sin motivo especificado.";
+        if (email) {
+            return new MessageContent(
+                    "TuEvento — Ya no eres organizador",
+                    html(
+                        "Un administrador quitó el rol de organizador de tu cuenta.",
+                        "Motivo indicado por el administrador: " + escapeHtml(plainReason),
+                        "Puedes seguir comprando entradas con normalidad. Si crees que es un error, contáctanos."
+                    ));
+        }
+        return new MessageContent(
+                "Ya no eres organizador",
+                "Un administrador quitó el rol de organizador de tu cuenta. Motivo: " + plainReason);
     }
 
     private static BigDecimal zeroIfNull(BigDecimal amount) {

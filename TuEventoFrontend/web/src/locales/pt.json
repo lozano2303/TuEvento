@@ -1493,5 +1493,43 @@
     "loadError": "Erro ao carregar os dados",
     "backToEvents": "Voltar aos eventos",
     "remainingBalance": "Seu saldo restante"
+  },
+  "adminUsers": {
+    "title": "Gestão de usuários",
+    "subtitle": "Busque usuários e gerencie seus papéis. Ao remover o papel de organizador, o usuário recebe o motivo por notificação.",
+    "searchPlaceholder": "Buscar por nome, apelido ou e-mail...",
+    "loading": "Carregando usuários...",
+    "empty": "Nenhum usuário corresponde à busca.",
+    "roles": {
+      "ALL": "Todos",
+      "ORGANIZER": "Organizadores",
+      "USER": "Usuários",
+      "ADMIN": "Administradores"
+    },
+    "statuses": {
+      "PENDING": "Pendente",
+      "ACTIVE": "Ativo",
+      "BLOCKED": "Bloqueado",
+      "INACTIVE": "Inativo",
+      "DELETED": "Excluído"
+    },
+    "columns": {
+      "user": "Usuário",
+      "email": "E-mail",
+      "role": "Papel",
+      "status": "Status",
+      "joined": "Cadastro",
+      "actions": "Ações"
+    },
+    "revokeButton": "Remover organizador",
+    "revokeTitle": "Remover o papel de organizador de {{name}}?",
+    "revokeMessage": "A conta voltará a ser de usuário comum e não poderá mais criar nem gerenciar eventos. Enviaremos o motivo por notificação e e-mail.",
+    "reasonLabel": "Motivo",
+    "reasonPlaceholder": "Explique ao usuário por que o papel está sendo removido...",
+    "reasonMin": "Mínimo de {{count}} caracteres",
+    "cancel": "Cancelar",
+    "revokeConfirm": "Remover papel",
+    "revokeSuccess": "{{name}} não é mais organizador.",
+    "revokeError": "Não foi possível remover o papel de organizador."
   }
 }

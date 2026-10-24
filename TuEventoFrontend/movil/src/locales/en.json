@@ -1571,6 +1571,10 @@
       "sectionTypes": {
         "label": "Section Types",
         "sub": "Manage section types"
+      },
+      "users": {
+        "label": "Users",
+        "sub": "Roles and organizers"
       }
     },
     "comingSoon": "Coming soon",
@@ -1956,5 +1960,43 @@
     "cancelConfirmMessage": "This action cannot be undone. All buyers will be refunded to their wallet and anyone viewing the event will be notified.",
     "cancelConfirmBack": "Go back",
     "cancelConfirmYes": "Yes, cancel"
+  },
+  "adminUsers": {
+    "title": "User management",
+    "subtitle": "Search users and manage their roles. When you revoke the organizer role, the user is notified with the reason.",
+    "searchPlaceholder": "Search by name, alias or email...",
+    "loading": "Loading users...",
+    "empty": "No users match your search.",
+    "roles": {
+      "ALL": "All",
+      "ORGANIZER": "Organizers",
+      "USER": "Users",
+      "ADMIN": "Admins"
+    },
+    "statuses": {
+      "PENDING": "Pending",
+      "ACTIVE": "Active",
+      "BLOCKED": "Blocked",
+      "INACTIVE": "Inactive",
+      "DELETED": "Deleted"
+    },
+    "columns": {
+      "user": "User",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "joined": "Joined",
+      "actions": "Actions"
+    },
+    "revokeButton": "Revoke organizer",
+    "revokeTitle": "Revoke the organizer role from {{name}}?",
+    "revokeMessage": "The account will go back to a regular user and will no longer be able to create or manage events. We will send the reason by notification and email.",
+    "reasonLabel": "Reason",
+    "reasonPlaceholder": "Explain to the user why the role is being revoked...",
+    "reasonMin": "At least {{count}} characters",
+    "cancel": "Cancel",
+    "revokeConfirm": "Revoke role",
+    "revokeSuccess": "{{name}} is no longer an organizer.",
+    "revokeError": "Could not revoke the organizer role."
   }
 }

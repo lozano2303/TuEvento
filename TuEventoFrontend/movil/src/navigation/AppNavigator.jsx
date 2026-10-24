@@ -35,6 +35,7 @@ import AdminFinancialScreen        from "../screens/AdminFinancialScreen";
 import AdminReportsScreen          from "../screens/AdminReportsScreen";
 import AdminCategoriesScreen       from "../screens/AdminCategoriesScreen";
 import AdminSectionTypesScreen     from "../screens/AdminSectionTypesScreen";
+import AdminUsersScreen            from "../screens/AdminUsersScreen";
 import MyTicketsScreen             from "../screens/MyTicketsScreen";
 import TicketQrScreen              from "../screens/TicketQrScreen";
 import ScanTicketScreen            from "../screens/ScanTicketScreen";
@@ -258,6 +259,7 @@ export default function AppNavigator() {
         <Stack.Screen name="AdminReports"            component={AdminReportsScreen} />
         <Stack.Screen name="AdminCategories"         component={AdminCategoriesScreen} />
         <Stack.Screen name="AdminSectionTypes"       component={AdminSectionTypesScreen} />
+        <Stack.Screen name="AdminUsers"              component={AdminUsersScreen} />
         <Stack.Screen name="MyTickets"               component={MyTicketsScreen} />
         <Stack.Screen name="TicketQr"                component={TicketQrScreen} />
         <Stack.Screen name="ScanTicket"              component={ScanTicketScreen} />

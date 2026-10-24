@@ -1571,6 +1571,10 @@
       "sectionTypes": {
         "label": "Types de section",
         "sub": "Gérer les types de section"
+      },
+      "users": {
+        "label": "Utilisateurs",
+        "sub": "Rôles et organisateurs"
       }
     },
     "comingSoon": "Bientôt disponible",
@@ -1956,5 +1960,43 @@
     "cancelConfirmMessage": "Cette action est irréversible. Tous les acheteurs seront remboursés sur leur portefeuille et les personnes qui consultent l'événement seront prévenues.",
     "cancelConfirmBack": "Retour",
     "cancelConfirmYes": "Oui, annuler"
+  },
+  "adminUsers": {
+    "title": "Gestion des utilisateurs",
+    "subtitle": "Recherchez des utilisateurs et gérez leurs rôles. Lorsque vous retirez le rôle d'organisateur, l'utilisateur reçoit le motif par notification.",
+    "searchPlaceholder": "Rechercher par nom, pseudo ou e-mail...",
+    "loading": "Chargement des utilisateurs...",
+    "empty": "Aucun utilisateur ne correspond à la recherche.",
+    "roles": {
+      "ALL": "Tous",
+      "ORGANIZER": "Organisateurs",
+      "USER": "Utilisateurs",
+      "ADMIN": "Administrateurs"
+    },
+    "statuses": {
+      "PENDING": "En attente",
+      "ACTIVE": "Actif",
+      "BLOCKED": "Bloqué",
+      "INACTIVE": "Inactif",
+      "DELETED": "Supprimé"
+    },
+    "columns": {
+      "user": "Utilisateur",
+      "email": "E-mail",
+      "role": "Rôle",
+      "status": "Statut",
+      "joined": "Inscription",
+      "actions": "Actions"
+    },
+    "revokeButton": "Retirer organisateur",
+    "revokeTitle": "Retirer le rôle d'organisateur à {{name}} ?",
+    "revokeMessage": "Le compte redeviendra un utilisateur standard et ne pourra plus créer ni gérer d'événements. Nous enverrons le motif par notification et e-mail.",
+    "reasonLabel": "Motif",
+    "reasonPlaceholder": "Expliquez à l'utilisateur pourquoi le rôle lui est retiré...",
+    "reasonMin": "Au moins {{count}} caractères",
+    "cancel": "Annuler",
+    "revokeConfirm": "Retirer le rôle",
+    "revokeSuccess": "{{name}} n'est plus organisateur.",
+    "revokeError": "Impossible de retirer le rôle d'organisateur."
   }
 }

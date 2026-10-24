@@ -1,0 +1,73 @@
+databaseChangeLog:
+  - changeSet:
+      id: 101-create-organizer-role-revocation-table
+      author: capysoft
+      comment: >
+        Auditoría de cuando un admin quita el rol de organizador a un usuario
+        (vuelve a USER): quién lo hizo, cuándo y el motivo que se le notificó.
+      changes:
+        - createTable:
+            tableName: organizer_role_revocation
+            columns:
+              - column:
+                  name: revocation_id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_organizer_role_revocation_user
+                    references: app_user(user_id)
+              - column:
+                  name: revoked_by
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_organizer_role_revocation_admin
+                    references: app_user(user_id)
+              - column:
+                  name: reason
+                  type: VARCHAR(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: NOW()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: organizer_role_revocation
+            indexName: idx_organizer_role_revocation_user
+            columns:
+              - column:
+                  name: user_id
+
+  - changeSet:
+      id: 101-seed-organizer-role-revoked-notification-type
+      author: capysoft
+      comment: Notificación al usuario cuando un admin le quita el rol de organizador, con el motivo.
+      changes:
+        - insert:
+            tableName: notification_type
+            columns:
+              - column:
+                  name: name
+                  value: ORGANIZER_ROLE_REVOKED
+              - column:
+                  name: description
+                  value: Un administrador quitó el rol de organizador al usuario
+              - column:
+                  name: active
+                  valueBoolean: true
+              - column:
+                  name: created_at
+                  valueComputed: NOW()
+              - column:
+                  name: updated_at
+                  valueComputed: NOW()
