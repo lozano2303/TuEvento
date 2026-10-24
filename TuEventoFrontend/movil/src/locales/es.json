@@ -879,7 +879,8 @@
     "gallery": "Galería",
     "cancelledLiveTitle": "Este evento ha sido cancelado",
     "cancelledLiveMessage": "Si realizaste un pago, el reembolso se acreditó en tu cartera. Revisa tu bandeja de entrada y tus notificaciones para ver el detalle.",
-    "cancelledLiveButton": "Volver al inicio"
+    "cancelledLiveButton": "Volver al inicio",
+    "cancelledLiveOrganizerMessage": "El administrador retiró al organizador de este evento por incumplir las normas de la plataforma, por lo que el evento fue cancelado. Si realizaste un pago, el reembolso se acreditó en tu cartera. Revisa tu bandeja de entrada y tus notificaciones para ver el detalle."
   },
   "paymentApproved": {
     "title": "¡Pago aprobado!",
@@ -1510,16 +1511,11 @@
     "title": "Mi Perfil",
     "sections": {
       "organizer": "Organizador",
-      "admin": "Administración",
       "account": "Cuenta"
     },
     "scan": {
       "label": "Validar entradas",
       "desc": "Escanear códigos QR de tus eventos"
-    },
-    "adminPanel": {
-      "label": "Panel de administración",
-      "desc": "Gestión de la plataforma"
     },
     "menu": {
       "profile": {
@@ -1539,46 +1535,6 @@
         "sub": "Gestiona tus alertas"
       }
     },
-    "admin": {
-      "dashboard": {
-        "label": "Dashboard",
-        "sub": "Vista general"
-      },
-      "financial": {
-        "label": "Control Financiero",
-        "sub": "Pagos y reembolsos"
-      },
-      "events": {
-        "label": "Eventos",
-        "sub": "Gestionar y revisar eventos"
-      },
-      "reports": {
-        "label": "Reportes",
-        "sub": "Estadísticas de la plataforma"
-      },
-      "refunds": {
-        "label": "Reembolsos",
-        "sub": "Gestionar reembolsos"
-      },
-      "requests": {
-        "label": "Solicitudes",
-        "sub": "Solicitudes de organizador"
-      },
-      "categories": {
-        "label": "Categorías",
-        "sub": "Gestionar categorías"
-      },
-      "sectionTypes": {
-        "label": "Tipos de Sección",
-        "sub": "Gestionar tipos de sección"
-      },
-      "users": {
-        "label": "Usuarios",
-        "sub": "Roles y organizadores"
-      }
-    },
-    "comingSoon": "Próximamente",
-    "comingSoonBadge": "PRONTO",
     "logout": "Cerrar sesión",
     "defaultUser": "Usuario"
   },
@@ -1953,100 +1909,6 @@
       "editExpired": "El tiempo para editar este comentario ha expirado.",
       "forbidden": "No tienes permiso para hacer esto.",
       "generic": "No se pudo completar la acción. Intenta de nuevo."
-    }
-  },
-  "mobileAdminEvents": {
-    "cancelConfirmTitle": "¿Cancelar este evento?",
-    "cancelConfirmMessage": "Esta acción no se puede deshacer. Todos los compradores recibirán el reembolso en su cartera y quienes estén viendo el evento serán avisados.",
-    "cancelConfirmBack": "Volver",
-    "cancelConfirmYes": "Sí, cancelar"
-  },
-  "adminUsers": {
-    "title": "Gestión de usuarios",
-    "subtitle": "Busca usuarios y gestiona sus roles. Al quitar el rol de organizador, el usuario recibe el motivo por notificación.",
-    "searchPlaceholder": "Buscar por nombre, alias o correo...",
-    "loading": "Cargando usuarios...",
-    "empty": "No hay usuarios que coincidan con la búsqueda.",
-    "roles": {
-      "ALL": "Todos",
-      "ORGANIZER": "Organizadores",
-      "USER": "Usuarios",
-      "ADMIN": "Administradores"
-    },
-    "statuses": {
-      "PENDING": "Pendiente",
-      "ACTIVE": "Activo",
-      "BLOCKED": "Bloqueado",
-      "INACTIVE": "Inactivo",
-      "DELETED": "Eliminado"
-    },
-    "columns": {
-      "user": "Usuario",
-      "email": "Correo",
-      "role": "Rol",
-      "status": "Estado",
-      "joined": "Registro",
-      "actions": "Acciones"
-    },
-    "revokeButton": "Quitar organizador",
-    "revokeTitle": "¿Quitar el rol de organizador a {{name}}?",
-    "revokeMessage": "La cuenta volverá a ser de usuario normal y ya no podrá crear ni gestionar eventos. Le enviaremos el motivo por notificación y correo.",
-    "reasonLabel": "Motivo",
-    "reasonPlaceholder": "Explica al usuario por qué se le quita el rol...",
-    "reasonMin": "Mínimo {{count}} caracteres",
-    "cancel": "Cancelar",
-    "revokeConfirm": "Quitar rol",
-    "revokeSuccess": "{{name}} ya no es organizador.",
-    "revokeError": "No se pudo quitar el rol de organizador."
-  },
-  "adminRefunds": {
-    "title": "Reembolsos",
-    "subtitle": "Reembolsos de pagos con su desglose y acreditación manual de saldo a la cartera de un usuario.",
-    "refresh": "Actualizar",
-    "loading": "Cargando reembolsos...",
-    "empty": "No hay reembolsos que coincidan con los filtros.",
-    "searchPlaceholder": "Buscar por comprador, correo o evento...",
-    "stats": {
-      "pending": "Pendientes",
-      "pendingSub": "Solicitados, aún sin procesar",
-      "processed": "Procesados",
-      "processedSub": "Reembolsos completados",
-      "total": "Total reembolsado",
-      "totalSub": "Monto devuelto en toda la plataforma",
-      "toWallet": "Procesado en el listado",
-      "toWalletSub": "Suma de los reembolsos procesados mostrados"
-    },
-    "status": {
-      "ALL": "Todos",
-      "PROCESSED": "Procesado",
-      "REQUESTED": "Solicitado",
-      "FAILED": "Fallido"
-    },
-    "columns": {
-      "date": "Fecha",
-      "buyer": "Comprador",
-      "event": "Evento",
-      "amount": "Monto",
-      "status": "Estado",
-      "reason": "Motivo"
-    },
-    "processedAt": "Procesado: {{date}}",
-    "order": "Orden #{{id}}",
-    "gatewayPart": "Pasarela: {{amount}}",
-    "walletPart": "Cartera: {{amount}}",
-    "credit": {
-      "open": "Agregar crédito",
-      "title": "Agregar crédito a una cartera",
-      "subtitle": "El saldo se suma de inmediato y el usuario recibe una notificación con el motivo.",
-      "user": "Usuario",
-      "userPlaceholder": "Selecciona un usuario",
-      "userSearch": "Buscar por nombre, alias o correo...",
-      "amount": "Monto (COP)",
-      "reason": "Motivo",
-      "reasonPlaceholder": "Ej.: Compensación por inconveniente con el evento",
-      "submit": "Acreditar",
-      "success": "Se acreditaron {{amount}} a {{name}}.",
-      "error": "No se pudo acreditar el saldo."
     }
   }
 }

@@ -879,7 +879,8 @@
     "gallery": "Gallery",
     "cancelledLiveTitle": "This event has been cancelled",
     "cancelledLiveMessage": "If you made a payment, the refund has been credited to your wallet. Check your inbox and notifications for the details.",
-    "cancelledLiveButton": "Back to home"
+    "cancelledLiveButton": "Back to home",
+    "cancelledLiveOrganizerMessage": "The administrator removed this event's organizer for breaking the platform rules, so the event was cancelled. If you made a payment, the refund has been credited to your wallet. Check your inbox and notifications for the details."
   },
   "paymentApproved": {
     "title": "Payment approved!",
@@ -1510,16 +1511,11 @@
     "title": "My Profile",
     "sections": {
       "organizer": "Organizer",
-      "admin": "Administration",
       "account": "Account"
     },
     "scan": {
       "label": "Validate tickets",
       "desc": "Scan QR codes for your events"
-    },
-    "adminPanel": {
-      "label": "Admin panel",
-      "desc": "Platform management"
     },
     "menu": {
       "profile": {
@@ -1539,46 +1535,6 @@
         "sub": "Manage your alerts"
       }
     },
-    "admin": {
-      "dashboard": {
-        "label": "Dashboard",
-        "sub": "Overview"
-      },
-      "financial": {
-        "label": "Financial Control",
-        "sub": "Payments and refunds"
-      },
-      "events": {
-        "label": "Events",
-        "sub": "Manage and review events"
-      },
-      "reports": {
-        "label": "Reports",
-        "sub": "Platform statistics"
-      },
-      "refunds": {
-        "label": "Refunds",
-        "sub": "Manage refunds"
-      },
-      "requests": {
-        "label": "Requests",
-        "sub": "Organizer requests"
-      },
-      "categories": {
-        "label": "Categories",
-        "sub": "Manage categories"
-      },
-      "sectionTypes": {
-        "label": "Section Types",
-        "sub": "Manage section types"
-      },
-      "users": {
-        "label": "Users",
-        "sub": "Roles and organizers"
-      }
-    },
-    "comingSoon": "Coming soon",
-    "comingSoonBadge": "SOON",
     "logout": "Log out",
     "defaultUser": "User"
   },
@@ -1953,100 +1909,6 @@
       "editExpired": "The time to edit this comment has expired.",
       "forbidden": "You don't have permission to do this.",
       "generic": "The action couldn't be completed. Please try again."
-    }
-  },
-  "mobileAdminEvents": {
-    "cancelConfirmTitle": "Cancel this event?",
-    "cancelConfirmMessage": "This action cannot be undone. All buyers will be refunded to their wallet and anyone viewing the event will be notified.",
-    "cancelConfirmBack": "Go back",
-    "cancelConfirmYes": "Yes, cancel"
-  },
-  "adminUsers": {
-    "title": "User management",
-    "subtitle": "Search users and manage their roles. When you revoke the organizer role, the user is notified with the reason.",
-    "searchPlaceholder": "Search by name, alias or email...",
-    "loading": "Loading users...",
-    "empty": "No users match your search.",
-    "roles": {
-      "ALL": "All",
-      "ORGANIZER": "Organizers",
-      "USER": "Users",
-      "ADMIN": "Admins"
-    },
-    "statuses": {
-      "PENDING": "Pending",
-      "ACTIVE": "Active",
-      "BLOCKED": "Blocked",
-      "INACTIVE": "Inactive",
-      "DELETED": "Deleted"
-    },
-    "columns": {
-      "user": "User",
-      "email": "Email",
-      "role": "Role",
-      "status": "Status",
-      "joined": "Joined",
-      "actions": "Actions"
-    },
-    "revokeButton": "Revoke organizer",
-    "revokeTitle": "Revoke the organizer role from {{name}}?",
-    "revokeMessage": "The account will go back to a regular user and will no longer be able to create or manage events. We will send the reason by notification and email.",
-    "reasonLabel": "Reason",
-    "reasonPlaceholder": "Explain to the user why the role is being revoked...",
-    "reasonMin": "At least {{count}} characters",
-    "cancel": "Cancel",
-    "revokeConfirm": "Revoke role",
-    "revokeSuccess": "{{name}} is no longer an organizer.",
-    "revokeError": "Could not revoke the organizer role."
-  },
-  "adminRefunds": {
-    "title": "Refunds",
-    "subtitle": "Payment refunds with their breakdown, plus manual credit to a user's wallet.",
-    "refresh": "Refresh",
-    "loading": "Loading refunds...",
-    "empty": "No refunds match the filters.",
-    "searchPlaceholder": "Search by buyer, email or event...",
-    "stats": {
-      "pending": "Pending",
-      "pendingSub": "Requested, not processed yet",
-      "processed": "Processed",
-      "processedSub": "Completed refunds",
-      "total": "Total refunded",
-      "totalSub": "Amount returned across the platform",
-      "toWallet": "Processed in this list",
-      "toWalletSub": "Sum of the processed refunds shown"
-    },
-    "status": {
-      "ALL": "All",
-      "PROCESSED": "Processed",
-      "REQUESTED": "Requested",
-      "FAILED": "Failed"
-    },
-    "columns": {
-      "date": "Date",
-      "buyer": "Buyer",
-      "event": "Event",
-      "amount": "Amount",
-      "status": "Status",
-      "reason": "Reason"
-    },
-    "processedAt": "Processed: {{date}}",
-    "order": "Order #{{id}}",
-    "gatewayPart": "Gateway: {{amount}}",
-    "walletPart": "Wallet: {{amount}}",
-    "credit": {
-      "open": "Add credit",
-      "title": "Add credit to a wallet",
-      "subtitle": "The balance is added immediately and the user is notified with the reason.",
-      "user": "User",
-      "userPlaceholder": "Select a user",
-      "userSearch": "Search by name, alias or email...",
-      "amount": "Amount (COP)",
-      "reason": "Reason",
-      "reasonPlaceholder": "E.g.: Compensation for an issue with the event",
-      "submit": "Credit",
-      "success": "{{amount}} credited to {{name}}.",
-      "error": "Could not credit the balance."
     }
   }
 }

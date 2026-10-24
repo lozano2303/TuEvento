@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
+import { adminText as t } from '../constants/adminText';
 import { Search, Loader2, AlertCircle, UserMinus, Users, X } from 'lucide-react';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import Toast from '../components/Toast';
@@ -23,7 +23,6 @@ const ROLE_BADGE = {
 };
 
 export default function AdminUsers() {
-  const { t, i18n } = useTranslation();
   const { toast, showToast, hideToast } = useToast();
 
   const [users,   setUsers]   = useState([]);
@@ -84,7 +83,7 @@ export default function AdminUsers() {
   };
 
   const fmtDate = (iso) => iso
-    ? new Date(iso).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })
+    ? new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
     : '—';
 
   return (

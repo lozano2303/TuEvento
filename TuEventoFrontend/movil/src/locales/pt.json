@@ -879,7 +879,8 @@
     "gallery": "Galeria",
     "cancelledLiveTitle": "Este evento foi cancelado",
     "cancelledLiveMessage": "Se você fez um pagamento, o reembolso foi creditado na sua carteira. Confira sua caixa de entrada e suas notificações para ver os detalhes.",
-    "cancelledLiveButton": "Voltar ao início"
+    "cancelledLiveButton": "Voltar ao início",
+    "cancelledLiveOrganizerMessage": "O administrador removeu o organizador deste evento por descumprir as regras da plataforma, por isso o evento foi cancelado. Se você fez um pagamento, o reembolso foi creditado na sua carteira. Confira sua caixa de entrada e suas notificações para ver os detalhes."
   },
   "paymentApproved": {
     "title": "Pagamento aprovado!",
@@ -1510,16 +1511,11 @@
     "title": "Meu Perfil",
     "sections": {
       "organizer": "Organizador",
-      "admin": "Administração",
       "account": "Conta"
     },
     "scan": {
       "label": "Validar ingressos",
       "desc": "Escanear códigos QR dos seus eventos"
-    },
-    "adminPanel": {
-      "label": "Painel de administração",
-      "desc": "Gestão da plataforma"
     },
     "menu": {
       "profile": {
@@ -1539,46 +1535,6 @@
         "sub": "Gerencie seus alertas"
       }
     },
-    "admin": {
-      "dashboard": {
-        "label": "Dashboard",
-        "sub": "Visão geral"
-      },
-      "financial": {
-        "label": "Controle Financeiro",
-        "sub": "Pagamentos e reembolsos"
-      },
-      "events": {
-        "label": "Eventos",
-        "sub": "Gerenciar e revisar eventos"
-      },
-      "reports": {
-        "label": "Relatórios",
-        "sub": "Estatísticas da plataforma"
-      },
-      "refunds": {
-        "label": "Reembolsos",
-        "sub": "Gerenciar reembolsos"
-      },
-      "requests": {
-        "label": "Solicitações",
-        "sub": "Solicitações de organizador"
-      },
-      "categories": {
-        "label": "Categorias",
-        "sub": "Gerenciar categorias"
-      },
-      "sectionTypes": {
-        "label": "Tipos de Seção",
-        "sub": "Gerenciar tipos de seção"
-      },
-      "users": {
-        "label": "Usuários",
-        "sub": "Papéis e organizadores"
-      }
-    },
-    "comingSoon": "Em breve",
-    "comingSoonBadge": "EM BREVE",
     "logout": "Sair",
     "defaultUser": "Usuário"
   },
@@ -1953,100 +1909,6 @@
       "editExpired": "O tempo para editar este comentário expirou.",
       "forbidden": "Você não tem permissão para fazer isso.",
       "generic": "Não foi possível concluir a ação. Tente novamente."
-    }
-  },
-  "mobileAdminEvents": {
-    "cancelConfirmTitle": "Cancelar este evento?",
-    "cancelConfirmMessage": "Esta ação não pode ser desfeita. Todos os compradores receberão o reembolso na carteira e quem estiver vendo o evento será avisado.",
-    "cancelConfirmBack": "Voltar",
-    "cancelConfirmYes": "Sim, cancelar"
-  },
-  "adminUsers": {
-    "title": "Gestão de usuários",
-    "subtitle": "Busque usuários e gerencie seus papéis. Ao remover o papel de organizador, o usuário recebe o motivo por notificação.",
-    "searchPlaceholder": "Buscar por nome, apelido ou e-mail...",
-    "loading": "Carregando usuários...",
-    "empty": "Nenhum usuário corresponde à busca.",
-    "roles": {
-      "ALL": "Todos",
-      "ORGANIZER": "Organizadores",
-      "USER": "Usuários",
-      "ADMIN": "Administradores"
-    },
-    "statuses": {
-      "PENDING": "Pendente",
-      "ACTIVE": "Ativo",
-      "BLOCKED": "Bloqueado",
-      "INACTIVE": "Inativo",
-      "DELETED": "Excluído"
-    },
-    "columns": {
-      "user": "Usuário",
-      "email": "E-mail",
-      "role": "Papel",
-      "status": "Status",
-      "joined": "Cadastro",
-      "actions": "Ações"
-    },
-    "revokeButton": "Remover organizador",
-    "revokeTitle": "Remover o papel de organizador de {{name}}?",
-    "revokeMessage": "A conta voltará a ser de usuário comum e não poderá mais criar nem gerenciar eventos. Enviaremos o motivo por notificação e e-mail.",
-    "reasonLabel": "Motivo",
-    "reasonPlaceholder": "Explique ao usuário por que o papel está sendo removido...",
-    "reasonMin": "Mínimo de {{count}} caracteres",
-    "cancel": "Cancelar",
-    "revokeConfirm": "Remover papel",
-    "revokeSuccess": "{{name}} não é mais organizador.",
-    "revokeError": "Não foi possível remover o papel de organizador."
-  },
-  "adminRefunds": {
-    "title": "Reembolsos",
-    "subtitle": "Reembolsos de pagamentos com detalhamento e crédito manual na carteira de um usuário.",
-    "refresh": "Atualizar",
-    "loading": "Carregando reembolsos...",
-    "empty": "Nenhum reembolso corresponde aos filtros.",
-    "searchPlaceholder": "Buscar por comprador, e-mail ou evento...",
-    "stats": {
-      "pending": "Pendentes",
-      "pendingSub": "Solicitados, ainda não processados",
-      "processed": "Processados",
-      "processedSub": "Reembolsos concluídos",
-      "total": "Total reembolsado",
-      "totalSub": "Valor devolvido em toda a plataforma",
-      "toWallet": "Processado na lista",
-      "toWalletSub": "Soma dos reembolsos processados exibidos"
-    },
-    "status": {
-      "ALL": "Todos",
-      "PROCESSED": "Processado",
-      "REQUESTED": "Solicitado",
-      "FAILED": "Falhou"
-    },
-    "columns": {
-      "date": "Data",
-      "buyer": "Comprador",
-      "event": "Evento",
-      "amount": "Valor",
-      "status": "Status",
-      "reason": "Motivo"
-    },
-    "processedAt": "Processado: {{date}}",
-    "order": "Pedido #{{id}}",
-    "gatewayPart": "Gateway: {{amount}}",
-    "walletPart": "Carteira: {{amount}}",
-    "credit": {
-      "open": "Adicionar crédito",
-      "title": "Adicionar crédito a uma carteira",
-      "subtitle": "O saldo é somado imediatamente e o usuário recebe uma notificação com o motivo.",
-      "user": "Usuário",
-      "userPlaceholder": "Selecione um usuário",
-      "userSearch": "Buscar por nome, apelido ou e-mail...",
-      "amount": "Valor (COP)",
-      "reason": "Motivo",
-      "reasonPlaceholder": "Ex.: Compensação por um problema com o evento",
-      "submit": "Creditar",
-      "success": "{{amount}} creditados para {{name}}.",
-      "error": "Não foi possível creditar o saldo."
     }
   }
 }
