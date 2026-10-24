@@ -1729,9 +1729,38 @@
     "heroEvents": "unique",
     "heroLine2": " events.",
     "quickAccess": "Quick access",
-    "searchEvents": "Search\nevents",
-    "myTickets": "My\ntickets",
-    "upcomingEvents": "Upcoming events"
+    "searchEvents": "Find events",
+    "myTickets": "My tickets",
+    "upcomingEvents": "Upcoming events",
+    "wallet": "My wallet",
+    "notifications": "Notifications",
+    "seeAll": "See all",
+    "noUpcoming": "No upcoming events right now",
+    "exploreCategories": "Explore by category",
+    "stats": {
+      "available": "Available events",
+      "thisWeek": "This week",
+      "categories": "Categories"
+    },
+    "steps": {
+      "title": "How it works",
+      "explore": {
+        "title": "Explore",
+        "desc": "Find events by name, date or category."
+      },
+      "seat": {
+        "title": "Pick your spot",
+        "desc": "Choose your seats on the venue map."
+      },
+      "pay": {
+        "title": "Pay securely",
+        "desc": "Pay through the gateway or use your wallet balance."
+      },
+      "enter": {
+        "title": "Enter with QR",
+        "desc": "Show your ticket code at the entrance."
+      }
+    }
   },
   "mobileQr": {
     "titleOrder": "Order QR",
@@ -1889,5 +1918,20 @@
     "logoutMessage": "Your session will end and you'll need to sign in again to access.",
     "logoutConfirm": "Yes, sign out",
     "accept": "OK"
+  },
+  "mobileEvents": {
+    "dates": {
+      "all": "All dates",
+      "today": "Today",
+      "weekend": "This weekend",
+      "week": "Next 7 days",
+      "month": "This month"
+    },
+    "onlyAvailable": "Available",
+    "allCategories": "All",
+    "results_one": "{{count}} event",
+    "results_other": "{{count}} events",
+    "clearFilters": "Clear filters",
+    "noMatches": "Try another search or remove some filters."
   }
 }

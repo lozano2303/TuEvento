@@ -1729,9 +1729,38 @@
     "heroEvents": "des événements",
     "heroLine2": " uniques.",
     "quickAccess": "Accès rapides",
-    "searchEvents": "Chercher\ndes événements",
-    "myTickets": "Mes\nbillets",
-    "upcomingEvents": "Événements à venir"
+    "searchEvents": "Chercher des événements",
+    "myTickets": "Mes billets",
+    "upcomingEvents": "Événements à venir",
+    "wallet": "Mon portefeuille",
+    "notifications": "Notifications",
+    "seeAll": "Tout voir",
+    "noUpcoming": "Aucun événement à venir pour le moment",
+    "exploreCategories": "Explorer par catégorie",
+    "stats": {
+      "available": "Événements disponibles",
+      "thisWeek": "Cette semaine",
+      "categories": "Catégories"
+    },
+    "steps": {
+      "title": "Comment ça marche ?",
+      "explore": {
+        "title": "Explorez",
+        "desc": "Trouvez des événements par nom, date ou catégorie."
+      },
+      "seat": {
+        "title": "Choisissez votre place",
+        "desc": "Sélectionnez vos sièges sur le plan de la salle."
+      },
+      "pay": {
+        "title": "Payez en sécurité",
+        "desc": "Payez via la passerelle ou avec le solde de votre portefeuille."
+      },
+      "enter": {
+        "title": "Entrez avec le QR",
+        "desc": "Montrez le code de votre billet à l'entrée."
+      }
+    }
   },
   "mobileQr": {
     "titleOrder": "QR de la commande",
@@ -1889,5 +1918,20 @@
     "logoutMessage": "Votre session sera fermée et vous devrez vous reconnecter pour y accéder.",
     "logoutConfirm": "Oui, se déconnecter",
     "accept": "Accepter"
+  },
+  "mobileEvents": {
+    "dates": {
+      "all": "Toutes les dates",
+      "today": "Aujourd'hui",
+      "weekend": "Ce week-end",
+      "week": "7 prochains jours",
+      "month": "Ce mois-ci"
+    },
+    "onlyAvailable": "Places dispo",
+    "allCategories": "Toutes",
+    "results_one": "{{count}} événement",
+    "results_other": "{{count}} événements",
+    "clearFilters": "Effacer les filtres",
+    "noMatches": "Essayez une autre recherche ou retirez des filtres."
   }
 }
