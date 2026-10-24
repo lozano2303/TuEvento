@@ -1933,5 +1933,27 @@
     "results_other": "{{count}} eventos",
     "clearFilters": "Limpar filtros",
     "noMatches": "Tente outra busca ou remova alguns filtros."
+  },
+  "mobileCart": {
+    "reservationHint": "Seus assentos ficam reservados por tempo limitado. Conclua o pagamento antes que expirem.",
+    "total": "Total",
+    "selectMore_one": "Selecione mais {{count}} assento para continuar",
+    "selectMore_other": "Selecione mais {{count}} assentos para continuar",
+    "pay_one": "Ir para o pagamento · {{count}} assento",
+    "pay_other": "Ir para o pagamento · {{count}} assentos",
+    "selectedOf": "{{count}} de {{total}} selecionados"
+  },
+  "mobileComments": {
+    "login": "Entre",
+    "yourRating": "Sua avaliação",
+    "errors": {
+      "sessionExpired": "Sua sessão expirou. Entre novamente.",
+      "rateLimited": "Aguarde alguns segundos antes de comentar de novo.",
+      "ratingRequired": "Selecione uma avaliação de 1 a 5 estrelas antes de publicar.",
+      "parentInvalid": "Este comentário não pode receber respostas.",
+      "editExpired": "O tempo para editar este comentário expirou.",
+      "forbidden": "Você não tem permissão para fazer isso.",
+      "generic": "Não foi possível concluir a ação. Tente novamente."
+    }
   }
 }
