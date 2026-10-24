@@ -50,8 +50,9 @@ export default function EventDetailScreen() {
   const currentUserId = user?.userId ?? null;
 
   const [event, setEvent] = useState(null);
-  // Aviso en vivo: el organizador/admin canceló el evento mientras se veía
-  const [cancelledLive, setCancelledLive] = useState(false);
+  // Aviso en vivo: el organizador/admin canceló el evento mientras se veía.
+  // null = sin aviso; { cause } = cancelado (cause 'ORGANIZER_REVOKED' si se quitó el rol al organizador)
+  const [cancelledLive, setCancelledLive] = useState(null);
   const [media, setMedia] = useState([]);
   const [layout, setLayout] = useState(null);
   const [sections, setSections] = useState([]);
@@ -225,7 +226,7 @@ export default function EventDetailScreen() {
           });
         }, (statusEvt) => {
           // El organizador/admin canceló el evento mientras se veía
-          if (statusEvt?.type === 'EVENT_CANCELLED') setCancelledLive(true);
+          if (statusEvt?.type === 'EVENT_CANCELLED') setCancelledLive({ cause: statusEvt.cause ?? null });
         });
 
         if (!isCancelled && client) {
@@ -938,13 +939,15 @@ export default function EventDetailScreen() {
 
       {/* Evento cancelado en vivo: solo se puede salir al inicio */}
       <AppModal
-        visible={cancelledLive}
+        visible={!!cancelledLive}
         type="error"
         title={t("eventDetail.cancelledLiveTitle")}
-        message={t("eventDetail.cancelledLiveMessage")}
+        message={cancelledLive?.cause === "ORGANIZER_REVOKED"
+          ? t("eventDetail.cancelledLiveOrganizerMessage")
+          : t("eventDetail.cancelledLiveMessage")}
         confirmText={t("eventDetail.cancelledLiveButton")}
         onConfirm={() => {
-          setCancelledLive(false);
+          setCancelledLive(null);
           navigation.reset({ index: 0, routes: [{ name: user ? "Main" : "Landing" }] });
         }}
       />

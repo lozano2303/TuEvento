@@ -30,8 +30,9 @@ export default function EventDetail() {
   const { t } = useTranslation();
   
   const [event, setEvent] = useState(null);
-  // Aviso en vivo: el organizador/admin canceló el evento mientras se veía
-  const [eventCancelledLive, setEventCancelledLive] = useState(false);
+  // Aviso en vivo: el organizador/admin canceló el evento mientras se veía.
+  // null = sin aviso; { cause } = cancelado (cause 'ORGANIZER_REVOKED' si se quitó el rol al organizador)
+  const [eventCancelledLive, setEventCancelledLive] = useState(null);
   const [media, setMedia] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -430,7 +431,7 @@ export default function EventDetail() {
     const unsubscribe = subscribe(
       `/topic/events/${eventId}/status`,
       (incoming) => {
-        if (incoming?.type === 'EVENT_CANCELLED') setEventCancelledLive(true);
+        if (incoming?.type === 'EVENT_CANCELLED') setEventCancelledLive({ cause: incoming.cause ?? null });
       },
       `status-event-${eventId}`
     );
@@ -1574,7 +1575,9 @@ export default function EventDetail() {
               {t('eventDetail.cancelledLiveTitle')}
             </h3>
             <p className="text-sm text-textSecondary leading-relaxed">
-              {t('eventDetail.cancelledLiveMessage')}
+              {eventCancelledLive.cause === 'ORGANIZER_REVOKED'
+                ? t('eventDetail.cancelledLiveOrganizerMessage')
+                : t('eventDetail.cancelledLiveMessage')}
             </p>
             <button
               onClick={() => navigate('/', { replace: true })}

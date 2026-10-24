@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -16,7 +17,9 @@ import java.util.Map;
  * de la pantalla del evento.
  *
  * <p>Canal: {@code /topic/events/{eventId}/status}
- * <p>Payload: {@code { type: "EVENT_CANCELLED", eventId: 12 }}
+ * <p>Payload: {@code { type: "EVENT_CANCELLED", eventId: 12, cause?: "ORGANIZER_REVOKED" }}
+ * ({@code cause} solo viene cuando el evento se canceló porque el admin quitó el rol al organizador;
+ * el motivo que escribió el admin no se envía a los asistentes).
  */
 @Slf4j
 @Component
@@ -32,8 +35,11 @@ public class EventCancelledWebSocketListener {
         if (!CANCELLED.equals(event.getNewStatus()) || event.getEventId() == null) return;
         String topic = "/topic/events/" + event.getEventId() + "/status";
         try {
-            messagingTemplate.convertAndSend(topic,
-                    Map.of("type", "EVENT_CANCELLED", "eventId", event.getEventId()));
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("type", "EVENT_CANCELLED");
+            payload.put("eventId", event.getEventId());
+            if (event.getCause() != null) payload.put("cause", event.getCause());
+            messagingTemplate.convertAndSend(topic, payload);
             log.debug("[EventCancelled] EVENT_CANCELLED sent to {}", topic);
         } catch (Exception e) {
             log.error("[EventCancelled] WebSocket push failed (non-breaking): eventId={}, error={}",
