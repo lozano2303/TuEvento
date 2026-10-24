@@ -18,6 +18,8 @@ import EventDetail from './pages/EventDetail';
 import ReactivateAccountPage from './pages/ReactivateAccountPage';
 import CompleteProfile from './pages/CompleteProfile';
 import AdminEventManagement from './pages/AdminEventManagement';
+import AdminUsers from './pages/AdminUsers';
+import AdminRefunds from './pages/AdminRefunds';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminFinancial from './pages/AdminFinancial';
 import AdminCategoryManagement from './pages/AdminCategoryManagement';
@@ -64,7 +66,7 @@ function AppContent() {
     '/login', '/verification', '/events/create',
     '/reactivate-account', '/complete-profile',
     '/admin-panel', '/admin-events', '/admin-dashboard', '/admin-financial', '/admin-reports',
-    '/admin-categories', '/admin-section-types',
+    '/admin-categories', '/admin-section-types', '/admin-users', '/admin-refunds',
     '/checkout',
   ].includes(location.pathname)
     && !location.pathname.match(/^\/events\/[^/]+\/layout$/)
@@ -133,6 +135,16 @@ function AppContent() {
           <Route path="/admin-section-types" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminSectionTypeManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-users" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminUsers />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-refunds" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminRefunds />
             </ProtectedRoute>
           } />
           <Route path="/admin-reports" element={

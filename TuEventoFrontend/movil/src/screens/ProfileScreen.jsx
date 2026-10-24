@@ -89,7 +89,7 @@ export default function ProfileScreen() {
     { icon: "card-outline",           label: t("mobileProfile.admin.financial.label"),    sub: t("mobileProfile.admin.financial.sub"),    route: "AdminFinancial" },
     { icon: "calendar-outline",       label: t("mobileProfile.admin.events.label"),       sub: t("mobileProfile.admin.events.sub"),       route: "AdminEvents" },
     { icon: "bar-chart-outline",      label: t("mobileProfile.admin.reports.label"),      sub: t("mobileProfile.admin.reports.sub"),      route: "AdminReports" },
-    { icon: "refresh-circle-outline", label: t("mobileProfile.admin.refunds.label"),      sub: t("mobileProfile.admin.refunds.sub"),      route: null },
+    { icon: "refresh-circle-outline", label: t("mobileProfile.admin.refunds.label"),      sub: t("mobileProfile.admin.refunds.sub"),      route: "AdminRefunds" },
     { icon: "people-outline",         label: t("mobileProfile.admin.requests.label"),     sub: t("mobileProfile.admin.requests.sub"),     route: "OrganizerRequests" },
     { icon: "person-circle-outline",  label: t("mobileProfile.admin.users.label"),        sub: t("mobileProfile.admin.users.sub"),        route: "AdminUsers" },
     { icon: "pricetags-outline",      label: t("mobileProfile.admin.categories.label"),   sub: t("mobileProfile.admin.categories.sub"),   route: "AdminCategories" },
