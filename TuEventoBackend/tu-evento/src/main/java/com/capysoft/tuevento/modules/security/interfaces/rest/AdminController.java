@@ -15,17 +15,18 @@ import com.capysoft.tuevento.modules.payment.infrastructure.persistence.reposito
 import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
 import com.capysoft.tuevento.modules.payment.domain.model.RefundStatus;
 import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.tuevento.modules.payment.application.dto.response.AdminRefundResponse;
+import com.capysoft.tuevento.modules.security.application.dto.request.RevokeOrganizerRoleRequest;
 import com.capysoft.tuevento.modules.security.application.dto.response.ActivityItemResponse;
+import com.capysoft.tuevento.modules.security.application.dto.response.AdminUserResponse;
+import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganizerRolePort;
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminDashboardStatsResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminPendingCountsResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerRequestResponse;
-import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerUserResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.ApproveOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetAdminPendingCountsPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizerRequestsPort;
-import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizersPort;
 import com.capysoft.tuevento.modules.security.application.port.in.RejectOrganizerRequestPort;
-import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganizerRolePort;
 import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
@@ -68,7 +69,6 @@ public class AdminController {
     private final OrganizerPetitionRepository organizerPetitionRepository;
 
     // ── Organizer role management ─────────────────────────────────────────────
-    private final GetOrganizersPort           getOrganizersPort;
     private final RevokeOrganizerRolePort     revokeOrganizerRolePort;
 
     // ── Events ────────────────────────────────────────────────────────────────
@@ -170,18 +170,15 @@ public class AdminController {
     // Organizer role management endpoints
     // ═════════════════════════════════════════════════════════════════════════
 
-    @Operation(summary = "List all users currently holding the ORGANIZER role")
-    @GetMapping("/organizer-users")
-    public ResponseEntity<ApiResponse<List<OrganizerUserResponse>>> getOrganizers() {
-        return ResponseEntity.ok(ApiResponse.ok("Organizers retrieved",
-                getOrganizersPort.getOrganizers()));
-    }
-
-    @Operation(summary = "Revoke the ORGANIZER role from a user (downgrades to USER). " +
-               "Sends in-app + email notification and pushes a WebSocket role-change signal.")
+    @Operation(summary = "Revoke the ORGANIZER role from a user (downgrades to USER) with a required reason. " +
+               "Cancels their published events, sends in-app + email notification with the reason " +
+               "and pushes a WebSocket role-change signal.")
     @DeleteMapping("/organizer-users/{userId}/revoke")
-    public ResponseEntity<ApiResponse<Void>> revokeOrganizerRole(@PathVariable Integer userId) {
-        revokeOrganizerRolePort.revoke(userId);
+    public ResponseEntity<ApiResponse<Void>> revokeOrganizerRole(
+            @PathVariable Integer userId,
+            @Valid @RequestBody RevokeOrganizerRoleRequest request,
+            @AuthenticationPrincipal SecurityUser principal) {
+        revokeOrganizerRolePort.revoke(userId, request.getReason(), principal.getUserId());
         return ResponseEntity.ok(ApiResponse.ok("Organizer role revoked successfully"));
     }
 
@@ -301,6 +298,36 @@ public class AdminController {
                 .toList();
 
         return ResponseEntity.ok(ApiResponse.ok("Activity feed retrieved", sorted));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // User management
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Operation(summary = "List users (newest first). ?q= searches alias, name and email; ?role=USER|ORGANIZER|ADMIN filters.")
+    @GetMapping("/users")
+    public ResponseEntity<ApiResponse<List<AdminUserResponse>>> getUsers(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String role,
+            @RequestParam(defaultValue = "100") int limit) {
+        String pattern = (q == null || q.isBlank()) ? "" : "%" + q.trim().toLowerCase() + "%";
+        String roleCode = (role == null || role.isBlank()) ? "" : role.trim().toUpperCase();
+        int size = Math.min(Math.max(limit, 1), 200);
+        return ResponseEntity.ok(ApiResponse.ok("Users retrieved",
+                userJpaRepository.searchForAdmin(pattern, roleCode, PageRequest.of(0, size))));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Refunds
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Operation(summary = "List the most recent refunds with payment breakdown, buyer and event")
+    @GetMapping("/refunds")
+    public ResponseEntity<ApiResponse<List<AdminRefundResponse>>> getRefunds(
+            @RequestParam(defaultValue = "100") int limit) {
+        int size = Math.min(Math.max(limit, 1), 300);
+        return ResponseEntity.ok(ApiResponse.ok("Refunds retrieved",
+                refundJpaRepository.findRecentForAdmin(PageRequest.of(0, size))));
     }
 
     // ═════════════════════════════════════════════════════════════════════════

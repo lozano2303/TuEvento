@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { getActivePalette, activateTheme as activateThemeService, getThemes } from '../services/themeService';
 import { THEMES, DEFAULT_THEME_ID } from '../theme/themes';
+import { THEME_UPDATED_EVENT } from './NotificationContext';
 
 // ── Paleta por defecto (tema PRINCIPAL) ─────────────────────────────────────
 // Debe coincidir con THEMES[0].palette y con la mobile src/theme/colors.js
@@ -235,13 +236,16 @@ export function ThemeProvider({ children }) {
     return () => window.removeEventListener('storage', handleStorage);
   }, [refreshPalette, resetTheme]);
 
-  // ── Efecto 4: polling cada 30 s (sincroniza cambios multi-device) ─────────
+  // ── Efecto 4: cambios en vivo desde otro dispositivo/pestaña ──────────────
+  // NotificationContext recibe THEME_UPDATED por WebSocket y lo reemite como
+  // evento del DOM (ThemeProvider envuelve a NotificationProvider, así que no
+  // puede usar su contexto).
   useEffect(() => {
-    const interval = setInterval(() => {
-      const token = localStorage.getItem('token');
-      if (token) refreshPalette();
-    }, 30000);
-    return () => clearInterval(interval);
+    const handleThemeUpdated = () => {
+      if (localStorage.getItem('token')) refreshPalette();
+    };
+    window.addEventListener(THEME_UPDATED_EVENT, handleThemeUpdated);
+    return () => window.removeEventListener(THEME_UPDATED_EVENT, handleThemeUpdated);
   }, [refreshPalette]);
 
   // `colors` es un alias de `palette` para compatibilidad con el patrón mobile

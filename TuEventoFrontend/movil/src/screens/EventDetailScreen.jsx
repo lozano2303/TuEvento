@@ -22,121 +22,14 @@ import { getEventDetail, getEventMedia, getEventLayout, getEventSections } from 
 import * as seatService from "../services/seatService";
 import { connectSeatSocket, disconnectSeatSocket } from "../services/websocketService";
 import SeatMapCanvas from "../components/SeatMapCanvas";
+import CartBubble from "../components/CartBubble";
+import EventComments from "../components/EventComments";
 import Toast from "../components/Toast";
+import AppModal from "../components/AppModal";
 import { useToast } from "../hooks/useToast";
 import { useSeatStore } from "../hooks/useSeatStore";
 
 const { width } = Dimensions.get("window");
-
-/**
- * Item individual del carrito con countdown de TTL.
- * Muestra código de silla, sección, precio y tiempo restante de reserva.
- */
-function CartItem({ seat, section, onRelease, isReleasing, colors, onExpire }) {
-  const { t } = useTranslation();
-  const [timeLeft, setTimeLeft] = useState('');
-
-  useEffect(() => {
-    if (!seat.reservedUntil) return;
-
-    const updateTimer = () => {
-      const now = new Date();
-      const until = new Date(seat.reservedUntil);
-      const diffMs = until - now;
-
-      if (diffMs <= 0) {
-        setTimeLeft(t("seats.expiredCountdown"));
-        // Deselección optimista: liberar inmediatamente en el cliente
-        // sin esperar el evento de WebSocket del scheduler
-        if (onExpire) {
-          onExpire(seat.seatId);
-        }
-        return;
-      }
-
-      const minutes = Math.floor(diffMs / 1000 / 60);
-      const seconds = Math.floor((diffMs / 1000) % 60);
-      setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')}`);
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-
-    return () => clearInterval(interval);
-  }, [seat.reservedUntil, seat.seatId, onExpire]);
-
-  return (
-    <View style={{
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: 10,
-      marginBottom: 8,
-      backgroundColor: colors.primary + '10',
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.primary + '20',
-    }}>
-      <View style={{ flex: 1 }}>
-        <Text style={{
-          fontSize: 13,
-          fontWeight: '700',
-          color: colors.textPrimary,
-          marginBottom: 2,
-        }}>
-          {seat.code}
-        </Text>
-        <Text style={{
-          fontSize: 11,
-          color: colors.textSecondary,
-          marginBottom: 4,
-        }}>
-          {section?.sectionTypeName ?? t("seats.section")}
-        </Text>
-        <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 4,
-          }}>
-            <Ionicons name="time-outline" size={12} color={colors.textMuted} />
-            <Text style={{
-              fontSize: 11,
-              color: colors.textMuted,
-            }}>
-              {timeLeft}
-            </Text>
-          </View>
-          <Text style={{
-            fontSize: 12,
-            fontWeight: '700',
-            color: colors.primary,
-          }}>
-            ${section?.price?.toFixed(2) ?? '0.00'}
-          </Text>
-        </View>
-      </View>
-      <TouchableOpacity
-        onPress={onRelease}
-        disabled={isReleasing}
-        style={{
-          padding: 4,
-          opacity: isReleasing ? 0.5 : 1,
-        }}
-        activeOpacity={0.7}
-      >
-        <Ionicons 
-          name="close-circle" 
-          size={20} 
-          color={isReleasing ? colors.textMuted : colors.error} 
-        />
-      </TouchableOpacity>
-    </View>
-  );
-}
 
 /**
  * Pantalla de detalle de un evento.
@@ -157,6 +50,9 @@ export default function EventDetailScreen() {
   const currentUserId = user?.userId ?? null;
 
   const [event, setEvent] = useState(null);
+  // Aviso en vivo: el organizador/admin canceló el evento mientras se veía.
+  // null = sin aviso; { cause } = cancelado (cause 'ORGANIZER_REVOKED' si se quitó el rol al organizador)
+  const [cancelledLive, setCancelledLive] = useState(null);
   const [media, setMedia] = useState([]);
   const [layout, setLayout] = useState(null);
   const [sections, setSections] = useState([]);
@@ -328,6 +224,9 @@ export default function EventDetailScreen() {
             reservedBy: evt.newStatus === 'RESERVED' ? evt.changedBy : null,
             reservedUntil: evt.reservedUntil,
           });
+        }, (statusEvt) => {
+          // El organizador/admin canceló el evento mientras se veía
+          if (statusEvt?.type === 'EVENT_CANCELLED') setCancelledLive({ cause: statusEvt.cause ?? null });
         });
 
         if (!isCancelled && client) {
@@ -586,6 +485,26 @@ export default function EventDetailScreen() {
   // Imagen de portada (primera imagen disponible)
   const coverImage = media.length > 0 ? media[0].imgUrl : null;
 
+  // Pago desde el modal del carrito
+  const handleCheckout = () => {
+    const seatIds = cart.map((s) => s.seatId);
+    const cartItems = cart.map((s) => {
+      const section = sections.find((sec) => sec.eventSectionId === s.eventSectionId);
+      return {
+        seatId:      s.seatId,
+        code:        s.code,
+        sectionName: section?.sectionTypeName ?? t("seats.section"),
+        price:       section?.price ?? 0,
+      };
+    });
+    navigation.navigate("Checkout", {
+      eventId,
+      seatIds,
+      cartItems,
+      eventTitle: displayName ?? event?.eventName,
+    });
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
@@ -779,7 +698,7 @@ export default function EventDetailScreen() {
                 </View>
               </View>
               <Text style={styles.quantityInfo}>
-                {cart.length} de {selectedQuantity} seleccionadas
+                {t("mobileCart.selectedOf", { count: cart.length, total: selectedQuantity })}
               </Text>
 
               {/* Menú de secciones */}
@@ -997,93 +916,41 @@ export default function EventDetailScreen() {
                 )}
               </View>
 
-              {/* Carrito de sillas seleccionadas */}
-              {cart.length > 0 && (
-                <View style={styles.cartContainer}>
-                  <View style={styles.cartHeader}>
-                    <View style={styles.cartHeaderLeft}>
-                      <Ionicons name="cart-outline" size={18} color={colors.primary} />
-                      <Text style={styles.cartTitle}>{t("seats.myCart")}</Text>
-                    </View>
-                    <Text style={styles.cartCount}>({cart.length})</Text>
-                  </View>
-                  <ScrollView 
-                    style={styles.cartList}
-                    nestedScrollEnabled={true}
-                  >
-                    {cart.map((item) => {
-                      const section = sections.find(
-                        (s) => s.eventSectionId === item.eventSectionId
-                      );
-                      return (
-                        <CartItem
-                          key={item.seatId}
-                          seat={item}
-                          section={section}
-                          onRelease={() => handleReleaseSeat(item.seatId)}
-                          onExpire={handleSeatExpire}
-                          isReleasing={reserving.has(item.seatId)}
-                          colors={colors}
-                        />
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              )}
-
-              {/* ── Botón de checkout — visible cuando el carrito está lleno ── */}
-              {cart.length > 0 && cart.length >= selectedQuantity && (
-                <TouchableOpacity
-                  onPress={() => {
-                    const seatIds = cart.map((s) => s.seatId);
-                    const cartItems = cart.map((s) => {
-                      const section = sections.find(
-                        (sec) => sec.eventSectionId === s.eventSectionId
-                      );
-                      return {
-                        seatId:      s.seatId,
-                        code:        s.code,
-                        sectionName: section?.sectionTypeName ?? t("seats.section"),
-                        price:       section?.price ?? 0,
-                      };
-                    });
-                    navigation.navigate("Checkout", {
-                      eventId,
-                      seatIds,
-                      cartItems,
-                      eventTitle: event?.eventName ?? "Evento",
-                    });
-                  }}
-                  activeOpacity={0.85}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 8,
-                    backgroundColor: colors.success,
-                    borderRadius: 14,
-                    paddingVertical: 15,
-                    marginTop: 4,
-                    shadowColor: colors.success,
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.35,
-                    shadowRadius: 8,
-                    elevation: 6,
-                  }}
-                >
-                  <Ionicons name="card-outline" size={20} color="#FFFFFF" />
-                  <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "800" }}>
-                    Ir al pago · {cart.length} {cart.length === 1 ? "silla" : "sillas"}
-                  </Text>
-                </TouchableOpacity>
-              )}
             </View>
           )}
+
+          {/* Comentarios, calificaciones y respuestas */}
+          <EventComments eventId={eventId} organizerUserId={event.userId} />
         </View>
       </ScrollView>
-      
+
+      {/* Carrito flotante (burbuja + modal con resumen y pago) */}
+      <CartBubble
+        cart={cart}
+        sections={sections}
+        selectedQuantity={selectedQuantity}
+        reserving={reserving}
+        onRelease={handleReleaseSeat}
+        onExpire={handleSeatExpire}
+        onCheckout={handleCheckout}
+      />
       {/* Toast de alertas */}
       <Toast toast={toast} onHide={hideToast} />
+
+      {/* Evento cancelado en vivo: solo se puede salir al inicio */}
+      <AppModal
+        visible={!!cancelledLive}
+        type="error"
+        title={t("eventDetail.cancelledLiveTitle")}
+        message={cancelledLive?.cause === "ORGANIZER_REVOKED"
+          ? t("eventDetail.cancelledLiveOrganizerMessage")
+          : t("eventDetail.cancelledLiveMessage")}
+        confirmText={t("eventDetail.cancelledLiveButton")}
+        onConfirm={() => {
+          setCancelledLive(null);
+          navigation.reset({ index: 0, routes: [{ name: user ? "Main" : "Landing" }] });
+        }}
+      />
     </View>
   );
 }
@@ -1118,6 +985,7 @@ function createStyles(colors) {
     },
     scrollContent: {
       flexGrow: 1,
+      paddingBottom: 110, // espacio para la burbuja del carrito
     },
     coverContainer: {
       width: width,
@@ -1313,37 +1181,6 @@ function createStyles(colors) {
       textAlign: "center",
       marginTop: 6,
       marginBottom: 4,
-    },
-    cartContainer: {
-      marginBottom: 16,
-      padding: 12,
-      backgroundColor: colors.surface,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.primary + "20",
-    },
-    cartHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: 12,
-    },
-    cartHeaderLeft: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-    },
-    cartTitle: {
-      fontSize: 14,
-      fontWeight: "700",
-      color: colors.textPrimary,
-    },
-    cartCount: {
-      fontSize: 12,
-      color: colors.textMuted,
-    },
-    cartList: {
-      maxHeight: 200,
     },
     sectionsMenuContainer: {
       marginBottom: 16,

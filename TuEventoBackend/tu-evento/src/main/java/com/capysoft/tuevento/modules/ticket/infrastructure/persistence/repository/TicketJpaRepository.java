@@ -15,4 +15,5 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
     List<TicketEntity> findByOrderId(Long orderId);
     List<TicketEntity> findByUserId(Long userId);
     Optional<TicketEntity> findByCode(String code);
+    long countByEventIdAndStatusIn(Long eventId, java.util.Collection<com.capysoft.tuevento.modules.ticket.domain.model.TicketStatus> statuses);
 }

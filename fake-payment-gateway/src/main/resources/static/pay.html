@@ -243,7 +243,9 @@
 
 <script>
   // ─── Config ───────────────────────────────────────────────────────────────
-  const GATEWAY_URL = 'http://localhost:4001';
+  // Mismo origen que sirve esta página: en móvil se abre por la IP de la LAN
+  // (p. ej. http://192.168.1.8:4001), donde "localhost" sería el propio teléfono.
+  const GATEWAY_URL = window.location.origin;
   const POLL_MS     = 3000;
 
   // ─── Estado ───────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/** Un admin quitó el rol de organizador a un usuario (vuelve a USER). */
 @Getter
 @Builder
 @NoArgsConstructor
@@ -18,6 +19,12 @@ public class OrganizerRoleRevokedEvent {
 
     /** Human-readable alias of the affected user. */
     private String alias;
+
+    /** ADMIN who revoked the role. */
+    private Integer revokedBy;
+
+    /** Reason written by the admin; notified to the user. */
+    private String reason;
 
     /** When the revocation happened. */
     private LocalDateTime occurredAt;

@@ -19,6 +19,8 @@ public class EventSummaryResponse {
     private final int         availableSeats;
     private final String      siteName;
     private final Integer     categoryId;
+    /** Entradas vendidas (PAID/USED): base del filtro "Populares". */
+    private final long        ticketsSold;
     /** URL de la primera imagen del evento (media_id más bajo). Null si no tiene imágenes. */
     private final String      coverUrl;
 }

@@ -200,3 +200,17 @@ export const THEMES = [
 ];
 
 export const DEFAULT_THEME_ID = "PRINCIPAL";
+
+/**
+ * Resuelve el id local (PRINCIPAL, DARK, …) a partir del nombre que devuelve el backend.
+ * Desde la migración 099 la columna theme.name guarda el nombre en español ("Oscuro");
+ * antes guardaba el código ("DARK"). Se aceptan ambos para no depender de la versión.
+ */
+export const resolveThemeCode = (backendName) => {
+  if (!backendName) return null;
+  const key = String(backendName).trim().toUpperCase();
+  const found = THEMES.find(
+    (t) => t.id === key || t.name.toUpperCase() === key
+  );
+  return found?.id ?? null;
+};

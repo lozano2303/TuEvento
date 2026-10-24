@@ -31,9 +31,12 @@ function getBaseURL() {
  *     reservedUntil: string | null
  *   }
  * 
+ * @param {function} [onStatusEvent] - Callback opcional para /topic/events/{eventId}/status
+ *   (p. ej. { type: 'EVENT_CANCELLED', eventId } cuando el evento se cancela en vivo)
+ *
  * @returns {Promise<Client | null>} Cliente STOMP para desconectar en cleanup, o null si no hay token
  */
-export async function connectSeatSocket(eventId, onSeatUpdate) {
+export async function connectSeatSocket(eventId, onSeatUpdate, onStatusEvent) {
   const token = await AsyncStorage.getItem('accessToken');
 
   if (!token) {
@@ -60,6 +63,16 @@ export async function connectSeatSocket(eventId, onSeatUpdate) {
           console.error('[WebSocket] Error parsing seat update:', err);
         }
       });
+
+      if (onStatusEvent) {
+        client.subscribe(`/topic/events/${eventId}/status`, (message) => {
+          try {
+            onStatusEvent(JSON.parse(message.body));
+          } catch (err) {
+            console.error('[WebSocket] Error parsing event status:', err);
+          }
+        });
+      }
     },
 
     // Callback de error de conexión
