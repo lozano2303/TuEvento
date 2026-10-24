@@ -13,14 +13,22 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Impide que un cliente se suscriba a los canales personales de otro usuario.
+ * Autoriza los frames STOMP que envían los clientes.
  *
- * <p>Los canales por usuario usan el userId en la ruta ({@code /topic/users/{id}/session},
- * {@code /topic/notifications/{id}}); sin este filtro cualquier sesión podría leer las
- * notificaciones o eventos de sesión ajenos. El Principal lo crea UserHandshakeHandler
- * con el userId del JWT.
+ * <ul>
+ *   <li>SEND: solo a destinos de aplicación ({@code /app/**}). Los clientes nunca publican
+ *       directo en el broker; si pudieran, falsificarían avisos de sillas, notificaciones o
+ *       eventos de sesión de otros usuarios.</li>
+ *   <li>SUBSCRIBE: se rechazan destinos con comodines o rutas no normalizadas, porque el
+ *       broker simple los interpreta como patrones Ant ({@code /topic/users/*}/session
+ *       recibiría los mensajes de todos). Los canales personales
+ *       ({@code /topic/users/{id}/**}, {@code /topic/notifications/{id}}) solo los puede
+ *       escuchar su dueño; el Principal lo crea UserHandshakeHandler con el userId del JWT.</li>
+ * </ul>
  */
 public class UserTopicSubscriptionInterceptor implements ChannelInterceptor {
+
+    private static final String APP_PREFIX = "/app/";
 
     private static final Pattern USER_TOPIC =
             Pattern.compile("^/topic/(?:users|notifications)/([^/]+)(?:/.*)?$");
@@ -28,18 +36,37 @@ public class UserTopicSubscriptionInterceptor implements ChannelInterceptor {
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-        if (accessor == null || accessor.getCommand() != StompCommand.SUBSCRIBE) return message;
+        if (accessor == null || accessor.getCommand() == null) return message;
 
         String destination = accessor.getDestination();
-        if (destination == null) return message;
+        switch (accessor.getCommand()) {
+            case SEND -> {
+                if (destination == null || !destination.startsWith(APP_PREFIX)) {
+                    throw new MessageDeliveryException("Clients may only send to /app destinations");
+                }
+            }
+            case SUBSCRIBE -> authorizeSubscription(destination, accessor.getUser());
+            default -> { /* CONNECT, UNSUBSCRIBE, DISCONNECT, etc. no llevan destino a validar */ }
+        }
+        return message;
+    }
+
+    private void authorizeSubscription(String destination, Principal principal) {
+        if (destination == null || hasPatternOrTraversal(destination)) {
+            throw new MessageDeliveryException("Invalid subscription destination");
+        }
 
         Matcher matcher = USER_TOPIC.matcher(destination);
-        if (!matcher.matches()) return message;
+        if (!matcher.matches()) return;
 
-        Principal principal = accessor.getUser();
         if (principal == null || !matcher.group(1).equals(principal.getName())) {
             throw new MessageDeliveryException("Subscription to another user's channel is not allowed");
         }
-        return message;
+    }
+
+    private static boolean hasPatternOrTraversal(String destination) {
+        return destination.contains("*") || destination.contains("?")
+                || destination.contains("{") || destination.contains("}")
+                || destination.contains("//") || destination.contains("..");
     }
 }
