@@ -9,12 +9,15 @@ import com.capysoft.tuevento.modules.payment.domain.repository.RefundRepository;
 import com.capysoft.tuevento.modules.ticket.application.port.in.ConfirmRefundUseCase;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
+import com.capysoft.tuevento.modules.wallet.application.usecase.CreditWalletUseCaseImpl;
 import com.capysoft.tuevento.modules.wallet.application.usecase.ReverseWalletPaymentUseCaseImpl;
+import com.capysoft.tuevento.modules.wallet.domain.model.WalletReferenceEntityType;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -35,6 +38,11 @@ import java.time.LocalDateTime;
  *  3. Ejecuta el cierre local directamente (sin gateway, sin webhook):
  *     Payment→REFUNDED, Refund→PROCESSED, ConfirmRefundUseCase, ReverseWalletPayment
  *
+ * Flujo cancelación de evento (executeToWallet):
+ *  Todo el pago vuelve como crédito a la wallet del comprador (se crea si no existe):
+ *  la parte wallet se revierte y la parte pasarela se acredita con CreditWalletUseCase.
+ *  No se llama al gateway, así que no hay doble devolución.
+ *
  * El cierre local está extraído a closeRefundLocally() y es compartido
  * con el caso webhook de ProcessWebhookUseCaseImpl para evitar duplicación.
  */
@@ -51,6 +59,7 @@ public class RequestRefundUseCaseImpl {
     private final PaymentGatewayPort paymentGatewayPort;
     private final ConfirmRefundUseCase confirmRefundUseCase;
     private final ReverseWalletPaymentUseCaseImpl reverseWalletPaymentUseCase;
+    private final CreditWalletUseCaseImpl creditWalletUseCase;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -78,7 +87,7 @@ public class RequestRefundUseCaseImpl {
 
         if (payment.isWalletOnly()) {
             // Pago 100% wallet — cerrar localmente sin gateway
-            closeRefundLocally(payment, savedRefund, reason);
+            closeRefundLocally(payment, savedRefund, "Wallet-only refund: " + reason);
         } else {
             // Pago con pasarela — el gateway dispara el webhook payment.refunded
             paymentGatewayPort.refundPayment(payment.getGatewayTransactionId());
@@ -86,7 +95,54 @@ public class RequestRefundUseCaseImpl {
     }
 
     /**
-     * Cierre local del reembolso (para pagos wallet-only).
+     * Reembolso por cancelación de evento: devuelve el pago completo como crédito
+     * en la wallet del comprador, también la parte pagada por pasarela.
+     *
+     * REQUIRES_NEW: cada pago se confirma por separado, así un fallo en uno no marca
+     * como rollback-only la transacción del listener y no deshace los demás reembolsos.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void executeToWallet(Long paymentId, Long eventId, String reason) {
+        Payment payment = paymentRepository.findById(paymentId)
+            .orElseThrow(() -> new PaymentNotFoundException(paymentId));
+
+        if (payment.getStatus() != PaymentStatus.APPROVED) {
+            throw new IllegalStateException(
+                String.format("Cannot refund payment %d: current status is %s, expected APPROVED",
+                    paymentId, payment.getStatus()));
+        }
+
+        Order order = orderRepository.findById(payment.getOrderId())
+            .orElseThrow(() -> new IllegalStateException(
+                "Order not found for payment " + paymentId));
+
+        Refund savedRefund = refundRepository.save(Refund.builder()
+            .paymentId(paymentId)
+            .status(RefundStatus.REQUESTED)
+            .reason(reason)
+            .requestedAt(LocalDateTime.now())
+            .build());
+
+        // Parte wallet → se revierte; Order/Tickets → REFUNDED; notificación de reembolso
+        closeRefundLocally(payment, savedRefund, "Event cancellation refund to wallet: " + reason);
+
+        // Parte pasarela → crédito en wallet (idempotente por pago)
+        BigDecimal gatewayAmount = payment.getAmount() != null ? payment.getAmount().getAmount() : BigDecimal.ZERO;
+        if (gatewayAmount != null && gatewayAmount.compareTo(BigDecimal.ZERO) > 0) {
+            creditWalletUseCase.execute(
+                order.getUserId(),
+                gatewayAmount,
+                WalletReferenceEntityType.EVENT_CANCELLATION,
+                eventId,
+                reason,
+                "event-cancel-refund-payment-" + paymentId);
+            log.info("Gateway amount credited to wallet on event cancellation: paymentId={}, userId={}, amount={}",
+                paymentId, order.getUserId(), gatewayAmount);
+        }
+    }
+
+    /**
+     * Cierre local del reembolso (pagos wallet-only y cancelación de evento).
      * Simétrico al bloque REFUNDED de ProcessWebhookUseCaseImpl.
      */
     private void closeRefundLocally(Payment payment, Refund refund, String reason) {
@@ -102,7 +158,7 @@ public class RequestRefundUseCaseImpl {
             .oldStatus(oldStatus)
             .newStatus(PaymentStatus.REFUNDED)
             .changedAt(LocalDateTime.now())
-            .reason("Wallet-only refund: " + reason)
+            .reason(reason)
             .build();
         paymentLogRepository.save(paymentLog);
 
@@ -126,7 +182,7 @@ public class RequestRefundUseCaseImpl {
                 && payment.getWalletTransactionId() != null) {
             reverseWalletPaymentUseCase.execute(
                 payment.getWalletTransactionId(),
-                "Wallet-only refund: " + reason);
+                reason);
             log.info("Wallet credit reversed on wallet-only refund: txId={}, amount={}",
                 payment.getWalletTransactionId(), walletApplied);
         }
