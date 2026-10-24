@@ -23,11 +23,9 @@ import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganize
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminDashboardStatsResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminPendingCountsResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerRequestResponse;
-import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerUserResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.ApproveOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetAdminPendingCountsPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizerRequestsPort;
-import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizersPort;
 import com.capysoft.tuevento.modules.security.application.port.in.RejectOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
@@ -71,7 +69,6 @@ public class AdminController {
     private final OrganizerPetitionRepository organizerPetitionRepository;
 
     // ── Organizer role management ─────────────────────────────────────────────
-    private final GetOrganizersPort           getOrganizersPort;
     private final RevokeOrganizerRolePort     revokeOrganizerRolePort;
 
     // ── Events ────────────────────────────────────────────────────────────────
@@ -172,13 +169,6 @@ public class AdminController {
     // ═════════════════════════════════════════════════════════════════════════
     // Organizer role management endpoints
     // ═════════════════════════════════════════════════════════════════════════
-
-    @Operation(summary = "List all users currently holding the ORGANIZER role")
-    @GetMapping("/organizer-users")
-    public ResponseEntity<ApiResponse<List<OrganizerUserResponse>>> getOrganizers() {
-        return ResponseEntity.ok(ApiResponse.ok("Organizers retrieved",
-                getOrganizersPort.getOrganizers()));
-    }
 
     @Operation(summary = "Revoke the ORGANIZER role from a user (downgrades to USER) with a required reason. " +
                "Cancels their published events, sends in-app + email notification with the reason " +

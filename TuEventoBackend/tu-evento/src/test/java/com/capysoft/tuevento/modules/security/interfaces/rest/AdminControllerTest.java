@@ -11,11 +11,9 @@ import com.capysoft.tuevento.modules.profile.infrastructure.persistence.entity.P
 import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
 import com.capysoft.tuevento.modules.security.application.dto.request.RevokeOrganizerRoleRequest;
 import com.capysoft.tuevento.modules.security.application.dto.response.ActivityItemResponse;
-import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerUserResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.ApproveOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetAdminPendingCountsPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizerRequestsPort;
-import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizersPort;
 import com.capysoft.tuevento.modules.security.application.port.in.RejectOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganizerRolePort;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
@@ -51,7 +49,6 @@ import static org.mockito.Mockito.*;
  * <h3>Coverage</h3>
  * <ul>
  *   <li>Organizer management endpoints: ADMIN allowed; USER and ORGANIZER denied</li>
- *   <li>GET /organizer-users returns the organizers from the use case</li>
  *   <li>DELETE /organizer-users/{id}/revoke delegates to the use case with the reason and the admin id</li>
  *   <li>Activity feed tolerates events without organizer and profiles without name/user</li>
  * </ul>
@@ -71,7 +68,6 @@ class AdminControllerTest {
     @MockitoBean private GetAdminPendingCountsPort   getAdminPendingCountsPort;
     @MockitoBean private GeneratePublicUrlPort       generatePublicUrlPort;
     @MockitoBean private OrganizerPetitionRepository organizerPetitionRepository;
-    @MockitoBean private GetOrganizersPort           getOrganizersPort;
     @MockitoBean private RevokeOrganizerRolePort     revokeOrganizerRolePort;
     @MockitoBean private GetAdminEventsPort          getAdminEventsPort;
     @MockitoBean private AdminChangeEventStatusPort  adminChangeEventStatusPort;
@@ -98,45 +94,6 @@ class AdminControllerTest {
     }
 
     // ── Role restrictions ─────────────────────────────────────────────────────
-
-    @Nested
-    @DisplayName("GET /organizer-users")
-    class GetOrganizers {
-
-        @Test
-        @WithMockUser(authorities = "ADMIN")
-        @DisplayName("ADMIN → returns organizers from the use case")
-        void getOrganizers_admin_returnsOrganizers() {
-            var organizer = OrganizerUserResponse.builder().userId(ORGANIZER_ID).alias("org_bob").build();
-            when(getOrganizersPort.getOrganizers()).thenReturn(List.of(organizer));
-
-            var response = controller.getOrganizers();
-
-            assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
-            assertThat(response.getBody().isSuccess()).isTrue();
-            assertThat(response.getBody().getData()).containsExactly(organizer);
-        }
-
-        @Test
-        @WithMockUser(authorities = "USER")
-        @DisplayName("USER → AccessDeniedException, use case not called")
-        void getOrganizers_user_isDenied() {
-            assertThatThrownBy(() -> controller.getOrganizers())
-                    .isInstanceOf(AccessDeniedException.class);
-
-            verifyNoInteractions(getOrganizersPort);
-        }
-
-        @Test
-        @WithMockUser(authorities = "ORGANIZER")
-        @DisplayName("ORGANIZER → AccessDeniedException, use case not called")
-        void getOrganizers_organizer_isDenied() {
-            assertThatThrownBy(() -> controller.getOrganizers())
-                    .isInstanceOf(AccessDeniedException.class);
-
-            verifyNoInteractions(getOrganizersPort);
-        }
-    }
 
     @Nested
     @DisplayName("DELETE /organizer-users/{userId}/revoke")
