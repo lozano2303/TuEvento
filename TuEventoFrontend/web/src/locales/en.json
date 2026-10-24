@@ -895,7 +895,10 @@
     "deleteCommentTitle": "Delete this comment?",
     "deleteCommentMessage": "Once deleted there's no going back — the comment and its replies will disappear forever. Continue?",
     "yesDelete": "Yes, delete",
-    "noCancel": "No, cancel"
+    "noCancel": "No, cancel",
+    "cancelledLiveTitle": "This event has been cancelled",
+    "cancelledLiveMessage": "If you made a payment, the refund has been credited to your wallet. Check your inbox and notifications for the details.",
+    "cancelledLiveButton": "Back to home"
   },
   "paymentApproved": {
     "title": "Payment approved!",

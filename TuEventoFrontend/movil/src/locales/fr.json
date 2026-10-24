@@ -876,7 +876,10 @@
     "errorTitle": "Erreur de chargement",
     "notFound": "Événement introuvable",
     "availability": "Disponibilité",
-    "gallery": "Galerie"
+    "gallery": "Galerie",
+    "cancelledLiveTitle": "Cet événement a été annulé",
+    "cancelledLiveMessage": "Si vous avez effectué un paiement, le remboursement a été crédité sur votre portefeuille. Consultez votre boîte de réception et vos notifications pour plus de détails.",
+    "cancelledLiveButton": "Retour à l'accueil"
   },
   "paymentApproved": {
     "title": "Paiement approuvé!",
@@ -1947,5 +1950,11 @@
       "forbidden": "Vous n'avez pas l'autorisation de faire cela.",
       "generic": "L'action n'a pas pu être effectuée. Réessayez."
     }
+  },
+  "mobileAdminEvents": {
+    "cancelConfirmTitle": "Annuler cet événement ?",
+    "cancelConfirmMessage": "Cette action est irréversible. Tous les acheteurs seront remboursés sur leur portefeuille et les personnes qui consultent l'événement seront prévenues.",
+    "cancelConfirmBack": "Retour",
+    "cancelConfirmYes": "Oui, annuler"
   }
 }

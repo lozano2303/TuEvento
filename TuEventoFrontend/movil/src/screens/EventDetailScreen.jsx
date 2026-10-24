@@ -25,6 +25,7 @@ import SeatMapCanvas from "../components/SeatMapCanvas";
 import CartBubble from "../components/CartBubble";
 import EventComments from "../components/EventComments";
 import Toast from "../components/Toast";
+import AppModal from "../components/AppModal";
 import { useToast } from "../hooks/useToast";
 import { useSeatStore } from "../hooks/useSeatStore";
 
@@ -49,6 +50,8 @@ export default function EventDetailScreen() {
   const currentUserId = user?.userId ?? null;
 
   const [event, setEvent] = useState(null);
+  // Aviso en vivo: el organizador/admin canceló el evento mientras se veía
+  const [cancelledLive, setCancelledLive] = useState(false);
   const [media, setMedia] = useState([]);
   const [layout, setLayout] = useState(null);
   const [sections, setSections] = useState([]);
@@ -220,6 +223,9 @@ export default function EventDetailScreen() {
             reservedBy: evt.newStatus === 'RESERVED' ? evt.changedBy : null,
             reservedUntil: evt.reservedUntil,
           });
+        }, (statusEvt) => {
+          // El organizador/admin canceló el evento mientras se veía
+          if (statusEvt?.type === 'EVENT_CANCELLED') setCancelledLive(true);
         });
 
         if (!isCancelled && client) {
@@ -929,6 +935,19 @@ export default function EventDetailScreen() {
       />
       {/* Toast de alertas */}
       <Toast toast={toast} onHide={hideToast} />
+
+      {/* Evento cancelado en vivo: solo se puede salir al inicio */}
+      <AppModal
+        visible={cancelledLive}
+        type="error"
+        title={t("eventDetail.cancelledLiveTitle")}
+        message={t("eventDetail.cancelledLiveMessage")}
+        confirmText={t("eventDetail.cancelledLiveButton")}
+        onConfirm={() => {
+          setCancelledLive(false);
+          navigation.reset({ index: 0, routes: [{ name: user ? "Main" : "Landing" }] });
+        }}
+      />
     </View>
   );
 }

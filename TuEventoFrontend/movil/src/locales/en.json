@@ -876,7 +876,10 @@
     "errorTitle": "Loading error",
     "notFound": "Event not found",
     "availability": "Availability",
-    "gallery": "Gallery"
+    "gallery": "Gallery",
+    "cancelledLiveTitle": "This event has been cancelled",
+    "cancelledLiveMessage": "If you made a payment, the refund has been credited to your wallet. Check your inbox and notifications for the details.",
+    "cancelledLiveButton": "Back to home"
   },
   "paymentApproved": {
     "title": "Payment approved!",
@@ -1947,5 +1950,11 @@
       "forbidden": "You don't have permission to do this.",
       "generic": "The action couldn't be completed. Please try again."
     }
+  },
+  "mobileAdminEvents": {
+    "cancelConfirmTitle": "Cancel this event?",
+    "cancelConfirmMessage": "This action cannot be undone. All buyers will be refunded to their wallet and anyone viewing the event will be notified.",
+    "cancelConfirmBack": "Go back",
+    "cancelConfirmYes": "Yes, cancel"
   }
 }

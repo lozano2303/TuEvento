@@ -30,6 +30,8 @@ export default function EventDetail() {
   const { t } = useTranslation();
   
   const [event, setEvent] = useState(null);
+  // Aviso en vivo: el organizador/admin canceló el evento mientras se veía
+  const [eventCancelledLive, setEventCancelledLive] = useState(false);
   const [media, setMedia] = useState([]);
   const [activeImage, setActiveImage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -416,6 +418,21 @@ export default function EventDetail() {
         );
       },
       key
+    );
+
+    return () => { unsubscribe(); };
+  }, [eventId, isLoading, subscribe]);
+
+  // ── WebSocket: el evento fue cancelado mientras se estaba viendo ──────────
+  useEffect(() => {
+    if (!eventId || isLoading) return;
+
+    const unsubscribe = subscribe(
+      `/topic/events/${eventId}/status`,
+      (incoming) => {
+        if (incoming?.type === 'EVENT_CANCELLED') setEventCancelledLive(true);
+      },
+      `status-event-${eventId}`
     );
 
     return () => { unsubscribe(); };
@@ -1545,6 +1562,30 @@ export default function EventDetail() {
         onConfirm={executeDeleteComment}
         onCancel={() => setDeleteConfirm(null)}
       />
+
+      {/* Evento cancelado en vivo — no se puede cerrar sin salir del evento */}
+      {eventCancelledLive && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[90] p-4">
+          <div className="bg-surface rounded-2xl border border-surfaceAlt shadow-2xl shadow-black/60 w-full max-w-sm p-6 flex flex-col items-center gap-4 text-center">
+            <div className="w-14 h-14 rounded-full bg-rose-500/15 flex items-center justify-center">
+              <AlertTriangle className="w-7 h-7 text-rose-400" />
+            </div>
+            <h3 className="text-base font-black text-textPrimary leading-snug">
+              {t('eventDetail.cancelledLiveTitle')}
+            </h3>
+            <p className="text-sm text-textSecondary leading-relaxed">
+              {t('eventDetail.cancelledLiveMessage')}
+            </p>
+            <button
+              onClick={() => navigate('/', { replace: true })}
+              className="w-full py-2.5 rounded-full text-sm font-bold text-white hover:brightness-110 transition-all"
+              style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primaryDark))' }}
+            >
+              {t('eventDetail.cancelledLiveButton')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

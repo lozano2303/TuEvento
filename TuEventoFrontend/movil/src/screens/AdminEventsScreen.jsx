@@ -10,6 +10,7 @@ import { useTheme } from "../context/ThemeContext";
 import { getAdminEvents, adminChangeEventStatus } from "../services/adminService";
 import { getEventDetail, getEventMedia } from "../services/eventService";
 import AppModal from "../components/AppModal";
+import { useTranslation } from "react-i18next";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -149,6 +150,9 @@ function EventDetailModal({ event, detail, media, loading, onClose, onAction, ac
   const transitions = getAllowedTransitions(event.status);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectInput, setShowRejectInput] = useState(false);
+  // Cancelar es irreversible (reembolsa a los compradores): requiere confirmación
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const { t } = useTranslation();
   const cfg = getCfg(event.status);
   // Imagen seleccionada en la galería; mientras carga la media se usa la portada del listado
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -158,6 +162,7 @@ function EventDetailModal({ event, detail, media, loading, onClose, onAction, ac
 
   const handleTransition = (value) => {
     if (value === "REJECTED") { setShowRejectInput(true); return; }
+    if (value === "CANCELLED") { setShowCancelConfirm(true); return; }
     onAction(event.eventId, value, null);
   };
 
@@ -356,8 +361,55 @@ function EventDetailModal({ event, detail, media, loading, onClose, onAction, ac
               </View>
             )}
 
+            {/* Confirmación de cancelación */}
+            {showCancelConfirm && (
+              <View style={{
+                gap: 10, padding: 14, borderRadius: 14,
+                backgroundColor: "#f8717114", borderWidth: 1, borderColor: "#f8717155",
+              }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Ionicons name="warning-outline" size={18} color="#f87171" />
+                  <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700", flex: 1 }}>
+                    {t("mobileAdminEvents.cancelConfirmTitle")}
+                  </Text>
+                </View>
+                <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 19 }}>
+                  {t("mobileAdminEvents.cancelConfirmMessage")}
+                </Text>
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => setShowCancelConfirm(false)} activeOpacity={0.8}
+                    disabled={actionLoading}
+                    style={{
+                      flex: 1, paddingVertical: 14, borderRadius: 13,
+                      borderWidth: 1, borderColor: colors.primary + "30",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>
+                      {t("mobileAdminEvents.cancelConfirmBack")}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => onAction(event.eventId, "CANCELLED", null)}
+                    disabled={actionLoading}
+                    activeOpacity={0.8}
+                    style={{
+                      flex: 1, paddingVertical: 14, borderRadius: 13,
+                      backgroundColor: "#f87171", alignItems: "center",
+                    }}
+                  >
+                    {actionLoading
+                      ? <ActivityIndicator size="small" color="#fff" />
+                      : <Text style={{ color: "#fff", fontWeight: "700" }}>{t("mobileAdminEvents.cancelConfirmYes")}</Text>
+                    }
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             {/* Botones de transición */}
-            {!showRejectInput && transitions.length > 0 && (
+            {!showRejectInput && !showCancelConfirm && transitions.length > 0 && (
               <View style={{ flexDirection: "row", gap: 10 }}>
                 {transitions.map(({ value, label, icon, color }) => (
                   <TouchableOpacity
