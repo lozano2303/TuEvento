@@ -15,6 +15,10 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
 
     @Query("SELECT u FROM UserEntity u JOIN FETCH u.role WHERE u.alias = :alias")
     Optional<UserEntity> findByAlias(@Param("alias") String alias);
+
+    /** Eager load of role + userStatus by ID — use this instead of findById() when the entity will be modified or mapped to domain. */
+    @Query("SELECT u FROM UserEntity u JOIN FETCH u.role JOIN FETCH u.userStatus WHERE u.userId = :userId")
+    Optional<UserEntity> findByIdEager(@Param("userId") Integer userId);
     
     @Query("SELECT COUNT(u) > 0 FROM UserEntity u WHERE u.alias = :alias")
     boolean existsByAlias(@Param("alias") String alias);
@@ -29,4 +33,16 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
     /** Most recent N registered users — used for admin activity feed. */
     @Query("SELECT u FROM UserEntity u ORDER BY u.createdAt DESC")
     List<UserEntity> findTopByOrderByCreatedAtDesc(Pageable pageable);
+
+    /** All users currently holding a specific role code. Eagerly fetches role + userStatus to avoid LazyInitializationException. */
+    @Query("SELECT u FROM UserEntity u JOIN FETCH u.role r JOIN FETCH u.userStatus WHERE r.code = :roleCode")
+    List<UserEntity> findAllByRoleCode(@Param("roleCode") String roleCode);
+
+    /** Count events for a given user — avoids loading the full event list just for a count. */
+    @Query("SELECT COUNT(e) FROM com.capysoft.tuevento.modules.event.infrastructure.persistence.entity.EventEntity e WHERE e.userId = :userId")
+    long countEventsByUserId(@Param("userId") Long userId);
+
+    /** Count published events for a given user. */
+    @Query(value = "SELECT COUNT(*) FROM event WHERE user_id = :userId AND status = 'PUBLISHED'", nativeQuery = true)
+    long countPublishedEventsByUserId(@Param("userId") Long userId);
 }
