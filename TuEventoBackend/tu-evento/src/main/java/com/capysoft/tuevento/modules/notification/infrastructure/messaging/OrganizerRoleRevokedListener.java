@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +23,8 @@ import java.util.Map;
  * Listens to {@link OrganizerRoleRevokedEvent} and:
  * <ol>
  *   <li>Sends an in-app + email notification via the standard notification pipeline
- *       (which includes automatic translation to the user's preferred language).</li>
+ *       (which includes automatic translation to the user's preferred language),
+ *       including the reason written by the admin.</li>
  *   <li>Pushes a dedicated WebSocket message to
  *       {@code /topic/role-change/{userId}} so the frontend can react immediately:
  *       refresh the JWT, update localStorage, and show the one-time revocation modal.</li>
@@ -58,6 +60,7 @@ public class OrganizerRoleRevokedListener {
                     .entityType(NotificationEntityTypes.USER)
                     .entityId(event.getUserId().longValue())
                     .userIds(List.of(event.getUserId()))
+                    .reason(event.getReason())
                     .idempotencySuffix(suffix)
                     .build();
 
@@ -71,12 +74,12 @@ public class OrganizerRoleRevokedListener {
             //   a) calls /api/v1/auth/refresh to get a new JWT with the USER role
             //   b) updates localStorage (token, role)
             //   c) shows the one-time "you are no longer an organizer" modal
-            Map<String, Object> wsPayload = Map.of(
-                    "type",      "ROLE_REVOKED",
-                    "newRole",   "USER",
-                    "userId",    event.getUserId(),
-                    "occurredAt", event.getOccurredAt().toString()
-            );
+            Map<String, Object> wsPayload = new HashMap<>();
+            wsPayload.put("type",       "ROLE_REVOKED");
+            wsPayload.put("newRole",    "USER");
+            wsPayload.put("userId",     event.getUserId());
+            wsPayload.put("occurredAt", event.getOccurredAt().toString());
+            // El motivo no viaja por WS: el usuario lo recibe en la notificación autenticada
 
             String destination = "/topic/role-change/" + event.getUserId();
             messagingTemplate.convertAndSend(destination, wsPayload);

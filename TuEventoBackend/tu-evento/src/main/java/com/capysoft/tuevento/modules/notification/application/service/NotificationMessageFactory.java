@@ -170,19 +170,24 @@ public final class NotificationMessageFactory {
     // ── Organizer role notifications ──────────────────────────────────────────
 
     private static MessageContent organizerRoleRevoked(boolean email, SendNotificationCommand command) {
+        // Motivo escrito por el admin; los eventos publicados se cancelan con reembolso a los compradores
+        boolean hasReason = command.getReason() != null && !command.getReason().isBlank();
         if (email) {
             return new MessageContent(
                     "TuEvento — Cambio en tu rol de organizador",
                     html("&#128274;",
                         "Tu rol de <strong style=\"color:#c4b5fd;\">Organizador</strong> ha sido revocado por un administrador de la plataforma.",
-                        "A partir de ahora tu cuenta tiene el rol de <strong style=\"color:#c4b5fd;\">Usuario</strong>. Ya no podrás crear ni gestionar eventos.",
+                        hasReason ? "Motivo indicado por el administrador: " + escapeHtml(command.getReason()) : null,
+                        "A partir de ahora tu cuenta tiene el rol de <strong style=\"color:#c4b5fd;\">Usuario</strong>. Ya no podrás crear ni gestionar eventos; tus eventos publicados fueron cancelados y sus compradores reembolsados.",
                         "Si crees que esto fue un error, puedes contactar al soporte de TuEvento o volver a solicitar el rol de organizador desde tu perfil."
                     ));
         }
         return new MessageContent(
                 "Rol de organizador revocado",
-                "Un administrador ha revocado tu rol de Organizador. Tu cuenta ahora es de tipo Usuario. " +
-                "Si tienes dudas, contacta al soporte de TuEvento.");
+                "Un administrador ha revocado tu rol de Organizador. "
+                + (hasReason ? "Motivo: " + command.getReason() + " " : "")
+                + "Tu cuenta ahora es de tipo Usuario y tus eventos publicados fueron cancelados. "
+                + "Si tienes dudas, contacta al soporte de TuEvento.");
     }
 
     private static String paymentBreakdown(SendNotificationCommand command) {

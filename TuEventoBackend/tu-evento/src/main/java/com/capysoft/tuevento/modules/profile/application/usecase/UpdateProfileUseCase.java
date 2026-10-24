@@ -74,7 +74,11 @@ public class UpdateProfileUseCase implements UpdateProfilePort {
                     request.getCityId().toString());
             profile.setCity(city);
         }
+        Long changedLanguageId = null;
         if (request.getPreferredLanguageId() != null) {
+            if (!request.getPreferredLanguageId().equals(profile.getPreferredLanguageId())) {
+                changedLanguageId = request.getPreferredLanguageId();
+            }
             log(profile.getProfileId(), "LANGUAGE_CHANGED",
                     profile.getPreferredLanguageId() != null ? profile.getPreferredLanguageId().toString() : null,
                     request.getPreferredLanguageId().toString());
@@ -86,6 +90,7 @@ public class UpdateProfileUseCase implements UpdateProfilePort {
         eventPublisher.publishEvent(ProfileUpdatedEvent.builder()
                 .profileId(saved.getProfileId())
                 .userId(saved.getUserId())
+                .changedLanguageId(changedLanguageId)
                 .occurredAt(LocalDateTime.now())
                 .build());
 

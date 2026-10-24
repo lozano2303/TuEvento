@@ -1,24 +1,17 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState } from "react";
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StatusBar, Animated, Image, ActivityIndicator, LayoutAnimation,
-  Platform, UIManager,
+  StatusBar, Animated, Image, ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { useNotifications } from "../context/NotificationContext";
 import { getFileUrl } from "../services/storageService";
-
-// Habilitar LayoutAnimation en Android
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getDisplayName(fullName) {
@@ -67,33 +60,6 @@ export default function ProfileScreen() {
   // Estado del avatar
   const [avatarUrl, setAvatarUrl]         = useState(null);
   const [avatarLoading, setAvatarLoading] = useState(true);
-
-  // Estado del accordion de administración
-  const [adminExpanded, setAdminExpanded] = useState(false);
-
-  // Pendientes del admin en vivo (WebSocket): punto rojo y contador por ítem
-  const { adminPending, adminPendingTotal, refreshAdminPending } = useNotifications();
-
-  // Respaldo del WebSocket: al entrar a Perfil se relee el estado real del backend
-  useFocusEffect(useCallback(() => {
-    if (user?.role === "ADMIN") refreshAdminPending();
-  }, [user?.role, refreshAdminPending]));
-  const PENDING_BY_ROUTE = {
-    AdminEvents:       adminPending.eventsInReview,
-    OrganizerRequests: adminPending.organizerRequests,
-  };
-
-  // Ítems del panel de administración (espejo del sidebar web)
-  const ADMIN_ITEMS = [
-    { icon: "grid-outline",           label: t("mobileProfile.admin.dashboard.label"),    sub: t("mobileProfile.admin.dashboard.sub"),    route: "AdminDashboard" },
-    { icon: "card-outline",           label: t("mobileProfile.admin.financial.label"),    sub: t("mobileProfile.admin.financial.sub"),    route: "AdminFinancial" },
-    { icon: "calendar-outline",       label: t("mobileProfile.admin.events.label"),       sub: t("mobileProfile.admin.events.sub"),       route: "AdminEvents" },
-    { icon: "bar-chart-outline",      label: t("mobileProfile.admin.reports.label"),      sub: t("mobileProfile.admin.reports.sub"),      route: "AdminReports" },
-    { icon: "refresh-circle-outline", label: t("mobileProfile.admin.refunds.label"),      sub: t("mobileProfile.admin.refunds.sub"),      route: null },
-    { icon: "people-outline",         label: t("mobileProfile.admin.requests.label"),     sub: t("mobileProfile.admin.requests.sub"),     route: "OrganizerRequests" },
-    { icon: "pricetags-outline",      label: t("mobileProfile.admin.categories.label"),   sub: t("mobileProfile.admin.categories.sub"),   route: "AdminCategories" },
-    { icon: "layers-outline",         label: t("mobileProfile.admin.sectionTypes.label"), sub: t("mobileProfile.admin.sectionTypes.sub"), route: "AdminSectionTypes" },
-  ];
 
   useEffect(() => {
     const loadAvatar = async () => {
@@ -277,147 +243,6 @@ export default function ProfileScreen() {
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </TouchableOpacity>
-            </>
-          )}
-
-          {/* ── Sección Administración — solo visible para ADMIN ── */}
-          {user?.role === "ADMIN" && (
-            <>
-              <Text style={{
-                color: colors.textSecondary, fontSize: 11, fontWeight: "700",
-                letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12,
-              }}>
-                {t("mobileProfile.sections.admin")}
-              </Text>
-
-              {/* ── Accordion trigger ── */}
-              <TouchableOpacity
-                activeOpacity={0.75}
-                onPress={() => {
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                  setAdminExpanded((v) => !v);
-                }}
-                style={{
-                  flexDirection: "row", alignItems: "center",
-                  backgroundColor: colors.surface + "CC",
-                  borderRadius: 14, borderWidth: 1,
-                  borderColor: colors.primary + "40",
-                  padding: 16,
-                  marginBottom: adminExpanded ? 2 : 24,
-                }}
-              >
-                <View style={{
-                  width: 40, height: 40, borderRadius: 12,
-                  backgroundColor: colors.error + "22",
-                  borderWidth: 1, borderColor: colors.error + "40",
-                  alignItems: "center", justifyContent: "center",
-                  marginRight: 14,
-                }}>
-                  <Ionicons name="shield-outline" size={20} color={colors.error} />
-                  {adminPendingTotal > 0 && (
-                    <View style={{
-                      position: "absolute", top: -3, right: -3,
-                      width: 11, height: 11, borderRadius: 6,
-                      backgroundColor: colors.error,
-                      borderWidth: 2, borderColor: colors.surface,
-                    }} />
-                  )}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "600" }}>
-                    {t("mobileProfile.adminPanel.label")}
-                  </Text>
-                  <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>
-                    {t("mobileProfile.adminPanel.desc")}
-                  </Text>
-                </View>
-                <Ionicons
-                  name={adminExpanded ? "chevron-up" : "chevron-down"}
-                  size={18}
-                  color={colors.textMuted}
-                />
-              </TouchableOpacity>
-
-              {/* ── Ítems del accordion ── */}
-              {adminExpanded && (
-                <View style={{
-                  backgroundColor: colors.surface + "88",
-                  borderRadius: 14, borderWidth: 1,
-                  borderColor: colors.primary + "25",
-                  marginBottom: 24,
-                  overflow: "hidden",
-                }}>
-                  {ADMIN_ITEMS.map((item, idx) => {
-                    const isLast = idx === ADMIN_ITEMS.length - 1;
-                    const disabled = !item.route;
-                    return (
-                      <TouchableOpacity
-                        key={idx}
-                        activeOpacity={disabled ? 1 : 0.75}
-                        onPress={() => {
-                          if (!item.route) return;
-                          navigation.navigate(item.route);
-                        }}
-                        style={{
-                          flexDirection: "row", alignItems: "center",
-                          paddingHorizontal: 16, paddingVertical: 13,
-                          borderBottomWidth: isLast ? 0 : 1,
-                          borderBottomColor: colors.primary + "18",
-                          opacity: disabled ? 0.45 : 1,
-                        }}
-                      >
-                        {/* Ícono */}
-                        <View style={{
-                          width: 36, height: 36, borderRadius: 10,
-                          backgroundColor: colors.primary + "22",
-                          alignItems: "center", justifyContent: "center",
-                          marginRight: 13,
-                        }}>
-                          <Ionicons name={item.icon} size={18} color={colors.accent} />
-                        </View>
-
-                        {/* Texto */}
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "600" }}>
-                            {item.label}
-                          </Text>
-                          <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }}>
-                            {disabled ? t("mobileProfile.comingSoon") : item.sub}
-                          </Text>
-                        </View>
-
-                        {/* Chevron o badge "Próximamente" */}
-                        {disabled ? (
-                          <View style={{
-                            backgroundColor: colors.primary + "22",
-                            borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3,
-                          }}>
-                            <Text style={{ color: colors.textMuted, fontSize: 9, fontWeight: "700" }}>
-                              {t("mobileProfile.comingSoonBadge")}
-                            </Text>
-                          </View>
-                        ) : (
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                            {PENDING_BY_ROUTE[item.route] > 0 && (
-                              <View style={{
-                                minWidth: 20, height: 20, borderRadius: 10,
-                                paddingHorizontal: 6,
-                                backgroundColor: colors.error,
-                                alignItems: "center", justifyContent: "center",
-                              }}>
-                                <Text style={{ color: "#FFFFFF", fontSize: 11, fontWeight: "700" }}>
-                                  {PENDING_BY_ROUTE[item.route] > 99 ? "99+" : PENDING_BY_ROUTE[item.route]}
-                                </Text>
-                              </View>
-                            )}
-                            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
             </>
           )}
 

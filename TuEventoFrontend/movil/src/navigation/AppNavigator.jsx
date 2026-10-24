@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
@@ -35,6 +35,11 @@ import AdminFinancialScreen        from "../screens/AdminFinancialScreen";
 import AdminReportsScreen          from "../screens/AdminReportsScreen";
 import AdminCategoriesScreen       from "../screens/AdminCategoriesScreen";
 import AdminSectionTypesScreen     from "../screens/AdminSectionTypesScreen";
+import AdminUsersScreen            from "../screens/AdminUsersScreen";
+import AdminRefundsScreen          from "../screens/AdminRefundsScreen";
+import AdminHomeScreen             from "../screens/AdminHomeScreen";
+import AdminTranslationsScreen     from "../screens/AdminTranslationsScreen";
+import { isAdminAllowedRoute }     from "./homeRoute";
 import MyTicketsScreen             from "../screens/MyTicketsScreen";
 import TicketQrScreen              from "../screens/TicketQrScreen";
 import ScanTicketScreen            from "../screens/ScanTicketScreen";
@@ -219,8 +224,31 @@ function MainTabs() {
 
 // ─── Navigator raíz ───────────────────────────────────────────────────────────
 export default function AppNavigator() {
-  const { logout, showLogoutModal, setShowLogoutModal } = useAuth();
+  const { user, logout, showLogoutModal, setShowLogoutModal } = useAuth();
   const isLoggingOut = useRef(false);
+
+  // Inicio (Main o AdminHome): "atrás" no sale de la app, pide confirmar el cierre de sesión
+  const exitGuard = () => ({
+    beforeRemove: (e) => {
+      if (isLoggingOut.current) return;
+      e.preventDefault();
+      setShowLogoutModal(true);
+    },
+  });
+
+  // Igual que la web: el admin solo usa el panel. Si llega a una pantalla de usuario
+  // (p. ej. Main tras un login antiguo), se le devuelve a AdminHome.
+  const enforceAdminArea = useCallback(() => {
+    if (user?.role !== "ADMIN" || !navigationRef.isReady()) return;
+    const state = navigationRef.getRootState();
+    const current = state?.routes?.[state.index]?.name;
+    if (!current || isAdminAllowedRoute(current)) return;
+    isLoggingOut.current = true; // permite salir de Main sin abrir el modal de cierre de sesión
+    navigationRef.reset({ index: 0, routes: [{ name: "AdminHome" }] });
+    isLoggingOut.current = false;
+  }, [user?.role]);
+
+  useEffect(() => { enforceAdminArea(); }, [enforceAdminArea]);
 
   const handleLogoutConfirm = async () => {
     setShowLogoutModal(false);
@@ -233,7 +261,7 @@ export default function AppNavigator() {
   };
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} onStateChange={enforceAdminArea}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Landing"        component={LandingScreen} />
         <Stack.Screen name="Login"          component={LoginScreen} />
@@ -258,6 +286,15 @@ export default function AppNavigator() {
         <Stack.Screen name="AdminReports"            component={AdminReportsScreen} />
         <Stack.Screen name="AdminCategories"         component={AdminCategoriesScreen} />
         <Stack.Screen name="AdminSectionTypes"       component={AdminSectionTypesScreen} />
+        <Stack.Screen name="AdminUsers"              component={AdminUsersScreen} />
+        <Stack.Screen name="AdminRefunds"            component={AdminRefundsScreen} />
+        <Stack.Screen name="AdminTranslations"       component={AdminTranslationsScreen} />
+        <Stack.Screen
+          name="AdminHome"
+          component={AdminHomeScreen}
+          options={{ gestureEnabled: false }}
+          listeners={exitGuard}
+        />
         <Stack.Screen name="MyTickets"               component={MyTicketsScreen} />
         <Stack.Screen name="TicketQr"                component={TicketQrScreen} />
         <Stack.Screen name="ScanTicket"              component={ScanTicketScreen} />
@@ -265,13 +302,7 @@ export default function AppNavigator() {
           name="Main"
           component={MainTabs}
           options={{ gestureEnabled: false }}
-          listeners={() => ({
-            beforeRemove: (e) => {
-              if (isLoggingOut.current) return;
-              e.preventDefault();
-              setShowLogoutModal(true);
-            },
-          })}
+          listeners={exitGuard}
         />
       </Stack.Navigator>
       <LogoutModal

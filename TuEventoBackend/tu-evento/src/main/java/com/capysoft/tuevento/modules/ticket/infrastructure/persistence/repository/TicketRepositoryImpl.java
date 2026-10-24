@@ -66,6 +66,13 @@ public class TicketRepositoryImpl implements TicketRepository {
     public boolean existsById(Long ticketId) {
         return jpaRepository.existsById(ticketId);
     }
+
+    @Override
+    public long countSoldByEventId(Long eventId) {
+        return jpaRepository.countByEventIdAndStatusIn(eventId,
+            List.of(com.capysoft.tuevento.modules.ticket.domain.model.TicketStatus.PAID,
+                    com.capysoft.tuevento.modules.ticket.domain.model.TicketStatus.USED));
+    }
     
     private TicketEntity toEntity(Ticket ticket) {
         return TicketEntity.builder()
