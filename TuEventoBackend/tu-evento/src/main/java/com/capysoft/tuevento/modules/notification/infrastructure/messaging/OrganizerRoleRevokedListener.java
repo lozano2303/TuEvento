@@ -79,7 +79,7 @@ public class OrganizerRoleRevokedListener {
             wsPayload.put("newRole",    "USER");
             wsPayload.put("userId",     event.getUserId());
             wsPayload.put("occurredAt", event.getOccurredAt().toString());
-            if (event.getReason() != null) wsPayload.put("reason", event.getReason());
+            // El motivo no viaja por WS: el usuario lo recibe en la notificación autenticada
 
             String destination = "/topic/role-change/" + event.getUserId();
             messagingTemplate.convertAndSend(destination, wsPayload);

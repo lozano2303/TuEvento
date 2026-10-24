@@ -4,7 +4,7 @@
  * NotificationContext es el único que mantiene la conexión STOMP y reemite aquí cada
  * mensaje; ThemeContext y LanguageContext se suscriben sin depender del orden de los
  * providers. Tipos: THEME_UPDATED, LANGUAGE_UPDATED { languageId }, ROLE_UPDATED { role }
- * y ROLE_REVOKED { newRole, reason } (este último llega por /topic/role-change/{userId}).
+ * y ROLE_REVOKED { newRole } (este último llega por /topic/role-change/{userId}).
  */
 const listeners = new Set();
 
