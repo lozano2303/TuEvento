@@ -1805,7 +1805,8 @@
     },
     "oauthCancelled": "You cancelled the sign-in",
     "oauthFailed": "Could not sign in with the external account. Please try again",
-    "googleExpoGo": "Google sign-in does not work in Expo Go. Use the development build (dev client)."
+    "googleExpoGo": "Google sign-in does not work in Expo Go. Use the development build (dev client).",
+    "googleDeveloperError": "Google rejected the app configuration (DEVELOPER_ERROR). Register this build's signing SHA-1 in Google Cloud."
   },
   "mobileSeats": {
     "sectionSoldOut": "No seats left available in this section",

@@ -1805,7 +1805,8 @@
     },
     "oauthCancelled": "Você cancelou o login",
     "oauthFailed": "Não foi possível entrar com a conta externa. Tente novamente",
-    "googleExpoGo": "O login com Google não funciona no Expo Go. Use o build de desenvolvimento (dev client)."
+    "googleExpoGo": "O login com Google não funciona no Expo Go. Use o build de desenvolvimento (dev client).",
+    "googleDeveloperError": "O Google rejeitou a configuração do app (DEVELOPER_ERROR). Registre o SHA-1 da assinatura deste build no Google Cloud."
   },
   "mobileSeats": {
     "sectionSoldOut": "Os assentos disponíveis nesta seção esgotaram",

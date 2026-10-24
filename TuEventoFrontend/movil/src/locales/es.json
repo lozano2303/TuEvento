@@ -1805,7 +1805,8 @@
     },
     "oauthCancelled": "Cancelaste el inicio de sesión",
     "oauthFailed": "No se pudo iniciar sesión con la cuenta externa. Intenta de nuevo",
-    "googleExpoGo": "El inicio de sesión con Google no funciona en Expo Go. Usa el build de desarrollo (dev client)."
+    "googleExpoGo": "El inicio de sesión con Google no funciona en Expo Go. Usa el build de desarrollo (dev client).",
+    "googleDeveloperError": "Google rechazó la configuración de la app (DEVELOPER_ERROR). Registra el SHA-1 de la firma de este build en Google Cloud."
   },
   "mobileSeats": {
     "sectionSoldOut": "Se agotaron las sillas disponibles en esta sección",
