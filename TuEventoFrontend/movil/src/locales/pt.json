@@ -1998,5 +1998,55 @@
     "revokeConfirm": "Remover papel",
     "revokeSuccess": "{{name}} não é mais organizador.",
     "revokeError": "Não foi possível remover o papel de organizador."
+  },
+  "adminRefunds": {
+    "title": "Reembolsos",
+    "subtitle": "Reembolsos de pagamentos com detalhamento e crédito manual na carteira de um usuário.",
+    "refresh": "Atualizar",
+    "loading": "Carregando reembolsos...",
+    "empty": "Nenhum reembolso corresponde aos filtros.",
+    "searchPlaceholder": "Buscar por comprador, e-mail ou evento...",
+    "stats": {
+      "pending": "Pendentes",
+      "pendingSub": "Solicitados, ainda não processados",
+      "processed": "Processados",
+      "processedSub": "Reembolsos concluídos",
+      "total": "Total reembolsado",
+      "totalSub": "Valor devolvido em toda a plataforma",
+      "toWallet": "Processado na lista",
+      "toWalletSub": "Soma dos reembolsos processados exibidos"
+    },
+    "status": {
+      "ALL": "Todos",
+      "PROCESSED": "Processado",
+      "REQUESTED": "Solicitado",
+      "FAILED": "Falhou"
+    },
+    "columns": {
+      "date": "Data",
+      "buyer": "Comprador",
+      "event": "Evento",
+      "amount": "Valor",
+      "status": "Status",
+      "reason": "Motivo"
+    },
+    "processedAt": "Processado: {{date}}",
+    "order": "Pedido #{{id}}",
+    "gatewayPart": "Gateway: {{amount}}",
+    "walletPart": "Carteira: {{amount}}",
+    "credit": {
+      "open": "Adicionar crédito",
+      "title": "Adicionar crédito a uma carteira",
+      "subtitle": "O saldo é somado imediatamente e o usuário recebe uma notificação com o motivo.",
+      "user": "Usuário",
+      "userPlaceholder": "Selecione um usuário",
+      "userSearch": "Buscar por nome, apelido ou e-mail...",
+      "amount": "Valor (COP)",
+      "reason": "Motivo",
+      "reasonPlaceholder": "Ex.: Compensação por um problema com o evento",
+      "submit": "Creditar",
+      "success": "{{amount}} creditados para {{name}}.",
+      "error": "Não foi possível creditar o saldo."
+    }
   }
 }

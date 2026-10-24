@@ -163,3 +163,34 @@ export const revokeOrganizerRole = async (userId, reason) => {
   }
   return response.json();
 };
+
+/**
+ * Reembolsos más recientes con desglose del pago, comprador y evento.
+ * GET /api/v1/admin/refunds?limit=
+ * @returns {Promise<Array<{refundId, userId, alias, fullName, email, eventId, eventName, orderId,
+ *   gatewayAmount, walletAmount, currency, status, reason, requestedAt, processedAt}>>}
+ */
+export const getAdminRefunds = async (limit = 200) => {
+  const response = await httpRequest(`${BASE_URL}/admin/refunds?limit=${limit}`);
+  if (!response.ok) throw new Error(`Error fetching refunds: ${response.status}`);
+  const json = await response.json();
+  return json.data ?? [];
+};
+
+/**
+ * Acredita saldo manualmente en la cartera de un usuario (crea la cartera si no existe).
+ * POST /api/v1/wallet/credit — el usuario recibe una notificación con el motivo.
+ * @param {{ userId: number, amount: number, reason: string }} params
+ */
+export const adminCreditWallet = async ({ userId, amount, reason }) => {
+  const response = await httpRequest(`${BASE_URL}/wallet/credit`, {
+    method: "POST",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ userId, amount, reason }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || `Error crediting wallet: ${response.status}`);
+  }
+  return response.json();
+};

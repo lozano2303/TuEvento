@@ -15,6 +15,7 @@ import com.capysoft.tuevento.modules.payment.infrastructure.persistence.reposito
 import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
 import com.capysoft.tuevento.modules.payment.domain.model.RefundStatus;
 import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.tuevento.modules.payment.application.dto.response.AdminRefundResponse;
 import com.capysoft.tuevento.modules.security.application.dto.request.RevokeOrganizerRoleRequest;
 import com.capysoft.tuevento.modules.security.application.dto.response.ActivityItemResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminUserResponse;
@@ -302,6 +303,19 @@ public class AdminController {
             @AuthenticationPrincipal SecurityUser principal) {
         revokeOrganizerRolePort.revoke(userId, request.getReason(), principal.getUserId());
         return ResponseEntity.ok(ApiResponse.ok("Organizer role revoked successfully"));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Refunds
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Operation(summary = "List the most recent refunds with payment breakdown, buyer and event")
+    @GetMapping("/refunds")
+    public ResponseEntity<ApiResponse<List<AdminRefundResponse>>> getRefunds(
+            @RequestParam(defaultValue = "100") int limit) {
+        int size = Math.min(Math.max(limit, 1), 300);
+        return ResponseEntity.ok(ApiResponse.ok("Refunds retrieved",
+                refundJpaRepository.findRecentForAdmin(PageRequest.of(0, size))));
     }
 
     // ═════════════════════════════════════════════════════════════════════════

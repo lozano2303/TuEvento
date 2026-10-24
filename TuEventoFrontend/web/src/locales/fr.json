@@ -1531,5 +1531,55 @@
     "revokeConfirm": "Retirer le rôle",
     "revokeSuccess": "{{name}} n'est plus organisateur.",
     "revokeError": "Impossible de retirer le rôle d'organisateur."
+  },
+  "adminRefunds": {
+    "title": "Remboursements",
+    "subtitle": "Remboursements des paiements avec leur détail et crédit manuel sur le portefeuille d'un utilisateur.",
+    "refresh": "Actualiser",
+    "loading": "Chargement des remboursements...",
+    "empty": "Aucun remboursement ne correspond aux filtres.",
+    "searchPlaceholder": "Rechercher par acheteur, e-mail ou événement...",
+    "stats": {
+      "pending": "En attente",
+      "pendingSub": "Demandés, pas encore traités",
+      "processed": "Traités",
+      "processedSub": "Remboursements terminés",
+      "total": "Total remboursé",
+      "totalSub": "Montant restitué sur toute la plateforme",
+      "toWallet": "Traité dans la liste",
+      "toWalletSub": "Somme des remboursements traités affichés"
+    },
+    "status": {
+      "ALL": "Tous",
+      "PROCESSED": "Traité",
+      "REQUESTED": "Demandé",
+      "FAILED": "Échoué"
+    },
+    "columns": {
+      "date": "Date",
+      "buyer": "Acheteur",
+      "event": "Événement",
+      "amount": "Montant",
+      "status": "Statut",
+      "reason": "Motif"
+    },
+    "processedAt": "Traité : {{date}}",
+    "order": "Commande n° {{id}}",
+    "gatewayPart": "Passerelle : {{amount}}",
+    "walletPart": "Portefeuille : {{amount}}",
+    "credit": {
+      "open": "Ajouter du crédit",
+      "title": "Ajouter du crédit à un portefeuille",
+      "subtitle": "Le solde est ajouté immédiatement et l'utilisateur reçoit une notification avec le motif.",
+      "user": "Utilisateur",
+      "userPlaceholder": "Sélectionnez un utilisateur",
+      "userSearch": "Rechercher par nom, pseudo ou e-mail...",
+      "amount": "Montant (COP)",
+      "reason": "Motif",
+      "reasonPlaceholder": "Ex. : Compensation pour un problème avec l'événement",
+      "submit": "Créditer",
+      "success": "{{amount}} crédités à {{name}}.",
+      "error": "Impossible de créditer le solde."
+    }
   }
 }

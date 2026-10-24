@@ -1998,5 +1998,55 @@
     "revokeConfirm": "Revoke role",
     "revokeSuccess": "{{name}} is no longer an organizer.",
     "revokeError": "Could not revoke the organizer role."
+  },
+  "adminRefunds": {
+    "title": "Refunds",
+    "subtitle": "Payment refunds with their breakdown, plus manual credit to a user's wallet.",
+    "refresh": "Refresh",
+    "loading": "Loading refunds...",
+    "empty": "No refunds match the filters.",
+    "searchPlaceholder": "Search by buyer, email or event...",
+    "stats": {
+      "pending": "Pending",
+      "pendingSub": "Requested, not processed yet",
+      "processed": "Processed",
+      "processedSub": "Completed refunds",
+      "total": "Total refunded",
+      "totalSub": "Amount returned across the platform",
+      "toWallet": "Processed in this list",
+      "toWalletSub": "Sum of the processed refunds shown"
+    },
+    "status": {
+      "ALL": "All",
+      "PROCESSED": "Processed",
+      "REQUESTED": "Requested",
+      "FAILED": "Failed"
+    },
+    "columns": {
+      "date": "Date",
+      "buyer": "Buyer",
+      "event": "Event",
+      "amount": "Amount",
+      "status": "Status",
+      "reason": "Reason"
+    },
+    "processedAt": "Processed: {{date}}",
+    "order": "Order #{{id}}",
+    "gatewayPart": "Gateway: {{amount}}",
+    "walletPart": "Wallet: {{amount}}",
+    "credit": {
+      "open": "Add credit",
+      "title": "Add credit to a wallet",
+      "subtitle": "The balance is added immediately and the user is notified with the reason.",
+      "user": "User",
+      "userPlaceholder": "Select a user",
+      "userSearch": "Search by name, alias or email...",
+      "amount": "Amount (COP)",
+      "reason": "Reason",
+      "reasonPlaceholder": "E.g.: Compensation for an issue with the event",
+      "submit": "Credit",
+      "success": "{{amount}} credited to {{name}}.",
+      "error": "Could not credit the balance."
+    }
   }
 }
