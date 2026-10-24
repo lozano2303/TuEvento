@@ -202,6 +202,7 @@ export default function AdminUsers() {
       {/* Modal: quitar rol de organizador */}
       {target && (
         <div
+          role="presentation"
           className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[80] p-4"
           onClick={(e) => { if (e.target === e.currentTarget) closeRevoke(); }}
         >
