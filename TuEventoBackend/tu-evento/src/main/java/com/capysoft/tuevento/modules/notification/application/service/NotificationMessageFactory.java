@@ -38,7 +38,7 @@ public final class NotificationMessageFactory {
         if (email) {
             return new MessageContent(
                     "TuEvento — Pago aprobado",
-                    html("&#9989;", "Tu pago fue aprobado.", breakdown));
+                    html("&#9989;", "Tu pago fue aprobado.", escapeHtml(breakdown)));
         }
         return new MessageContent("Pago aprobado", "Tu pago fue aprobado. " + breakdown);
     }
@@ -48,7 +48,7 @@ public final class NotificationMessageFactory {
         if (email) {
             return new MessageContent(
                     "TuEvento — Reembolso procesado",
-                    html("&#128260;", "Tu reembolso fue procesado.", breakdown));
+                    html("&#128260;", "Tu reembolso fue procesado.", escapeHtml(breakdown)));
         }
         return new MessageContent("Reembolso procesado", "Tu reembolso fue procesado. " + breakdown);
     }
@@ -58,8 +58,9 @@ public final class NotificationMessageFactory {
         String reason = (command.getReason() == null || command.getReason().isBlank())
                 ? ""
                 : " Motivo: " + command.getReason() + ".";
-        String line = "Se acreditaron <strong style=\"color:#c4b5fd;\">" + amount + "</strong> a tu cartera." + reason;
         if (email) {
+            String line = "Se acreditaron <strong style=\"color:#c4b5fd;\">" + escapeHtml(amount) + "</strong> a tu cartera."
+                    + escapeHtml(reason);
             return new MessageContent("TuEvento — Crédito en tu cartera", html("&#128176;", line));
         }
         return new MessageContent("Crédito en tu cartera", "Se acreditaron " + amount + " a tu cartera." + reason);
@@ -73,7 +74,7 @@ public final class NotificationMessageFactory {
             return new MessageContent(
                     "Bienvenido a TuEvento",
                     html("&#127881;",
-                        "¡Hola <strong style=\"color:#c4b5fd;\">" + userName + "</strong>! Bienvenido a TuEvento, tu plataforma para descubrir y disfrutar eventos increíbles.",
+                        "¡Hola <strong style=\"color:#c4b5fd;\">" + escapeHtml(userName) + "</strong>! Bienvenido a TuEvento, tu plataforma para descubrir y disfrutar eventos increíbles.",
                         "En TuEvento puedes:",
                         "&#8226; Explorar y comprar tickets para eventos de todo tipo",
                         "&#8226; Solicitar ser organizador presentando tu cédula/pasaporte y documentos adicionales",
