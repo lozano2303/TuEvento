@@ -893,7 +893,10 @@
     "deleteCommentTitle": "Excluir este comentário?",
     "deleteCommentMessage": "Uma vez excluído não há volta — o comentário e suas respostas desaparecerão para sempre. Continuar?",
     "yesDelete": "Sim, excluir",
-    "noCancel": "Não, cancelar"
+    "noCancel": "Não, cancelar",
+    "cancelledLiveTitle": "Este evento foi cancelado",
+    "cancelledLiveMessage": "Se você fez um pagamento, o reembolso foi creditado na sua carteira. Confira sua caixa de entrada e suas notificações para ver os detalhes.",
+    "cancelledLiveButton": "Voltar ao início"
   },
   "paymentApproved": {
     "title": "Pagamento aprovado!",

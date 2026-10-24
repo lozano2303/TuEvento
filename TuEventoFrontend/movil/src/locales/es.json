@@ -876,7 +876,10 @@
     "errorTitle": "Error al cargar",
     "notFound": "Evento no encontrado",
     "availability": "Disponibilidad",
-    "gallery": "Galería"
+    "gallery": "Galería",
+    "cancelledLiveTitle": "Este evento ha sido cancelado",
+    "cancelledLiveMessage": "Si realizaste un pago, el reembolso se acreditó en tu cartera. Revisa tu bandeja de entrada y tus notificaciones para ver el detalle.",
+    "cancelledLiveButton": "Volver al inicio"
   },
   "paymentApproved": {
     "title": "¡Pago aprobado!",
@@ -1947,5 +1950,11 @@
       "forbidden": "No tienes permiso para hacer esto.",
       "generic": "No se pudo completar la acción. Intenta de nuevo."
     }
+  },
+  "mobileAdminEvents": {
+    "cancelConfirmTitle": "¿Cancelar este evento?",
+    "cancelConfirmMessage": "Esta acción no se puede deshacer. Todos los compradores recibirán el reembolso en su cartera y quienes estén viendo el evento serán avisados.",
+    "cancelConfirmBack": "Volver",
+    "cancelConfirmYes": "Sí, cancelar"
   }
 }
