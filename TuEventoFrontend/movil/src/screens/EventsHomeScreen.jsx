@@ -20,42 +20,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { getPublishedEvents } from "../services/eventService";
 import { getAllCategories } from "../services/catalogService";
 import EventCard from "../components/EventCard";
-import { displayEventName, parseLocalDate, resolveCoverUrl } from "../utils/eventFormat";
-
-// Filtros rápidos de fecha (clave i18n en mobileEvents.dates.*)
-const DATE_FILTERS = ["all", "today", "weekend", "week", "month"];
-
-/** Rango [desde, hasta) en fecha local para cada filtro rápido. */
-function dateRange(filter) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
-  switch (filter) {
-    case "today":
-      return [today, addDays(today, 1)];
-    case "weekend": {
-      // Sábado y domingo de esta semana (si hoy es domingo, solo hoy)
-      const day = today.getDay();
-      const saturday = day === 0 ? addDays(today, -1) : addDays(today, 6 - day);
-      return [day === 0 ? today : saturday, addDays(saturday, 2)];
-    }
-    case "week":
-      return [today, addDays(today, 7)];
-    case "month":
-      return [today, new Date(today.getFullYear(), today.getMonth() + 1, 1)];
-    default:
-      return null;
-  }
-}
-
-/** Un evento cae en el rango si su intervalo [inicio, fin] se cruza con él. */
-function inRange(event, range) {
-  if (!range) return true;
-  const start = parseLocalDate(event.startDate);
-  if (!start) return false;
-  const finish = parseLocalDate(event.finishDate) ?? start;
-  return start < range[1] && finish >= range[0];
-}
+import { displayEventName, resolveCoverUrl } from "../utils/eventFormat";
 
 /**
  * Pantalla principal del tab "Eventos".
@@ -79,9 +44,9 @@ export default function EventsHomeScreen() {
   const [error, setError] = useState(null);
 
   const [query, setQuery] = useState("");
-  const [dateFilter, setDateFilter] = useState("all");
   const [categoryId, setCategoryId] = useState(null);
-  const [onlyAvailable, setOnlyAvailable] = useState(false);
+  // "Populares": solo eventos con entradas vendidas, de más a menos vendidos
+  const [popularOnly, setPopularOnly] = useState(false);
 
   const loadEvents = async (isRefresh = false) => {
     try {
@@ -144,26 +109,25 @@ export default function EventsHomeScreen() {
 
   const filteredEvents = useMemo(() => {
     const term = query.trim().toLowerCase();
-    const range = dateRange(dateFilter);
-    return events.filter((event) => {
+    const result = events.filter((event) => {
       if (term) {
         const haystack = [displayEventName(event, language), event.eventName, event.siteName]
           .filter(Boolean).join(" ").toLowerCase();
         if (!haystack.includes(term)) return false;
       }
       if (categoryId && event.categoryId !== categoryId) return false;
-      if (onlyAvailable && !(event.availableSeats > 0)) return false;
-      return inRange(event, range);
+      if (popularOnly && !(event.ticketsSold > 0)) return false;
+      return true;
     });
-  }, [events, query, dateFilter, categoryId, onlyAvailable, language]);
+    return popularOnly ? [...result].sort((a, b) => b.ticketsSold - a.ticketsSold) : result;
+  }, [events, query, categoryId, popularOnly, language]);
 
-  const hasFilters = query.trim() !== "" || dateFilter !== "all" || categoryId !== null || onlyAvailable;
+  const hasFilters = query.trim() !== "" || categoryId !== null || popularOnly;
 
   const clearFilters = () => {
     setQuery("");
-    setDateFilter("all");
     setCategoryId(null);
-    setOnlyAvailable(false);
+    setPopularOnly(false);
   };
 
   const Chip = ({ label, active, onPress, icon }) => (
@@ -199,44 +163,29 @@ export default function EventsHomeScreen() {
         ) : null}
       </View>
 
-      {/* Fecha */}
+      {/* Populares + categorías */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-        {DATE_FILTERS.map((key) => (
+        <Chip
+          label={t("mobileEvents.popular")}
+          icon="flame-outline"
+          active={popularOnly}
+          onPress={() => setPopularOnly((v) => !v)}
+        />
+        <Chip
+          label={t("mobileEvents.allCategories")}
+          icon="pricetags-outline"
+          active={categoryId === null}
+          onPress={() => setCategoryId(null)}
+        />
+        {categoryChips.map((cat) => (
           <Chip
-            key={key}
-            label={t(`mobileEvents.dates.${key}`)}
-            icon={key === "all" ? "calendar-outline" : undefined}
-            active={dateFilter === key}
-            onPress={() => setDateFilter(key)}
+            key={cat.categoryId}
+            label={cat.translatedName || cat.name}
+            active={categoryId === cat.categoryId}
+            onPress={() => setCategoryId(categoryId === cat.categoryId ? null : cat.categoryId)}
           />
         ))}
-        <Chip
-          label={t("mobileEvents.onlyAvailable")}
-          icon="ticket-outline"
-          active={onlyAvailable}
-          onPress={() => setOnlyAvailable((v) => !v)}
-        />
       </ScrollView>
-
-      {/* Categorías */}
-      {categoryChips.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-          <Chip
-            label={t("mobileEvents.allCategories")}
-            icon="pricetags-outline"
-            active={categoryId === null}
-            onPress={() => setCategoryId(null)}
-          />
-          {categoryChips.map((cat) => (
-            <Chip
-              key={cat.categoryId}
-              label={cat.translatedName || cat.name}
-              active={categoryId === cat.categoryId}
-              onPress={() => setCategoryId(categoryId === cat.categoryId ? null : cat.categoryId)}
-            />
-          ))}
-        </ScrollView>
-      )}
 
       {/* Resumen */}
       <View style={styles.resultsRow}>

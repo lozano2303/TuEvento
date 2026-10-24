@@ -1920,19 +1920,12 @@
     "accept": "Aceitar"
   },
   "mobileEvents": {
-    "dates": {
-      "all": "Todas as datas",
-      "today": "Hoje",
-      "weekend": "Este fim de semana",
-      "week": "Próximos 7 dias",
-      "month": "Este mês"
-    },
-    "onlyAvailable": "Com vagas",
     "allCategories": "Todas",
     "results_one": "{{count}} evento",
     "results_other": "{{count}} eventos",
     "clearFilters": "Limpar filtros",
-    "noMatches": "Tente outra busca ou remova alguns filtros."
+    "noMatches": "Tente outra busca ou remova alguns filtros.",
+    "popular": "Populares"
   },
   "mobileCart": {
     "reservationHint": "Seus assentos ficam reservados por tempo limitado. Conclua o pagamento antes que expirem.",

@@ -352,7 +352,9 @@
       "autoReload": "The page will reload automatically."
     },
     "soldOut": "Sold out",
-    "almostGone": "Few left"
+    "almostGone": "Few left",
+    "popularFilter": "Popular",
+    "popularEmpty": "No events with tickets sold yet."
   },
   "myEvents": {
     "title": "My Events",
