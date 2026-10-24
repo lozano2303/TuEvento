@@ -394,7 +394,7 @@ export function NotificationProvider({ children }) {
           try {
             const payload = JSON.parse(message.body);
             if (payload?.type === 'ROLE_REVOKED') {
-              handleRoleRevoked();
+              void handleRoleRevoked();
             }
           } catch (err) {
             // Error parsing role-change message
@@ -497,7 +497,7 @@ export function NotificationProvider({ children }) {
           try {
             const payload = JSON.parse(message.body);
             if (payload?.type === 'ROLE_REVOKED') {
-              handleRoleRevoked();
+              void handleRoleRevoked();
             }
           } catch (err) {
             // Error parsing role-change message

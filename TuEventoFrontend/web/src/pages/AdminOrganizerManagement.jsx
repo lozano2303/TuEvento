@@ -14,7 +14,7 @@ export default function AdminOrganizerManagement() {
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmModal, setConfirmModal]   = useState(null); // { organizer }
 
-  useEffect(() => { fetchOrganizers(); }, []);
+  useEffect(() => { void fetchOrganizers(); }, []);
 
   const fetchOrganizers = async () => {
     setLoading(true);
