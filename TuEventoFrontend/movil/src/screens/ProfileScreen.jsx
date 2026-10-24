@@ -91,6 +91,7 @@ export default function ProfileScreen() {
     { icon: "bar-chart-outline",      label: t("mobileProfile.admin.reports.label"),      sub: t("mobileProfile.admin.reports.sub"),      route: "AdminReports" },
     { icon: "refresh-circle-outline", label: t("mobileProfile.admin.refunds.label"),      sub: t("mobileProfile.admin.refunds.sub"),      route: null },
     { icon: "people-outline",         label: t("mobileProfile.admin.requests.label"),     sub: t("mobileProfile.admin.requests.sub"),     route: "OrganizerRequests" },
+    { icon: "person-circle-outline",  label: t("mobileProfile.admin.users.label"),        sub: t("mobileProfile.admin.users.sub"),        route: "AdminUsers" },
     { icon: "pricetags-outline",      label: t("mobileProfile.admin.categories.label"),   sub: t("mobileProfile.admin.categories.sub"),   route: "AdminCategories" },
     { icon: "layers-outline",         label: t("mobileProfile.admin.sectionTypes.label"), sub: t("mobileProfile.admin.sectionTypes.sub"), route: "AdminSectionTypes" },
   ];

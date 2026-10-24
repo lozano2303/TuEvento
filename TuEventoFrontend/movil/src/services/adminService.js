@@ -128,3 +128,38 @@ export const getAdminActivity = async (limit = 5) => {
   const json = await response.json();
   return json.data ?? [];
 };
+
+/**
+ * Lista usuarios para el panel admin (más recientes primero).
+ * GET /api/v1/admin/users?q=&role=&limit=
+ * @param {{ q?: string, role?: string, limit?: number }} params
+ * @returns {Promise<Array<{userId, alias, fullName, email, role, status, createdAt}>>}
+ */
+export const getAdminUsers = async ({ q = "", role = "", limit = 100 } = {}) => {
+  const params = [`limit=${limit}`];
+  if (q.trim()) params.push(`q=${encodeURIComponent(q.trim())}`);
+  if (role) params.push(`role=${role}`);
+  const response = await httpRequest(`${BASE_URL}/admin/users?${params.join("&")}`);
+  if (!response.ok) throw new Error(`Error fetching users: ${response.status}`);
+  const json = await response.json();
+  return json.data ?? [];
+};
+
+/**
+ * Quita el rol de organizador (vuelve a USER) y notifica el motivo al usuario.
+ * PATCH /api/v1/admin/users/{userId}/revoke-organizer
+ * @param {number} userId
+ * @param {string} reason - entre 10 y 500 caracteres
+ */
+export const revokeOrganizerRole = async (userId, reason) => {
+  const response = await httpRequest(`${BASE_URL}/admin/users/${userId}/revoke-organizer`, {
+    method: "PATCH",
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ reason }),
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || `Error revoking organizer role: ${response.status}`);
+  }
+  return response.json();
+};
