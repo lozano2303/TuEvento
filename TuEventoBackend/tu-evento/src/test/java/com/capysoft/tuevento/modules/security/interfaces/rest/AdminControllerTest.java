@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -128,6 +129,54 @@ class AdminControllerTest {
                     .isInstanceOf(AccessDeniedException.class);
 
             verifyNoInteractions(revokeOrganizerRolePort);
+        }
+    }
+
+    // ── User management and refunds ───────────────────────────────────────────
+
+    @Nested
+    @DisplayName("GET /users and GET /refunds")
+    @WithMockUser(authorities = "ADMIN")
+    class UsersAndRefunds {
+
+        @Test
+        @DisplayName("normalizes the search and role filter and caps the page size at 200")
+        void getUsers_normalizesFiltersAndCapsLimit() {
+            when(userJpaRepository.searchForAdmin(any(), any(), any())).thenReturn(List.of());
+
+            var response = controller.getUsers("  Bob ", " organizer ", 999);
+
+            assertThat(response.getBody().getData()).isEmpty();
+            verify(userJpaRepository).searchForAdmin("%bob%", "ORGANIZER", PageRequest.of(0, 200));
+        }
+
+        @Test
+        @DisplayName("blank filters become empty strings and the page size is at least 1")
+        void getUsers_blankFilters_matchEverything() {
+            controller.getUsers(" ", null, 0);
+
+            verify(userJpaRepository).searchForAdmin("", "", PageRequest.of(0, 1));
+        }
+
+        @Test
+        @DisplayName("refunds page size is capped at 300")
+        void getRefunds_capsLimit() {
+            when(refundJpaRepository.findRecentForAdmin(any())).thenReturn(List.of());
+
+            var response = controller.getRefunds(1000);
+
+            assertThat(response.getBody().getData()).isEmpty();
+            verify(refundJpaRepository).findRecentForAdmin(PageRequest.of(0, 300));
+        }
+
+        @Test
+        @WithMockUser(authorities = "ORGANIZER")
+        @DisplayName("ORGANIZER → AccessDeniedException")
+        void getUsers_organizer_isDenied() {
+            assertThatThrownBy(() -> controller.getUsers(null, null, 100))
+                    .isInstanceOf(AccessDeniedException.class);
+
+            verifyNoInteractions(userJpaRepository);
         }
     }
 
