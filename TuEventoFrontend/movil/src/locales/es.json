@@ -1729,9 +1729,38 @@
     "heroEvents": "eventos",
     "heroLine2": " únicos.",
     "quickAccess": "Accesos rápidos",
-    "searchEvents": "Buscar\neventos",
-    "myTickets": "Mis\ntickets",
-    "upcomingEvents": "Próximos eventos"
+    "searchEvents": "Buscar eventos",
+    "myTickets": "Mis tickets",
+    "upcomingEvents": "Próximos eventos",
+    "wallet": "Mi billetera",
+    "notifications": "Notificaciones",
+    "seeAll": "Ver todos",
+    "noUpcoming": "No hay eventos próximos por ahora",
+    "exploreCategories": "Explora por categoría",
+    "stats": {
+      "available": "Eventos disponibles",
+      "thisWeek": "Esta semana",
+      "categories": "Categorías"
+    },
+    "steps": {
+      "title": "¿Cómo funciona?",
+      "explore": {
+        "title": "Explora",
+        "desc": "Encuentra eventos por nombre, fecha o categoría."
+      },
+      "seat": {
+        "title": "Elige tu lugar",
+        "desc": "Selecciona tus sillas en el mapa del venue."
+      },
+      "pay": {
+        "title": "Paga seguro",
+        "desc": "Paga con la pasarela o usa el saldo de tu billetera."
+      },
+      "enter": {
+        "title": "Entra con QR",
+        "desc": "Muestra el código de tu ticket en la entrada."
+      }
+    }
   },
   "mobileQr": {
     "titleOrder": "QR de la orden",
@@ -1889,5 +1918,20 @@
     "logoutMessage": "Tu sesión se cerrará y tendrás que volver a iniciar sesión para acceder.",
     "logoutConfirm": "Sí, cerrar sesión",
     "accept": "Aceptar"
+  },
+  "mobileEvents": {
+    "dates": {
+      "all": "Todas las fechas",
+      "today": "Hoy",
+      "weekend": "Este fin de semana",
+      "week": "Próximos 7 días",
+      "month": "Este mes"
+    },
+    "onlyAvailable": "Con cupos",
+    "allCategories": "Todas",
+    "results_one": "{{count}} evento",
+    "results_other": "{{count}} eventos",
+    "clearFilters": "Limpiar filtros",
+    "noMatches": "Prueba con otra búsqueda o quita algunos filtros."
   }
 }
