@@ -56,6 +56,12 @@ function UserPicker({ value, onChange, t }) {
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const boxRef = useRef(null);
+  const searchRef = useRef(null);
+
+  // Al abrir el desplegable, el foco pasa al buscador
+  useEffect(() => {
+    if (open) searchRef.current?.focus();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -99,7 +105,7 @@ function UserPicker({ value, onChange, t }) {
           <div className="flex items-center gap-2 px-3 py-2 border-b border-surfaceAlt">
             <Search className="w-4 h-4 text-textMuted" />
             <input
-              autoFocus
+              ref={searchRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('adminRefunds.credit.userSearch')}
@@ -357,6 +363,7 @@ export default function AdminRefunds() {
       {/* Modal: agregar crédito */}
       {creditOpen && (
         <div
+          role="presentation"
           className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[80] p-4"
           onClick={(e) => { if (e.target === e.currentTarget && !submitting) setCreditOpen(false); }}
         >
