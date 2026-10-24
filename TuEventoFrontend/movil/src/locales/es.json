@@ -1846,7 +1846,17 @@
     "invalidHex": "Formato inválido — usa #RGB o #RRGGBB",
     "reset": "Restablecer",
     "applyError": "No se pudo aplicar el color. Intenta de nuevo.",
-    "resetError": "No se pudo restablecer el color. Intenta de nuevo."
+    "resetError": "No se pudo restablecer el color. Intenta de nuevo.",
+    "names": {
+      "PRINCIPAL": "Principal",
+      "DARK": "Oscuro",
+      "LIGHT": "Claro",
+      "PASTEL": "Pastel",
+      "VIBRANT": "Vibrante",
+      "NATURE": "Naturaleza",
+      "OCEAN": "Océano",
+      "SUNSET": "Atardecer"
+    }
   },
   "mobileAuth": {
     "passwordPlaceholder": "Mín. 8 caracteres, mayúscula, número y símbolo"
