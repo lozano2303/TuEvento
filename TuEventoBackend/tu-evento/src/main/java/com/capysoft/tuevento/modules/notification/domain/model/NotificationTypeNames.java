@@ -12,6 +12,8 @@ public final class NotificationTypeNames {
     public static final String NEW_COMMENT      = "NEW_COMMENT";
     /** Sent to a user when someone replies to their comment or mentions them in a thread. */
     public static final String NEW_REPLY        = "NEW_REPLY";
+    /** Sent to a user when an admin revokes their ORGANIZER role and downgrades them to USER. */
+    public static final String ORGANIZER_ROLE_REVOKED = "ORGANIZER_ROLE_REVOKED";
 
     private NotificationTypeNames() {
     }
