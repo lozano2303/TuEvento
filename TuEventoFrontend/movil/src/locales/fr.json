@@ -1920,19 +1920,12 @@
     "accept": "Accepter"
   },
   "mobileEvents": {
-    "dates": {
-      "all": "Toutes les dates",
-      "today": "Aujourd'hui",
-      "weekend": "Ce week-end",
-      "week": "7 prochains jours",
-      "month": "Ce mois-ci"
-    },
-    "onlyAvailable": "Places dispo",
     "allCategories": "Toutes",
     "results_one": "{{count}} événement",
     "results_other": "{{count}} événements",
     "clearFilters": "Effacer les filtres",
-    "noMatches": "Essayez une autre recherche ou retirez des filtres."
+    "noMatches": "Essayez une autre recherche ou retirez des filtres.",
+    "popular": "Populaires"
   },
   "mobileCart": {
     "reservationHint": "Vos sièges sont réservés pour une durée limitée. Finalisez le paiement avant leur expiration.",

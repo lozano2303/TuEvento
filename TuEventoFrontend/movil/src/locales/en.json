@@ -1920,19 +1920,12 @@
     "accept": "OK"
   },
   "mobileEvents": {
-    "dates": {
-      "all": "All dates",
-      "today": "Today",
-      "weekend": "This weekend",
-      "week": "Next 7 days",
-      "month": "This month"
-    },
-    "onlyAvailable": "Available",
     "allCategories": "All",
     "results_one": "{{count}} event",
     "results_other": "{{count}} events",
     "clearFilters": "Clear filters",
-    "noMatches": "Try another search or remove some filters."
+    "noMatches": "Try another search or remove some filters.",
+    "popular": "Popular"
   },
   "mobileCart": {
     "reservationHint": "Your seats are held for a limited time. Complete the payment before they expire.",

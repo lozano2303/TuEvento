@@ -1920,19 +1920,12 @@
     "accept": "Aceptar"
   },
   "mobileEvents": {
-    "dates": {
-      "all": "Todas las fechas",
-      "today": "Hoy",
-      "weekend": "Este fin de semana",
-      "week": "Próximos 7 días",
-      "month": "Este mes"
-    },
-    "onlyAvailable": "Con cupos",
     "allCategories": "Todas",
     "results_one": "{{count}} evento",
     "results_other": "{{count}} eventos",
     "clearFilters": "Limpiar filtros",
-    "noMatches": "Prueba con otra búsqueda o quita algunos filtros."
+    "noMatches": "Prueba con otra búsqueda o quita algunos filtros.",
+    "popular": "Populares"
   },
   "mobileCart": {
     "reservationHint": "Tus sillas quedan reservadas por tiempo limitado. Completa el pago antes de que venzan.",

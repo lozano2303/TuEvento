@@ -376,7 +376,9 @@
       "autoReload": "A página será recarregada automaticamente."
     },
     "soldOut": "Esgotado",
-    "almostGone": "Últimos lugares"
+    "almostGone": "Últimos lugares",
+    "popularFilter": "Populares",
+    "popularEmpty": "Ainda não há eventos com ingressos vendidos."
   },
   "myEvents": {
     "title": "Meus Eventos",

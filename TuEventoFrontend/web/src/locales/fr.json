@@ -376,7 +376,9 @@
       "autoReload": "La page se rechargera automatiquement."
     },
     "soldOut": "Complet",
-    "almostGone": "Dernières places"
+    "almostGone": "Dernières places",
+    "popularFilter": "Populaires",
+    "popularEmpty": "Aucun événement avec des billets vendus pour le moment."
   },
   "myEvents": {
     "title": "Mes Événements",
