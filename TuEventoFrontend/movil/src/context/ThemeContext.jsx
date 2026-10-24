@@ -4,6 +4,7 @@ import { colors as baseColors } from "../theme/colors";
 import { THEMES, DEFAULT_THEME_ID, resolveThemeCode } from "../theme/themes";
 import { activateTheme, getActivePalette, getThemes } from "../services/themeService";
 import { useAuth } from "./AuthContext";
+import { onSessionEvent } from "../utils/sessionEvents";
 
 const STORAGE_KEY = "activeThemeId";
 
@@ -89,31 +90,12 @@ export function ThemeProvider({ children }) {
     void loadBackendMap();
   }, []);
 
-  // ── Polling cada 30 segundos — sincroniza paleta resuelta con el backend ──
+  // ── Cambios en vivo: THEME_UPDATED llega por WebSocket (otro dispositivo o la web) ──
   useEffect(() => {
-    if (!user) return; // sin sesión no hacer polling
-    const interval = setInterval(async () => {
-      try {
-        const token = await AsyncStorage.getItem("accessToken");
-        if (!token) return;
-        const data = await getActivePalette();
-        if (!data) return;
-        // Actualizar activeThemeId si cambió
-        const found = THEMES.find((t) => t.id === resolveThemeCode(data.themeName));
-        if (found) {
-          setActiveThemeId(found.id);
-          await AsyncStorage.setItem(STORAGE_KEY, found.id);
-        }
-        // Aplicar la paleta resuelta — preserva customizaciones
-        if (data.palette) {
-          setColors({ ...baseColors, ...data.palette });
-        }
-      } catch (e) {
-        if (e?.message?.includes("403")) return;
-        // otros errores: silencioso, se reintenta en el próximo ciclo
-      }
-    }, 30000);
-    return () => clearInterval(interval);
+    if (!user) return;
+    return onSessionEvent((event) => {
+      if (event?.type === "THEME_UPDATED") void syncTheme();
+    });
   }, [user]);
 
   // ── applyTheme: activa un tema diferente en el backend y obtiene la paleta resuelta ──
