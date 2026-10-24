@@ -132,6 +132,10 @@ const TEXT = {
         "label": "Tipos de Sección",
         "sub": "Gestionar tipos de sección"
       },
+      "translations": {
+        "label": "Traducciones",
+        "sub": "Eventos, categorías, comentarios y perfiles"
+      },
       "users": {
         "label": "Usuarios",
         "sub": "Roles y organizadores"

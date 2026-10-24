@@ -38,6 +38,7 @@ import AdminSectionTypesScreen     from "../screens/AdminSectionTypesScreen";
 import AdminUsersScreen            from "../screens/AdminUsersScreen";
 import AdminRefundsScreen          from "../screens/AdminRefundsScreen";
 import AdminHomeScreen             from "../screens/AdminHomeScreen";
+import AdminTranslationsScreen     from "../screens/AdminTranslationsScreen";
 import { isAdminAllowedRoute }     from "./homeRoute";
 import MyTicketsScreen             from "../screens/MyTicketsScreen";
 import TicketQrScreen              from "../screens/TicketQrScreen";
@@ -287,6 +288,7 @@ export default function AppNavigator() {
         <Stack.Screen name="AdminSectionTypes"       component={AdminSectionTypesScreen} />
         <Stack.Screen name="AdminUsers"              component={AdminUsersScreen} />
         <Stack.Screen name="AdminRefunds"            component={AdminRefundsScreen} />
+        <Stack.Screen name="AdminTranslations"       component={AdminTranslationsScreen} />
         <Stack.Screen
           name="AdminHome"
           component={AdminHomeScreen}
