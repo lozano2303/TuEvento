@@ -143,6 +143,26 @@ class RevokeOrganizerRoleUseCaseTest {
         }
 
         @Test
+        @DisplayName("user has null role → treated as non-ORGANIZER, throws BusinessException")
+        void revoke_userNullRole_throwsBusinessException() {
+            UserEntity noRoleUser = UserEntity.builder()
+                    .userId(USER_ID)
+                    .alias("no_role_user")
+                    .role(null)
+                    .activated(true)
+                    .build();
+
+            when(userJpaRepository.findByIdEager(USER_ID)).thenReturn(Optional.of(noRoleUser));
+
+            assertThatThrownBy(() -> useCase.revoke(USER_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("does not have the ORGANIZER role");
+
+            verify(roleJpaRepository, never()).findByCode(any());
+            verify(eventPublisher, never()).publishEvent(any());
+        }
+
+        @Test
         @DisplayName("USER role not found in DB → throws NotFoundException")
         void revoke_userRoleNotFound_throwsNotFoundException() {
             when(userJpaRepository.findByIdEager(USER_ID)).thenReturn(Optional.of(organizerUser));

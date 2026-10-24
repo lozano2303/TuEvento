@@ -55,7 +55,7 @@ public class ApproveOrganizerRequestUseCase implements ApproveOrganizerRequestPo
         var userEntity = userJpaRepository.findByIdEager(userId)
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found: " + userId));
         log.info("[Approve] User loaded alias={}, currentRole={}",
-                userEntity.getAlias(), userEntity.getRole().getCode());
+                userEntity.getAlias(), userEntity.getRole() != null ? userEntity.getRole().getCode() : "null");
 
         // 4. Assign managed role entity — no detached entity issue
         userEntity.setRole(organizerRoleEntity);
