@@ -168,6 +168,15 @@ export function NotificationProvider({ children }) {
           });
           subscriptionsRef.current.set("session", sessionSub);
 
+          // Rol de organizador revocado por un admin: renovar el JWT para tomar el rol USER
+          const roleSub = client.subscribe(`/topic/role-change/${userId}`, (msg) => {
+            let event;
+            try { event = JSON.parse(msg.body); } catch { return; }
+            if (event?.type === "ROLE_REVOKED") void applyRoleUpdate();
+            emitSessionEvent(event);
+          });
+          subscriptionsRef.current.set("roleChange", roleSub);
+
           // Admin: contadores de solicitudes y eventos en revisión en vivo
           if (isAdmin) {
             const adminSub = client.subscribe("/topic/admin/pending-counts", (msg) => {

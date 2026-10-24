@@ -119,7 +119,7 @@ function ActivityRow({ item }) {
       </div>
 
       {/* Timestamp */}
-      <span className="text-base flex-shrink-0 whitespace-nowrap self-center" style={{ color: 'rgba(255,255,255,0.60)' }}>
+      <span className="text-sm flex-shrink-0 mt-0.5 whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.55)' }}>
         {fmtTime(item.occurredAt)}
       </span>
     </div>

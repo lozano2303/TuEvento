@@ -21,13 +21,13 @@ export const getAdminUsers = async ({ q = '', role = '', limit = 100 } = {}) => 
 
 /**
  * Quita el rol de organizador a un usuario (vuelve a USER) y le notifica el motivo.
- * PATCH /api/v1/admin/users/{userId}/revoke-organizer
+ * DELETE /api/v1/admin/organizer-users/{userId}/revoke — body { reason }
  * @param {number} userId
  * @param {string} reason - entre 10 y 500 caracteres
  */
 export const revokeOrganizerRole = async (userId, reason) => {
-  const res = await httpRequest(`${API_URL}/admin/users/${userId}/revoke-organizer`, {
-    method: 'PATCH',
+  const res = await httpRequest(`${API_URL}/admin/organizer-users/${userId}/revoke`, {
+    method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ reason }),
   });

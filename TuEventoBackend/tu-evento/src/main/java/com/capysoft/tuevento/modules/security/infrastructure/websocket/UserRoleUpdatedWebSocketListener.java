@@ -1,7 +1,6 @@
 package com.capysoft.tuevento.modules.security.infrastructure.websocket;
 
 import com.capysoft.tuevento.modules.security.domain.event.OrganizerApprovedEvent;
-import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -12,13 +11,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import java.util.Map;
 
 /**
- * Avisa al usuario en vivo que su rol cambió (solicitud de organizador aprobada o
- * rol de organizador revocado por un admin),
+ * Avisa al usuario en vivo que su rol cambió (solicitud de organizador aprobada),
+ * (la revocación usa ROLE_REVOKED en /topic/role-change/{userId}, ver OrganizerRoleRevokedListener)
  * para que el cliente renueve el JWT con POST /auth/refresh (el refresh vuelve a
  * leer el rol desde la BD, que es la fuente de verdad).
  *
  * <p>Canal: {@code /topic/users/{userId}/session}
- * <p>Payload: {@code { type: "ROLE_UPDATED", role: "ORGANIZER" | "USER" }}
+ * <p>Payload: {@code { type: "ROLE_UPDATED", role: "ORGANIZER" }}
  */
 @Slf4j
 @Component
@@ -26,18 +25,12 @@ import java.util.Map;
 public class UserRoleUpdatedWebSocketListener {
 
     private static final String ORGANIZER_ROLE = "ORGANIZER";
-    private static final String USER_ROLE      = "USER";
 
     private final SimpMessagingTemplate messagingTemplate;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onOrganizerApproved(OrganizerApprovedEvent event) {
         sendRoleUpdated(event.getUserId(), ORGANIZER_ROLE);
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
-    public void onOrganizerRoleRevoked(OrganizerRoleRevokedEvent event) {
-        sendRoleUpdated(event.getUserId(), USER_ROLE);
     }
 
     private void sendRoleUpdated(Integer userId, String role) {
