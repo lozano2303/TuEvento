@@ -27,6 +27,9 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
     @Query("SELECT u.userStatus.code FROM UserEntity u WHERE u.userId = :userId")
     String findStatusCodeByUserId(@Param("userId") Integer userId);
 
+    @Query("SELECT u.role.code FROM UserEntity u WHERE u.userId = :userId")
+    String findRoleCodeByUserId(@Param("userId") Integer userId);
+
     /** Most recent N registered users — used for admin activity feed. */
     @Query("SELECT u FROM UserEntity u ORDER BY u.createdAt DESC")
     List<UserEntity> findTopByOrderByCreatedAtDesc(Pageable pageable);

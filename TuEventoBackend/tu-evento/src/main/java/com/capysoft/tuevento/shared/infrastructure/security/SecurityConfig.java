@@ -23,6 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.Ordered;
 
+import com.capysoft.tuevento.modules.security.application.port.out.CurrentRolePort;
 import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -35,13 +36,14 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
     private final TokenGeneratorPort tokenGenerator;
+    private final CurrentRolePort    currentRolePort;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(tokenGenerator);
+        return new JwtAuthenticationFilter(tokenGenerator, currentRolePort);
     }
 
     private static final String[] PUBLIC_ENDPOINTS = {
