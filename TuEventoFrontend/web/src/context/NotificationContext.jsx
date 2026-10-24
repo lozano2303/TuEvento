@@ -9,6 +9,11 @@ import {
 import { useTokenRefresh } from '../hooks/useTokenRefresh';
 import { refreshAccessToken } from '../services/httpClient';
 import { ORGANIZER_WELCOME_KEY } from '../components/common/OrganizerWelcomeModal';
+import { getActiveLanguages } from '../services/LanguageService';
+import { changeUILanguage, getCurrentUILanguage } from '../i18n';
+
+/** Evento del DOM que dispara el aviso THEME_UPDATED del WebSocket (lo escucha ThemeContext). */
+export const THEME_UPDATED_EVENT = 'tuevento:theme-updated';
 
 const NotificationContext = createContext(null);
 
@@ -36,6 +41,22 @@ function decodeJwtRole(token) {
  * Si el rol nuevo es ORGANIZER, deja marcado el modal de bienvenida (OrganizerWelcomeModal).
  */
 async function handleSessionEvent(event) {
+  // THEME_UPDATED: el ThemeContext escucha este evento del DOM y recarga la paleta
+  if (event?.type === 'THEME_UPDATED') {
+    window.dispatchEvent(new CustomEvent(THEME_UPDATED_EVENT));
+    return;
+  }
+  // LANGUAGE_UPDATED: el idioma preferido cambió (en otro dispositivo o pestaña)
+  if (event?.type === 'LANGUAGE_UPDATED') {
+    try {
+      const languages = await getActiveLanguages();
+      const lang = languages.find(l => l.languageId === event.languageId);
+      if (lang && lang.code !== getCurrentUILanguage()) changeUILanguage(lang.code);
+    } catch {
+      // no crítico — se mantiene el idioma actual
+    }
+    return;
+  }
   if (event?.type !== 'ROLE_UPDATED') return;
   try {
     const newToken = await refreshAccessToken();

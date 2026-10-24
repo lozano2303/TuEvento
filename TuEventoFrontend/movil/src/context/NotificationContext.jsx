@@ -8,7 +8,9 @@ import {
   markAllAsRead,
 } from "../services/notificationService";
 import { getAdminPendingCounts } from "../services/adminService";
-import { getValidAccessToken } from "../services/httpClient";
+import { getValidAccessToken, refreshAccessToken } from "../services/httpClient";
+import { emitSessionEvent } from "../utils/sessionEvents";
+import { jwtDecode } from "jwt-decode";
 
 const NotificationContext = createContext(null);
 
@@ -20,7 +22,7 @@ function getWsBaseUrl() {
 }
 
 export function NotificationProvider({ children }) {
-  const { user } = useAuth(); // ← depende de AuthContext para saber cuándo hay sesión
+  const { user, setUser } = useAuth(); // ← depende de AuthContext para saber cuándo hay sesión
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount]     = useState(0);
@@ -94,6 +96,17 @@ export function NotificationProvider({ children }) {
     }
   }, []);
 
+  // ── ROLE_UPDATED: el refresh relee el rol desde la BD (organizador aprobado o revocado) ─
+  const applyRoleUpdate = useCallback(async () => {
+    try {
+      const token = await refreshAccessToken();
+      const { role } = jwtDecode(token);
+      if (role) setUser((prev) => (prev ? { ...prev, role } : prev));
+    } catch (err) {
+      console.warn("[NotificationContext] Error refreshing role:", err.message);
+    }
+  }, [setUser]);
+
   // ── Conectar/desconectar según cambio de sesión ───────────────────────────
   useEffect(() => {
     const userId = user?.userId ? String(user.userId) : null;
@@ -146,6 +159,15 @@ export function NotificationProvider({ children }) {
           );
           subscriptionsRef.current.set("notifications", sub);
 
+          // Eventos de sesión: tema, idioma y rol cambiados (en vivo, sin polling)
+          const sessionSub = client.subscribe(`/topic/users/${userId}/session`, (msg) => {
+            let event;
+            try { event = JSON.parse(msg.body); } catch { return; }
+            if (event?.type === "ROLE_UPDATED") void applyRoleUpdate();
+            emitSessionEvent(event);
+          });
+          subscriptionsRef.current.set("session", sessionSub);
+
           // Admin: contadores de solicitudes y eventos en revisión en vivo
           if (isAdmin) {
             const adminSub = client.subscribe("/topic/admin/pending-counts", (msg) => {
@@ -185,7 +207,7 @@ export function NotificationProvider({ children }) {
       connectedUserRef.current = null;
       subscriptionsRef.current.clear();
     };
-  }, [user?.userId, isAdmin, loadNotifications, refreshAdminPending]);
+  }, [user?.userId, isAdmin, loadNotifications, refreshAdminPending, applyRoleUpdate]);
 
   const value = {
     notifications,

@@ -200,37 +200,30 @@ export default function SettingsScreen() {
             );
           })}
 
-          {/* Nota informativa */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              gap: 10,
-              backgroundColor: colors.surface + "80",
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: colors.primary + "25",
-              padding: 14,
-              marginTop: 4,
-            }}
-          >
-            <Ionicons
-              name="information-circle-outline"
-              size={18}
-              color={colors.accent}
-              style={{ marginTop: 1 }}
-            />
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontSize: 12,
-                lineHeight: 18,
-                flex: 1,
-              }}
+          {/* Personalizar el tema activo (el principal no es personalizable) */}
+          {activeThemeId && activeThemeId !== "PRINCIPAL" && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() =>
+                navigation.navigate("ThemeCustomize", {
+                  themeName: activeThemeId,
+                  activeThemeId,
+                })
+              }
+              style={styles.customizeCard}
             >
-              {t("settings.themeSaved")}
-            </Text>
-          </View>
+              <View style={styles.customizeIcon}>
+                <Ionicons name="color-palette-outline" size={20} color={colors.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.themeName}>{t("profile.customizePanel.customizeTheme")}</Text>
+                <Text style={styles.themeDescription}>
+                  {t(`mobileTheme.names.${activeThemeId}`, { defaultValue: activeThemeId })}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </Animated.View>
       </ScrollView>
     </View>
@@ -326,6 +319,25 @@ function makeStyles(colors) {
       paddingVertical: 3,
       borderWidth: 1,
       borderColor: colors.accent + "55",
+    },
+    customizeCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      backgroundColor: colors.surface + "CC",
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: colors.accent + "55",
+      padding: 14,
+      marginTop: 4,
+    },
+    customizeIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: colors.accent + "22",
+      alignItems: "center",
+      justifyContent: "center",
     },
     customizeButtonText: {
       color: colors.accent,

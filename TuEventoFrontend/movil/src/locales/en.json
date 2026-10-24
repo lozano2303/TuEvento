@@ -1479,7 +1479,6 @@
     "appearance": "Appearance",
     "themeColor": "Color theme",
     "themeDesc": "Choose the theme that best fits your preferences. The change applies immediately.",
-    "themeSaved": "The theme is saved automatically and restored the next time you open the app.",
     "languageSection": "Language",
     "languageTitle": "App language",
     "languageDesc": "Select the language you want to see the app in.",
