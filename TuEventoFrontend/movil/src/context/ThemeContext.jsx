@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors as baseColors } from "../theme/colors";
-import { THEMES, DEFAULT_THEME_ID } from "../theme/themes";
+import { THEMES, DEFAULT_THEME_ID, resolveThemeCode } from "../theme/themes";
 import { activateTheme, getActivePalette, getThemes } from "../services/themeService";
 import { useAuth } from "./AuthContext";
 
@@ -41,7 +41,7 @@ export function ThemeProvider({ children }) {
         if (!token) return;
         const data = await getActivePalette(token);
         if (data) {
-          const found = THEMES.find((t) => t.id === data.themeName);
+          const found = THEMES.find((t) => t.id === resolveThemeCode(data.themeName));
           if (found) {
             setActiveThemeId(found.id);
             await AsyncStorage.setItem(STORAGE_KEY, found.id);
@@ -68,20 +68,24 @@ export function ThemeProvider({ children }) {
     void loadTheme();
   }, [user]);
 
-  // ── Al arrancar: cargar mapa nombre → id numérico del backend para applyTheme ──
-  useEffect(() => {
-    const loadBackendMap = async () => {
-      try {
-        const backendThemes = await getThemes();
-        if (Array.isArray(backendThemes)) {
-          const map = {};
-          backendThemes.forEach((t) => { map[t.name] = t.id; });
-          backendIdMap.current = map;
-        }
-      } catch (e) {
-        // silencioso
+  // ── Mapa id local → id numérico del backend, ej: { DARK: 2, ... } ──
+  const loadBackendMap = async () => {
+    try {
+      const backendThemes = await getThemes();
+      if (Array.isArray(backendThemes)) {
+        const map = {};
+        backendThemes.forEach((t) => {
+          const code = resolveThemeCode(t.name);
+          if (code) map[code] = t.id;
+        });
+        backendIdMap.current = map;
       }
-    };
+    } catch (e) {
+      // silencioso — applyTheme lo reintenta si el mapa sigue vacío
+    }
+  };
+
+  useEffect(() => {
     void loadBackendMap();
   }, []);
 
@@ -95,7 +99,7 @@ export function ThemeProvider({ children }) {
         const data = await getActivePalette();
         if (!data) return;
         // Actualizar activeThemeId si cambió
-        const found = THEMES.find((t) => t.id === data.themeName);
+        const found = THEMES.find((t) => t.id === resolveThemeCode(data.themeName));
         if (found) {
           setActiveThemeId(found.id);
           await AsyncStorage.setItem(STORAGE_KEY, found.id);
@@ -114,6 +118,8 @@ export function ThemeProvider({ children }) {
 
   // ── applyTheme: activa un tema diferente en el backend y obtiene la paleta resuelta ──
   const applyTheme = async (themeId) => {
+    // Si el backend no respondió al arrancar, el mapa está vacío: se recarga aquí
+    if (!backendIdMap.current[themeId]) await loadBackendMap();
     const numericId = backendIdMap.current[themeId];
     if (!numericId) return;
 
@@ -124,7 +130,7 @@ export function ThemeProvider({ children }) {
       // 2. Obtener la paleta resuelta post-activación (incluye customizaciones del nuevo tema)
       const data = await getActivePalette();
       if (data) {
-        const found = THEMES.find((t) => t.id === data.themeName);
+        const found = THEMES.find((t) => t.id === resolveThemeCode(data.themeName));
         if (found) {
           setActiveThemeId(found.id);
           await AsyncStorage.setItem(STORAGE_KEY, found.id);
@@ -158,7 +164,7 @@ export function ThemeProvider({ children }) {
       if (!token) return;
       const data = await getActivePalette();
       if (!data) return;
-      const found = THEMES.find((t) => t.id === data.themeName);
+      const found = THEMES.find((t) => t.id === resolveThemeCode(data.themeName));
       if (found) {
         setActiveThemeId(found.id);
         await AsyncStorage.setItem(STORAGE_KEY, found.id);
