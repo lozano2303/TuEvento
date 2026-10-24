@@ -27,7 +27,7 @@ public class RevokeOrganizerRoleUseCase implements RevokeOrganizerRolePort {
         var userEntity = userJpaRepository.findByIdEager(userId)
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
 
-        if (!"ORGANIZER".equals(userEntity.getRole().getCode())) {
+        if (userEntity.getRole() == null || !"ORGANIZER".equals(userEntity.getRole().getCode())) {
             throw new BusinessException("USER_NOT_ORGANIZER",
                     "User " + userId + " does not have the ORGANIZER role");
         }

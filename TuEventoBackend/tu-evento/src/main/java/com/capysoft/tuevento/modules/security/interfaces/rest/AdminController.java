@@ -224,6 +224,7 @@ public class AdminController {
 
         // Collect organizer userIds to resolve names in one query
         var organizerIds = recentEvents.stream()
+                .filter(e -> e.getUserId() != null)
                 .map(e -> e.getUserId().intValue())
                 .distinct()
                 .toList();
@@ -231,13 +232,16 @@ public class AdminController {
         Map<Integer, String> organizerNames = profileJpaRepository
                 .findAllByUserIdIn(organizerIds)
                 .stream()
+                .filter(p -> p.getUserId() != null)
                 .collect(Collectors.toMap(
                         p -> p.getUserId(),
-                        p -> p.getFullName(),
+                        p -> p.getFullName() != null ? p.getFullName() : "Organizador",
                         (a, b) -> a));
 
         for (var ev : recentEvents) {
-            String organizerName = organizerNames.getOrDefault(ev.getUserId().intValue(), "Organizador");
+            String organizerName = ev.getUserId() != null
+                    ? organizerNames.getOrDefault(ev.getUserId().intValue(), "Organizador")
+                    : "Organizador";
             String title = switch (ev.getStatus()) {
                 case PUBLISHED       -> "Event approved and published";
                 case REJECTED        -> "Event rejected";

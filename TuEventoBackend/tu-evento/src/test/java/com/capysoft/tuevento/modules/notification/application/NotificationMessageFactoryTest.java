@@ -99,4 +99,57 @@ class NotificationMessageFactoryTest {
             assertThat(result.body()).doesNotContain("<script>");
         }
     }
+
+    @Nested
+    @DisplayName("ORGANIZER_ROLE_REVOKED")
+    class OrganizerRoleRevoked {
+
+        private SendNotificationCommand revokedCmd() {
+            return SendNotificationCommand.builder()
+                    .typeName(NotificationTypeNames.ORGANIZER_ROLE_REVOKED)
+                    .entityId(42L)
+                    .entityType("USER")
+                    .build();
+        }
+
+        @Test
+        @DisplayName("IN_APP: subject mentions 'revocado' and body mentions 'Organizador'")
+        void inApp_subject_and_body() {
+            var result = NotificationMessageFactory.build(
+                    NotificationTypeNames.ORGANIZER_ROLE_REVOKED, NotificationChannelNames.IN_APP, revokedCmd());
+
+            assertThat(result.subject()).containsIgnoringCase("revocado");
+            assertThat(result.body()).containsIgnoringCase("organizador");
+        }
+
+        @Test
+        @DisplayName("EMAIL: subject starts with TuEvento and HTML body contains 'Organizador'")
+        void email_subject_and_htmlBody() {
+            var result = NotificationMessageFactory.build(
+                    NotificationTypeNames.ORGANIZER_ROLE_REVOKED, NotificationChannelNames.EMAIL, revokedCmd());
+
+            assertThat(result.subject()).startsWith("TuEvento");
+            assertThat(result.body()).contains("<html");
+            assertThat(result.body()).containsIgnoringCase("Organizador");
+        }
+    }
+
+    @Nested
+    @DisplayName("Unknown type → default message")
+    class UnknownType {
+
+        @Test
+        @DisplayName("unknown type returns generic notification subject and body")
+        void unknownType_returnsDefault() {
+            var cmd = SendNotificationCommand.builder()
+                    .typeName("UNKNOWN_TYPE")
+                    .entityId(1L)
+                    .build();
+
+            var result = NotificationMessageFactory.build("UNKNOWN_TYPE", NotificationChannelNames.IN_APP, cmd);
+
+            assertThat(result.subject()).isEqualTo("Notificación");
+            assertThat(result.body()).containsIgnoringCase("notificación");
+        }
+    }
 }
