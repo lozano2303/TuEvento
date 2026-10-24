@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, CreditCard, Calendar, BarChart2, RefreshCcw, 
   Users, LogOut, Settings, ChevronDown, Layers, Languages,
-  FileText, Globe, ShieldCheck
+  FileText, Globe, UserCog
 } from 'lucide-react';
 import { performLogout } from '../../services/httpClient';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 /**
  * AdminSidebar - Componente estandarizado del sidebar para todas las páginas del admin
  * 
- * @param {string} activePage - Identificador de la página activa ('dashboard', 'financial', 'events', 'requests', 'categories', 'section-types')
+ * @param {string} activePage - Identificador de la página activa ('dashboard', 'financial', 'events', 'refunds', 'requests', 'users', 'categories', 'section-types')
  */
 export default function AdminSidebar({ activePage }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -60,20 +60,19 @@ export default function AdminSidebar({ activePage }) {
       id: 'refunds', 
       icon: RefreshCcw, 
       label: 'Reembolsos',
-      href: '#',
-      disabled: true
+      href: '/admin-refunds'
     },
     { 
       id: 'requests', 
       icon: Users, 
       label: 'Solicitudes', 
-      href: '/admin-panel' 
+      href: '/admin-panel'
     },
     {
-      id: 'organizer-management',
-      icon: ShieldCheck,
-      label: 'Organizadores',
-      href: '/admin-organizers'
+      id: 'users',
+      icon: UserCog,
+      label: 'Usuarios',
+      href: '/admin-users'
     },
     { 
       id: 'categories', 

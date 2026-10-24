@@ -12,5 +12,10 @@ import com.capysoft.tuevento.modules.event.application.dto.response.EventStatusL
 public interface AdminChangeEventStatusPort {
 
     /** adminUserId is the ID of the ADMIN executing the action (used for audit log). */
-    EventStatusLogResponse execute(Long eventId, ChangeEventStatusRequest request, Long adminUserId);
+    default EventStatusLogResponse execute(Long eventId, ChangeEventStatusRequest request, Long adminUserId) {
+        return execute(eventId, request, adminUserId, null);
+    }
+
+    /** Igual que el anterior, con una causa especial que viaja en EventStatusChangedEvent (ver CAUSE_*). */
+    EventStatusLogResponse execute(Long eventId, ChangeEventStatusRequest request, Long adminUserId, String cause);
 }

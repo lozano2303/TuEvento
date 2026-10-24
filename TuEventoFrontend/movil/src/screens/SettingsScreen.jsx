@@ -8,9 +8,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
-import { useLanguage } from "../context/LanguageContext";
 import BackButton from "../components/BackButton";
-import { LANGUAGES } from "../components/LanguageSelector";
 
 // ─── Colores de preview hardcodeados por tema ─────────────────────────────────
 const THEME_PREVIEWS = {
@@ -28,7 +26,6 @@ export default function SettingsScreen() {
   const navigation = useNavigation();
   const insets     = useSafeAreaInsets();
   const { t } = useTranslation();
-  const { language, changeLanguage } = useLanguage();
   const { colors, activeThemeId, applyTheme, themes } = useTheme();
 
   // Animación de entrada
@@ -164,7 +161,9 @@ export default function SettingsScreen() {
 
                 {/* Info */}
                 <View style={styles.themeInfo}>
-                  <Text style={styles.themeName}>{theme.name}</Text>
+                  <Text style={styles.themeName}>
+                    {t(`mobileTheme.names.${themeKey}`, { defaultValue: theme.name })}
+                  </Text>
                   <Text style={styles.themeDescription}>
                     {description}
                   </Text>
@@ -201,127 +200,30 @@ export default function SettingsScreen() {
             );
           })}
 
-          {/* Nota informativa */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              gap: 10,
-              backgroundColor: colors.surface + "80",
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: colors.primary + "25",
-              padding: 14,
-              marginTop: 4,
-            }}
-          >
-            <Ionicons
-              name="information-circle-outline"
-              size={18}
-              color={colors.accent}
-              style={{ marginTop: 1 }}
-            />
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontSize: 12,
-                lineHeight: 18,
-                flex: 1,
-              }}
+          {/* Personalizar el tema activo (el principal no es personalizable) */}
+          {activeThemeId && activeThemeId !== "PRINCIPAL" && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() =>
+                navigation.navigate("ThemeCustomize", {
+                  themeName: activeThemeId,
+                  activeThemeId,
+                })
+              }
+              style={styles.customizeCard}
             >
-              {t("settings.themeSaved")}
-            </Text>
-          </View>
-
-          {/* ── Sección Idioma ── */}
-          <Text
-            style={{
-              color: colors.textSecondary,
-              fontSize: 11,
-              fontWeight: "700",
-              letterSpacing: 1.2,
-              textTransform: "uppercase",
-              marginTop: 36,
-              marginBottom: 4,
-            }}
-          >
-            {t("settings.languageSection")}
-          </Text>
-          <Text
-            style={{
-              color: colors.textPrimary,
-              fontSize: 20,
-              fontWeight: "800",
-              marginBottom: 6,
-            }}
-          >
-            {t("settings.languageTitle")}
-          </Text>
-          <Text
-            style={{
-              color: colors.textMuted,
-              fontSize: 13,
-              lineHeight: 20,
-              marginBottom: 20,
-            }}
-          >
-            {t("settings.languageDesc")}
-          </Text>
-
-          {LANGUAGES.map((lng) => {
-            const isActive = language === lng.code;
-            return (
-              <TouchableOpacity
-                key={lng.code}
-                onPress={() => changeLanguage(lng.code)}
-                activeOpacity={0.75}
-                style={[styles.langCard, isActive && styles.langCardActive]}
-              >
-                <Text style={{ fontSize: 22 }}>{lng.flag}</Text>
-                <Text style={styles.langLabel}>{lng.label}</Text>
-                {isActive && (
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={20}
-                    color={colors.primary}
-                    style={{ marginLeft: "auto" }}
-                  />
-                )}
-              </TouchableOpacity>
-            );
-          })}
-
-          {/* Nota de idioma */}
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              gap: 10,
-              backgroundColor: colors.surface + "80",
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: colors.primary + "25",
-              padding: 14,
-              marginTop: 4,
-            }}
-          >
-            <Ionicons
-              name="language-outline"
-              size={18}
-              color={colors.accent}
-              style={{ marginTop: 1 }}
-            />
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontSize: 12,
-                lineHeight: 18,
-                flex: 1,
-              }}
-            >
-              {t("settings.languageNote")}
-            </Text>
-          </View>
+              <View style={styles.customizeIcon}>
+                <Ionicons name="color-palette-outline" size={20} color={colors.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.themeName}>{t("profile.customizePanel.customizeTheme")}</Text>
+                <Text style={styles.themeDescription}>
+                  {t(`mobileTheme.names.${activeThemeId}`, { defaultValue: activeThemeId })}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </Animated.View>
       </ScrollView>
     </View>
@@ -418,34 +320,30 @@ function makeStyles(colors) {
       borderWidth: 1,
       borderColor: colors.accent + "55",
     },
+    customizeCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      backgroundColor: colors.surface + "CC",
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: colors.accent + "55",
+      padding: 14,
+      marginTop: 4,
+    },
+    customizeIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: colors.accent + "22",
+      alignItems: "center",
+      justifyContent: "center",
+    },
     customizeButtonText: {
       color: colors.accent,
       fontSize: 10,
       fontWeight: "800",
       letterSpacing: 0.5,
-    },
-
-    // Selector de idioma
-    langCard: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      backgroundColor: colors.surface + "CC",
-      borderRadius: 14,
-      borderWidth: 1.5,
-      borderColor: colors.primary + "30",
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-      marginBottom: 12,
-    },
-    langCardActive: {
-      backgroundColor: colors.primary + "20",
-      borderColor: colors.primary,
-    },
-    langLabel: {
-      fontSize: 15,
-      fontWeight: "600",
-      color: colors.textPrimary,
     },
   });
 }

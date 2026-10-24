@@ -876,7 +876,11 @@
     "errorTitle": "Erro ao carregar",
     "notFound": "Evento não encontrado",
     "availability": "Disponibilidade",
-    "gallery": "Galeria"
+    "gallery": "Galeria",
+    "cancelledLiveTitle": "Este evento foi cancelado",
+    "cancelledLiveMessage": "Se você fez um pagamento, o reembolso foi creditado na sua carteira. Confira sua caixa de entrada e suas notificações para ver os detalhes.",
+    "cancelledLiveButton": "Voltar ao início",
+    "cancelledLiveOrganizerMessage": "O administrador removeu o organizador deste evento por descumprir as regras da plataforma, por isso o evento foi cancelado. Se você fez um pagamento, o reembolso foi creditado na sua carteira. Confira sua caixa de entrada e suas notificações para ver os detalhes."
   },
   "paymentApproved": {
     "title": "Pagamento aprovado!",
@@ -1479,7 +1483,6 @@
     "appearance": "Aparência",
     "themeColor": "Tema de cor",
     "themeDesc": "Escolha o tema que melhor se adapta às suas preferências. A mudança é aplicada imediatamente.",
-    "themeSaved": "O tema é salvo automaticamente e restaurado na próxima vez que você abrir o app.",
     "languageSection": "Idioma",
     "languageTitle": "Idioma do aplicativo",
     "languageDesc": "Selecione o idioma em que deseja ver o aplicativo.",
@@ -1508,16 +1511,11 @@
     "title": "Meu Perfil",
     "sections": {
       "organizer": "Organizador",
-      "admin": "Administração",
       "account": "Conta"
     },
     "scan": {
       "label": "Validar ingressos",
       "desc": "Escanear códigos QR dos seus eventos"
-    },
-    "adminPanel": {
-      "label": "Painel de administração",
-      "desc": "Gestão da plataforma"
     },
     "menu": {
       "profile": {
@@ -1537,42 +1535,6 @@
         "sub": "Gerencie seus alertas"
       }
     },
-    "admin": {
-      "dashboard": {
-        "label": "Dashboard",
-        "sub": "Visão geral"
-      },
-      "financial": {
-        "label": "Controle Financeiro",
-        "sub": "Pagamentos e reembolsos"
-      },
-      "events": {
-        "label": "Eventos",
-        "sub": "Gerenciar e revisar eventos"
-      },
-      "reports": {
-        "label": "Relatórios",
-        "sub": "Estatísticas da plataforma"
-      },
-      "refunds": {
-        "label": "Reembolsos",
-        "sub": "Gerenciar reembolsos"
-      },
-      "requests": {
-        "label": "Solicitações",
-        "sub": "Solicitações de organizador"
-      },
-      "categories": {
-        "label": "Categorias",
-        "sub": "Gerenciar categorias"
-      },
-      "sectionTypes": {
-        "label": "Tipos de Seção",
-        "sub": "Gerenciar tipos de seção"
-      }
-    },
-    "comingSoon": "Em breve",
-    "comingSoonBadge": "EM BREVE",
     "logout": "Sair",
     "defaultUser": "Usuário"
   },
@@ -1729,9 +1691,38 @@
     "heroEvents": "eventos",
     "heroLine2": " únicos.",
     "quickAccess": "Acessos rápidos",
-    "searchEvents": "Buscar\neventos",
-    "myTickets": "Meus\ningressos",
-    "upcomingEvents": "Próximos eventos"
+    "searchEvents": "Buscar eventos",
+    "myTickets": "Meus ingressos",
+    "upcomingEvents": "Próximos eventos",
+    "wallet": "Minha carteira",
+    "notifications": "Notificações",
+    "seeAll": "Ver todos",
+    "noUpcoming": "Nenhum evento próximo no momento",
+    "exploreCategories": "Explore por categoria",
+    "stats": {
+      "available": "Eventos disponíveis",
+      "thisWeek": "Esta semana",
+      "categories": "Categorias"
+    },
+    "steps": {
+      "title": "Como funciona?",
+      "explore": {
+        "title": "Explore",
+        "desc": "Encontre eventos por nome, data ou categoria."
+      },
+      "seat": {
+        "title": "Escolha seu lugar",
+        "desc": "Selecione seus assentos no mapa do local."
+      },
+      "pay": {
+        "title": "Pague com segurança",
+        "desc": "Pague pelo gateway ou use o saldo da sua carteira."
+      },
+      "enter": {
+        "title": "Entre com QR",
+        "desc": "Mostre o código do seu ingresso na entrada."
+      }
+    }
   },
   "mobileQr": {
     "titleOrder": "QR do pedido",
@@ -1805,7 +1796,8 @@
     },
     "oauthCancelled": "Você cancelou o login",
     "oauthFailed": "Não foi possível entrar com a conta externa. Tente novamente",
-    "googleExpoGo": "O login com Google não funciona no Expo Go. Use o build de desenvolvimento (dev client)."
+    "googleExpoGo": "O login com Google não funciona no Expo Go. Use o build de desenvolvimento (dev client).",
+    "googleDeveloperError": "O Google rejeitou a configuração do app (DEVELOPER_ERROR). Registre o SHA-1 da assinatura deste build no Google Cloud."
   },
   "mobileSeats": {
     "sectionSoldOut": "Os assentos disponíveis nesta seção esgotaram",
@@ -1845,7 +1837,17 @@
     "invalidHex": "Formato inválido — use #RGB ou #RRGGBB",
     "reset": "Restaurar",
     "applyError": "Não foi possível aplicar a cor. Tente novamente.",
-    "resetError": "Não foi possível restaurar a cor. Tente novamente."
+    "resetError": "Não foi possível restaurar a cor. Tente novamente.",
+    "names": {
+      "PRINCIPAL": "Principal",
+      "DARK": "Escuro",
+      "LIGHT": "Claro",
+      "PASTEL": "Pastel",
+      "VIBRANT": "Vibrante",
+      "NATURE": "Natureza",
+      "OCEAN": "Oceano",
+      "SUNSET": "Pôr do sol"
+    }
   },
   "mobileAuth": {
     "passwordPlaceholder": "Mín. 8 caracteres, maiúscula, número e símbolo"
@@ -1878,5 +1880,35 @@
     "logoutMessage": "Sua sessão será encerrada e você precisará entrar novamente para acessar.",
     "logoutConfirm": "Sim, sair",
     "accept": "Aceitar"
+  },
+  "mobileEvents": {
+    "allCategories": "Todas",
+    "results_one": "{{count}} evento",
+    "results_other": "{{count}} eventos",
+    "clearFilters": "Limpar filtros",
+    "noMatches": "Tente outra busca ou remova alguns filtros.",
+    "popular": "Populares"
+  },
+  "mobileCart": {
+    "reservationHint": "Seus assentos ficam reservados por tempo limitado. Conclua o pagamento antes que expirem.",
+    "total": "Total",
+    "selectMore_one": "Selecione mais {{count}} assento para continuar",
+    "selectMore_other": "Selecione mais {{count}} assentos para continuar",
+    "pay_one": "Ir para o pagamento · {{count}} assento",
+    "pay_other": "Ir para o pagamento · {{count}} assentos",
+    "selectedOf": "{{count}} de {{total}} selecionados"
+  },
+  "mobileComments": {
+    "login": "Entre",
+    "yourRating": "Sua avaliação",
+    "errors": {
+      "sessionExpired": "Sua sessão expirou. Entre novamente.",
+      "rateLimited": "Aguarde alguns segundos antes de comentar de novo.",
+      "ratingRequired": "Selecione uma avaliação de 1 a 5 estrelas antes de publicar.",
+      "parentInvalid": "Este comentário não pode receber respostas.",
+      "editExpired": "O tempo para editar este comentário expirou.",
+      "forbidden": "Você não tem permissão para fazer isso.",
+      "generic": "Não foi possível concluir a ação. Tente novamente."
+    }
   }
 }

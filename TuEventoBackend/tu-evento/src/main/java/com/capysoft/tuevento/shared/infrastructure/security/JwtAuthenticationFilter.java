@@ -15,6 +15,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import com.capysoft.tuevento.modules.security.application.port.out.CurrentRolePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,8 +25,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX        = "Bearer ";
+    private static final String ORGANIZER_ROLE       = "ORGANIZER";
 
     private final TokenGeneratorPort tokenGenerator;
+    private final CurrentRolePort    currentRolePort;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -43,7 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(token) && tokenGenerator.isTokenValid(token)) {
             tokenGenerator.extractUserId(token).ifPresent(userId -> {
                 String alias = tokenGenerator.extractSubject(token).orElse("");
-                String role  = tokenGenerator.extractRole(token).orElse("");
+                String role  = resolveRole(userId, tokenGenerator.extractRole(token).orElse(""));
 
                 log.debug("JWT authorities loaded for userId={}: [{}]", userId, role);
 
@@ -61,6 +64,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Un admin puede quitar el rol de organizador mientras el access token (15 min) sigue
+     * vigente. Para no depender de que el cliente renueve el JWT, el rol ORGANIZER del
+     * token se confirma contra la BD; solo esos tokens pagan la consulta extra.
+     */
+    private String resolveRole(Integer userId, String tokenRole) {
+        if (!ORGANIZER_ROLE.equals(tokenRole)) return tokenRole;
+        try {
+            return currentRolePort.findRoleCode(userId).orElse(tokenRole);
+        } catch (Exception e) {
+            log.warn("Could not verify current role for userId={}: {}", userId, e.getMessage());
+            return tokenRole;
+        }
     }
 
     private String extractToken(HttpServletRequest request) {

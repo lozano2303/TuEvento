@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,10 +24,8 @@ import java.util.stream.Collectors;
  * 1. Evento cambia a CANCELLED
  * 2. Buscar todas las órdenes del evento
  * 3. Buscar todos los pagos APPROVED de esas órdenes
- * 4. Disparar reembolso para cada pago
- *    - Wallet-only: Devuelve saldo a wallet inmediatamente
- *    - Gateway: Dispara reembolso en gateway (webhook completa el proceso)
- *    - Mixed: Ambos
+ * 4. Reembolsar cada pago como crédito en la wallet del comprador (se crea si no
+ *    existe), incluida la parte pagada por pasarela — ver RequestRefundUseCaseImpl#executeToWallet
  */
 @Slf4j
 @Component
@@ -41,7 +38,6 @@ public class EventCancelledListener {
 
     @Async
     @EventListener
-    @Transactional
     public void handleEventStatusChanged(EventStatusChangedEvent event) {
         // Solo procesar si el nuevo estado es CANCELLED
         if (!"CANCELLED".equals(event.getNewStatus())) {
@@ -84,7 +80,7 @@ public class EventCancelledListener {
 
             for (Payment payment : approvedPayments) {
                 try {
-                    String reason = String.format("Automatic refund: Event %d was cancelled", 
+                    String reason = String.format("Reembolso por cancelación del evento #%d",
                             event.getEventId());
                     
                     log.info("Processing refund for payment: paymentId={}, orderId={}, eventId={}, " +
@@ -96,7 +92,7 @@ public class EventCancelledListener {
                             payment.getWalletAmountApplied(),
                             payment.getAmount() != null ? payment.getAmount().getAmount() : "N/A");
 
-                    requestRefundUseCase.execute(payment.getPaymentId(), reason);
+                    requestRefundUseCase.executeToWallet(payment.getPaymentId(), event.getEventId(), reason);
                     
                     successCount++;
                     log.info("Refund successfully initiated: paymentId={}, orderId={}", 

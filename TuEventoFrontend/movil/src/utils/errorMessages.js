@@ -48,6 +48,7 @@ export const mapErrorMessage = (message) => {
     // OAuth (errores lanzados por oauthService)
     "Usuario canceló el inicio de sesión": "oauthCancelled",
     "GOOGLE_SIGNIN_EXPO_GO": "googleExpoGo",
+    "GOOGLE_SIGNIN_DEVELOPER_ERROR": "googleDeveloperError",
     "OAuth state mismatch": "oauthFailed",
     "Error en el flujo OAuth": "oauthFailed",
     "Error OAuth": "oauthFailed",

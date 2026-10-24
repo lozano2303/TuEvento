@@ -28,6 +28,7 @@ public class GetEventService implements GetEventUseCase {
     private final CategoryEventUseCase categoryEventUseCase;
     private final GetSitePort          getSitePort;
     private final EventMediaRepository eventMediaRepository;
+    private final com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository ticketRepository;
 
     // Translation support
     private final com.capysoft.tuevento.modules.language.domain.repository.EventTranslationRepository eventTranslationRepository;
@@ -239,6 +240,7 @@ public class GetEventService implements GetEventUseCase {
                 .isPublic(e.getIsPublic())
                 .availableSeats(e.getAvailableSeats())
                 .categoryId(categoryId)
+                .ticketsSold(countSold(e))
                 .coverUrl(coverUrl)
                 .translatedName(translatedName)
                 .translatedDescription(translatedDescription)
@@ -250,6 +252,15 @@ public class GetEventService implements GetEventUseCase {
                 .createdBy(e.getCreatedBy())
                 .updatedBy(e.getUpdatedBy())
                 .build();
+    }
+
+    private long countSold(Event e) {
+        try {
+            return ticketRepository.countSoldByEventId(e.getEventId());
+        } catch (Exception ex) {
+            log.warn("Could not count sold tickets for event {}: {}", e.getEventId(), ex.getMessage());
+            return 0;
+        }
     }
 
     private EventSummaryResponse toSummary(Event e) {
@@ -290,6 +301,7 @@ public class GetEventService implements GetEventUseCase {
                 .availableSeats(e.getAvailableSeats())
                 .siteName(siteName)
                 .categoryId(categoryId)
+                .ticketsSold(countSold(e))
                 .coverUrl(coverUrl)
                 .build();
     }

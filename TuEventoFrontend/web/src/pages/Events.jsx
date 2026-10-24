@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, Flame } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLanguageSync } from '../hooks/useLanguageSync';
 import { getAllEvents, cancelEvent } from '../services/EventService.js';
@@ -22,6 +22,12 @@ const TuEvento = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [eventsWithTranslations, setEventsWithTranslations] = useState(new Set()); // IDs de eventos con traducciones en progreso
   const [dateError, setDateError] = useState('');
+  // "Populares": solo eventos con entradas vendidas, de más a menos vendidos
+  const [popularOnly, setPopularOnly] = useState(false);
+
+  const visibleEvents = popularOnly
+    ? filteredEvents.filter(e => e.ticketsSold > 0).sort((a, b) => b.ticketsSold - a.ticketsSold)
+    : filteredEvents;
 
   // Fecha mínima permitida: hoy (YYYY-MM-DD en hora local)
   const today = new Date().toISOString().split('T')[0];
@@ -284,6 +290,23 @@ const TuEvento = () => {
               {/* Separador */}
               <div style={{ width: '0.5px', height: '20px', background: 'var(--color-surfaceAlt)' }} />
 
+              {/* Populares */}
+              <button
+                type="button"
+                onClick={() => setPopularOnly(v => !v)}
+                aria-pressed={popularOnly}
+                className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-xl transition-all"
+                style={popularOnly
+                  ? { background: 'var(--color-primary)', color: '#fff' }
+                  : { background: 'transparent', color: 'var(--color-textSecondary)', border: '0.5px solid var(--color-surfaceAlt)' }}
+              >
+                <Flame className="w-4 h-4" />
+                {t('events.popularFilter')}
+              </button>
+
+              {/* Separador */}
+              <div style={{ width: '0.5px', height: '20px', background: 'var(--color-surfaceAlt)' }} />
+
               {/* Botón buscar */}
               <button
                 onClick={handleServerFilter}
@@ -330,9 +353,9 @@ const TuEvento = () => {
 
               {!loading && !error && (
                 <>
-                  {filteredEvents.length > 0 ? (
+                  {visibleEvents.length > 0 ? (
                     <div className="grid md:grid-cols-3 gap-6">
-                      {filteredEvents.map((event) => (
+                      {visibleEvents.map((event) => (
                         <EventCard
                           key={event.eventId}
                           event={event}
@@ -355,7 +378,7 @@ const TuEvento = () => {
                           {t('events.noEventsFound')}
                         </p>
                         <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>
-                          {t('events.noEventsMessage')}
+                          {popularOnly ? t('events.popularEmpty') : t('events.noEventsMessage')}
                         </p>
                       </div>
                     </div>

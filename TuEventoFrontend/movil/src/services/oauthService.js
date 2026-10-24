@@ -81,6 +81,11 @@ export const oauthService = {
       }
       return { idToken: response.data.idToken };
     } catch (error) {
+      // DEVELOPER_ERROR (código 10): el SHA-1 de la firma del APK o el webClientId no
+      // coinciden con los clientes OAuth de Google Cloud.
+      if (isErrorWithCode(error) && error.code === "10") {
+        throw new Error("GOOGLE_SIGNIN_DEVELOPER_ERROR");
+      }
       if (isErrorWithCode(error) && error.code === statusCodes.IN_PROGRESS) {
         throw new Error("Error en el flujo OAuth de Google: ya hay un inicio de sesión en curso");
       }
