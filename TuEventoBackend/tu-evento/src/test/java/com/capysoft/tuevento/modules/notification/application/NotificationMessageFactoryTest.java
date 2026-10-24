@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>WELCOME — EMAIL greeting with and without name</li>
  *   <li>NEW_COMMENT / NEW_REPLY — EMAIL escaping and IN_APP texts</li>
  *   <li>Unknown type — IN_APP and EMAIL default</li>
+ *   <li>EMAIL escapes user input: welcome name, wallet reason, currency in amounts</li>
  * </ul>
  */
 @DisplayName("NotificationMessageFactory")
@@ -345,6 +346,88 @@ class NotificationMessageFactoryTest {
 
             assertThat(result.subject()).isEqualTo("Carlos respondió tu comentario");
             assertThat(result.body()).isEqualTo("Carlos en \"" + EVENT_NAME + "\": \"Thanks\"");
+        }
+    }
+
+    @Nested
+    @DisplayName("EMAIL escapes user-supplied input")
+    class EmailEscaping {
+
+        private static final String RAW     = "<b>x</b>";
+        private static final String ESCAPED = "&lt;b&gt;x&lt;/b&gt;";
+
+        @Test
+        @DisplayName("WELCOME: user name is escaped")
+        void welcome_email_escapesUserName() {
+            var cmd = SendNotificationCommand.builder()
+                    .typeName(NotificationTypeNames.WELCOME)
+                    .reason(RAW)
+                    .build();
+
+            var result = NotificationMessageFactory.build(
+                    NotificationTypeNames.WELCOME, NotificationChannelNames.EMAIL, cmd);
+
+            assertThat(result.body()).contains(ESCAPED).doesNotContain(RAW);
+        }
+
+        @Test
+        @DisplayName("WALLET_CREDITED: reason is escaped")
+        void walletCredited_email_escapesReason() {
+            var cmd = SendNotificationCommand.builder()
+                    .typeName(NotificationTypeNames.WALLET_CREDITED)
+                    .creditedAmount(new BigDecimal("3000"))
+                    .reason(RAW)
+                    .build();
+
+            var result = NotificationMessageFactory.build(
+                    NotificationTypeNames.WALLET_CREDITED, NotificationChannelNames.EMAIL, cmd);
+
+            assertThat(result.body()).contains("Motivo: " + ESCAPED + ".").doesNotContain(RAW);
+        }
+
+        @Test
+        @DisplayName("WALLET_CREDITED: currency in the amount is escaped")
+        void walletCredited_email_escapesCurrency() {
+            var cmd = SendNotificationCommand.builder()
+                    .typeName(NotificationTypeNames.WALLET_CREDITED)
+                    .creditedAmount(new BigDecimal("3000"))
+                    .currency(RAW)
+                    .build();
+
+            var result = NotificationMessageFactory.build(
+                    NotificationTypeNames.WALLET_CREDITED, NotificationChannelNames.EMAIL, cmd);
+
+            assertThat(result.body()).contains("3000.00 " + ESCAPED).doesNotContain(RAW);
+        }
+
+        @Test
+        @DisplayName("PAYMENT_APPROVED: currency in the breakdown is escaped")
+        void paymentApproved_email_escapesCurrency() {
+            var cmd = SendNotificationCommand.builder()
+                    .typeName(NotificationTypeNames.PAYMENT_APPROVED)
+                    .gatewayAmount(new BigDecimal("5000"))
+                    .currency(RAW)
+                    .build();
+
+            var result = NotificationMessageFactory.build(
+                    NotificationTypeNames.PAYMENT_APPROVED, NotificationChannelNames.EMAIL, cmd);
+
+            assertThat(result.body()).contains("5000.00 " + ESCAPED).doesNotContain(RAW);
+        }
+
+        @Test
+        @DisplayName("PAYMENT_REFUNDED: currency in the breakdown is escaped")
+        void paymentRefunded_email_escapesCurrency() {
+            var cmd = SendNotificationCommand.builder()
+                    .typeName(NotificationTypeNames.PAYMENT_REFUNDED)
+                    .walletAmount(new BigDecimal("2500"))
+                    .currency(RAW)
+                    .build();
+
+            var result = NotificationMessageFactory.build(
+                    NotificationTypeNames.PAYMENT_REFUNDED, NotificationChannelNames.EMAIL, cmd);
+
+            assertThat(result.body()).contains("2500.00 " + ESCAPED).doesNotContain(RAW);
         }
     }
 }
