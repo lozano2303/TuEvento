@@ -36,6 +36,8 @@ import static org.mockito.Mockito.*;
  *   <li>Avatar storedFileId is null → profilePicture is null (no URL generation attempt)</li>
  *   <li>GeneratePublicUrlPort throws → profilePicture is null (resilient)</li>
  *   <li>loginCredentialsRepository throws → email is null (resilient)</li>
+ *   <li>profileRepository throws → fullName / profilePicture are null (resilient)</li>
+ *   <li>event count queries throw → counts default to zero (resilient)</li>
  * </ul>
  */
 @ExtendWith(MockitoExtension.class)
@@ -202,6 +204,42 @@ class GetOrganizersUseCaseTest {
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getEmail()).isNull();
+        }
+
+        @Test
+        @DisplayName("profileRepository throws → fullName and profilePicture are null, other fields kept")
+        void getOrganizers_profileQueryFails_nullProfileFields() {
+            when(userJpaRepository.findAllByRoleCode("ORGANIZER")).thenReturn(List.of(organizerUser));
+            when(loginCredentialsRepository.findEmailByUserId(USER_ID)).thenReturn(Optional.of("alice@mail.com"));
+            when(profileRepository.findByUserId(USER_ID)).thenThrow(new RuntimeException("DB error"));
+            when(userJpaRepository.countEventsByUserId((long) USER_ID)).thenReturn(4L);
+            when(userJpaRepository.countPublishedEventsByUserId((long) USER_ID)).thenReturn(1L);
+
+            List<OrganizerUserResponse> result = useCase.getOrganizers();
+
+            assertThat(result).hasSize(1);
+            OrganizerUserResponse r = result.get(0);
+            assertThat(r.getFullName()).isNull();
+            assertThat(r.getProfilePicture()).isNull();
+            assertThat(r.getEmail()).isEqualTo("alice@mail.com");
+            assertThat(r.getTotalEvents()).isEqualTo(4L);
+            verifyNoInteractions(generatePublicUrlPort);
+        }
+
+        @Test
+        @DisplayName("event count queries throw → counts default to zero")
+        void getOrganizers_countQueryFails_countsZero() {
+            when(userJpaRepository.findAllByRoleCode("ORGANIZER")).thenReturn(List.of(organizerUser));
+            when(loginCredentialsRepository.findEmailByUserId(USER_ID)).thenReturn(Optional.empty());
+            when(profileRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
+            when(userJpaRepository.countEventsByUserId((long) USER_ID)).thenThrow(new RuntimeException("DB error"));
+
+            List<OrganizerUserResponse> result = useCase.getOrganizers();
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getTotalEvents()).isZero();
+            assertThat(result.get(0).getPublishedEvents()).isZero();
+            assertThat(result.get(0).getAlias()).isEqualTo("org_alice");
         }
     }
 }
