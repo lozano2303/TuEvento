@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
+import { adminText as t } from '../constants/adminText';
 import {
   Search, Loader2, AlertCircle, RefreshCcw, Clock, CheckCircle2, XCircle,
   Wallet, Plus, X, ChevronDown, ArrowLeftRight,
@@ -133,7 +133,6 @@ function UserPicker({ value, onChange, t }) {
 
 // ── Página ────────────────────────────────────────────────────────────────────
 export default function AdminRefunds() {
-  const { t, i18n } = useTranslation();
   const { toast, showToast, hideToast } = useToast();
 
   const [refunds, setRefunds] = useState([]);
@@ -182,7 +181,7 @@ export default function AdminRefunds() {
     .reduce((sum, r) => sum + Number(r.gatewayAmount || 0) + Number(r.walletAmount || 0), 0), [refunds]);
 
   const fmtDateTime = (iso) => iso
-    ? new Date(iso).toLocaleString(i18n.language, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+    ? new Date(iso).toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
     : '—';
 
   const openCredit = () => {

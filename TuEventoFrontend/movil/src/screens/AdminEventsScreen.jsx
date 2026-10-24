@@ -10,7 +10,7 @@ import { useTheme } from "../context/ThemeContext";
 import { getAdminEvents, adminChangeEventStatus } from "../services/adminService";
 import { getEventDetail, getEventMedia } from "../services/eventService";
 import AppModal from "../components/AppModal";
-import { useTranslation } from "react-i18next";
+import { adminText as t } from "../utils/adminText";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -152,7 +152,6 @@ function EventDetailModal({ event, detail, media, loading, onClose, onAction, ac
   const [showRejectInput, setShowRejectInput] = useState(false);
   // Cancelar es irreversible (reembolsa a los compradores): requiere confirmación
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const { t } = useTranslation();
   const cfg = getCfg(event.status);
   // Imagen seleccionada en la galería; mientras carga la media se usa la portada del listado
   const [selectedIdx, setSelectedIdx] = useState(0);

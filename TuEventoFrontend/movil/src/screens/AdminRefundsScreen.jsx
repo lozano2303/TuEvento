@@ -6,7 +6,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTranslation } from "react-i18next";
+import { adminText as t } from "../utils/adminText";
 import { useTheme } from "../context/ThemeContext";
 import { getAdminRefunds, getAdminStats, getAdminUsers, adminCreditWallet } from "../services/adminService";
 import AppModal from "../components/AppModal";
@@ -26,7 +26,6 @@ const fmtCOP = (n) =>
  */
 export default function AdminRefundsScreen() {
   const { colors } = useTheme();
-  const { t, i18n } = useTranslation();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
@@ -92,7 +91,7 @@ export default function AdminRefundsScreen() {
   }, [refunds, status, query]);
 
   const fmtDate = (iso) => iso
-    ? new Date(iso).toLocaleString(i18n.language, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
+    ? new Date(iso).toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
     : "—";
 
   const openCredit = () => {

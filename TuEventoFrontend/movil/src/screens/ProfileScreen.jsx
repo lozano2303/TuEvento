@@ -10,6 +10,7 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTranslation } from "react-i18next";
+import { adminText } from "../utils/adminText";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useNotifications } from "../context/NotificationContext";
@@ -85,15 +86,15 @@ export default function ProfileScreen() {
 
   // Ítems del panel de administración (espejo del sidebar web)
   const ADMIN_ITEMS = [
-    { icon: "grid-outline",           label: t("mobileProfile.admin.dashboard.label"),    sub: t("mobileProfile.admin.dashboard.sub"),    route: "AdminDashboard" },
-    { icon: "card-outline",           label: t("mobileProfile.admin.financial.label"),    sub: t("mobileProfile.admin.financial.sub"),    route: "AdminFinancial" },
-    { icon: "calendar-outline",       label: t("mobileProfile.admin.events.label"),       sub: t("mobileProfile.admin.events.sub"),       route: "AdminEvents" },
-    { icon: "bar-chart-outline",      label: t("mobileProfile.admin.reports.label"),      sub: t("mobileProfile.admin.reports.sub"),      route: "AdminReports" },
-    { icon: "refresh-circle-outline", label: t("mobileProfile.admin.refunds.label"),      sub: t("mobileProfile.admin.refunds.sub"),      route: "AdminRefunds" },
-    { icon: "people-outline",         label: t("mobileProfile.admin.requests.label"),     sub: t("mobileProfile.admin.requests.sub"),     route: "OrganizerRequests" },
-    { icon: "person-circle-outline",  label: t("mobileProfile.admin.users.label"),        sub: t("mobileProfile.admin.users.sub"),        route: "AdminUsers" },
-    { icon: "pricetags-outline",      label: t("mobileProfile.admin.categories.label"),   sub: t("mobileProfile.admin.categories.sub"),   route: "AdminCategories" },
-    { icon: "layers-outline",         label: t("mobileProfile.admin.sectionTypes.label"), sub: t("mobileProfile.admin.sectionTypes.sub"), route: "AdminSectionTypes" },
+    { icon: "grid-outline",           label: adminText("mobileProfile.admin.dashboard.label"),    sub: adminText("mobileProfile.admin.dashboard.sub"),    route: "AdminDashboard" },
+    { icon: "card-outline",           label: adminText("mobileProfile.admin.financial.label"),    sub: adminText("mobileProfile.admin.financial.sub"),    route: "AdminFinancial" },
+    { icon: "calendar-outline",       label: adminText("mobileProfile.admin.events.label"),       sub: adminText("mobileProfile.admin.events.sub"),       route: "AdminEvents" },
+    { icon: "bar-chart-outline",      label: adminText("mobileProfile.admin.reports.label"),      sub: adminText("mobileProfile.admin.reports.sub"),      route: "AdminReports" },
+    { icon: "refresh-circle-outline", label: adminText("mobileProfile.admin.refunds.label"),      sub: adminText("mobileProfile.admin.refunds.sub"),      route: "AdminRefunds" },
+    { icon: "people-outline",         label: adminText("mobileProfile.admin.requests.label"),     sub: adminText("mobileProfile.admin.requests.sub"),     route: "OrganizerRequests" },
+    { icon: "person-circle-outline",  label: adminText("mobileProfile.admin.users.label"),        sub: adminText("mobileProfile.admin.users.sub"),        route: "AdminUsers" },
+    { icon: "pricetags-outline",      label: adminText("mobileProfile.admin.categories.label"),   sub: adminText("mobileProfile.admin.categories.sub"),   route: "AdminCategories" },
+    { icon: "layers-outline",         label: adminText("mobileProfile.admin.sectionTypes.label"), sub: adminText("mobileProfile.admin.sectionTypes.sub"), route: "AdminSectionTypes" },
   ];
 
   useEffect(() => {
@@ -288,7 +289,7 @@ export default function ProfileScreen() {
                 color: colors.textSecondary, fontSize: 11, fontWeight: "700",
                 letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12,
               }}>
-                {t("mobileProfile.sections.admin")}
+                Administración
               </Text>
 
               {/* ── Accordion trigger ── */}
@@ -326,10 +327,10 @@ export default function ProfileScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "600" }}>
-                    {t("mobileProfile.adminPanel.label")}
+                    {adminText("mobileProfile.adminPanel.label")}
                   </Text>
                   <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>
-                    {t("mobileProfile.adminPanel.desc")}
+                    {adminText("mobileProfile.adminPanel.desc")}
                   </Text>
                 </View>
                 <Ionicons
@@ -383,7 +384,7 @@ export default function ProfileScreen() {
                             {item.label}
                           </Text>
                           <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 1 }}>
-                            {disabled ? t("mobileProfile.comingSoon") : item.sub}
+                            {disabled ? "Próximamente" : item.sub}
                           </Text>
                         </View>
 
@@ -394,7 +395,7 @@ export default function ProfileScreen() {
                             borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3,
                           }}>
                             <Text style={{ color: colors.textMuted, fontSize: 9, fontWeight: "700" }}>
-                              {t("mobileProfile.comingSoonBadge")}
+                              PRONTO
                             </Text>
                           </View>
                         ) : (

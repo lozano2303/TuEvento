@@ -6,7 +6,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTranslation } from "react-i18next";
+import { adminText as t } from "../utils/adminText";
 import { useTheme } from "../context/ThemeContext";
 import { getAdminUsers, revokeOrganizerRole } from "../services/adminService";
 import AppModal from "../components/AppModal";
@@ -23,7 +23,6 @@ const ROLE_COLORS = { ADMIN: "#fbbf24", ORGANIZER: "#a78bfa", USER: "#9ca3af" };
  */
 export default function AdminUsersScreen() {
   const { colors } = useTheme();
-  const { t, i18n } = useTranslation();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
@@ -80,7 +79,7 @@ export default function AdminUsersScreen() {
   };
 
   const fmtDate = (iso) => iso
-    ? new Date(iso).toLocaleDateString(i18n.language, { day: "2-digit", month: "short", year: "numeric" })
+    ? new Date(iso).toLocaleDateString("es-CO", { day: "2-digit", month: "short", year: "numeric" })
     : "—";
 
   const renderUser = ({ item: u }) => {

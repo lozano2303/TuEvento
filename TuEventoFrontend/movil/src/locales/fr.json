@@ -879,7 +879,8 @@
     "gallery": "Galerie",
     "cancelledLiveTitle": "Cet événement a été annulé",
     "cancelledLiveMessage": "Si vous avez effectué un paiement, le remboursement a été crédité sur votre portefeuille. Consultez votre boîte de réception et vos notifications pour plus de détails.",
-    "cancelledLiveButton": "Retour à l'accueil"
+    "cancelledLiveButton": "Retour à l'accueil",
+    "cancelledLiveOrganizerMessage": "L'administrateur a retiré l'organisateur de cet événement pour non-respect des règles de la plateforme, l'événement a donc été annulé. Si vous avez effectué un paiement, le remboursement a été crédité sur votre portefeuille. Consultez votre boîte de réception et vos notifications pour plus de détails."
   },
   "paymentApproved": {
     "title": "Paiement approuvé!",
@@ -1510,16 +1511,11 @@
     "title": "Mon profil",
     "sections": {
       "organizer": "Organisateur",
-      "admin": "Administration",
       "account": "Compte"
     },
     "scan": {
       "label": "Valider les billets",
       "desc": "Scanner les codes QR de vos événements"
-    },
-    "adminPanel": {
-      "label": "Panneau d’administration",
-      "desc": "Gestion de la plateforme"
     },
     "menu": {
       "profile": {
@@ -1539,46 +1535,6 @@
         "sub": "Gérez vos alertes"
       }
     },
-    "admin": {
-      "dashboard": {
-        "label": "Tableau de bord",
-        "sub": "Vue d’ensemble"
-      },
-      "financial": {
-        "label": "Contrôle financier",
-        "sub": "Paiements et remboursements"
-      },
-      "events": {
-        "label": "Événements",
-        "sub": "Gérer et examiner les événements"
-      },
-      "reports": {
-        "label": "Rapports",
-        "sub": "Statistiques de la plateforme"
-      },
-      "refunds": {
-        "label": "Remboursements",
-        "sub": "Gérer les remboursements"
-      },
-      "requests": {
-        "label": "Demandes",
-        "sub": "Demandes d’organisateur"
-      },
-      "categories": {
-        "label": "Catégories",
-        "sub": "Gérer les catégories"
-      },
-      "sectionTypes": {
-        "label": "Types de section",
-        "sub": "Gérer les types de section"
-      },
-      "users": {
-        "label": "Utilisateurs",
-        "sub": "Rôles et organisateurs"
-      }
-    },
-    "comingSoon": "Bientôt disponible",
-    "comingSoonBadge": "BIENTÔT",
     "logout": "Se déconnecter",
     "defaultUser": "Utilisateur"
   },
@@ -1953,100 +1909,6 @@
       "editExpired": "Le délai pour modifier ce commentaire est dépassé.",
       "forbidden": "Vous n'avez pas l'autorisation de faire cela.",
       "generic": "L'action n'a pas pu être effectuée. Réessayez."
-    }
-  },
-  "mobileAdminEvents": {
-    "cancelConfirmTitle": "Annuler cet événement ?",
-    "cancelConfirmMessage": "Cette action est irréversible. Tous les acheteurs seront remboursés sur leur portefeuille et les personnes qui consultent l'événement seront prévenues.",
-    "cancelConfirmBack": "Retour",
-    "cancelConfirmYes": "Oui, annuler"
-  },
-  "adminUsers": {
-    "title": "Gestion des utilisateurs",
-    "subtitle": "Recherchez des utilisateurs et gérez leurs rôles. Lorsque vous retirez le rôle d'organisateur, l'utilisateur reçoit le motif par notification.",
-    "searchPlaceholder": "Rechercher par nom, pseudo ou e-mail...",
-    "loading": "Chargement des utilisateurs...",
-    "empty": "Aucun utilisateur ne correspond à la recherche.",
-    "roles": {
-      "ALL": "Tous",
-      "ORGANIZER": "Organisateurs",
-      "USER": "Utilisateurs",
-      "ADMIN": "Administrateurs"
-    },
-    "statuses": {
-      "PENDING": "En attente",
-      "ACTIVE": "Actif",
-      "BLOCKED": "Bloqué",
-      "INACTIVE": "Inactif",
-      "DELETED": "Supprimé"
-    },
-    "columns": {
-      "user": "Utilisateur",
-      "email": "E-mail",
-      "role": "Rôle",
-      "status": "Statut",
-      "joined": "Inscription",
-      "actions": "Actions"
-    },
-    "revokeButton": "Retirer organisateur",
-    "revokeTitle": "Retirer le rôle d'organisateur à {{name}} ?",
-    "revokeMessage": "Le compte redeviendra un utilisateur standard et ne pourra plus créer ni gérer d'événements. Nous enverrons le motif par notification et e-mail.",
-    "reasonLabel": "Motif",
-    "reasonPlaceholder": "Expliquez à l'utilisateur pourquoi le rôle lui est retiré...",
-    "reasonMin": "Au moins {{count}} caractères",
-    "cancel": "Annuler",
-    "revokeConfirm": "Retirer le rôle",
-    "revokeSuccess": "{{name}} n'est plus organisateur.",
-    "revokeError": "Impossible de retirer le rôle d'organisateur."
-  },
-  "adminRefunds": {
-    "title": "Remboursements",
-    "subtitle": "Remboursements des paiements avec leur détail et crédit manuel sur le portefeuille d'un utilisateur.",
-    "refresh": "Actualiser",
-    "loading": "Chargement des remboursements...",
-    "empty": "Aucun remboursement ne correspond aux filtres.",
-    "searchPlaceholder": "Rechercher par acheteur, e-mail ou événement...",
-    "stats": {
-      "pending": "En attente",
-      "pendingSub": "Demandés, pas encore traités",
-      "processed": "Traités",
-      "processedSub": "Remboursements terminés",
-      "total": "Total remboursé",
-      "totalSub": "Montant restitué sur toute la plateforme",
-      "toWallet": "Traité dans la liste",
-      "toWalletSub": "Somme des remboursements traités affichés"
-    },
-    "status": {
-      "ALL": "Tous",
-      "PROCESSED": "Traité",
-      "REQUESTED": "Demandé",
-      "FAILED": "Échoué"
-    },
-    "columns": {
-      "date": "Date",
-      "buyer": "Acheteur",
-      "event": "Événement",
-      "amount": "Montant",
-      "status": "Statut",
-      "reason": "Motif"
-    },
-    "processedAt": "Traité : {{date}}",
-    "order": "Commande n° {{id}}",
-    "gatewayPart": "Passerelle : {{amount}}",
-    "walletPart": "Portefeuille : {{amount}}",
-    "credit": {
-      "open": "Ajouter du crédit",
-      "title": "Ajouter du crédit à un portefeuille",
-      "subtitle": "Le solde est ajouté immédiatement et l'utilisateur reçoit une notification avec le motif.",
-      "user": "Utilisateur",
-      "userPlaceholder": "Sélectionnez un utilisateur",
-      "userSearch": "Rechercher par nom, pseudo ou e-mail...",
-      "amount": "Montant (COP)",
-      "reason": "Motif",
-      "reasonPlaceholder": "Ex. : Compensation pour un problème avec l'événement",
-      "submit": "Créditer",
-      "success": "{{amount}} crédités à {{name}}.",
-      "error": "Impossible de créditer le solde."
     }
   }
 }
