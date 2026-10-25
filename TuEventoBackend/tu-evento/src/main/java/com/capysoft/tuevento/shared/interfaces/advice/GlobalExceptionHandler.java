@@ -21,8 +21,10 @@ import com.capysoft.tuevento.modules.profile.domain.exception.ProfileAlreadyExis
 import com.capysoft.tuevento.modules.ticket.domain.model.InvalidOrderStatusTransitionException;
 import com.capysoft.tuevento.modules.wallet.domain.model.InsufficientWalletBalanceException;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
+import com.capysoft.tuevento.shared.domain.exception.ForbiddenException;
 import com.capysoft.tuevento.shared.domain.exception.ImagePolicyViolationException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
+import com.capysoft.tuevento.shared.domain.exception.UnauthorizedException;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 
 import jakarta.validation.ConstraintViolationException;
@@ -98,6 +100,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleImagePolicyViolation(ImagePolicyViolationException ex) {
         return ResponseEntity.unprocessableEntity()
                 .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnauthorizedException(UnauthorizedException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleForbiddenException(ForbiddenException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
 
     @ExceptionHandler(BusinessException.class)

@@ -1,41 +1,34 @@
 package com.capysoft.tuevento.modules.storage.application.usecase;
 
+import com.capysoft.tuevento.modules.storage.application.dto.request.StorageRequester;
 import com.capysoft.tuevento.modules.storage.application.dto.response.StoredFileResponse;
 import com.capysoft.tuevento.modules.storage.application.port.in.GetFilePort;
+import com.capysoft.tuevento.modules.storage.application.service.StorageAccessPolicy;
+import com.capysoft.tuevento.modules.storage.application.service.StoredFileResponseFactory;
 import com.capysoft.tuevento.modules.storage.domain.model.StoredFile;
 import com.capysoft.tuevento.modules.storage.domain.repository.StoredFileRepository;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class GetFileUseCase implements GetFilePort {
 
-    private final StoredFileRepository storedFileRepository;
+    private final StoredFileRepository      storedFileRepository;
+    private final StorageAccessPolicy       accessPolicy;
+    private final StoredFileResponseFactory responseFactory;
 
     @Override
-    public StoredFileResponse getById(Integer storedFileId) {
+    @Transactional(readOnly = true)
+    public StoredFileResponse getById(Integer storedFileId, StorageRequester requester) {
         StoredFile file = storedFileRepository.findById(storedFileId)
                 .filter(f -> !Boolean.TRUE.equals(f.getDeleted()))
                 .orElseThrow(() -> new NotFoundException("FILE_NOT_FOUND", "File not found or has been deleted"));
 
-        return toResponse(file);
-    }
+        accessPolicy.assertCanRead(file, requester);
 
-    static StoredFileResponse toResponse(StoredFile file) {
-        return StoredFileResponse.builder()
-                .storedFileId(file.getStoredFileId())
-                .fileCategoryCode(file.getFileCategory().getCode())
-                .uploadedBy(file.getUploadedBy())
-                .s3Key(file.getS3Key())
-                .originalFilename(file.getOriginalFilename())
-                .contentType(file.getContentType())
-                .sizeBytes(file.getSizeBytes())
-                .publicUrl(file.getPublicUrl())
-                .ownerEntityId(file.getOwnerEntityId())
-                .ownerEntityType(file.getOwnerEntityType())
-                .uploadedAt(file.getUploadedAt())
-                .build();
+        return responseFactory.toResponse(file);
     }
 }

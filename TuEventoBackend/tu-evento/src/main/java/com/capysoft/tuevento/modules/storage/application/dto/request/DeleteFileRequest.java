@@ -12,5 +12,5 @@ public class DeleteFileRequest {
     private Integer storedFileId;
 
     @NotNull
-    private Integer deletedBy;
+    private StorageRequester requester;
 }
