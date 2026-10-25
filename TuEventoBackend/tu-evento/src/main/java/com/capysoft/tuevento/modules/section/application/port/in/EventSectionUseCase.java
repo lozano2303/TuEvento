@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface EventSectionUseCase {
     List<EventSectionResponse> getSectionsByEvent(Integer eventId, String languageCode);
-    EventSectionResponse createEventSection(CreateEventSectionRequest request);
-    EventSectionResponse updateEventSection(Integer eventSectionId, UpdateEventSectionRequest request);
-    void deleteEventSection(Integer eventSectionId);
+    EventSectionResponse createEventSection(CreateEventSectionRequest request, Long userId);
+    EventSectionResponse updateEventSection(Integer eventSectionId, UpdateEventSectionRequest request, Long userId);
+    void deleteEventSection(Integer eventSectionId, Long userId);
 }

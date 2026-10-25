@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Security — fix(security): event sections can only be changed by the event's organizer
+
+- **Ownership check on `/api/v1/event-sections`**: creating, updating and deleting a section only checked the role, so any organizer could change the price or capacity, or delete sections, of another organizer's event, even after it was published. Now the event must belong to the authenticated organizer (`EVENT_ACCESS_DENIED`, 403) and be in `DRAFT` (`EVENT_SECTION_EDIT_NOT_ALLOWED`), the same rules as saving the layout
+- **ADMIN is read-only**: those three endpoints now require `ORGANIZER`; admins keep `GET /event/{eventId}`. The layout editor is the only client that writes sections
+
 ## [1.0.1] - 2026-10-25
 
 Imágenes Docker `v1.0.1`: se reconstruyen `backend`, `frontend` y `gateway` (el gateway cambia con el sandbox de pagos, #100); solo `nsfw` se reetiqueta desde `v1.0.0`. Incluyen también la cancelación de eventos y reembolsos (PR #105), que no estaba en las imágenes `v1.0.0`.
