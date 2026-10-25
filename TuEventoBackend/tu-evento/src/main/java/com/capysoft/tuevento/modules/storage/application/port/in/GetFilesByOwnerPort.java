@@ -6,5 +6,7 @@ import java.util.List;
 
 public interface GetFilesByOwnerPort {
 
-    List<StoredFileResponse> getByOwner(Integer ownerEntityId, String ownerEntityType);
+    /** Devuelve solo los archivos de la entidad que el solicitante puede ver. */
+    List<StoredFileResponse> getByOwner(Integer ownerEntityId, String ownerEntityType,
+                                        Integer requesterId, boolean requesterIsAdmin);
 }

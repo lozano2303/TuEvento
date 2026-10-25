@@ -80,29 +80,35 @@ public class OrderController {
     }
 
     /**
-     * Obtener una orden por ID.
+     * Obtener una orden por ID (solo el comprador).
      */
     @GetMapping("/{orderId:\\d+}")
-    public ResponseEntity<ApiResponse<OrderResponse>> getOrder(@PathVariable Long orderId) {
-        OrderResponse response = getOrderUseCase.execute(orderId);
+    public ResponseEntity<ApiResponse<OrderResponse>> getOrder(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal SecurityUser principal) {
+        OrderResponse response = getOrderUseCase.execute(orderId, principal.getUserId().longValue());
         return ResponseEntity.ok(ApiResponse.ok("Order retrieved successfully", response));
     }
     
     /**
-     * Obtener los tickets de una orden.
+     * Obtener los tickets de una orden (solo el comprador).
      */
     @GetMapping("/{orderId:\\d+}/tickets")
-    public ResponseEntity<ApiResponse<List<TicketResponse>>> getOrderTickets(@PathVariable Long orderId) {
-        List<TicketResponse> tickets = getOrderTicketsUseCase.execute(orderId);
+    public ResponseEntity<ApiResponse<List<TicketResponse>>> getOrderTickets(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal SecurityUser principal) {
+        List<TicketResponse> tickets = getOrderTicketsUseCase.execute(orderId, principal.getUserId().longValue());
         return ResponseEntity.ok(ApiResponse.ok("Order tickets retrieved successfully", tickets));
     }
     
     /**
-     * Cancelar una orden.
+     * Cancelar una orden (solo el comprador).
      */
     @PostMapping("/{orderId:\\d+}/cancel")
-    public ResponseEntity<ApiResponse<Void>> cancelOrder(@PathVariable Long orderId) {
-        cancelOrderUseCase.execute(orderId);
+    public ResponseEntity<ApiResponse<Void>> cancelOrder(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal SecurityUser principal) {
+        cancelOrderUseCase.execute(orderId, principal.getUserId().longValue());
         return ResponseEntity.ok(ApiResponse.ok("Order cancelled successfully"));
     }
 }

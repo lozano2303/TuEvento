@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.payment.application.usecase;
 
+import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.payment.application.port.out.PaymentGatewayPort;
 import com.capysoft.tuevento.modules.payment.domain.event.PaymentRefundedEvent;
 import com.capysoft.tuevento.modules.payment.domain.model.*;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,6 +63,27 @@ public class RequestRefundUseCaseImpl {
     private final ReverseWalletPaymentUseCaseImpl reverseWalletPaymentUseCase;
     private final CreditWalletUseCaseImpl creditWalletUseCase;
     private final ApplicationEventPublisher eventPublisher;
+    private final EventRepository eventRepository;
+
+    /**
+     * Reembolso pedido desde la API: un administrador puede reembolsar cualquier
+     * pago; un organizador, solo los pagos de órdenes de sus propios eventos.
+     */
+    @Transactional
+    public void execute(Long paymentId, String reason, Long requesterId, boolean requesterIsAdmin) {
+        if (!requesterIsAdmin) {
+            Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new PaymentNotFoundException(paymentId));
+            boolean ownsEvent = orderRepository.findById(payment.getOrderId())
+                .flatMap(order -> eventRepository.findById(order.getEventId()))
+                .map(event -> event.getUserId().equals(requesterId))
+                .orElse(false);
+            if (!ownsEvent) {
+                throw new AccessDeniedException("You can only refund payments of your own events");
+            }
+        }
+        execute(paymentId, reason);
+    }
 
     @Transactional
     public void execute(Long paymentId, String reason) {
