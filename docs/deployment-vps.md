@@ -175,11 +175,11 @@ el archivo directamente de ese host, por eso `s3.` necesita proxy host público.
 Las subidas y borrados van por la red interna (`RUSTFS_ENDPOINT=http://rustfs:9000`).
 La consola de RustFS está desactivada.
 
-**Control de acceso.** Los `GET` de `/api/v1/storage` son públicos para que carguen las
-imágenes de eventos y los avatares; el caso de uso solo deja leer un archivo privado
-(`ORGANIZER_DOCUMENT`) a quien lo subió o a un ADMIN (401/403 en otro caso). Subir y
-borrar exige sesión; por REST solo se suben fotos de perfil y los documentos de
-organizador solo los borra un ADMIN.
+**Control de acceso.** Todo `/api/v1/storage` exige sesión. Las imágenes de eventos se
+sirven por la URL guardada en `event_media.img_url`, sin pasar por este endpoint. El caso de
+uso solo deja leer un archivo privado (`ORGANIZER_DOCUMENT`) a quien lo subió o a un ADMIN
+(403 en otro caso); por REST solo se suben fotos de perfil y los documentos de organizador
+solo los borra un ADMIN.
 
 **URL pública guardada.** Desde `fix/storage-access-control`, `stored_file.public_url` y
 `event_media.img_url` se guardan con `RUSTFS_PUBLIC_URL`, y los metadatos de

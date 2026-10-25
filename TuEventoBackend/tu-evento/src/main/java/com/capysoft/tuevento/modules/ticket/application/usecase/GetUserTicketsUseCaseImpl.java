@@ -4,6 +4,7 @@ import com.capysoft.tuevento.modules.ticket.application.dto.response.TicketRespo
 import com.capysoft.tuevento.modules.ticket.domain.model.Ticket;
 import com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,5 +27,16 @@ public class GetUserTicketsUseCaseImpl {
         return tickets.stream()
             .map(TicketResponse::fromDomain)
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Tickets de otro usuario: solo el propio usuario o un administrador.
+     */
+    @Transactional(readOnly = true)
+    public List<TicketResponse> executeFor(Long userId, Long requesterId, boolean requesterIsAdmin) {
+        if (!requesterIsAdmin && !userId.equals(requesterId)) {
+            throw new AccessDeniedException("You do not have access to these tickets");
+        }
+        return execute(userId);
     }
 }

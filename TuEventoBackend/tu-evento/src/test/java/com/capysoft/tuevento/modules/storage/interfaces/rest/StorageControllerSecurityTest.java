@@ -13,7 +13,6 @@ import com.capysoft.tuevento.modules.storage.application.port.in.GetFilePort;
 import com.capysoft.tuevento.modules.storage.application.port.in.GetFilesByOwnerPort;
 import com.capysoft.tuevento.modules.storage.application.port.in.UploadUserFilePort;
 import com.capysoft.tuevento.shared.domain.exception.ForbiddenException;
-import com.capysoft.tuevento.shared.domain.exception.UnauthorizedException;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityConfig;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * HTTP-level tests for {@link StorageController} behind the real {@link SecurityConfig}:
- * which routes are public, which require a login, and how access errors are rendered.
+ * every storage route requires a login, the principal reaches the use cases as the requester,
+ * and access errors keep their code.
  */
 @WebMvcTest(StorageController.class)
 @Import(SecurityConfig.class)
@@ -86,40 +86,49 @@ class StorageControllerSecurityTest {
         }
 
         @Test
-        @DisplayName("GET /{id} of a public file → 200, use case called as anonymous")
-        void getFile_public_ok() throws Exception {
-            when(getFilePort.getById(eq(10), any())).thenReturn(StoredFileResponse.builder().storedFileId(10).build());
-
-            mockMvc.perform(get("/api/v1/storage/10"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.storedFileId").value(10));
-            verify(getFilePort).getById(10, StorageRequester.anonymous());
-        }
-
-        @Test
-        @DisplayName("GET /owner/{type}/{id} → 200, use case filters as anonymous")
-        void getByOwner_ok() throws Exception {
-            when(getFilesByOwnerPort.getByOwner(any(), any(), any())).thenReturn(List.of());
-
-            mockMvc.perform(get("/api/v1/storage/owner/EVENT/5")).andExpect(status().isOk());
-            verify(getFilesByOwnerPort).getByOwner(5, "EVENT", StorageRequester.anonymous());
-        }
-
-        @Test
-        @DisplayName("GET /{id}/url of an organizer document → 401 with STORAGE_AUTHENTICATION_REQUIRED")
-        void url_private_unauthorized() throws Exception {
-            when(generatePublicUrlPort.generate(eq(10), any())).thenThrow(new UnauthorizedException(
-                    "STORAGE_AUTHENTICATION_REQUIRED", "Authentication is required to access this file"));
-
-            mockMvc.perform(get("/api/v1/storage/10/url"))
-                    .andExpect(status().isUnauthorized())
-                    .andExpect(jsonPath("$.code").value("STORAGE_AUTHENTICATION_REQUIRED"));
+        @DisplayName("GET /{id}, /{id}/url and /owner/** → 401 before reaching the use cases")
+        void reads_unauthorized() throws Exception {
+            mockMvc.perform(get("/api/v1/storage/10")).andExpect(status().isUnauthorized());
+            mockMvc.perform(get("/api/v1/storage/10/url")).andExpect(status().isUnauthorized());
+            mockMvc.perform(get("/api/v1/storage/owner/EVENT/5")).andExpect(status().isUnauthorized());
+            verifyNoInteractions(getFilePort, generatePublicUrlPort, getFilesByOwnerPort);
         }
     }
 
     @Nested
     @DisplayName("Authenticated")
     class Authenticated {
+
+        @Test
+        @DisplayName("other user GET /{id} of a public file → 200, use case called with the principal")
+        void getFile_public_ok() throws Exception {
+            when(getFilePort.getById(eq(10), any())).thenReturn(StoredFileResponse.builder().storedFileId(10).build());
+
+            mockMvc.perform(get("/api/v1/storage/10").with(user(OTHER)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.storedFileId").value(10));
+            verify(getFilePort).getById(10, StorageRequester.of(99, "ORGANIZER"));
+        }
+
+        @Test
+        @DisplayName("other user GET /owner/** → listing filtered for the principal")
+        void getByOwner_passesPrincipal() throws Exception {
+            when(getFilesByOwnerPort.getByOwner(any(), any(), any())).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/v1/storage/owner/EVENT/5").with(user(OTHER))).andExpect(status().isOk());
+            verify(getFilesByOwnerPort).getByOwner(5, "EVENT", StorageRequester.of(99, "ORGANIZER"));
+        }
+
+        @Test
+        @DisplayName("other user GET /{id}/url of an organizer document → 403 with STORAGE_ACCESS_DENIED")
+        void url_private_forbidden() throws Exception {
+            when(generatePublicUrlPort.generate(eq(10), any())).thenThrow(
+                    new ForbiddenException("STORAGE_ACCESS_DENIED", "You do not have access to this file"));
+
+            mockMvc.perform(get("/api/v1/storage/10/url").with(user(OTHER)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("STORAGE_ACCESS_DENIED"));
+        }
 
         @Test
         @DisplayName("owner POST /upload → requester is the principal; ownerEntity params are ignored")
@@ -176,7 +185,7 @@ class StorageControllerSecurityTest {
     @Test
     @DisplayName("GET /{id} with a non-numeric id → 400 INVALID_PARAMETER without echoing the value")
     void typeMismatch_badRequest() throws Exception {
-        mockMvc.perform(get("/api/v1/storage/abc<script>"))
+        mockMvc.perform(get("/api/v1/storage/abc<script>").with(user(OWNER)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"))
                 .andExpect(jsonPath("$.message").value("Invalid value for parameter 'fileId'"));

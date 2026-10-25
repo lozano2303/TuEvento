@@ -23,6 +23,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Every endpoint requires authentication (SecurityConfig). Access to each file is decided by
+ * StorageAccessPolicy inside the use cases; the controller only passes the authenticated user.
+ */
 @RestController
 @RequestMapping("/api/v1/storage")
 @RequiredArgsConstructor
@@ -65,7 +69,7 @@ public class StorageController {
         return ResponseEntity.ok(ApiResponse.ok("File deleted successfully"));
     }
 
-    @Operation(summary = "Get file info — public files for anyone, private files for owner or ADMIN",
+    @Operation(summary = "Get file info — public categories for any user, private files for owner or ADMIN",
                description = "Errors: STORAGE_AUTHENTICATION_REQUIRED (401), STORAGE_ACCESS_DENIED (403), FILE_NOT_FOUND (404)")
     @GetMapping("/{fileId}")
     public ResponseEntity<ApiResponse<StoredFileResponse>> getFile(@PathVariable Integer fileId,
@@ -84,7 +88,7 @@ public class StorageController {
                 getFilesByOwnerPort.getByOwner(ownerEntityId, ownerEntityType, toRequester(principal))));
     }
 
-    @Operation(summary = "Generate presigned URL — public files for anyone, private files for owner or ADMIN",
+    @Operation(summary = "Generate presigned URL — public categories for any user, private files for owner or ADMIN",
                description = "Errors: STORAGE_AUTHENTICATION_REQUIRED (401), STORAGE_ACCESS_DENIED (403), "
                        + "FILE_NOT_FOUND (404), S3_PRESIGN_FAILED (400)")
     @GetMapping("/{fileId}/url")
