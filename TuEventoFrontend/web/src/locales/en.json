@@ -1193,6 +1193,13 @@
       "resendError": "Connection error when resending activation code",
       "enterEmailResend": "Please enter your email to resend the activation code."
     },
+    "oauthErrors": {
+      "cancelled": "You cancelled the social sign-in.",
+      "failed": "We couldn't sign you in with the social network. Please try again.",
+      "facebookFailed": "We couldn't sign you in with Facebook. Please try again.",
+      "locked": "Your account is temporarily locked. Please try again later.",
+      "deleted": "This account does not exist."
+    },
     "modals": {
       "termsTitle": "Terms and Conditions of Use",
       "understood": "Understood",

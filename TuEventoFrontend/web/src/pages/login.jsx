@@ -17,6 +17,17 @@ import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
+// oauth_error codes sent by GET /auth/oauth/{provider}/callback → i18n key.
+// ACCOUNT_DEACTIVATED opens the reactivation modal instead; unknown codes use the generic message.
+const OAUTH_ERROR_MESSAGES = {
+  OAUTH_CANCELLED: 'login.oauthErrors.cancelled',
+  OAUTH_FAILED: 'login.oauthErrors.failed',
+  FACEBOOK_OAUTH_FAILED: 'login.oauthErrors.facebookFailed',
+  ACCOUNT_LOCKED: 'login.oauthErrors.locked',
+  ACCOUNT_BLOCKED: 'login.errors.accountBlocked',
+  ACCOUNT_DELETED: 'login.oauthErrors.deleted',
+};
+
 /**
  * GoogleButton — botón visualmente idéntico al de Facebook.
  *
@@ -90,6 +101,21 @@ export default function Login() {
   // ─── OAuth2 / sesión activa ───────────────────────────────────────────────
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
+
+    // The OAuth callback redirects here with oauth_error=<code> when the provider was
+    // cancelled or the sign-in was rejected (blocked, deactivated, ...).
+    const oauthError = urlParams.get('oauth_error');
+    if (oauthError) {
+      sessionStorage.removeItem('oauth_state');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      if (oauthError === 'ACCOUNT_DEACTIVATED') {
+        setShowReactivationModal(true);
+      } else {
+        setError(t(OAUTH_ERROR_MESSAGES[oauthError] ?? 'login.oauthErrors.failed'));
+      }
+      return;
+    }
+
     const token = urlParams.get('token');
     const userID = urlParams.get('userID');
     const role = urlParams.get('role');

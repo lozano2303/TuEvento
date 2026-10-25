@@ -1191,6 +1191,13 @@
       "resendError": "Erro de conexão ao reenviar código de ativação",
       "enterEmailResend": "Por favor, digite seu e-mail para reenviar o código de ativação."
     },
+    "oauthErrors": {
+      "cancelled": "Você cancelou o login com a rede social.",
+      "failed": "Não foi possível entrar com a rede social. Tente novamente.",
+      "facebookFailed": "Não foi possível entrar com o Facebook. Tente novamente.",
+      "locked": "Sua conta está bloqueada temporariamente. Tente novamente mais tarde.",
+      "deleted": "Esta conta não existe."
+    },
     "modals": {
       "termsTitle": "Termos e Condições de Uso",
       "understood": "Entendido",
