@@ -91,7 +91,7 @@ public class RequestRefundUseCaseImpl {
         if (refundable.isPartial()) {
             Order order = orderRepository.findById(payment.getOrderId())
                 .orElseThrow(() -> new IllegalStateException("Order not found for payment " + paymentId));
-            refundUnusedTicketsToWallet(payment, order, refundable, reason,
+            refundUnusedTicketsToWallet(payment, order, reason,
                 WalletReferenceEntityType.ORDER, order.getOrderId(), "partial-refund-payment-" + paymentId);
             return;
         }
@@ -146,7 +146,7 @@ public class RequestRefundUseCaseImpl {
             return;
         }
         if (refundable.isPartial()) {
-            refundUnusedTicketsToWallet(payment, order, refundable, reason,
+            refundUnusedTicketsToWallet(payment, order, reason,
                 WalletReferenceEntityType.EVENT_CANCELLATION, eventId, "event-cancel-refund-payment-" + paymentId);
             return;
         }
@@ -181,10 +181,21 @@ public class RequestRefundUseCaseImpl {
      * sin usar vuelve al comprador, como crédito en su wallet (idempotente por clave).
      * Los tickets sin usar pasan a REFUNDED, los usados se conservan, y el pago sigue
      * APPROVED porque la parte usada sí se cobró.
+     *
+     * Se acredita exactamente lo que confirmRefund marcó como REFUNDED (no el cálculo
+     * previo): los tickets quedan bloqueados en esta transacción desde getRefundableTickets,
+     * así que un escaneo concurrente espera y no puede colarse entre el cálculo y el crédito.
      */
-    private void refundUnusedTicketsToWallet(Payment payment, Order order, RefundableTicketsSummary refundable,
-                                             String reason, WalletReferenceEntityType referenceType,
+    private void refundUnusedTicketsToWallet(Payment payment, Order order, String reason,
+                                             WalletReferenceEntityType referenceType,
                                              Long referenceId, String idempotencyKey) {
+        RefundableTicketsSummary refundable = confirmRefundUseCase.confirmRefund(order.getOrderId());
+        if (refundable.isNothingToRefund()) {
+            log.warn("Partial refund skipped: no unused tickets left on order {} (paymentId={})",
+                order.getOrderId(), payment.getPaymentId());
+            return;
+        }
+
         String detail = String.format("%s (reembolso parcial: %d de %d tickets sin usar)",
             reason, refundable.refundableCount(), refundable.totalCount());
 
@@ -194,8 +205,6 @@ public class RequestRefundUseCaseImpl {
             .reason(detail)
             .requestedAt(LocalDateTime.now())
             .build());
-
-        confirmRefundUseCase.confirmRefund(order.getOrderId());
 
         creditWalletUseCase.execute(order.getUserId(), refundable.amount(), referenceType, referenceId,
             detail, idempotencyKey);

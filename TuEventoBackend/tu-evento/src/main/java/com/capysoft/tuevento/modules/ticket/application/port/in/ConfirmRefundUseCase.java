@@ -14,6 +14,8 @@ public interface ConfirmRefundUseCase {
 
     /**
      * Calcula qué tickets de la orden son reembolsables (PAID) y cuánto suman.
+     * Bloquea los tickets hasta el fin de la transacción del llamador, para que nadie
+     * los use (escaneo/check-in) entre este cálculo y el reembolso.
      *
      * @param orderId ID de la orden
      */
@@ -25,6 +27,7 @@ public interface ConfirmRefundUseCase {
      * ticket en su estado real (USED o REFUNDED).
      *
      * @param orderId ID de la orden a reembolsar
+     * @return lo que realmente se reembolsó (tickets que pasaron a REFUNDED y su importe)
      */
-    void confirmRefund(Long orderId);
+    RefundableTicketsSummary confirmRefund(Long orderId);
 }

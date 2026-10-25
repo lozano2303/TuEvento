@@ -25,7 +25,8 @@ public class CheckinTicketUseCaseImpl {
     
     @Transactional
     public TicketCheckinResponse execute(Long ticketId, Long validatedBy) {
-        Ticket ticket = ticketRepository.findById(ticketId)
+        // Lectura con bloqueo: no se puede usar un ticket mientras se reembolsa (y viceversa)
+        Ticket ticket = ticketRepository.findByIdForUpdate(ticketId)
             .orElseThrow(() -> new TicketNotFoundException(ticketId));
         
         // Validar que el ticket pueda hacer check-in

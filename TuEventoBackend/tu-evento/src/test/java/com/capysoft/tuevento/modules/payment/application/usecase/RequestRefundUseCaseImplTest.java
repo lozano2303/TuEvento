@@ -231,6 +231,7 @@ class RequestRefundUseCaseImplTest {
             when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
             when(confirmRefundUseCase.getRefundableTickets(ORDER_ID)).thenReturn(partial);
+            when(confirmRefundUseCase.confirmRefund(ORDER_ID)).thenReturn(partial);
 
             useCase.execute(PAYMENT_ID, REASON);
 
@@ -246,6 +247,37 @@ class RequestRefundUseCaseImplTest {
             verify(refundRepository, times(2)).save(refunds.capture());
             assertThat(refunds.getAllValues()).extracting(Refund::getStatus)
                     .containsExactly(RefundStatus.REQUESTED, RefundStatus.PROCESSED);
+        }
+
+        @Test
+        @DisplayName("se acredita lo realmente reembolsado, no el cálculo previo")
+        void execute_partial_creditsWhatWasActuallyRefunded() {
+            when(paymentRepository.findById(PAYMENT_ID))
+                    .thenReturn(Optional.of(payment(PaymentStatus.APPROVED, "80000", "0")));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
+            when(confirmRefundUseCase.getRefundableTickets(ORDER_ID))
+                    .thenReturn(new RefundableTicketsSummary(new BigDecimal("100000"), "COP", 2, 3));
+            when(confirmRefundUseCase.confirmRefund(ORDER_ID)).thenReturn(partial);
+
+            useCase.execute(PAYMENT_ID, REASON);
+
+            verify(creditWalletUseCase).execute(eq(USER_ID), eq(new BigDecimal("50000")),
+                    eq(WalletReferenceEntityType.ORDER), eq(ORDER_ID), anyString(), anyString());
+        }
+
+        @Test
+        @DisplayName("si al confirmar ya no queda ningún ticket sin usar → no acredita nada")
+        void execute_partial_nothingLeftAtConfirmation_creditsNothing() {
+            when(paymentRepository.findById(PAYMENT_ID))
+                    .thenReturn(Optional.of(payment(PaymentStatus.APPROVED, "80000", "0")));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
+            when(confirmRefundUseCase.getRefundableTickets(ORDER_ID)).thenReturn(partial);
+            when(confirmRefundUseCase.confirmRefund(ORDER_ID)).thenReturn(allUsed);
+
+            useCase.execute(PAYMENT_ID, REASON);
+
+            verifyNoInteractions(creditWalletUseCase, paymentGatewayPort);
+            verify(refundRepository, never()).save(any());
         }
 
         @Test
@@ -270,6 +302,7 @@ class RequestRefundUseCaseImplTest {
             when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
             when(confirmRefundUseCase.getRefundableTickets(ORDER_ID)).thenReturn(partial);
+            when(confirmRefundUseCase.confirmRefund(ORDER_ID)).thenReturn(partial);
 
             useCase.executeToWallet(PAYMENT_ID, EVENT_ID, REASON);
 
