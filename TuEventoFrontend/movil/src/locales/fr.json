@@ -1803,6 +1803,7 @@
   "mobileSeats": {
     "sectionSoldOut": "Il n'y a plus de places disponibles dans cette section",
     "loadError": "Impossible de charger les places",
+    "loadingSeats": "Chargement des places…",
     "wsDisconnected": "Connexion en temps réel perdue, reconnexion...",
     "reserveError": "Impossible de réserver la place, réessayez",
     "releaseError": "Impossible de libérer la place, réessayez",
