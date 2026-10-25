@@ -62,15 +62,17 @@ public class LoginUseCase implements LoginPort {
         }
 
         // Check lockout first — if expired, it auto-unblocks the user before status is evaluated
-        checkLockout(user);
+        boolean unlockedNow = checkLockout(user);
 
-        // Re-fetch credentials so user status reflects any auto-unblock done above
-        credentials = loginCredentialsRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "Invalid email or password"));
-        user = credentials.getUser();
+        // El desbloqueo corre en su propia transacción (REQUIRES_NEW): volver a leer al usuario
+        // aquí devolvería la copia en caché de esta transacción, todavía BLOCKED. Si se acaba de
+        // desbloquear, el estado real ya es ACTIVE.
+        String statusCode = user.getUserStatus().getCode();
+        if (unlockedNow && "BLOCKED".equals(statusCode)) {
+            statusCode = "ACTIVE";
+        }
 
         // Verify user status for blocked/inactive/deleted accounts
-        String statusCode = user.getUserStatus().getCode();
         if ("BLOCKED".equals(statusCode)) {
             throw new BusinessException("ACCOUNT_BLOCKED",
                     "Tu cuenta ha sido bloqueada. Por favor contacta a soporte.");
@@ -122,17 +124,19 @@ public class LoginUseCase implements LoginPort {
                 .build();
     }
 
-    private void checkLockout(User user) {
-        accountLockoutRepository.findByUserId(user.getUserId()).ifPresent(lockout -> {
-            if (lockout.getLockedUntil() != null) {
-                if (lockout.getLockedUntil().isAfter(LocalDateTime.now())) {
-                    throw new BusinessException("ACCOUNT_LOCKED",
-                            "Cuenta bloqueada temporalmente. Por favor intenta de nuevo más tarde.");
-                }
-                // Lockout window expired — auto-unblock
-                accountLockoutService.deleteLockout(user.getUserId());
-            }
-        });
+    /** @return true si el bloqueo había vencido y se acaba de levantar */
+    private boolean checkLockout(User user) {
+        AccountLockout lockout = accountLockoutRepository.findByUserId(user.getUserId()).orElse(null);
+        if (lockout == null || lockout.getLockedUntil() == null) {
+            return false;
+        }
+        if (lockout.getLockedUntil().isAfter(LocalDateTime.now())) {
+            throw new BusinessException("ACCOUNT_LOCKED",
+                    "Cuenta bloqueada temporalmente. Por favor intenta de nuevo más tarde.");
+        }
+        // Lockout window expired — auto-unblock
+        accountLockoutService.deleteLockout(user.getUserId());
+        return true;
     }
 
     private void handleFailedAttempt(User user) {
