@@ -5,6 +5,10 @@ export default function Footer() {
   const { t } = useTranslation();
   const year = new Date().getFullYear();
 
+  // El footer no aplica para la interfaz de administración
+  const role = localStorage.getItem('role');
+  if (role === 'ADMIN') return null;
+
   const links = [
     { label: t('navigation.home'),    to: '/' },
     { label: t('navigation.about'),  to: '/nosotros' },

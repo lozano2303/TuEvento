@@ -10,6 +10,15 @@ import java.util.Optional;
 
 public interface OrganizerPetitionJpaRepository extends JpaRepository<OrganizerPetitionEntity, Integer> {
 
+    /** Eagerly loads user + user.role + user.userStatus to avoid LazyInitializationException during domain mapping. */
+    @Query("SELECT o FROM OrganizerPetitionEntity o " +
+           "JOIN FETCH o.user u " +
+           "JOIN FETCH u.role " +
+           "JOIN FETCH u.userStatus " +
+           "LEFT JOIN FETCH o.storedFile " +
+           "WHERE o.organizerPetitionId = :id")
+    Optional<OrganizerPetitionEntity> findByIdEager(@Param("id") Integer id);
+
     @Query("SELECT o FROM OrganizerPetitionEntity o LEFT JOIN FETCH o.storedFile WHERE o.user.userId = :userId AND o.status = 'PENDING'")
     Optional<OrganizerPetitionEntity> findPendingByUserId(@Param("userId") Integer userId);
 

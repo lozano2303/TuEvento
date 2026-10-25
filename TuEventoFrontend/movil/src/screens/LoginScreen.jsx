@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { homeRouteFor } from "../navigation/homeRoute";
 import {
   View, Text, TextInput, TouchableOpacity,
   ScrollView, ActivityIndicator, StatusBar,
@@ -49,7 +50,7 @@ export default function LoginScreen() {
     if (!validate()) return;
     const result = await login(email, password);
     if (result.success) {
-      navigation.navigate("Main");
+      navigation.navigate(homeRouteFor(result.role));
       return;
     }
     // Si la cuenta no está activada, reenviar el código y llevar a verificación
@@ -76,8 +77,8 @@ export default function LoginScreen() {
         const { code } = await oauthService.loginWithFacebook();
         result = await authService.oauthLogin(provider, code);
       }
-      await setSession(result);
-      navigation.navigate("Main");
+      const role = await setSession(result);
+      navigation.navigate(homeRouteFor(role));
     } catch (e) {
       setErrors({ oauth: mapErrorMessage(e.message) });
     } finally {
@@ -270,6 +271,16 @@ export default function LoginScreen() {
               {oauthLoading === "facebook" ? t("login.loading") : `${t("login.signInWith")} ${t("login.facebook")}`}
             </Text>
           </TouchableOpacity>
+
+          {/* Error OAuth */}
+          {errors.oauth && (
+            <View style={{
+              backgroundColor: colors.errorBg, borderRadius: 10,
+              padding: 12, borderWidth: 1, borderColor: colors.error,
+            }}>
+              <Text style={{ color: colors.error, fontSize: 13, textAlign: "center" }}>{errors.oauth}</Text>
+            </View>
+          )}
         </View>
 
         {/* Registro + Términos */}

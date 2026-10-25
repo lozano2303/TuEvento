@@ -59,6 +59,7 @@ export function AuthProvider({ children }) {
       profileId: profile.profileId,
       storedFileId: profile.storedFileId,
     });
+    return decoded.role;
   };
 
   const login = async (email, password) => {
@@ -66,8 +67,8 @@ export function AuthProvider({ children }) {
     setError(null);
     try {
       const data = await authService.login(email, password);
-      await setSession(data);
-      return { success: true };
+      const role = await setSession(data);
+      return { success: true, role };
     } catch (e) {
       const mapped = mapErrorMessage(e.message);
       setError(mapped);

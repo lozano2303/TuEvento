@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
+import React from 'react'
 import { ThemeProvider } from './context/ThemeContext'
 import { NotificationProvider } from './context/NotificationContext'
 import Login from './pages/login'
@@ -18,6 +19,8 @@ import EventDetail from './pages/EventDetail';
 import ReactivateAccountPage from './pages/ReactivateAccountPage';
 import CompleteProfile from './pages/CompleteProfile';
 import AdminEventManagement from './pages/AdminEventManagement';
+import AdminUsers from './pages/AdminUsers';
+import AdminRefunds from './pages/AdminRefunds';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminFinancial from './pages/AdminFinancial';
 import AdminCategoryManagement from './pages/AdminCategoryManagement';
@@ -38,6 +41,8 @@ import Privacidad from './pages/Privacidad';
 import Notifications from './pages/Notifications';
 import SpanishOnlyRoute from './components/common/SpanishOnlyRoute';
 import OrganizerWelcomeModal from './components/common/OrganizerWelcomeModal';
+import RoleRevokedModal from './components/common/RoleRevokedModal';
+import { useNotifications } from './context/NotificationContext';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -57,14 +62,45 @@ function ProtectedRoute({ children, requiredRoles }) {
   return children;
 }
 
+/**
+ * Blocks ADMIN users from accessing regular user/organizer routes.
+ * Redirects them to /admin-panel if they try to navigate there manually.
+ */
+function UserOnlyRoute({ children }) {
+  const token = localStorage.getItem('token');
+  const role  = localStorage.getItem('role');
+
+  if (token && role === 'ADMIN') return <Navigate to="/admin-panel" replace />;
+
+  return children;
+}
+
 function AppContent() {
   const location = useLocation();
+  const { roleRevokedPending, clearRoleRevokedPending } = useNotifications();
+
+  // Check on mount if a role-revoked acknowledgement is pending from a previous session
+  // (e.g. the user was offline when the WS fired, then logged back in)
+  const [showRoleRevokedModal, setShowRoleRevokedModal] = React.useState(() => {
+    const userId = localStorage.getItem('userID');
+    return userId ? localStorage.getItem(`role_revoked_ack_${userId}`) === 'pending' : false;
+  });
+
+  React.useEffect(() => {
+    if (roleRevokedPending) setShowRoleRevokedModal(true);
+  }, [roleRevokedPending]);
+
+  const handleCloseRoleRevokedModal = () => {
+    setShowRoleRevokedModal(false);
+    clearRoleRevokedPending();
+  };
+
   // Rutas sin navbar — incluye el editor con ruta dinámica /events/:id/layout
   const showNavbar = ![
     '/login', '/verification', '/events/create',
     '/reactivate-account', '/complete-profile',
     '/admin-panel', '/admin-events', '/admin-dashboard', '/admin-financial', '/admin-reports',
-    '/admin-categories', '/admin-section-types',
+    '/admin-categories', '/admin-section-types', '/admin-users', '/admin-refunds',
     '/checkout',
   ].includes(location.pathname)
     && !location.pathname.match(/^\/events\/[^/]+\/layout$/)
@@ -73,15 +109,16 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-background">
+      <RoleRevokedModal open={showRoleRevokedModal} onClose={handleCloseRoleRevokedModal} />
       {showNavbar && <Navbar />}
       {/* Bienvenida tras aprobarse la solicitud de organizador (se activa vía WebSocket) */}
       <OrganizerWelcomeModal />
       <div>
         <Routes>
-          <Route path="/" element={<LadingPage />} />
+          <Route path="/" element={<UserOnlyRoute><LadingPage /></UserOnlyRoute>} />
           <Route path="/login" element={<Login />} />
-          <Route path="/nosotros" element={<AboutUs />} />
-          <Route path="/events" element={<Events />} />
+          <Route path="/nosotros" element={<UserOnlyRoute><AboutUs /></UserOnlyRoute>} />
+          <Route path="/events" element={<UserOnlyRoute><Events /></UserOnlyRoute>} />
           <Route path="/events/create" element={
             <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
               <SpanishOnlyRoute>
@@ -99,7 +136,7 @@ function AppContent() {
               <OrganizerEarnings />
             </ProtectedRoute>
           } />
-          <Route path="/events/:eventId" element={<EventDetail />} />
+          <Route path="/events/:eventId" element={<UserOnlyRoute><EventDetail /></UserOnlyRoute>} />
           <Route path="/organizer-petition-form" element={
             <ProtectedRoute>
               <OrganizerPetitionForm />
@@ -135,6 +172,16 @@ function AppContent() {
               <AdminSectionTypeManagement />
             </ProtectedRoute>
           } />
+          <Route path="/admin-users" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminUsers />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-refunds" element={
+            <ProtectedRoute requiredRoles={['ADMIN']}>
+              <AdminRefunds />
+            </ProtectedRoute>
+          } />
           <Route path="/admin-reports" element={
             <ProtectedRoute requiredRoles={['ADMIN']}>
               <AdminReports />
@@ -167,12 +214,12 @@ function AppContent() {
           } />
           <Route path="/profile" element={
             <ProtectedRoute>
-              <ProfilePage />
+              <UserOnlyRoute><ProfilePage /></UserOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/notifications" element={
             <ProtectedRoute>
-              <Notifications />
+              <UserOnlyRoute><Notifications /></UserOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/verification" element={<CodeVerification />} />
@@ -193,22 +240,22 @@ function AppContent() {
           } />
           <Route path="/wallet" element={
             <ProtectedRoute>
-              <WalletPage />
+              <UserOnlyRoute><WalletPage /></UserOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/checkout" element={
             <ProtectedRoute>
-              <Checkout />
+              <UserOnlyRoute><Checkout /></UserOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/checkout/pending/:paymentId" element={
             <ProtectedRoute>
-              <PaymentPending />
+              <UserOnlyRoute><PaymentPending /></UserOnlyRoute>
             </ProtectedRoute>
           } />
           <Route path="/checkout/confirmed/:paymentId" element={
             <ProtectedRoute>
-              <PaymentConfirmation />
+              <UserOnlyRoute><PaymentConfirmation /></UserOnlyRoute>
             </ProtectedRoute>
           } />
         </Routes>

@@ -79,6 +79,7 @@ payment:
   gateway: fake
   fake-gateway:
     url: http://localhost:4001
+    api-key: test-admin-key
   webhook:
     secret: test-webhook-secret
 

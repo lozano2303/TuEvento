@@ -476,7 +476,9 @@ export default function ThemeCustomizeScreen() {
             {t("profile.customizePanel.customizeTheme")}
           </Text>
           {themeName ? (
-            <Text style={[styles.headerSub, { color: colors.accent }]}>{themeName}</Text>
+            <Text style={[styles.headerSub, { color: colors.accent }]}>
+              {t(`mobileTheme.names.${themeName}`, { defaultValue: themeName })}
+            </Text>
           ) : null}
         </View>
 

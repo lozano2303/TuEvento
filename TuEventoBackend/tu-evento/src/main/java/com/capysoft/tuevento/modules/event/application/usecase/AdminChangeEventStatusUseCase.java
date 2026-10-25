@@ -53,7 +53,8 @@ public class AdminChangeEventStatusUseCase implements AdminChangeEventStatusPort
 
     @Override
     @Transactional
-    public EventStatusLogResponse execute(Long eventId, ChangeEventStatusRequest request, Long adminUserId) {
+    public EventStatusLogResponse execute(Long eventId, ChangeEventStatusRequest request, Long adminUserId,
+                                          String cause) {
 
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("EVENT_NOT_FOUND",
@@ -154,6 +155,7 @@ public class AdminChangeEventStatusUseCase implements AdminChangeEventStatusPort
                 .organizerId(event.getUserId())
                 .eventName(event.getEventName())
                 .reason(request.getNewStatus() == EventStatus.REJECTED ? request.getReason() : null)
+                .cause(cause)
                 .build());
 
         return EventStatusLogResponse.builder()

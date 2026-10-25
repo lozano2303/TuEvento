@@ -149,7 +149,8 @@ export default function Login() {
       })();
 
       window.history.replaceState({}, document.title, window.location.pathname);
-      window.location.href = '/';
+      const oauthRole = urlParams.get('role') || '';
+      window.location.href = (oauthRole === 'ADMIN' || localStorage.getItem('userEmail') === 'tuevento.capysoft@gmail.com') ? '/admin-panel' : '/';
       return;
     }
 
@@ -251,7 +252,12 @@ export default function Login() {
     setUserID(formData.userID);
     setView('verification');
   };
-  const handleContinueToHome = () => { setShowLoginSuccessNotification(false); window.location.href = '/'; };
+  const handleContinueToHome = () => {
+    setShowLoginSuccessNotification(false);
+    const role = localStorage.getItem('role');
+    const email = localStorage.getItem('userEmail');
+    window.location.href = (role === 'ADMIN' || email === 'tuevento.capysoft@gmail.com') ? '/admin-panel' : '/';
+  };
   const handleLogout = async () => { 
     await clearAuth(); 
     setUserData(null); 
@@ -329,7 +335,10 @@ export default function Login() {
 
       setUserData({ userId: result.data.userID, alias: result.data.alias, email: googleEmail });
       setShowLoginSuccessNotification(true);
-      setTimeout(() => { window.location.href = '/'; }, 1500);
+      setTimeout(() => {
+        const role = result.data.role || localStorage.getItem('role');
+        window.location.href = (role === 'ADMIN' || googleEmail === 'tuevento.capysoft@gmail.com') ? '/admin-panel' : '/';
+      }, 1500);
     } catch (err) {
       setError(err.message || t('login.errors.googleLoginError'));
     } finally {
@@ -420,7 +429,8 @@ export default function Login() {
           setUserData({ userId: result.data.userID, alias: result.data.alias, fullName: fullName, email: formData.email });
           setShowLoginSuccessNotification(true);
           setTimeout(() => {
-            window.location.href = '/';
+            const role = result.data.role || 'USER';
+            window.location.href = (role === 'ADMIN' || formData.email === 'tuevento.capysoft@gmail.com') ? '/admin-panel' : '/';
           }, 1500);
         } else {
           const msg = result.message || "";

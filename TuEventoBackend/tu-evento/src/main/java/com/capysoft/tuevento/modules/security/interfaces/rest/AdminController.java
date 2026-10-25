@@ -15,7 +15,11 @@ import com.capysoft.tuevento.modules.payment.infrastructure.persistence.reposito
 import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
 import com.capysoft.tuevento.modules.payment.domain.model.RefundStatus;
 import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.tuevento.modules.payment.application.dto.response.AdminRefundResponse;
+import com.capysoft.tuevento.modules.security.application.dto.request.RevokeOrganizerRoleRequest;
 import com.capysoft.tuevento.modules.security.application.dto.response.ActivityItemResponse;
+import com.capysoft.tuevento.modules.security.application.dto.response.AdminUserResponse;
+import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganizerRolePort;
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminDashboardStatsResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminPendingCountsResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerRequestResponse;
@@ -63,6 +67,9 @@ public class AdminController {
     private final GetAdminPendingCountsPort   getAdminPendingCountsPort;
     private final GeneratePublicUrlPort       generatePublicUrlPort;
     private final OrganizerPetitionRepository organizerPetitionRepository;
+
+    // ── Organizer role management ─────────────────────────────────────────────
+    private final RevokeOrganizerRolePort     revokeOrganizerRolePort;
 
     // ── Events ────────────────────────────────────────────────────────────────
     private final GetAdminEventsPort          getAdminEventsPort;
@@ -160,6 +167,22 @@ public class AdminController {
     }
 
     // ═════════════════════════════════════════════════════════════════════════
+    // Organizer role management endpoints
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Operation(summary = "Revoke the ORGANIZER role from a user (downgrades to USER) with a required reason. " +
+               "Cancels their published events, sends in-app + email notification with the reason " +
+               "and pushes a WebSocket role-change signal.")
+    @DeleteMapping("/organizer-users/{userId}/revoke")
+    public ResponseEntity<ApiResponse<Void>> revokeOrganizerRole(
+            @PathVariable Integer userId,
+            @Valid @RequestBody RevokeOrganizerRoleRequest request,
+            @AuthenticationPrincipal SecurityUser principal) {
+        revokeOrganizerRolePort.revoke(userId, request.getReason(), principal.getUserId());
+        return ResponseEntity.ok(ApiResponse.ok("Organizer role revoked successfully"));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
     // Event-management endpoints
     // ═════════════════════════════════════════════════════════════════════════
 
@@ -198,6 +221,7 @@ public class AdminController {
 
         // Collect organizer userIds to resolve names in one query
         var organizerIds = recentEvents.stream()
+                .filter(e -> e.getUserId() != null)
                 .map(e -> e.getUserId().intValue())
                 .distinct()
                 .toList();
@@ -205,13 +229,16 @@ public class AdminController {
         Map<Integer, String> organizerNames = profileJpaRepository
                 .findAllByUserIdIn(organizerIds)
                 .stream()
+                .filter(p -> p.getUserId() != null)
                 .collect(Collectors.toMap(
                         p -> p.getUserId(),
-                        p -> p.getFullName(),
+                        p -> p.getFullName() != null ? p.getFullName() : "Organizador",
                         (a, b) -> a));
 
         for (var ev : recentEvents) {
-            String organizerName = organizerNames.getOrDefault(ev.getUserId().intValue(), "Organizador");
+            String organizerName = ev.getUserId() != null
+                    ? organizerNames.getOrDefault(ev.getUserId().intValue(), "Organizador")
+                    : "Organizador";
             String title = switch (ev.getStatus()) {
                 case PUBLISHED       -> "Event approved and published";
                 case REJECTED        -> "Event rejected";
@@ -271,6 +298,36 @@ public class AdminController {
                 .toList();
 
         return ResponseEntity.ok(ApiResponse.ok("Activity feed retrieved", sorted));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // User management
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Operation(summary = "List users (newest first). ?q= searches alias, name and email; ?role=USER|ORGANIZER|ADMIN filters.")
+    @GetMapping("/users")
+    public ResponseEntity<ApiResponse<List<AdminUserResponse>>> getUsers(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String role,
+            @RequestParam(defaultValue = "100") int limit) {
+        String pattern = (q == null || q.isBlank()) ? "" : "%" + q.trim().toLowerCase() + "%";
+        String roleCode = (role == null || role.isBlank()) ? "" : role.trim().toUpperCase();
+        int size = Math.min(Math.max(limit, 1), 200);
+        return ResponseEntity.ok(ApiResponse.ok("Users retrieved",
+                userJpaRepository.searchForAdmin(pattern, roleCode, PageRequest.of(0, size))));
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // Refunds
+    // ═════════════════════════════════════════════════════════════════════════
+
+    @Operation(summary = "List the most recent refunds with payment breakdown, buyer and event")
+    @GetMapping("/refunds")
+    public ResponseEntity<ApiResponse<List<AdminRefundResponse>>> getRefunds(
+            @RequestParam(defaultValue = "100") int limit) {
+        int size = Math.min(Math.max(limit, 1), 300);
+        return ResponseEntity.ok(ApiResponse.ok("Refunds retrieved",
+                refundJpaRepository.findRecentForAdmin(PageRequest.of(0, size))));
     }
 
     // ═════════════════════════════════════════════════════════════════════════

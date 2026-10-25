@@ -19,7 +19,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 let refreshPromise = null;
 
-async function refreshAccessToken() {
+export async function refreshAccessToken() {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {

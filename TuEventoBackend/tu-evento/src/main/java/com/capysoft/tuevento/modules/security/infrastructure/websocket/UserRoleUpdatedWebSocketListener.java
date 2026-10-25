@@ -12,6 +12,7 @@ import java.util.Map;
 
 /**
  * Avisa al usuario en vivo que su rol cambió (solicitud de organizador aprobada),
+ * (la revocación usa ROLE_REVOKED en /topic/role-change/{userId}, ver OrganizerRoleRevokedListener)
  * para que el cliente renueve el JWT con POST /auth/refresh (el refresh vuelve a
  * leer el rol desde la BD, que es la fuente de verdad).
  *
@@ -29,13 +30,17 @@ public class UserRoleUpdatedWebSocketListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onOrganizerApproved(OrganizerApprovedEvent event) {
-        String topic = "/topic/users/" + event.getUserId() + "/session";
+        sendRoleUpdated(event.getUserId(), ORGANIZER_ROLE);
+    }
+
+    private void sendRoleUpdated(Integer userId, String role) {
+        String topic = "/topic/users/" + userId + "/session";
         try {
-            messagingTemplate.convertAndSend(topic, Map.of("type", "ROLE_UPDATED", "role", ORGANIZER_ROLE));
-            log.debug("[UserRoleUpdated] ROLE_UPDATED sent to {}", topic);
+            messagingTemplate.convertAndSend(topic, Map.of("type", "ROLE_UPDATED", "role", role));
+            log.debug("[UserRoleUpdated] ROLE_UPDATED ({}) sent to {}", role, topic);
         } catch (Exception e) {
             log.error("[UserRoleUpdated] WebSocket push failed (non-breaking): userId={}, error={}",
-                    event.getUserId(), e.getMessage(), e);
+                    userId, e.getMessage(), e);
         }
     }
 }
