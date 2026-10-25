@@ -8,6 +8,7 @@ import com.capysoft.tuevento.modules.ticket.domain.model.Ticket;
 import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
 import com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,9 +26,12 @@ public class GetOrderUseCaseImpl {
     private final TicketRepository ticketRepository;
     
     @Transactional(readOnly = true)
-    public OrderResponse execute(Long orderId) {
+    public OrderResponse execute(Long orderId, Long requesterId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException(orderId));
+        if (!order.isOwnedBy(requesterId)) {
+            throw new AccessDeniedException("You do not have access to this order");
+        }
         
         List<Ticket> tickets = ticketRepository.findByOrderId(orderId);
         List<TicketResponse> ticketResponses = tickets.stream()
