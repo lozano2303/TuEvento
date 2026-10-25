@@ -1,5 +1,7 @@
 package com.capysoft.tuevento.modules.seat.infrastructure.persistence.repository;
 
+import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
+import com.capysoft.tuevento.modules.seat.domain.model.EventSeatSummary;
 import com.capysoft.tuevento.modules.seat.domain.model.Seat;
 import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -82,8 +85,13 @@ public class SeatRepositoryImpl implements SeatRepository {
     }
 
     @Override
-    public boolean existsByEventSectionIdAndStatusNot(Integer eventSectionId, SeatStatus status) {
-        return jpaRepository.existsByEventSectionIdAndStatusNot(eventSectionId, status);
+    public boolean existsByEventSectionIdAndStatusIn(Integer eventSectionId, Collection<SeatStatus> statuses) {
+        return jpaRepository.existsByEventSectionIdAndStatusIn(eventSectionId, statuses);
+    }
+
+    @Override
+    public List<EventSeatSummary> summarizeSeatsByOrganizer(Long organizerId) {
+        return jpaRepository.summarizeSeatsByOrganizer(organizerId, SeatStatus.COURTESY, EventStatus.CANCELLED);
     }
 
     @Override

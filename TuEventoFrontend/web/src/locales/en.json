@@ -1465,7 +1465,11 @@
       },
       "ticketsSold": {
         "label": "Tickets sold",
-        "sub": "Completed transactions"
+        "sub": "Tickets paid or already used"
+      },
+      "potential": {
+        "label": "Potential earnings",
+        "sub": "If every non-courtesy seat is sold"
       },
       "eventsWithSales": {
         "label": "Events with sales",
@@ -1478,14 +1482,17 @@
       "columns": {
         "event": "Event",
         "tickets": "Tickets sold",
-        "revenue": "Collected"
+        "revenue": "Collected",
+        "potential": "Potential",
+        "courtesy": "Courtesy"
       },
-      "total": "Total"
+      "total": "Total",
+      "soldOfPotential": "{{pct}}% of potential"
     },
     "info": {
       "howCalculated": {
         "title": "How is it calculated?",
-        "text": "All approved payments across your events are added up. The amount shown reflects the total charged to attendees."
+        "text": "Revenue adds up the approved payments for your events. Potential is the price of every non-courtesy seat in events that are not cancelled: courtesy seats are never sold, so they only lower the potential."
       },
       "realTime": {
         "title": "Real-time information",
