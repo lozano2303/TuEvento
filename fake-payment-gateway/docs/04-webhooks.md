@@ -165,7 +165,7 @@ class H(BaseHTTPRequestHandler):
 HTTPServer(('0.0.0.0', 9999), H).serve_forever()"
 
 # Terminal 2: CPS apuntando al receptor
-PAYMENT_CALLBACK_URL=http://localhost:9999/ WEBHOOK_SECRET=demo ./mvnw spring-boot:run
+PAYMENT_CALLBACK_URL=http://localhost:9999/ WEBHOOK_SECRET=demo ADMIN_API_KEY=dev-admin-key-change-in-production ./mvnw spring-boot:run
 ```
 
 Responder `500` en el receptor permite observar los reintentos y su registro en la bitácora.

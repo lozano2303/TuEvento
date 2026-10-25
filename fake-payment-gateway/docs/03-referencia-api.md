@@ -41,7 +41,7 @@ X-Api-Key: <valor de ADMIN_API_KEY>
   ```
 
 - Las peticiones `OPTIONS` (preflight de CORS) no requieren clave.
-- CPS no arranca si `ADMIN_API_KEY` está vacía, y registra una advertencia si se usa el valor de desarrollo por defecto.
+- `ADMIN_API_KEY` no tiene valor por defecto: CPS no arranca si falta, está vacía o tiene menos de 16 caracteres, y registra una advertencia si se usa la clave de desarrollo (`dev-admin-key-change-in-production`, la que pasa `docker-compose.yml` en local).
 
 ### 1.2 Por qué el checkout es público
 

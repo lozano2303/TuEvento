@@ -13,7 +13,7 @@ En la primera versión, `/admin/**` no tenía autenticación y el checkout (`pay
    - `/admin/**`: acciones del **comercio** y de QA (listar, reembolsar, cancelar, forzar desenlaces). Exigen la cabecera `X-Api-Key`.
 2. **El reembolso no está en el checkout.** Un pagador no puede reembolsarse a sí mismo; el reembolso es decisión del comercio.
 3. **Interceptor de Spring MVC** (`AdminApiKeyInterceptor`) registrado con el patrón `/admin/**`, en lugar de Spring Security: una sola regla no justifica la dependencia. Se descartó un filtro de servlet porque compararía el `requestURI` crudo, mientras Spring enruta sobre la ruta decodificada y sin `;…`: `/%61dmin/...` o `/admin;x=1/...` evadían la clave. El interceptor se evalúa sobre la misma ruta normalizada que el enrutamiento. Comparación con `MessageDigest.isEqual` (tiempo constante). Las preflight `OPTIONS` pasan sin clave.
-4. **Fallar de forma segura:** la aplicación no arranca con la clave vacía y registra una advertencia si usa el valor de desarrollo por defecto.
+4. **Fallar de forma segura:** la clave no tiene valor por defecto en `application.yml`; la aplicación no arranca si falta, está vacía o tiene menos de 16 caracteres. La clave de desarrollo solo la inyecta explícitamente `docker-compose.yml` en local, y produce una advertencia en el log. Así, un despliegue que olvide configurarla no queda abierto con una clave publicada en el repositorio.
 
 ## Alternativas consideradas
 

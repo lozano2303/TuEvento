@@ -48,7 +48,7 @@ Este punto es central para entender qué es CPS.
 | Comunicación asíncrona saliente | No | **Sí** | Webhooks HTTP POST firmados, 3 intentos con *backoff* en un pool asíncrono, ver [04](04-webhooks.md) |
 | Seguridad de mensajes | No | **Sí** | Firma HMAC-SHA256 en cabecera `X-Signature` con secreto compartido |
 | Control de acceso | No | **Sí** | `/admin/**` protegido con API key (`X-Api-Key`), comparación en tiempo constante |
-| Pruebas automatizadas propias | No aplica | **Sí** | 52 pruebas (dominio, casos de uso, firma, reintentos, seguridad, contrato HTTP) con `./mvnw test` |
+| Pruebas automatizadas propias | No aplica | **Sí** | 53 pruebas (dominio, casos de uso, firma, reintentos, seguridad, contrato HTTP) con `./mvnw test` |
 | Auditoría | No | **Sí** | Cada intento de entrega queda en `webhook_delivery_logs` (intento, HTTP status, error, fecha) |
 | Interfaz de usuario | No | **Sí** | Checkout hospedado `pay.html` con *polling*, integración con popup web y WebView móvil |
 | Despliegue independiente | No | **Sí** | `Dockerfile` multi-etapa, servicio propio en `docker-compose.yml` |
