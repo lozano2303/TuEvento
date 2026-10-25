@@ -312,7 +312,9 @@
     "rememberMe": "Recordarme",
     "noAccount": "¿No tienes cuenta?",
     "hasAccount": "¿Ya tienes cuenta?",
-    "sessionExpired": "Tu sesión expiró, iniciá sesión de nuevo"
+    "sessionExpired": "Tu sesión expiró, iniciá sesión de nuevo",
+    "tooManyRequests": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
+    "tooManyRequestsWait": "Demasiados intentos. Inténtalo de nuevo en {{seconds}} s."
   },
   "events": {
     "title": "Eventos",
@@ -1190,6 +1192,13 @@
       "googleLoginError": "No se pudo iniciar sesión con Google. Intenta de nuevo.",
       "resendError": "Error de conexión al reenviar código de activación",
       "enterEmailResend": "Por favor, ingresa tu correo electrónico para reenviar el código de activación."
+    },
+    "oauthErrors": {
+      "cancelled": "Cancelaste el inicio de sesión con la red social.",
+      "failed": "No pudimos iniciar sesión con la red social. Inténtalo de nuevo.",
+      "facebookFailed": "No pudimos iniciar sesión con Facebook. Inténtalo de nuevo.",
+      "locked": "Tu cuenta está bloqueada temporalmente. Inténtalo de nuevo más tarde.",
+      "deleted": "Esta cuenta no existe."
     },
     "modals": {
       "termsTitle": "Términos y Condiciones de Uso",

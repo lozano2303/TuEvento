@@ -15,6 +15,7 @@ import {
 import Tooltip from '../components/common/Tooltip';
 import ThemeCustomizePanel from '../components/theme/ThemeCustomizePanel';
 import DeactivateAccountModal from '../components/common/DeactivateAccountModal';
+import { getAccessToken } from '../services/tokenStore.js';
 
 // ── Previews de los 8 temas del sistema (colores literales solo para las
 //    muestras de vista previa — no se usan en la UI de la página) ─────────────
@@ -151,7 +152,7 @@ const ProfilePage = () => {
 
   // ── Carga temas ────────────────────────────────────────────────────────────
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     if (!token) return;
     
     // Obtener el idioma actual del usuario para cargar temas traducidos
@@ -194,7 +195,7 @@ const ProfilePage = () => {
     if (languages.length === 0) return; // Esperar a que los idiomas se carguen
     
     const loadProfileWithUserLanguage = async () => {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const userId = localStorage.getItem('userID');
       if (!token || !userId) return;
       

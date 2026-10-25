@@ -3,15 +3,22 @@ package com.capysoft.tuevento.modules.security.interfaces.rest;
 import com.capysoft.tuevento.modules.security.application.dto.request.*;
 import com.capysoft.tuevento.modules.security.application.dto.response.*;
 import com.capysoft.tuevento.modules.security.application.port.in.*;
+import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+
+import com.capysoft.tuevento.shared.domain.exception.UnauthorizedException;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -45,6 +52,7 @@ public class AuthController {
     private final GoogleAuthPort      googleAuthPort;
     private final RequestReactivationPort requestReactivationPort;
     private final ConfirmReactivationPort confirmReactivationPort;
+    private final RefreshTokenCookie  refreshTokenCookie;
 
     /** Base OAuth provider authorization URLs (without state) — built by OauthConfig. */
     private final Map<String, String> oauthAuthorizationUrls;
@@ -75,15 +83,22 @@ public class AuthController {
     @Operation(summary = "Login with email and password")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(
-            @Valid @RequestBody LoginRequest request) {
+            @Valid @RequestBody LoginRequest request,
+            @RequestHeader(value = RefreshTokenCookie.AUTH_MODE_HEADER, required = false) String authMode) {
         LoginResponse response = loginPort.login(request);
-        return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
+        return loginResult(response, authMode, "Login successful");
     }
 
     @Operation(summary = "Logout and revoke current session")
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
-            @Valid @RequestBody LogoutRequest request) {
+            @Valid @RequestBody LogoutRequest request,
+            @RequestHeader(value = RefreshTokenCookie.AUTH_MODE_HEADER, required = false) String authMode,
+            HttpServletResponse servletResponse) {
+        // La cookie se borra antes de revocar: aunque la sesión ya no exista, la web queda deslogueada
+        if (RefreshTokenCookie.isCookieMode(authMode)) {
+            servletResponse.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.clear());
+        }
         logoutPort.logout(request);
         return ResponseEntity.ok(ApiResponse.ok("Logged out successfully"));
     }
@@ -91,9 +106,25 @@ public class AuthController {
     @Operation(summary = "Refresh access token using a valid refresh token")
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<RefreshTokenResponse>> refresh(
-            @Valid @RequestBody RefreshTokenRequest request) {
-        RefreshTokenResponse response = refreshTokenPort.refresh(request);
-        return ResponseEntity.ok(ApiResponse.ok("Token refreshed successfully", response));
+            @RequestBody(required = false) RefreshTokenRequest request,
+            @CookieValue(name = RefreshTokenCookie.NAME, required = false) String cookieToken,
+            @RequestHeader(value = RefreshTokenCookie.AUTH_MODE_HEADER, required = false) String authMode) {
+        boolean cookieMode = RefreshTokenCookie.isCookieMode(authMode);
+        // El cuerpo tiene prioridad: la web lo usa una sola vez para migrar un token antiguo de localStorage
+        String token = request != null && StringUtils.hasText(request.getRefreshToken())
+                ? request.getRefreshToken()
+                : (cookieMode ? cookieToken : null);
+        if (!StringUtils.hasText(token)) {
+            throw new UnauthorizedException("REFRESH_TOKEN_REQUIRED", "Refresh token is required");
+        }
+
+        RefreshTokenResponse response = refreshTokenPort.refresh(new RefreshTokenRequest(token));
+        if (!cookieMode) {
+            return ResponseEntity.ok(ApiResponse.ok("Token refreshed successfully", response));
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.create(response.getRefreshToken()))
+                .body(ApiResponse.ok("Token refreshed successfully", response.toBuilder().refreshToken(null).build()));
     }
 
     @Operation(summary = "Request a password recovery code by email")
@@ -159,8 +190,9 @@ public class AuthController {
                    user profile, creates or links the user account, issues a JWT + refresh token.
 
                    Web clients (browser-based): respond with a 302 redirect to the frontend URI
-                   encoded in the state param carrying token, refreshToken, userID, alias, role,
-                   oauth=true, state (original CSRF token), needsOnboarding and profileId.
+                   encoded in the state param carrying userID, alias, role, oauth=true, state
+                   (original CSRF token), needsOnboarding and profileId. The refresh token is set
+                   as an httpOnly cookie; the access token is obtained with POST /auth/refresh.
 
                    Mobile clients (Expo / React Native): pass response_format=json to receive
                    a 200 JSON response with the same LoginResponse payload instead of a redirect,
@@ -168,7 +200,7 @@ public class AuthController {
 
                    Security notes:
                    - The open-redirect whitelist (oauthAllowedFrontendRedirectUris) applies exclusively
-                     to the 302 branch, where the token travels as a URL fragment and the destination
+                     to the 302 branch, which issues the refresh cookie and whose destination
                      must be controlled.  In the json branch the token travels in the response body;
                      cross-origin read access from a browser is blocked by CORS
                      (app.cors.allowed-origins whitelist), but CORS does NOT protect against a
@@ -179,53 +211,61 @@ public class AuthController {
                        2. The authorization code is single-use and expires in minutes (OAuth2 protocol
                           property — no extra code needed)
                      Do not rely on CORS as a substitute for HTTPS in the json branch.
+
+                   Errors never surface as raw JSON in the browser: when the provider returns
+                   error (e.g. the user cancelled) or no code, or sign-in fails, the browser is
+                   redirected to the frontend with oauth_error=<code>: OAUTH_CANCELLED,
+                   OAUTH_FAILED, FACEBOOK_OAUTH_FAILED, ACCOUNT_LOCKED, ACCOUNT_BLOCKED,
+                   ACCOUNT_DEACTIVATED, ACCOUNT_DELETED. With response_format=json they are
+                   returned as 400 with the same code.
                    """)
     @GetMapping("/oauth/{provider}/callback")
     public ResponseEntity<?> oauthCallback(
             @PathVariable String provider,
-            @RequestParam String code,
+            @RequestParam(required = false) String code,
             @RequestParam(required = false) String state,
+            @RequestParam(required = false) String error,
             @RequestParam(required = false, name = "response_format") String responseFormat) {
 
-        LoginResponse response = oauthLoginPort.login(provider, code);
+        boolean jsonResponse = "json".equalsIgnoreCase(responseFormat);
+        CallbackTarget target = resolveCallbackTarget(state);
+
+        if (error != null || code == null || code.isBlank()) {
+            String errorCode = "access_denied".equals(error) ? OAUTH_CANCELLED : OAUTH_FAILED;
+            log.info("OAuth callback without code — provider={} error={}", provider, error);
+            return oauthError(jsonResponse, target, errorCode, "Social sign-in was cancelled or not authorized");
+        }
+
+        LoginResponse response;
+        try {
+            response = oauthLoginPort.login(provider, code);
+        } catch (BusinessException e) {
+            log.info("OAuth sign-in rejected — provider={} code={}", provider, e.getCode());
+            return oauthError(jsonResponse, target, e.getCode(), e.getMessage());
+        } catch (RuntimeException e) {
+            log.error("OAuth sign-in failed — provider={}", provider, e);
+            return oauthError(jsonResponse, target, OAUTH_FAILED, "Social sign-in failed");
+        }
 
         // ── Mobile JSON response ──────────────────────────────────────────────
         // Native apps (Expo) pass response_format=json.  They are not subject to
         // browser Same-Origin Policy, so CORS does not apply.  The token reaches
         // the app directly and is stored in AsyncStorage, never in a URL.
-        if ("json".equalsIgnoreCase(responseFormat)) {
+        if (jsonResponse) {
             log.debug("OAuth callback (json) — provider={} userId={}", provider, response.getUserId());
             return ResponseEntity.ok(ApiResponse.ok("OAuth login successful", response));
         }
 
         // ── Browser 302 redirect ──────────────────────────────────────────────
-        // The token travels in the redirect URL, so the destination MUST be on
-        // the whitelist to prevent open-redirect token theft.
-        // Recover the frontend redirect URI and original CSRF token from the
-        // composite state value that the OAuth provider returned unchanged.
-        String frontendUri   = oauthAllowedFrontendRedirectUris.iterator().next(); // safe default
-        String originalState = null;
+        // The destination MUST be on the whitelist: the redirect starts a session
+        // (refresh cookie) and carries user data, so it cannot go to arbitrary sites.
+        String frontendUri   = target.frontendUri();
+        String originalState = target.originalState();
 
-        if (state != null && !state.isBlank()) {
-            try {
-                @SuppressWarnings("unchecked")
-                Map<String, String> parsed = objectMapper.readValue(state, Map.class);
-                originalState = parsed.get("s");
-                String requestedUri = parsed.get("r");
-                if (requestedUri != null && oauthAllowedFrontendRedirectUris.contains(requestedUri)) {
-                    frontendUri = requestedUri;
-                } else if (requestedUri != null) {
-                    log.warn("OAuth callback received unlisted frontend_redirect_uri '{}' — using default", requestedUri);
-                }
-            } catch (Exception e) {
-                log.warn("OAuth callback: could not parse composite state '{}' — using defaults", state);
-            }
-        }
-
+        // Los tokens no viajan en la URL: el refresh token va en la cookie httpOnly y
+        // la web obtiene el access token con un POST /auth/refresh al cargar.
         StringBuilder redirect = new StringBuilder(frontendUri)
                 .append("?oauth=true")
-                .append("&token=").append(enc(response.getAccessToken()))
-                .append("&refreshToken=").append(enc(response.getRefreshToken()))
                 .append("&userID=").append(response.getUserId())
                 .append("&alias=").append(enc(response.getAlias()))
                 .append("&role=").append(enc(response.getRole()))
@@ -242,15 +282,17 @@ public class AuthController {
 
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(redirect.toString()))
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.create(response.getRefreshToken()))
                 .build();
     }
 
         @Operation(summary = "Authenticate with a Google ID Token from Google Identity Services (GSI)")
     @PostMapping("/google")
     public ResponseEntity<ApiResponse<LoginResponse>> googleAuth(
-            @Valid @RequestBody GoogleAuthRequest request) {
+            @Valid @RequestBody GoogleAuthRequest request,
+            @RequestHeader(value = RefreshTokenCookie.AUTH_MODE_HEADER, required = false) String authMode) {
         LoginResponse response = googleAuthPort.authenticate(request);
-        return ResponseEntity.ok(ApiResponse.ok("Login con Google exitoso", response));
+        return loginResult(response, authMode, "Login con Google exitoso");
     }
 
     @Operation(summary = "Resend activation code to email")
@@ -281,6 +323,72 @@ public ResponseEntity<ApiResponse<Void>> confirmReactivation(
 }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    private static final String OAUTH_CANCELLED = "OAUTH_CANCELLED";
+    private static final String OAUTH_FAILED    = "OAUTH_FAILED";
+
+    /** Whitelisted frontend URI and the frontend's original CSRF token, recovered from the composite state. */
+    private record CallbackTarget(String frontendUri, String originalState) {}
+
+    /**
+     * Recovers the frontend redirect URI and original CSRF token from the composite state
+     * value that the OAuth provider returned unchanged. Falls back to the first whitelisted
+     * URI when the state is missing, unparseable or names an unlisted URI.
+     */
+    private CallbackTarget resolveCallbackTarget(String state) {
+        String frontendUri   = oauthAllowedFrontendRedirectUris.iterator().next(); // safe default
+        String originalState = null;
+
+        if (state != null && !state.isBlank()) {
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, String> parsed = objectMapper.readValue(state, Map.class);
+                originalState = parsed.get("s");
+                String requestedUri = parsed.get("r");
+                if (requestedUri != null && oauthAllowedFrontendRedirectUris.contains(requestedUri)) {
+                    frontendUri = requestedUri;
+                } else if (requestedUri != null) {
+                    log.warn("OAuth callback received unlisted frontend_redirect_uri '{}' — using default", requestedUri);
+                }
+            } catch (Exception e) {
+                log.warn("OAuth callback: could not parse composite state '{}' — using defaults", state);
+            }
+        }
+        return new CallbackTarget(frontendUri, originalState);
+    }
+
+    /**
+     * Mobile (json): 400 with the error code. Browser: 302 back to the frontend login page
+     * with oauth_error=<code>, so the user sees a message instead of a raw error page.
+     */
+    private ResponseEntity<?> oauthError(boolean jsonResponse, CallbackTarget target,
+                                         String errorCode, String message) {
+        if (jsonResponse) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(errorCode, message));
+        }
+        StringBuilder redirect = new StringBuilder(target.frontendUri())
+                .append("?oauth_error=").append(enc(errorCode));
+        if (target.originalState() != null && !target.originalState().isBlank()) {
+            redirect.append("&state=").append(enc(target.originalState()));
+        }
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(redirect.toString()))
+                .build();
+    }
+
+    /**
+     * En modo cookie (web) el refresh token sale en la cookie httpOnly y no en el cuerpo;
+     * sin la cabecera (móvil) la respuesta no cambia.
+     */
+    private ResponseEntity<ApiResponse<LoginResponse>> loginResult(
+            LoginResponse response, String authMode, String message) {
+        if (!RefreshTokenCookie.isCookieMode(authMode)) {
+            return ResponseEntity.ok(ApiResponse.ok(message, response));
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.create(response.getRefreshToken()))
+                .body(ApiResponse.ok(message, response.toBuilder().refreshToken(null).build()));
+    }
 
     /**
      * Validates the requested frontend redirect URI against the whitelist.

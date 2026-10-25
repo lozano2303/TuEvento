@@ -10,21 +10,24 @@
 	</parent>
 	<groupId>com.capysoft</groupId>
 	<artifactId>tu-evento</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
-	<url/>
+	<version>1.0.1</version>
+	<name>TuEvento API</name>
+	<description>API principal de TuEvento (CapySoft): gestión de eventos, layouts de venues, venta de boletas, pagos y validación de entradas con QR.</description>
+	<url>https://github.com/lozano2303/TuEvento</url>
 	<licenses>
-		<license/>
+		<license>
+			<name>Propietaria</name>
+			<comments>Copyright (c) CapySoft. Todos los derechos reservados.</comments>
+			<distribution>repo</distribution>
+		</license>
 	</licenses>
-	<developers>
-		<developer/>
-	</developers>
+	<organization>
+		<name>CapySoft</name>
+	</organization>
 	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
+		<connection>scm:git:https://github.com/lozano2303/TuEvento.git</connection>
+		<developerConnection>scm:git:https://github.com/lozano2303/TuEvento.git</developerConnection>
+		<url>https://github.com/lozano2303/TuEvento</url>
 	</scm>
 	<properties>
 		<java.version>17</java.version>

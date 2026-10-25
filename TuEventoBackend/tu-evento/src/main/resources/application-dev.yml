@@ -51,6 +51,10 @@ minio:
   public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
 
 app:
+  # Refresh token de la web en cookie httpOnly; en local va por http, así que sin Secure
+  auth:
+    refresh-cookie:
+      secure: false
   jwt:
     secret: ${JWT_SECRET}
     access-token-expiration: 900000
@@ -81,14 +85,16 @@ app:
     google:
       client-id: ${GOOGLE_CLIENT_ID}
       client-secret: ${GOOGLE_CLIENT_SECRET}
-      redirect-uri: ${APP_OAUTH_GOOGLE_REDIRECT_URI:http://localhost:8080}/api/v1/auth/oauth/google/callback
+      # Full callback URL, used as-is by the authorization request and the code exchange.
+      redirect-uri: ${APP_OAUTH_GOOGLE_REDIRECT_URI:http://localhost:8080/api/v1/auth/oauth/google/callback}
       token-uri: https://oauth2.googleapis.com/token
       userinfo-uri: https://www.googleapis.com/oauth2/v3/userinfo
       authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
     facebook:
       client-id: ${FACEBOOK_CLIENT_ID}
       client-secret: ${FACEBOOK_CLIENT_SECRET}
-      redirect-uri: ${APP_OAUTH_FACEBOOK_REDIRECT_URI:http://localhost:8080}/api/v1/auth/oauth/facebook/callback
+      # Full callback URL, used as-is by the Facebook dialog and the code exchange.
+      redirect-uri: ${APP_OAUTH_FACEBOOK_REDIRECT_URI:http://localhost:8080/api/v1/auth/oauth/facebook/callback}
       auth-uri: https://www.facebook.com/v18.0/dialog/oauth
       token-uri: https://graph.facebook.com/v18.0/oauth/access_token
       profile-uri: https://graph.facebook.com/me
@@ -130,3 +136,8 @@ payment:
 notification:
   email:
     enabled: ${NOTIFICATION_EMAIL_ENABLED:true}
+
+# En dev el bloqueo dura poco para poder probarlo
+security:
+  lockout:
+    minutes: ${SECURITY_LOCKOUT_MINUTES:1}

@@ -4,6 +4,63 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-25
+
+Imágenes Docker `v1.0.1`: se reconstruyen `backend`, `frontend` y `gateway` (el gateway cambia con el sandbox de pagos, #100); solo `nsfw` se reetiqueta desde `v1.0.0`. Incluyen también la cancelación de eventos y reembolsos (PR #105), que no estaba en las imágenes `v1.0.0`.
+
+### Changed — feat(gateway): payment sandbox with an admin API key (#100)
+
+- **Brings the payment sandbox work (#100) into `develop`**: it had been merged straight into `main`. The gateway requires an API key (`X-Api-Key`) on `/admin/**` and refuses to start without `ADMIN_API_KEY` (minimum 16 characters); the payment popup (`pay.html`) uses the new public `/public/checkout/{id}/{approve|decline|fail|cancel}` endpoints and no longer offers refunds (a merchant operation); webhook retries run asynchronously with HTTP timeouts; invalid requests get a 4xx with field details
+- **Backend** sends `FAKE_GATEWAY_API_KEY` as `X-Api-Key` when cancelling or refunding a payment; creating and reading payments stay on the public API
+- **`docker-compose.prod.yml`** passes `ADMIN_API_KEY` to the gateway and `FAKE_GATEWAY_API_KEY` to the backend, both required (`${VAR:?}`); `.env.prod.example` documents that they must hold the same value
+- No change for the web or mobile apps: they only open `pay.html` from the gateway, so no new `VITE_*`/`EXPO_PUBLIC_*` variable
+
+### Security — feat(web-auth): refresh token in an httpOnly cookie (#111)
+
+- **Web refresh token in an httpOnly cookie**: `tuevento_refresh` (`HttpOnly`, `Secure`, `SameSite=Strict`, path `/api/v1/auth`, 7 days). The web sends `X-Auth-Mode: cookie` on login, refresh and logout; JavaScript can no longer read the refresh token
+- **Access token only in memory** (`services/tokenStore.js`): restored with `POST /auth/refresh` before the first render; tabs share it through `BroadcastChannel` and serialise refreshes with Web Locks
+- **OAuth callback** no longer puts tokens in the redirect URL: it sets the refresh cookie and the web gets the access token on load
+- **Existing sessions migrate on their own**: a refresh token left in `localStorage` is exchanged once for the cookie
+- **Mobile unchanged**: without `X-Auth-Mode: cookie` the API keeps returning both tokens in the body
+- **New optional settings**: `AUTH_COOKIE_SECURE` (default `true`) and `AUTH_COOKIE_SAME_SITE` (default `Strict`)
+
+### Changed — chore(frontend): lint, formatting and tests for web and mobile (#112)
+
+- **ESLint 9, Prettier and tests** in `TuEventoFrontend/web` (Vitest + React Testing Library) and `TuEventoFrontend/movil` (Jest + `jest-expo`): `npm run lint`, `npm run format:check`, `npm test`
+- **CI** runs the tests (blocking) and the lint (informative, `continue-on-error`, until existing errors are fixed); see `docs/frontend-quality.md`
+
+### Security — fix(config): configuration hardening from the security audit
+
+- **Account lockout** lasts 30 minutes again (`security.lockout.minutes`, `SECURITY_LOCKOUT_MINUTES`); the dev profile keeps 1 minute
+- **Lockout cleanup job** runs every 5 minutes (`security.lockout.cleanup-cron`) and logs at `debug`
+- **k8s profile** reads the database user and password from `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` with no fallback values
+- **Sightengine** nudity scores are logged at `debug`
+- **EAS `preview` profile** no longer hardcodes a LAN IP: `EXPO_PUBLIC_*` come from the EAS `preview` environment (see `movil/.env.example`)
+- **Cleanup**: removed `EventLayoutEditorDemo.jsx`, `TokenRefreshDebug.jsx` and a JVM crash log; `hs_err_pid*.log` is git-ignored; `pom.xml` has name, description and license
+- **Docs**: the README states Java 17 (the version in `pom.xml`)
+
+### Security — feat(security): rate limiting on public auth endpoints
+
+- **Per-IP limit** (10 requests/minute per endpoint by default) on login, register, activation, password recovery/reset and account reactivation; over the limit the API answers `429` with `Retry-After` and code `TOO_MANY_REQUESTS`
+- **Redis counter** with a one-minute window; if Redis is unavailable requests pass (the account lockout still protects login)
+- **Client IP** taken from `X-Forwarded-For` counting `rate-limit.auth.trusted-proxies` hops from the right (`RATE_LIMIT_TRUSTED_PROXIES`: 2 on the VPS stack, 1 on k8s, 0 by default)
+- **Web and mobile** show a translated message (es/en/pt/fr); CORS exposes `Retry-After`
+
+### Fixed — fix(security): OAuth sessions, social login checks and errors
+
+- **Duplicate sessions after social login**: access and refresh tokens now carry a random `jti`. Before, two tokens issued to the same user in the same second were identical (the OAuth callback followed by an immediate `/auth/refresh` produced them), which left `auth_session`/`refresh_token` rows sharing a token and made `/auth/logout` fail with a 500
+- **Migration `102-add-unique-session-tokens`**: neutralises existing duplicates (keeps the active or newest row; the others are revoked and get a `#dup-<id>` suffix, nothing is deleted) and adds unique constraints on `auth_session.access_token` and `refresh_token.token`. Idempotent and PostgreSQL only
+- **Session lookup** (`findByAccessToken`) no longer fails if legacy duplicates remain
+- **Web no longer refreshes the token on every page load**: `useTokenRefresh` schedules the refresh from the token's `exp`. The refresh on mount ran while `/login` redirected to `/` after OAuth, rotating the tokens before they were stored and sending the user back to the login page
+- **Google and Facebook reject blocked, deactivated and deleted accounts** with the same codes and temporary-lockout handling as the password login (`ACCOUNT_LOCKED`, `ACCOUNT_BLOCKED`, `ACCOUNT_DEACTIVATED`, `ACCOUNT_DELETED`)
+- **OAuth callback errors**: when the provider returns an error (e.g. the user cancels) or no code, or the sign-in is rejected, the browser goes back to `/login?oauth_error=<code>` (`OAUTH_CANCELLED`, `OAUTH_FAILED`, …) instead of a 500; mobile (`response_format=json`) gets a 400 with the code. The web shows a translated message (deactivated accounts open the reactivation modal)
+- **`FACEBOOK_OAUTH_FAILED`** returns a fixed message; the Graph API detail only goes to the log
+- **`APP_OAUTH_GOOGLE_REDIRECT_URI` / `APP_OAUTH_FACEBOOK_REDIRECT_URI` are the full callback URL** (`https://<domain>/api/v1/auth/oauth/{google|facebook}/callback`), used as-is by the authorization request and the code exchange. The YAML no longer appends the path (it only took effect when the variable did not come from the environment)
+
+## [1.0.0] - 2026-10-24
+
+Primer despliegue en el VPS (imágenes Docker `v1.0.0`). Incluye todo lo acumulado en `develop` hasta esa fecha.
+
 ### Security — fix(storage): access control on storage endpoints
 
 - **`/api/v1/storage/**` is no longer public**: every route requires a login (no client calls storage anonymously)

@@ -7,6 +7,7 @@ import { loginUser, registerUser, resendActivationCode, googleLogin } from "../s
 import { getProfileByUserId } from "../services/ProfileService.js";
 import { useTheme } from "../context/ThemeContext";
 import { performLogout } from "../services/httpClient.js";
+import { getAccessToken, setAccessToken } from "../services/tokenStore.js";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 import BaseModal from "../components/common/BaseModal.jsx";
@@ -16,6 +17,17 @@ import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+// oauth_error codes sent by GET /auth/oauth/{provider}/callback → i18n key.
+// ACCOUNT_DEACTIVATED opens the reactivation modal instead; unknown codes use the generic message.
+const OAUTH_ERROR_MESSAGES = {
+  OAUTH_CANCELLED: 'login.oauthErrors.cancelled',
+  OAUTH_FAILED: 'login.oauthErrors.failed',
+  FACEBOOK_OAUTH_FAILED: 'login.oauthErrors.facebookFailed',
+  ACCOUNT_LOCKED: 'login.oauthErrors.locked',
+  ACCOUNT_BLOCKED: 'login.errors.accountBlocked',
+  ACCOUNT_DELETED: 'login.oauthErrors.deleted',
+};
 
 /**
  * GoogleButton — botón visualmente idéntico al de Facebook.
@@ -90,12 +102,26 @@ export default function Login() {
   // ─── OAuth2 / sesión activa ───────────────────────────────────────────────
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+
+    // The OAuth callback redirects here with oauth_error=<code> when the provider was
+    // cancelled or the sign-in was rejected (blocked, deactivated, ...).
+    const oauthError = urlParams.get('oauth_error');
+    if (oauthError) {
+      sessionStorage.removeItem('oauth_state');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      if (oauthError === 'ACCOUNT_DEACTIVATED') {
+        setShowReactivationModal(true);
+      } else {
+        setError(t(OAUTH_ERROR_MESSAGES[oauthError] ?? 'login.oauthErrors.failed'));
+      }
+      return;
+    }
+
     const userID = urlParams.get('userID');
     const role = urlParams.get('role');
     const oauth = urlParams.get('oauth');
 
-    if (oauth === 'true' && token && userID && role) {
+    if (oauth === 'true' && userID && role) {
       // Validate the CSRF state param produced by handleFacebookLogin.
       // Google GSI does not come through this redirect path, so the check only
       // fires when a stored state exists in sessionStorage.
@@ -110,18 +136,17 @@ export default function Login() {
 
       // Store all fields the backend includes in the redirect — mirrors what
       // handleGoogleSuccess does so both OAuth paths leave localStorage in the
-      // same shape.
-      localStorage.setItem('token',        token);
+      // same shape. The tokens are not in the URL: the refresh token arrived as
+      // an httpOnly cookie and restoreSession() gets the access token on the
+      // full-page redirect below.
       localStorage.setItem('userID',       userID);
       localStorage.setItem('role',         role);
 
       const alias        = urlParams.get('alias')        || '';
-      const refreshToken = urlParams.get('refreshToken') || '';
       const profileId    = urlParams.get('profileId');
       const needsOnboarding = urlParams.get('needsOnboarding') === 'true';
 
       if (alias)        localStorage.setItem('alias',        alias);
-      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
 
       // Remove any stale profileId before conditionally setting the new one
       localStorage.removeItem('profileId');
@@ -154,7 +179,7 @@ export default function Login() {
       return;
     }
 
-    const storedToken = localStorage.getItem('token');
+    const storedToken = getAccessToken();
     const storedUserID = localStorage.getItem('userID');
     const storedAlias = localStorage.getItem('alias');
     const storedEmail = localStorage.getItem('userEmail');
@@ -294,8 +319,7 @@ export default function Login() {
       const googleEmail = payload.email || '';
 
       const result = await googleLogin(credential);
-      localStorage.setItem('token',        result.data.token);
-      localStorage.setItem('refreshToken', result.data.refreshToken);
+      setAccessToken(result.data.token);
       localStorage.setItem('userID',       result.data.userID);
       localStorage.setItem('alias',        result.data.alias);
       localStorage.setItem('role',         result.data.role);
@@ -352,7 +376,7 @@ export default function Login() {
   // Facebook does not support reliable popup flows the way Google GSI does,
   // so we use a server-side redirect: the backend redirects to Facebook, Facebook
   // redirects back to the backend callback, and the backend then redirects to
-  // /login?token=...&userID=...&role=...&oauth=true.
+  // /login?oauth=true&userID=...&role=... (the refresh token comes as an httpOnly cookie).
   // The useEffect at the top of this component already handles that callback URL
   // (same shape used by the original redirect-based OAuth flow).
   const handleFacebookLogin = () => {
@@ -395,8 +419,7 @@ export default function Login() {
       if (view === 'login') {
         const result = await loginUser(formData.email, formData.password);
         if (result.success) {
-          localStorage.setItem('token', result.data.token);
-          localStorage.setItem('refreshToken', result.data.refreshToken ?? '');
+          setAccessToken(result.data.token);
           localStorage.setItem('userID', result.data.userID);
           localStorage.setItem('alias', result.data.alias);
           localStorage.setItem('userEmail', formData.email);

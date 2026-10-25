@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.security.infrastructure.external;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 
 import javax.crypto.SecretKey;
 
@@ -38,9 +39,12 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
         signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
+    // jti makes every token unique: without it, two tokens issued to the same user within the
+    // same second (iat/exp have second precision) are byte-for-byte identical.
     @Override
     public String generateAccessToken(Integer userId, String alias, String role) {
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(alias)
                 .claim("userId", userId)
                 .claim("role", role)
@@ -53,6 +57,7 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
     @Override
     public String generateRefreshToken(Integer userId) {
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(String.valueOf(userId))
                 .claim("userId", userId)
                 .issuedAt(new Date())

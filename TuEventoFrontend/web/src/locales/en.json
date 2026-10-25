@@ -312,7 +312,9 @@
     "rememberMe": "Remember me",
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
-    "sessionExpired": "Your session expired, please log in again"
+    "sessionExpired": "Your session expired, please log in again",
+    "tooManyRequests": "Too many attempts. Please wait a moment and try again.",
+    "tooManyRequestsWait": "Too many attempts. Try again in {{seconds}} s."
   },
   "events": {
     "title": "Events",
@@ -1190,6 +1192,13 @@
       "googleLoginError": "Could not sign in with Google. Try again.",
       "resendError": "Connection error when resending activation code",
       "enterEmailResend": "Please enter your email to resend the activation code."
+    },
+    "oauthErrors": {
+      "cancelled": "You cancelled the social sign-in.",
+      "failed": "We couldn't sign you in with the social network. Please try again.",
+      "facebookFailed": "We couldn't sign you in with Facebook. Please try again.",
+      "locked": "Your account is temporarily locked. Please try again later.",
+      "deleted": "This account does not exist."
     },
     "modals": {
       "termsTitle": "Terms and Conditions of Use",
