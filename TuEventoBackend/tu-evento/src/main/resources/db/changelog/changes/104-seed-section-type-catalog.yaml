@@ -1,0 +1,201 @@
+databaseChangeLog:
+  # Catálogo de tipos de sección (nombres en español, que es el idioma del editor de layout).
+  # Idempotente: cada tipo se inserta solo si no existe uno con el mismo nombre.
+  - changeSet:
+      id: 104-seed-section-type-palco-diamante
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Palco Diamante', true, 'PALCO'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Palco Diamante');
+  - changeSet:
+      id: 104-seed-section-type-palco-platino
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Palco Platino', true, 'PALCO'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Palco Platino');
+  - changeSet:
+      id: 104-seed-section-type-palco-oro
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Palco Oro', true, 'PALCO'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Palco Oro');
+  - changeSet:
+      id: 104-seed-section-type-palco-plata
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Palco Plata', true, 'PALCO'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Palco Plata');
+  - changeSet:
+      id: 104-seed-section-type-palco-empresarial
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Palco Empresarial', true, 'PALCO'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Palco Empresarial');
+  - changeSet:
+      id: 104-seed-section-type-vip-plus
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'VIP Plus', true, 'VIP'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'VIP Plus');
+  - changeSet:
+      id: 104-seed-section-type-backstage
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Backstage', true, 'VIP'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Backstage');
+  - changeSet:
+      id: 104-seed-section-type-preferencial
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Preferencial', true, 'PREFERENCIAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Preferencial');
+  - changeSet:
+      id: 104-seed-section-type-oriental
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Oriental', true, 'PREFERENCIAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Oriental');
+  - changeSet:
+      id: 104-seed-section-type-occidental
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Occidental', true, 'PREFERENCIAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Occidental');
+  - changeSet:
+      id: 104-seed-section-type-platea
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Platea', true, 'PREFERENCIAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Platea');
+  - changeSet:
+      id: 104-seed-section-type-platea-alta
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Platea Alta', true, 'PREFERENCIAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Platea Alta');
+  - changeSet:
+      id: 104-seed-section-type-platea-baja
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Platea Baja', true, 'PREFERENCIAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Platea Baja');
+  - changeSet:
+      id: 104-seed-section-type-mezzanine
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Mezzanine', true, 'PREFERENCIAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Mezzanine');
+  - changeSet:
+      id: 104-seed-section-type-balcon
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Balcón', true, 'PREFERENCIAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Balcón');
+  - changeSet:
+      id: 104-seed-section-type-tribuna-norte
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Tribuna Norte', true, 'GENERAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Tribuna Norte');
+  - changeSet:
+      id: 104-seed-section-type-tribuna-sur
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Tribuna Sur', true, 'GENERAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Tribuna Sur');
+  - changeSet:
+      id: 104-seed-section-type-gramilla
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Gramilla', true, 'GENERAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Gramilla');
+  - changeSet:
+      id: 104-seed-section-type-graderia
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Gradería', true, 'GENERAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Gradería');
+  - changeSet:
+      id: 104-seed-section-type-zona-de-movilidad-reducida
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Zona de movilidad reducida', true, 'ESPECIAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Zona de movilidad reducida');
+  - changeSet:
+      id: 104-seed-section-type-zona-familiar
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Zona familiar', true, 'ESPECIAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Zona familiar');
+  - changeSet:
+      id: 104-seed-section-type-prensa
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type (name, active, category)
+              SELECT 'Prensa', true, 'ESPECIAL'
+              WHERE NOT EXISTS (SELECT 1 FROM section_type WHERE name = 'Prensa');
