@@ -118,6 +118,9 @@ management:
     web:
       exposure:
         include: health
+      # No /actuator index page listing the exposed endpoints
+      discovery:
+        enabled: false
   endpoint:
     health:
       show-details: never
