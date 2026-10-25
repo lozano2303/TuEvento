@@ -15,6 +15,20 @@ Imágenes Docker `v1.0.1`: se reconstruyen `backend`, `frontend` y `gateway` (el
 - **`docker-compose.prod.yml`** passes `ADMIN_API_KEY` to the gateway and `FAKE_GATEWAY_API_KEY` to the backend, both required (`${VAR:?}`); `.env.prod.example` documents that they must hold the same value
 - No change for the web or mobile apps: they only open `pay.html` from the gateway, so no new `VITE_*`/`EXPO_PUBLIC_*` variable
 
+### Security — feat(web-auth): refresh token in an httpOnly cookie (#111)
+
+- **Web refresh token in an httpOnly cookie**: `tuevento_refresh` (`HttpOnly`, `Secure`, `SameSite=Strict`, path `/api/v1/auth`, 7 days). The web sends `X-Auth-Mode: cookie` on login, refresh and logout; JavaScript can no longer read the refresh token
+- **Access token only in memory** (`services/tokenStore.js`): restored with `POST /auth/refresh` before the first render; tabs share it through `BroadcastChannel` and serialise refreshes with Web Locks
+- **OAuth callback** no longer puts tokens in the redirect URL: it sets the refresh cookie and the web gets the access token on load
+- **Existing sessions migrate on their own**: a refresh token left in `localStorage` is exchanged once for the cookie
+- **Mobile unchanged**: without `X-Auth-Mode: cookie` the API keeps returning both tokens in the body
+- **New optional settings**: `AUTH_COOKIE_SECURE` (default `true`) and `AUTH_COOKIE_SAME_SITE` (default `Strict`)
+
+### Changed — chore(frontend): lint, formatting and tests for web and mobile (#112)
+
+- **ESLint 9, Prettier and tests** in `TuEventoFrontend/web` (Vitest + React Testing Library) and `TuEventoFrontend/movil` (Jest + `jest-expo`): `npm run lint`, `npm run format:check`, `npm test`
+- **CI** runs the tests (blocking) and the lint (informative, `continue-on-error`, until existing errors are fixed); see `docs/frontend-quality.md`
+
 ### Security — fix(config): configuration hardening from the security audit
 
 - **Account lockout** lasts 30 minutes again (`security.lockout.minutes`, `SECURITY_LOCKOUT_MINUTES`); the dev profile keeps 1 minute
