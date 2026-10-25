@@ -1761,6 +1761,7 @@
     "notActivated": "Sua conta não está ativada. Verifique seu e-mail",
     "locked": "Sua conta está temporariamente bloqueada. Tente mais tarde",
     "tooManyAttempts": "Muitas tentativas falhas. Conta temporariamente bloqueada",
+    "tooManyRequests": "Muitas tentativas. Aguarde um momento e tente novamente.",
     "gmailOnly": "Apenas e-mails @gmail.com são aceitos",
     "passwordWeak": "A senha deve ter no mínimo 8 caracteres, uma letra maiúscula, uma minúscula, um número e um caractere especial",
     "nameInvalid": "O nome deve ter pelo menos duas palavras e apenas letras",

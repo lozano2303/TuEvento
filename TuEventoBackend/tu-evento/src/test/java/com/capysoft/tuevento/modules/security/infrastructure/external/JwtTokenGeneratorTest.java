@@ -46,11 +46,18 @@ class JwtTokenGeneratorTest {
     @Test
     @DisplayName("two access tokens for the same user in the same second are different")
     void accessTokens_sameSecond_areUnique() {
-        String first  = generator.generateAccessToken(42, "alias", "USER");
-        String second = generator.generateAccessToken(42, "alias", "USER");
+        // The pair can straddle a second boundary (the first token is slow while JJWT warms up),
+        // so retry until both share the same iat; that is the case the jti must disambiguate.
+        String first;
+        String second;
+        int attempts = 0;
+        do {
+            first  = generator.generateAccessToken(42, "alias", "USER");
+            second = generator.generateAccessToken(42, "alias", "USER");
+        } while (!claims(first).getIssuedAt().equals(claims(second).getIssuedAt()) && ++attempts < 5);
 
-        assertThat(first).isNotEqualTo(second);
         assertThat(claims(first).getIssuedAt()).isEqualTo(claims(second).getIssuedAt());
+        assertThat(first).isNotEqualTo(second);
     }
 
     @Test

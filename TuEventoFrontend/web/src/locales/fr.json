@@ -336,7 +336,9 @@
     "rememberMe": "Se souvenir de moi",
     "noAccount": "Pas de compte?",
     "hasAccount": "Vous avez déjà un compte?",
-    "sessionExpired": "Votre session a expiré, veuillez vous reconnecter"
+    "sessionExpired": "Votre session a expiré, veuillez vous reconnecter",
+    "tooManyRequests": "Trop de tentatives. Patientez un instant et réessayez.",
+    "tooManyRequestsWait": "Trop de tentatives. Réessayez dans {{seconds}} s."
   },
   "events": {
     "title": "Événements",
