@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Security — fix(storage): access control on storage endpoints
+
+- **`/api/v1/storage/**` is no longer public**: every route requires a login (no client calls storage anonymously)
+- **Ownership checks in the use cases** (`StorageAccessPolicy`): public categories (profile pictures, event media) are readable by any authenticated user; private files (organizer documents) only by the uploader or an ADMIN; deletes by the owner or an ADMIN, and organizer documents only by an ADMIN
+- **REST uploads** accept `PROFILE_PICTURE` only and ignore `ownerEntityType`/`ownerEntityId` from the client; the uploader is always the authenticated user
+- **`GET /storage/owner/{type}/{id}`** returns only the files the caller may read
+- **New error codes**: `STORAGE_AUTHENTICATION_REQUIRED` (401), `STORAGE_ACCESS_DENIED` (403), `STORAGE_CATEGORY_NOT_ALLOWED` (403) and `INVALID_PARAMETER` (400, mistyped path/query parameters); `ForbiddenException`/`UnauthorizedException` keep the `code` in the response
+- **No internal details in errors**: storage clients and `UploadFileUseCase` return fixed messages (`S3_UPLOAD_FAILED`, `S3_DELETE_FAILED`, `S3_PRESIGN_FAILED`, `UPLOAD_FAILED`); the SDK detail only goes to the log
+- **Public URLs use the public host** (`MINIO_PUBLIC_URL` / `RUSTFS_PUBLIC_URL`) instead of the internal endpoint, both when stored and when file metadata is read; see `docs/deployment-vps.md` to fix rows saved before this change
+
 ### Added — chore(deploy): production stack for a self-hosted VPS
 
 - **`docker-compose.prod.yml`**: versioned Docker Hub images (no `build:`), Nginx Proxy Manager as the only service publishing ports (80/443, admin panel 81 bound to 127.0.0.1), RustFS storage, fake payment gateway, optional LibreTranslate (`--profile translate`), healthchecks, memory limits for 8 GB RAM and `JAVA_OPTS`

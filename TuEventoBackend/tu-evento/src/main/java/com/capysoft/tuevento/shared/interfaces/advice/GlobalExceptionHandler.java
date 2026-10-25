@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.capysoft.tuevento.modules.geolocation.domain.exception.SiteAlreadyExistsException;
@@ -21,8 +22,10 @@ import com.capysoft.tuevento.modules.profile.domain.exception.ProfileAlreadyExis
 import com.capysoft.tuevento.modules.ticket.domain.model.InvalidOrderStatusTransitionException;
 import com.capysoft.tuevento.modules.wallet.domain.model.InsufficientWalletBalanceException;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
+import com.capysoft.tuevento.shared.domain.exception.ForbiddenException;
 import com.capysoft.tuevento.shared.domain.exception.ImagePolicyViolationException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
+import com.capysoft.tuevento.shared.domain.exception.UnauthorizedException;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 
 import jakarta.validation.ConstraintViolationException;
@@ -44,6 +47,14 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
         return ApiResponse.error("Malformed JSON request");
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        // The rejected value is not echoed back to the client.
+        log.warn("Invalid value for parameter '{}'", ex.getName());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("INVALID_PARAMETER", "Invalid value for parameter '" + ex.getName() + "'"));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -98,6 +109,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleImagePolicyViolation(ImagePolicyViolationException ex) {
         return ResponseEntity.unprocessableEntity()
                 .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnauthorizedException(UnauthorizedException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleForbiddenException(ForbiddenException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
 
     @ExceptionHandler(BusinessException.class)

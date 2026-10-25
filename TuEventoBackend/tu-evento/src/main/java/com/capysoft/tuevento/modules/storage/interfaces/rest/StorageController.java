@@ -1,16 +1,15 @@
 package com.capysoft.tuevento.modules.storage.interfaces.rest;
 
 import com.capysoft.tuevento.modules.storage.application.dto.request.DeleteFileRequest;
-import com.capysoft.tuevento.modules.storage.application.dto.request.UploadFileRequest;
+import com.capysoft.tuevento.modules.storage.application.dto.request.StorageRequester;
 import com.capysoft.tuevento.modules.storage.application.dto.response.PublicUrlResponse;
 import com.capysoft.tuevento.modules.storage.application.dto.response.StoredFileResponse;
 import com.capysoft.tuevento.modules.storage.application.dto.response.UploadFileResponse;
-import com.capysoft.tuevento.modules.storage.application.port.in.CheckFileAccessPort;
 import com.capysoft.tuevento.modules.storage.application.port.in.DeleteFilePort;
 import com.capysoft.tuevento.modules.storage.application.port.in.GeneratePublicUrlPort;
 import com.capysoft.tuevento.modules.storage.application.port.in.GetFilePort;
 import com.capysoft.tuevento.modules.storage.application.port.in.GetFilesByOwnerPort;
-import com.capysoft.tuevento.modules.storage.application.port.in.UploadFilePort;
+import com.capysoft.tuevento.modules.storage.application.port.in.UploadUserFilePort;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,8 +24,8 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Todos los endpoints exigen autenticación. Los archivos privados (documentos
- * de organizador) solo los ve o borra quien los subió o un administrador.
+ * Every endpoint requires authentication (SecurityConfig). Access to each file is decided by
+ * StorageAccessPolicy inside the use cases; the controller only passes the authenticated user.
  */
 @RestController
 @RequestMapping("/api/v1/storage")
@@ -34,61 +33,51 @@ import java.util.List;
 @Tag(name = "Storage", description = "File storage endpoints")
 public class StorageController {
 
-    private final UploadFilePort        uploadFilePort;
+    private final UploadUserFilePort    uploadUserFilePort;
     private final DeleteFilePort        deleteFilePort;
     private final GetFilePort           getFilePort;
     private final GetFilesByOwnerPort   getFilesByOwnerPort;
     private final GeneratePublicUrlPort generatePublicUrlPort;
-    private final CheckFileAccessPort   checkFileAccessPort;
 
-    @Operation(summary = "Upload a file — requires authentication")
+    @Operation(summary = "Upload a profile picture — requires authentication",
+               description = "Only PROFILE_PICTURE can be uploaded here; the uploader is the authenticated user. "
+                       + "Errors: STORAGE_AUTHENTICATION_REQUIRED (401), STORAGE_CATEGORY_NOT_ALLOWED (403), "
+                       + "FILE_CATEGORY_NOT_FOUND (404), INVALID_FILE_EXTENSION, FILE_TOO_LARGE, "
+                       + "S3_UPLOAD_FAILED, UPLOAD_FAILED (400), image policy violation (422)")
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
     public ResponseEntity<ApiResponse<UploadFileResponse>> upload(
             @RequestParam MultipartFile file,
             @RequestParam String categoryCode,
-            @RequestParam(required = false) Integer ownerEntityId,
-            @RequestParam(required = false) String ownerEntityType,
             @AuthenticationPrincipal SecurityUser principal) throws IOException {
 
-        UploadFileRequest request = UploadFileRequest.builder()
-                .fileCategoryCode(categoryCode)
-                .uploadedBy(principal.getUserId())
-                .originalFilename(file.getOriginalFilename())
-                .contentType(file.getContentType())
-                .content(file.getBytes())
-                .ownerEntityId(ownerEntityId)
-                .ownerEntityType(ownerEntityType)
-                .build();
+        UploadFileResponse response = uploadUserFilePort.uploadAsUser(
+                categoryCode, file.getOriginalFilename(), file.getContentType(), file.getBytes(), toRequester(principal));
 
-        return ResponseEntity.ok(ApiResponse.ok("File uploaded successfully", uploadFilePort.upload(request)));
+        return ResponseEntity.ok(ApiResponse.ok("File uploaded successfully", response));
     }
 
-    @Operation(summary = "Delete a file — uploader or admin only")
+    @Operation(summary = "Delete a file — owner or ADMIN",
+               description = "Organizer documents can only be deleted by an ADMIN. "
+                       + "Errors: STORAGE_AUTHENTICATION_REQUIRED (401), STORAGE_ACCESS_DENIED (403), FILE_NOT_FOUND (404)")
     @DeleteMapping("/{fileId}")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable Integer fileId,
-            @AuthenticationPrincipal SecurityUser principal) {
-        checkFileAccessPort.assertCanDelete(fileId, principal.getUserId(), principal.isAdmin());
-
-        DeleteFileRequest request = DeleteFileRequest.builder()
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Integer fileId,
+                                                    @AuthenticationPrincipal SecurityUser principal) {
+        deleteFilePort.delete(DeleteFileRequest.builder()
                 .storedFileId(fileId)
-                .deletedBy(principal.getUserId())
-                .build();
-
-        deleteFilePort.delete(request);
+                .requester(toRequester(principal))
+                .build());
         return ResponseEntity.ok(ApiResponse.ok("File deleted successfully"));
     }
 
-    @Operation(summary = "Get file info — public categories or uploader/admin")
+    @Operation(summary = "Get file info — public categories for any user, private files for owner or ADMIN",
+               description = "Errors: STORAGE_AUTHENTICATION_REQUIRED (401), STORAGE_ACCESS_DENIED (403), FILE_NOT_FOUND (404)")
     @GetMapping("/{fileId}")
-    public ResponseEntity<ApiResponse<StoredFileResponse>> getFile(
-            @PathVariable Integer fileId,
-            @AuthenticationPrincipal SecurityUser principal) {
-        checkFileAccessPort.assertCanRead(fileId, principal.getUserId(), principal.isAdmin());
-        return ResponseEntity.ok(ApiResponse.ok("File retrieved", getFilePort.getById(fileId)));
+    public ResponseEntity<ApiResponse<StoredFileResponse>> getFile(@PathVariable Integer fileId,
+                                                                   @AuthenticationPrincipal SecurityUser principal) {
+        return ResponseEntity.ok(ApiResponse.ok("File retrieved", getFilePort.getById(fileId, toRequester(principal))));
     }
 
-    @Operation(summary = "Get files by owner entity — only the files the requester can see")
+    @Operation(summary = "Get files by owner entity — only the files the caller can read")
     @GetMapping("/owner/{ownerEntityType}/{ownerEntityId}")
     public ResponseEntity<ApiResponse<List<StoredFileResponse>>> getByOwner(
             @PathVariable String ownerEntityType,
@@ -96,16 +85,22 @@ public class StorageController {
             @AuthenticationPrincipal SecurityUser principal) {
 
         return ResponseEntity.ok(ApiResponse.ok("Files retrieved",
-                getFilesByOwnerPort.getByOwner(ownerEntityId, ownerEntityType,
-                        principal.getUserId(), principal.isAdmin())));
+                getFilesByOwnerPort.getByOwner(ownerEntityId, ownerEntityType, toRequester(principal))));
     }
 
-    @Operation(summary = "Generate presigned URL — public categories or uploader/admin")
+    @Operation(summary = "Generate presigned URL — public categories for any user, private files for owner or ADMIN",
+               description = "Errors: STORAGE_AUTHENTICATION_REQUIRED (401), STORAGE_ACCESS_DENIED (403), "
+                       + "FILE_NOT_FOUND (404), S3_PRESIGN_FAILED (400)")
     @GetMapping("/{fileId}/url")
-    public ResponseEntity<ApiResponse<PublicUrlResponse>> generateUrl(
-            @PathVariable Integer fileId,
-            @AuthenticationPrincipal SecurityUser principal) {
-        checkFileAccessPort.assertCanRead(fileId, principal.getUserId(), principal.isAdmin());
-        return ResponseEntity.ok(ApiResponse.ok("URL generated", generatePublicUrlPort.generate(fileId)));
+    public ResponseEntity<ApiResponse<PublicUrlResponse>> generateUrl(@PathVariable Integer fileId,
+                                                                      @AuthenticationPrincipal SecurityUser principal) {
+        return ResponseEntity.ok(ApiResponse.ok("URL generated",
+                generatePublicUrlPort.generate(fileId, toRequester(principal))));
+    }
+
+    private static StorageRequester toRequester(SecurityUser principal) {
+        return principal == null
+                ? StorageRequester.anonymous()
+                : StorageRequester.of(principal.getUserId(), principal.getRole());
     }
 }

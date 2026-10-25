@@ -2,12 +2,11 @@ package com.capysoft.tuevento.shared.infrastructure.security;
 
 import com.capysoft.tuevento.modules.security.application.port.out.CurrentRolePort;
 import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
-import com.capysoft.tuevento.modules.storage.application.port.in.CheckFileAccessPort;
 import com.capysoft.tuevento.modules.storage.application.port.in.DeleteFilePort;
 import com.capysoft.tuevento.modules.storage.application.port.in.GeneratePublicUrlPort;
 import com.capysoft.tuevento.modules.storage.application.port.in.GetFilePort;
 import com.capysoft.tuevento.modules.storage.application.port.in.GetFilesByOwnerPort;
-import com.capysoft.tuevento.modules.storage.application.port.in.UploadFilePort;
+import com.capysoft.tuevento.modules.storage.application.port.in.UploadUserFilePort;
 import com.capysoft.tuevento.modules.storage.interfaces.rest.StorageController;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,12 +35,11 @@ class PublicEndpointsSecurityTest {
 
     @MockitoBean private TokenGeneratorPort tokenGenerator;
     @MockitoBean private CurrentRolePort currentRolePort;
-    @MockitoBean private UploadFilePort uploadFilePort;
+    @MockitoBean private UploadUserFilePort uploadUserFilePort;
     @MockitoBean private DeleteFilePort deleteFilePort;
     @MockitoBean private GetFilePort getFilePort;
     @MockitoBean private GetFilesByOwnerPort getFilesByOwnerPort;
     @MockitoBean private GeneratePublicUrlPort generatePublicUrlPort;
-    @MockitoBean private CheckFileAccessPort checkFileAccessPort;
 
     @Test
     @DisplayName("Storage without a session → 401 for upload, delete, info, owner list and presigned URL")
@@ -55,6 +53,6 @@ class PublicEndpointsSecurityTest {
         mvc.perform(get("/api/v1/storage/5/url")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/storage/owner/USER/1")).andExpect(status().isUnauthorized());
 
-        verifyNoInteractions(uploadFilePort, deleteFilePort, getFilePort, generatePublicUrlPort, getFilesByOwnerPort);
+        verifyNoInteractions(uploadUserFilePort, deleteFilePort, getFilePort, generatePublicUrlPort, getFilesByOwnerPort);
     }
 }

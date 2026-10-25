@@ -31,6 +31,7 @@ import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
 import com.capysoft.tuevento.modules.storage.application.dto.response.PublicUrlResponse;
+import com.capysoft.tuevento.modules.storage.application.dto.request.StorageRequester;
 import com.capysoft.tuevento.modules.storage.application.port.in.GeneratePublicUrlPort;
 import com.capysoft.tuevento.modules.ticket.infrastructure.persistence.repository.TicketJpaRepository;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
@@ -133,9 +134,10 @@ public class AdminController {
     @Operation(summary = "List organizer requests. Pass ?status=PENDING|APPROVED|REJECTED to filter; omit for all.")
     @GetMapping("/organizer-requests")
     public ResponseEntity<ApiResponse<List<OrganizerRequestResponse>>> getOrganizerRequests(
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            @AuthenticationPrincipal SecurityUser principal) {
         return ResponseEntity.ok(ApiResponse.ok("Organizer requests retrieved",
-                getOrganizerRequestsPort.getRequests(status)));
+                getOrganizerRequestsPort.getRequests(status, principal.getUserId())));
     }
 
     @Operation(summary = "Approve an organizer request and assign ORGANIZER role to the user")
@@ -154,7 +156,9 @@ public class AdminController {
 
     @Operation(summary = "Get document public URL for an organizer request")
     @GetMapping("/organizer-requests/{id}/document")
-    public ResponseEntity<ApiResponse<PublicUrlResponse>> getDocumentUrl(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<PublicUrlResponse>> getDocumentUrl(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal SecurityUser principal) {
         OrganizerPetition petition = organizerPetitionRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("PETITION_NOT_FOUND", "Organizer petition not found"));
 
@@ -163,7 +167,8 @@ public class AdminController {
         }
 
         return ResponseEntity.ok(ApiResponse.ok("Document URL generated",
-                generatePublicUrlPort.generate(petition.getStoredFileId())));
+                generatePublicUrlPort.generate(petition.getStoredFileId(),
+                        StorageRequester.of(principal.getUserId(), principal.getRole()))));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
