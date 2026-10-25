@@ -1,6 +1,6 @@
-﻿import React, { useEffect } from "react";
+﻿import { useCallback, useEffect, useMemo } from "react";
 import { View, StyleSheet } from "react-native";
-import { Canvas, Path, Circle, Text, rect, Skia } from "@shopify/react-native-skia";
+import { Canvas, Path, Text, rect, Skia } from "@shopify/react-native-skia";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import {
   migrateElement,
@@ -9,27 +9,34 @@ import {
   flattenPolygonForFill,
   filterSeatsByPage,
 } from "../utils/layoutUtils";
-import { findSeatAt } from "../utils/seatHitTesting";
+import { findSeatAt, findSectionAt } from "../utils/seatHitTesting";
+
+const PAGE_SIZE = 10;
+const ZOOM_MARGIN_BASE = 60;       // Margen base (igual que web)
+const SEAT_VIEW_MARGIN_BASE = 24;  // Margen base para vista de sillas (igual que web: 24px)
+const MIN_SEAT_TOUCH_RADIUS_PX = 16; // Mismo valor que la web
+const EMPTY_PAGE = [];
 
 /**
  * Canvas de Skia que renderiza el mapa de sillas de un evento.
  *
+ * Rendimiento: la geometría (posiciones de las sillas, escala, página visible) se calcula
+ * una vez por elemento/página y no depende del estado de las sillas; en cada update solo
+ * se leen del store las ≤100 sillas de la página actual.
+ *
  * Props:
  * - layoutData: objeto con { canvasWidth, canvasHeight, elements }
- * - containerWidth: ancho del contenedor (del onLayout)
- * - containerHeight: alto del contenedor (del onLayout)
+ * - containerWidth / containerHeight: tamaño del contenedor (del onLayout)
  * - focusedSectionId: ID de la seccion enfocada (null = vista general)
  * - currentSubSectionIndex: indice de la sub-seccion activa
- * - currentRowPage: pagina actual de filas (0-indexed)
- * - currentColPage: pagina actual de columnas (0-indexed)
+ * - currentRowPage / currentColPage: pagina actual de filas / columnas (0-indexed)
  * - sections: Array de EventSectionResponse con datos del backend
- * - seats: objeto { [seatId]: SeatResponse } (compatibilidad)
- * - seatStore: SeatDataStore para renderizado optimizado con DOD
+ * - seatStore: SeatDataStore con las sillas cargadas
+ * - storeVersion: cambia con cada modificación del store (fuerza el re-render)
  * - onSeatPress: callback (seatId) => void
+ * - onSectionPress: callback (eventSectionId) => void, al tocar una sección en la vista general
  * - currentUserId: ID del usuario actual
- * - reserving: Set de seatIds que están en proceso de reserva
- * - onRowPagesChange: callback (total) => void
- * - onColPagesChange: callback (total) => void
+ * - onRowPagesChange / onColPagesChange: callback (total) => void
  */
 export default function SeatMapCanvas({
   layoutData,
@@ -40,205 +47,62 @@ export default function SeatMapCanvas({
   currentRowPage = 0,
   currentColPage = 0,
   sections = [],
-  seats = {},
-  seatStore = null,
+  seatStore,
+  storeVersion = 0,
   onSeatPress,
+  onSectionPress,
   currentUserId = null,
-  reserving = new Set(),
   onRowPagesChange,
   onColPagesChange,
 }) {
   const inOverviewMode = focusedSectionId === null;
 
-  if (!layoutData || !layoutData.elements || layoutData.elements.length === 0) {
-    return null;
-  }
-
-  // Migrar elementos
-  const elements = layoutData.elements.map(migrateElement);
-
-  // Agrupar elementos por backendSectionId
-  const groupedSections = {};
-  elements.forEach((el) => {
-    if (el.type === "section" && el.backendSectionId) {
-      const key = el.backendSectionId;
-      if (!groupedSections[key]) groupedSections[key] = [];
-      groupedSections[key].push(el);
-    }
-  });
-
-  // Determinar elementos visibles segun filtro y sub-seccion
-  let visibleElements;
-  let orderedLayoutElements = [];
-
-  if (focusedSectionId) {
-    const subSections = groupedSections[focusedSectionId] || [];
-    const elementIndexMap = {};
-    elements.forEach((el, idx) => { elementIndexMap[el.id] = idx; });
-    subSections.sort((a, b) => elementIndexMap[a.id] - elementIndexMap[b.id]);
-    orderedLayoutElements = subSections;
-    visibleElements = subSections.length > 1
-      ? [subSections[currentSubSectionIndex]]
-      : subSections;
-  } else {
-    visibleElements = elements.filter((el) => el.type === "section");
-  }
-
-  // AABB del contenido visible
-  const totalAABB = computeTotalAABB(visibleElements);
-  const contentWidth  = totalAABB.maxX - totalAABB.minX;
-  const contentHeight = totalAABB.maxY - totalAABB.minY;
-
-  if (!containerWidth || !containerHeight || containerWidth <= 0 || containerHeight <= 0) return null;
-  if (!contentWidth  || !contentHeight  || contentWidth  <= 0 || contentHeight  <= 0) return null;
-
-  // Espacio disponible con padding - márgenes adaptativos para pantallas pequeñas
-  const ZOOM_MARGIN_BASE = 60;       // Margen base (igual que web)
-  const SEAT_VIEW_MARGIN_BASE = 24;  // Margen base para vista de sillas (igual que web: 24px)
-  
-  // 🔧 NUEVO: Reducir márgenes en pantallas pequeñas para ganar espacio
-  const minScreenDimension = Math.min(containerWidth, containerHeight);
-  let ZOOM_MARGIN = ZOOM_MARGIN_BASE;
-  let SEAT_VIEW_MARGIN = SEAT_VIEW_MARGIN_BASE;
-  
-  if (minScreenDimension < 400) {
-    // Pantalla muy pequeña: reducir márgenes al 50%
-    ZOOM_MARGIN *= 0.5;
-    SEAT_VIEW_MARGIN *= 0.5;
-  } else if (minScreenDimension < 500) {
-    // Pantalla pequeña: reducir márgenes al 70%
-    ZOOM_MARGIN *= 0.7;
-    SEAT_VIEW_MARGIN *= 0.7;
-  }
-  
-  const PADDING = ZOOM_MARGIN;  // Usar ZOOM_MARGIN como padding principal
-  const availWidth  = containerWidth  - PADDING * 2;
-  const availHeight = containerHeight - PADDING * 2;
-
-  // --- CALCULO DE SCALE Y CENTRO ---
-  let scale;
-  let effectiveOffsetX;
-  let effectiveOffsetY;
-  let totalRowPages = 1;
-  let totalColPages = 1;
-
-  if (inOverviewMode) {
-    // Overview: ajustar todo el contenido al viewport
-    scale = Math.min(availWidth / contentWidth, availHeight / contentHeight);
-    if (!isFinite(scale) || scale <= 0) scale = 1;
-    effectiveOffsetX = (containerWidth  - contentWidth  * scale) / 2 - totalAABB.minX * scale;
-    effectiveOffsetY = (containerHeight - contentHeight * scale) / 2 - totalAABB.minY * scale;
-  } else {
-    // Vista enfocada: calcular scale sobre la ventana 10x10 real de sillas
-    const sectionsWithSeats = visibleElements.filter(
-      (el) => el.type === "section" && el.seatLayout
-    );
-
-    if (sectionsWithSeats.length > 0) {
-      const el         = sectionsWithSeats[0];
-      const seatLayout = el.seatLayout;
-      const seatResult = distributeSeats(el);
-      const allPos     = Array.isArray(seatResult) ? seatResult : seatResult.positions;
-      const rowStruct  = Array.isArray(seatResult) ? [] : (seatResult.rowStructure || []);
-
-      if (rowStruct.length > 0 && allPos.length > 0) {
-        // Calcular paginas
-        const rowStart        = currentRowPage * 10;
-        const rowEnd          = Math.min(rowStruct.length, rowStart + 10);
-        const maxColsInPage   = Math.max(1, ...rowStruct.slice(rowStart, rowEnd));
-        totalRowPages         = Math.ceil(rowStruct.length / 10);
-        totalColPages         = Math.ceil(maxColsInPage / 10);
-
-        // Filtrar posiciones de la pagina actual
-        const gridInfo = {
-          totalRows: rowStruct.length,
-          rowStructure: rowStruct,
-          maxColsInVisibleRows: maxColsInPage,
-        };
-        const pageSeats = filterSeatsByPage(allPos, gridInfo, currentColPage, currentRowPage, false);
-
-        if (pageSeats.length > 0) {
-          // Bounding box real de las sillas visibles en coordenadas locales al elemento
-          const positions = pageSeats.map((s) => s.pos);
-          const seatR     = positions[0].r || seatLayout.seatRadius || 7;
-          
-          // 🔧 CRÍTICO: Calcular bounding box real desde las posiciones filtradas (como en web)
-          // Incluir el radio completo de cada silla para evitar cortes
-          const localMinX = Math.min(...positions.map((p) => p.x - p.r)) - SEAT_VIEW_MARGIN;
-          const localMaxX = Math.max(...positions.map((p) => p.x + p.r)) + SEAT_VIEW_MARGIN;
-          const localMinY = Math.min(...positions.map((p) => p.y - p.r)) - SEAT_VIEW_MARGIN;
-          const localMaxY = Math.max(...positions.map((p) => p.y + p.r)) + SEAT_VIEW_MARGIN;
-
-          // Convertir a coordenadas globales (igual que en web)
-          const globalMinX = localMinX + el.x;
-          const globalMaxX = localMaxX + el.x;
-          const globalMinY = localMinY + el.y;
-          const globalMaxY = localMaxY + el.y;
-
-          // Usar dimensiones reales de las sillas filtradas (igual que web)
-          const windowWidth  = (globalMaxX - globalMinX);
-          const windowHeight = (globalMaxY - globalMinY);
-
-          // Aplicar SEAT_VIEW_MARGIN para respiración visual como en web (24px)
-          const availableWidth = containerWidth - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
-          const availableHeight = containerHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
-          
-          // Scale para que la ventana quepa en el viewport
-          scale = Math.min(availableWidth / windowWidth, availableHeight / windowHeight);
-
-          // Aplicar mínimo táctil igual que en web (16px), PERO con límite dinámico para pantallas pequeñas
-          const MIN_SEAT_TOUCH_RADIUS_PX = 16; // Mismo valor que la web
-          const minTouchScale = MIN_SEAT_TOUCH_RADIUS_PX / (seatLayout.seatRadius || 7);
-          
-          // 🔧 NUEVO: Limitar el zoom táctil si causa cortes en pantallas pequeñas
-          // Calcular el scale máximo que permite que el contenido entre sin cortes
-          const maxScaleForViewport = Math.min(
-            (containerWidth - ZOOM_MARGIN * 2) / windowWidth,
-            (containerHeight - ZOOM_MARGIN * 2) / windowHeight
-          );
-          
-          // Usar el menor entre zoom táctil y lo que cabe en pantalla
-          scale = Math.max(scale, Math.min(minTouchScale, maxScaleForViewport));
-
-          if (!isFinite(scale) || scale <= 0) scale = 1;
-
-          // 🔧 CRÍTICO: Centrar sobre el bounding box real de la página (igual que web)
-          // Usar efectiveViewport con AMBOS márgenes como en web
-          const effectiveViewportWidth = containerWidth - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
-          const effectiveViewportHeight = containerHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
-          const centerX = (globalMinX + globalMaxX) / 2;
-          const centerY = (globalMinY + globalMaxY) / 2;
-          effectiveOffsetX = ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveViewportWidth / 2 - centerX * scale;
-          effectiveOffsetY = ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveViewportHeight / 2 - centerY * scale;
-        } else {
-          // Sin sillas filtradas: fit clasico
-          scale = Math.min(availWidth / contentWidth, availHeight / contentHeight);
-          if (!isFinite(scale) || scale <= 0) scale = 1;
-          effectiveOffsetX = (containerWidth  - contentWidth  * scale) / 2 - totalAABB.minX * scale;
-          effectiveOffsetY = (containerHeight - contentHeight * scale) / 2 - totalAABB.minY * scale;
-        }
-      } else {
-        // Sin rowStructure: fit con mínimo táctil igual que web
-        const MIN_SEAT_TOUCH_RADIUS_PX = 16;
-        scale = Math.max(
-          Math.min(availWidth / contentWidth, availHeight / contentHeight),
-          MIN_SEAT_TOUCH_RADIUS_PX / (seatLayout.seatRadius || 7)
-        );
-        if (!isFinite(scale) || scale <= 0) scale = 1;
-        effectiveOffsetX = (containerWidth  - contentWidth  * scale) / 2 - totalAABB.minX * scale;
-        effectiveOffsetY = (containerHeight - contentHeight * scale) / 2 - totalAABB.minY * scale;
+  // Elementos migrados y agrupados: solo cambian con el layout
+  const { elements, groupedSections, elementIndex } = useMemo(() => {
+    const migrated = (layoutData?.elements ?? []).map(migrateElement);
+    const groups = {};
+    const index = {};
+    migrated.forEach((el, idx) => {
+      index[el.id] = idx;
+      if (el.type === "section" && el.backendSectionId) {
+        (groups[el.backendSectionId] ??= []).push(el);
       }
-    } else {
-      // Seccion sin sillas: fit clasico
-      scale = Math.min(availWidth / contentWidth, availHeight / contentHeight);
-      if (!isFinite(scale) || scale <= 0) scale = 1;
-      effectiveOffsetX = (containerWidth  - contentWidth  * scale) / 2 - totalAABB.minX * scale;
-      effectiveOffsetY = (containerHeight - contentHeight * scale) / 2 - totalAABB.minY * scale;
-    }
-  }
+    });
+    return { elements: migrated, groupedSections: groups, elementIndex: index };
+  }, [layoutData]);
 
-  const offsetX = effectiveOffsetX;
-  const offsetY = effectiveOffsetY;
+  // distributeSeats es costoso (sobre todo en polígonos): se calcula una vez por elemento
+  // Cache nueva cuando cambia el layout (la dependencia en `elements` es intencional)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const distributionCache = useMemo(() => new Map(), [elements]);
+  const getDistribution = useCallback((el) => {
+    let dist = distributionCache.get(el.id);
+    if (!dist) {
+      const result = distributeSeats(el);
+      dist = Array.isArray(result)
+        ? { positions: result, rowStructure: [] }
+        : { positions: result.positions, rowStructure: result.rowStructure || [] };
+      distributionCache.set(el.id, dist);
+    }
+    return dist;
+  }, [distributionCache]);
+
+  const sectionsById = useMemo(
+    () => new Map(sections.map((s) => [s.eventSectionId, s])),
+    [sections]
+  );
+
+  // Geometría de la vista: no depende del estado de las sillas
+  const view = useMemo(() => computeView({
+    elements, groupedSections, elementIndex, focusedSectionId, currentSubSectionIndex,
+    currentRowPage, currentColPage, containerWidth, containerHeight, getDistribution,
+  }), [
+    elements, groupedSections, elementIndex, focusedSectionId, currentSubSectionIndex,
+    currentRowPage, currentColPage, containerWidth, containerHeight, getDistribution,
+  ]);
+
+  const totalRowPages = view?.totalRowPages ?? 1;
+  const totalColPages = view?.totalColPages ?? 1;
 
   // Notificar paginas al padre (fuera del render via useEffect)
   useEffect(() => {
@@ -249,54 +113,69 @@ export default function SeatMapCanvas({
     if (typeof onColPagesChange === "function") onColPagesChange(totalColPages);
   }, [totalColPages, onColPagesChange]);
 
-  // Handler de tap en sillas — usa Gesture.Tap() para compatibilidad con iOS + Skia
-  const tapGesture = Gesture.Tap()
+  // Sillas de la página actual con su estado: ≤100 lecturas del store por update
+  const visibleSeatsByElement = useMemo(() => {
+    const result = new Map();
+    if (!view || inOverviewMode || !seatStore) return result;
+    for (const element of view.visibleElements) {
+      const pageSeats = view.pageSeatsByElement.get(element.id) ?? EMPTY_PAGE;
+      const sorted = seatStore.getSortedSectionIndices(element.backendSectionId);
+      const elementOffset = calculateSeatOffset(element, view.orderedLayoutElements);
+      const seats = [];
+      for (const { pos, realIndex } of pageSeats) {
+        const idx = sorted[elementOffset + realIndex];
+        if (idx === undefined) continue;
+        seats.push({
+          pos,
+          seatId: seatStore.seatIds[idx],
+          color: seatStore.colorHexAt(idx),
+          mine: seatStore.isReservedBy(idx, currentUserId),
+        });
+      }
+      result.set(element.id, seats);
+    }
+    return result;
+    // storeVersion: el store es mutable, la versión indica que cambió su contenido
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, inOverviewMode, seatStore, storeVersion, currentUserId]);
+
+  // Vista general: tocar una sección la selecciona. Vista enfocada: tocar una silla visible.
+  const tapGesture = useMemo(() => Gesture.Tap()
     .runOnJS(true)
     .onEnd((event) => {
-      if (inOverviewMode || !onSeatPress) return;
-      const tapX = event.x;
-      const tapY = event.y;
-
-      for (const element of visibleElements) {
-        const seatResult    = distributeSeats(element);
-        const seatPositions = Array.isArray(seatResult) ? seatResult : seatResult.positions;
-        const allSectionSeats = Object.values(seats)
-          .filter((s) => s.eventSectionId === element.backendSectionId)
-          .sort((a, b) => a.code.localeCompare(b.code));
-        const elementOffset = calculateSeatOffset(element, orderedLayoutElements);
-        const elementSeats  = seatPositions.map((_, i) => allSectionSeats[elementOffset + i]).filter(Boolean);
-
-        const clickedSeat = findSeatAt(tapX, tapY, seatPositions, elementSeats, element, scale, offsetX, offsetY);
-        if (clickedSeat) {
-          onSeatPress(clickedSeat.seatId);
+      if (!view) return;
+      const { scale, offsetX, offsetY } = view;
+      if (inOverviewMode) {
+        const section = findSectionAt(event.x, event.y, view.visibleElements, scale, offsetX, offsetY);
+        if (section && onSectionPress) onSectionPress(section.backendSectionId);
+        return;
+      }
+      if (!onSeatPress) return;
+      for (const element of view.visibleElements) {
+        const seats = visibleSeatsByElement.get(element.id) ?? EMPTY_PAGE;
+        const seatId = findSeatAt(event.x, event.y, seats, element, scale, offsetX, offsetY);
+        if (seatId !== null) {
+          onSeatPress(seatId);
           break;
         }
       }
-    });
+    }), [view, inOverviewMode, onSectionPress, onSeatPress, visibleSeatsByElement]);
+
+  if (!view) return null;
 
   return (
     <View style={styles.container}>
       <GestureDetector gesture={tapGesture}>
         <View style={{ width: containerWidth, height: containerHeight }}>
           <Canvas style={{ width: containerWidth, height: containerHeight }}>
-            {visibleElements.map((element) => (
+            {view.visibleElements.map((element) => (
               <SectionRenderer
                 key={element.id}
                 element={element}
-                scale={scale}
-                offsetX={offsetX}
-                offsetY={offsetY}
+                view={view}
                 inOverviewMode={inOverviewMode}
-                sections={sections}
-                seats={seats}
-                seatStore={seatStore}
-                currentUserId={currentUserId}
-                reserving={reserving}
-                orderedLayoutElements={orderedLayoutElements}
-                currentRowPage={currentRowPage}
-                currentColPage={currentColPage}
-                containerWidth={containerWidth}
-                containerHeight={containerHeight}
+                sectionData={sectionsById.get(element.backendSectionId)}
+                seats={visibleSeatsByElement.get(element.id) ?? EMPTY_PAGE}
               />
             ))}
           </Canvas>
@@ -307,277 +186,267 @@ export default function SeatMapCanvas({
 }
 
 // ---------------------------------------------------------------------------
-// Color de silla según estado - usando exactamente los mismos colores que la web
+// Geometría: elementos visibles, escala, centrado y sillas de la página actual
 // ---------------------------------------------------------------------------
-function getSeatColor(seat, currentUserId, isSectionFiltered = false) {
-  if (!seat) return "#6B7280";
-  
-  // Si la sección está filtrada (no es la seleccionada), usar color gris
-  if (isSectionFiltered) return "#4B5563";
-  
-  const isMyReservation = seat.status === "RESERVED" && seat.reservedBy === currentUserId;
-  const isOtherReservation = seat.status === "RESERVED" && seat.reservedBy !== currentUserId;
-  
-  if (seat.status === "AVAILABLE") return "#10B981";      // Verde para disponibles
-  if (isMyReservation) return "#3B82F6";                  // Azul para mis reservas  
-  if (isOtherReservation) return "#FBBF24";               // Amarillo para reservas de otros
-  if (seat.status === "SOLD") return "#9CA3AF";           // Gris claro para vendidas/ocupadas
-  if (seat.status === "COURTESY") return "#8B5CF6";       // Púrpura para cortesías
-  
-  return "#6B7280"; // Gris por defecto
+function computeView({
+  elements, groupedSections, elementIndex, focusedSectionId, currentSubSectionIndex,
+  currentRowPage, currentColPage, containerWidth, containerHeight, getDistribution,
+}) {
+  if (elements.length === 0) return null;
+  if (!containerWidth || !containerHeight || containerWidth <= 0 || containerHeight <= 0) return null;
+
+  const inOverviewMode = focusedSectionId === null;
+
+  // Determinar elementos visibles segun filtro y sub-seccion
+  let visibleElements;
+  let orderedLayoutElements = [];
+  if (!inOverviewMode) {
+    const subSections = [...(groupedSections[focusedSectionId] || [])]
+      .sort((a, b) => elementIndex[a.id] - elementIndex[b.id]);
+    orderedLayoutElements = subSections;
+    visibleElements = subSections.length > 1
+      ? [subSections[currentSubSectionIndex]].filter(Boolean)
+      : subSections;
+  } else {
+    visibleElements = elements.filter((el) => el.type === "section");
+  }
+
+  // AABB del contenido visible
+  const totalAABB = computeTotalAABB(visibleElements);
+  const contentWidth  = totalAABB.maxX - totalAABB.minX;
+  const contentHeight = totalAABB.maxY - totalAABB.minY;
+  if (!contentWidth || !contentHeight || contentWidth <= 0 || contentHeight <= 0) return null;
+
+  // Márgenes adaptativos para pantallas pequeñas
+  const minScreenDimension = Math.min(containerWidth, containerHeight);
+  let marginFactor = 1;
+  if (minScreenDimension < 400) marginFactor = 0.5;       // Pantalla muy pequeña
+  else if (minScreenDimension < 500) marginFactor = 0.7;  // Pantalla pequeña
+  const ZOOM_MARGIN = ZOOM_MARGIN_BASE * marginFactor;
+  const SEAT_VIEW_MARGIN = SEAT_VIEW_MARGIN_BASE * marginFactor;
+
+  const availWidth  = containerWidth  - ZOOM_MARGIN * 2;
+  const availHeight = containerHeight - ZOOM_MARGIN * 2;
+
+  const fitAll = () => {
+    let s = Math.min(availWidth / contentWidth, availHeight / contentHeight);
+    if (!isFinite(s) || s <= 0) s = 1;
+    return {
+      scale: s,
+      offsetX: (containerWidth  - contentWidth  * s) / 2 - totalAABB.minX * s,
+      offsetY: (containerHeight - contentHeight * s) / 2 - totalAABB.minY * s,
+    };
+  };
+
+  let fit;
+  let totalRowPages = 1;
+  let totalColPages = 1;
+  const pageSeatsByElement = new Map();
+  const backgroundRects = new Map();
+
+  if (inOverviewMode) {
+    fit = fitAll();
+  } else {
+    // Sillas de la página actual (ventana 10x10) por elemento
+    let pagesCounted = false;
+    for (const el of visibleElements) {
+      if (!el.seatLayout) continue;
+      const { positions, rowStructure } = getDistribution(el);
+      if (rowStructure.length === 0 || positions.length === 0) continue;
+      const rowStart = currentRowPage * PAGE_SIZE;
+      const rowEnd = Math.min(rowStructure.length, rowStart + PAGE_SIZE);
+      const maxColsInVisibleRows = Math.max(1, ...rowStructure.slice(rowStart, rowEnd));
+      const gridInfo = { totalRows: rowStructure.length, rowStructure, maxColsInVisibleRows };
+      pageSeatsByElement.set(el.id, filterSeatsByPage(positions, gridInfo, currentColPage, currentRowPage, false));
+      // Las páginas las define la primera sección con sillas (igual que antes)
+      if (!pagesCounted) {
+        totalRowPages = Math.ceil(rowStructure.length / PAGE_SIZE);
+        totalColPages = Math.ceil(maxColsInVisibleRows / PAGE_SIZE);
+        pagesCounted = true;
+      }
+    }
+
+    const el = visibleElements.find((e) => e.type === "section" && e.seatLayout);
+    const pageSeats = el ? pageSeatsByElement.get(el.id) : undefined;
+
+    if (el && pageSeats && pageSeats.length > 0) {
+      // Bounding box real de las sillas visibles (incluye el radio), como en la web
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (const { pos } of pageSeats) {
+        minX = Math.min(minX, pos.x - pos.r);
+        maxX = Math.max(maxX, pos.x + pos.r);
+        minY = Math.min(minY, pos.y - pos.r);
+        maxY = Math.max(maxY, pos.y + pos.r);
+      }
+      const globalMinX = minX - SEAT_VIEW_MARGIN + el.x;
+      const globalMaxX = maxX + SEAT_VIEW_MARGIN + el.x;
+      const globalMinY = minY - SEAT_VIEW_MARGIN + el.y;
+      const globalMaxY = maxY + SEAT_VIEW_MARGIN + el.y;
+      const windowWidth  = globalMaxX - globalMinX;
+      const windowHeight = globalMaxY - globalMinY;
+
+      const effectiveViewportWidth  = containerWidth  - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+      const effectiveViewportHeight = containerHeight - ZOOM_MARGIN * 2 - SEAT_VIEW_MARGIN * 2;
+      let scale = Math.min(effectiveViewportWidth / windowWidth, effectiveViewportHeight / windowHeight);
+
+      // Mínimo táctil (16px) limitado a lo que cabe en pantalla, para no cortar en pantallas pequeñas
+      const minTouchScale = MIN_SEAT_TOUCH_RADIUS_PX / (el.seatLayout.seatRadius || 7);
+      const maxScaleForViewport = Math.min(availWidth / windowWidth, availHeight / windowHeight);
+      scale = Math.max(scale, Math.min(minTouchScale, maxScaleForViewport));
+      if (!isFinite(scale) || scale <= 0) scale = 1;
+
+      const centerX = (globalMinX + globalMaxX) / 2;
+      const centerY = (globalMinY + globalMaxY) / 2;
+      fit = {
+        scale,
+        offsetX: ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveViewportWidth / 2 - centerX * scale,
+        offsetY: ZOOM_MARGIN + SEAT_VIEW_MARGIN + effectiveViewportHeight / 2 - centerY * scale,
+      };
+    } else if (el && pageSeats) {
+      // Hay filas pero la página quedó vacía: fit clasico
+      fit = fitAll();
+    } else if (el) {
+      // Sin estructura de filas: fit con mínimo táctil igual que web
+      const base = fitAll();
+      const scale = Math.max(base.scale, MIN_SEAT_TOUCH_RADIUS_PX / (el.seatLayout.seatRadius || 7));
+      fit = {
+        scale,
+        offsetX: (containerWidth  - contentWidth  * scale) / 2 - totalAABB.minX * scale,
+        offsetY: (containerHeight - contentHeight * scale) / 2 - totalAABB.minY * scale,
+      };
+    } else {
+      // Seccion sin sillas: fit clasico
+      fit = fitAll();
+    }
+
+    // Fondo de cada sección ajustado a las sillas de la página (igual que web)
+    for (const element of visibleElements) {
+      const pageSeats = pageSeatsByElement.get(element.id);
+      if (!pageSeats || pageSeats.length === 0) continue;
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      const seatRadius = pageSeats[0].pos.r || 7;
+      for (const { pos } of pageSeats) {
+        minX = Math.min(minX, pos.x);
+        maxX = Math.max(maxX, pos.x);
+        minY = Math.min(minY, pos.y);
+        maxY = Math.max(maxY, pos.y);
+      }
+      backgroundRects.set(element.id, {
+        x: minX - seatRadius - SEAT_VIEW_MARGIN,
+        y: minY - seatRadius - SEAT_VIEW_MARGIN,
+        width: maxX - minX + seatRadius * 2 + SEAT_VIEW_MARGIN * 2,
+        height: maxY - minY + seatRadius * 2 + SEAT_VIEW_MARGIN * 2,
+      });
+    }
+  }
+
+  // Radio adaptativo de las sillas en pantallas pequeñas
+  let seatRadiusFactor = 1;
+  if (minScreenDimension < 400) seatRadiusFactor = 0.75;
+  else if (minScreenDimension < 500) seatRadiusFactor = 0.85;
+
+  return {
+    ...fit,
+    visibleElements,
+    orderedLayoutElements,
+    pageSeatsByElement,
+    backgroundRects,
+    totalRowPages,
+    totalColPages,
+    seatRadiusFactor,
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Renderer de una seccion individual
 // ---------------------------------------------------------------------------
-function SectionRenderer({
-  element,
-  scale,
-  offsetX,
-  offsetY,
-  inOverviewMode,
-  sections,
-  seats,
-  seatStore = null,
-  currentUserId,
-  reserving = new Set(),
-  orderedLayoutElements = [],
-  currentRowPage = 0,
-  currentColPage = 0,
-  containerWidth = 400,
-  containerHeight = 600,
-}) {
-  // 🔧 Calcular márgenes adaptativos localmente (igual que en el componente principal)
-  const minScreenDimension = Math.min(containerWidth, containerHeight);
-  let SEAT_VIEW_MARGIN = 24; // Margen base
-  
-  if (minScreenDimension < 400) {
-    SEAT_VIEW_MARGIN *= 0.5; // Pantalla muy pequeña: 50%
-  } else if (minScreenDimension < 500) {
-    SEAT_VIEW_MARGIN *= 0.7; // Pantalla pequeña: 70%
-  }
-  const shapeMode   = element.shapeMode ?? "rect";
-  const color       = element.color     ?? "#3B82F6";
-  const label       = element.label     ?? "";
-  const sectionData = sections.find((s) => s.eventSectionId === element.backendSectionId);
-  const sectionName = sectionData?.sectionTypeName || label;
-  const sectionPrice = sectionData?.price ?? 0;
-
+function SectionRenderer({ element, view, inOverviewMode, sectionData, seats }) {
+  const { scale, offsetX, offsetY, seatRadiusFactor } = view;
   const transformX = (x) => x * scale + offsetX;
   const transformY = (y) => y * scale + offsetY;
 
-  // Distribuir sillas con estructura de filas
-  const seatResult   = distributeSeats(element);
-  const seatPositions = Array.isArray(seatResult) ? seatResult : seatResult.positions;
-  const rowStructure  = Array.isArray(seatResult) ? [] : (seatResult.rowStructure || []);
+  const shapeMode = element.shapeMode ?? "rect";
+  const color = element.color ?? "#3B82F6";
+  const sectionName = sectionData?.sectionTypeName || element.label || "";
+  const sectionPrice = sectionData?.price ?? 0;
 
-  // Construir gridInfo y filtrar sillas de la pagina actual
-  const gridInfo = (() => {
-    if (inOverviewMode || rowStructure.length === 0) {
-      return { totalRows: 0, rowStructure: [], maxColsInVisibleRows: 0 };
-    }
-    const rowStart = currentRowPage * 10;
-    const rowEnd   = Math.min(rowStructure.length, rowStart + 10);
-    const maxColsInVisibleRows = Math.max(1, ...rowStructure.slice(rowStart, rowEnd));
-    return { totalRows: rowStructure.length, rowStructure, maxColsInVisibleRows };
-  })();
-
-  const pageFilteredSeats = filterSeatsByPage(
-    seatPositions, gridInfo, currentColPage, currentRowPage, inOverviewMode
-  );
-
-  // 🔧 NUEVO: Calcular background rect basado en sillas filtradas (igual que web)
-  const backgroundRect = (() => {
-    if (inOverviewMode || pageFilteredSeats.length === 0) {
-      // Vista general → usar dimensiones completas de la sección
-      return { x: 0, y: 0, width: element.width, height: element.height };
-    }
-
-    // Vista enfocada → calcular bounding box de las sillas de la página actual
-    const positions = pageFilteredSeats.map(item => item.pos);
-    const seatRadius = positions[0]?.r || 7;
-    
-    const minX = Math.min(...positions.map(p => p.x)) - seatRadius;
-    const maxX = Math.max(...positions.map(p => p.x)) + seatRadius;
-    const minY = Math.min(...positions.map(p => p.y)) - seatRadius;
-    const maxY = Math.max(...positions.map(p => p.y)) + seatRadius;
-
-    // Expandir el bounding box con margen visual simétrico (usar margen dinámico)
-    return {
-      x: minX - SEAT_VIEW_MARGIN,
-      y: minY - SEAT_VIEW_MARGIN,
-      width: (maxX - minX) + (SEAT_VIEW_MARGIN * 2),
-      height: (maxY - minY) + (SEAT_VIEW_MARGIN * 2)
-    };
-  })();
-
-  // Sillas de esta seccion ordenadas por codigo
-  const allSectionSeats = Object.values(seats)
-    .filter((s) => s.eventSectionId === element.backendSectionId)
-    .sort((a, b) => a.code.localeCompare(b.code));
-
-  const elementOffset = calculateSeatOffset(element, orderedLayoutElements);
+  const backgroundRect = (!inOverviewMode && view.backgroundRects.get(element.id))
+    || { x: 0, y: 0, width: element.width, height: element.height };
 
   // Path de la forma - usar backgroundRect para vista enfocada
-  const shapePath = Skia.Path.Make();
-  if (shapeMode === "polygon" && element.polygonPoints) {
-    const flatPoints = flattenPolygonForFill(element.polygonPoints);
-    if (flatPoints.length > 0) {
-      shapePath.moveTo(transformX(element.x + flatPoints[0].x), transformY(element.y + flatPoints[0].y));
-      for (let i = 1; i < flatPoints.length; i++) {
-        shapePath.lineTo(transformX(element.x + flatPoints[i].x), transformY(element.y + flatPoints[i].y));
+  const shapePath = useMemo(() => {
+    const path = Skia.Path.Make();
+    if (shapeMode === "polygon" && element.polygonPoints) {
+      const flatPoints = flattenPolygonForFill(element.polygonPoints);
+      if (flatPoints.length > 0) {
+        path.moveTo(transformX(element.x + flatPoints[0].x), transformY(element.y + flatPoints[0].y));
+        for (let i = 1; i < flatPoints.length; i++) {
+          path.lineTo(transformX(element.x + flatPoints[i].x), transformY(element.y + flatPoints[i].y));
+        }
+        path.close();
       }
-      shapePath.close();
+    } else {
+      path.addRect(rect(
+        transformX(element.x + backgroundRect.x),
+        transformY(element.y + backgroundRect.y),
+        backgroundRect.width * scale,
+        backgroundRect.height * scale
+      ));
     }
-  } else {
-    // Para rectángulos, usar backgroundRect calculado
-    shapePath.addRect(rect(
-      transformX(element.x + backgroundRect.x), 
-      transformY(element.y + backgroundRect.y), 
-      backgroundRect.width * scale, 
-      backgroundRect.height * scale
-    ));
-  }
+    return path;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [element, scale, offsetX, offsetY, backgroundRect.x, backgroundRect.y, backgroundRect.width, backgroundRect.height]);
 
-  const fillOpacity  = inOverviewMode ? "80" : "40";
-  const fillColor    = color + fillOpacity;
-  const strokeColor  = color;
-  const strokeWidth  = inOverviewMode ? 3 * scale : 2 * scale;
-  
+  // Sillas agrupadas por color: un Path por color en lugar de un Circle por silla
+  const seatPaths = useMemo(() => {
+    if (inOverviewMode || seats.length === 0) return null;
+    const byColor = new Map();
+    const mine = Skia.Path.Make();
+    let hasMine = false;
+    for (const { pos, color: seatColor, mine: isMine } of seats) {
+      const x = transformX(element.x + pos.x);
+      const y = transformY(element.y + pos.y);
+      const r = Math.max(pos.r * scale * seatRadiusFactor, 8);
+      let path = byColor.get(seatColor);
+      if (!path) {
+        path = Skia.Path.Make();
+        byColor.set(seatColor, path);
+      }
+      path.addCircle(x, y, r);
+      if (isMine) {
+        mine.addCircle(x, y, r);
+        hasMine = true;
+      }
+    }
+    return { byColor: [...byColor.entries()], mine: hasMine ? mine : null };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seats, inOverviewMode, element, scale, offsetX, offsetY, seatRadiusFactor]);
+
+  const fillColor   = color + (inOverviewMode ? "80" : "40");
+  const strokeWidth = inOverviewMode ? 3 * scale : 2 * scale;
+
   // Centro del texto basado en backgroundRect para vista enfocada
-  const centerX = inOverviewMode 
-    ? transformX(element.x + element.width / 2)
-    : transformX(element.x + backgroundRect.x + backgroundRect.width / 2);
-  const centerY = inOverviewMode
-    ? transformY(element.y + element.height / 2)
-    : transformY(element.y + backgroundRect.y + backgroundRect.height / 2);
+  const centerX = transformX(element.x + backgroundRect.x + backgroundRect.width / 2);
+  const centerY = transformY(element.y + backgroundRect.y + backgroundRect.height / 2);
 
   return (
     <>
-      <Path path={shapePath} color={fillColor}   style="fill" />
-      <Path path={shapePath} color={strokeColor} style="stroke" strokeWidth={strokeWidth} />
+      <Path path={shapePath} color={fillColor} style="fill" />
+      <Path path={shapePath} color={color} style="stroke" strokeWidth={strokeWidth} />
 
-      {/* Sillas: renderizado optimizado con DOD o fallback a objetos */}
-      {!inOverviewMode && (() => {
-        // 🚀 DOD: Renderizado ultra-optimizado para 100k+ sillas
-        if (seatStore && seatStore.count > 0) {
-          const seatsByColor = new Map(); // color hex -> [{x, y, r, seatId}]
-          const myReservationSeats = [];
-          
-          pageFilteredSeats.forEach(({ pos, realIndex }) => {
-            const seat = allSectionSeats[elementOffset + realIndex];
-            if (!seat) return;
-            
-            const seatId = seat.seatId;
-            const idx = seatStore.seatIdToIndex.get(seatId);
-            if (idx === undefined) return;
-            
-            // Leer datos directamente de los TypedArrays
-            const colorInt = seatStore.colors[idx];
-            const colorHex = '#' + colorInt.toString(16).padStart(6, '0').toUpperCase();
-            
-            const seatX = transformX(element.x + pos.x);
-            const seatY = transformY(element.y + pos.y);
-            
-            // Radio adaptativo
-            let seatRadius = pos.r * scale;
-            if (minScreenDimension < 400) {
-              seatRadius *= 0.75;
-            } else if (minScreenDimension < 500) {
-              seatRadius *= 0.85;
-            }
-            seatRadius = Math.max(seatRadius, 8);
-            
-            // Agrupar por color
-            if (!seatsByColor.has(colorHex)) {
-              seatsByColor.set(colorHex, []);
-            }
-            seatsByColor.get(colorHex).push({ x: seatX, y: seatY, r: seatRadius, seatId });
-            
-            // Track mis reservas para borde blanco
-            if (seatStore.statuses[idx] === 1 && seatStore.reservedBy[idx] === currentUserId) {
-              myReservationSeats.push({ x: seatX, y: seatY, r: seatRadius });
-            }
-          });
-          
-          return (
-            <React.Fragment>
-              {/* Renderizar por lotes de color */}
-              {Array.from(seatsByColor.entries()).map(([color, seats]) => {
-                const path = Skia.Path.Make();
-                seats.forEach(({ x, y, r }) => {
-                  path.addCircle(x, y, r);
-                });
-                return (
-                  <Path
-                    key={color}
-                    path={path}
-                    color={color}
-                    style="fill"
-                  />
-                );
-              })}
-              
-              {/* Bordes blancos para mis reservas */}
-              {myReservationSeats.length > 0 && (() => {
-                const borderPath = Skia.Path.Make();
-                myReservationSeats.forEach(({ x, y, r }) => {
-                  borderPath.addCircle(x, y, r);
-                });
-                return (
-                  <Path
-                    key="my-reservations-border"
-                    path={borderPath}
-                    color="#FFFFFF"
-                    style="stroke"
-                    strokeWidth={Math.max(1, 2 * scale * 0.8)}
-                  />
-                );
-              })()}
-            </React.Fragment>
-          );
-        }
-        
-        // Fallback: Renderizado tradicional con objetos
-        return pageFilteredSeats.map(({ pos, realIndex }) => {
-          const seat = allSectionSeats[elementOffset + realIndex];
-          if (!seat) return null;
-          
-          const isMyReservation = seat.status === "RESERVED" && seat.reservedBy === currentUserId;
-          const seatColor = getSeatColor(seat, currentUserId, false);
-          const seatX = transformX(element.x + pos.x);
-          const seatY = transformY(element.y + pos.y);
-          
-          let seatRadius = pos.r * scale;
-          if (minScreenDimension < 400) {
-            seatRadius *= 0.75;
-          } else if (minScreenDimension < 500) {
-            seatRadius *= 0.85;
-          }
-          seatRadius = Math.max(seatRadius, 8);
-          
-          return (
-            <React.Fragment key={seat.seatId}>
-              <Circle
-                cx={seatX}
-                cy={seatY}
-                r={seatRadius}
-                color={seatColor}
-              />
-              {isMyReservation && (
-                <Circle
-                  cx={seatX}
-                  cy={seatY}
-                  r={seatRadius}
-                  style="stroke"
-                  color="#FFFFFF"
-                  strokeWidth={Math.max(1, 2 * scale * 0.8)}
-                />
-              )}
-            </React.Fragment>
-          );
-        });
-      })()}
+      {seatPaths?.byColor.map(([seatColor, path]) => (
+        <Path key={seatColor} path={path} color={seatColor} style="fill" />
+      ))}
+
+      {/* Bordes blancos para mis reservas */}
+      {seatPaths?.mine && (
+        <Path
+          path={seatPaths.mine}
+          color="#FFFFFF"
+          style="stroke"
+          strokeWidth={Math.max(1, 2 * scale * 0.8)}
+        />
+      )}
 
       <Text
         x={centerX}

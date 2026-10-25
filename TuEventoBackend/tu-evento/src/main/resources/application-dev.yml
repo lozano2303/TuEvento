@@ -10,6 +10,10 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/${POSTGRES_DB}}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
+    hikari:
+      # El driver de PostgreSQL envía cada lote de inserts como un único INSERT multi-fila
+      data-source-properties:
+        reWriteBatchedInserts: true
   jpa:
     hibernate:
       ddl-auto: validate
