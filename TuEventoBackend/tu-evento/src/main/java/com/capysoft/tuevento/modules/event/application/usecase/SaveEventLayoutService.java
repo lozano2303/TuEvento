@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,8 @@ import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 import com.capysoft.tuevento.modules.seat.domain.model.SeatType;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatBlockRepository;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
+import com.capysoft.tuevento.modules.section.domain.model.EventSection;
+import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -37,10 +41,18 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SaveEventLayoutService implements SaveEventLayoutUseCase {
 
+    /**
+     * Máximo de sillas por sección lógica. El layout llega del cliente: sin tope, un
+     * targetSeats enorme reservaría memoria sin límite. 200.000 cubre con margen el
+     * estadio más grande del mundo (~132.000 asientos) como una sola sección.
+     */
+    static final int MAX_SEATS_PER_SECTION = 200_000;
+
     private final EventRepository eventRepository;
     private final EventLayoutRepository eventLayoutRepository;
     private final SeatBlockRepository seatBlockRepository;
     private final SeatRepository seatRepository;
+    private final EventSectionRepository eventSectionRepository;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -76,7 +88,7 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
         EventLayout saved = eventLayoutRepository.save(layout);
 
         // Generar automáticamente seat_block y seat a partir del layout
-        regenerateSeatsFromLayout(saved.getLayoutData());
+        regenerateSeatsFromLayout(eventId, saved.getLayoutData());
 
         return EventLayoutResponse.builder()
                 .eventLayoutId(saved.getEventLayoutId())
@@ -97,7 +109,7 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
      * Corre en la misma transacción que guarda el EventLayout — si algo falla,
      * se revierten ambos cambios.
      */
-    private void regenerateSeatsFromLayout(String layoutData) {
+    private void regenerateSeatsFromLayout(Long eventId, String layoutData) {
         try {
             JsonNode root = objectMapper.readTree(layoutData);
             JsonNode elementsNode = root.get("elements");
@@ -106,6 +118,12 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                 log.warn("[SaveEventLayout] layoutData no contiene 'elements' array válido");
                 return;
             }
+
+            // Los ids de sección vienen del cliente: solo se aceptan las secciones de este evento,
+            // para que un layout no pueda borrar ni regenerar sillas de otro evento
+            Set<Integer> eventSectionIds = eventSectionRepository.findAllByEventId(Math.toIntExact(eventId)).stream()
+                    .map(EventSection::getEventSectionId)
+                    .collect(Collectors.toSet());
 
             // Paso 1: Agrupar elementos de sección por backendSectionId
             Map<Integer, List<SectionElement>> sectionGroups = new HashMap<>();
@@ -134,9 +152,27 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                 if (targetSeats <= 0) {
                     continue;
                 }
+                if (!eventSectionIds.contains(backendSectionId)) {
+                    throw new BusinessException("LAYOUT_SECTION_NOT_IN_EVENT",
+                            "La sección " + backendSectionId + " no pertenece a este evento");
+                }
+                if (targetSeats > MAX_SEATS_PER_SECTION) {
+                    throw new BusinessException("LAYOUT_TOO_MANY_SEATS",
+                            "Una sección no puede tener más de " + MAX_SEATS_PER_SECTION + " sillas");
+                }
 
                 SectionElement element = new SectionElement(targetSeats, rows, seatsPerRow, i);
                 sectionGroups.computeIfAbsent(backendSectionId, k -> new ArrayList<>()).add(element);
+            }
+
+            // Validar el total de cada sección lógica antes de tocar ninguna
+            // (long: la suma de sub-elementos no puede desbordar)
+            for (List<SectionElement> elements : sectionGroups.values()) {
+                long totalSeats = elements.stream().mapToLong(e -> e.targetSeats).sum();
+                if (totalSeats > MAX_SEATS_PER_SECTION) {
+                    throw new BusinessException("LAYOUT_TOO_MANY_SEATS",
+                            "Una sección no puede tener más de " + MAX_SEATS_PER_SECTION + " sillas");
+                }
             }
 
             // Paso 2: Procesar cada sección lógica (grupo)
@@ -151,28 +187,19 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                 elements.sort(Comparator.comparingInt(e -> e.originalIndex));
 
                 // Validación defensiva: verificar que ninguna silla existente esté reservada/vendida
-                List<Seat> existingSeats = seatRepository.findAllByEventSectionId(eventSectionId);
-                boolean hasNonAvailableSeats = existingSeats.stream()
-                        .anyMatch(seat -> seat.getStatus() != SeatStatus.AVAILABLE);
-
-                if (hasNonAvailableSeats) {
+                // Una sola consulta (EXISTS) en lugar de cargar todas las sillas en memoria
+                if (seatRepository.existsByEventSectionIdAndStatusNot(eventSectionId, SeatStatus.AVAILABLE)) {
                     throw new BusinessException("SEAT_REGENERATION_CONFLICT",
-                            "No se puede regenerar las sillas de la sección " + eventSectionId + 
+                            "No se puede regenerar las sillas de la sección " + eventSectionId +
                             " porque algunas ya tienen reservas o ventas. " +
                             "Esto no debería ocurrir en estado DRAFT.");
                 }
 
-                // Borrar sillas y seat_blocks existentes de esta sección
-                for (Seat seat : existingSeats) {
-                    seatRepository.deleteById(seat.getSeatId());
-                }
+                // Borrar sillas y seat_blocks existentes de esta sección: una sentencia por tabla
+                seatRepository.deleteAllByEventSectionId(eventSectionId);
+                seatBlockRepository.deleteAllByEventSectionId(eventSectionId);
 
-                List<SeatBlock> existingBlocks = seatBlockRepository.findAllByEventSectionId(eventSectionId);
-                for (SeatBlock block : existingBlocks) {
-                    seatBlockRepository.deleteById(block.getSeatBlockId());
-                }
-
-                // Calcular capacidad total de la sección lógica
+                // Calcular capacidad total de la sección lógica (ya validada contra el máximo)
                 int totalCapacity = elements.stream().mapToInt(e -> e.targetSeats).sum();
 
                 // Crear un único seat_block para toda la sección lógica
@@ -183,11 +210,14 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                         .build());
 
                 // Generar sillas con numeración continua a través de todos los elementos
-                int generatedCount = generateContinuousSeatsForSection(
-                        seatBlock.getSeatBlockId(), 
-                        eventSectionId, 
+                // Las sillas se construyen en memoria y se insertan por lotes
+                List<Seat> seats = buildContinuousSeatsForSection(
+                        seatBlock.getSeatBlockId(),
+                        eventSectionId,
                         elements
                 );
+                seatRepository.insertAll(seats);
+                int generatedCount = seats.size();
 
                 sectionsProcessed++;
                 seatsGenerated += generatedCount;
@@ -211,13 +241,13 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
     /**
      * Clase auxiliar para representar un elemento de sección con su configuración de asientos.
      */
-    private static class SectionElement {
+    static class SectionElement {
         public final int targetSeats;
         public final int rows;
         public final int seatsPerRow;
         public final int originalIndex; // Para mantener orden determinístico
 
-        public SectionElement(int targetSeats, int rows, int seatsPerRow, int originalIndex) {
+        SectionElement(int targetSeats, int rows, int seatsPerRow, int originalIndex) {
             this.targetSeats = targetSeats;
             this.rows = rows;
             this.seatsPerRow = seatsPerRow;
@@ -226,18 +256,20 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
     }
 
     /**
-     * Genera sillas con numeración continua para una sección lógica compuesta
-     * por múltiples elementos visuales (sub-secciones).
-     * 
+     * Construye las sillas con numeración continua para una sección lógica compuesta
+     * por múltiples elementos visuales (sub-secciones). No las guarda: el llamador las
+     * inserta por lotes.
+     *
      * La numeración de códigos (A1, A2, B1...) continúa a través de todos los
      * elementos del grupo, sin reiniciarse entre sub-secciones.
      */
-    private int generateContinuousSeatsForSection(Integer seatBlockId, Integer eventSectionId, 
-                                                  List<SectionElement> elements) {
-        int totalGenerated = 0;
+    List<Seat> buildContinuousSeatsForSection(Integer seatBlockId, Integer eventSectionId,
+                                              List<SectionElement> elements) {
+        int total = elements.stream().mapToInt(e -> e.targetSeats).sum();
+        List<Seat> seats = new ArrayList<>(total);
         int globalCurrentRow = 1;
         int globalCurrentPosition = 1;
-        
+
         // Calcular seatsPerRow máximo para mantener consistencia en la numeración
         int maxSeatsPerRow = elements.stream().mapToInt(e -> e.seatsPerRow).max().orElse(1);
 
@@ -247,7 +279,7 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                 String rowLabel = getRowLabel(globalCurrentRow);
                 String code = rowLabel + globalCurrentPosition;
 
-                seatRepository.save(Seat.builder()
+                seats.add(Seat.builder()
                         .seatBlockId(seatBlockId)
                         .eventSectionId(eventSectionId)
                         .code(code)
@@ -259,8 +291,6 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                         .reservedUntil(null)
                         .build());
 
-                totalGenerated++;
-
                 // Avanzar numeración global usando el seatsPerRow máximo para consistencia
                 globalCurrentPosition++;
                 if (globalCurrentPosition > maxSeatsPerRow) {
@@ -270,54 +300,7 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
             }
         }
 
-        return totalGenerated;
-    }
-
-    /**
-     * Genera los registros de seat individuales para un seat_block.
-     * 
-     * DEPRECADO: Mantener por compatibilidad, pero la nueva lógica usa
-     * generateContinuousSeatsForSection para soportar numeración continua.
-     * 
-     * Algoritmo:
-     * - Distribuye targetSeats en 'rows' filas
-     * - Asigna códigos legibles tipo A1, A2, B1, B2...
-     * - Todas las sillas se crean con status=AVAILABLE y type=REGULAR
-     */
-    private int generateSeatsForBlock(Integer seatBlockId, Integer eventSectionId, 
-                                      int targetSeats, int rows, int seatsPerRow) {
-        int generatedCount = 0;
-        int currentRow = 1;
-        int currentPosition = 1;
-
-        for (int i = 0; i < targetSeats; i++) {
-            // Calcular la letra de la fila (A, B, C... Z, AA, AB...)
-            String rowLabel = getRowLabel(currentRow);
-            String code = rowLabel + currentPosition;
-
-            seatRepository.save(Seat.builder()
-                    .seatBlockId(seatBlockId)
-                    .eventSectionId(eventSectionId)
-                    .code(code)
-                    .row(currentRow)
-                    .position(currentPosition)
-                    .type(SeatType.REGULAR)
-                    .status(SeatStatus.AVAILABLE)
-                    .reservedBy(null)
-                    .reservedUntil(null)
-                    .build());
-
-            generatedCount++;
-
-            // Avanzar a la siguiente posición
-            currentPosition++;
-            if (currentPosition > seatsPerRow) {
-                currentPosition = 1;
-                currentRow++;
-            }
-        }
-
-        return generatedCount;
+        return seats;
     }
 
     /**
