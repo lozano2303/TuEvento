@@ -43,6 +43,9 @@ public class FakePaymentGatewayAdapter implements PaymentGatewayPort {
     @Value("${payment.fake-gateway.url}")
     private String gatewayUrl;
     
+    @Value("${payment.fake-gateway.api-key}")
+    private String apiKey;
+    
     @Value("${payment.webhook.secret}")
     private String webhookSecret;
     
@@ -130,9 +133,7 @@ public class FakePaymentGatewayAdapter implements PaymentGatewayPort {
         
         log.info("Cancelling payment in fake-gateway: paymentId={}", gatewayPaymentId);
         
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        HttpEntity<Void> entity = new HttpEntity<>(adminHeaders());
         
         restTemplate.exchange(
             url,
@@ -148,9 +149,7 @@ public class FakePaymentGatewayAdapter implements PaymentGatewayPort {
 
         log.info("Refunding payment in fake-gateway: paymentId={}", gatewayPaymentId);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        HttpEntity<Void> entity = new HttpEntity<>(adminHeaders());
 
         restTemplate.exchange(
             url,
@@ -185,6 +184,16 @@ public class FakePaymentGatewayAdapter implements PaymentGatewayPort {
             log.error("Error parsing webhook payload", e);
             throw new RuntimeException("Invalid webhook payload", e);
         }
+    }
+    
+    /**
+     * Cabeceras para los endpoints /admin del gateway, protegidos con API key.
+     */
+    private HttpHeaders adminHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-Api-Key", apiKey);
+        return headers;
     }
     
     /**
