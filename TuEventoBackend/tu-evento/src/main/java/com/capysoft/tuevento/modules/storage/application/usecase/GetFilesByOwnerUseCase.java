@@ -15,9 +15,11 @@ public class GetFilesByOwnerUseCase implements GetFilesByOwnerPort {
     private final StoredFileRepository storedFileRepository;
 
     @Override
-    public List<StoredFileResponse> getByOwner(Integer ownerEntityId, String ownerEntityType) {
+    public List<StoredFileResponse> getByOwner(Integer ownerEntityId, String ownerEntityType,
+                                               Integer requesterId, boolean requesterIsAdmin) {
         return storedFileRepository.findByOwnerEntity(ownerEntityId, ownerEntityType)
                 .stream()
+                .filter(file -> file.isReadableBy(requesterId, requesterIsAdmin))
                 .map(GetFileUseCase::toResponse)
                 .toList();
     }

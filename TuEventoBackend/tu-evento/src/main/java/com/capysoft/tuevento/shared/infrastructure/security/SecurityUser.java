@@ -22,6 +22,10 @@ public class SecurityUser implements UserDetails {
         this.role   = role;
     }
 
+    public boolean isAdmin() {
+        return "ADMIN".equals(role);
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role));
