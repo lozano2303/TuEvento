@@ -3,6 +3,7 @@ import { Group, Rect, Shape, Text, Transformer } from 'react-konva';
 import {
   computeMinSectionSize,
   distributeSeats,
+  fillSeatsOnResize,
   polyCentroid,
   snapToGrid,
   migratePolygonPoints,
@@ -10,7 +11,7 @@ import {
   CANVAS_MARGIN,
 } from '../layoutEditorUtils';
 
-const VERTEX_RADIUS = 7; // eslint-disable-line no-unused-vars — reservado por si se necesita
+const VERTEX_RADIUS = 7; // eslint-disable-line no-unused-vars -- reservado por si se necesita
 
 /**
  * Construye el path del polígono en el contexto 2D de Konva.
@@ -294,7 +295,7 @@ export default function SectionElement({
         handleOut: pt.handleOut ? { x: bb.minX + (pt.handleOut.x - bb.minX) * ratioX, y: bb.minY + (pt.handleOut.y - bb.minY) * ratioY } : null,
       }));
     }
-    onChange({ ...element, ...patch });
+    onChange(fillSeatsOnResize(element, { ...element, ...patch }));
   };
 
   const handleDoubleClick = () => {

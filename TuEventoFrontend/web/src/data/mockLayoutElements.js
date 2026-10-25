@@ -10,7 +10,6 @@ export const PALETTE_ELEMENTS = [
   {
     type: 'stage',
     label: 'Escenario',
-    icon: '🎭',
     defaultWidth: 220,
     defaultHeight: 100,
     color: '#1E293B',
@@ -19,7 +18,6 @@ export const PALETTE_ELEMENTS = [
   {
     type: 'screen',
     label: 'Pantalla',
-    icon: '🖥️',
     defaultWidth: 180,
     defaultHeight: 60,
     color: '#0F172A',
@@ -28,7 +26,6 @@ export const PALETTE_ELEMENTS = [
   {
     type: 'dance_floor',
     label: 'Pista de baile',
-    icon: '🕺',
     defaultWidth: 160,
     defaultHeight: 160,
     color: '#1D4ED8',
@@ -37,7 +34,6 @@ export const PALETTE_ELEMENTS = [
   {
     type: 'entrance',
     label: 'Entrada',
-    icon: '🚪',
     defaultWidth: 80,
     defaultHeight: 50,
     color: '#15803D',
@@ -46,7 +42,6 @@ export const PALETTE_ELEMENTS = [
   {
     type: 'exit',
     label: 'Salida',
-    icon: '🚪',
     defaultWidth: 80,
     defaultHeight: 50,
     color: '#B91C1C',
@@ -55,7 +50,6 @@ export const PALETTE_ELEMENTS = [
   {
     type: 'bar',
     label: 'Bar',
-    icon: '🍺',
     defaultWidth: 120,
     defaultHeight: 60,
     color: '#92400E',
@@ -64,7 +58,6 @@ export const PALETTE_ELEMENTS = [
   {
     type: 'restroom',
     label: 'Baños',
-    icon: '🚻',
     defaultWidth: 80,
     defaultHeight: 80,
     color: '#475569',
@@ -76,7 +69,6 @@ export const PALETTE_ELEMENTS = [
     type: 'section',
     sectionType: 'VIP',
     label: 'VIP',
-    icon: '⭐',
     defaultWidth: 100,
     defaultHeight: 100,
     color: '#7C3AED',
@@ -86,7 +78,6 @@ export const PALETTE_ELEMENTS = [
     type: 'section',
     sectionType: 'General',
     label: 'General',
-    icon: '👥',
     defaultWidth: 100,
     defaultHeight: 100,
     color: '#16A34A',
@@ -96,7 +87,6 @@ export const PALETTE_ELEMENTS = [
     type: 'section',
     sectionType: 'Palco',
     label: 'Palco',
-    icon: '🎪',
     defaultWidth: 100,
     defaultHeight: 100,
     color: '#EA580C',
@@ -106,7 +96,6 @@ export const PALETTE_ELEMENTS = [
     type: 'section',
     sectionType: 'Tribuna',
     label: 'Tribuna',
-    icon: '🏟️',
     defaultWidth: 100,
     defaultHeight: 100,
     color: '#2563EB',

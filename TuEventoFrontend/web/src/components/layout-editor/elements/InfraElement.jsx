@@ -2,16 +2,6 @@ import { useRef, useEffect } from 'react';
 import { Group, Rect, Text, Transformer } from 'react-konva';
 import { snapToGrid, getElementAABB, CANVAS_MARGIN } from '../layoutEditorUtils';
 
-const TYPE_ABBR = {
-  stage:       '🎭',
-  screen:      '🖥',
-  dance_floor: '🕺',
-  entrance:    '🚪↓',
-  exit:        '🚪↑',
-  bar:         '🍺',
-  restroom:    '🚻',
-};
-
 export default function InfraElement({
   element,
   isSelected,
@@ -118,8 +108,6 @@ export default function InfraElement({
     });
   };
 
-  const abbr          = TYPE_ABBR[element.type] ?? element.type.slice(0, 3).toUpperCase();
-  const iconFontSize  = Math.min(element.width, element.height) * 0.3;
   const labelFontSize = Math.max(10, Math.min(13, element.width / 10));
 
   return (
@@ -151,18 +139,10 @@ export default function InfraElement({
 
         <Text
           x={0}
-          y={element.height / 2 - iconFontSize - 2}
+          y={0}
           width={element.width}
-          text={abbr}
-          fontSize={Math.max(10, iconFontSize)}
-          align="center"
-          listening={false}
-        />
-
-        <Text
-          x={0}
-          y={element.height / 2 + 4}
-          width={element.width}
+          height={element.height}
+          verticalAlign="middle"
           text={element.label}
           fontSize={labelFontSize}
           fontStyle="bold"
