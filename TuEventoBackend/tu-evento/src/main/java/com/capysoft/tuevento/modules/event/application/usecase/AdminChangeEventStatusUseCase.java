@@ -51,6 +51,18 @@ public class AdminChangeEventStatusUseCase implements AdminChangeEventStatusPort
     private final ApplicationEventPublisher eventPublisher;
     private final EventDateValidator        eventDateValidator;
 
+    /**
+     * Debe tener su propio @Transactional: si fuera un método default de la interfaz, el proxy
+     * no abriría transacción y la llamada interna a la variante con causa no pasaría por él.
+     * Sin transacción, los listeners AFTER_COMMIT (la notificación EVENT_PUBLISHED al
+     * organizador) se descartan en silencio y cada save se confirma por separado.
+     */
+    @Override
+    @Transactional
+    public EventStatusLogResponse execute(Long eventId, ChangeEventStatusRequest request, Long adminUserId) {
+        return execute(eventId, request, adminUserId, null);
+    }
+
     @Override
     @Transactional
     public EventStatusLogResponse execute(Long eventId, ChangeEventStatusRequest request, Long adminUserId,
