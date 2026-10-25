@@ -5,6 +5,7 @@ import com.capysoft.tuevento.modules.section.application.dto.request.UpdateSecti
 import com.capysoft.tuevento.modules.section.application.dto.response.SectionTypeResponse;
 import com.capysoft.tuevento.modules.section.application.port.in.SectionTypeUseCase;
 import com.capysoft.tuevento.modules.section.domain.event.SectionTypeCreatedEvent;
+import com.capysoft.tuevento.modules.section.domain.model.SectionCategory;
 import com.capysoft.tuevento.modules.section.domain.model.SectionType;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
@@ -24,8 +25,9 @@ public class SectionTypeService implements SectionTypeUseCase {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    public List<SectionTypeResponse> getAllSectionTypes() {
+    public List<SectionTypeResponse> getAllSectionTypes(SectionCategory category) {
         return sectionTypeRepository.findAll().stream()
+                .filter(sectionType -> category == null || category == sectionType.getCategory())
                 .map(this::toResponse)
                 .toList();
     }
@@ -40,6 +42,7 @@ public class SectionTypeService implements SectionTypeUseCase {
         SectionType saved = sectionTypeRepository.save(SectionType.builder()
                 .name(request.getName())
                 .active(true)
+                .category(request.getCategory() != null ? request.getCategory() : SectionCategory.GENERAL)
                 .build());
         
         eventPublisher.publishEvent(SectionTypeCreatedEvent.builder()
@@ -62,6 +65,7 @@ public class SectionTypeService implements SectionTypeUseCase {
                 .sectionTypeId(sectionType.getSectionTypeId())
                 .name(request.getName())
                 .active(sectionType.getActive())
+                .category(request.getCategory() != null ? request.getCategory() : sectionType.getCategory())
                 .build());
 
         // Si cambió el nombre, solicitar nuevas traducciones
@@ -84,6 +88,7 @@ public class SectionTypeService implements SectionTypeUseCase {
                 .sectionTypeId(sectionType.getSectionTypeId())
                 .name(sectionType.getName())
                 .active(true)
+                .category(sectionType.getCategory())
                 .build());
     }
 
@@ -96,6 +101,7 @@ public class SectionTypeService implements SectionTypeUseCase {
                 .sectionTypeId(sectionType.getSectionTypeId())
                 .name(sectionType.getName())
                 .active(false)
+                .category(sectionType.getCategory())
                 .build());
     }
 
@@ -104,6 +110,7 @@ public class SectionTypeService implements SectionTypeUseCase {
                 .sectionTypeId(domain.getSectionTypeId())
                 .name(domain.getName())
                 .active(domain.getActive())
+                .category(domain.getCategory())
                 .build();
     }
 }

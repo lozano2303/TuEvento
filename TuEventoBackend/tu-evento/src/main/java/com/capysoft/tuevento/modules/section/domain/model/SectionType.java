@@ -9,4 +9,5 @@ public class SectionType {
     private Integer sectionTypeId;
     private String name;
     private Boolean active;
+    private SectionCategory category;
 }
