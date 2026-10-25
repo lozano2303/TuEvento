@@ -6,12 +6,14 @@ import com.capysoft.tuevento.modules.payment.domain.model.*;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentLogRepository;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentRepository;
 import com.capysoft.tuevento.modules.payment.domain.repository.RefundRepository;
+import com.capysoft.tuevento.modules.ticket.application.dto.response.RefundableTicketsSummary;
 import com.capysoft.tuevento.modules.ticket.application.port.in.ConfirmRefundUseCase;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
 import com.capysoft.tuevento.modules.wallet.application.usecase.CreditWalletUseCaseImpl;
 import com.capysoft.tuevento.modules.wallet.application.usecase.ReverseWalletPaymentUseCaseImpl;
 import com.capysoft.tuevento.modules.wallet.domain.model.WalletReferenceEntityType;
+import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +47,14 @@ import java.time.LocalDateTime;
  *
  * El cierre local está extraído a closeRefundLocally() y es compartido
  * con el caso webhook de ProcessWebhookUseCaseImpl para evitar duplicación.
+ *
+ * Tickets usados: nunca se reembolsan. Antes de cualquier flujo se consulta qué
+ * tickets de la orden siguen PAID:
+ *  - Todos sin usar  → flujos anteriores (reembolso completo).
+ *  - Algunos usados  → refundUnusedTicketsToWallet(): solo el precio de los tickets sin
+ *    usar vuelve como crédito en la wallet (la pasarela solo admite reembolsos totales).
+ *    El pago sigue APPROVED porque la parte usada sí se cobró.
+ *  - Todos usados    → nada que reembolsar (la API responde error; la cancelación lo omite).
  */
 @Service
 @RequiredArgsConstructor
@@ -71,6 +81,19 @@ public class RequestRefundUseCaseImpl {
             throw new IllegalStateException(
                 String.format("Cannot refund payment %d: current status is %s, expected APPROVED",
                     paymentId, payment.getStatus()));
+        }
+
+        RefundableTicketsSummary refundable = confirmRefundUseCase.getRefundableTickets(payment.getOrderId());
+        if (refundable.isNothingToRefund()) {
+            throw new BusinessException("NOTHING_TO_REFUND",
+                "All tickets of this order were already used; there is nothing to refund");
+        }
+        if (refundable.isPartial()) {
+            Order order = orderRepository.findById(payment.getOrderId())
+                .orElseThrow(() -> new IllegalStateException("Order not found for payment " + paymentId));
+            refundUnusedTicketsToWallet(payment, order, refundable, reason,
+                WalletReferenceEntityType.ORDER, order.getOrderId(), "partial-refund-payment-" + paymentId);
+            return;
         }
 
         // Crear Refund en REQUESTED
@@ -116,6 +139,18 @@ public class RequestRefundUseCaseImpl {
             .orElseThrow(() -> new IllegalStateException(
                 "Order not found for payment " + paymentId));
 
+        RefundableTicketsSummary refundable = confirmRefundUseCase.getRefundableTickets(order.getOrderId());
+        if (refundable.isNothingToRefund()) {
+            log.info("Event cancellation: every ticket of order {} was already used, nothing to refund (paymentId={})",
+                order.getOrderId(), paymentId);
+            return;
+        }
+        if (refundable.isPartial()) {
+            refundUnusedTicketsToWallet(payment, order, refundable, reason,
+                WalletReferenceEntityType.EVENT_CANCELLATION, eventId, "event-cancel-refund-payment-" + paymentId);
+            return;
+        }
+
         Refund savedRefund = refundRepository.save(Refund.builder()
             .paymentId(paymentId)
             .status(RefundStatus.REQUESTED)
@@ -138,6 +173,57 @@ public class RequestRefundUseCaseImpl {
                 "event-cancel-refund-payment-" + paymentId);
             log.info("Gateway amount credited to wallet on event cancellation: paymentId={}, userId={}, amount={}",
                 paymentId, order.getUserId(), gatewayAmount);
+        }
+    }
+
+    /**
+     * Reembolso parcial: la orden tiene tickets usados. Solo el precio de los tickets
+     * sin usar vuelve al comprador, como crédito en su wallet (idempotente por clave).
+     * Los tickets sin usar pasan a REFUNDED, los usados se conservan, y el pago sigue
+     * APPROVED porque la parte usada sí se cobró.
+     */
+    private void refundUnusedTicketsToWallet(Payment payment, Order order, RefundableTicketsSummary refundable,
+                                             String reason, WalletReferenceEntityType referenceType,
+                                             Long referenceId, String idempotencyKey) {
+        String detail = String.format("%s (reembolso parcial: %d de %d tickets sin usar)",
+            reason, refundable.refundableCount(), refundable.totalCount());
+
+        Refund requested = refundRepository.save(Refund.builder()
+            .paymentId(payment.getPaymentId())
+            .status(RefundStatus.REQUESTED)
+            .reason(detail)
+            .requestedAt(LocalDateTime.now())
+            .build());
+
+        confirmRefundUseCase.confirmRefund(order.getOrderId());
+
+        creditWalletUseCase.execute(order.getUserId(), refundable.amount(), referenceType, referenceId,
+            detail, idempotencyKey);
+
+        refundRepository.save(Refund.builder()
+            .refundId(requested.getRefundId())
+            .paymentId(requested.getPaymentId())
+            .status(RefundStatus.PROCESSED)
+            .reason(requested.getReason())
+            .requestedAt(requested.getRequestedAt())
+            .processedAt(LocalDateTime.now())
+            .build());
+
+        log.info("Partial refund to wallet: paymentId={}, orderId={}, refundedTickets={}/{}, amount={}",
+            payment.getPaymentId(), order.getOrderId(), refundable.refundableCount(),
+            refundable.totalCount(), refundable.amount());
+
+        try {
+            eventPublisher.publishEvent(PaymentRefundedEvent.builder()
+                .paymentId(payment.getPaymentId())
+                .userId(order.getUserId().intValue())
+                .walletAmount(refundable.amount())
+                .gatewayAmount(BigDecimal.ZERO)
+                .currency(refundable.currency() != null ? refundable.currency() : "COP")
+                .build());
+        } catch (Exception e) {
+            log.error("Failed to publish PaymentRefundedEvent (non-breaking): paymentId={}",
+                payment.getPaymentId(), e);
         }
     }
 
