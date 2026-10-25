@@ -14,3 +14,6 @@ TuEventoBackend/tu-evento/jar-listing.txt
 
 # Secret de Kubernetes con valores reales (usar k8s/secrets.example.yaml como plantilla)
 k8s/secrets.yaml
+
+# Volcados de error de la JVM
+hs_err_pid*.log

@@ -74,6 +74,45 @@ exige reconstruir la imagen):
 | `VITE_GOOGLE_CLIENT_ID` | Client ID OAuth web de Google |
 | `VITE_GATEWAY_URL` | `https://pay.tuevento.example.com` |
 
+### Publicar una versión que solo cambia algunas imágenes (p. ej. `v1.0.1`)
+
+`docker-compose.prod.yml` usa un único `TUEVENTO_VERSION` para las 4 imágenes, así que
+**los 4 tags tienen que existir** con la versión nueva o el stack falla al hacer pull.
+Las imágenes que no cambian no se reconstruyen: se reetiquetan en Docker Hub copiando el
+manifiesto de la versión anterior (no descarga ni sube capas, el digest es el mismo).
+
+Ejemplo de `v1.0.1`, donde solo cambian backend y frontend:
+
+```bash
+docker login -u jhampier23
+export $(grep -E '^VITE_' .env.prod | xargs)
+
+# 1. Construir y publicar solo lo que cambió (una imagen a la vez)
+docker build -t jhampier23/tu-evento:v1.0.1 TuEventoBackend/tu-evento
+docker push jhampier23/tu-evento:v1.0.1
+
+docker build -t jhampier23/tu-evento:frontend-v1.0.1 \
+  --build-arg VITE_API_URL="$VITE_API_URL" \
+  --build-arg VITE_GOOGLE_CLIENT_ID="$VITE_GOOGLE_CLIENT_ID" \
+  --build-arg VITE_GATEWAY_URL="$VITE_GATEWAY_URL" \
+  TuEventoFrontend/web
+docker push jhampier23/tu-evento:frontend-v1.0.1
+
+# 2. Reetiquetar las que no cambiaron, sin reconstruirlas
+docker buildx imagetools create -t jhampier23/tu-evento:nsfw-v1.0.1    jhampier23/tu-evento:nsfw-v1.0.0
+docker buildx imagetools create -t jhampier23/tu-evento:gateway-v1.0.1 jhampier23/tu-evento:gateway-v1.0.0
+
+# 3. Comprobar que existen los 4 tags antes de tocar el VPS
+for t in v1.0.1 frontend-v1.0.1 nsfw-v1.0.1 gateway-v1.0.1; do
+  docker manifest inspect jhampier23/tu-evento:$t > /dev/null && echo "OK  $t" || echo "FALTA  $t"
+done
+```
+
+Después, en Portainer: cambiar `TUEVENTO_VERSION` a la versión nueva en las variables
+del stack y **Update the stack** con *Re-pull image* activado. Para volver atrás basta
+con restaurar el valor anterior de `TUEVENTO_VERSION` (las migraciones Liquibase no se
+revierten solas: revisar el changelog de la versión antes de hacer rollback).
+
 ## 3. Preparar el VPS
 
 1. DNS: registros `A` de `tuevento.example.com`, `s3.tuevento.example.com` y
@@ -158,6 +197,26 @@ En los 3 hosts: pestaña **SSL** → *Request a new SSL Certificate* (Let's Encr
 NPM resuelve los nombres de servicio porque comparte la red `tuevento-edge`.
 No sobrescribir la cabecera `Host` en `s3.`: la firma S3 V4 incluye el host y debe
 coincidir con `RUSTFS_PUBLIC_URL`.
+
+### Login social (Google y Facebook)
+
+`APP_OAUTH_GOOGLE_REDIRECT_URI` y `APP_OAUTH_FACEBOOK_REDIRECT_URI` son la **URL completa
+del callback**, no solo el dominio. El backend usa ese valor tal cual como `redirect_uri`
+en el diálogo del proveedor y en el canje del code; si no coincide carácter por carácter
+con lo registrado, el proveedor rechaza el login.
+
+| Variable | Valor | Dónde registrarlo |
+|---|---|---|
+| `APP_OAUTH_FACEBOOK_REDIRECT_URI` | `https://tuevento.example.com/api/v1/auth/oauth/facebook/callback` | Meta for Developers → Facebook Login → *Valid OAuth Redirect URIs* |
+| `APP_OAUTH_GOOGLE_REDIRECT_URI` | `https://tuevento.example.com/api/v1/auth/oauth/google/callback` | Google Cloud Console → *Authorized redirect URIs* (la web entra con Google por GSI, que además exige el dominio en *Authorized JavaScript origins*) |
+| `APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS` | `https://tuevento.example.com/login` | — (lista blanca del redirect final al frontend) |
+
+En local (perfil `dev`), sin las variables, los callbacks por defecto son
+`http://localhost:8080/api/v1/auth/oauth/{google|facebook}/callback`.
+
+Si el usuario cancela en el proveedor o el login se rechaza (cuenta bloqueada,
+desactivada…), el backend redirige a `/login?oauth_error=<código>` y la web muestra el
+mensaje correspondiente.
 
 ## 6. Cómo se sirven las imágenes (`/storage/{id}/url`)
 
