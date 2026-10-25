@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send, CornerDownLeft, Pencil, Globe, AlertTriangle } from 'lucide-react';
-import { Stage, Layer, Group, Rect, Circle, Text, Shape } from 'react-konva';
+import { Stage, Layer, Group, Rect, Circle, Shape } from 'react-konva';
 import Konva from 'konva';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
@@ -13,7 +13,7 @@ import * as EventSectionService from '../services/EventSectionService';
 import { getEventComments, addEventComment, editEventComment, deleteEventComment } from '../services/EventCommentService';
 import { formatDistanceToNow } from 'date-fns';
 import { es, enUS, fr, pt } from 'date-fns/locale';
-import { distributeSeats, migratePolygonPoints, polyCentroid, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
+import { distributeSeats, migratePolygonPoints, getElementAABB } from '../components/layout-editor/layoutEditorUtils';
 import BackButton from '../components/common/BackButton';
 import StarRatingInput from '../components/common/StarRatingInput';
 import ConfirmModal from '../components/common/ConfirmModal';
@@ -2380,7 +2380,6 @@ function SeatSelectorSection({
                   <SectionRenderer
                     key={section.id}
                     section={section}
-                    sections={sections}
                     seatsBySection={seatsBySection}
                     currentUserId={currentUserId}
                     reserving={reserving}
@@ -2513,7 +2512,6 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
  */
 function SectionRenderer({
   section,
-  sections,
   seatsBySection,
   currentUserId,
   reserving,
@@ -2661,13 +2659,6 @@ function SectionRenderer({
     };
   }, [selectedSectionFilter, pageFilteredSeatPositions, section.width, section.height]);
 
-  const labelCenter = useMemo(() => {
-    if (shapeMode === 'polygon' && workPoints) {
-      return polyCentroid(workPoints);
-    }
-    return { x: section.width / 2, y: section.height / 2 };
-  }, [shapeMode, workPoints, section.width, section.height]);
-
   // P3: leer directamente del índice pre-calculado en lugar de filtrar+ordenar seats completo
   const allSectionSeats = seatsBySection[section.backendSectionId] ?? [];
 
@@ -2675,10 +2666,6 @@ function SectionRenderer({
   const elementOffset = useMemo(() => {
     return calculateSeatOffsetWeb(section, currentSubSections);
   }, [section, currentSubSections]);
-
-  // Encontrar el precio de esta sección
-  const sectionData = sections.find((s) => s.eventSectionId === section.backendSectionId);
-  const sectionPrice = sectionData?.price ?? 0;
 
   // En vista general (sin filtro), las sillas no son clickeables, solo la sección
   const inOverviewMode = selectedSectionFilter === null;
@@ -2736,29 +2723,6 @@ function SectionRenderer({
           cursor={inOverviewMode ? 'pointer' : 'default'}
         />
       )}
-
-      {/* Label de la sección con precio */}
-      <Text
-        x={labelCenter.x}
-        y={labelCenter.y - 15}
-        text={section.label}
-        fontSize={14}
-        fontStyle="bold"
-        fill="#ffffff"
-        align="center"
-        offsetX={0}
-        listening={false}
-      />
-      <Text
-        x={labelCenter.x}
-        y={labelCenter.y + 2}
-        text={`$${sectionPrice.toFixed(2)}`}
-        fontSize={11}
-        fill="rgba(196,181,253,0.8)"
-        align="center"
-        offsetX={0}
-        listening={false}
-      />
 
       {/* Sillas individuales - solo las de la página actual */}
       {/* canSelectMore: booleano estable por render del padre — reemplaza pasar cart completo a SeatCircle */}
