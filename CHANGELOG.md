@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-25
+
+Primera versión con número semántico (ver `docs/versioning.md`). Incluye todo lo acumulado en `develop` hasta esta fecha.
+
+### Security — fix(config): configuration hardening from the security audit
+
+- **Account lockout** lasts 30 minutes again (`security.lockout.minutes`, `SECURITY_LOCKOUT_MINUTES`); the dev profile keeps 1 minute
+- **Lockout cleanup job** runs every 5 minutes (`security.lockout.cleanup-cron`) and logs at `debug`
+- **k8s profile** reads the database user and password from `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` with no fallback values
+- **Sightengine** nudity scores are logged at `debug`
+- **EAS `preview` profile** no longer hardcodes a LAN IP: `EXPO_PUBLIC_*` come from the EAS `preview` environment (see `movil/.env.example`)
+- **Cleanup**: removed `EventLayoutEditorDemo.jsx`, `TokenRefreshDebug.jsx` and a JVM crash log; `hs_err_pid*.log` is git-ignored; `pom.xml` has name, description and license
+- **Docs**: the README states Java 17 (the version in `pom.xml`)
+
+### Security — feat(security): rate limiting on public auth endpoints
+
+- **Per-IP limit** (10 requests/minute per endpoint by default) on login, register, activation, password recovery/reset and account reactivation; over the limit the API answers `429` with `Retry-After` and code `TOO_MANY_REQUESTS`
+- **Redis counter** with a one-minute window; if Redis is unavailable requests pass (the account lockout still protects login)
+- **Client IP** taken from `X-Forwarded-For` counting `rate-limit.auth.trusted-proxies` hops from the right (`RATE_LIMIT_TRUSTED_PROXIES`: 2 on the VPS stack, 1 on k8s, 0 by default)
+- **Web and mobile** show a translated message (es/en/pt/fr); CORS exposes `Retry-After`
+
 ### Security — fix(storage): access control on storage endpoints
 
 - **`/api/v1/storage/**` is no longer public**: every route requires a login (no client calls storage anonymously)
