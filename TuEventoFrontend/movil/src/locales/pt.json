@@ -1803,6 +1803,7 @@
   "mobileSeats": {
     "sectionSoldOut": "Os assentos disponíveis nesta seção esgotaram",
     "loadError": "Não foi possível carregar os assentos",
+    "loadingSeats": "Carregando assentos…",
     "wsDisconnected": "Conexão em tempo real perdida, reconectando...",
     "reserveError": "Não foi possível reservar o assento, tente novamente",
     "releaseError": "Não foi possível liberar o assento, tente novamente",

@@ -1803,6 +1803,7 @@
   "mobileSeats": {
     "sectionSoldOut": "Se agotaron las sillas disponibles en esta sección",
     "loadError": "No se pudieron cargar las sillas",
+    "loadingSeats": "Cargando sillas…",
     "wsDisconnected": "Se perdió la conexión en tiempo real, reconectando...",
     "reserveError": "No se pudo reservar la silla, intentalo de nuevo",
     "releaseError": "No se pudo liberar la silla, intentalo de nuevo",
