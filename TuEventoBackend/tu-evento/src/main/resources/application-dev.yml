@@ -51,6 +51,10 @@ minio:
   public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
 
 app:
+  # Refresh token de la web en cookie httpOnly; en local va por http, así que sin Secure
+  auth:
+    refresh-cookie:
+      secure: false
   jwt:
     secret: ${JWT_SECRET}
     access-token-expiration: 900000
