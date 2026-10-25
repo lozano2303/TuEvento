@@ -11,6 +11,8 @@ import com.capysoft.tuevento.modules.seat.domain.model.SeatBlock;
 import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatBlockRepository;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
+import com.capysoft.tuevento.modules.section.domain.model.EventSection;
+import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,25 +50,32 @@ class SaveEventLayoutServiceTest {
     @Mock EventLayoutRepository eventLayoutRepository;
     @Mock SeatBlockRepository seatBlockRepository;
     @Mock SeatRepository seatRepository;
+    @Mock EventSectionRepository eventSectionRepository;
 
     private SaveEventLayoutService service;
 
     @BeforeEach
     void setUp() {
         service = new SaveEventLayoutService(eventRepository, eventLayoutRepository,
-                seatBlockRepository, seatRepository, new ObjectMapper());
+                seatBlockRepository, seatRepository, eventSectionRepository, new ObjectMapper());
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(Event.builder()
                 .eventId(EVENT_ID).userId(OWNER_ID).status(EventStatus.DRAFT).build()));
         when(eventLayoutRepository.findByEventId(EVENT_ID)).thenReturn(Optional.empty());
         when(eventLayoutRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(eventSectionRepository.findAllByEventId((int) EVENT_ID))
+                .thenReturn(List.of(EventSection.builder().eventSectionId(SECTION_ID).eventId((int) EVENT_ID).build()));
     }
 
     /** Layout con una sección lógica partida en sub-elementos (targetSeats, seatsPerRow). */
     private static String layout(int[]... subElements) {
+        return layoutForSection(SECTION_ID, subElements);
+    }
+
+    private static String layoutForSection(int sectionId, int[]... subElements) {
         StringBuilder json = new StringBuilder("{\"elements\":[");
         for (int i = 0; i < subElements.length; i++) {
             if (i > 0) json.append(',');
-            json.append("{\"type\":\"section\",\"backendSectionId\":").append(SECTION_ID)
+            json.append("{\"type\":\"section\",\"backendSectionId\":").append(sectionId)
                     .append(",\"seatLayout\":{\"targetSeats\":").append(subElements[i][0])
                     .append(",\"rows\":1,\"seatsPerRow\":").append(subElements[i][1]).append("}}");
         }
@@ -133,6 +142,41 @@ class SaveEventLayoutServiceTest {
 
         verify(seatRepository, never()).deleteAllByEventSectionId(anyInt());
         verify(seatBlockRepository, never()).deleteAllByEventSectionId(anyInt());
+        verify(seatRepository, never()).insertAll(any());
+    }
+
+    @Test
+    @DisplayName("rechaza secciones de otro evento sin tocar sus sillas")
+    void rejectsSectionFromAnotherEvent() {
+        assertThatThrownBy(() -> save(layoutForSection(999, new int[]{10, 5})))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("no pertenece a este evento");
+
+        verify(seatRepository, never()).deleteAllByEventSectionId(anyInt());
+        verify(seatBlockRepository, never()).deleteAllByEventSectionId(anyInt());
+        verify(seatRepository, never()).insertAll(any());
+    }
+
+    @Test
+    @DisplayName("rechaza un sub-elemento con más sillas que el máximo")
+    void rejectsElementOverLimit() {
+        assertThatThrownBy(() -> save(layout(new int[]{SaveEventLayoutService.MAX_SEATS_PER_SECTION + 1, 100})))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("más de");
+
+        verify(seatRepository, never()).insertAll(any());
+    }
+
+    @Test
+    @DisplayName("rechaza una sección que supera el máximo sumando sus sub-elementos")
+    void rejectsSectionOverLimitAcrossSubElements() {
+        int half = SaveEventLayoutService.MAX_SEATS_PER_SECTION / 2 + 1;
+
+        assertThatThrownBy(() -> save(layout(new int[]{half, 100}, new int[]{half, 100})))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("más de");
+
+        verify(seatRepository, never()).deleteAllByEventSectionId(anyInt());
         verify(seatRepository, never()).insertAll(any());
     }
 }
