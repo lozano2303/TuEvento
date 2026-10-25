@@ -10,6 +10,30 @@ import { computeMaxSeats, flattenPolygonForFill, polyBoundingBox, snapToGrid } f
 /** Máximo de sillas por sección lógica; el backend rechaza más (MAX_SEATS_PER_SECTION). */
 export const MAX_SECTION_SEATS = 200_000;
 
+/**
+ * Tamaños de silla. Con muchas sillas conviene uno menor: la sección ocupa mucho menos
+ * en el mapa. El selector de asientos pagina por fila y columna, así que no cambia.
+ */
+export const SEAT_SIZES = [
+  { id: 'normal',  label: 'Normal',   seatRadius: 8, gap: 4 },
+  { id: 'compact', label: 'Compacta', seatRadius: 5, gap: 3 },
+  { id: 'mini',    label: 'Mini',     seatRadius: 3, gap: 2 },
+];
+
+/** Tamaño sugerido según la cantidad de sillas de la sección. */
+export const suggestedSeatSize = (seats) => {
+  if (seats > 10_000) return 'mini';
+  if (seats > 1_000) return 'compact';
+  return 'normal';
+};
+
+export const getSeatSize = (id) => SEAT_SIZES.find((s) => s.id === id) ?? SEAT_SIZES[0];
+
+/** Tamaño del catálogo que corresponde a un seatLayout (o el más parecido por radio). */
+export const seatSizeOf = (seatLayout) => SEAT_SIZES.reduce((best, s) =>
+  Math.abs(s.seatRadius - (seatLayout?.seatRadius ?? 8)) < Math.abs(best.seatRadius - (seatLayout?.seatRadius ?? 8))
+    ? s : best);
+
 const MIN_WIDTH  = 80;
 const MIN_HEIGHT = 60;
 

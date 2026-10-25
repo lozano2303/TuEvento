@@ -95,6 +95,11 @@ public class SeatRepositoryImpl implements SeatRepository {
     }
 
     @Override
+    public long countByEventSectionId(Integer eventSectionId) {
+        return jpaRepository.countByEventSectionId(eventSectionId);
+    }
+
+    @Override
     public void deleteAllByEventSectionId(Integer eventSectionId) {
         jpaRepository.deleteAllInSection(eventSectionId);
     }

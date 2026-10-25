@@ -20,6 +20,9 @@ public interface SeatRepository {
     /** true si la sección tiene alguna silla en alguno de los estados indicados (una sola consulta). */
     boolean existsByEventSectionIdAndStatusIn(Integer eventSectionId, Collection<SeatStatus> statuses);
 
+    /** Cantidad de sillas de la sección (una sola consulta COUNT). */
+    long countByEventSectionId(Integer eventSectionId);
+
     /** Borra todas las sillas de la sección con una sola sentencia. */
     void deleteAllByEventSectionId(Integer eventSectionId);
 

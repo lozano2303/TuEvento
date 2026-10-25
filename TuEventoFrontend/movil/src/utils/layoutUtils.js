@@ -182,86 +182,36 @@ export const computePolygonSeatRows = (polygonPoints, seatLayout) => {
 };
 
 /**
- * Agrupa posiciones por coordenada Y para derivar la estructura de filas.
- * Portado de layoutEditorUtils.js (web) — misma lógica, misma tolerancia.
+ * Asigna fila y columna a las sillas de un polígono (vienen fila por fila, de arriba
+ * abajo y de izquierda a derecha, como las genera computePolygonSeatRows).
+ * Espejo de indexPolygonSeats en web/src/components/layout-editor/layoutEditorUtils.js.
  *
- * @param {Array<{x: number, y: number, r: number}>} positions
- * @param {number} cellHeight - altura de celda (seatRadius * 2 + gap)
- * @returns {number[]} Array con el conteo de sillas por fila, de arriba a abajo
- */
-function deriveRowStructureFromPositions(positions, cellHeight) {
-  if (positions.length === 0) return [];
-
-  // Agrupar por Y con tolerancia del 10% de la altura de celda
-  const tolerance = cellHeight * 0.1;
-  const rows = [];
-
-  positions.forEach((pos, index) => {
-    let foundRow = rows.find(row => Math.abs(row.y - pos.y) <= tolerance);
-    if (!foundRow) {
-      foundRow = { y: pos.y, seats: [] };
-      rows.push(foundRow);
-    }
-    foundRow.seats.push({ ...pos, originalIndex: index });
-  });
-
-  // Ordenar filas por Y (de arriba hacia abajo)
-  rows.sort((a, b) => a.y - b.y);
-
-  // Ordenar sillas dentro de cada fila por X (de izquierda a derecha)
-  rows.forEach(row => {
-    row.seats.sort((a, b) => a.x - b.x);
-  });
-
-  return rows.map(row => row.seats.length);
-}
-
-/**
- * Asigna rowIndex y colIndex a cada posición según su fila y columna real.
- * Portado de layoutEditorUtils.js (web) — misma lógica.
+ * La columna es FÍSICA: se calcula con la posición X, no con el orden dentro de la fila.
+ * En formas con huecos (herradura, U, anillo) las sillas a ambos lados del hueco quedan
+ * en columnas separadas, y una página de 10 × 10 nunca junta los dos lados.
+ * El orden de las posiciones no cambia: el índice de cada una sigue siendo el de su silla.
  *
- * @param {Array<{x: number, y: number, r: number}>} positions
- * @param {number[]} rowStructure - resultado de deriveRowStructureFromPositions
- * @returns {Array<{x, y, r, rowIndex, colIndex}>}
+ * @returns {{ positions, rowStructure }} rowStructure[fila] = columnas que ocupa la fila
  */
-function addRowColIndices(positions, rowStructure) {
-  if (positions.length === 0) return positions;
-
-  const tolerance = (positions[0].r || 7) * 2 + 4; // cellHeight aproximado
-  const rowGroups = [];
-
-  positions.forEach((pos, index) => {
-    let foundRow = rowGroups.find(row => Math.abs(row.y - pos.y) <= tolerance * 0.1);
-    if (!foundRow) {
-      foundRow = { y: pos.y, seats: [] };
-      rowGroups.push(foundRow);
+export function indexPolygonSeats(positions, cellSize) {
+  if (positions.length === 0) return { positions: [], rowStructure: [] };
+  // reduce y no Math.min(...): con cientos de miles de sillas el spread desborda la pila
+  const minX      = positions.reduce((min, p) => Math.min(min, p.x), Infinity);
+  const tolerance = cellSize * 0.1;
+  const rowStructure = [];
+  let rowIndex = -1;
+  let rowY     = null;
+  const indexed = positions.map((pos) => {
+    if (rowY === null || Math.abs(pos.y - rowY) > tolerance) {
+      rowIndex++;
+      rowY = pos.y;
+      rowStructure.push(0);
     }
-    foundRow.seats.push({ ...pos, originalIndex: index });
+    const colIndex = Math.round((pos.x - minX) / cellSize);
+    rowStructure[rowIndex] = Math.max(rowStructure[rowIndex], colIndex + 1);
+    return { ...pos, rowIndex, colIndex };
   });
-
-  // Ordenar filas por Y y sillas por X
-  rowGroups.sort((a, b) => a.y - b.y);
-  rowGroups.forEach(row => {
-    row.seats.sort((a, b) => a.x - b.x);
-  });
-
-  // Asignar índices
-  const result = [];
-
-  rowGroups.forEach((row, rowIndex) => {
-    row.seats.forEach((seat, colIndex) => {
-      result.push({
-        ...seat,
-        rowIndex,
-        colIndex,
-      });
-    });
-  });
-
-  // Reordenar según originalIndex para mantener orden original
-  result.sort((a, b) => a.originalIndex - b.originalIndex);
-
-  return result;
+  return { positions: indexed, rowStructure };
 }
 
 /**
@@ -335,17 +285,8 @@ export const distributeSeats = (element) => {
     const sl = normalizeSeatLayout(element.seatLayout);
     if (!sl) return { positions: [], rowStructure: [], isUniformGrid: false };
     const allPositions = computePolygonSeatRows(element.polygonPoints, sl);
-    const limitedPositions = allPositions.slice(0, sl.targetSeats);
-
-    // Derivar estructura de filas reales desde las posiciones generadas
-    const rowStructure = deriveRowStructureFromPositions(limitedPositions, sl.seatRadius * 2 + sl.gap);
-
-    // Asignar rowIndex y colIndex a cada posición
-    const positionsWithIndices = addRowColIndices(limitedPositions, rowStructure);
-
     return {
-      positions: positionsWithIndices,
-      rowStructure,
+      ...indexPolygonSeats(allPositions.slice(0, sl.targetSeats), sl.seatRadius * 2 + sl.gap),
       isUniformGrid: false,
     };
   }
@@ -388,66 +329,33 @@ export function computeTotalAABB(elements) {
   return { minX, minY, maxX, maxY };
 }
 
+/** Filas (ordenadas) que tienen al menos una silla en la ventana de columnas `colPage`. */
+export function rowsInColumnWindow(seatPositions, colPage, pageSize = 10) {
+  const colStart = colPage * pageSize;
+  const rows = new Set();
+  for (const pos of seatPositions) {
+    if (pos.colIndex >= colStart && pos.colIndex < colStart + pageSize) rows.add(pos.rowIndex);
+  }
+  return [...rows].sort((a, b) => a - b);
+}
+
 /**
- * Filtra las sillas de la página actual según rowStructure, currentRowPage y currentColPage.
- * Portado de filterSeatsByPage en web/src/pages/EventDetail.jsx — misma lógica exacta.
+ * Sillas de una página de la vista enfocada: la ventana de 10 columnas `colPage` y,
+ * entre las filas que tienen sillas en esa ventana, el bloque de 10 filas `rowPage`.
+ * Filtra por la fila y columna de cada silla, así que respeta los huecos de la forma.
+ * Espejo de filterSeatsByPage en web/src/components/layout-editor/layoutEditorUtils.js.
  *
- * @param {Array<{x,y,r,...}>} seatPositions - Array completo de posiciones (retorno de distributeSeats)
- * @param {Object} gridInfo - { totalRows, rowStructure, maxColsInVisibleRows }
- * @param {number} currentColPage - Página actual de columnas (0-indexed)
- * @param {number} currentRowPage - Página actual de filas (0-indexed)
- * @param {boolean} isOverview - Si true, retorna [] (overview no dibuja sillas individuales)
- * @returns {Array<{pos, realIndex}>} Sillas de la página actual con su índice global real
+ * @returns {Array<{pos, realIndex}>} realIndex = índice de la silla dentro de la sección
  */
-export function filterSeatsByPage(seatPositions, gridInfo, currentColPage, currentRowPage, isOverview = false) {
-  // En overview nunca dibujamos sillas individuales
-  if (isOverview || !gridInfo || gridInfo.totalRows === 0 || !seatPositions) {
-    return [];
-  }
-
-  const { rowStructure, maxColsInVisibleRows } = gridInfo;
-
-  const colStart = currentColPage * 10;
-
-  // Identificar qué filas tienen al menos una silla en el rango de columnas actual
-  const validRowIndices = [];
-  for (let rowIdx = 0; rowIdx < rowStructure.length; rowIdx++) {
-    const seatsInRow = rowStructure[rowIdx];
-    if (seatsInRow > colStart) {
-      validRowIndices.push(rowIdx);
-    }
-  }
-
-  // Aplicar paginación de filas sobre las filas válidas
-  const validRowStart = currentRowPage * 10;
-  const validRowEnd = Math.min(validRowIndices.length, validRowStart + 10);
-  const visibleValidRowIndices = validRowIndices.slice(validRowStart, validRowEnd);
-
-  const filteredSeats = [];
-  let globalIndex = 0;
-
-  // Iterar por todas las filas para mantener el índice global correcto
-  for (let rowIndex = 0; rowIndex < rowStructure.length; rowIndex++) {
-    const seatsInThisRow = rowStructure[rowIndex];
-
-    if (visibleValidRowIndices.includes(rowIndex)) {
-      const effectiveColsForPagination = Math.min(seatsInThisRow, maxColsInVisibleRows);
-      const colEnd = Math.min(effectiveColsForPagination, colStart + 10);
-
-      for (let colIndex = colStart; colIndex < colEnd && colIndex < seatsInThisRow; colIndex++) {
-        const seatIndexInRow = globalIndex + colIndex;
-        if (seatIndexInRow < seatPositions.length) {
-          filteredSeats.push({
-            pos: seatPositions[seatIndexInRow],
-            realIndex: seatIndexInRow,
-          });
-        }
-      }
-    }
-
-    // Avanzar el índice global por todas las sillas de esta fila
-    globalIndex += seatsInThisRow;
-  }
-
-  return filteredSeats;
+export function filterSeatsByPage(seatPositions, colPage, rowPage, pageSize = 10) {
+  if (!seatPositions || seatPositions.length === 0) return [];
+  const colStart = colPage * pageSize;
+  const pageRows = new Set(rowsInColumnWindow(seatPositions, colPage, pageSize)
+    .slice(rowPage * pageSize, (rowPage + 1) * pageSize));
+  const page = [];
+  seatPositions.forEach((pos, realIndex) => {
+    const inWindow = pos.colIndex >= colStart && pos.colIndex < colStart + pageSize;
+    if (inWindow && pageRows.has(pos.rowIndex)) page.push({ pos, realIndex });
+  });
+  return page;
 }

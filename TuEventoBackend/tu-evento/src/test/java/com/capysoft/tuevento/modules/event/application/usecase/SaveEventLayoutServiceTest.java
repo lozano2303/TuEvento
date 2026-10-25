@@ -205,6 +205,71 @@ class SaveEventLayoutServiceTest {
         verify(eventSectionRepository, never()).save(any());
     }
 
+    private void previousLayout(String layoutData) {
+        when(eventLayoutRepository.findByEventId(EVENT_ID)).thenReturn(Optional.of(
+                EventLayout.builder().eventLayoutId(1L).eventId(EVENT_ID).layoutData(layoutData).build()));
+    }
+
+    @Test
+    @DisplayName("una sección cuyas sillas no cambiaron no se borra ni se vuelve a insertar")
+    void skipsUnchangedSections() {
+        String layout = layoutWithCourtesy(SECTION_ID, 2, new int[]{3, 2}, new int[]{2, 2});
+        previousLayout(layout);
+        when(seatRepository.countByEventSectionId(SECTION_ID)).thenReturn(5L);
+
+        save(layout);
+
+        verify(eventLayoutRepository).save(any());
+        verify(seatRepository, never()).deleteAllByEventSectionId(anyInt());
+        verify(seatBlockRepository, never()).deleteAllByEventSectionId(anyInt());
+        verify(seatRepository, never()).insertAll(any());
+        verify(eventSectionRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("si faltan sillas en la base, la sección se regenera aunque el layout no cambie")
+    void regeneratesWhenSeatsAreMissing() {
+        when(seatBlockRepository.save(any())).thenReturn(SeatBlock.builder().seatBlockId(33).build());
+        String layout = layout(new int[]{3, 2});
+        previousLayout(layout);
+        when(seatRepository.countByEventSectionId(SECTION_ID)).thenReturn(0L);
+
+        save(layout);
+
+        assertThat(insertedSeats()).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("cambiar la cantidad, la numeración o las cortesías regenera la sección")
+    void regeneratesChangedSections() {
+        when(seatBlockRepository.save(any())).thenReturn(SeatBlock.builder().seatBlockId(33).build());
+        previousLayout(layoutWithCourtesy(SECTION_ID, 0, new int[]{3, 2}));
+
+        save(layoutWithCourtesy(SECTION_ID, 1, new int[]{3, 2}));
+
+        verify(seatRepository, never()).countByEventSectionId(anyInt());
+        assertThat(insertedSeats()).extracting(Seat::getStatus).containsExactly(
+                SeatStatus.AVAILABLE, SeatStatus.AVAILABLE, SeatStatus.COURTESY);
+    }
+
+    @Test
+    @DisplayName("un layout anterior ilegible o sin elementos no impide guardar: se regenera todo")
+    void regeneratesWhenPreviousLayoutIsUnreadable() {
+        when(seatBlockRepository.save(any())).thenReturn(SeatBlock.builder().seatBlockId(33).build());
+        previousLayout("{no es json");
+        save(layout(new int[]{2, 2}));
+        assertThat(insertedSeats()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("un layout anterior sin lista de elementos se trata como vacío")
+    void regeneratesWhenPreviousLayoutHasNoElements() {
+        when(seatBlockRepository.save(any())).thenReturn(SeatBlock.builder().seatBlockId(33).build());
+        previousLayout("{\"canvasWidth\":1200}");
+        save(layout(new int[]{2, 2}));
+        assertThat(insertedSeats()).hasSize(2);
+    }
+
     @Test
     @DisplayName("rechaza secciones de otro evento sin tocar sus sillas")
     void rejectsSectionFromAnotherEvent() {
