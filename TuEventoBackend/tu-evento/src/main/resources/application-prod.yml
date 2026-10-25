@@ -135,6 +135,13 @@ minio:
   public-url: ${MINIO_PUBLIC_URL}
 
 app:
+  # ── Cookie del refresh token (web) ────────────────────────
+  # Strict sirve cuando web y API comparten sitio (mismo dominio o subdominios).
+  # Si están en sitios distintos (p. ej. dos subdominios de onrender.com) usar None.
+  auth:
+    refresh-cookie:
+      secure: ${AUTH_COOKIE_SECURE:true}
+      same-site: ${AUTH_COOKIE_SAME_SITE:Strict}
   # ── JWT ───────────────────────────────────────────────────
   jwt:
     secret: ${JWT_SECRET}
