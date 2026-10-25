@@ -227,7 +227,7 @@ CPS DEBE registrar cada intento de entrega con `eventId`, número de intento, c�
 |---|---|
 | Descripción | Las operaciones de `/admin/**` (listar, consultar, forzar desenlaces, cancelar, reembolsar) DEBEN exigir una API key en la cabecera `X-Api-Key`. |
 | Proceso | Comparación en tiempo constante con `ADMIN_API_KEY`. Sin cabecera o con clave incorrecta: HTTP 401 sin ejecutar la operación. |
-| Arranque | CPS NO DEBE arrancar si la clave está vacía y DEBERÍA advertir en el log si usa el valor de desarrollo. |
+| Arranque | La clave NO DEBE tener valor por defecto. CPS NO DEBE arrancar si falta, está vacía o tiene menos de 16 caracteres, y DEBERÍA advertir en el log si usa la clave de desarrollo. |
 | Prioridad / Estado | Alta / Implementado |
 
 #### RF-14 Errores de cliente
@@ -298,7 +298,7 @@ flowchart LR
 | RNF-12 | Usabilidad | El checkout DEBE ser usable en pantallas móviles desde 360 px de ancho. | Implementado |
 | RNF-13 | Interoperabilidad | El contrato NO DEBE contener conceptos propios de un sistema cliente particular. | Implementado |
 | RNF-14 | Configurabilidad | Puerto, base de datos, URL de webhook, secreto, API key, *timeouts*, *backoff* y nivel de log DEBEN ser configurables por variables de entorno. | Implementado |
-| RNF-15 | Verificabilidad | Las reglas de dominio, los casos de uso, la firma, los reintentos, el control de acceso y el contrato HTTP DEBEN tener pruebas automatizadas ejecutables sin base de datos. | Implementado (52 pruebas) |
+| RNF-15 | Verificabilidad | Las reglas de dominio, los casos de uso, la firma, los reintentos, el control de acceso y el contrato HTTP DEBEN tener pruebas automatizadas ejecutables sin base de datos. | Implementado (53 pruebas) |
 
 ### 3.5 Requisitos de base de datos lógica
 

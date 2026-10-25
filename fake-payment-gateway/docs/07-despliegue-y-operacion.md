@@ -25,7 +25,7 @@
 | `POSTGRES_PASSWORD` | Sí en entornos compartidos | `postgres` | Contraseña |
 | `PAYMENT_CALLBACK_URL` | Sí | `http://localhost:8080/api/v1/webhooks/payment` | Destino de los webhooks |
 | `WEBHOOK_SECRET` | Sí | `default-secret-change-in-production` | Secreto HMAC; **nunca** use el valor por defecto fuera de local |
-| `ADMIN_API_KEY` | Sí | `dev-admin-key-change-in-production` | API key de `/admin/**` (cabecera `X-Api-Key`). Vacía → CPS no arranca; valor por defecto → advertencia en el log |
+| `ADMIN_API_KEY` | **Sí** | — (sin valor por defecto) | API key de `/admin/**` (cabecera `X-Api-Key`), mínimo 16 caracteres. Si falta, está vacía o es más corta, CPS no arranca. La clave de desarrollo `dev-admin-key-change-in-production` (usada por `docker-compose.yml`) produce una advertencia en el log |
 | `WEBHOOK_CONNECT_TIMEOUT_MS` | No | `3000` | *Timeout* de conexión de cada intento de webhook |
 | `WEBHOOK_READ_TIMEOUT_MS` | No | `5000` | *Timeout* de lectura de cada intento de webhook |
 | `WEBHOOK_RETRY_BACKOFF_MS` | No | `2000,10000` | Esperas antes de cada reintento; intentos totales = elementos + 1 |
@@ -39,7 +39,8 @@ Plantilla: [`.env.example`](../.env.example). El archivo `.env` está en `.gitig
 ```bash
 cd fake-payment-gateway
 cp .env.example .env            # ajuste valores
-# exporte las variables (o use su IDE) y luego:
+# exporte las variables (o use su IDE); ADMIN_API_KEY es obligatoria, p. ej.:
+# export ADMIN_API_KEY=dev-admin-key-change-in-production
 ./mvnw spring-boot:run
 
 # pruebas automatizadas (no requieren base de datos)
@@ -135,6 +136,7 @@ DELETE FROM payments WHERE updated_at < now() - interval '90 days';
 | Webhooks con `Connection refused` | `PAYMENT_CALLBACK_URL` apunta a `localhost` desde dentro del contenedor | Use `host.docker.internal` o el nombre del servicio |
 | Aprobar tarda hasta ~10 s | URL de webhook que acepta la conexión pero no responde: el primer intento espera el *timeout* de lectura por cada evento | Corregir el receptor o bajar `WEBHOOK_READ_TIMEOUT_MS` |
 | El backend recibe 401 al cancelar o reembolsar | `FAKE_GATEWAY_API_KEY` del backend distinta de `ADMIN_API_KEY` de CPS | Igualar ambos valores |
-| CPS no arranca: `gateway.admin.api-key (ADMIN_API_KEY) must not be blank` | Variable definida pero vacía | Asignar un valor |
+| CPS no arranca: `Could not resolve placeholder 'ADMIN_API_KEY'` | Variable no definida | Definir `ADMIN_API_KEY` |
+| CPS no arranca: `ADMIN_API_KEY ... must not be blank` o `must be at least 16 characters` | Variable vacía o demasiado corta | Usar un valor aleatorio, p. ej. `openssl rand -hex 32` |
 | Error `violates check constraint "payments_status_check"` al reembolsar | Base creada antes de existir `REFUNDED` | Recrear el `CHECK` ([05 §4](05-modelo-de-datos.md#4-gestión-del-esquema)) |
 | El checkout en el teléfono no carga | Se usó `localhost` en la URL | Usar la IP LAN del equipo que ejecuta CPS |

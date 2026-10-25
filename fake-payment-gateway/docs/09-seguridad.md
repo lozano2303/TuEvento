@@ -25,7 +25,7 @@ Al no existir datos de titular de tarjeta, PCI-DSS no aplica. Los integradores *
 | Control | Descripción |
 |---|---|
 | Autenticidad e integridad de webhooks | HMAC-SHA256 del cuerpo con secreto compartido en `X-Signature` |
-| Control de acceso administrativo | `X-Api-Key` obligatoria en `/admin/**`, comparada en tiempo constante; arranque bloqueado si la clave está vacía; advertencia si se usa la clave de desarrollo |
+| Control de acceso administrativo | `X-Api-Key` obligatoria en `/admin/**`, comparada en tiempo constante. La clave no tiene valor por defecto (*fail-closed*): sin ella, vacía o con menos de 16 caracteres, CPS no arranca; advertencia si se usa la clave de desarrollo |
 | Separación pagador / comercio | El checkout solo puede aprobar, rechazar, fallar o cancelar (`/public/checkout`); reembolsar y listar requieren la API key |
 | Errores sin filtración | Los 500 responden `Unexpected error`; el detalle va solo al log |
 | Resiliencia del HTTP saliente | *Timeouts* de 3 s / 5 s y reintentos fuera del hilo de la petición |

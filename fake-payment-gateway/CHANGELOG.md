@@ -19,13 +19,13 @@ All notable changes to the fake-payment-gateway are documented here.
 
 ### Security — L-03 `/admin/**` had no authentication
 
-- New `AdminApiKeyInterceptor` (Spring MVC interceptor on `/admin/**`, evaluated on the same normalized path used for routing, so `/%61dmin/...` and `/admin;x=1/...` cannot bypass it): `/admin/**` requires `X-Api-Key` (constant-time comparison, `ADMIN_API_KEY`). CORS preflight is exempt. Startup fails if the key is blank and warns if the development default is used.
+- New `AdminApiKeyInterceptor` (Spring MVC interceptor on `/admin/**`, evaluated on the same normalized path used for routing, so `/%61dmin/...` and `/admin;x=1/...` cannot bypass it): `/admin/**` requires `X-Api-Key` (constant-time comparison, `ADMIN_API_KEY`). CORS preflight is exempt. `ADMIN_API_KEY` has no default (fail-closed): startup fails if it is missing, blank or shorter than 16 characters, and warns if the development key is used.
 - New public checkout endpoints `POST /public/checkout/{id}/{approve|decline|fail|cancel}`; `pay.html` uses them instead of `/admin`. Refund is no longer reachable from the checkout (merchant-only).
 - TuEvento backend: `FakePaymentGatewayAdapter` sends `X-Api-Key` on cancel/refund (`payment.fake-gateway.api-key` / `FAKE_GATEWAY_API_KEY`). `docker-compose.yml` passes the same value to the gateway.
 
 ### Added — L-09 automated tests
 
-- 52 tests across domain, use cases, webhook signing (RFC 4231 vector), delivery, retries (including a real `@Async` proxy test), the API-key filter and the HTTP contract (`@WebMvcTest`). Run with `./mvnw test`; no database required.
+- 53 tests across domain, use cases, webhook signing (RFC 4231 vector), delivery, retries (including a real `@Async` proxy test), the API-key filter and the HTTP contract (`@WebMvcTest`). Run with `./mvnw test`; no database required.
 
 ### Docs
 

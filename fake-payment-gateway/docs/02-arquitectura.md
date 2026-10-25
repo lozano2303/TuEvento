@@ -244,7 +244,7 @@ Procedimiento completo en [07 — Despliegue y operación](07-despliegue-y-opera
 | Seguridad de mensajes | HMAC-SHA256 sobre el cuerpo exacto |
 | Control de acceso | API key en `/admin/**`; checkout autorizado por posesión del `paymentId` |
 | Disponibilidad | Reintentos fuera del hilo de la petición; *timeouts* en el HTTP saliente |
-| Verificabilidad | 52 pruebas automatizadas sin dependencia de base de datos |
+| Verificabilidad | 53 pruebas automatizadas sin dependencia de base de datos |
 | Idempotencia | `eventId` nuevo y único por transición |
 | Trazabilidad | Bitácora de entregas + logs estructurados con `eventId` y número de intento |
 | Modificabilidad | Puertos y adaptadores; un caso de uso por clase |

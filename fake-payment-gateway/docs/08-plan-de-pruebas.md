@@ -11,11 +11,11 @@ Verificar que CPS cumple los requisitos del [SRS](01-SRS.md) y que un sistema cl
 
 ## 2. Estado actual
 
-CPS tiene **52 pruebas automatizadas** en 9 clases, que se ejecutan con `./mvnw test` en unos 15 s y **no requieren base de datos ni red**. Se complementan con pruebas manuales extremo a extremo a través de la plataforma TuEvento (sección 6). La integración con PostgreSQL real todavía se verifica de forma manual (L-14).
+CPS tiene **53 pruebas automatizadas** en 9 clases, que se ejecutan con `./mvnw test` en unos 15 s y **no requieren base de datos ni red**. Se complementan con pruebas manuales extremo a extremo a través de la plataforma TuEvento (sección 6). La integración con PostgreSQL real todavía se verifica de forma manual (L-14).
 
 ```text
 ./mvnw test
-Tests run: 52, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS
+Tests run: 53, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS
 ```
 
 | Clase de prueba | Pruebas | Qué verifica |
@@ -27,7 +27,7 @@ Tests run: 52, Failures: 0, Errors: 0, Skipped: 0 — BUILD SUCCESS
 | `infrastructure.webhook.WebhookDeliveryClientTest` | 5 | Firma contra el vector RFC 4231, payload y cabecera exactos, registro de 2xx, no-2xx y error de red, tolerancia a fallas de la bitácora |
 | `infrastructure.webhook.WebhookRetryTest` | 5 | El notificador solo reintenta si falla el primer intento; cantidad de intentos; corte al tener éxito; lectura del *backoff* desde la configuración |
 | `infrastructure.webhook.WebhookRetryAsyncTest` | 1 | Con el proxy real de Spring, los reintentos corren en otro hilo y la llamada vuelve de inmediato (L-01) |
-| `infrastructure.security.AdminApiKeyInterceptorTest` | 1 | La aplicación no arranca con la API key vacía |
+| `infrastructure.security.AdminApiKeyInterceptorTest` | 2 | La aplicación no arranca con la API key vacía o con menos de 16 caracteres |
 | `interfaces.rest.PaymentApiTest` | 18 | Contrato HTTP de las tres superficies, códigos 400/401/404/415/500, detalle de validación, checkout sin clave y sin reembolso, preflight CORS, intentos de evadir la API key con rutas codificadas o *matrix params* |
 
 ## 3. Estrategia por niveles

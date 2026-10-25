@@ -25,7 +25,7 @@ http://localhost:4001/pay.html?id=fake_...
 - Webhooks firmados (`X-Signature`), con `eventId` para idempotencia, 3 intentos asíncronos con *timeouts* y bitácora de auditoría.
 - Superficie administrativa protegida con API key (`X-Api-Key`); checkout con endpoints públicos propios.
 - Errores de cliente con códigos 4xx y detalle por campo.
-- 52 pruebas automatizadas: `./mvnw test` (no requieren base de datos).
+- 53 pruebas automatizadas: `./mvnw test` (no requieren base de datos).
 - Base PostgreSQL dedicada; configuración 100 % por variables de entorno; imagen Docker multi-etapa.
 
 ## Stack
