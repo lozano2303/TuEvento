@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.security.application.usecase;
 
 import java.time.LocalDateTime;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +32,6 @@ import lombok.RequiredArgsConstructor;
 public class LoginUseCase implements LoginPort {
 
     private static final int    MAX_FAILED_ATTEMPTS  = 5;
-    private static final int    LOCKOUT_MINUTES       = 1; // TODO: restore to 30 for production
     private static final int    WINDOW_MINUTES        = 15;
     private static final int    ACCESS_TOKEN_MINUTES  = 15;
     private static final int    REFRESH_TOKEN_DAYS    = 7;
@@ -44,6 +44,10 @@ public class LoginUseCase implements LoginPort {
     private final PasswordEncoderPort        passwordEncoder;
     private final TokenGeneratorPort         tokenGenerator;
     private final ApplicationEventPublisher  eventPublisher;
+
+    // Duración del bloqueo tras MAX_FAILED_ATTEMPTS intentos fallidos; dev puede reducirla
+    @Value("${security.lockout.minutes:30}")
+    private long lockoutMinutes;
 
     @Override
     @Transactional
@@ -58,15 +62,17 @@ public class LoginUseCase implements LoginPort {
         }
 
         // Check lockout first — if expired, it auto-unblocks the user before status is evaluated
-        checkLockout(user);
+        boolean unlockedNow = checkLockout(user);
 
-        // Re-fetch credentials so user status reflects any auto-unblock done above
-        credentials = loginCredentialsRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "Invalid email or password"));
-        user = credentials.getUser();
+        // El desbloqueo corre en su propia transacción (REQUIRES_NEW): volver a leer al usuario
+        // aquí devolvería la copia en caché de esta transacción, todavía BLOCKED. Si se acaba de
+        // desbloquear, el estado real ya es ACTIVE.
+        String statusCode = user.getUserStatus().getCode();
+        if (unlockedNow && "BLOCKED".equals(statusCode)) {
+            statusCode = "ACTIVE";
+        }
 
         // Verify user status for blocked/inactive/deleted accounts
-        String statusCode = user.getUserStatus().getCode();
         if ("BLOCKED".equals(statusCode)) {
             throw new BusinessException("ACCOUNT_BLOCKED",
                     "Tu cuenta ha sido bloqueada. Por favor contacta a soporte.");
@@ -118,17 +124,19 @@ public class LoginUseCase implements LoginPort {
                 .build();
     }
 
-    private void checkLockout(User user) {
-        accountLockoutRepository.findByUserId(user.getUserId()).ifPresent(lockout -> {
-            if (lockout.getLockedUntil() != null) {
-                if (lockout.getLockedUntil().isAfter(LocalDateTime.now())) {
-                    throw new BusinessException("ACCOUNT_LOCKED",
-                            "Cuenta bloqueada temporalmente. Por favor intenta de nuevo más tarde.");
-                }
-                // Lockout window expired — auto-unblock
-                accountLockoutService.deleteLockout(user.getUserId());
-            }
-        });
+    /** @return true si el bloqueo había vencido y se acaba de levantar */
+    private boolean checkLockout(User user) {
+        AccountLockout lockout = accountLockoutRepository.findByUserId(user.getUserId()).orElse(null);
+        if (lockout == null || lockout.getLockedUntil() == null) {
+            return false;
+        }
+        if (lockout.getLockedUntil().isAfter(LocalDateTime.now())) {
+            throw new BusinessException("ACCOUNT_LOCKED",
+                    "Cuenta bloqueada temporalmente. Por favor intenta de nuevo más tarde.");
+        }
+        // Lockout window expired — auto-unblock
+        accountLockoutService.deleteLockout(user.getUserId());
+        return true;
     }
 
     private void handleFailedAttempt(User user) {
@@ -150,7 +158,7 @@ public class LoginUseCase implements LoginPort {
         }
 
         if (lockout.getFailedAttempts() >= MAX_FAILED_ATTEMPTS) {
-            LocalDateTime lockedUntil = now.plusMinutes(LOCKOUT_MINUTES);
+            LocalDateTime lockedUntil = now.plusMinutes(lockoutMinutes);
             lockout.setLockedUntil(lockedUntil);
             accountLockoutService.saveLockout(lockout);
             eventPublisher.publishEvent(UserLockedEvent.builder()

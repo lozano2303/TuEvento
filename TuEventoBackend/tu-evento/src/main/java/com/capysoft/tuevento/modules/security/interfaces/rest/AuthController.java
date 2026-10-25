@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.security.interfaces.rest;
 import com.capysoft.tuevento.modules.security.application.dto.request.*;
 import com.capysoft.tuevento.modules.security.application.dto.response.*;
 import com.capysoft.tuevento.modules.security.application.port.in.*;
+import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -179,21 +180,47 @@ public class AuthController {
                        2. The authorization code is single-use and expires in minutes (OAuth2 protocol
                           property — no extra code needed)
                      Do not rely on CORS as a substitute for HTTPS in the json branch.
+
+                   Errors never surface as raw JSON in the browser: when the provider returns
+                   error (e.g. the user cancelled) or no code, or sign-in fails, the browser is
+                   redirected to the frontend with oauth_error=<code>: OAUTH_CANCELLED,
+                   OAUTH_FAILED, FACEBOOK_OAUTH_FAILED, ACCOUNT_LOCKED, ACCOUNT_BLOCKED,
+                   ACCOUNT_DEACTIVATED, ACCOUNT_DELETED. With response_format=json they are
+                   returned as 400 with the same code.
                    """)
     @GetMapping("/oauth/{provider}/callback")
     public ResponseEntity<?> oauthCallback(
             @PathVariable String provider,
-            @RequestParam String code,
+            @RequestParam(required = false) String code,
             @RequestParam(required = false) String state,
+            @RequestParam(required = false) String error,
             @RequestParam(required = false, name = "response_format") String responseFormat) {
 
-        LoginResponse response = oauthLoginPort.login(provider, code);
+        boolean jsonResponse = "json".equalsIgnoreCase(responseFormat);
+        CallbackTarget target = resolveCallbackTarget(state);
+
+        if (error != null || code == null || code.isBlank()) {
+            String errorCode = "access_denied".equals(error) ? OAUTH_CANCELLED : OAUTH_FAILED;
+            log.info("OAuth callback without code — provider={} error={}", provider, error);
+            return oauthError(jsonResponse, target, errorCode, "Social sign-in was cancelled or not authorized");
+        }
+
+        LoginResponse response;
+        try {
+            response = oauthLoginPort.login(provider, code);
+        } catch (BusinessException e) {
+            log.info("OAuth sign-in rejected — provider={} code={}", provider, e.getCode());
+            return oauthError(jsonResponse, target, e.getCode(), e.getMessage());
+        } catch (RuntimeException e) {
+            log.error("OAuth sign-in failed — provider={}", provider, e);
+            return oauthError(jsonResponse, target, OAUTH_FAILED, "Social sign-in failed");
+        }
 
         // ── Mobile JSON response ──────────────────────────────────────────────
         // Native apps (Expo) pass response_format=json.  They are not subject to
         // browser Same-Origin Policy, so CORS does not apply.  The token reaches
         // the app directly and is stored in AsyncStorage, never in a URL.
-        if ("json".equalsIgnoreCase(responseFormat)) {
+        if (jsonResponse) {
             log.debug("OAuth callback (json) — provider={} userId={}", provider, response.getUserId());
             return ResponseEntity.ok(ApiResponse.ok("OAuth login successful", response));
         }
@@ -201,26 +228,8 @@ public class AuthController {
         // ── Browser 302 redirect ──────────────────────────────────────────────
         // The token travels in the redirect URL, so the destination MUST be on
         // the whitelist to prevent open-redirect token theft.
-        // Recover the frontend redirect URI and original CSRF token from the
-        // composite state value that the OAuth provider returned unchanged.
-        String frontendUri   = oauthAllowedFrontendRedirectUris.iterator().next(); // safe default
-        String originalState = null;
-
-        if (state != null && !state.isBlank()) {
-            try {
-                @SuppressWarnings("unchecked")
-                Map<String, String> parsed = objectMapper.readValue(state, Map.class);
-                originalState = parsed.get("s");
-                String requestedUri = parsed.get("r");
-                if (requestedUri != null && oauthAllowedFrontendRedirectUris.contains(requestedUri)) {
-                    frontendUri = requestedUri;
-                } else if (requestedUri != null) {
-                    log.warn("OAuth callback received unlisted frontend_redirect_uri '{}' — using default", requestedUri);
-                }
-            } catch (Exception e) {
-                log.warn("OAuth callback: could not parse composite state '{}' — using defaults", state);
-            }
-        }
+        String frontendUri   = target.frontendUri();
+        String originalState = target.originalState();
 
         StringBuilder redirect = new StringBuilder(frontendUri)
                 .append("?oauth=true")
@@ -281,6 +290,58 @@ public ResponseEntity<ApiResponse<Void>> confirmReactivation(
 }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    private static final String OAUTH_CANCELLED = "OAUTH_CANCELLED";
+    private static final String OAUTH_FAILED    = "OAUTH_FAILED";
+
+    /** Whitelisted frontend URI and the frontend's original CSRF token, recovered from the composite state. */
+    private record CallbackTarget(String frontendUri, String originalState) {}
+
+    /**
+     * Recovers the frontend redirect URI and original CSRF token from the composite state
+     * value that the OAuth provider returned unchanged. Falls back to the first whitelisted
+     * URI when the state is missing, unparseable or names an unlisted URI.
+     */
+    private CallbackTarget resolveCallbackTarget(String state) {
+        String frontendUri   = oauthAllowedFrontendRedirectUris.iterator().next(); // safe default
+        String originalState = null;
+
+        if (state != null && !state.isBlank()) {
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, String> parsed = objectMapper.readValue(state, Map.class);
+                originalState = parsed.get("s");
+                String requestedUri = parsed.get("r");
+                if (requestedUri != null && oauthAllowedFrontendRedirectUris.contains(requestedUri)) {
+                    frontendUri = requestedUri;
+                } else if (requestedUri != null) {
+                    log.warn("OAuth callback received unlisted frontend_redirect_uri '{}' — using default", requestedUri);
+                }
+            } catch (Exception e) {
+                log.warn("OAuth callback: could not parse composite state '{}' — using defaults", state);
+            }
+        }
+        return new CallbackTarget(frontendUri, originalState);
+    }
+
+    /**
+     * Mobile (json): 400 with the error code. Browser: 302 back to the frontend login page
+     * with oauth_error=<code>, so the user sees a message instead of a raw error page.
+     */
+    private ResponseEntity<?> oauthError(boolean jsonResponse, CallbackTarget target,
+                                         String errorCode, String message) {
+        if (jsonResponse) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(errorCode, message));
+        }
+        StringBuilder redirect = new StringBuilder(target.frontendUri())
+                .append("?oauth_error=").append(enc(errorCode));
+        if (target.originalState() != null && !target.originalState().isBlank()) {
+            redirect.append("&state=").append(enc(target.originalState()));
+        }
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(redirect.toString()))
+                .build();
+    }
 
     /**
      * Validates the requested frontend redirect URI against the whitelist.
