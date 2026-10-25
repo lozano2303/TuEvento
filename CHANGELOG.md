@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-25
+
+Imágenes Docker `v1.0.1`: se reconstruyen `backend`, `frontend` y `gateway` (el gateway cambia con el sandbox de pagos, #100); solo `nsfw` se reetiqueta desde `v1.0.0`. Incluyen también la cancelación de eventos y reembolsos (PR #105), que no estaba en las imágenes `v1.0.0`.
+
+### Changed — feat(gateway): payment sandbox with an admin API key (#100)
+
+- **Brings the payment sandbox work (#100) into `develop`**: it had been merged straight into `main`. The gateway requires an API key (`X-Api-Key`) on `/admin/**` and refuses to start without `ADMIN_API_KEY` (minimum 16 characters); the payment popup (`pay.html`) uses the new public `/public/checkout/{id}/{approve|decline|fail|cancel}` endpoints and no longer offers refunds (a merchant operation); webhook retries run asynchronously with HTTP timeouts; invalid requests get a 4xx with field details
+- **Backend** sends `FAKE_GATEWAY_API_KEY` as `X-Api-Key` when cancelling or refunding a payment; creating and reading payments stay on the public API
+- **`docker-compose.prod.yml`** passes `ADMIN_API_KEY` to the gateway and `FAKE_GATEWAY_API_KEY` to the backend, both required (`${VAR:?}`); `.env.prod.example` documents that they must hold the same value
+- No change for the web or mobile apps: they only open `pay.html` from the gateway, so no new `VITE_*`/`EXPO_PUBLIC_*` variable
+
 ### Security — fix(config): configuration hardening from the security audit
 
 - **Account lockout** lasts 30 minutes again (`security.lockout.minutes`, `SECURITY_LOCKOUT_MINUTES`); the dev profile keeps 1 minute
@@ -20,10 +31,6 @@ All notable changes to this project will be documented in this file.
 - **Redis counter** with a one-minute window; if Redis is unavailable requests pass (the account lockout still protects login)
 - **Client IP** taken from `X-Forwarded-For` counting `rate-limit.auth.trusted-proxies` hops from the right (`RATE_LIMIT_TRUSTED_PROXIES`: 2 on the VPS stack, 1 on k8s, 0 by default)
 - **Web and mobile** show a translated message (es/en/pt/fr); CORS exposes `Retry-After`
-
-## [1.0.1] - 2026-10-25
-
-Imágenes Docker `v1.0.1` (backend y web; `nsfw` y `gateway` reetiquetadas desde `v1.0.0`). Incluyen también la cancelación de eventos y reembolsos (PR #105), que no estaba en las imágenes `v1.0.0`.
 
 ### Fixed — fix(security): OAuth sessions, social login checks and errors
 
