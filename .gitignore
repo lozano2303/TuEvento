@@ -11,3 +11,6 @@ postgres*.tar
 TuEventoFrontend/web/dist/
 
 TuEventoBackend/tu-evento/jar-listing.txt
+
+# Secret de Kubernetes con valores reales (usar k8s/secrets.example.yaml como plantilla)
+k8s/secrets.yaml

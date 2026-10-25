@@ -6,8 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Security — fix(storage): access control on storage endpoints
 
-- **`/api/v1/storage/**` is no longer fully public**: only the `GET` routes stay open; `POST /upload` and `DELETE /{id}` require a login
-- **Ownership checks in the use cases** (`StorageAccessPolicy`): public categories (profile pictures, event media) are readable by anyone; private files (organizer documents) only by the uploader or an ADMIN; deletes by the owner or an ADMIN, and organizer documents only by an ADMIN
+- **`/api/v1/storage/**` is no longer public**: every route requires a login (no client calls storage anonymously)
+- **Ownership checks in the use cases** (`StorageAccessPolicy`): public categories (profile pictures, event media) are readable by any authenticated user; private files (organizer documents) only by the uploader or an ADMIN; deletes by the owner or an ADMIN, and organizer documents only by an ADMIN
 - **REST uploads** accept `PROFILE_PICTURE` only and ignore `ownerEntityType`/`ownerEntityId` from the client; the uploader is always the authenticated user
 - **`GET /storage/owner/{type}/{id}`** returns only the files the caller may read
 - **New error codes**: `STORAGE_AUTHENTICATION_REQUIRED` (401), `STORAGE_ACCESS_DENIED` (403), `STORAGE_CATEGORY_NOT_ALLOWED` (403) and `INVALID_PARAMETER` (400, mistyped path/query parameters); `ForbiddenException`/`UnauthorizedException` keep the `code` in the response

@@ -6,12 +6,14 @@ import com.capysoft.tuevento.modules.payment.application.dto.response.PaymentRes
 import com.capysoft.tuevento.modules.payment.application.usecase.CreatePaymentUseCaseImpl;
 import com.capysoft.tuevento.modules.payment.application.usecase.GetPaymentUseCaseImpl;
 import com.capysoft.tuevento.modules.payment.application.usecase.RequestRefundUseCaseImpl;
+import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -21,33 +23,40 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
 public class PaymentController {
-    
+
     private final CreatePaymentUseCaseImpl createPaymentUseCase;
     private final GetPaymentUseCaseImpl getPaymentUseCase;
     private final RequestRefundUseCaseImpl requestRefundUseCase;
-    
+
+    /** Paga una orden propia (solo el comprador). */
     @PostMapping
-    public ResponseEntity<PaymentResponse> createPayment(@Valid @RequestBody CreatePaymentRequest request) {
-        PaymentResponse response = createPaymentUseCase.execute(request);
+    public ResponseEntity<PaymentResponse> createPayment(
+            @Valid @RequestBody CreatePaymentRequest request,
+            @AuthenticationPrincipal SecurityUser principal) {
+        PaymentResponse response = createPaymentUseCase.execute(request, principal.getUserId().longValue());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-    
+
+    /** Consulta un pago (solo el comprador de la orden). */
     @GetMapping("/{id}")
-    public ResponseEntity<PaymentResponse> getPayment(@PathVariable Long id) {
-        PaymentResponse response = getPaymentUseCase.execute(id);
+    public ResponseEntity<PaymentResponse> getPayment(
+            @PathVariable Long id,
+            @AuthenticationPrincipal SecurityUser principal) {
+        PaymentResponse response = getPaymentUseCase.execute(id, principal.getUserId().longValue());
         return ResponseEntity.ok(response);
     }
 
     /**
      * Solicita el reembolso de un pago aprobado.
-     * Accesible solo por ADMIN u ORGANIZER.
+     * ADMIN: cualquier pago. ORGANIZER: solo pagos de sus propios eventos.
      */
     @PostMapping("/{id}/refund")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'ORGANIZER')")
     public ResponseEntity<ApiResponse<Void>> refundPayment(
             @PathVariable Long id,
-            @Valid @RequestBody RefundPaymentRequest request) {
-        requestRefundUseCase.execute(id, request.reason());
+            @Valid @RequestBody RefundPaymentRequest request,
+            @AuthenticationPrincipal SecurityUser principal) {
+        requestRefundUseCase.execute(id, request.reason(), principal.getUserId().longValue(), principal.isAdmin());
         return ResponseEntity.ok(ApiResponse.ok("Refund requested successfully"));
     }
 }

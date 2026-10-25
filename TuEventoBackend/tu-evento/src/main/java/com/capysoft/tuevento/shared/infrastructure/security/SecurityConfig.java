@@ -62,12 +62,6 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {
             "/api/v1/themes",
-            // Storage reads: public images (event media, avatars) must load without login.
-            // Private files (organizer documents) are protected by StorageAccessPolicy in the use cases.
-            // Upload and delete fall through to anyRequest().authenticated().
-            "/api/v1/storage/*",
-            "/api/v1/storage/*/url",
-            "/api/v1/storage/owner/**",
             "/api/v1/languages",          // GET idiomas activos — público
             "/api/v1/languages/*",        // GET idioma por ID — público
             "/api/v1/events/*",
