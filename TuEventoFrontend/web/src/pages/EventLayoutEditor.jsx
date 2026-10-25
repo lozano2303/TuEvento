@@ -21,7 +21,7 @@ import {
   groupBy,
   normalizeSeatLayout,
 } from '../components/layout-editor/layoutEditorUtils';
-import { sizeSectionForSeats } from '../components/layout-editor/sectionShapes';
+import { getSeatSize, sizeSectionForSeats } from '../components/layout-editor/sectionShapes';
 import {
   applyCourtesySeats,
   countCourtesySeats,
@@ -202,9 +202,10 @@ export default function EventLayoutEditor() {
     setSelectedIds([newElement.id]);
   }, [isReadOnly]);
 
-  const handleWizardConfirm = useCallback(({ targetSeats, shapeId, price }) => {
+  const handleWizardConfirm = useCallback(({ targetSeats, shapeId, seatSize, price }) => {
     if (!pendingSection) return;
-    const seatLayout = { ...normalizeSeatLayout(pendingSection.seatLayout), targetSeats };
+    const { seatRadius, gap } = getSeatSize(seatSize);
+    const seatLayout = { ...normalizeSeatLayout(pendingSection.seatLayout), targetSeats, seatRadius, gap };
     const el = {
       ...pendingSection,
       ...sizeSectionForSeats(shapeId, targetSeats, seatLayout),
@@ -359,42 +360,43 @@ export default function EventLayoutEditor() {
     setIsSaving(true);
     try {
       const groups = groupBy(elements.filter((e) => e.type === 'section'), 'eventSectionId');
-      console.log('[handleSave] groups:', JSON.stringify(
-        Object.entries(groups).map(([id, g]) => ({
-          eventSectionId: id, count: g.length,
-          sectionTypeId: g[0]?.sectionTypeId, backendSectionId: g[0]?.backendSectionId,
-          price: g[0]?.price,
-          capacity: g.reduce((s, el) => s + (el.seatLayout?.targetSeats ?? 0), 0),
-        })), null, 2));
 
       // Cortesías recortadas a las sillas actuales de cada sección (pudieron reducirse)
       const updatedElements = applyCourtesySeats(elements, Object.fromEntries(
         getSectionGroups(elements).map((g) => [g.eventSectionId, g.courtesySeats])));
-      for (const [, group] of Object.entries(groups)) {
+
+      // Una sola consulta de las secciones del backend: solo se actualizan las que cambiaron
+      const existingSections = (await EventSectionService.getByEvent(eventId)).data ?? [];
+      const existingById = new Map(existingSections.map((s) => [s.eventSectionId, s]));
+      const backendIdByGroup = {};
+
+      for (const [groupId, group] of Object.entries(groups)) {
         const capacity = group.reduce((s, el) => s + (el.seatLayout?.targetSeats ?? 0), 0);
         const price    = group[0].price ?? 0;
-        const existingBackendId = group[0].backendSectionId;
+        const current  = existingById.get(group[0].backendSectionId);
 
-        let backendSection;
-        if (existingBackendId) {
-          backendSection = (await EventSectionService.update(existingBackendId, { capacity, price })).data;
-        } else {
-          backendSection = (await EventSectionService.create({
+        if (!current) {
+          // Nueva, o su sección del backend ya no existe: se crea
+          backendIdByGroup[groupId] = (await EventSectionService.create({
             eventId: Number(eventId), sectionTypeId: group[0].sectionTypeId, capacity, price,
-          })).data;
+          })).data.eventSectionId;
+        } else {
+          if (current.capacity !== capacity || Number(current.price) !== Number(price)) {
+            await EventSectionService.update(current.eventSectionId, { capacity, price });
+          }
+          backendIdByGroup[groupId] = current.eventSectionId;
         }
-        group.forEach((el) => {
-          const idx = updatedElements.findIndex((u) => u.id === el.id);
-          if (idx !== -1)
-            updatedElements[idx] = { ...updatedElements[idx], backendSectionId: backendSection.eventSectionId };
-        });
       }
 
-      const currentBackendIds = updatedElements
-        .filter((e) => e.type === 'section' && e.backendSectionId != null)
-        .map((e) => e.backendSectionId);
-      const existingRes = await EventSectionService.getByEvent(eventId);
-      for (const orphan of (existingRes.data ?? []).filter((s) => !currentBackendIds.includes(s.eventSectionId)))
+      updatedElements.forEach((el, idx) => {
+        if (el.type === 'section' && backendIdByGroup[el.eventSectionId] != null) {
+          updatedElements[idx] = { ...el, backendSectionId: backendIdByGroup[el.eventSectionId] };
+        }
+      });
+
+      // Secciones del backend que ya no están en el mapa
+      const currentBackendIds = new Set(Object.values(backendIdByGroup));
+      for (const orphan of existingSections.filter((s) => !currentBackendIds.has(s.eventSectionId)))
         await EventSectionService.remove(orphan.eventSectionId);
 
       setElements(updatedElements);

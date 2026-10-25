@@ -59,6 +59,8 @@ class SeatRepositoryImplBulkTest {
 
         List<Seat> stored = seatRepository.findAllByEventSectionId(10);
         assertThat(stored).hasSize(count);
+        assertThat(seatRepository.countByEventSectionId(10)).isEqualTo(count);
+        assertThat(seatRepository.countByEventSectionId(99)).isZero();
         assertThat(stored).allSatisfy(seat -> {
             assertThat(seat.getSeatId()).isNotNull();
             assertThat(seat.getStatus()).isEqualTo(SeatStatus.AVAILABLE);
