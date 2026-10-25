@@ -19,6 +19,14 @@ security:
     minutes: ${SECURITY_LOCKOUT_MINUTES:30}
     cleanup-cron: "0 0/5 * * * *"
 
+# Límite por IP en login, registro, recuperación y activación de cuenta
+rate-limit:
+  auth:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    requests-per-minute: ${RATE_LIMIT_REQUESTS_PER_MINUTE:10}
+    # Proxies propios delante del backend (cuántas entradas de X-Forwarded-For añaden)
+    trusted-proxies: ${RATE_LIMIT_TRUSTED_PROXIES:0}
+
 # Translation configuration
 translation:
   provider: libretranslate

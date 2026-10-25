@@ -11,6 +11,8 @@ export const mapErrorMessage = (message) => {
     "Account is not activated": "notActivated",
     "Account is locked until": "locked",
     "Account locked due to too many failed attempts": "tooManyAttempts",
+    // Rate limit del backend (HTTP 429, code TOO_MANY_REQUESTS)
+    "Demasiadas solicitudes": "tooManyRequests",
     // Registro — BusinessException desde ValidationUtils y UseCase
     "Only @gmail.com emails are accepted": "gmailOnly",
     "Password must be at least 8 characters and include uppercase, lowercase, number and special character":

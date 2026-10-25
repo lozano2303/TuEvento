@@ -1761,6 +1761,7 @@
     "notActivated": "Your account is not activated. Check your email",
     "locked": "Your account is temporarily locked. Try again later",
     "tooManyAttempts": "Too many failed attempts. Account temporarily locked",
+    "tooManyRequests": "Too many attempts. Please wait a moment and try again.",
     "gmailOnly": "Only @gmail.com emails are accepted",
     "passwordWeak": "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number and a special character",
     "nameInvalid": "Name must have at least two words and letters only",

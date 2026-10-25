@@ -29,6 +29,9 @@ spec:
               key: jwt-secret
         - name: SPRING_PROFILES_ACTIVE
           value: "k8s"
+        # El ingress de nginx añade una entrada a X-Forwarded-For
+        - name: RATE_LIMIT_TRUSTED_PROXIES
+          value: "1"
         - name: SPRING_DATASOURCE_URL
           value: "jdbc:postgresql://postgres-service:5432/tuevento"
         - name: SPRING_DATASOURCE_USERNAME
