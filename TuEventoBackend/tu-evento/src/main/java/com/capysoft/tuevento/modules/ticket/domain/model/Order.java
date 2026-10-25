@@ -70,4 +70,9 @@ public class Order {
     public void markAsUsed() {
         transitionTo(OrderStatus.USED);
     }
+
+    /** Indica si la entidad pertenece al usuario dado (el comprador). */
+    public boolean isOwnedBy(Long requesterId) {
+        return requesterId != null && requesterId.equals(userId);
+    }
 }

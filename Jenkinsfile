@@ -28,7 +28,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('TuEventoBackend/tu-evento') {
-                    sh 'chmod +x mvnw && ./mvnw test -Dmaven.test.skip=true'
+                    sh 'chmod +x mvnw && ./mvnw test'
                 }
             }
         }

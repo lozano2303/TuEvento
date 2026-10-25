@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.ticket.application.usecase;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Use case para cancelar una orden.
- * Solo permitido en estados DRAFT o PAYMENT_PENDING.
+ * Solo permitido en estados DRAFT o PAYMENT_PENDING y solo por el comprador.
  */
 @Service
 @RequiredArgsConstructor
@@ -39,9 +40,12 @@ public class CancelOrderUseCaseImpl {
     private final SeatUseCase seatUseCase;
     
     @Transactional
-    public void execute(Long orderId) {
+    public void execute(Long orderId, Long requesterId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException(orderId));
+        if (!order.isOwnedBy(requesterId)) {
+            throw new AccessDeniedException("You cannot cancel this order");
+        }
         
         // Transicionar orden a CANCELLED (validará estados permitidos)
         order.cancel();

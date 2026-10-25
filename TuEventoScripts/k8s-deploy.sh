@@ -17,7 +17,12 @@ K8S_DIR="./k8s"
 echo "Creating namespace: $NAMESPACE"
 kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
-# Aplicar secrets primero
+# Aplicar secrets primero. k8s/secrets.yaml no se versiona: se crea a partir
+# de k8s/secrets.example.yaml con los valores reales del entorno.
+if [ ! -f "$K8S_DIR/secrets.yaml" ]; then
+  echo "ERROR: $K8S_DIR/secrets.yaml no existe. Créalo desde secrets.example.yaml" >&2
+  exit 1
+fi
 echo "Applying secrets..."
 kubectl apply -f $K8S_DIR/secrets.yaml -n $NAMESPACE
 

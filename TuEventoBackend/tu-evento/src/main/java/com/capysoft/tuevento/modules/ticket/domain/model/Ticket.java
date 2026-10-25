@@ -63,4 +63,9 @@ public class Ticket {
                expirationDate != null && 
                LocalDateTime.now().isBefore(expirationDate);
     }
+
+    /** Indica si la entidad pertenece al usuario dado (el comprador). */
+    public boolean isOwnedBy(Long requesterId) {
+        return requesterId != null && requesterId.equals(userId);
+    }
 }
