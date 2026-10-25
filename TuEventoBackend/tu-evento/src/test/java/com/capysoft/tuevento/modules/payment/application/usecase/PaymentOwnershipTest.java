@@ -12,6 +12,7 @@ import com.capysoft.tuevento.modules.payment.domain.repository.RefundRepository;
 import com.capysoft.tuevento.modules.ticket.application.port.in.ConfirmRefundUseCase;
 import com.capysoft.tuevento.modules.ticket.application.port.in.FailOrderPaymentUseCase;
 import com.capysoft.tuevento.modules.ticket.application.port.in.InitiateOrderPaymentUseCase;
+import com.capysoft.tuevento.modules.ticket.domain.model.Money;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
 import com.capysoft.tuevento.modules.wallet.application.usecase.CreditWalletUseCaseImpl;
@@ -29,6 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -131,6 +133,24 @@ class PaymentOwnershipTest {
                     .isInstanceOf(AccessDeniedException.class);
             verify(refundRepository, never()).save(any());
             verify(paymentGatewayPort, never()).refundPayment(any());
+        }
+
+        @Test
+        @DisplayName("Organizer of the event → authorized and the refund proceeds to the gateway")
+        void refund_eventOwner_proceeds() {
+            Payment approved = Payment.builder().paymentId(PAYMENT_ID).orderId(ORDER_ID)
+                    .status(PaymentStatus.APPROVED).gatewayTransactionId("gw-tx-1")
+                    .amount(new Money(new BigDecimal("80000"), "COP"))
+                    .walletAmountApplied(BigDecimal.ZERO)
+                    .build();
+            when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(approved));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(Event.builder().userId(ORGANIZER_ID).build()));
+            when(refundRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            requestRefund.execute(PAYMENT_ID, "reason", ORGANIZER_ID, false);
+
+            verify(paymentGatewayPort).refundPayment("gw-tx-1");
         }
 
         @Test
