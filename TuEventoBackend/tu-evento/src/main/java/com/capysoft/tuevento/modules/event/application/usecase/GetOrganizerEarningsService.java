@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,12 +40,12 @@ public class GetOrganizerEarningsService {
 
     @Transactional(readOnly = true)
     public OrganizerEarningsResponse execute(Long organizerId) {
+        // Ambas consultas agrupan por evento: una fila por eventId. El orden final lo fija el sort
         Map<Long, OrganizerEarningsByEventResponse> revenueByEvent = paymentRepository
                 .findEarningsByOrganizer(organizerId).stream()
-                .collect(Collectors.toMap(OrganizerEarningsByEventResponse::getEventId, Function.identity(),
-                        (a, b) -> a, LinkedHashMap::new));
+                .collect(Collectors.toMap(OrganizerEarningsByEventResponse::getEventId, Function.identity()));
         Map<Long, EventSeatSummary> seatsByEvent = seatRepository.summarizeSeatsByOrganizer(organizerId).stream()
-                .collect(Collectors.toMap(EventSeatSummary::eventId, Function.identity(), (a, b) -> a));
+                .collect(Collectors.toMap(EventSeatSummary::eventId, Function.identity()));
 
         List<OrganizerEarningsByEventResponse> byEvent = Stream
                 .concat(revenueByEvent.keySet().stream(), seatsByEvent.keySet().stream())
