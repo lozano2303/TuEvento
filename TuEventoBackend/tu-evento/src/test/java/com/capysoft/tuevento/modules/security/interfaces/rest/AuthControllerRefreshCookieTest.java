@@ -185,7 +185,7 @@ class AuthControllerRefreshCookieTest {
     void oauthRedirectUsesCookieInsteadOfUrl() {
         when(oauthLoginPort.login(anyString(), anyString())).thenReturn(login);
 
-        ResponseEntity<?> response = controller.oauthCallback("google", "code", null, null);
+        ResponseEntity<?> response = controller.oauthCallback("google", "code", null, null, null);
 
         String location = response.getHeaders().getLocation().toString();
         assertThat(location).startsWith("http://localhost:3000/login?oauth=true&userID=7")
@@ -198,7 +198,7 @@ class AuthControllerRefreshCookieTest {
     void oauthJsonKeepsBody() {
         when(oauthLoginPort.login(anyString(), anyString())).thenReturn(login);
 
-        ResponseEntity<?> response = controller.oauthCallback("google", "code", null, "json");
+        ResponseEntity<?> response = controller.oauthCallback("google", "code", null, null, "json");
 
         assertThat(setCookie(response)).isNull();
     }

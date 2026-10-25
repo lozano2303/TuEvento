@@ -1,0 +1,74 @@
+databaseChangeLog:
+  # Tokens issued before jti was added could repeat when the same user got two tokens in the
+  # same second (e.g. the OAuth callback followed by an immediate /auth/refresh). Each changeSet
+  # first neutralises the existing duplicates and then adds the unique constraint, in a single
+  # PostgreSQL transaction.
+  #
+  # Duplicate handling: per token, the row to keep is the active one (revoked = false) or, if all
+  # are revoked, the newest. The other rows are revoked and get a "#dup-<id>" suffix, so they can
+  # never match a lookup again. Rows are only updated, never deleted, so the
+  # refresh_token -> auth_session foreign key is untouched.
+  #
+  # Idempotent: the UPDATE only touches rows that still share a token (0 rows on a re-run), and
+  # the precondition marks the changeSet as ran when the constraint already exists.
+  - changeSet:
+      id: 102-unique-auth-session-access-token
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: postgresql
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM pg_constraint WHERE conname = 'uq_auth_session_access_token'
+      changes:
+        - sql:
+            sql: >
+              WITH ranked AS (
+                SELECT auth_session_id,
+                       ROW_NUMBER() OVER (PARTITION BY access_token
+                                          ORDER BY revoked ASC, auth_session_id DESC) AS rn
+                FROM auth_session
+              )
+              UPDATE auth_session s
+              SET access_token = LEFT(s.access_token, 490) || '#dup-' || s.auth_session_id,
+                  revoked      = true,
+                  revoked_at   = COALESCE(s.revoked_at, CURRENT_TIMESTAMP)
+              FROM ranked r
+              WHERE r.auth_session_id = s.auth_session_id
+                AND r.rn > 1
+        - addUniqueConstraint:
+            tableName: auth_session
+            columnNames: access_token
+            constraintName: uq_auth_session_access_token
+
+  - changeSet:
+      id: 102-unique-refresh-token-token
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: postgresql
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM pg_constraint WHERE conname = 'uq_refresh_token_token'
+      changes:
+        - sql:
+            sql: >
+              WITH ranked AS (
+                SELECT refresh_token_id,
+                       ROW_NUMBER() OVER (PARTITION BY token
+                                          ORDER BY revoked ASC, refresh_token_id DESC) AS rn
+                FROM refresh_token
+              )
+              UPDATE refresh_token t
+              SET token      = LEFT(t.token, 490) || '#dup-' || t.refresh_token_id,
+                  revoked    = true,
+                  revoked_at = COALESCE(t.revoked_at, CURRENT_TIMESTAMP)
+              FROM ranked r
+              WHERE r.refresh_token_id = t.refresh_token_id
+                AND r.rn > 1
+        - addUniqueConstraint:
+            tableName: refresh_token
+            columnNames: token
+            constraintName: uq_refresh_token_token

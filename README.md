@@ -37,7 +37,7 @@ Additional roles include **anonymous users** (browse-only on web) and **administ
 
 | Layer | Technology |
 |---|---|
-| Backend | Java 23, Spring Boot |
+| Backend | Java 17, Spring Boot |
 | Persistence | Spring Data JPA |
 | Database | PostgreSQL 17 |
 | Authentication | JWT + Refresh Token |
@@ -271,7 +271,7 @@ The database is designed around the modules above. Each module has its own entit
 ### Prerequisites
 
 #### Development Environment
-- Java 21
+- Java 17 or later (the code targets Java 17 via `pom.xml`; the Docker image runs on a compatible JRE 21)
 - Maven 3.9+
 - PostgreSQL 17
 
@@ -477,7 +477,7 @@ Los roles adicionales incluyen **usuarios anónimos** (solo navegación en web) 
 
 | Capa | Tecnología |
 |---|---|
-| Backend | Java 23, Spring Boot |
+| Backend | Java 17, Spring Boot |
 | Persistencia | Spring Data JPA |
 | Base de Datos | PostgreSQL 17 |
 | Autenticación | JWT + Refresh Token |
@@ -711,7 +711,7 @@ La base de datos está diseñada alrededor de los módulos anteriores. Cada mód
 ### Prerrequisitos
 
 #### Entorno de Desarrollo
-- Java 21
+- Java 17 o superior (el código compila para Java 17 según el `pom.xml`; la imagen Docker usa un JRE 21 compatible)
 - Maven 3.9+
 - PostgreSQL 17
 
