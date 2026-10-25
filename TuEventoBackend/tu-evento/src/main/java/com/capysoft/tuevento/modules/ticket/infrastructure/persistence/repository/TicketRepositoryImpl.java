@@ -44,6 +44,16 @@ public class TicketRepositoryImpl implements TicketRepository {
     }
     
     @Override
+    public Optional<Ticket> findByIdForUpdate(Long ticketId) {
+        return jpaRepository.findByIdForUpdate(ticketId).map(this::toDomain);
+    }
+
+    @Override
+    public List<Ticket> findByOrderIdForUpdate(Long orderId) {
+        return jpaRepository.findByOrderIdForUpdate(orderId).stream().map(this::toDomain).toList();
+    }
+
+    @Override
     public List<Ticket> findByOrderId(Long orderId) {
         return jpaRepository.findByOrderId(orderId).stream()
             .map(this::toDomain)

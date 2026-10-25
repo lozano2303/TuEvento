@@ -151,7 +151,7 @@ class OrderTicketOwnershipTest {
         @Test
         @DisplayName("Organizer of another event → denied and the ticket is not used")
         void checkin_notEventOwner_isDenied() {
-            when(ticketRepository.findById(TICKET_ID)).thenReturn(Optional.of(paidTicket()));
+            when(ticketRepository.findByIdForUpdate(TICKET_ID)).thenReturn(Optional.of(paidTicket()));
             when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(Event.builder().userId(ORGANIZER_ID).build()));
 
             assertThatThrownBy(() -> checkinTicket.execute(TICKET_ID, OTHER_USER_ID))
@@ -163,7 +163,7 @@ class OrderTicketOwnershipTest {
         @Test
         @DisplayName("Event owner → check-in recorded with the authenticated organizer as validator")
         void checkin_eventOwner_isRecorded() {
-            when(ticketRepository.findById(TICKET_ID)).thenReturn(Optional.of(paidTicket()));
+            when(ticketRepository.findByIdForUpdate(TICKET_ID)).thenReturn(Optional.of(paidTicket()));
             when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(Event.builder().userId(ORGANIZER_ID).build()));
             when(ticketCheckinRepository.existsByTicketId(TICKET_ID)).thenReturn(false);
             when(ticketCheckinRepository.save(any(TicketCheckin.class))).thenAnswer(inv -> inv.getArgument(0));
