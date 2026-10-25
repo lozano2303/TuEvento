@@ -1496,7 +1496,22 @@
     "title": "Passez la langue en espagnol",
     "subtitle": "Cette section est uniquement disponible en espagnol",
     "description": "La création et la modification d’événements ne sont disponibles qu’avec l’espagnol sélectionné comme langue. Changez votre langue en espagnol dans votre profil pour continuer.",
-    "action": "Retour"
+    "action": "Retour",
+    "switchAction": "Passer en espagnol"
+  },
+  "layoutGuard": {
+    "notOrganizer": {
+      "title": "Vous n’êtes pas organisateur",
+      "subtitle": "L’éditeur de plan est réservé aux organisateurs",
+      "description": "Seuls les organisateurs peuvent concevoir le plan d’un événement. Pour créer des événements, demandez le rôle d’organisateur depuis votre profil.",
+      "action": "Aller aux événements"
+    },
+    "notOwner": {
+      "title": "Vous n’êtes pas l’organisateur de cet événement",
+      "subtitle": "Seul le créateur de l’événement peut modifier son plan",
+      "description": "Cet événement appartient à un autre organisateur : vous ne pouvez ni voir ni modifier son plan des sections.",
+      "action": "Retour à mes événements"
+    }
   },
   "paymentConfirmation": {
     "loading": "Chargement de votre confirmation…",

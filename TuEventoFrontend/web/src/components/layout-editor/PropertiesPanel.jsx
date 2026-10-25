@@ -1,4 +1,6 @@
-import { computeMaxSeats, normalizeSeatLayout, polyBoundingBox, migratePolygonPoints, getPresetPolygonPoints } from './layoutEditorUtils';
+import { computeMaxSeats, fillSeatsOnResize, normalizeSeatLayout, polyBoundingBox, migratePolygonPoints } from './layoutEditorUtils';
+import { SECTION_SHAPES, getShapePoints } from './sectionShapes';
+import { ShapeGrid } from './ShapeIcon';
 
 const SECTION_COLORS = [
   { label: 'Morado', value: '#7C3AED' },
@@ -17,43 +19,6 @@ const INFRA_COLORS = [
   { label: 'Café',    value: '#92400E' },
   { label: 'Gris',    value: '#475569' },
 ];
-
-// ── Formas sugeridas: íconos SVG inline ──────────────────────────────────────
-const PRESET_ICONS = {
-  rect: (stroke) => (
-    <polyline points="4,4 36,4 36,36 4,36 4,4" stroke={stroke} strokeWidth="2" fill="none" />
-  ),
-  circle: (stroke) => (
-    <ellipse cx="20" cy="20" rx="16" ry="16" stroke={stroke} strokeWidth="2" fill="none" />
-  ),
-  semicircle: (stroke) => (
-    <path d="M4,36 L4,20 Q4,4 20,4 Q36,4 36,20 L36,36 Z" stroke={stroke} strokeWidth="2" fill="none" />
-  ),
-  trapezoid: (stroke) => (
-    <polygon points="8,6 32,6 36,34 4,34" stroke={stroke} strokeWidth="2" fill="none" />
-  ),
-  triangle: (stroke) => (
-    <polygon points="20,4 36,36 4,36" stroke={stroke} strokeWidth="2" fill="none" />
-  ),
-  hexagon: (stroke) => (
-    <polygon points="20,4 36,14 36,26 20,36 4,26 4,14" stroke={stroke} strokeWidth="2" fill="none" />
-  ),
-  lshape: (stroke) => (
-    <polygon points="4,4 20,4 20,20 36,20 36,36 4,36" stroke={stroke} strokeWidth="2" fill="none" />
-  ),
-};
-
-const PRESET_LABELS = {
-  rect:       'Rect.',
-  circle:     'Círculo',
-  semicircle: 'Semicírc.',
-  trapezoid:  'Trapecio',
-  triangle:   'Triáng.',
-  hexagon:    'Hexág.',
-  lshape:     'L',
-};
-
-const PRESET_ORDER = ['rect', 'circle', 'semicircle', 'trapezoid', 'triangle', 'hexagon', 'lshape'];
 
 export default function PropertiesPanel({
   element,
@@ -84,6 +49,8 @@ export default function PropertiesPanel({
 
   // ── Variables para el render del elemento seleccionado ──────────────────
   const update    = (patch) => onChange({ ...element, ...patch });
+  // Cambiar el tamaño llena la sección con las sillas que caben, igual que en el mapa
+  const resize    = (patch) => onChange(fillSeatsOnResize(element, { ...element, ...patch }));
   const colors    = element.type === 'section' ? SECTION_COLORS : INFRA_COLORS;
   const shapeMode = element.type === 'section' ? (element.shapeMode ?? 'rect') : null;
 
@@ -212,7 +179,7 @@ export default function PropertiesPanel({
                 className="w-full py-1.5 rounded-lg text-xs font-semibold border border-accent/40
                            text-accent hover:bg-accent/10 transition-colors"
               >
-                ✦ Convertir a forma libre
+                Convertir a forma libre
               </button>
             ) : isEditingVertices ? (
               <div className="space-y-1.5">
@@ -224,7 +191,7 @@ export default function PropertiesPanel({
                   className="w-full py-1.5 rounded-lg text-xs font-semibold bg-accent/15
                              text-accent border border-accent/40 hover:bg-accent/25 transition-colors"
                 >
-                  ✓ Guardar forma
+                  Guardar forma
                 </button>
 
                 {/* ── Formas sugeridas ── */}
@@ -233,34 +200,12 @@ export default function PropertiesPanel({
                     <span className="text-[9px] font-semibold text-textMuted uppercase tracking-wider block mb-1.5">
                       Formas sugeridas
                     </span>
-                    <div className="grid grid-cols-4 gap-1">
-                      {PRESET_ORDER.map((preset) => (
-                        <button
-                          key={preset}
-                          title={PRESET_LABELS[preset]}
-                          onClick={() => {
-                            const pts = getPresetPolygonPoints(preset, element.width, element.height);
-                            onApplyPreset(pts);
-                          }}
-                          className="flex flex-col items-center justify-center gap-0.5 rounded-md
-                                     bg-surfaceAlt hover:bg-accent/20 border border-transparent
-                                     hover:border-accent/40 transition-colors cursor-pointer"
-                          style={{ width: '100%', aspectRatio: '1 / 1', padding: '4px' }}
-                        >
-                          <svg
-                            viewBox="0 0 40 40"
-                            width="28" height="28"
-                            xmlns="http://www.w3.org/2000/svg"
-                            style={{ overflow: 'visible' }}
-                          >
-                            {PRESET_ICONS[preset]?.(element.color ?? '#7C3AED')}
-                          </svg>
-                          <span className="text-[8px] text-textMuted leading-none truncate w-full text-center">
-                            {PRESET_LABELS[preset]}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
+                    <ShapeGrid
+                      shapes={SECTION_SHAPES}
+                      selectedId={null}
+                      color={element.color ?? '#7C3AED'}
+                      onSelect={(id) => onApplyPreset(getShapePoints(id, element.width, element.height))}
+                    />
                   </div>
                 )}
               </div>
@@ -271,14 +216,14 @@ export default function PropertiesPanel({
                   className="w-full py-1.5 rounded-lg text-xs font-semibold border border-accent/40
                              text-accent hover:bg-accent/10 transition-colors"
                 >
-                  ✏ Editar forma
+                  Editar forma
                 </button>
                 <button
                   onClick={handleRevertToRect}
                   className="w-full py-1.5 rounded-lg text-xs font-semibold border border-surfaceAlt
                              text-textMuted hover:text-textSecondary hover:bg-surfaceAlt transition-colors"
                 >
-                  ↩ Volver a rectángulo
+                  Volver a rectángulo
                 </button>
               </div>
             )}
@@ -310,6 +255,9 @@ export default function PropertiesPanel({
               placeholder="0"
               onChange={(e) => update({ price: e.target.value === '' ? null : Number(e.target.value) })}
             />
+            <p className="text-[10px] text-textMuted mt-1 leading-tight">
+              Aplica a todas las sub-secciones de esta sección
+            </p>
           </div>
         )}
 
@@ -340,13 +288,13 @@ export default function PropertiesPanel({
                 <span className="text-[9px] text-textMuted mb-0.5 block">Ancho</span>
                 <input type="number" className={inputClass} min={40}
                   value={Math.round(element.width)}
-                  onChange={(e) => update({ width: Math.max(40, Number(e.target.value)) })} />
+                  onChange={(e) => resize({ width: Math.max(40, Number(e.target.value)) })} />
               </div>
               <div>
                 <span className="text-[9px] text-textMuted mb-0.5 block">Alto</span>
                 <input type="number" className={inputClass} min={30}
                   value={Math.round(element.height)}
-                  onChange={(e) => update({ height: Math.max(30, Number(e.target.value)) })} />
+                  onChange={(e) => resize({ height: Math.max(30, Number(e.target.value)) })} />
               </div>
             </div>
           </div>
