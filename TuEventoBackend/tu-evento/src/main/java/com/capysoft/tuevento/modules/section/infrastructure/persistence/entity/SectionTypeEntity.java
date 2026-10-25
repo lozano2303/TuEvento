@@ -1,5 +1,7 @@
 package com.capysoft.tuevento.modules.section.infrastructure.persistence.entity;
 
+import com.capysoft.tuevento.modules.section.domain.model.SectionCategory;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,4 +25,9 @@ public class SectionTypeEntity {
     @Builder.Default
     @Column(name = "active", nullable = false)
     private Boolean active = true;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category", nullable = false, length = 30)
+    private SectionCategory category = SectionCategory.GENERAL;
 }

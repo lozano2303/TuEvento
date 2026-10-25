@@ -1,0 +1,795 @@
+databaseChangeLog:
+  # Traducciones manuales del catálogo (en/pt/fr). Solo se muestran al usuario final, en las
+  # etiquetas con el nombre de la sección; el editor de layout usa siempre el nombre en español.
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-diamante-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Diamond Box', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Diamante' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-diamante-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Camarote Diamante', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Diamante' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-diamante-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Loge Diamant', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Diamante' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-platino-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Platinum Box', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Platino' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-platino-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Camarote Platina', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Platino' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-platino-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Loge Platine', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Platino' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-oro-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Gold Box', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Oro' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-oro-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Camarote Ouro', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Oro' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-oro-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Loge Or', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Oro' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-plata-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Silver Box', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Plata' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-plata-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Camarote Prata', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Plata' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-plata-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Loge Argent', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Plata' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-empresarial-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Corporate Box', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Empresarial' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-empresarial-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Camarote Corporativo', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Empresarial' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-palco-empresarial-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Loge d''entreprise', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Palco Empresarial' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-vip-plus-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'VIP Plus', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'VIP Plus' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-vip-plus-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'VIP Plus', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'VIP Plus' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-vip-plus-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'VIP Plus', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'VIP Plus' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-backstage-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Backstage', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Backstage' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-backstage-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Backstage', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Backstage' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-backstage-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Coulisses', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Backstage' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-preferencial-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Preferred Seating', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Preferencial' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-preferencial-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Setor Preferencial', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Preferencial' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-preferencial-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Zone préférentielle', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Preferencial' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-oriental-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'East Stand', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Oriental' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-oriental-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Arquibancada Leste', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Oriental' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-oriental-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Tribune Est', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Oriental' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-occidental-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'West Stand', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Occidental' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-occidental-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Arquibancada Oeste', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Occidental' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-occidental-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Tribune Ouest', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Occidental' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-platea-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Stalls', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Platea' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-platea-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Plateia', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Platea' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-platea-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Parterre', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Platea' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-platea-alta-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Upper Stalls', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Platea Alta' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-platea-alta-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Plateia Alta', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Platea Alta' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-platea-alta-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Parterre haut', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Platea Alta' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-platea-baja-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Lower Stalls', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Platea Baja' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-platea-baja-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Plateia Baixa', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Platea Baja' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-platea-baja-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Parterre bas', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Platea Baja' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-mezzanine-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Mezzanine', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Mezzanine' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-mezzanine-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Mezanino', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Mezzanine' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-mezzanine-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Mezzanine', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Mezzanine' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-balcon-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Balcony', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Balcón' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-balcon-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Balcão', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Balcón' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-balcon-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Balcon', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Balcón' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-tribuna-norte-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'North Stand', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Tribuna Norte' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-tribuna-norte-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Arquibancada Norte', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Tribuna Norte' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-tribuna-norte-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Tribune Nord', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Tribuna Norte' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-tribuna-sur-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'South Stand', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Tribuna Sur' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-tribuna-sur-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Arquibancada Sul', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Tribuna Sur' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-tribuna-sur-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Tribune Sud', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Tribuna Sur' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-gramilla-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Field', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Gramilla' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-gramilla-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Gramado', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Gramilla' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-gramilla-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Pelouse', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Gramilla' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-graderia-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Bleachers', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Gradería' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-graderia-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Arquibancada', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Gradería' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-graderia-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Gradins', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Gradería' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-zona-de-movilidad-reducida-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Accessible Area', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Zona de movilidad reducida' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-zona-de-movilidad-reducida-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Área Acessível', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Zona de movilidad reducida' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-zona-de-movilidad-reducida-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Espace accessible', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Zona de movilidad reducida' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-zona-familiar-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Family Area', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Zona familiar' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-zona-familiar-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Área Familiar', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Zona familiar' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-zona-familiar-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Espace famille', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Zona familiar' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-prensa-en
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Press', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Prensa' AND l.code = 'en'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-prensa-pt
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Imprensa', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Prensa' AND l.code = 'pt'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
+  - changeSet:
+      id: 105-seed-section-type-translation-prensa-fr
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO section_type_translation (section_type_id, language_id, translated_name, source, status)
+              SELECT st.section_type_id, l.language_id, 'Presse', 'MANUAL', 'published'
+              FROM section_type st, language l
+              WHERE st.name = 'Prensa' AND l.code = 'fr'
+              AND NOT EXISTS (SELECT 1 FROM section_type_translation t
+                              WHERE t.section_type_id = st.section_type_id AND t.language_id = l.language_id);
