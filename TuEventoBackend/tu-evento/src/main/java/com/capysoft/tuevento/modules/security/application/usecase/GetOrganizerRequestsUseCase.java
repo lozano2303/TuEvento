@@ -6,6 +6,7 @@ import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizerRe
 import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.LoginCredentialsJpaRepository;
+import com.capysoft.tuevento.modules.storage.application.dto.request.StorageRequester;
 import com.capysoft.tuevento.modules.storage.application.port.in.GeneratePublicUrlPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +27,9 @@ public class GetOrganizerRequestsUseCase implements GetOrganizerRequestsPort {
 
     @Override
     @Transactional
-    public List<OrganizerRequestResponse> getRequests(String status) {
+    public List<OrganizerRequestResponse> getRequests(String status, Integer adminUserId) {
+        StorageRequester requester = StorageRequester.of(adminUserId, "ADMIN");
+
         List<OrganizerPetition> petitions = (status == null || status.isBlank())
                 ? organizerPetitionRepository.findAll()
                 : organizerPetitionRepository.findByStatus(status.toUpperCase());
@@ -55,7 +58,7 @@ public class GetOrganizerRequestsUseCase implements GetOrganizerRequestsPort {
                         // The null guard here is a safety net for edge cases only.
                         if (avatarFileId != null) {
                             try {
-                                profilePicture = generatePublicUrlPort.generate(avatarFileId).getPublicUrl();
+                                profilePicture = generatePublicUrlPort.generate(avatarFileId, requester).getPublicUrl();
                             } catch (Exception ex) {
                                 // Orphaned or deleted file — degrade gracefully; frontend shows initial.
                                 log.warn("Could not generate presigned URL for storedFileId={} (userId={}): {}",

@@ -1,20 +1,21 @@
 package com.capysoft.tuevento.modules.storage.application.usecase;
 
+import com.capysoft.tuevento.modules.storage.application.dto.request.StorageRequester;
 import com.capysoft.tuevento.modules.storage.application.dto.response.PublicUrlResponse;
 import com.capysoft.tuevento.modules.storage.application.port.in.GeneratePublicUrlPort;
 import com.capysoft.tuevento.modules.storage.application.port.out.StorageClientPort;
+import com.capysoft.tuevento.modules.storage.application.service.StorageAccessPolicy;
 import com.capysoft.tuevento.modules.storage.domain.event.FileUrlGeneratedEvent;
 import com.capysoft.tuevento.modules.storage.domain.model.StorageOperationLog;
 import com.capysoft.tuevento.modules.storage.domain.model.StoredFile;
 import com.capysoft.tuevento.modules.storage.domain.repository.StorageOperationLogRepository;
 import com.capysoft.tuevento.modules.storage.domain.repository.StoredFileRepository;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
-import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -24,21 +25,28 @@ public class GeneratePublicUrlUseCase implements GeneratePublicUrlPort {
 
     private static final int PRESIGNED_URL_EXPIRATION_MINUTES = 60;
 
+    // Sentinel for "system" in storage_operation_log.performed_by (NOT NULL) when nobody is logged in.
+    private static final int SYSTEM_USER_ID = 0;
+
     private final StoredFileRepository          storedFileRepository;
     private final StorageOperationLogRepository operationLogRepository;
     private final StorageClientPort             storageClient;
     private final ApplicationEventPublisher     eventPublisher;
+    private final StorageAccessPolicy           accessPolicy;
 
     @Value("${app.storage.bucket-default}")
     private String defaultBucket;
 
     @Override
-    public PublicUrlResponse generate(Integer storedFileId) {
+    @Transactional
+    public PublicUrlResponse generate(Integer storedFileId, StorageRequester requester) {
         StoredFile file = storedFileRepository.findById(storedFileId)
                 .filter(f -> !Boolean.TRUE.equals(f.getDeleted()))
                 .orElseThrow(() -> new NotFoundException("FILE_NOT_FOUND", "File not found or has been deleted"));
 
-        Integer performedBy = resolveCurrentUserId();
+        accessPolicy.assertCanRead(file, requester);
+
+        Integer performedBy = requester.isAnonymous() ? SYSTEM_USER_ID : requester.userId();
 
         String url = storageClient.generatePresignedUrl(defaultBucket, file.getS3Key(), PRESIGNED_URL_EXPIRATION_MINUTES);
 
@@ -61,15 +69,5 @@ public class GeneratePublicUrlUseCase implements GeneratePublicUrlPort {
                 .storedFileId(file.getStoredFileId())
                 .publicUrl(url)
                 .build();
-    }
-
-    private Integer resolveCurrentUserId() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof SecurityUser securityUser) {
-            return securityUser.getUserId();
-        }
-        // System-generated URL (no interactive user in context, e.g. batch/admin list).
-        // Using 0 as a sentinel for "system" so the NOT NULL constraint is satisfied.
-        return 0;
     }
 }

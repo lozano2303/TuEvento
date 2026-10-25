@@ -1,10 +1,13 @@
 package com.capysoft.tuevento.modules.storage.application.usecase;
 
+import com.capysoft.tuevento.modules.storage.application.dto.request.StorageRequester;
 import com.capysoft.tuevento.modules.storage.application.dto.request.UploadFileRequest;
 import com.capysoft.tuevento.modules.storage.application.dto.response.UploadFileResponse;
 import com.capysoft.tuevento.modules.storage.application.port.in.UploadFilePort;
+import com.capysoft.tuevento.modules.storage.application.port.in.UploadUserFilePort;
 import com.capysoft.tuevento.modules.storage.application.port.out.StorageClientPort;
 import com.capysoft.tuevento.modules.storage.application.service.ImageModerationService;
+import com.capysoft.tuevento.modules.storage.application.service.StorageAccessPolicy;
 import com.capysoft.tuevento.modules.storage.domain.event.FileUploadedEvent;
 import com.capysoft.tuevento.modules.storage.domain.model.FileCategory;
 import com.capysoft.tuevento.modules.storage.domain.model.StorageOperationLog;
@@ -28,7 +31,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UploadFileUseCase implements UploadFilePort {
+public class UploadFileUseCase implements UploadFilePort, UploadUserFilePort {
 
     private final FileCategoryRepository        fileCategoryRepository;
     private final StoredFileRepository          storedFileRepository;
@@ -36,9 +39,26 @@ public class UploadFileUseCase implements UploadFilePort {
     private final StorageClientPort             storageClient;
     private final ApplicationEventPublisher     eventPublisher;
     private final ImageModerationService        moderationService;
+    private final StorageAccessPolicy           accessPolicy;
 
     @Value("${app.storage.bucket-default}")
     private String defaultBucket;
+
+    @Override
+    @Transactional
+    public UploadFileResponse uploadAsUser(String fileCategoryCode, String originalFilename, String contentType,
+                                           byte[] content, StorageRequester requester) {
+        accessPolicy.assertCanUploadViaApi(fileCategoryCode, requester);
+
+        // Ownership is never taken from the client: the uploader is the authenticated user.
+        return upload(UploadFileRequest.builder()
+                .fileCategoryCode(fileCategoryCode)
+                .uploadedBy(requester.userId())
+                .originalFilename(originalFilename)
+                .contentType(contentType)
+                .content(content)
+                .build());
+    }
 
     @Override
     @Transactional
