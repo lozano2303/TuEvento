@@ -8,6 +8,7 @@ import EditorToolbar from '../components/layout-editor/EditorToolbar';
 import SectionsList from '../components/layout-editor/SectionsList';
 import HelpModal from '../components/layout-editor/HelpModal';
 import SectionWizardModal from '../components/layout-editor/SectionWizardModal';
+import CourtesySeatsModal from '../components/layout-editor/CourtesySeatsModal';
 import LayoutAccessModal from '../components/layout-editor/LayoutAccessModal';
 import BackButton from '../components/common/BackButton';
 import SpanishOnlyRoute from '../components/common/SpanishOnlyRoute';
@@ -21,6 +22,12 @@ import {
   normalizeSeatLayout,
 } from '../components/layout-editor/layoutEditorUtils';
 import { sizeSectionForSeats } from '../components/layout-editor/sectionShapes';
+import {
+  applyCourtesySeats,
+  countCourtesySeats,
+  estimateEarnings,
+  getSectionGroups,
+} from '../components/layout-editor/layoutEarnings';
 import * as EventService        from '../services/EventService';
 import * as SectionTypeService  from '../services/SectionTypeService';
 import * as EventSectionService from '../services/EventSectionService';
@@ -82,6 +89,7 @@ export default function EventLayoutEditor() {
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   // Sección elegida en la paleta, a la espera de que el asistente la configure
   const [pendingSection, setPendingSection] = useState(null);
+  const [courtesyOpen,   setCourtesyOpen]   = useState(false);
 
   // ── canvasSize derivado ───────────────────────────────────────────────────
   const canvasSize = useMemo(() => {
@@ -168,6 +176,7 @@ export default function EventLayoutEditor() {
           const patch = {};
           if (el.color !== updated.color) patch.color = updated.color;
           if (el.price !== updated.price) patch.price = updated.price;
+          if (el.courtesySeats !== updated.courtesySeats) patch.courtesySeats = updated.courtesySeats;
           if (Object.keys(patch).length > 0) return { ...el, ...patch };
         }
         return el;
@@ -319,6 +328,20 @@ export default function EventLayoutEditor() {
   const isOverCapacity = maxSeats != null && totalSeats > maxSeats;
   const remainingSeats = maxSeats == null ? null : Math.max(0, maxSeats - totalSeats);
 
+  // Secciones lógicas con sus cortesías; la ganancia estimada usa la misma fórmula que el backend
+  const sectionGroups     = useMemo(() => getSectionGroups(elements), [elements]);
+  const estimatedEarnings = useMemo(() => estimateEarnings(sectionGroups), [sectionGroups]);
+  const courtesyCount     = useMemo(() => countCourtesySeats(sectionGroups), [sectionGroups]);
+
+  const handleApplyCourtesy = useCallback((courtesyBySection) => {
+    setElements((prev) => {
+      setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), prev]);
+      setFuture([]);
+      return applyCourtesySeats(prev, courtesyBySection);
+    });
+    setCourtesyOpen(false);
+  }, []);
+
   // ── handleSave ────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     if (isReadOnly) {
@@ -344,7 +367,9 @@ export default function EventLayoutEditor() {
           capacity: g.reduce((s, el) => s + (el.seatLayout?.targetSeats ?? 0), 0),
         })), null, 2));
 
-      const updatedElements = [...elements];
+      // Cortesías recortadas a las sillas actuales de cada sección (pudieron reducirse)
+      const updatedElements = applyCourtesySeats(elements, Object.fromEntries(
+        getSectionGroups(elements).map((g) => [g.eventSectionId, g.courtesySeats])));
       for (const [, group] of Object.entries(groups)) {
         const capacity = group.reduce((s, el) => s + (el.seatLayout?.targetSeats ?? 0), 0);
         const price    = group[0].price ?? 0;
@@ -482,6 +507,8 @@ export default function EventLayoutEditor() {
         onUndo={handleUndo} onRedo={handleRedo}
         onOpenHelp={() => setHelpOpen(true)}
         onSave={handleSave} isSaving={isSaving} maxSeats={maxSeats} isReadOnly={isReadOnly}
+        courtesyCount={courtesyCount} estimatedEarnings={estimatedEarnings}
+        onOpenCourtesy={() => setCourtesyOpen(true)}
         onClear={() => {
           setElements([]); setSelectedIds([]); setManualCanvasSize(CANVAS_DEFAULT_MANUAL);
           setUserResizedCanvas(false); setEditingPolygonId(null);
@@ -546,6 +573,12 @@ export default function EventLayoutEditor() {
         remainingSeats={remainingSeats}
         onCancel={() => setPendingSection(null)}
         onConfirm={handleWizardConfirm}
+      />
+      <CourtesySeatsModal
+        isOpen={courtesyOpen}
+        groups={sectionGroups}
+        onClose={() => setCourtesyOpen(false)}
+        onApply={handleApplyCourtesy}
       />
     </div>
     </SpanishOnlyRoute>

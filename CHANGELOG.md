@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added — feat(seats): courtesy seats and potential earnings
+
+- **Courtesy seats in the layout editor**: a "Cortesías" menu asks how many courtesy seats each section has and shows the estimated earnings live. The toolbar shows the courtesy total and the estimate, Σ price × (seats − courtesy)
+- **Saving the layout** reads `courtesySeats` for each logical section (0 to its seats, otherwise `LAYOUT_INVALID_COURTESY_SEATS`) and creates its last seats with type and status `COURTESY`, which cannot be reserved or bought. The section is saved with `capacity` = its seats and `availableSeats` = seats − courtesy; until now `availableSeats` was never updated after the capacity changed
+- **Regeneration** is only blocked by `RESERVED` or `SOLD` seats (`existsByEventSectionIdAndStatusIn`), so a section with courtesy seats can be saved again
+- **Potential earnings** in `GET /api/v1/organizer/earnings`: `totalPotentialEarnings`, `totalCourtesySeats` and, per event, `potentialRevenue`, `courtesySeats` and `totalSeats`. Potential is the section price of every non-courtesy seat, in events that are not cancelled. Courtesy seats never reduce what was collected, since they never produce a payment. The list now also includes events with seats but no sales yet
+- **Earnings panel (web)**: new "Potential earnings" card with the % already collected, and Potential and Courtesy columns per event
+
+### Fixed — fix(earnings): tickets sold counted payments
+
+- **"Tickets sold"** counted payments (`COUNT(p.paymentId)`), so a 4-seat purchase showed as 1. It now counts tickets (one per seat) that are `PAID` or `USED`; refunded tickets no longer count
+
 ### Added — feat(layout): section creation wizard and shape catalog in the layout editor
 
 - **Section wizard**: adding a section type (click or drag) opens a dialog that asks how many seats it has, its base shape and the price per seat, shared by all of its sub-sections. The section is created at the smallest size that fits those seats; the seat count can be changed later in Properties > Sillas

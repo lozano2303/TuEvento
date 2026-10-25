@@ -1466,7 +1466,11 @@
       },
       "ticketsSold": {
         "label": "Tickets vendidos",
-        "sub": "Transacciones completadas"
+        "sub": "Entradas pagadas o ya usadas"
+      },
+      "potential": {
+        "label": "Ganancia potencial",
+        "sub": "Si se venden todas las sillas que no son de cortesía"
       },
       "eventsWithSales": {
         "label": "Eventos con ventas",
@@ -1479,14 +1483,17 @@
       "columns": {
         "event": "Evento",
         "tickets": "Tickets vendidos",
-        "revenue": "Recaudado"
+        "revenue": "Recaudado",
+        "potential": "Potencial",
+        "courtesy": "Cortesías"
       },
-      "total": "Total"
+      "total": "Total",
+      "soldOfPotential": "{{pct}} % de lo potencial"
     },
     "info": {
       "howCalculated": {
         "title": "¿Cómo se calcula?",
-        "text": "Se suman todos los pagos aprobados en tus eventos. El monto mostrado refleja el total cobrado a los asistentes."
+        "text": "Lo recaudado suma los pagos aprobados en tus eventos. Lo potencial es el precio de cada silla que no es de cortesía, en los eventos no cancelados: las cortesías no se venden, así que solo reducen lo potencial."
       },
       "realTime": {
         "title": "Información en tiempo real",

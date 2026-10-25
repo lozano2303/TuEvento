@@ -72,6 +72,7 @@ export const serializeLayout = (elements, canvasWidth = 1200, canvasHeight = 800
       eventSectionId:   el.eventSectionId   ?? null, // antes hardcodeado a null — BUG CORREGIDO
       backendSectionId: el.backendSectionId ?? null, // necesario para update en handleSave (evita duplicados)
       price:            el.price            ?? null,
+      courtesySeats:    el.courtesySeats    ?? 0,    // sillas de cortesía de la sección lógica (COURTESY al guardar)
       seatLayout:       el.seatLayout,
       shapeMode:        el.shapeMode ?? 'rect',
       polygonPoints:    el.polygonPoints ?? null,

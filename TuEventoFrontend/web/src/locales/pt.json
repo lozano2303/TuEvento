@@ -1464,7 +1464,11 @@
       },
       "ticketsSold": {
         "label": "Ingressos vendidos",
-        "sub": "Transações concluídas"
+        "sub": "Ingressos pagos ou já usados"
+      },
+      "potential": {
+        "label": "Ganho potencial",
+        "sub": "Se todos os assentos que não são cortesia forem vendidos"
       },
       "eventsWithSales": {
         "label": "Eventos com vendas",
@@ -1477,14 +1481,17 @@
       "columns": {
         "event": "Evento",
         "tickets": "Ingressos vendidos",
-        "revenue": "Arrecadado"
+        "revenue": "Arrecadado",
+        "potential": "Potencial",
+        "courtesy": "Cortesias"
       },
-      "total": "Total"
+      "total": "Total",
+      "soldOfPotential": "{{pct}}% do potencial"
     },
     "info": {
       "howCalculated": {
         "title": "Como é calculado?",
-        "text": "Somam-se todos os pagamentos aprovados nos seus eventos. O valor exibido reflete o total cobrado dos participantes."
+        "text": "O arrecadado soma os pagamentos aprovados dos seus eventos. O potencial é o preço de cada assento que não é cortesia, nos eventos não cancelados: as cortesias nunca são vendidas, então só reduzem o potencial."
       },
       "realTime": {
         "title": "Informação em tempo real",
