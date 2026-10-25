@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - **`POST /api/v1/seats`, `PATCH /seats/{id}/status` and `DELETE /seats/{id}`** only checked the role, so any organizer could change or delete seats of another organizer's event, including turning a sold seat back to `AVAILABLE` to sell it twice. They now require `ORGANIZER`, the event must be theirs (`EVENT_ACCESS_DENIED`, 403) and in `DRAFT` (`SEAT_EDIT_NOT_ALLOWED`). By hand a seat can only be marked or unmarked as courtesy, and sold or reserved seats cannot be deleted. ADMIN is read-only, as with sections. Web and mobile do not use these endpoints
 - **Orders** (`POST /orders`) now require every seat to still be `RESERVED` and to belong to the order's event; seats from another event used to be accepted and attributed to it
+- **Payment confirmation** sells each seat to the order's buyer only if it is still free or reserved by them (`SEAT_ALREADY_TAKEN` otherwise). It used to mark seats `SOLD` without checking who held them, so a late approval after an expired reservation could hand out a seat already sold to someone else
 
 ### Fixed — fix(seats): refunds, live seat map and section availability
 

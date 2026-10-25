@@ -95,7 +95,7 @@ class SeatServiceTest {
     class SystemFlows {
 
         @ParameterizedTest(name = "{0} → {1}")
-        @CsvSource({"RESERVED,SOLD", "RESERVED,AVAILABLE", "SOLD,AVAILABLE", "AVAILABLE,SOLD", "COURTESY,AVAILABLE"})
+        @CsvSource({"RESERVED,AVAILABLE", "SOLD,AVAILABLE", "COURTESY,AVAILABLE", "AVAILABLE,COURTESY"})
         @DisplayName("aplican la transición y la publican para el mapa en vivo")
         void appliesAndPublishes(SeatStatus from, SeatStatus to) {
             seatIs(from);
@@ -116,14 +116,15 @@ class SeatServiceTest {
         void clearsReservation() {
             seatIs(SeatStatus.RESERVED);
 
-            SeatResponse response = service.updateSeatStatus(SEAT_ID, to(SeatStatus.SOLD), null);
+            SeatResponse response = service.updateSeatStatus(SEAT_ID, to(SeatStatus.AVAILABLE), null);
 
             assertThat(response.getReservedBy()).isNull();
             assertThat(response.getReservedUntil()).isNull();
         }
 
         @ParameterizedTest(name = "{0} → {1}")
-        @CsvSource({"SOLD,RESERVED", "SOLD,COURTESY", "COURTESY,SOLD", "COURTESY,RESERVED", "RESERVED,COURTESY"})
+        @CsvSource({"SOLD,RESERVED", "SOLD,COURTESY", "COURTESY,SOLD", "COURTESY,RESERVED", "RESERVED,COURTESY",
+                "RESERVED,SOLD", "AVAILABLE,SOLD", "SOLD,SOLD"})
         @DisplayName("rechazan transiciones sin sentido")
         void rejectsInvalidTransitions(SeatStatus from, SeatStatus to) {
             seatIs(from);
@@ -136,7 +137,7 @@ class SeatServiceTest {
         }
 
         @Test
-        @DisplayName("repetir el mismo estado no falla ni publica nada")
+        @DisplayName("liberar una silla ya libre no falla ni publica nada")
         void sameStatusIsIdempotent() {
             seatIs(SeatStatus.AVAILABLE);
 
@@ -164,6 +165,58 @@ class SeatServiceTest {
             service.updateSeatStatus(SEAT_ID, to(SeatStatus.AVAILABLE), null);
 
             verify(seatRepository).save(any());
+            verify(eventPublisher, never()).publishEvent(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("venta al confirmarse el pago")
+    class Sale {
+
+        private static final long BUYER_ID = 7L;
+
+        @Test
+        @DisplayName("vende la silla reservada por el comprador y lo publica")
+        void sellsSeatReservedByTheBuyer() {
+            seatIs(SeatStatus.RESERVED); // reservada por el usuario 7
+
+            SeatResponse response = service.sellSeat(SEAT_ID, BUYER_ID, "pago");
+
+            assertThat(response.getStatus()).isEqualTo(SeatStatus.SOLD);
+            assertThat(response.getReservedBy()).isNull();
+            ArgumentCaptor<SeatStatusChangedEvent> event = ArgumentCaptor.forClass(SeatStatusChangedEvent.class);
+            verify(eventPublisher).publishEvent(event.capture());
+            assertThat(event.getValue().getNewStatus()).isEqualTo(SeatStatus.SOLD);
+            assertThat(event.getValue().getChangedBy()).isEqualTo(7);
+        }
+
+        @Test
+        @DisplayName("vende una silla libre si la reserva expiró y nadie la tomó")
+        void sellsFreeSeatAfterExpiredReservation() {
+            seatIs(SeatStatus.AVAILABLE);
+            assertThat(service.sellSeat(SEAT_ID, BUYER_ID, "pago").getStatus()).isEqualTo(SeatStatus.SOLD);
+        }
+
+        @Test
+        @DisplayName("no vende una silla reservada por otra persona (doble venta)")
+        void rejectsSeatReservedBySomeoneElse() {
+            seatIs(SeatStatus.RESERVED);
+
+            assertThatThrownBy(() -> service.sellSeat(SEAT_ID, 8L, "pago"))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("ya no está disponible");
+            verify(seatRepository, never()).save(any());
+        }
+
+        @ParameterizedTest(name = "silla {0}")
+        @CsvSource({"SOLD", "COURTESY"})
+        @DisplayName("no vende una silla ya vendida o de cortesía, ni lo da por hecho")
+        void rejectsSoldOrCourtesySeats(SeatStatus status) {
+            seatIs(status);
+
+            assertThatThrownBy(() -> service.sellSeat(SEAT_ID, BUYER_ID, "pago"))
+                    .isInstanceOf(BusinessException.class);
+            verify(seatRepository, never()).save(any());
             verify(eventPublisher, never()).publishEvent(any());
         }
     }

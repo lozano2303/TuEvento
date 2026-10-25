@@ -36,14 +36,13 @@ import lombok.RequiredArgsConstructor;
 public class SeatService implements SeatUseCase {
 
     /**
-     * Transiciones que pueden hacer los flujos del sistema (pago, cancelación, pago fallido,
-     * reembolso). AVAILABLE → SOLD se permite: si la reserva expira justo antes de que llegue
-     * el pago aprobado, la confirmación de quien ya pagó no puede fallar.
+     * Transiciones que pueden hacer los flujos del sistema (cancelación, pago fallido, cortesías).
+     * La venta no está aquí: va por {@link #sellSeat}, que comprueba quién compra.
      * Una cortesía solo vuelve a estar disponible; una venta nunca vuelve a reservada.
      */
     private static final Map<SeatStatus, Set<SeatStatus>> SYSTEM_TRANSITIONS = Map.of(
-            SeatStatus.AVAILABLE, EnumSet.of(SeatStatus.RESERVED, SeatStatus.SOLD, SeatStatus.COURTESY),
-            SeatStatus.RESERVED,  EnumSet.of(SeatStatus.AVAILABLE, SeatStatus.SOLD),
+            SeatStatus.AVAILABLE, EnumSet.of(SeatStatus.RESERVED, SeatStatus.COURTESY),
+            SeatStatus.RESERVED,  EnumSet.of(SeatStatus.AVAILABLE),
             SeatStatus.SOLD,      EnumSet.of(SeatStatus.AVAILABLE),
             SeatStatus.COURTESY,  EnumSet.of(SeatStatus.AVAILABLE));
 
@@ -96,9 +95,9 @@ public class SeatService implements SeatUseCase {
         Seat existing = findSeat(seatId);
         SeatStatus newStatus = request.getNewStatus();
 
-        // Idempotente: un flujo que repite el cambio (p. ej. la silla ya se liberó al expirar
-        // la reserva) no debe romperse
-        if (existing.getStatus() == newStatus) {
+        // Liberar es idempotente: la silla pudo liberarse ya al expirar la reserva. Repetir
+        // cualquier otro estado sí es un error
+        if (existing.getStatus() == newStatus && newStatus == SeatStatus.AVAILABLE) {
             return toResponse(existing);
         }
         if (!SYSTEM_TRANSITIONS.get(existing.getStatus()).contains(newStatus)) {
@@ -106,6 +105,25 @@ public class SeatService implements SeatUseCase {
                     "Una silla " + existing.getStatus() + " no puede pasar a " + newStatus);
         }
         return applyStatus(existing, newStatus, request.getReason(), changedBy);
+    }
+
+    /**
+     * Venta al confirmarse el pago. Solo si la silla está libre (la reserva expiró pero nadie la
+     * tomó) o sigue reservada por el mismo comprador. Si la tiene otra persona, o ya está vendida
+     * o es de cortesía, falla: tratarlo como "sin cambios" entregaría dos veces la misma silla.
+     */
+    @Override
+    public SeatResponse sellSeat(Integer seatId, Long buyerId, String reason) {
+        Seat existing = findSeat(seatId);
+        boolean free = existing.getStatus() == SeatStatus.AVAILABLE;
+        boolean reservedByBuyer = existing.getStatus() == SeatStatus.RESERVED
+                && existing.getReservedBy() != null
+                && existing.getReservedBy().longValue() == buyerId;
+        if (!free && !reservedByBuyer) {
+            throw new BusinessException("SEAT_ALREADY_TAKEN",
+                    "La silla " + seatId + " ya no está disponible para este comprador (" + existing.getStatus() + ")");
+        }
+        return applyStatus(existing, SeatStatus.SOLD, reason, buyerId.intValue());
     }
 
     @Override
