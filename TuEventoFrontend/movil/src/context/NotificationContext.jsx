@@ -10,6 +10,7 @@ import {
 import { getAdminPendingCounts } from "../services/adminService";
 import { getValidAccessToken, refreshAccessToken } from "../services/httpClient";
 import { emitSessionEvent } from "../utils/sessionEvents";
+import { EVENT_CANCELLED_TOPIC, emitEventCancelled } from "../utils/eventCancellation";
 import { jwtDecode } from "jwt-decode";
 
 const NotificationContext = createContext(null);
@@ -176,6 +177,14 @@ export function NotificationProvider({ children }) {
             emitSessionEvent(event);
           });
           subscriptionsRef.current.set("roleChange", roleSub);
+
+          // Eventos cancelados: los listados abiertos los quitan sin recargar
+          const cancelledSub = client.subscribe(EVENT_CANCELLED_TOPIC, (msg) => {
+            let event;
+            try { event = JSON.parse(msg.body); } catch { return; }
+            if (event?.type === "EVENT_CANCELLED" && event.eventId != null) emitEventCancelled(event.eventId);
+          });
+          subscriptionsRef.current.set("eventsCancelled", cancelledSub);
 
           // Admin: contadores de solicitudes y eventos en revisión en vivo
           if (isAdmin) {

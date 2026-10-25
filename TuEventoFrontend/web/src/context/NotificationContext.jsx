@@ -11,6 +11,7 @@ import { refreshAccessToken } from '../services/httpClient';
 import { ORGANIZER_WELCOME_KEY } from '../components/common/OrganizerWelcomeModal';
 import { getActiveLanguages } from '../services/LanguageService';
 import { changeUILanguage, getCurrentUILanguage } from '../i18n';
+import { EVENT_CANCELLED_TOPIC, emitEventCancelled } from '../utils/eventCancellation';
 
 /** Evento del DOM que dispara el aviso THEME_UPDATED del WebSocket (lo escucha ThemeContext). */
 export const THEME_UPDATED_EVENT = 'tuevento:theme-updated';
@@ -134,6 +135,21 @@ function subscribeSessionEvents(client, userId, subscriptionsRef) {
   subscriptionsRef.current.set('session', sub);
 }
 
+/** Canal global de eventos cancelados: los listados abiertos quitan el evento en vivo. */
+function subscribeEventCancellations(client, subscriptionsRef) {
+  const sub = client.subscribe(EVENT_CANCELLED_TOPIC, (message) => {
+    try {
+      const payload = JSON.parse(message.body);
+      if (payload?.type === 'EVENT_CANCELLED' && payload.eventId != null) {
+        emitEventCancelled(payload.eventId);
+      }
+    } catch (err) {
+      // Error parsing event cancellation
+    }
+  });
+  subscriptionsRef.current.set('events-cancelled', sub);
+}
+
 /**
  * Provider de notificaciones que mantiene UN SOLO WebSocket centralizado.
  * Este WebSocket maneja:
@@ -141,6 +157,7 @@ function subscribeSessionEvents(client, userId, subscriptionsRef) {
  * - Actualizaciones de sillas (dinámico, solo en páginas de eventos)
  * - Role-change signals (/topic/role-change/{userId}) — revocación de rol
  * - Session events (/topic/users/{userId}/session) — aprobación de rol
+ * - Eventos cancelados (/topic/events/cancelled) — se quitan de los listados en vivo
  */
 export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
@@ -425,6 +442,9 @@ export function NotificationProvider({ children }) {
 
         // Session events subscription: ROLE_UPDATED (solicitud de organizador aprobada)
         subscribeSessionEvents(client, userId, subscriptionsRef);
+
+        // Eventos cancelados: los listados abiertos los quitan sin recargar
+        subscribeEventCancellations(client, subscriptionsRef);
       },
 
       onStompError: (frame) => {
@@ -528,6 +548,9 @@ export function NotificationProvider({ children }) {
 
         // Session events subscription: ROLE_UPDATED (solicitud de organizador aprobada)
         subscribeSessionEvents(client, userId, subscriptionsRef);
+
+        // Eventos cancelados: los listados abiertos los quitan sin recargar
+        subscribeEventCancellations(client, subscriptionsRef);
       },
 
       onStompError: (frame) => {

@@ -21,6 +21,7 @@ import { getPublishedEvents } from "../services/eventService";
 import { getAllCategories } from "../services/catalogService";
 import EventCard from "../components/EventCard";
 import { displayEventName, resolveCoverUrl } from "../utils/eventFormat";
+import { onEventCancelled, withoutEvent } from "../utils/eventCancellation";
 
 /**
  * Pantalla principal del tab "Eventos".
@@ -38,6 +39,9 @@ export default function EventsHomeScreen() {
   const searchRef = useRef(null);
 
   const [events, setEvents] = useState([]);
+
+  // Evento cancelado en vivo (WebSocket): se quita del listado sin recargar
+  useEffect(() => onEventCancelled((eventId) => setEvents((prev) => withoutEvent(prev, eventId))), []);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
