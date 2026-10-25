@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Security — fix(security): event sections can only be changed by the event's organizer
+
+- **Ownership check on `/api/v1/event-sections`**: creating, updating and deleting a section only checked the role, so any organizer could change the price or capacity, or delete sections, of another organizer's event, even after it was published. Now the event must belong to the authenticated organizer (`EVENT_ACCESS_DENIED`, 403) and be in `DRAFT` (`EVENT_SECTION_EDIT_NOT_ALLOWED`), the same rules as saving the layout
+- **ADMIN is read-only**: those three endpoints now require `ORGANIZER`; admins keep `GET /event/{eventId}`. The layout editor is the only client that writes sections
+
 ### Fixed — fix(web): landing images in production builds
 
 - **Landing images** (`ladingpage.png`, `ladingpage1.png`, `ladingpage2.png`) are imported instead of referenced as `/src/assets/...` strings, which only Vite's dev server serves; the build now emits them under `/assets/` with a content hash
