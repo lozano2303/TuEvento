@@ -1,6 +1,9 @@
 /**
  * Traducciones de notificaciones.
  *
+ * La app móvil tiene un espejo en TuEventoFrontend/movil/src/utils/notificationI18n.js (las apps
+ * se construyen por separado y no comparten módulos). Cualquier cambio aquí debe replicarse allá.
+ *
  * El backend crea cada notificación en español y la traduce en segundo plano
  * (LibreTranslate, un job cada ~15 s); la API devuelve las traducciones junto a
  * cada notificación con el código base del idioma ("en", "pt", "fr").
