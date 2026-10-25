@@ -61,6 +61,15 @@ class EventCancelledWebSocketListenerTest {
     }
 
     @Test
+    @DisplayName("evento cancelado → también se avisa en el canal global para quitarlo de los listados")
+    void cancelled_broadcastsToListings() {
+        listener.onEventStatusChanged(event(12L, "CANCELLED", "ORGANIZER_REVOKED"));
+
+        verify(messagingTemplate).convertAndSend("/topic/events/cancelled",
+                (Object) Map.of("type", "EVENT_CANCELLED", "eventId", 12L));
+    }
+
+    @Test
     @DisplayName("otro estado o sin eventId → no envía nada")
     void otherStatusOrMissingId_doesNothing() {
         listener.onEventStatusChanged(event(12L, "PUBLISHED", null));
