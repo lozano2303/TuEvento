@@ -10,7 +10,7 @@ TuEvento sigue [Semantic Versioning 2.0.0](https://semver.org/lang/es/): `MAJOR.
 
 ## Una sola versión para todo el monorepo
 
-Backend, web y móvil se publican juntos y llevan la misma versión:
+Backend y web se publican juntos y llevan la misma versión. La app móvil la adopta cuando sale una build nueva de EAS con esos cambios; mientras tanto conserva la de su última build (por eso `v1.0.1` no cambió la versión de la app):
 
 | Componente | Dónde vive la versión |
 |---|---|

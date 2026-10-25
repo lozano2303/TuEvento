@@ -4,16 +4,36 @@ import { httpRequest } from '../services/httpClient.js';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 // Configuración de producción
-const TOKEN_EXPIRATION_MS = 15 * 60 * 1000; // 15 minutos
 const REFRESH_BEFORE_MS = 3 * 60 * 1000; // Refrescar 3 minutos antes
-const REFRESH_INTERVAL_MS = 12 * 60 * 1000; // 12 minutos
+const REFRESH_INTERVAL_MS = 12 * 60 * 1000; // 12 minutos (si no se puede leer el exp)
+const RETRY_DELAY_MS = 60 * 1000; // Espera mínima tras un refresh fallido
+
+/**
+ * Milliseconds until the token must be renewed: REFRESH_BEFORE_MS before its exp claim.
+ * Falls back to the fixed interval when the token cannot be decoded.
+ */
+function msUntilRefresh(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (typeof payload.exp === 'number') {
+      return Math.max(0, payload.exp * 1000 - Date.now() - REFRESH_BEFORE_MS);
+    }
+  } catch {
+    // Malformed token: fall back to the fixed interval
+  }
+  return REFRESH_INTERVAL_MS;
+}
 
 /**
  * Hook para refrescar automáticamente el token JWT antes de que expire
- * y notificar cuando se actualiza para reconectar WebSocket
+ * y notificar cuando se actualiza para reconectar WebSocket.
+ *
+ * Never refreshes on mount: a page load right after login (e.g. the OAuth redirect
+ * /login → /) would rotate the tokens while the page is navigating away, leaving a
+ * revoked refresh token in localStorage. The refresh is scheduled from the exp claim.
  */
 export const useTokenRefresh = (onTokenRefreshed) => {
-  const intervalRef = useRef(null);
+  const timeoutRef = useRef(null);
   const isRefreshing = useRef(false);
 
   const refreshToken = useCallback(async () => {
@@ -72,26 +92,31 @@ export const useTokenRefresh = (onTokenRefreshed) => {
     }
   }, [onTokenRefreshed]);
 
-  // Iniciar el intervalo de refresh automático
+  // Programar el refresh según el exp del token actual
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    let cancelled = false;
 
-    if (!token) {
-      return;
-    }
+    const schedule = (afterAttempt) => {
+      const token = localStorage.getItem('token');
+      if (cancelled || !token) {
+        return;
+      }
+      let delay = msUntilRefresh(token);
+      // If a refresh just failed, the token is still near expiry: wait before retrying
+      if (afterAttempt) {
+        delay = Math.max(delay, RETRY_DELAY_MS);
+      }
+      timeoutRef.current = setTimeout(async () => {
+        await refreshToken();
+        schedule(true);
+      }, delay);
+    };
 
-    // Ejecutar refresh inmediatamente en la primera carga
-    refreshToken();
-
-    // Intervalo regular
-    intervalRef.current = setInterval(() => {
-      refreshToken();
-    }, REFRESH_INTERVAL_MS);
+    schedule(false);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      cancelled = true;
+      clearTimeout(timeoutRef.current);
     };
   }, [refreshToken]);
 

@@ -13,7 +13,9 @@ import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.
 
 public interface AuthSessionJpaRepository extends JpaRepository<AuthSessionEntity, Integer> {
 
-    Optional<AuthSessionEntity> findByAccessToken(String accessToken);
+    // findFirst + newest first: tolerates legacy rows that share a token (before jti and the
+    // unique constraint) instead of failing with IncorrectResultSizeDataAccessException.
+    Optional<AuthSessionEntity> findFirstByAccessTokenOrderByAuthSessionIdDesc(String accessToken);
 
     @Query("SELECT s FROM AuthSessionEntity s WHERE s.user.userId = :userId AND s.revoked = false")
     List<AuthSessionEntity> findActiveByUserId(@Param("userId") Integer userId);

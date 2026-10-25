@@ -4,10 +4,6 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-10-25
-
-Primera versión con número semántico (ver `docs/versioning.md`). Incluye todo lo acumulado en `develop` hasta esta fecha.
-
 ### Security — fix(config): configuration hardening from the security audit
 
 - **Account lockout** lasts 30 minutes again (`security.lockout.minutes`, `SECURITY_LOCKOUT_MINUTES`); the dev profile keeps 1 minute
@@ -25,6 +21,21 @@ Primera versión con número semántico (ver `docs/versioning.md`). Incluye todo
 - **Client IP** taken from `X-Forwarded-For` counting `rate-limit.auth.trusted-proxies` hops from the right (`RATE_LIMIT_TRUSTED_PROXIES`: 2 on the VPS stack, 1 on k8s, 0 by default)
 - **Web and mobile** show a translated message (es/en/pt/fr); CORS exposes `Retry-After`
 
+## [1.0.1] - 2026-10-25
+
+Imágenes Docker `v1.0.1` (backend y web; `nsfw` y `gateway` reetiquetadas desde `v1.0.0`). Incluyen también la cancelación de eventos y reembolsos (PR #105), que no estaba en las imágenes `v1.0.0`.
+
+### Fixed — fix(security): OAuth sessions, social login checks and errors
+
+- **Duplicate sessions after social login**: access and refresh tokens now carry a random `jti`. Before, two tokens issued to the same user in the same second were identical (the OAuth callback followed by an immediate `/auth/refresh` produced them), which left `auth_session`/`refresh_token` rows sharing a token and made `/auth/logout` fail with a 500
+- **Migration `102-add-unique-session-tokens`**: neutralises existing duplicates (keeps the active or newest row; the others are revoked and get a `#dup-<id>` suffix, nothing is deleted) and adds unique constraints on `auth_session.access_token` and `refresh_token.token`. Idempotent and PostgreSQL only
+- **Session lookup** (`findByAccessToken`) no longer fails if legacy duplicates remain
+- **Web no longer refreshes the token on every page load**: `useTokenRefresh` schedules the refresh from the token's `exp`. The refresh on mount ran while `/login` redirected to `/` after OAuth, rotating the tokens before they were stored and sending the user back to the login page
+- **Google and Facebook reject blocked, deactivated and deleted accounts** with the same codes and temporary-lockout handling as the password login (`ACCOUNT_LOCKED`, `ACCOUNT_BLOCKED`, `ACCOUNT_DEACTIVATED`, `ACCOUNT_DELETED`)
+- **OAuth callback errors**: when the provider returns an error (e.g. the user cancels) or no code, or the sign-in is rejected, the browser goes back to `/login?oauth_error=<code>` (`OAUTH_CANCELLED`, `OAUTH_FAILED`, …) instead of a 500; mobile (`response_format=json`) gets a 400 with the code. The web shows a translated message (deactivated accounts open the reactivation modal)
+- **`FACEBOOK_OAUTH_FAILED`** returns a fixed message; the Graph API detail only goes to the log
+- **`APP_OAUTH_GOOGLE_REDIRECT_URI` / `APP_OAUTH_FACEBOOK_REDIRECT_URI` are the full callback URL** (`https://<domain>/api/v1/auth/oauth/{google|facebook}/callback`), used as-is by the authorization request and the code exchange. The YAML no longer appends the path (it only took effect when the variable did not come from the environment)
+
 ### Security — fix(storage): access control on storage endpoints
 
 - **`/api/v1/storage/**` is no longer public**: every route requires a login (no client calls storage anonymously)
@@ -34,6 +45,10 @@ Primera versión con número semántico (ver `docs/versioning.md`). Incluye todo
 - **New error codes**: `STORAGE_AUTHENTICATION_REQUIRED` (401), `STORAGE_ACCESS_DENIED` (403), `STORAGE_CATEGORY_NOT_ALLOWED` (403) and `INVALID_PARAMETER` (400, mistyped path/query parameters); `ForbiddenException`/`UnauthorizedException` keep the `code` in the response
 - **No internal details in errors**: storage clients and `UploadFileUseCase` return fixed messages (`S3_UPLOAD_FAILED`, `S3_DELETE_FAILED`, `S3_PRESIGN_FAILED`, `UPLOAD_FAILED`); the SDK detail only goes to the log
 - **Public URLs use the public host** (`MINIO_PUBLIC_URL` / `RUSTFS_PUBLIC_URL`) instead of the internal endpoint, both when stored and when file metadata is read; see `docs/deployment-vps.md` to fix rows saved before this change
+
+## [1.0.0] - 2026-10-24
+
+Primer despliegue en el VPS (imágenes Docker `v1.0.0`). Incluye todo lo acumulado en `develop` hasta esa fecha.
 
 ### Added — chore(deploy): production stack for a self-hosted VPS
 
