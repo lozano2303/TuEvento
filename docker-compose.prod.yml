@@ -60,9 +60,9 @@ services:
     container_name: tuevento-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -85,7 +85,7 @@ services:
     container_name: tuevento-redis
     restart: unless-stopped
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
     command:
       - sh
       - -c
@@ -112,8 +112,8 @@ services:
     container_name: tuevento-rustfs
     restart: unless-stopped
     environment:
-      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?set RUSTFS_ACCESS_KEY}
-      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?set RUSTFS_SECRET_KEY}
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?}
       RUSTFS_CONSOLE_ENABLE: "false"
     volumes:
       - rustfs_data:/data
@@ -134,7 +134,7 @@ services:
 
   # ── Moderación de imágenes ──────────────────────────────────────────────────
   nsfw-classifier:
-    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:nsfw-${TUEVENTO_VERSION:?set TUEVENTO_VERSION}
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:nsfw-${TUEVENTO_VERSION:?}
     container_name: tuevento-nsfw
     restart: unless-stopped
     healthcheck:
@@ -158,8 +158,8 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${GATEWAY_POSTGRES_DB:-fake_gateway_db}
-      POSTGRES_USER: ${GATEWAY_POSTGRES_USER:?set GATEWAY_POSTGRES_USER}
-      POSTGRES_PASSWORD: ${GATEWAY_POSTGRES_PASSWORD:?set GATEWAY_POSTGRES_PASSWORD}
+      POSTGRES_USER: ${GATEWAY_POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${GATEWAY_POSTGRES_PASSWORD:?}
     volumes:
       - postgres_gateway_data:/var/lib/postgresql/data
     healthcheck:
@@ -178,7 +178,7 @@ services:
 
   # El navegador abre GATEWAY_PUBLIC_URL/pay.html en un popup (proxy host de NPM).
   fake-payment-gateway:
-    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:gateway-${TUEVENTO_VERSION:?set TUEVENTO_VERSION}
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:gateway-${TUEVENTO_VERSION:?}
     container_name: tuevento-fake-gateway
     restart: unless-stopped
     environment:
@@ -187,10 +187,10 @@ services:
       POSTGRES_HOST: postgres-gateway
       POSTGRES_PORT: "5432"
       POSTGRES_DB: ${GATEWAY_POSTGRES_DB:-fake_gateway_db}
-      POSTGRES_USER: ${GATEWAY_POSTGRES_USER:?set GATEWAY_POSTGRES_USER}
-      POSTGRES_PASSWORD: ${GATEWAY_POSTGRES_PASSWORD:?set GATEWAY_POSTGRES_PASSWORD}
+      POSTGRES_USER: ${GATEWAY_POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${GATEWAY_POSTGRES_PASSWORD:?}
       PAYMENT_CALLBACK_URL: http://backend:8080/api/v1/webhooks/payment
-      WEBHOOK_SECRET: ${WEBHOOK_SECRET:?set WEBHOOK_SECRET}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:?}
       LOG_LEVEL: INFO
     depends_on:
       postgres-gateway:
@@ -240,7 +240,7 @@ services:
 
   # ── Backend (Spring Boot, perfil prod) ─────────────────────────────────────
   backend:
-    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:${TUEVENTO_VERSION:?set TUEVENTO_VERSION}
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:${TUEVENTO_VERSION:?}
     container_name: tuevento-backend
     restart: unless-stopped
     environment:
@@ -248,49 +248,49 @@ services:
       JAVA_OPTS: ${BACKEND_JAVA_OPTS:--Xms256m -Xmx768m -XX:MaxMetaspaceSize=256m}
 
       # Base de datos
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?set POSTGRES_DB}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
       SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
-      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
 
       # Redis interno (sin TLS)
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: "6379"
-      SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+      SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD:?}
       SPRING_REDIS_SSL: "false"
 
       # Almacenamiento: subidas por la red interna, URLs firmadas con el host público
       STORAGE_PROVIDER: rustfs
       RUSTFS_ENDPOINT: http://rustfs:9000
-      RUSTFS_PUBLIC_URL: ${RUSTFS_PUBLIC_URL:?set RUSTFS_PUBLIC_URL (public https host of RustFS)}
-      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?set RUSTFS_ACCESS_KEY}
-      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?set RUSTFS_SECRET_KEY}
+      RUSTFS_PUBLIC_URL: ${RUSTFS_PUBLIC_URL:?}
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?}
 
       # Seguridad
-      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
-      QR_SECRET: ${QR_SECRET:?set QR_SECRET}
+      JWT_SECRET: ${JWT_SECRET:?}
+      QR_SECRET: ${QR_SECRET:?}
       QR_EXPIRATION: ${QR_EXPIRATION:-60000}
-      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?set APP_CORS_ALLOWED_ORIGINS}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
 
       # OAuth
-      APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS: ${APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS:?set APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS}
-      APP_OAUTH_GOOGLE_REDIRECT_URI: ${APP_OAUTH_GOOGLE_REDIRECT_URI:?set APP_OAUTH_GOOGLE_REDIRECT_URI}
-      APP_OAUTH_FACEBOOK_REDIRECT_URI: ${APP_OAUTH_FACEBOOK_REDIRECT_URI:?set APP_OAUTH_FACEBOOK_REDIRECT_URI}
+      APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS: ${APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS:?}
+      APP_OAUTH_GOOGLE_REDIRECT_URI: ${APP_OAUTH_GOOGLE_REDIRECT_URI:?}
+      APP_OAUTH_FACEBOOK_REDIRECT_URI: ${APP_OAUTH_FACEBOOK_REDIRECT_URI:?}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
       FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
 
       # Cuenta admin inicial y avatar por defecto
-      ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
       ADMIN_ALIAS: ${ADMIN_ALIAS:-AdminTuEvento}
       APP_PROFILE_DEFAULT_AVATAR_ID: ${APP_PROFILE_DEFAULT_AVATAR_ID:-1}
 
       # Correo
-      MAIL_USERNAME: ${MAIL_USERNAME:?set MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:?set MAIL_PASSWORD}
+      MAIL_USERNAME: ${MAIL_USERNAME:?}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?}
       NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-true}
 
       # Moderación de imágenes
@@ -305,7 +305,7 @@ services:
       # Pagos
       PAYMENT_GATEWAY: fake
       FAKE_GATEWAY_URL: http://fake-payment-gateway:4001
-      WEBHOOK_SECRET: ${WEBHOOK_SECRET:?set WEBHOOK_SECRET}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:?}
 
       # Traducción (solo responde si se levanta el perfil "translate")
       TRANSLATION_LIBRETRANSLATE_BASE_URL: http://libretranslate:5000
@@ -335,7 +335,7 @@ services:
 
   # ── Frontend (SPA + proxy de /api y /ws al backend) ────────────────────────
   frontend:
-    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:frontend-${TUEVENTO_VERSION:?set TUEVENTO_VERSION}
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:frontend-${TUEVENTO_VERSION:?}
     container_name: tuevento-frontend
     restart: unless-stopped
     depends_on:
