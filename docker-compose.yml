@@ -153,6 +153,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - PAYMENT_CALLBACK_URL=http://host.docker.internal:8080/api/v1/webhooks/payment
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - ADMIN_API_KEY=${FAKE_GATEWAY_API_KEY:-dev-admin-key-change-in-production}
       - LOG_LEVEL=INFO
     depends_on:
       - postgres-fake-gateway
