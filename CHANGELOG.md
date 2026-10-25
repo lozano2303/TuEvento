@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Security — fix(seats): seat writes are restricted to the event's organizer
+
+- **`POST /api/v1/seats`, `PATCH /seats/{id}/status` and `DELETE /seats/{id}`** only checked the role, so any organizer could change or delete seats of another organizer's event, including turning a sold seat back to `AVAILABLE` to sell it twice. They now require `ORGANIZER`, the event must be theirs (`EVENT_ACCESS_DENIED`, 403) and in `DRAFT` (`SEAT_EDIT_NOT_ALLOWED`). By hand a seat can only be marked or unmarked as courtesy, and sold or reserved seats cannot be deleted. ADMIN is read-only, as with sections. Web and mobile do not use these endpoints
+- **Orders** (`POST /orders`) now require every seat to still be `RESERVED` and to belong to the order's event; seats from another event used to be accepted and attributed to it
+
+### Fixed — fix(seats): refunds, live seat map and section availability
+
+- **Admin and organizer refunds** returned a 500 after 30 s: the gateway was called inside the transaction that locks the tickets, and the gateway sends the refund webhook before answering, so the webhook waited for those locks until the call timed out. The rollback also deleted the `REQUESTED` refund, leaving refunded payments without a refund record. The gateway is now called after the commit; the refund answers in under a second and ends `PROCESSED`
+- **Seat map in real time**: sales, released reservations and failed payments now reach `/topic/events/{eventId}/seats`; only reservations did. System seat changes validate the transition (a courtesy seat can only become available again, a sold seat never goes back to reserved) and repeating the same status is a no-op
+- **`availableSeats`** of an event section now follows capacity changes made through `PUT /event-sections/{id}`; it kept the original capacity
+
 ### Added — feat(seats): courtesy seats and potential earnings
 
 - **Courtesy seats in the layout editor**: a "Cortesías" menu asks how many courtesy seats each section has and shows the estimated earnings live. The toolbar shows the courtesy total and the estimate, Σ price × (seats − courtesy)
