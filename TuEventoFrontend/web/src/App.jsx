@@ -232,11 +232,10 @@ function AppContent() {
           } />
           <Route path="/terminos-de-uso" element={<TerminosDeUso />} />
           <Route path="/privacidad" element={<Privacidad />} />
+          {/* Rol, propiedad del evento e idioma los valida el editor, en ese orden, con sus modales */}
           <Route path="/events/:eventId/layout" element={
-            <ProtectedRoute requiredRoles={['ORGANIZER', 'ADMIN']}>
-              <SpanishOnlyRoute>
-                <EventLayoutEditor />
-              </SpanishOnlyRoute>
+            <ProtectedRoute>
+              <EventLayoutEditor />
             </ProtectedRoute>
           } />
           <Route path="/wallet" element={

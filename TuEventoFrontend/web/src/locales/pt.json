@@ -1495,7 +1495,22 @@
     "title": "Mude o idioma para espanhol",
     "subtitle": "Esta seção só está disponível em espanhol",
     "description": "A criação e edição de eventos só está disponível com o espanhol selecionado como idioma. Altere seu idioma para espanhol no seu perfil para continuar.",
-    "action": "Voltar"
+    "action": "Voltar",
+    "switchAction": "Mudar para espanhol"
+  },
+  "layoutGuard": {
+    "notOrganizer": {
+      "title": "Você não é organizador",
+      "subtitle": "O editor de layout é só para organizadores",
+      "description": "Somente organizadores podem desenhar o mapa de um evento. Se quiser criar eventos, solicite o papel de organizador no seu perfil.",
+      "action": "Ir para eventos"
+    },
+    "notOwner": {
+      "title": "Você não é o organizador deste evento",
+      "subtitle": "Somente quem criou o evento pode editar o layout",
+      "description": "Este evento pertence a outro organizador, então você não pode ver nem alterar o mapa de seções.",
+      "action": "Voltar aos meus eventos"
+    }
   },
   "paymentConfirmation": {
     "loading": "Carregando sua confirmação…",

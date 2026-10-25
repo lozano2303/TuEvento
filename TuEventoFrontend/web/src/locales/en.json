@@ -1497,7 +1497,22 @@
     "title": "Switch the language to Spanish",
     "subtitle": "This section is only available in Spanish",
     "description": "Creating and editing events is only available with Spanish selected as your language. Change your language to Spanish in your profile to continue.",
-    "action": "Go back"
+    "action": "Go back",
+    "switchAction": "Switch to Spanish"
+  },
+  "layoutGuard": {
+    "notOrganizer": {
+      "title": "You are not an organizer",
+      "subtitle": "The layout editor is only for organizers",
+      "description": "Only organizers can design an event map. If you want to create events, request the organizer role from your profile.",
+      "action": "Go to events"
+    },
+    "notOwner": {
+      "title": "You are not the organizer of this event",
+      "subtitle": "Only the event creator can edit its layout",
+      "description": "This event belongs to another organizer, so you cannot view or change its section map.",
+      "action": "Back to my events"
+    }
   },
   "paymentConfirmation": {
     "loading": "Loading your confirmation…",

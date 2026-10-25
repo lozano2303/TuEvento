@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added — feat(layout): section creation wizard and shape catalog in the layout editor
+
+- **Section wizard**: adding a section type (click or drag) opens a dialog that asks how many seats it has, its base shape and the price per seat, shared by all of its sub-sections. The section is created at the smallest size that fits those seats; the seat count can be changed later in Properties > Sillas
+- **Shape catalog** (`sectionShapes.js`): 22 base shapes — rectangle, rounded rectangle, circle, oval, semicircle, quarter circle, grandstand arc, ring, horseshoe, trapezoids, parallelogram, rhombus, triangles, pentagon, hexagon, octagon, L, U, T and cross — built as Bézier vertices, so they can be edited afterwards and render the same on the web and mobile seat maps. They also replace the 7 suggested shapes of the vertex editor
+- **Resizing fills the section**: making a section larger (handles, size fields or vertex editing) fills it with the maximum seats that fit; making it smaller only trims the seats that no longer fit. The seat size never changes, so the 10 × 10 pages of the seat selector stay the same
+- **Palette**: section types from the backend as plain text (no emojis), sorted, with a search box and category filters (General, Preferencial, VIP, Palcos, Especiales). Emojis were also removed from infrastructure elements, buttons and hints
+- **Access checks in order**: role (`No eres organizador`), event ownership (`No eres el organizador de este evento`) and then language, each with its own modal. Changing the language no longer comes before the ownership check. The language modal can switch the profile to Spanish directly
+- **ADMIN is view-only** in the layout editor, matching the backend
+
+### Fixed — fix(layout): hooks order in the layout editor
+
+- **`EventLayoutEditor`** returned early on a load error before declaring its callbacks, so React saw a different number of hooks between renders. All hooks now run before any conditional return
+
 ### Added — feat(sections): section type categories and catalog
 
 - **`section_type.category`** (migration `103`): `GENERAL`, `PREFERENCIAL`, `VIP`, `PALCO` or `ESPECIAL`, so the layout editor can group and filter the catalog. Existing types default to `GENERAL`
