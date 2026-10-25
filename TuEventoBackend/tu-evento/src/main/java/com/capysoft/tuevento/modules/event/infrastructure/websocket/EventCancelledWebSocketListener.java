@@ -20,6 +20,9 @@ import java.util.Map;
  * <p>Payload: {@code { type: "EVENT_CANCELLED", eventId: 12, cause?: "ORGANIZER_REVOKED" }}
  * ({@code cause} solo viene cuando el evento se canceló porque el admin quitó el rol al organizador;
  * el motivo que escribió el admin no se envía a los asistentes).
+ *
+ * <p>Además publica {@code { type: "EVENT_CANCELLED", eventId }} en {@link #CANCELLED_BROADCAST_TOPIC}
+ * para que los listados de eventos abiertos quiten el evento sin recargar.
  */
 @Slf4j
 @Component
@@ -27,6 +30,7 @@ import java.util.Map;
 public class EventCancelledWebSocketListener {
 
     private static final String CANCELLED = "CANCELLED";
+    static final String CANCELLED_BROADCAST_TOPIC = "/topic/events/cancelled";
 
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -41,6 +45,9 @@ public class EventCancelledWebSocketListener {
             if (event.getCause() != null) payload.put("cause", event.getCause());
             messagingTemplate.convertAndSend(topic, payload);
             log.debug("[EventCancelled] EVENT_CANCELLED sent to {}", topic);
+
+            messagingTemplate.convertAndSend(CANCELLED_BROADCAST_TOPIC,
+                    Map.of("type", "EVENT_CANCELLED", "eventId", event.getEventId()));
         } catch (Exception e) {
             log.error("[EventCancelled] WebSocket push failed (non-breaking): eventId={}, error={}",
                     event.getEventId(), e.getMessage(), e);

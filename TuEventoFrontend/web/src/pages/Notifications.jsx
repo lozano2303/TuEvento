@@ -3,6 +3,7 @@ import { CheckCircle2, DollarSign, Wallet, Info, AlertCircle, RefreshCw, Gift, P
 import { formatDistanceToNow } from 'date-fns';
 import { es, enUS, fr, pt } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { baseLanguage, isAwaitingTranslation, localizeNotification } from '../utils/notificationI18n';
 import { useNotifications } from '../context/NotificationContext';
 import NotificationDetailModal from '../components/common/NotificationDetailModal';
 
@@ -51,30 +52,12 @@ function NotificationCard({ notification, onMarkAsRead, locale }) {
   const { Icon, color } = getNotificationIcon(notification.type);
   const isUnread = !notification.readAt;
   
-  // FIX BUG #2: Obtener traducción si existe para el idioma actual
-  const userLanguage = i18n.language || 'es';
-  const translation = userLanguage !== 'es' 
-    ? notification.translations?.find(t => t.languageCode === userLanguage && t.status === 'PUBLISHED')
-    : null;
-  
-  // DEBUG: Log para diagnóstico
-  console.log('[NotificationCard DEBUG]', {
-    notificationId: notification.notificationUserId,
-    userLanguage,
-    hasTranslations: !!notification.translations,
-    translationsCount: notification.translations?.length || 0,
-    translations: notification.translations,
-    foundTranslation: !!translation,
-    translationStatus: translation?.status
-  });
-  
-  // Usar traducción si existe, sino mostrar original
-  const displaySubject = translation?.translatedSubject || notification.subject;
-  const displayBody = translation?.translatedBody || notification.body;
-  
-  // Detectar si está esperando traducción (sin traducción PUBLISHED)
-  // NO mostrar indicador si la traducción ya está lista
-  const isTranslating = false; // Deshabilitado porque IN_APP ahora envía traducido
+  // Traducción al idioma de la UI si ya llegó; si no, el original
+  const language = baseLanguage(i18n);
+  const { subject: displaySubject, body: displayBody } = localizeNotification(notification, language);
+
+  // Notificación reciente cuya traducción aún no llega: el contexto la sigue consultando
+  const isTranslating = isAwaitingTranslation(notification, language);
 
   const handleClick = () => {
     if (isUnread) {

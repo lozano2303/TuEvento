@@ -221,8 +221,14 @@ public class ProcessWebhookUseCaseImpl {
                         refundRepository.save(processed);
                     });
 
-                    // Transicionar Order y Tickets a REFUNDED
-                    confirmRefundUseCase.confirmRefund(payment.getOrderId());
+                    // Transicionar Order y Tickets a REFUNDED (los tickets USED se conservan)
+                    var refundedTickets = confirmRefundUseCase.confirmRefund(payment.getOrderId());
+                    if (refundedTickets.isPartial()) {
+                        // La pasarela ya devolvió el total: algún ticket se usó mientras el reembolso estaba pendiente
+                        log.warn("Gateway refund completed but {} of {} ticket(s) were used while it was pending: paymentId={}, orderId={}",
+                            refundedTickets.totalCount() - refundedTickets.refundableCount(), refundedTickets.totalCount(),
+                            payment.getPaymentId(), payment.getOrderId());
+                    }
 
                     // Si había crédito wallet aplicado, devolver el saldo
                     BigDecimal walletApplied = payment.getWalletAmountApplied();
