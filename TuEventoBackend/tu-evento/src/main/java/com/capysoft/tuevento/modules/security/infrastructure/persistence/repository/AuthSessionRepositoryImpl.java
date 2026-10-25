@@ -29,7 +29,7 @@ public class AuthSessionRepositoryImpl implements AuthSessionRepository {
 
     @Override
     public Optional<AuthSession> findByAccessToken(String accessToken) {
-        return jpaRepository.findByAccessToken(accessToken).map(mapper::toDomain);
+        return jpaRepository.findFirstByAccessTokenOrderByAuthSessionIdDesc(accessToken).map(mapper::toDomain);
     }
 
     @Override

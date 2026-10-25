@@ -1189,6 +1189,13 @@
       "resendError": "Erreur de connexion lors du renvoi du code d'activation",
       "enterEmailResend": "Veuillez entrer votre e-mail pour renvoyer le code d'activation."
     },
+    "oauthErrors": {
+      "cancelled": "Vous avez annulé la connexion avec le réseau social.",
+      "failed": "Impossible de vous connecter avec le réseau social. Veuillez réessayer.",
+      "facebookFailed": "Impossible de vous connecter avec Facebook. Veuillez réessayer.",
+      "locked": "Votre compte est temporairement bloqué. Veuillez réessayer plus tard.",
+      "deleted": "Ce compte n'existe pas."
+    },
     "modals": {
       "termsTitle": "Termes et Conditions d'Utilisation",
       "understood": "Compris",
