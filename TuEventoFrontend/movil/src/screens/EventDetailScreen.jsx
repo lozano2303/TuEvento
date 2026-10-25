@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -30,6 +30,9 @@ import { useToast } from "../hooks/useToast";
 import { useSeatStore } from "../hooks/useSeatStore";
 
 const { width } = Dimensions.get("window");
+
+// Secciones que se descargan a la vez en segundo plano (para hidratar el carrito)
+const SEAT_LOAD_CONCURRENCY = 4;
 
 /**
  * Pantalla de detalle de un evento.
@@ -69,7 +72,29 @@ export default function EventDetailScreen() {
   const MIN_SEAT_TOUCH_RADIUS_PX = 22; // Tamaño táctil mínimo deseado en píxeles
   
   // 🚀 DOD: Usar SeatDataStore para 100k+ sillas
-  const { store: seatStore, seats, cart, loadSeats, updateSeat, getSeat } = useSeatStore(currentUserId);
+  const { store: seatStore, version: seatsVersion, cart, upsertSeats, updateSeat, getSeat } = useSeatStore(currentUserId);
+
+  // Sillas por sección: cada sección se descarga una sola vez (promesa compartida)
+  const sectionLoadsRef = useRef(new Map());
+  const [loadedSectionIds, setLoadedSectionIds] = useState(() => new Set());
+
+  const ensureSectionSeats = useCallback((sectionId) => {
+    const loads = sectionLoadsRef.current;
+    if (!loads.has(sectionId)) {
+      const promise = seatService.getSeatsBySection(sectionId)
+        .then((data) => {
+          upsertSeats(data || []);
+          setLoadedSectionIds((prev) => new Set(prev).add(sectionId));
+          return data || [];
+        })
+        .catch((err) => {
+          loads.delete(sectionId); // permitir reintento al volver a abrir la sección
+          throw err;
+        });
+      loads.set(sectionId, promise);
+    }
+    return loads.get(sectionId);
+  }, [upsertSeats]);
   
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [reserving, setReserving] = useState(new Set());
@@ -118,13 +143,15 @@ export default function EventDetailScreen() {
         setLoading(true);
         setError(null);
 
-        // Cargar detalles del evento (con traducción dinámica según idioma activo)
-        const eventData = await getEventDetail(eventId, language);
+        // Detalle (traducido al idioma activo), imágenes, layout y secciones en paralelo
+        const [eventData, mediaData, layoutData, sectionsData] = await Promise.all([
+          getEventDetail(eventId, language),
+          getEventMedia(eventId),
+          getEventLayout(eventId),
+          getEventSections(eventId),
+        ]);
         setEvent(eventData);
 
-        // Cargar imágenes del evento
-        const mediaData = await getEventMedia(eventId);
-        
         // Procesar URLs de imágenes (reemplazar localhost por MinIO host)
         const processedMedia = (mediaData || []).map((item) => ({
           ...item,
@@ -134,31 +161,17 @@ export default function EventDetailScreen() {
         }));
         setMedia(processedMedia);
 
-        // Cargar layout del evento (puede ser null si no existe)
-        const layoutData = await getEventLayout(eventId);
+        // Layout del evento (puede ser null si no existe)
         if (layoutData && layoutData.layoutData) {
-          const parsedLayout = JSON.parse(layoutData.layoutData);
-          setLayout(parsedLayout);
+          setLayout(JSON.parse(layoutData.layoutData));
         }
-
-        // Cargar secciones del evento
-        const sectionsData = await getEventSections(eventId);
         setSections(sectionsData || []);
 
-        // Cargar sillas de todas las secciones para detectar reservas existentes
-        // Esto permite hidratar el stepper correctamente al entrar a la vista
+        // Con sesión, las sillas de todas las secciones se cargan en segundo plano para
+        // detectar reservas existentes (stepper y carrito); la pantalla no las espera.
+        // Sin sesión basta con cargar cada sección al abrirla.
         if (sectionsData && sectionsData.length > 0 && currentUserId) {
-          const allSeatsArray = [];
-          for (const section of sectionsData) {
-            try {
-              const sectionSeats = await seatService.getSeatsBySection(section.eventSectionId);
-              allSeatsArray.push(...sectionSeats);
-            } catch (err) {
-              console.warn(`[EventDetailScreen] Could not load seats for section ${section.eventSectionId}:`, err);
-            }
-          }
-          // 🚀 DOD: Cargar todas las sillas en el store
-          loadSeats(allSeatsArray);
+          void loadAllSectionsInBackground(sectionsData);
         }
       } catch (err) {
         console.error("[EventDetailScreen] Error loading event:", err);
@@ -166,6 +179,21 @@ export default function EventDetailScreen() {
       } finally {
         setLoading(false);
       }
+    };
+
+    const loadAllSectionsInBackground = async (sectionsData) => {
+      const queue = sectionsData.map((section) => section.eventSectionId);
+      const worker = async () => {
+        while (queue.length > 0) {
+          const sectionId = queue.shift();
+          try {
+            await ensureSectionSeats(sectionId);
+          } catch (err) {
+            console.warn(`[EventDetailScreen] Could not load seats for section ${sectionId}:`, err);
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(SEAT_LOAD_CONCURRENCY, queue.length) }, worker));
     };
 
     if (eventId) {
@@ -183,21 +211,14 @@ export default function EventDetailScreen() {
 
     const loadSeatsForSection = async () => {
       try {
-        const data = await seatService.getSeatsBySection(selectedSectionId);
-        
-        // CASO 5: Detectar sección sin sillas disponibles
-        const availableSeats = data.filter(s => s.status === 'AVAILABLE');
-        if (availableSeats.length === 0) {
+        await ensureSectionSeats(selectedSectionId);
+
+        // CASO 5: Detectar sección sin sillas disponibles (estado actual del store)
+        const indices = seatStore.getSortedSectionIndices(selectedSectionId);
+        const hasAvailable = indices.some((idx) => seatStore.statuses[idx] === 0);
+        if (indices.length > 0 && !hasAvailable) {
           showToast('section-no-seats', t("mobileSeats.sectionSoldOut"), 'warning');
         }
-        
-        // 🚀 DOD: Cargar sillas adicionales de la sección al store
-        data.forEach(seat => {
-          const existing = getSeat(seat.seatId);
-          if (!existing) {
-            updateSeat(seat.seatId, seat);
-          }
-        });
       } catch (err) {
         console.error("[EventDetailScreen] Error loading seats:", err);
         Alert.alert(t("common.error"), t("mobileSeats.loadError"));
@@ -205,7 +226,7 @@ export default function EventDetailScreen() {
     };
 
     void loadSeatsForSection();
-  }, [selectedSectionId, showToast]);
+  }, [selectedSectionId, showToast, ensureSectionSeats]);
 
   // Conectar WebSocket al montar
   useEffect(() => {
@@ -364,7 +385,7 @@ export default function EventDetailScreen() {
 
   // Handler de tap en silla
   const onSeatPress = (seatId) => {
-    const seat = seats[seatId];
+    const seat = getSeat(seatId);
     if (!seat) return;
 
     if (seat.status === 'AVAILABLE') {
@@ -908,14 +929,20 @@ export default function EventDetailScreen() {
                     currentRowPage={currentRowPage}
                     currentColPage={currentColPage}
                     sections={sections}
-                    seats={seats}
                     seatStore={seatStore}
+                    storeVersion={seatsVersion}
                     onSeatPress={onSeatPress}
+                    onSectionPress={setSelectedSectionId}
                     currentUserId={currentUserId}
-                    reserving={reserving}
                     onRowPagesChange={setTotalRowPages}
                     onColPagesChange={setTotalColPages}
                   />
+                )}
+                {selectedSectionId && !loadedSectionIds.has(selectedSectionId) && (
+                  <View style={styles.seatsLoadingOverlay} pointerEvents="none">
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={styles.seatsLoadingText}>{t("mobileSeats.loadingSeats")}</Text>
+                  </View>
                 )}
               </View>
 
@@ -1245,6 +1272,22 @@ function createStyles(colors) {
       borderRadius: 12,
       overflow: "hidden",
       backgroundColor: colors.surfaceAlt,
+    },
+    seatsLoadingOverlay: {
+      position: "absolute",
+      top: 12,
+      alignSelf: "center",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      backgroundColor: "rgba(0,0,0,0.6)",
+    },
+    seatsLoadingText: {
+      color: "#FFFFFF",
+      fontSize: 12,
     },
     subSectionNavigation: {
       flexDirection: "row",

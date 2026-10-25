@@ -1803,6 +1803,7 @@
   "mobileSeats": {
     "sectionSoldOut": "No seats left available in this section",
     "loadError": "Could not load the seats",
+    "loadingSeats": "Loading seats…",
     "wsDisconnected": "Real-time connection lost, reconnecting...",
     "reserveError": "Could not reserve the seat, please try again",
     "releaseError": "Could not release the seat, please try again",
