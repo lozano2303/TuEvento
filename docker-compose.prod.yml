@@ -245,6 +245,8 @@ services:
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      # nginx-proxy-manager + nginx del frontend: dos entradas en X-Forwarded-For
+      RATE_LIMIT_TRUSTED_PROXIES: "2"
       JAVA_OPTS: ${BACKEND_JAVA_OPTS:--Xms256m -Xmx768m -XX:MaxMetaspaceSize=256m}
 
       # Base de datos
