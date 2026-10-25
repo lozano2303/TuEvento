@@ -36,4 +36,19 @@ public class StoredFile {
     private LocalDateTime updatedAt;
     private String createdBy;
     private String updatedBy;
+
+    /**
+     * Archivos de categorías públicas (foto de perfil, media de eventos) los ve
+     * cualquier usuario autenticado; los privados (documentos de organizador)
+     * solo quien los subió o un administrador.
+     */
+    public boolean isReadableBy(Integer userId, boolean admin) {
+        boolean publicCategory = fileCategory != null && Boolean.TRUE.equals(fileCategory.getIsPublic());
+        return publicCategory || isDeletableBy(userId, admin);
+    }
+
+    /** Solo quien subió el archivo o un administrador pueden borrarlo. */
+    public boolean isDeletableBy(Integer userId, boolean admin) {
+        return admin || (userId != null && userId.equals(uploadedBy));
+    }
 }
