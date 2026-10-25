@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.section.infrastructure.persistence.repository;
 
+import com.capysoft.tuevento.modules.section.domain.model.SectionCategory;
 import com.capysoft.tuevento.modules.section.domain.model.SectionType;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeRepository;
 import com.capysoft.tuevento.modules.section.infrastructure.persistence.entity.SectionTypeEntity;
@@ -38,6 +39,7 @@ public class SectionTypeRepositoryImpl implements SectionTypeRepository {
                 .sectionTypeId(sectionType.getSectionTypeId())
                 .name(sectionType.getName())
                 .active(sectionType.getActive())
+                .category(sectionType.getCategory() != null ? sectionType.getCategory() : SectionCategory.GENERAL)
                 .build();
         return toDomain(jpaRepository.save(entity));
     }
@@ -47,6 +49,7 @@ public class SectionTypeRepositoryImpl implements SectionTypeRepository {
                 .sectionTypeId(entity.getSectionTypeId())
                 .name(entity.getName())
                 .active(entity.getActive())
+                .category(entity.getCategory())
                 .build();
     }
 }
