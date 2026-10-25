@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight, PartyPopper, Sparkles, FileText, X } from "lucide-react";
 import { useTranslation } from 'react-i18next';
@@ -13,7 +13,7 @@ import ForgotPassword from "./ForgotPassword.jsx";
 import BaseModal from "../components/common/BaseModal.jsx";
 import ReactivationModal from "../components/common/ReactivationModal.jsx";
 import LanguageSelector from "../components/common/LanguageSelector.jsx";
-import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { renderGoogleButton, releaseGoogleButton } from "../services/googleIdentity.js";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
@@ -32,24 +32,43 @@ const OAUTH_ERROR_MESSAGES = {
 /**
  * GoogleButton — botón visualmente idéntico al de Facebook.
  *
- * Técnica overlay: el botón visual (con logo + "Google") está debajo.
- * Encima, con opacity-0 y posicionado absolute, vive el GoogleLogin real
- * de @react-oauth/google — ese es el que dispara el flujo OAuth auténtico.
- * El div wrapper tiene cursor-pointer; el overlay captura el clic y lo pasa
- * al GoogleLogin. pointer-events-none en la capa visual evita conflictos.
+ * Técnica overlay: el botón visual (con logo + "Google") está debajo. Encima, con
+ * opacity-0 y position absolute (inset 0), vive el botón real de Google Identity
+ * Services, que dispara el flujo OAuth auténtico; su iframe ocupa todo el wrapper.
  *
- * El width del GoogleLogin se fija en 120px para que su botón interno ocupe
- * exactamente el contenedor del overlay sin desbordarse.
- */
-/**
- * GoogleButton rediseñado para el nuevo layout glassmorphism.
- *
- * Usa la clase login-google-wrapper como contenedor (w-full en el grid de 2 col).
- * El overlay tiene position:absolute inset-0 con display:flex + stretch, de modo
- * que el iframe interno de GoogleLogin ocupa el 100% del wrapper y cualquier clic
- * dentro del botón visual dispara el flujo OAuth real.
+ * GSI se carga e inicializa una sola vez por carga de página (services/googleIdentity.js);
+ * en cada montaje solo se vuelve a dibujar el botón. Así sigue funcionando al volver a
+ * /login sin recargar (por ejemplo, tras cerrar sesión desde la vista de perfil).
  */
 function GoogleButton({ onSuccess, onError }) {
+  const containerRef = useRef(null);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  onSuccessRef.current = onSuccess;
+  onErrorRef.current = onError;
+
+  useEffect(() => {
+    const container = containerRef.current;
+    // Same contract as @react-oauth/google: onSuccess({ credential, select_by }) or onError()
+    const onCredential = (response) => {
+      if (!response?.credential) return onErrorRef.current?.();
+      return onSuccessRef.current?.({ credential: response.credential, select_by: response.select_by });
+    };
+
+    if (GOOGLE_CLIENT_ID) {
+      renderGoogleButton(container, {
+        clientId: GOOGLE_CLIENT_ID,
+        onCredential,
+        buttonOptions: { type: 'standard', theme: 'outline', size: 'large', width: 400 },
+      }).catch((err) => console.warn('[GoogleButton] Google Identity Services unavailable:', err.message));
+    }
+
+    return () => {
+      releaseGoogleButton(onCredential);
+      container.replaceChildren();
+    };
+  }, []);
+
   return (
     <div className="login-google-wrapper" role="button" tabIndex={0} aria-label="Iniciar sesión con Google">
       {/* ── Capa visual ── */}
@@ -66,12 +85,7 @@ function GoogleButton({ onSuccess, onError }) {
 
       {/* ── Overlay invisible full-width — dispara el flujo OAuth real ── */}
       <div className="login-google-overlay" aria-hidden="true">
-        <GoogleLogin
-          onSuccess={onSuccess}
-          onError={onError}
-          useOneTap={false}
-          width="600"
-        />
+        <div ref={containerRef} />
       </div>
     </div>
   );
@@ -889,9 +903,7 @@ export default function Login() {
               {/* Botones sociales en grid 2 columnas */}
               <div className="login-social-grid">
                 {/* Google */}
-                <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-                  <GoogleButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
-                </GoogleOAuthProvider>
+                <GoogleButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
 
                 {/* Facebook */}
                 <button

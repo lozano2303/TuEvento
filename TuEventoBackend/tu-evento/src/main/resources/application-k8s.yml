@@ -7,6 +7,10 @@ spring:
     url: jdbc:postgresql://postgres-service:5432/tuevento
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
+    hikari:
+      # El driver de PostgreSQL envía cada lote de inserts como un único INSERT multi-fila
+      data-source-properties:
+        reWriteBatchedInserts: true
   jpa:
     hibernate:
       ddl-auto: none

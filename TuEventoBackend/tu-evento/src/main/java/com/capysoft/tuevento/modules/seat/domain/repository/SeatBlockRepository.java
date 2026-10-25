@@ -11,4 +11,7 @@ public interface SeatBlockRepository {
     boolean existsByEventSectionIdAndName(Integer eventSectionId, String name);
     SeatBlock save(SeatBlock seatBlock);
     void deleteById(Integer seatBlockId);
+
+    /** Borra todos los bloques de la sección con una sola sentencia. */
+    void deleteAllByEventSectionId(Integer eventSectionId);
 }

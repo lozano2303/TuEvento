@@ -229,8 +229,8 @@ export const resetPassword = async (code, newPassword, email) => {
 // ── Google Sign-In (GSI / id_token flow) ─────────────────────────────────────
 
 /**
- * Sends the Google ID Token (credential) received from @react-oauth/google's
- * GoogleLogin component to our backend for server-side verification.
+ * Sends the Google ID Token (credential) received from the Google Identity
+ * Services button (services/googleIdentity.js) to our backend for server-side verification.
  * Returns the same shape as loginUser() so the caller can handle both
  * flows identically.
  */
