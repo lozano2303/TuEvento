@@ -48,6 +48,11 @@ public class SeatBlockRepositoryImpl implements SeatBlockRepository {
         jpaRepository.deleteById(seatBlockId);
     }
 
+    @Override
+    public void deleteAllByEventSectionId(Integer eventSectionId) {
+        jpaRepository.deleteAllInSection(eventSectionId);
+    }
+
     private SeatBlock toDomain(SeatBlockEntity entity) {
         return SeatBlock.builder()
                 .seatBlockId(entity.getSeatBlockId())

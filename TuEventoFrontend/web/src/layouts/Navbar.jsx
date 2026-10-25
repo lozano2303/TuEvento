@@ -6,6 +6,7 @@ import ChangePassword from "../pages/ChangePassword.jsx";
 import { getEventsByUser } from "../services/EventService.js";
 import NotificationBell from "../components/common/NotificationBell.jsx";
 import LanguageSelector from "../components/common/LanguageSelector.jsx";
+import { getAccessToken } from '../services/tokenStore.js';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     const storedUserID = localStorage.getItem('userID');
     const storedAlias = localStorage.getItem('alias');
     const storedName = localStorage.getItem('name');

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, User, CheckCircle, ArrowRight, PartyPopper, Sparkles, FileText, X } from "lucide-react";
 import { useTranslation } from 'react-i18next';
@@ -7,12 +7,13 @@ import { loginUser, registerUser, resendActivationCode, googleLogin } from "../s
 import { getProfileByUserId } from "../services/ProfileService.js";
 import { useTheme } from "../context/ThemeContext";
 import { performLogout } from "../services/httpClient.js";
+import { getAccessToken, setAccessToken } from "../services/tokenStore.js";
 import CodeVerification from "./CodeVerification.jsx";
 import ForgotPassword from "./ForgotPassword.jsx";
 import BaseModal from "../components/common/BaseModal.jsx";
 import ReactivationModal from "../components/common/ReactivationModal.jsx";
 import LanguageSelector from "../components/common/LanguageSelector.jsx";
-import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { renderGoogleButton, releaseGoogleButton } from "../services/googleIdentity.js";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
@@ -31,24 +32,43 @@ const OAUTH_ERROR_MESSAGES = {
 /**
  * GoogleButton — botón visualmente idéntico al de Facebook.
  *
- * Técnica overlay: el botón visual (con logo + "Google") está debajo.
- * Encima, con opacity-0 y posicionado absolute, vive el GoogleLogin real
- * de @react-oauth/google — ese es el que dispara el flujo OAuth auténtico.
- * El div wrapper tiene cursor-pointer; el overlay captura el clic y lo pasa
- * al GoogleLogin. pointer-events-none en la capa visual evita conflictos.
+ * Técnica overlay: el botón visual (con logo + "Google") está debajo. Encima, con
+ * opacity-0 y position absolute (inset 0), vive el botón real de Google Identity
+ * Services, que dispara el flujo OAuth auténtico; su iframe ocupa todo el wrapper.
  *
- * El width del GoogleLogin se fija en 120px para que su botón interno ocupe
- * exactamente el contenedor del overlay sin desbordarse.
- */
-/**
- * GoogleButton rediseñado para el nuevo layout glassmorphism.
- *
- * Usa la clase login-google-wrapper como contenedor (w-full en el grid de 2 col).
- * El overlay tiene position:absolute inset-0 con display:flex + stretch, de modo
- * que el iframe interno de GoogleLogin ocupa el 100% del wrapper y cualquier clic
- * dentro del botón visual dispara el flujo OAuth real.
+ * GSI se carga e inicializa una sola vez por carga de página (services/googleIdentity.js);
+ * en cada montaje solo se vuelve a dibujar el botón. Así sigue funcionando al volver a
+ * /login sin recargar (por ejemplo, tras cerrar sesión desde la vista de perfil).
  */
 function GoogleButton({ onSuccess, onError }) {
+  const containerRef = useRef(null);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  onSuccessRef.current = onSuccess;
+  onErrorRef.current = onError;
+
+  useEffect(() => {
+    const container = containerRef.current;
+    // Same contract as @react-oauth/google: onSuccess({ credential, select_by }) or onError()
+    const onCredential = (response) => {
+      if (!response?.credential) return onErrorRef.current?.();
+      return onSuccessRef.current?.({ credential: response.credential, select_by: response.select_by });
+    };
+
+    if (GOOGLE_CLIENT_ID) {
+      renderGoogleButton(container, {
+        clientId: GOOGLE_CLIENT_ID,
+        onCredential,
+        buttonOptions: { type: 'standard', theme: 'outline', size: 'large', width: 400 },
+      }).catch((err) => console.warn('[GoogleButton] Google Identity Services unavailable:', err.message));
+    }
+
+    return () => {
+      releaseGoogleButton(onCredential);
+      container.replaceChildren();
+    };
+  }, []);
+
   return (
     <div className="login-google-wrapper" role="button" tabIndex={0} aria-label="Iniciar sesión con Google">
       {/* ── Capa visual ── */}
@@ -65,12 +85,7 @@ function GoogleButton({ onSuccess, onError }) {
 
       {/* ── Overlay invisible full-width — dispara el flujo OAuth real ── */}
       <div className="login-google-overlay" aria-hidden="true">
-        <GoogleLogin
-          onSuccess={onSuccess}
-          onError={onError}
-          useOneTap={false}
-          width="600"
-        />
+        <div ref={containerRef} />
       </div>
     </div>
   );
@@ -116,12 +131,11 @@ export default function Login() {
       return;
     }
 
-    const token = urlParams.get('token');
     const userID = urlParams.get('userID');
     const role = urlParams.get('role');
     const oauth = urlParams.get('oauth');
 
-    if (oauth === 'true' && token && userID && role) {
+    if (oauth === 'true' && userID && role) {
       // Validate the CSRF state param produced by handleFacebookLogin.
       // Google GSI does not come through this redirect path, so the check only
       // fires when a stored state exists in sessionStorage.
@@ -136,18 +150,17 @@ export default function Login() {
 
       // Store all fields the backend includes in the redirect — mirrors what
       // handleGoogleSuccess does so both OAuth paths leave localStorage in the
-      // same shape.
-      localStorage.setItem('token',        token);
+      // same shape. The tokens are not in the URL: the refresh token arrived as
+      // an httpOnly cookie and restoreSession() gets the access token on the
+      // full-page redirect below.
       localStorage.setItem('userID',       userID);
       localStorage.setItem('role',         role);
 
       const alias        = urlParams.get('alias')        || '';
-      const refreshToken = urlParams.get('refreshToken') || '';
       const profileId    = urlParams.get('profileId');
       const needsOnboarding = urlParams.get('needsOnboarding') === 'true';
 
       if (alias)        localStorage.setItem('alias',        alias);
-      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
 
       // Remove any stale profileId before conditionally setting the new one
       localStorage.removeItem('profileId');
@@ -180,7 +193,7 @@ export default function Login() {
       return;
     }
 
-    const storedToken = localStorage.getItem('token');
+    const storedToken = getAccessToken();
     const storedUserID = localStorage.getItem('userID');
     const storedAlias = localStorage.getItem('alias');
     const storedEmail = localStorage.getItem('userEmail');
@@ -320,8 +333,7 @@ export default function Login() {
       const googleEmail = payload.email || '';
 
       const result = await googleLogin(credential);
-      localStorage.setItem('token',        result.data.token);
-      localStorage.setItem('refreshToken', result.data.refreshToken);
+      setAccessToken(result.data.token);
       localStorage.setItem('userID',       result.data.userID);
       localStorage.setItem('alias',        result.data.alias);
       localStorage.setItem('role',         result.data.role);
@@ -378,7 +390,7 @@ export default function Login() {
   // Facebook does not support reliable popup flows the way Google GSI does,
   // so we use a server-side redirect: the backend redirects to Facebook, Facebook
   // redirects back to the backend callback, and the backend then redirects to
-  // /login?token=...&userID=...&role=...&oauth=true.
+  // /login?oauth=true&userID=...&role=... (the refresh token comes as an httpOnly cookie).
   // The useEffect at the top of this component already handles that callback URL
   // (same shape used by the original redirect-based OAuth flow).
   const handleFacebookLogin = () => {
@@ -421,8 +433,7 @@ export default function Login() {
       if (view === 'login') {
         const result = await loginUser(formData.email, formData.password);
         if (result.success) {
-          localStorage.setItem('token', result.data.token);
-          localStorage.setItem('refreshToken', result.data.refreshToken ?? '');
+          setAccessToken(result.data.token);
           localStorage.setItem('userID', result.data.userID);
           localStorage.setItem('alias', result.data.alias);
           localStorage.setItem('userEmail', formData.email);
@@ -892,9 +903,7 @@ export default function Login() {
               {/* Botones sociales en grid 2 columnas */}
               <div className="login-social-grid">
                 {/* Google */}
-                <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-                  <GoogleButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
-                </GoogleOAuthProvider>
+                <GoogleButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
 
                 {/* Facebook */}
                 <button

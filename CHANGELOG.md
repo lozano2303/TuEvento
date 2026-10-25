@@ -4,6 +4,69 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-25
+
+Imágenes Docker `v1.0.2`: se reconstruyen `backend` y `frontend` (web); `gateway`, `nsfw` y `movil` se reetiquetan desde `v1.0.1`. Incluye corrección de Google Sign-In (#119), imágenes de la landing (#121), permisos de secciones (#120), rendimiento del mapa de asientos en móvil (#116) y regeneración de asientos en bloque (#117).
+
+### Security — fix(security): event sections can only be changed by the event's organizer (#120)
+
+- **Ownership check on `/api/v1/event-sections`**: creating, updating and deleting a section only checked the role, so any organizer could change the price or capacity, or delete sections, of another organizer's event, even after it was published. Now the event must belong to the authenticated organizer (`EVENT_ACCESS_DENIED`, 403) and be in `DRAFT` (`EVENT_SECTION_EDIT_NOT_ALLOWED`), the same rules as saving the layout
+- **ADMIN is read-only**: those three endpoints now require `ORGANIZER`; admins keep `GET /event/{eventId}`. The layout editor is the only client that writes sections
+
+### Fixed — fix(web): landing images in production builds (#121)
+
+- **Landing images** (`ladingpage.png`, `ladingpage1.png`, `ladingpage2.png`) are imported instead of referenced as `/src/assets/...` strings, which only Vite's dev server serves; the build now emits them under `/assets/` with a content hash
+- **About us**: the team photos (`francisco.jpg`, `keiner.png`) were never committed; every member shows their initials until the photos are added
+- **`nginx.conf`**: a missing file (by extension) returns 404 instead of `index.html` as `text/html`; `/assets/`, `/api` and `/ws` use `^~` so the new rule never intercepts them
+
+### Fixed — fix(web-auth): Google Sign-In after logging out without a reload (#119)
+
+- **Google button stopped responding** after logging out from the profile view of `/login` (or coming back to `/login` without a reload) until F5. `@react-oauth/google` re-injected `gsi/client` and called `google.accounts.id.initialize()` on every mount, which Google warns causes unexpected behaviour
+- **`services/googleIdentity.js`** loads Google Identity Services once per page load and calls `initialize()` once per client ID; the button is re-rendered on every mount and the credential goes to the button mounted at that moment
+- **Logout** calls `google.accounts.id.disableAutoSelect()` (`performLogout`)
+- **`@react-oauth/google` removed** from the web dependencies
+
+### Performance — fix(mobile): seat map performance on the event detail screen (#116)
+
+- **Geometry computed once per element/page**: seat positions, scale and visible page are derived from the layout data; only the ≤100 seats of the current page are read from the store on each render
+- **`distributeSeats` cached per element** (`distributionCache`): recalculated only when the layout changes, not on every seat-state update
+- **`sectionsById` map** built once from the sections array instead of a linear search per seat
+- **`seatDataStore.js`** extracted from `useSeatStore`: pure data structure with O(1) lookups by id, row and column; no React dependency, fully unit-tested
+- **`seatHitTesting.js`** extracted: `findSeatAt` and `findSectionAt` are pure functions, unit-tested separately
+
+### Performance — fix(backend): bulk seat regeneration when saving a layout (#117)
+
+- **Saving a layout no longer writes seats one by one**: regenerating a section used `deleteById` per seat (two queries each), one `INSERT` per new seat and loaded every seat as an entity just to check their status. A 132,000-seat venue took ~4.3 minutes on a local PostgreSQL, inside a single transaction, long past the proxy timeout
+- **Now**: one `EXISTS` query to check that no seat is taken, one `DELETE` per table for the section, and JDBC batch inserts of 1,000 rows (`JdbcTemplate.batchUpdate`). Seats keep their `IDENTITY` ids; Hibernate cannot batch inserts with `IDENTITY`, and the generated ids are not needed here, so no schema change was required
+- **`reWriteBatchedInserts=true`** on the PostgreSQL driver (dev, prod, k8s) sends each batch as a single multi-row `INSERT`. Measured with 132,000 seats: 258.5 s → 2.2 s
+- Removed the unused `generateSeatsForBlock`, which also saved seats one by one
+- **Security**: the layout comes from the client, so its `backendSectionId`s are now checked against the event's own sections (`LAYOUT_SECTION_NOT_IN_EVENT`); before, a layout could delete and regenerate another event's seats. Each section is capped at 200,000 seats (`LAYOUT_TOO_MANY_SEATS`, also when summing sub-elements). Both checks run before anything is deleted
+
+## [1.0.1] - 2026-10-25
+
+Imágenes Docker `v1.0.1`: se reconstruyen `backend`, `frontend` y `gateway` (el gateway cambia con el sandbox de pagos, #100); solo `nsfw` se reetiqueta desde `v1.0.0`. Incluyen también la cancelación de eventos y reembolsos (PR #105), que no estaba en las imágenes `v1.0.0`.
+
+### Changed — feat(gateway): payment sandbox with an admin API key (#100)
+
+- **Brings the payment sandbox work (#100) into `develop`**: it had been merged straight into `main`. The gateway requires an API key (`X-Api-Key`) on `/admin/**` and refuses to start without `ADMIN_API_KEY` (minimum 16 characters); the payment popup (`pay.html`) uses the new public `/public/checkout/{id}/{approve|decline|fail|cancel}` endpoints and no longer offers refunds (a merchant operation); webhook retries run asynchronously with HTTP timeouts; invalid requests get a 4xx with field details
+- **Backend** sends `FAKE_GATEWAY_API_KEY` as `X-Api-Key` when cancelling or refunding a payment; creating and reading payments stay on the public API
+- **`docker-compose.prod.yml`** passes `ADMIN_API_KEY` to the gateway and `FAKE_GATEWAY_API_KEY` to the backend, both required (`${VAR:?}`); `.env.prod.example` documents that they must hold the same value
+- No change for the web or mobile apps: they only open `pay.html` from the gateway, so no new `VITE_*`/`EXPO_PUBLIC_*` variable
+
+### Security — feat(web-auth): refresh token in an httpOnly cookie (#111)
+
+- **Web refresh token in an httpOnly cookie**: `tuevento_refresh` (`HttpOnly`, `Secure`, `SameSite=Strict`, path `/api/v1/auth`, 7 days). The web sends `X-Auth-Mode: cookie` on login, refresh and logout; JavaScript can no longer read the refresh token
+- **Access token only in memory** (`services/tokenStore.js`): restored with `POST /auth/refresh` before the first render; tabs share it through `BroadcastChannel` and serialise refreshes with Web Locks
+- **OAuth callback** no longer puts tokens in the redirect URL: it sets the refresh cookie and the web gets the access token on load
+- **Existing sessions migrate on their own**: a refresh token left in `localStorage` is exchanged once for the cookie
+- **Mobile unchanged**: without `X-Auth-Mode: cookie` the API keeps returning both tokens in the body
+- **New optional settings**: `AUTH_COOKIE_SECURE` (default `true`) and `AUTH_COOKIE_SAME_SITE` (default `Strict`)
+
+### Changed — chore(frontend): lint, formatting and tests for web and mobile (#112)
+
+- **ESLint 9, Prettier and tests** in `TuEventoFrontend/web` (Vitest + React Testing Library) and `TuEventoFrontend/movil` (Jest + `jest-expo`): `npm run lint`, `npm run format:check`, `npm test`
+- **CI** runs the tests (blocking) and the lint (informative, `continue-on-error`, until existing errors are fixed); see `docs/frontend-quality.md`
+
 ### Security — fix(config): configuration hardening from the security audit
 
 - **Account lockout** lasts 30 minutes again (`security.lockout.minutes`, `SECURITY_LOCKOUT_MINUTES`); the dev profile keeps 1 minute
@@ -21,10 +84,6 @@ All notable changes to this project will be documented in this file.
 - **Client IP** taken from `X-Forwarded-For` counting `rate-limit.auth.trusted-proxies` hops from the right (`RATE_LIMIT_TRUSTED_PROXIES`: 2 on the VPS stack, 1 on k8s, 0 by default)
 - **Web and mobile** show a translated message (es/en/pt/fr); CORS exposes `Retry-After`
 
-## [1.0.1] - 2026-10-25
-
-Imágenes Docker `v1.0.1` (backend y web; `nsfw` y `gateway` reetiquetadas desde `v1.0.0`). Incluyen también la cancelación de eventos y reembolsos (PR #105), que no estaba en las imágenes `v1.0.0`.
-
 ### Fixed — fix(security): OAuth sessions, social login checks and errors
 
 - **Duplicate sessions after social login**: access and refresh tokens now carry a random `jti`. Before, two tokens issued to the same user in the same second were identical (the OAuth callback followed by an immediate `/auth/refresh` produced them), which left `auth_session`/`refresh_token` rows sharing a token and made `/auth/logout` fail with a 500
@@ -36,6 +95,10 @@ Imágenes Docker `v1.0.1` (backend y web; `nsfw` y `gateway` reetiquetadas desde
 - **`FACEBOOK_OAUTH_FAILED`** returns a fixed message; the Graph API detail only goes to the log
 - **`APP_OAUTH_GOOGLE_REDIRECT_URI` / `APP_OAUTH_FACEBOOK_REDIRECT_URI` are the full callback URL** (`https://<domain>/api/v1/auth/oauth/{google|facebook}/callback`), used as-is by the authorization request and the code exchange. The YAML no longer appends the path (it only took effect when the variable did not come from the environment)
 
+## [1.0.0] - 2026-10-24
+
+Primer despliegue en el VPS (imágenes Docker `v1.0.0`). Incluye todo lo acumulado en `develop` hasta esa fecha.
+
 ### Security — fix(storage): access control on storage endpoints
 
 - **`/api/v1/storage/**` is no longer public**: every route requires a login (no client calls storage anonymously)
@@ -45,10 +108,6 @@ Imágenes Docker `v1.0.1` (backend y web; `nsfw` y `gateway` reetiquetadas desde
 - **New error codes**: `STORAGE_AUTHENTICATION_REQUIRED` (401), `STORAGE_ACCESS_DENIED` (403), `STORAGE_CATEGORY_NOT_ALLOWED` (403) and `INVALID_PARAMETER` (400, mistyped path/query parameters); `ForbiddenException`/`UnauthorizedException` keep the `code` in the response
 - **No internal details in errors**: storage clients and `UploadFileUseCase` return fixed messages (`S3_UPLOAD_FAILED`, `S3_DELETE_FAILED`, `S3_PRESIGN_FAILED`, `UPLOAD_FAILED`); the SDK detail only goes to the log
 - **Public URLs use the public host** (`MINIO_PUBLIC_URL` / `RUSTFS_PUBLIC_URL`) instead of the internal endpoint, both when stored and when file metadata is read; see `docs/deployment-vps.md` to fix rows saved before this change
-
-## [1.0.0] - 2026-10-24
-
-Primer despliegue en el VPS (imágenes Docker `v1.0.0`). Incluye todo lo acumulado en `develop` hasta esa fecha.
 
 ### Added — chore(deploy): production stack for a self-hosted VPS
 

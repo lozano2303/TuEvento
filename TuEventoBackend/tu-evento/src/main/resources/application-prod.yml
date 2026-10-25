@@ -39,6 +39,9 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
+      # El driver de PostgreSQL envía cada lote de inserts como un único INSERT multi-fila
+      data-source-properties:
+        reWriteBatchedInserts: true
 
   jpa:
     hibernate:
@@ -135,6 +138,13 @@ minio:
   public-url: ${MINIO_PUBLIC_URL}
 
 app:
+  # ── Cookie del refresh token (web) ────────────────────────
+  # Strict sirve cuando web y API comparten sitio (mismo dominio o subdominios).
+  # Si están en sitios distintos (p. ej. dos subdominios de onrender.com) usar None.
+  auth:
+    refresh-cookie:
+      secure: ${AUTH_COOKIE_SECURE:true}
+      same-site: ${AUTH_COOKIE_SAME_SITE:Strict}
   # ── JWT ───────────────────────────────────────────────────
   jwt:
     secret: ${JWT_SECRET}
@@ -227,6 +237,7 @@ payment:
   gateway: ${PAYMENT_GATEWAY:fake}
   fake-gateway:
     url: ${FAKE_GATEWAY_URL}
+    api-key: ${FAKE_GATEWAY_API_KEY}
   webhook:
     secret: ${WEBHOOK_SECRET}
 

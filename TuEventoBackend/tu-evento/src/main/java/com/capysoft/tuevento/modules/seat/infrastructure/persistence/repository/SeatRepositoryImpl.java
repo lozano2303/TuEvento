@@ -5,8 +5,11 @@ import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
 import com.capysoft.tuevento.modules.seat.infrastructure.persistence.entity.SeatEntity;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +18,15 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SeatRepositoryImpl implements SeatRepository {
 
+    /** Filas por lote en insertAll: equilibrio entre idas a la base y tamaño de cada sentencia. */
+    static final int INSERT_BATCH_SIZE = 1000;
+
+    private static final String INSERT_SQL =
+            "INSERT INTO seat (seat_block_id, event_section_id, code, row, position, type, status, reserved_by, reserved_until) "
+                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
     private final SeatJpaRepository jpaRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public List<Seat> findAllBySeatBlockId(Integer seatBlockId) {
@@ -68,6 +79,48 @@ public class SeatRepositoryImpl implements SeatRepository {
         return jpaRepository.findAllByStatusAndReservedUntilBefore(status, dateTime).stream()
                 .map(this::toDomain)
                 .toList();
+    }
+
+    @Override
+    public boolean existsByEventSectionIdAndStatusNot(Integer eventSectionId, SeatStatus status) {
+        return jpaRepository.existsByEventSectionIdAndStatusNot(eventSectionId, status);
+    }
+
+    @Override
+    public void deleteAllByEventSectionId(Integer eventSectionId) {
+        jpaRepository.deleteAllInSection(eventSectionId);
+    }
+
+    /**
+     * Inserción por lotes con JDBC. Las sillas usan ids IDENTITY, con los que Hibernate no
+     * agrupa inserts (necesita el id de cada fila al guardarla); aquí no hacen falta los ids,
+     * así que cada lote viaja en una sola ida a la base. Con reWriteBatchedInserts el driver
+     * de PostgreSQL además lo convierte en un único INSERT multi-fila.
+     */
+    @Override
+    public void insertAll(List<Seat> seats) {
+        if (seats == null || seats.isEmpty()) {
+            return;
+        }
+        jdbcTemplate.batchUpdate(INSERT_SQL, seats, INSERT_BATCH_SIZE, (ps, seat) -> {
+            ps.setInt(1, seat.getSeatBlockId());
+            ps.setInt(2, seat.getEventSectionId());
+            ps.setString(3, seat.getCode());
+            ps.setInt(4, seat.getRow());
+            ps.setInt(5, seat.getPosition());
+            ps.setString(6, seat.getType().name());
+            ps.setString(7, seat.getStatus().name());
+            if (seat.getReservedBy() != null) {
+                ps.setInt(8, seat.getReservedBy());
+            } else {
+                ps.setNull(8, Types.INTEGER);
+            }
+            if (seat.getReservedUntil() != null) {
+                ps.setTimestamp(9, Timestamp.valueOf(seat.getReservedUntil()));
+            } else {
+                ps.setNull(9, Types.TIMESTAMP);
+            }
+        });
     }
 
     private Seat toDomain(SeatEntity entity) {

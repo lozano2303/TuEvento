@@ -572,15 +572,11 @@ export default function AboutUs() {
               <div className="relative">
                 <div className="relative group">
                   <div className={`w-80 h-80 mx-auto bg-gradient-to-r ${member.gradient} rounded-3xl overflow-hidden shadow-2xl group-hover:scale-105 transition-all duration-500`}>
-                    {member.id === 1 ? (
-                      <img src="/src/assets/images/francisco.jpg" alt={member.name} className="w-full h-full object-cover" />
-                    ) : member.id === 2 ? (
-                      <img src="/src/assets/images/keiner.png" alt={member.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-textPrimary font-bold text-6xl">
-                        {member.initials}
-                      </div>
-                    )}
+                    {/* The team photos (francisco.jpg, keiner.png) were never committed: initials for
+                        everyone until they are added under src/assets/images and imported */}
+                    <div className="w-full h-full flex items-center justify-center text-textPrimary font-bold text-6xl">
+                      {member.initials}
+                    </div>
                   </div>
                   <div className="absolute -top-4 -left-4 w-8 h-8 bg-accent rounded-full animate-pulse" />
                   <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-primary rounded-full animate-bounce" />
