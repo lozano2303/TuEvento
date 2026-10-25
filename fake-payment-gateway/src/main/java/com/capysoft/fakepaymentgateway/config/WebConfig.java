@@ -1,7 +1,11 @@
 package com.capysoft.fakepaymentgateway.config;
 
+import java.time.Duration;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -12,6 +16,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * Configuración web del microservicio.
  * - CORS abierto para desarrollo
  * - Recursos estáticos servidos desde /static/ (pay.html, etc.)
+ * - RestTemplate para webhooks con timeouts acotados
  */
 @Configuration
 @EnableAsync
@@ -34,8 +39,17 @@ public class WebConfig implements WebMvcConfigurer {
                 .setCachePeriod(0); // Sin cache en desarrollo
     }
 
+    /**
+     * Sin timeouts, un receptor de webhooks que no responde bloquearía el hilo indefinidamente.
+     */
     @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
+    public RestTemplate restTemplate(
+        @Value("${webhook.connect-timeout-ms:3000}") long connectTimeoutMs,
+        @Value("${webhook.read-timeout-ms:5000}") long readTimeoutMs
+    ) {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofMillis(connectTimeoutMs));
+        factory.setReadTimeout(Duration.ofMillis(readTimeoutMs));
+        return new RestTemplate(factory);
     }
 }
