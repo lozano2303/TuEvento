@@ -61,6 +61,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
     private final ApplicationEventPublisher  eventPublisher;
     private final CreateProfilePort          createProfilePort;
     private final ProfileRepository          profileRepository;
+    private final AccountAccessGuard         accountAccessGuard;
 
     /** Registry of provider-specific profile resolvers — extensible without modifying this class. */
     private final Map<String, Function<String, OauthProfile>> providerResolvers;
@@ -92,6 +93,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
 
         if (existing.isPresent()) {
             user = existing.get().getUser();
+            accountAccessGuard.assertCanSignIn(user);
 
             // ── Check whether the stored fullName is still valid ──────────────
             // Covers users that were created before the fix (their profile was
@@ -129,6 +131,7 @@ public class OauthLoginUseCase implements OauthLoginPort {
                 // Idempotent: findByProviderAndProviderUserId already checked above,
                 // so this branch only runs when the oauth_account row does not yet exist.
                 user = localCredentials.get().getUser();
+                accountAccessGuard.assertCanSignIn(user);
 
                 // Apply the same synthetic email fallback used in the new-user branch:
                 // Facebook may not return an email when the user hasn't granted the
