@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,7 +41,7 @@ public class ConfirmRefundUseCaseImpl implements ConfirmRefundUseCase {
     private final TicketLogRepository ticketLogRepository;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public RefundableTicketsSummary getRefundableTickets(Long orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException(orderId));
@@ -50,21 +51,17 @@ public class ConfirmRefundUseCaseImpl implements ConfirmRefundUseCase {
             .filter(t -> t.getStatus() == TicketStatus.PAID)
             .toList();
 
-        BigDecimal amount = refundable.stream()
-            .map(t -> t.getTotalPrice() != null ? t.getTotalPrice().getAmount() : BigDecimal.ZERO)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        String currency = order.getTotalAmount() != null ? order.getTotalAmount().getCurrency() : null;
-
-        return new RefundableTicketsSummary(amount, currency, refundable.size(), tickets.size());
+        return summary(order, refundable, tickets.size());
     }
 
     @Override
     @Transactional
-    public void confirmRefund(Long orderId) {
+    public RefundableTicketsSummary confirmRefund(Long orderId) {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new OrderNotFoundException(orderId));
 
         List<Ticket> tickets = activeTickets(orderId);
+        List<Ticket> refundedTickets = new ArrayList<>();
         long refunded = 0;
         long used = 0;
 
@@ -80,6 +77,7 @@ public class ConfirmRefundUseCaseImpl implements ConfirmRefundUseCase {
             TicketStatus oldStatus = ticket.getStatus();
             ticket.markAsRefunded();
             ticketRepository.save(ticket);
+            refundedTickets.add(ticket);
             refunded++;
 
             ticketLogRepository.save(TicketLog.builder()
@@ -102,12 +100,24 @@ public class ConfirmRefundUseCaseImpl implements ConfirmRefundUseCase {
         }
 
         // Nota: las sillas NO se liberan en este flujo; las vendidas permanecen en SOLD.
+        return summary(order, refundedTickets, tickets.size());
     }
 
-    /** Tickets de la orden que cuentan para el reembolso (los cancelados no forman parte de la venta). */
+    /**
+     * Tickets de la orden que cuentan para el reembolso (los cancelados no forman parte
+     * de la venta), bloqueados hasta el fin de la transacción.
+     */
     private List<Ticket> activeTickets(Long orderId) {
-        return ticketRepository.findByOrderId(orderId).stream()
+        return ticketRepository.findByOrderIdForUpdate(orderId).stream()
             .filter(t -> t.getStatus() != TicketStatus.CANCELLED)
             .toList();
+    }
+
+    private static RefundableTicketsSummary summary(Order order, List<Ticket> refundable, int totalCount) {
+        BigDecimal amount = refundable.stream()
+            .map(t -> t.getTotalPrice() != null ? t.getTotalPrice().getAmount() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        String currency = order.getTotalAmount() != null ? order.getTotalAmount().getCurrency() : null;
+        return new RefundableTicketsSummary(amount, currency, refundable.size(), totalCount);
     }
 }

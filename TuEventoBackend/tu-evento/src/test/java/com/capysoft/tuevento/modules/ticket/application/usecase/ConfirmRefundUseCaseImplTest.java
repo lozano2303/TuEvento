@@ -55,7 +55,7 @@ class ConfirmRefundUseCaseImplTest {
     @DisplayName("resumen → solo suma los tickets PAID y no cuenta los cancelados")
     void summary_countsOnlyPaidTickets() {
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(paidOrder()));
-        when(ticketRepository.findByOrderId(ORDER_ID)).thenReturn(List.of(
+        when(ticketRepository.findByOrderIdForUpdate(ORDER_ID)).thenReturn(List.of(
                 ticket(1, TicketStatus.USED, "50000"),
                 ticket(2, TicketStatus.PAID, "40000"),
                 ticket(3, TicketStatus.PAID, "60000"),
@@ -77,10 +77,12 @@ class ConfirmRefundUseCaseImplTest {
         Ticket used = ticket(1, TicketStatus.USED, "50000");
         Ticket unused = ticket(2, TicketStatus.PAID, "50000");
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
-        when(ticketRepository.findByOrderId(ORDER_ID)).thenReturn(List.of(used, unused));
+        when(ticketRepository.findByOrderIdForUpdate(ORDER_ID)).thenReturn(List.of(used, unused));
 
-        useCase.confirmRefund(ORDER_ID);
+        RefundableTicketsSummary refunded = useCase.confirmRefund(ORDER_ID);
 
+        assertThat(refunded.refundableCount()).isEqualTo(1);
+        assertThat(refunded.amount()).isEqualByComparingTo("50000");
         assertThat(used.getStatus()).isEqualTo(TicketStatus.USED);
         assertThat(unused.getStatus()).isEqualTo(TicketStatus.REFUNDED);
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
@@ -95,7 +97,7 @@ class ConfirmRefundUseCaseImplTest {
         Ticket first = ticket(1, TicketStatus.PAID, "50000");
         Ticket second = ticket(2, TicketStatus.PAID, "50000");
         when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order));
-        when(ticketRepository.findByOrderId(ORDER_ID)).thenReturn(List.of(first, second));
+        when(ticketRepository.findByOrderIdForUpdate(ORDER_ID)).thenReturn(List.of(first, second));
 
         useCase.confirmRefund(ORDER_ID);
 
