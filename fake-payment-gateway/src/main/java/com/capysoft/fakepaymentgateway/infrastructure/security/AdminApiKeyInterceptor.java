@@ -32,6 +32,7 @@ public class AdminApiKeyInterceptor implements HandlerInterceptor {
     private static final Logger log = LoggerFactory.getLogger(AdminApiKeyInterceptor.class);
     public static final String API_KEY_HEADER = "X-Api-Key";
     static final String DEFAULT_DEV_KEY = "dev-admin-key-change-in-production";
+    static final int MIN_KEY_LENGTH = 16;
 
     private final byte[] expectedKey;
     private final ObjectMapper objectMapper;
@@ -42,6 +43,10 @@ public class AdminApiKeyInterceptor implements HandlerInterceptor {
     ) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("gateway.admin.api-key (ADMIN_API_KEY) must not be blank");
+        }
+        if (apiKey.length() < MIN_KEY_LENGTH) {
+            throw new IllegalStateException(
+                "gateway.admin.api-key (ADMIN_API_KEY) must be at least " + MIN_KEY_LENGTH + " characters");
         }
         if (DEFAULT_DEV_KEY.equals(apiKey)) {
             log.warn("ADMIN_API_KEY is using the development default; set a random value outside local development");

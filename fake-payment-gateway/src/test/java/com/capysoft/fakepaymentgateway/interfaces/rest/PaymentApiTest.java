@@ -41,11 +41,11 @@ import com.capysoft.fakepaymentgateway.domain.repository.PaymentRepository;
 /**
  * Contrato HTTP: controladores, manejo de errores (L-02) y protección de /admin (L-03).
  */
-@WebMvcTest(properties = "gateway.admin.api-key=test-admin-key")
+@WebMvcTest(properties = "gateway.admin.api-key=test-admin-key-0123456789")
 class PaymentApiTest {
 
     private static final String KEY_HEADER = "X-Api-Key";
-    private static final String KEY = "test-admin-key";
+    private static final String KEY = "test-admin-key-0123456789";
     private static final String ID = "fake_3f2b7a0e-9c1d-4e8f-a6b5-1d2c3e4f5a6b";
 
     @Autowired

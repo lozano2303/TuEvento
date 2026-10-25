@@ -16,4 +16,13 @@ class AdminApiKeyInterceptorTest {
         assertThatThrownBy(() -> new AdminApiKeyInterceptor("   ", mapper)).isInstanceOf(IllegalStateException.class);
         assertThatThrownBy(() -> new AdminApiKeyInterceptor(null, mapper)).isInstanceOf(IllegalStateException.class);
     }
+
+    @Test
+    void rechazaArrancarConApiKeyCorta() {
+        ObjectMapper mapper = new ObjectMapper();
+
+        assertThatThrownBy(() -> new AdminApiKeyInterceptor("123456", mapper))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("at least 16");
+    }
 }
