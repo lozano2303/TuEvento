@@ -172,4 +172,13 @@ class StorageControllerSecurityTest {
             verify(generatePublicUrlPort).generate(10, StorageRequester.of(1, "ADMIN"));
         }
     }
+
+    @Test
+    @DisplayName("GET /{id} with a non-numeric id → 400 INVALID_PARAMETER without echoing the value")
+    void typeMismatch_badRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/storage/abc<script>"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_PARAMETER"))
+                .andExpect(jsonPath("$.message").value("Invalid value for parameter 'fileId'"));
+    }
 }
