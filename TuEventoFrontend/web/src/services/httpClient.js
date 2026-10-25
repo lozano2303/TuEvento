@@ -59,7 +59,17 @@ const clearLocalSession = () => {
  * para garantizar que el usuario pueda iniciar sesión de nuevo.
  */
 export async function performLogout() {
-  const accessToken = getAccessToken();
+  let accessToken = getAccessToken();
+
+  // Sin token en memoria (p. ej. falló restoreSession por red) se pide uno con la cookie
+  // para poder revocar la sesión en el backend; si la cookie ya no vale, no hay nada que revocar
+  if (!accessToken && localStorage.getItem('userID')) {
+    try {
+      accessToken = await refreshAccessToken();
+    } catch {
+      accessToken = null;
+    }
+  }
 
   if (accessToken) {
     try {
