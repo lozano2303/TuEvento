@@ -22,69 +22,89 @@ const Colors = {
   PURPLE: 0x8B5CF6,   // COURTESY
 };
 
-// Convertir entero a string hex color
+// Cache de strings hex: hay pocos colores distintos y se piden por cada silla visible
+const hexCache = new Map();
 function colorToHex(colorInt) {
-  return '#' + colorInt.toString(16).padStart(6, '0').toUpperCase();
+  let hex = hexCache.get(colorInt);
+  if (!hex) {
+    hex = '#' + colorInt.toString(16).padStart(6, '0').toUpperCase();
+    hexCache.set(colorInt, hex);
+  }
+  return hex;
 }
+
+// Mismo orden que la web (localeCompare): es el que asocia cada silla con su posición
+const byCode = (codes) => (a, b) => String(codes[a]).localeCompare(String(codes[b]));
 
 export class SeatDataStore {
   constructor(capacity = 150000) {
     this.capacity = capacity;
     this.count = 0;
-    
+
     // Arrays de datos (SoA - Structure of Arrays)
     this.seatIds = new Uint32Array(capacity);
     this.statuses = new Uint8Array(capacity);
     this.reservedBy = new Uint32Array(capacity);
-    this.sectionIds = new Uint16Array(capacity);
+    // Uint32: los ids de sección pueden superar 65535
+    this.sectionIds = new Uint32Array(capacity);
     this.codes = new Array(capacity);
     this.reservedUntil = new Array(capacity);
-    
-    // Datos de renderizado
-    this.posX = new Float32Array(capacity);
-    this.posY = new Float32Array(capacity);
-    this.posR = new Float32Array(capacity);
     this.colors = new Uint32Array(capacity);
-    
+
     // Índices para lookups O(1)
     this.seatIdToIndex = new Map();
     this.sectionIndex = new Map();
     this.reservedByIndex = new Map();
+    // Índices de cada sección ordenados por código; se invalidan solo al cambiar sus sillas
+    this.sortedSectionIndex = new Map();
   }
 
   /**
-   * Carga masiva de sillas
+   * Carga masiva de sillas (reemplaza todo el contenido)
    */
   loadSeats(seatsArray, currentUserId = null) {
-    const start = performance.now();
-    
-    this.count = Math.min(seatsArray.length, this.capacity);
-    
-    // Clear indices
+    this.count = 0;
     this.seatIdToIndex.clear();
     this.sectionIndex.clear();
     this.reservedByIndex.clear();
-    
-    for (let i = 0; i < this.count; i++) {
-      const seat = seatsArray[i];
-      
+    this.sortedSectionIndex.clear();
+    this.upsertSeats(seatsArray, currentUserId);
+  }
+
+  /**
+   * Agrega sillas nuevas o actualiza las existentes. Permite cargar el evento
+   * sección por sección en lugar de todo de una vez.
+   *
+   * @returns {boolean} true si cambió algo
+   */
+  upsertSeats(seatsArray, currentUserId = null) {
+    if (!seatsArray || seatsArray.length === 0) return false;
+    this._ensureCapacity(this.count + seatsArray.length);
+
+    for (const seat of seatsArray) {
+      const existing = this.seatIdToIndex.get(seat.seatId);
+      if (existing !== undefined) {
+        this.updateSeat(seat.seatId, seat, currentUserId);
+        continue;
+      }
+
+      const i = this.count++;
       this.seatIds[i] = seat.seatId;
       this.statuses[i] = this._statusToEnum(seat.status);
       this.reservedBy[i] = seat.reservedBy || 0;
       this.sectionIds[i] = seat.eventSectionId;
       this.codes[i] = seat.code;
       this.reservedUntil[i] = seat.reservedUntil;
-      
-      // Índice seatId -> index
+      this.colors[i] = this._computeColor(i, currentUserId);
+
       this.seatIdToIndex.set(seat.seatId, i);
-      
-      // Índice por sección
+
       if (!this.sectionIndex.has(seat.eventSectionId)) {
         this.sectionIndex.set(seat.eventSectionId, []);
       }
       this.sectionIndex.get(seat.eventSectionId).push(i);
-      
-      // Índice por usuario
+      this.sortedSectionIndex.delete(seat.eventSectionId);
+
       if (seat.reservedBy) {
         if (!this.reservedByIndex.has(seat.reservedBy)) {
           this.reservedByIndex.set(seat.reservedBy, []);
@@ -92,11 +112,7 @@ export class SeatDataStore {
         this.reservedByIndex.get(seat.reservedBy).push(i);
       }
     }
-    
-    // Calcular colores
-    this.recalculateColors(currentUserId);
-    
-    console.log(`[SeatDataStore] Loaded ${this.count} seats in ${(performance.now() - start).toFixed(2)}ms`);
+    return true;
   }
 
   /**
@@ -105,46 +121,46 @@ export class SeatDataStore {
   updateSeat(seatId, updates, currentUserId) {
     const idx = this.seatIdToIndex.get(seatId);
     if (idx === undefined) return false;
-    
+
     let changed = false;
-    
+
     if (updates.status !== undefined) {
       this.statuses[idx] = this._statusToEnum(updates.status);
       changed = true;
     }
-    
+
     if (updates.reservedBy !== undefined) {
       const oldUserId = this.reservedBy[idx];
       const newUserId = updates.reservedBy || 0;
-      
+
       this.reservedBy[idx] = newUserId;
-      
+
       // Actualizar índice
       if (oldUserId && this.reservedByIndex.has(oldUserId)) {
         const arr = this.reservedByIndex.get(oldUserId);
         const i = arr.indexOf(idx);
         if (i > -1) arr.splice(i, 1);
       }
-      
+
       if (newUserId) {
         if (!this.reservedByIndex.has(newUserId)) {
           this.reservedByIndex.set(newUserId, []);
         }
         this.reservedByIndex.get(newUserId).push(idx);
       }
-      
+
       changed = true;
     }
-    
+
     if (updates.reservedUntil !== undefined) {
       this.reservedUntil[idx] = updates.reservedUntil;
       changed = true;
     }
-    
+
     if (changed) {
       this.colors[idx] = this._computeColor(idx, currentUserId);
     }
-    
+
     return changed;
   }
 
@@ -154,41 +170,35 @@ export class SeatDataStore {
   getSeat(seatId) {
     const idx = this.seatIdToIndex.get(seatId);
     if (idx === undefined) return null;
-    
-    return {
-      seatId: this.seatIds[idx],
-      status: StatusFromEnum[this.statuses[idx]],
-      reservedBy: this.reservedBy[idx] || null,
-      eventSectionId: this.sectionIds[idx],
-      code: this.codes[idx],
-      reservedUntil: this.reservedUntil[idx],
-    };
+    return this._seatAt(idx);
+  }
+
+  /** true si ya hay sillas cargadas de la sección */
+  hasSection(sectionId) {
+    return this.sectionIndex.has(sectionId);
   }
 
   /**
-   * Obtiene todas las sillas como objeto (para compatibilidad)
+   * Índices de las sillas de una sección ordenados por código (cacheado).
+   * El orden no depende del estado, así que reservar o liberar no lo invalida.
    */
-  getAllSeatsAsObject() {
-    const obj = {};
-    for (let i = 0; i < this.count; i++) {
-      const seatId = this.seatIds[i];
-      obj[seatId] = {
-        seatId,
-        status: StatusFromEnum[this.statuses[i]],
-        reservedBy: this.reservedBy[i] || null,
-        eventSectionId: this.sectionIds[i],
-        code: this.codes[i],
-        reservedUntil: this.reservedUntil[i],
-      };
+  getSortedSectionIndices(sectionId) {
+    let sorted = this.sortedSectionIndex.get(sectionId);
+    if (!sorted) {
+      sorted = [...(this.sectionIndex.get(sectionId) || [])].sort(byCode(this.codes));
+      this.sortedSectionIndex.set(sectionId, sorted);
     }
-    return obj;
+    return sorted;
   }
 
-  /**
-   * Obtiene índices de sillas por sección
-   */
-  getSectionIndices(sectionId) {
-    return this.sectionIndex.get(sectionId) || [];
+  /** Color de la silla como string hex, listo para Skia */
+  colorHexAt(idx) {
+    return colorToHex(this.colors[idx]);
+  }
+
+  /** true si la silla está reservada por el usuario indicado */
+  isReservedBy(idx, userId) {
+    return this.statuses[idx] === SeatStatus.RESERVED && !!userId && this.reservedBy[idx] === userId;
   }
 
   /**
@@ -196,7 +206,7 @@ export class SeatDataStore {
    */
   getUserReservations(userId) {
     const indices = this.reservedByIndex.get(userId) || [];
-    return indices.map(idx => this.getSeat(this.seatIds[idx]));
+    return indices.map((idx) => this._seatAt(idx));
   }
 
   /**
@@ -208,20 +218,52 @@ export class SeatDataStore {
     }
   }
 
+  _seatAt(idx) {
+    return {
+      seatId: this.seatIds[idx],
+      status: StatusFromEnum[this.statuses[idx]],
+      reservedBy: this.reservedBy[idx] || null,
+      eventSectionId: this.sectionIds[idx],
+      code: this.codes[idx],
+      reservedUntil: this.reservedUntil[idx],
+    };
+  }
+
+  /** Duplica la capacidad de los TypedArrays cuando hace falta */
+  _ensureCapacity(needed) {
+    if (needed <= this.capacity) return;
+    let capacity = this.capacity;
+    while (capacity < needed) capacity *= 2;
+
+    const grow = (Type, old) => {
+      const next = new Type(capacity);
+      next.set(old.subarray(0, this.count));
+      return next;
+    };
+    this.seatIds = grow(Uint32Array, this.seatIds);
+    this.statuses = grow(Uint8Array, this.statuses);
+    this.reservedBy = grow(Uint32Array, this.reservedBy);
+    this.sectionIds = grow(Uint32Array, this.sectionIds);
+    this.colors = grow(Uint32Array, this.colors);
+    this.codes.length = capacity;
+    this.reservedUntil.length = capacity;
+    this.capacity = capacity;
+  }
+
   /**
    * Computa color de una silla
    */
   _computeColor(idx, currentUserId) {
     const status = this.statuses[idx];
     const reservedBy = this.reservedBy[idx];
-    
+
     if (status === SeatStatus.AVAILABLE) return Colors.GREEN;
     if (status === SeatStatus.RESERVED) {
       return reservedBy === currentUserId ? Colors.BLUE : Colors.YELLOW;
     }
     if (status === SeatStatus.SOLD) return Colors.GRAY;
     if (status === SeatStatus.COURTESY) return Colors.PURPLE;
-    
+
     return Colors.GRAY;
   }
 
@@ -235,45 +277,6 @@ export class SeatDataStore {
       case 'SOLD': return SeatStatus.SOLD;
       case 'COURTESY': return SeatStatus.COURTESY;
       default: return SeatStatus.AVAILABLE;
-    }
-  }
-
-  /**
-   * Obtiene datos de renderizado por índices (para windowing 10x10)
-   */
-  getRenderData(indices) {
-    const data = {
-      positions: [],
-      colors: [],
-      seatIds: [],
-    };
-    
-    for (const idx of indices) {
-      data.positions.push({
-        x: this.posX[idx],
-        y: this.posY[idx],
-        r: this.posR[idx],
-      });
-      data.colors.push(colorToHex(this.colors[idx]));
-      data.seatIds.push(this.seatIds[idx]);
-    }
-    
-    return data;
-  }
-
-  /**
-   * Asigna posiciones de renderizado a sillas de una sección
-   */
-  setPositions(sectionId, positions) {
-    const indices = this.sectionIndex.get(sectionId) || [];
-    
-    for (let i = 0; i < Math.min(indices.length, positions.length); i++) {
-      const idx = indices[i];
-      const pos = positions[i];
-      
-      this.posX[idx] = pos.x;
-      this.posY[idx] = pos.y;
-      this.posR[idx] = pos.r;
     }
   }
 }
