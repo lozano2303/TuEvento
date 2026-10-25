@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -45,6 +46,7 @@ class AuthControllerOauthCallbackTest {
                 mock(LogoutPort.class), mock(RefreshTokenPort.class), mock(RecoverPasswordPort.class),
                 mock(ResetPasswordPort.class), oauthLoginPort, mock(GoogleAuthPort.class),
                 mock(RequestReactivationPort.class), mock(ConfirmReactivationPort.class),
+                new RefreshTokenCookie(true, "Strict"),
                 Map.of("facebook", "https://www.facebook.com/dialog/oauth?client_id=1"),
                 Set.of(LOGIN_URI));
     }
@@ -113,15 +115,27 @@ class AuthControllerOauthCallbackTest {
         }
 
         @Test
-        @DisplayName("success → /login?oauth=true with the tokens and the original state")
-        void success_redirectsWithTokens() {
+        @DisplayName("success → /login?oauth=true with the original state; refresh token only in the httpOnly cookie")
+        void success_redirectsWithCookie() {
             when(oauthLoginPort.login("facebook", "code-1")).thenReturn(LoginResponse.builder()
                     .accessToken("access").refreshToken("refresh").userId(5).alias("ana").role("USER").build());
 
-            String location = location(controller.oauthCallback("facebook", "code-1", STATE, null, null));
+            ResponseEntity<?> response = controller.oauthCallback("facebook", "code-1", STATE, null, null);
+            String location = location(response);
 
-            assertThat(location).startsWith(LOGIN_URI + "?oauth=true&token=access&refreshToken=refresh&userID=5")
-                    .contains("&state=" + URLEncoder.encode("csrf-123", StandardCharsets.UTF_8));
+            assertThat(location).startsWith(LOGIN_URI + "?oauth=true&userID=5")
+                    .contains("&state=" + URLEncoder.encode("csrf-123", StandardCharsets.UTF_8))
+                    .doesNotContain("access").doesNotContain("refresh");
+            assertThat(response.getHeaders().getFirst(HttpHeaders.SET_COOKIE))
+                    .startsWith(RefreshTokenCookie.NAME + "=refresh").contains("HttpOnly");
+        }
+
+        @Test
+        @DisplayName("an error redirect sets no session cookie")
+        void error_setsNoCookie() {
+            ResponseEntity<?> response = controller.oauthCallback("facebook", null, STATE, "access_denied", null);
+
+            assertThat(response.getHeaders().getFirst(HttpHeaders.SET_COOKIE)).isNull();
         }
     }
 

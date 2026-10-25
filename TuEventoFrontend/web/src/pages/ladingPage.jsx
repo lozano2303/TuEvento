@@ -10,6 +10,7 @@ import Footer from '../layouts/Footer';
 import BaseModal from '../components/common/BaseModal';
 import { getAllEvents } from '../services/EventService';
 import { getEventComments } from '../services/EventCommentService';
+import { getAccessToken } from '../services/tokenStore.js';
 
 /* ── Pasos "Cómo funciona" ─────────────────────────────────────────────── */
 const STEPS = [
@@ -40,7 +41,7 @@ export default function LadingPage() {
 
   /* Auth */
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     const uid   = localStorage.getItem('userID');
     if (token && uid) {
       setUserData({
