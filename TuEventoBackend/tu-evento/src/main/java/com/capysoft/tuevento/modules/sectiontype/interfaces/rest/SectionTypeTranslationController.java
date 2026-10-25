@@ -1,4 +1,4 @@
-package com.capysoft.tuevento.modules.section.interfaces.rest;
+package com.capysoft.tuevento.modules.sectiontype.interfaces.rest;
 
 import com.capysoft.tuevento.modules.section.domain.model.SectionType;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeRepository;
