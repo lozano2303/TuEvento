@@ -49,11 +49,11 @@ public class SecurityDataCleanupTask {
         log.info("Security data cleanup task completed successfully");
     }
 
-    // TODO: change to "0 0/30 * * * *" (every 30 min) for production
-    @Scheduled(cron = "0 * * * * *")
+    // Solo limpieza: el login ya desbloquea al vencer el plazo; esto refleja el estado en el panel admin
+    @Scheduled(cron = "${security.lockout.cleanup-cron:0 0/5 * * * *}")
     public void unlockExpiredLockouts() {
         LocalDateTime now = LocalDateTime.now();
-        log.info("[LockoutSchedule] Running at {}", now);
+        log.debug("[LockoutSchedule] Running at {}", now);
         var expiredUserIds = accountLockoutJpaRepository.findAllExpiredUserIds(now);
         if (expiredUserIds.isEmpty()) return;
 
