@@ -129,3 +129,8 @@ payment:
 notification:
   email:
     enabled: ${NOTIFICATION_EMAIL_ENABLED:true}
+
+# En dev el bloqueo dura poco para poder probarlo
+security:
+  lockout:
+    minutes: ${SECURITY_LOCKOUT_MINUTES:1}
