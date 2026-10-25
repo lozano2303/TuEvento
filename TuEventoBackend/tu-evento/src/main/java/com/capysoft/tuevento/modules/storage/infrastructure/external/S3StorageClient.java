@@ -27,8 +27,9 @@ public class S3StorageClient implements StorageClientPort {
     private final S3Client    s3Client;
     private final S3Presigner s3Presigner;
 
-    @Value("${app.storage.endpoint}")
-    private String endpoint;
+    /** Browser-reachable MinIO host (same one used by the presigner in S3Config). */
+    @Value("${minio.public-url:http://localhost:9000}")
+    private String publicUrl;
 
     @Override
     public String uploadFile(String bucket, String key, byte[] content, String contentType) {
@@ -45,7 +46,7 @@ public class S3StorageClient implements StorageClientPort {
             return key;
         } catch (Exception e) {
             log.error("Failed to upload file to S3: bucket={}, key={}", bucket, key, e);
-            throw new BusinessException("S3_UPLOAD_FAILED", "Failed to upload file: " + e.getMessage());
+            throw new BusinessException("S3_UPLOAD_FAILED", "Failed to upload file");
         }
     }
 
@@ -74,14 +75,14 @@ public class S3StorageClient implements StorageClientPort {
             log.debug("File deleted successfully: bucket={}, key={}", bucket, key);
         } catch (Exception e) {
             log.error("Failed to delete file from S3: bucket={}, key={}", bucket, key, e);
-            throw new BusinessException("S3_DELETE_FAILED", "Failed to delete file: " + e.getMessage());
+            throw new BusinessException("S3_DELETE_FAILED", "Failed to delete file");
         }
     }
 
     @Override
     public String generatePublicUrl(String bucket, String key) {
-        // Constructs the public URL directly: {endpoint}/{bucket}/{key}
-        return endpoint.replaceAll("/$", "") + "/" + bucket + "/" + key;
+        // {publicHost}/{bucket}/{key} — the browser-reachable host, never the internal endpoint.
+        return publicUrl.replaceAll("/$", "") + "/" + bucket + "/" + key;
     }
 
     @Override
@@ -97,7 +98,7 @@ public class S3StorageClient implements StorageClientPort {
             return url;
         } catch (Exception e) {
             log.error("Failed to generate presigned URL: bucket={}, key={}", bucket, key, e);
-            throw new BusinessException("S3_PRESIGN_FAILED", "Failed to generate presigned URL: " + e.getMessage());
+            throw new BusinessException("S3_PRESIGN_FAILED", "Failed to generate presigned URL");
         }
     }
 }

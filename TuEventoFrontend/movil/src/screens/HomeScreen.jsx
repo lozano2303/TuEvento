@@ -18,6 +18,7 @@ import { getAllCategories } from "../services/catalogService";
 import { useNotifications } from "../context/NotificationContext";
 import EventCard from "../components/EventCard";
 import { parseLocalDate, resolveCoverUrl } from "../utils/eventFormat";
+import { onEventCancelled, withoutEvent } from "../utils/eventCancellation";
 
 // Pasos de "Cómo funciona" (clave i18n en mobileHome.steps.*)
 const STEPS = [
@@ -64,6 +65,9 @@ export default function HomeScreen() {
 
   // Eventos publicados y categorías
   const [events, setEvents] = useState([]);
+
+  // Evento cancelado en vivo (WebSocket): se quita del listado sin recargar
+  useEffect(() => onEventCancelled((eventId) => setEvents((prev) => withoutEvent(prev, eventId))), []);
   const [categories, setCategories] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(true);
 

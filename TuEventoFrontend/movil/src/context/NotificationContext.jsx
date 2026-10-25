@@ -10,6 +10,14 @@ import {
 import { getAdminPendingCounts } from "../services/adminService";
 import { getValidAccessToken, refreshAccessToken } from "../services/httpClient";
 import { emitSessionEvent } from "../utils/sessionEvents";
+import { EVENT_CANCELLED_TOPIC, emitEventCancelled } from "../utils/eventCancellation";
+import i18n from "../i18n";
+import {
+  baseLanguage,
+  isAwaitingTranslation,
+  mergeTranslations,
+  TRANSLATION_POLL_MS,
+} from "../utils/notificationI18n";
 import { jwtDecode } from "jwt-decode";
 
 const NotificationContext = createContext(null);
@@ -56,6 +64,30 @@ export function NotificationProvider({ children }) {
   }, []);
 
   // ── Pendientes del admin (REST) — carga inicial, reconexión y foco de Perfil ─
+  /**
+   * Polling de traducciones: solo mientras alguna notificación reciente siga sin
+   * traducción al idioma de la UI. Una petición por ciclo; se detiene sola.
+   */
+  useEffect(() => {
+    const isPending = (n) => isAwaitingTranslation(n, baseLanguage(i18n));
+    if (!notifications.some(isPending)) return undefined;
+
+    const intervalId = setInterval(async () => {
+      if (!notificationsRef.current.some(isPending)) {
+        clearInterval(intervalId);
+        return;
+      }
+      try {
+        const response = await getUserNotifications();
+        setNotifications((prev) => mergeTranslations(prev, response.data?.content));
+      } catch {
+        // Se reintenta en el siguiente ciclo
+      }
+    }, TRANSLATION_POLL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [notifications]);
+
   const refreshAdminPending = useCallback(async () => {
     try {
       setAdminPending(await getAdminPendingCounts());
@@ -176,6 +208,14 @@ export function NotificationProvider({ children }) {
             emitSessionEvent(event);
           });
           subscriptionsRef.current.set("roleChange", roleSub);
+
+          // Eventos cancelados: los listados abiertos los quitan sin recargar
+          const cancelledSub = client.subscribe(EVENT_CANCELLED_TOPIC, (msg) => {
+            let event;
+            try { event = JSON.parse(msg.body); } catch { return; }
+            if (event?.type === "EVENT_CANCELLED" && event.eventId != null) emitEventCancelled(event.eventId);
+          });
+          subscriptionsRef.current.set("eventsCancelled", cancelledSub);
 
           // Admin: contadores de solicitudes y eventos en revisión en vivo
           if (isAdmin) {

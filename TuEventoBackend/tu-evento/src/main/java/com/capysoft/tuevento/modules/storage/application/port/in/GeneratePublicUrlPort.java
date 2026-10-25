@@ -1,8 +1,9 @@
 package com.capysoft.tuevento.modules.storage.application.port.in;
 
+import com.capysoft.tuevento.modules.storage.application.dto.request.StorageRequester;
 import com.capysoft.tuevento.modules.storage.application.dto.response.PublicUrlResponse;
 
 public interface GeneratePublicUrlPort {
 
-    PublicUrlResponse generate(Integer storedFileId);
+    PublicUrlResponse generate(Integer storedFileId, StorageRequester requester);
 }

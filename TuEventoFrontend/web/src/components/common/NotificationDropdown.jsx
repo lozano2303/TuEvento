@@ -3,6 +3,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es, enUS, fr, pt } from 'date-fns/locale';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { baseLanguage, localizeNotification } from '../../utils/notificationI18n';
 import NotificationDetailModal from './NotificationDetailModal';
 
 /**
@@ -58,15 +59,9 @@ function NotificationItem({ notification, onMarkAsRead, onClose }) {
   const isUnread = !notification.readAt;
   const locale = getDateLocale(i18n.language);
 
-  // FIX: Obtener traducción si existe para el idioma actual
-  const userLanguage = i18n.language || 'es';
-  const translation = userLanguage !== 'es' 
-    ? notification.translations?.find(t => t.languageCode === userLanguage && t.status === 'PUBLISHED')
-    : null;
-  
-  // Usar traducción si existe, sino mostrar original
-  const displaySubject = translation?.translatedSubject || notification.subject;
-  const displayBody = translation?.translatedBody || notification.body;
+  // Traducción al idioma de la UI si ya llegó; si no, el original
+  const { subject: displaySubject, body: displayBody } =
+    localizeNotification(notification, baseLanguage(i18n));
 
   const handleClick = () => {
     if (isUnread) {

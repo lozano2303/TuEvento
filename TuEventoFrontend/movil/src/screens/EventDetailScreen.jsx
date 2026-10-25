@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useIsFocused, useNavigation, useRoute } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
@@ -42,6 +42,9 @@ export default function EventDetailScreen() {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const navigation = useNavigation();
+  // La pantalla sigue montada cuando se avanza a otra (checkout, pago...): el aviso de
+  // evento cancelado solo debe verse mientras el detalle está en primer plano.
+  const isFocused = useIsFocused();
   const route = useRoute();
   const styles = createStyles(colors);
   const { toast, showToast, hideToast } = useToast();
@@ -939,7 +942,7 @@ export default function EventDetailScreen() {
 
       {/* Evento cancelado en vivo: solo se puede salir al inicio */}
       <AppModal
-        visible={!!cancelledLive}
+        visible={!!cancelledLive && isFocused}
         type="error"
         title={t("eventDetail.cancelledLiveTitle")}
         message={cancelledLive?.cause === "ORGANIZER_REVOKED"
@@ -948,7 +951,9 @@ export default function EventDetailScreen() {
         confirmText={t("eventDetail.cancelledLiveButton")}
         onConfirm={() => {
           setCancelledLive(null);
-          navigation.reset({ index: 0, routes: [{ name: user ? "Main" : "Landing" }] });
+          // navigate (no reset): vuelve a la ruta de inicio existente sin eliminarla. Un reset
+          // quitaría "Main" y su guardia beforeRemove abriría el modal de cerrar sesión.
+          navigation.navigate(user ? "Main" : "Landing");
         }}
       />
     </View>
