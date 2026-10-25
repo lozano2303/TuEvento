@@ -1,0 +1,373 @@
+# ============================================================
+# docker-compose.prod.yml — TuEvento en un VPS (Docker + Portainer CE)
+# ============================================================
+# - Solo Nginx Proxy Manager publica puertos: 80 y 443 públicos, y su panel (81)
+#   solo en 127.0.0.1 — se accede por túnel SSH. Docker escribe sus propias reglas
+#   de iptables, así que UFW no filtra los puertos publicados por contenedores.
+#   TLS con Let's Encrypt se gestiona desde NPM; ver docs/deployment-vps.md.
+# - El resto de servicios no publica puertos. NPM solo alcanza los servicios
+#   expuestos a internet (frontend, rustfs, fake-payment-gateway) por la red
+#   "edge"; bases de datos, Redis, backend y NSFW viven solo en "internal".
+# - Imágenes con tag de versión desde Docker Hub (sin build:).
+# - Variables: copiar .env.prod.example a .env.prod (o cargarlas en Portainer).
+#     docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#   LibreTranslate es opcional (≈2 GB de RAM):
+#     docker compose -f docker-compose.prod.yml --env-file .env.prod --profile translate up -d
+# - Límites de memoria pensados para 8 GB de RAM + 4 GB de swap:
+#   ≈5.4 GB sin LibreTranslate y ≈7.4 GB con él (topes, no reservas).
+# ============================================================
+
+name: tuevento
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+
+  # ── Reverse proxy + TLS ─────────────────────────────────────────────────────
+  npm:
+    image: jc21/nginx-proxy-manager:2.16.0
+    container_name: tuevento-npm
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      # Panel de administración solo en localhost: ssh -L 8181:127.0.0.1:81 root@<IP>
+      - "127.0.0.1:81:81"
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    healthcheck:
+      test: ["CMD", "/usr/bin/check-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging: *default-logging
+    networks:
+      - edge
+
+  # ── Persistencia ────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:17.11-alpine
+    container_name: tuevento-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    logging: *default-logging
+    networks:
+      - internal
+
+  # Solo guarda nonces de QR y sesiones: sin persistencia en disco.
+  redis:
+    image: redis:7.4.11-alpine
+    container_name: tuevento-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+    command:
+      - sh
+      - -c
+      - exec redis-server --requirepass "$$REDIS_PASSWORD" --save "" --appendonly no --maxmemory 128mb --maxmemory-policy volatile-lru
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 192m
+    logging: *default-logging
+    networks:
+      - internal
+
+  # ── Object storage (RustFS, S3 compatible) ──────────────────────────────────
+  # El backend crea el bucket y aplica la lectura pública de profile_picture/ y
+  # event_media/ al arrancar (STORAGE_PROVIDER=rustfs). El navegador descarga
+  # las imágenes por RUSTFS_PUBLIC_URL (proxy host de NPM → rustfs:9000).
+  rustfs:
+    image: rustfs/rustfs:1.0.3
+    container_name: tuevento-rustfs
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?set RUSTFS_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?set RUSTFS_SECRET_KEY}
+      RUSTFS_CONSOLE_ENABLE: "false"
+    volumes:
+      - rustfs_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging: *default-logging
+    networks:
+      - internal
+      - edge
+
+  # ── Moderación de imágenes ──────────────────────────────────────────────────
+  nsfw-classifier:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:nsfw-${TUEVENTO_VERSION:?set TUEVENTO_VERSION}
+    container_name: tuevento-nsfw
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          memory: 1536m
+    logging: *default-logging
+    networks:
+      - internal
+
+  # ── Pasarela de pagos simulada (demo / sustentación) ───────────────────────
+  postgres-gateway:
+    image: postgres:17.11-alpine
+    container_name: tuevento-postgres-gateway
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${GATEWAY_POSTGRES_DB:-fake_gateway_db}
+      POSTGRES_USER: ${GATEWAY_POSTGRES_USER:?set GATEWAY_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${GATEWAY_POSTGRES_PASSWORD:?set GATEWAY_POSTGRES_PASSWORD}
+    volumes:
+      - postgres_gateway_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging: *default-logging
+    networks:
+      - internal
+
+  # El navegador abre GATEWAY_PUBLIC_URL/pay.html en un popup (proxy host de NPM).
+  fake-payment-gateway:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:gateway-${TUEVENTO_VERSION:?set TUEVENTO_VERSION}
+    container_name: tuevento-fake-gateway
+    restart: unless-stopped
+    environment:
+      JAVA_OPTS: ${GATEWAY_JAVA_OPTS:--Xms64m -Xmx256m -XX:MaxMetaspaceSize=128m}
+      FAKE_GATEWAY_PORT: "4001"
+      POSTGRES_HOST: postgres-gateway
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${GATEWAY_POSTGRES_DB:-fake_gateway_db}
+      POSTGRES_USER: ${GATEWAY_POSTGRES_USER:?set GATEWAY_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${GATEWAY_POSTGRES_PASSWORD:?set GATEWAY_POSTGRES_PASSWORD}
+      PAYMENT_CALLBACK_URL: http://backend:8080/api/v1/webhooks/payment
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:?set WEBHOOK_SECRET}
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:4001/pay.html || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging: *default-logging
+    networks:
+      - internal
+      - edge
+
+  # ── Traducción (opcional, perfil "translate") ──────────────────────────────
+  # Sin este servicio las traducciones automáticas quedan en reintentos; el
+  # resto de la aplicación funciona igual.
+  libretranslate:
+    image: libretranslate/libretranslate:v1.9.6
+    container_name: tuevento-libretranslate
+    profiles: ["translate"]
+    restart: unless-stopped
+    environment:
+      LT_LOAD_ONLY: es,en,fr,pt
+      LT_THREADS: "2"
+      LT_UPDATE_MODELS: "false"
+    volumes:
+      - libretranslate_models:/home/libretranslate/.local:rw
+    healthcheck:
+      test: ["CMD-SHELL", "./venv/bin/python scripts/healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 300s
+    deploy:
+      resources:
+        limits:
+          memory: 2048m
+    logging: *default-logging
+    networks:
+      - internal
+
+  # ── Backend (Spring Boot, perfil prod) ─────────────────────────────────────
+  backend:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:${TUEVENTO_VERSION:?set TUEVENTO_VERSION}
+    container_name: tuevento-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: ${BACKEND_JAVA_OPTS:--Xms256m -Xmx768m -XX:MaxMetaspaceSize=256m}
+
+      # Base de datos
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?set POSTGRES_DB}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+
+      # Redis interno (sin TLS)
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: "6379"
+      SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+      SPRING_REDIS_SSL: "false"
+
+      # Almacenamiento: subidas por la red interna, URLs firmadas con el host público
+      STORAGE_PROVIDER: rustfs
+      RUSTFS_ENDPOINT: http://rustfs:9000
+      RUSTFS_PUBLIC_URL: ${RUSTFS_PUBLIC_URL:?set RUSTFS_PUBLIC_URL (public https host of RustFS)}
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?set RUSTFS_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?set RUSTFS_SECRET_KEY}
+
+      # Seguridad
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      QR_SECRET: ${QR_SECRET:?set QR_SECRET}
+      QR_EXPIRATION: ${QR_EXPIRATION:-60000}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?set APP_CORS_ALLOWED_ORIGINS}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+
+      # OAuth
+      APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS: ${APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS:?set APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS}
+      APP_OAUTH_GOOGLE_REDIRECT_URI: ${APP_OAUTH_GOOGLE_REDIRECT_URI:?set APP_OAUTH_GOOGLE_REDIRECT_URI}
+      APP_OAUTH_FACEBOOK_REDIRECT_URI: ${APP_OAUTH_FACEBOOK_REDIRECT_URI:?set APP_OAUTH_FACEBOOK_REDIRECT_URI}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
+      FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
+
+      # Cuenta admin inicial y avatar por defecto
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD}
+      ADMIN_ALIAS: ${ADMIN_ALIAS:-AdminTuEvento}
+      APP_PROFILE_DEFAULT_AVATAR_ID: ${APP_PROFILE_DEFAULT_AVATAR_ID:-1}
+
+      # Correo
+      MAIL_USERNAME: ${MAIL_USERNAME:?set MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?set MAIL_PASSWORD}
+      NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-true}
+
+      # Moderación de imágenes
+      NSFW_SERVICE_URL: http://nsfw-classifier:8000
+      NSFW_THRESHOLD: ${NSFW_THRESHOLD:-0.6}
+      SIGHTENGINE_API_USER: ${SIGHTENGINE_API_USER:-}
+      SIGHTENGINE_API_SECRET: ${SIGHTENGINE_API_SECRET:-}
+      SIGHTENGINE_MODELS: ${SIGHTENGINE_MODELS:-gore,nudity,weapon}
+      SIGHTENGINE_THRESHOLD: ${SIGHTENGINE_THRESHOLD:-0.6}
+      SIGHTENGINE_NUDITY_THRESHOLD: ${SIGHTENGINE_NUDITY_THRESHOLD:-0.15}
+
+      # Pagos
+      PAYMENT_GATEWAY: fake
+      FAKE_GATEWAY_URL: http://fake-payment-gateway:4001
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:?set WEBHOOK_SECRET}
+
+      # Traducción (solo responde si se levanta el perfil "translate")
+      TRANSLATION_LIBRETRANSLATE_BASE_URL: http://libretranslate:5000
+      TRANSLATION_PROTECTED_TERMS: ${TRANSLATION_PROTECTED_TERMS:-Tu Evento}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rustfs:
+        condition: service_healthy
+      nsfw-classifier:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+    deploy:
+      resources:
+        limits:
+          memory: 1280m
+    logging: *default-logging
+    networks:
+      - internal
+
+  # ── Frontend (SPA + proxy de /api y /ws al backend) ────────────────────────
+  frontend:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:frontend-${TUEVENTO_VERSION:?set TUEVENTO_VERSION}
+    container_name: tuevento-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+    logging: *default-logging
+    networks:
+      - internal
+      - edge
+
+networks:
+  internal:
+    name: tuevento-internal
+    driver: bridge
+  edge:
+    name: tuevento-edge
+    driver: bridge
+
+volumes:
+  postgres_data:
+  postgres_gateway_data:
+  rustfs_data:
+  npm_data:
+  npm_letsencrypt:
+  libretranslate_models:
