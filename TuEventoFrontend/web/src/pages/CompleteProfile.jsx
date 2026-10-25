@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { createProfile, updateProfile } from '../services/ProfileService';
 import LanguageSelector from '../components/common/LanguageSelector.jsx';
+import { getAccessToken } from '../services/tokenStore.js';
 
 /**
  * Onboarding page shown after a Google OAuth login when:
@@ -47,7 +48,7 @@ export default function CompleteProfile() {
   const profileId = localStorage.getItem('profileId');
 
   // Guard: no token means the user isn't logged in at all.
-  if (!localStorage.getItem('token')) {
+  if (!getAccessToken()) {
     navigate('/login', { replace: true });
     return null;
   }

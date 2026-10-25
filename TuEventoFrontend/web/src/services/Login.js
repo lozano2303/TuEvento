@@ -1,6 +1,6 @@
 // Servicio de autenticación - conexión con el backend
 
-import { httpRequest } from './httpClient.js';
+import { AUTH_MODE_HEADERS, httpRequest } from './httpClient.js';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -9,8 +9,10 @@ export const loginUser = async (email, password) => {
   try {
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        ...AUTH_MODE_HEADERS,
       },
       body: JSON.stringify({ email, password }),
     });
@@ -228,7 +230,8 @@ export const resetPassword = async (code, newPassword, email) => {
 export const googleLogin = async (idToken) => {
   const response = await fetch(`${API_URL}/auth/google`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...AUTH_MODE_HEADERS },
     body: JSON.stringify({ idToken }),
   });
 

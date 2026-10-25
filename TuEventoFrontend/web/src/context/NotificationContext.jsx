@@ -18,6 +18,7 @@ import {
   TRANSLATION_POLL_MS,
 } from '../utils/notificationI18n';
 import { EVENT_CANCELLED_TOPIC, emitEventCancelled } from '../utils/eventCancellation';
+import { getAccessToken } from '../services/tokenStore.js';
 
 /** Evento del DOM que dispara el aviso THEME_UPDATED del WebSocket (lo escucha ThemeContext). */
 export const THEME_UPDATED_EVENT = 'tuevento:theme-updated';
@@ -28,7 +29,6 @@ const WS_BASE_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace('/api/v1', '')
   : 'http://localhost:8080';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 // Notificaciones que indican que el admin cambió el estado de un evento del organizador.
 // Al recibirlas se recarga la página para leer el estado real desde el backend.
@@ -53,26 +53,12 @@ function decodeJwtRole(token) {
 }
 
 /**
- * Refreshes the JWT via /auth/refresh and updates localStorage with the
- * new access token and role. Returns the new access token or null on failure.
+ * Refreshes the JWT via /auth/refresh (httpOnly cookie) and updates the
+ * in-memory access token and the role in localStorage. Returns the new access token or null on failure.
  */
 async function refreshJwtAndUpdateRole() {
   try {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) return null;
-
-    const res = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    if (!data?.data) return null;
-
-    const { accessToken, refreshToken: newRefresh } = data.data;
+    const accessToken = await refreshAccessToken();
 
     // Decode the role from the JWT payload (base64 middle segment)
     try {
@@ -82,9 +68,6 @@ async function refreshJwtAndUpdateRole() {
     } catch (_) {
       // If decoding fails, role stays stale — acceptable; page reload will fix it
     }
-
-    localStorage.setItem('token', accessToken);
-    localStorage.setItem('refreshToken', newRefresh);
 
     // Notify components (Navbar, etc.) that the role changed without a full page reload
     window.dispatchEvent(new CustomEvent('roleChanged', { detail: { role: localStorage.getItem('role') } }));
@@ -413,7 +396,7 @@ export function NotificationProvider({ children }) {
       return;
     }
 
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     if (!token) {
       setLoading(false);
       return;
