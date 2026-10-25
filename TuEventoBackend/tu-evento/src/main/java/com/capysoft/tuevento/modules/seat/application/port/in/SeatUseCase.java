@@ -14,6 +14,8 @@ public interface SeatUseCase {
     SeatResponse createSeat(CreateSeatRequest request, Long organizerId);
     /** Cambio hecho por los flujos del sistema (pago, cancelación, reembolso): valida la transición y la publica. */
     SeatResponse updateSeatStatus(Integer seatId, UpdateSeatStatusRequest request, Integer changedBy);
+    /** Venta al confirmarse el pago: solo si la silla está libre o reservada por ese comprador. */
+    SeatResponse sellSeat(Integer seatId, Long buyerId, String reason);
     /** Cambio manual del organizador del evento en DRAFT: solo entre AVAILABLE y COURTESY. */
     SeatResponse updateSeatStatusByOrganizer(Integer seatId, UpdateSeatStatusRequest request, Long organizerId);
     List<SeatLogResponse> getSeatLog(Integer seatId);
