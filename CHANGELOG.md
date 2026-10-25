@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Security — fix(config): configuration hardening from the security audit
+
+- **Account lockout** lasts 30 minutes again (`security.lockout.minutes`, `SECURITY_LOCKOUT_MINUTES`); the dev profile keeps 1 minute
+- **Lockout cleanup job** runs every 5 minutes (`security.lockout.cleanup-cron`) and logs at `debug`
+- **k8s profile** reads the database user and password from `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` with no fallback values
+- **Sightengine** nudity scores are logged at `debug`
+- **EAS `preview` profile** no longer hardcodes a LAN IP: `EXPO_PUBLIC_*` come from the EAS `preview` environment (see `movil/.env.example`)
+- **Cleanup**: removed `EventLayoutEditorDemo.jsx`, `TokenRefreshDebug.jsx` and a JVM crash log; `hs_err_pid*.log` is git-ignored; `pom.xml` has name, description and license
+- **Docs**: the README states Java 17 (the version in `pom.xml`)
+
+### Security — feat(security): rate limiting on public auth endpoints
+
+- **Per-IP limit** (10 requests/minute per endpoint by default) on login, register, activation, password recovery/reset and account reactivation; over the limit the API answers `429` with `Retry-After` and code `TOO_MANY_REQUESTS`
+- **Redis counter** with a one-minute window; if Redis is unavailable requests pass (the account lockout still protects login)
+- **Client IP** taken from `X-Forwarded-For` counting `rate-limit.auth.trusted-proxies` hops from the right (`RATE_LIMIT_TRUSTED_PROXIES`: 2 on the VPS stack, 1 on k8s, 0 by default)
+- **Web and mobile** show a translated message (es/en/pt/fr); CORS exposes `Retry-After`
+
+## [1.0.1] - 2026-10-25
+
+Imágenes Docker `v1.0.1` (backend y web; `nsfw` y `gateway` reetiquetadas desde `v1.0.0`). Incluyen también la cancelación de eventos y reembolsos (PR #105), que no estaba en las imágenes `v1.0.0`.
+
 ### Fixed — fix(security): OAuth sessions, social login checks and errors
 
 - **Duplicate sessions after social login**: access and refresh tokens now carry a random `jti`. Before, two tokens issued to the same user in the same second were identical (the OAuth callback followed by an immediate `/auth/refresh` produced them), which left `auth_session`/`refresh_token` rows sharing a token and made `/auth/logout` fail with a 500
@@ -24,6 +45,10 @@ All notable changes to this project will be documented in this file.
 - **New error codes**: `STORAGE_AUTHENTICATION_REQUIRED` (401), `STORAGE_ACCESS_DENIED` (403), `STORAGE_CATEGORY_NOT_ALLOWED` (403) and `INVALID_PARAMETER` (400, mistyped path/query parameters); `ForbiddenException`/`UnauthorizedException` keep the `code` in the response
 - **No internal details in errors**: storage clients and `UploadFileUseCase` return fixed messages (`S3_UPLOAD_FAILED`, `S3_DELETE_FAILED`, `S3_PRESIGN_FAILED`, `UPLOAD_FAILED`); the SDK detail only goes to the log
 - **Public URLs use the public host** (`MINIO_PUBLIC_URL` / `RUSTFS_PUBLIC_URL`) instead of the internal endpoint, both when stored and when file metadata is read; see `docs/deployment-vps.md` to fix rows saved before this change
+
+## [1.0.0] - 2026-10-24
+
+Primer despliegue en el VPS (imágenes Docker `v1.0.0`). Incluye todo lo acumulado en `develop` hasta esa fecha.
 
 ### Added — chore(deploy): production stack for a self-hosted VPS
 
