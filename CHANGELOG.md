@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added — chore(deploy): production stack for a self-hosted VPS
+
+- **`docker-compose.prod.yml`**: versioned Docker Hub images (no `build:`), Nginx Proxy Manager as the only service publishing ports (80/443, admin panel 81 bound to 127.0.0.1), RustFS storage, fake payment gateway, optional LibreTranslate (`--profile translate`), healthchecks, memory limits for 8 GB RAM and `JAVA_OPTS`
+- **`.env.prod.example`**: every variable read by the prod profile, the gateway and the web build; `.env.*` files are now git-ignored
+- **`docs/deployment-vps.md`**: build/push of the `v1.0.0` images, Portainer stack and NPM proxy hosts
+- **Prod profile**: Actuator limited to `/health` without details, no stack traces or messages in error responses, Swagger disabled unless `SWAGGER_ENABLED=true`, RustFS settings and a dedicated OAuth redirect whitelist (`APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS`)
+- **Web image**: `/ws` proxied with WebSocket upgrade, 12 MB upload limit, forwarded headers, all `VITE_*` build args, `.dockerignore`
+- **Images**: backend and gateway entrypoints honor `JAVA_OPTS`; `nsfw-service/requirements.txt` is tracked so the classifier builds from the repo
+
 ### Added — feat(i18n): implement i18next for UI internationalization
 
 - **i18next setup**: Complete i18next integration with react-i18next and language detector
