@@ -9,6 +9,9 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+
+import com.capysoft.fakepaymentgateway.infrastructure.security.AdminApiKeyInterceptor;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -21,6 +24,18 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 @EnableAsync
 public class WebConfig implements WebMvcConfigurer {
+
+    private final AdminApiKeyInterceptor adminApiKeyInterceptor;
+
+    public WebConfig(AdminApiKeyInterceptor adminApiKeyInterceptor) {
+        this.adminApiKeyInterceptor = adminApiKeyInterceptor;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        // El patrón se evalúa sobre la ruta ya normalizada por Spring, igual que el enrutamiento
+        registry.addInterceptor(adminApiKeyInterceptor).addPathPatterns("/admin", "/admin/**");
+    }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
