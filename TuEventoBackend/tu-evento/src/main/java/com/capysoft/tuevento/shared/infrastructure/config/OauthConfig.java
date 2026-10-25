@@ -13,6 +13,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
+import com.capysoft.tuevento.modules.security.application.dto.OauthProfile;
+
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @Configuration
 public class OauthConfig {
