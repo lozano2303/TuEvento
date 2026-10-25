@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Performance — fix(backend): bulk seat regeneration when saving a layout
+
+- **Saving a layout no longer writes seats one by one**: regenerating a section used `deleteById` per seat (two queries each), one `INSERT` per new seat and loaded every seat as an entity just to check their status. A 132,000-seat venue took ~4.3 minutes on a local PostgreSQL, inside a single transaction, long past the proxy timeout
+- **Now**: one `EXISTS` query to check that no seat is taken, one `DELETE` per table for the section, and JDBC batch inserts of 1,000 rows (`JdbcTemplate.batchUpdate`). Seats keep their `IDENTITY` ids; Hibernate cannot batch inserts with `IDENTITY`, and the generated ids are not needed here, so no schema change was required
+- **`reWriteBatchedInserts=true`** on the PostgreSQL driver (dev, prod, k8s) sends each batch as a single multi-row `INSERT`. Measured with 132,000 seats: 258.5 s → 2.2 s
+- Removed the unused `generateSeatsForBlock`, which also saved seats one by one
+- **Security**: the layout comes from the client, so its `backendSectionId`s are now checked against the event's own sections (`LAYOUT_SECTION_NOT_IN_EVENT`); before, a layout could delete and regenerate another event's seats. Each section is capped at 200,000 seats (`LAYOUT_TOO_MANY_SEATS`, also when summing sub-elements). Both checks run before anything is deleted
+
 ## [1.0.1] - 2026-10-25
 
 Imágenes Docker `v1.0.1`: se reconstruyen `backend`, `frontend` y `gateway` (el gateway cambia con el sandbox de pagos, #100); solo `nsfw` se reetiqueta desde `v1.0.0`. Incluyen también la cancelación de eventos y reembolsos (PR #105), que no estaba en las imágenes `v1.0.0`.
