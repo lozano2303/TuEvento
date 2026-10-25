@@ -481,6 +481,7 @@
     "selected": "{{count}} of {{total}} selected",
     "sections": "Sections",
     "seatMap": "Seat Map",
+    "loadingSeats": "Loading seats…",
     "myCart": "Your Cart",
     "noSeatsSelected": "You haven't selected any seats",
     "section": "Section",

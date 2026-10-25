@@ -47,6 +47,7 @@
     "selected": "{{count}} sur {{total}} sélectionnées",
     "sections": "Sections",
     "seatMap": "Plan des Places",
+    "loadingSeats": "Chargement des places…",
     "myCart": "Votre Panier",
     "noSeatsSelected": "Vous n'avez sélectionné aucune place",
     "section": "Section",
