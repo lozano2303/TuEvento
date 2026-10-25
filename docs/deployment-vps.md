@@ -175,6 +175,24 @@ el archivo directamente de ese host, por eso `s3.` necesita proxy host público.
 Las subidas y borrados van por la red interna (`RUSTFS_ENDPOINT=http://rustfs:9000`).
 La consola de RustFS está desactivada.
 
+**Control de acceso.** Todo `/api/v1/storage` exige sesión. Las imágenes de eventos se
+sirven por la URL guardada en `event_media.img_url`, sin pasar por este endpoint. El caso de
+uso solo deja leer un archivo privado (`ORGANIZER_DOCUMENT`) a quien lo subió o a un ADMIN
+(403 en otro caso); por REST solo se suben fotos de perfil y los documentos de organizador
+solo los borra un ADMIN.
+
+**URL pública guardada.** Desde `fix/storage-access-control`, `stored_file.public_url` y
+`event_media.img_url` se guardan con `RUSTFS_PUBLIC_URL`, y los metadatos de
+`GET /storage/{id}` calculan la URL al leer. Las filas de `event_media` creadas antes
+siguen con el host interno; para corregirlas una sola vez (con respaldo previo):
+
+```bash
+docker exec -it tuevento-postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
+  UPDATE event_media     SET img_url    = replace(img_url,    'http://rustfs:9000', 'https://s3.tuevento.example.com') WHERE img_url    LIKE 'http://rustfs:9000/%';
+  UPDATE event_media_log SET img_url    = replace(img_url,    'http://rustfs:9000', 'https://s3.tuevento.example.com') WHERE img_url    LIKE 'http://rustfs:9000/%';
+  UPDATE stored_file     SET public_url = replace(public_url, 'http://rustfs:9000', 'https://s3.tuevento.example.com') WHERE public_url LIKE 'http://rustfs:9000/%';"
+```
+
 ## 7. Smoke tests tras el despliegue
 
 ### 7.1 Contenedores y backend
