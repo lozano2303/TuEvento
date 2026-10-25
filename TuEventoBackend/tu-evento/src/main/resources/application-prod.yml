@@ -39,6 +39,9 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
+      # El driver de PostgreSQL envía cada lote de inserts como un único INSERT multi-fila
+      data-source-properties:
+        reWriteBatchedInserts: true
 
   jpa:
     hibernate:
