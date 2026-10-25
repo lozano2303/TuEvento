@@ -1,6 +1,8 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
 import com.capysoft.tuevento.modules.security.application.dto.request.LoginRequest;
+import com.capysoft.tuevento.modules.security.application.dto.response.LoginResponse;
+import com.capysoft.tuevento.modules.security.domain.model.Role;
 import com.capysoft.tuevento.modules.security.application.port.out.PasswordEncoderPort;
 import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
 import com.capysoft.tuevento.modules.security.domain.event.UserLockedEvent;
@@ -31,7 +33,9 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -97,6 +101,36 @@ class LoginUseCaseLockoutTest {
         verify(eventPublisher).publishEvent(event.capture());
         assertThat(event.getValue().getLockedUntil()).isEqualTo(lockout.getLockedUntil());
         verify(accountLockoutService).saveLockout(lockout);
+    }
+
+    @Test
+    @DisplayName("tras vencer el bloqueo el primer login entra aunque el usuario en caché siga BLOCKED")
+    void expiredLockoutLetsFirstLoginIn() {
+        user.setUserStatus(UserStatus.builder().code("BLOCKED").build());
+        user.setRole(Role.builder().code("USER").build());
+        AccountLockout lockout = AccountLockout.builder()
+                .user(user).failedAttempts(5).lockedUntil(LocalDateTime.now().minusSeconds(5)).build();
+        when(accountLockoutRepository.findByUserId(USER_ID)).thenReturn(Optional.of(lockout));
+        when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
+        when(tokenGenerator.generateAccessToken(USER_ID, "user", "USER")).thenReturn("access");
+        when(tokenGenerator.generateRefreshToken(USER_ID)).thenReturn("refresh");
+        when(authSessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        LoginResponse response = useCase.login(request);
+
+        assertThat(response.getAccessToken()).isEqualTo("access");
+        verify(accountLockoutService, atLeastOnce()).deleteLockout(USER_ID);
+    }
+
+    @Test
+    @DisplayName("un usuario BLOCKED sin bloqueo vencido sigue rechazado")
+    void blockedUserWithoutExpiredLockoutIsRejected() {
+        user.setUserStatus(UserStatus.builder().code("BLOCKED").build());
+        when(accountLockoutRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> useCase.login(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("contacta a soporte");
     }
 
     @Test
