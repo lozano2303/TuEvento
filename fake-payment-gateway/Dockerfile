@@ -17,4 +17,6 @@ COPY --from=builder /app/target/*.jar app.jar
 
 EXPOSE 4001
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# sh -c expands $JAVA_OPTS (e.g. -Xmx); exec keeps java as PID 1 for SIGTERM
+ENV JAVA_OPTS=""
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

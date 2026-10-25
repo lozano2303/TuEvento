@@ -23,10 +23,6 @@ import com.capysoft.tuevento.modules.security.application.dto.request.ConfirmRea
 import com.capysoft.tuevento.modules.security.application.dto.request.GoogleAuthRequest;
 import com.capysoft.tuevento.modules.security.application.dto.request.ReactivateAccountRequest;
 import com.capysoft.tuevento.modules.security.application.port.in.GoogleAuthPort;
-import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
-import com.capysoft.tuevento.modules.security.domain.repository.AccountActivationRepository;
-import com.capysoft.tuevento.shared.domain.exception.BusinessException;
-import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,8 +45,6 @@ public class AuthController {
     private final GoogleAuthPort      googleAuthPort;
     private final RequestReactivationPort requestReactivationPort;
     private final ConfirmReactivationPort confirmReactivationPort;
-    private final LoginCredentialsRepository loginCredentialsRepository;
-    private final AccountActivationRepository accountActivationRepository;
 
     /** Base OAuth provider authorization URLs (without state) — built by OauthConfig. */
     private final Map<String, String> oauthAuthorizationUrls;
@@ -284,21 +278,6 @@ public ResponseEntity<ApiResponse<Void>> confirmReactivation(
         @Valid @RequestBody ConfirmReactivationRequest request) {
     confirmReactivationPort.confirm(request);
     return ResponseEntity.ok(ApiResponse.ok("Tu cuenta ha sido reactivada exitosamente. Ya puedes iniciar sesión."));
-}
-
-@Operation(summary = "Get activation code for testing (dev only)")
-@GetMapping("/dev/activate-code/{email}")
-public ResponseEntity<ApiResponse<String>> getActivationCodeForTesting(
-        @PathVariable String email) {
-    var credentials = loginCredentialsRepository.findByEmail(email)
-            .orElseThrow(() -> new NotFoundException("EMAIL_NOT_FOUND", "Email not found"));
-    
-    var activation = accountActivationRepository.findByUserAndActivatedFalse(credentials.getUser());
-    if (activation.isEmpty()) {
-        throw new BusinessException("NO_ACTIVATION_CODE", "No pending activation code");
-    }
-    
-    return ResponseEntity.ok(ApiResponse.ok("Activation code", activation.get().getActivationCode()));
 }
 
     // ── Private helpers ───────────────────────────────────────────────────────
