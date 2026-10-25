@@ -1,6 +1,5 @@
 package com.capysoft.tuevento.modules.ticket.interfaces.rest;
 
-import com.capysoft.tuevento.modules.ticket.application.dto.request.CheckinTicketRequest;
 import com.capysoft.tuevento.modules.ticket.application.dto.request.ScanQrRequest;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.ScanResultResponse;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.TicketCheckinResponse;
@@ -97,14 +96,16 @@ public class TicketController {
     }
     
     /**
-     * Hacer check-in de un ticket (rol staff/organizer).
+     * Hacer check-in manual de un ticket (solo el organizador dueño del evento).
+     * El validador es el usuario autenticado; ya no se acepta en el cuerpo.
      */
     @PostMapping("/{ticketId:\\d+}/checkin")
+    @PreAuthorize("hasAuthority('ORGANIZER')")
     public ResponseEntity<ApiResponse<TicketCheckinResponse>> checkinTicket(
             @PathVariable Long ticketId,
-            @Valid @RequestBody CheckinTicketRequest request) {
-        
-        TicketCheckinResponse response = checkinTicketUseCase.execute(ticketId, request.getValidatedBy());
+            @AuthenticationPrincipal SecurityUser principal) {
+
+        TicketCheckinResponse response = checkinTicketUseCase.execute(ticketId, principal.getUserId().longValue());
         return ResponseEntity.ok(ApiResponse.ok("Ticket checked in successfully", response));
     }
 }
