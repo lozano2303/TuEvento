@@ -21,6 +21,10 @@ import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
 import { useNotifications } from '../context/NotificationContext';
+import { buildSectionOrder, runWithConcurrency } from '../utils/seatSections';
+
+// Secciones que se descargan a la vez en segundo plano
+const SEAT_LOAD_CONCURRENCY = 4;
 
 export default function EventDetail() {
   const { eventId } = useParams();
@@ -51,6 +55,33 @@ export default function EventDetail() {
   
   // P4: ref que siempre apunta al seats más reciente sin necesitar estar en deps de useCallback
   const seatsRef = useRef({});
+
+  // Sillas por sección: cada sección se descarga una sola vez (promesa compartida) y la
+  // página no espera a tenerlas todas para mostrarse.
+  const sectionLoadsRef = useRef(new Map());
+  const [loadedSectionIds, setLoadedSectionIds] = useState(() => new Set());
+
+  const ensureSectionSeats = useCallback((sectionId) => {
+    const loads = sectionLoadsRef.current;
+    if (!loads.has(sectionId)) {
+      const promise = SeatService.getSeatsBySection(sectionId)
+        .then((seatsRes) => {
+          const sectionSeats = {};
+          for (const seat of seatsRes.data ?? []) {
+            sectionSeats[seat.seatId] = seat;
+          }
+          // Mismo render: el índice por sección se recalcula al cambiar loadedSectionIds
+          setSeats((prev) => ({ ...prev, ...sectionSeats }));
+          setLoadedSectionIds((prev) => new Set(prev).add(sectionId));
+        })
+        .catch((err) => {
+          loads.delete(sectionId); // permitir reintento al volver a abrir la sección
+          throw err;
+        });
+      loads.set(sectionId, promise);
+    }
+    return loads.get(sectionId);
+  }, []);
 
   // ── Estado de comentarios ──────────────────────────────────────────────────
   const [comments, setComments] = useState([]);
@@ -108,6 +139,11 @@ export default function EventDetail() {
   useEffect(() => {
     const userId = localStorage.getItem('userID');
     setCurrentUserId(userId ? parseInt(userId) : null);
+
+    const loadSectionsInBackground = (sectionIds) => runWithConcurrency(
+      sectionIds, SEAT_LOAD_CONCURRENCY, ensureSectionSeats,
+      (err, sectionId) => console.warn(`No se pudieron cargar sillas de sección ${sectionId}:`, err),
+    );
     
     // Obtener idioma del usuario para cargar el evento con traducciones si está disponible
     const userLanguage = i18next.language || 'es';
@@ -132,24 +168,26 @@ export default function EventDetail() {
           );
           setLayoutElements(sectionElements);
 
-          // Cargar sillas de todas las secciones
-          const seatMap = {};
-          for (const section of sectionElements) {
-            try {
-              const seatsRes = await SeatService.getSeatsBySection(section.backendSectionId);
-              for (const seat of seatsRes.data) {
-                seatMap[seat.seatId] = seat;
-              }
-            } catch (err) {
-              console.warn(`No se pudieron cargar sillas de sección ${section.backendSectionId}:`, err);
-            }
+          // Con sesión, las sillas de todas las secciones se cargan en segundo plano (carrito
+          // y reservas existentes); sin sesión, cada sección se carga al abrirla. Una sección
+          // partida en sub-secciones tiene varios elementos: se descarga una sola vez.
+          if (userId) {
+            const sectionIds = [...new Set(sectionElements.map((el) => el.backendSectionId))];
+            void loadSectionsInBackground(sectionIds);
           }
-          setSeats(seatMap);
         }
       })
       .catch((err) => setError(err.message))
       .finally(() => setIsLoading(false));
-  }, [eventId]);
+  }, [eventId, ensureSectionSeats]);
+
+  // La sección que se abre se carga primero (si no estaba)
+  useEffect(() => {
+    if (!selectedSectionFilter) return;
+    ensureSectionSeats(selectedSectionFilter).catch((err) => {
+      console.warn(`No se pudieron cargar sillas de sección ${selectedSectionFilter}:`, err);
+    });
+  }, [selectedSectionFilter, ensureSectionSeats]);
 
   // P4: mantener seatsRef sincronizado con el estado seats
   useEffect(() => {
@@ -1011,6 +1049,7 @@ export default function EventDetail() {
             layoutElements={layoutElements}
             sections={sections}
             seats={seats}
+            loadedSectionIds={loadedSectionIds}
             currentUserId={currentUserId}
             cart={cart}
             selectedQuantity={selectedQuantity}
@@ -1609,6 +1648,7 @@ function SeatSelectorSection({
   layoutElements,
   sections,
   seats,
+  loadedSectionIds,
   currentUserId,
   cart,
   selectedQuantity,
@@ -1650,21 +1690,23 @@ function SeatSelectorSection({
     return groups;
   }, [layoutElements]);
 
-  // P3: índice de sillas agrupadas y ordenadas por sectionId — calculado UNA sola vez.
-  // Cada SectionRenderer lee seatsBySection[id] en lugar de filtrar+ordenar 999 sillas por su cuenta.
+  // P3: orden de las sillas de cada sección por código. Solo cambia cuando llegan las
+  // sillas de una sección (loadedSectionIds), no con cada update de estado por WebSocket,
+  // así que ya no se reordena todo el evento en cada reserva.
+  const sectionOrder = useMemo(() => {
+    return buildSectionOrder(seats);
+    // seats se lee en el momento en que cambia loadedSectionIds (mismo render que setSeats)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadedSectionIds]);
+
+  // Solo la sección abierta dibuja sillas: el índice se arma solo para ella (sin ordenar)
   const seatsBySection = useMemo(() => {
-    const map = {};
-    for (const seat of Object.values(seats)) {
-      const id = seat.eventSectionId;
-      if (!map[id]) map[id] = [];
-      map[id].push(seat);
-    }
-    // Ordenar cada grupo una sola vez
-    for (const id of Object.keys(map)) {
-      map[id].sort((a, b) => a.code.localeCompare(b.code));
-    }
-    return map;
-  }, [seats]);
+    if (!selectedSectionFilter) return {};
+    const ids = sectionOrder[selectedSectionFilter] ?? [];
+    return { [selectedSectionFilter]: ids.map((id) => seats[id]).filter(Boolean) };
+  }, [selectedSectionFilter, sectionOrder, seats]);
+
+  const sectionSeatsLoading = selectedSectionFilter !== null && !loadedSectionIds.has(selectedSectionFilter);
 
   // ── Sub-secciones de la sección actualmente filtrada ──
   const currentSubSections = useMemo(() => {
@@ -2317,7 +2359,17 @@ function SeatSelectorSection({
               </div>
             )}
           </div>
-          <div ref={containerRef} className="w-full" style={{ height: '65vh', minHeight: '450px', maxHeight: '750px', overflow: 'hidden' }}>
+          <div ref={containerRef} className="w-full relative" style={{ height: '65vh', minHeight: '450px', maxHeight: '750px', overflow: 'hidden' }}>
+            {sectionSeatsLoading && (
+              <div
+                className="absolute left-1/2 top-3 z-10 -translate-x-1/2 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs pointer-events-none"
+                style={{ background: 'rgba(0,0,0,0.6)', color: '#e9d5ff' }}
+                role="status"
+              >
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                {t('seats.loadingSeats')}
+              </div>
+            )}
             <Stage
               ref={stageRef}
               width={containerSize.width}
