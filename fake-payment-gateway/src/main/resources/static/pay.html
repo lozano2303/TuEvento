@@ -308,7 +308,7 @@
   async function doAction(action) {
     disableButtons(true);
     try {
-      const res = await fetch(`${GATEWAY_URL}/admin/payments/${paymentId}/${action}`, {
+      const res = await fetch(`${GATEWAY_URL}/public/checkout/${paymentId}/${action}`, {
         method: 'POST',
       });
       if (!res.ok) {
@@ -327,7 +327,7 @@
 
       // Cerrar el popup automáticamente en estados terminales
       setTimeout(() => {
-        const terminalActions = ['approve', 'decline', 'fail', 'cancel', 'refund'];
+        const terminalActions = ['approve', 'decline', 'fail', 'cancel'];
         if (terminalActions.includes(action)) {
           window.close();
         }
@@ -389,10 +389,7 @@
   }
 
   function renderButtons(status) {
-    // El botón Refund solo aparece cuando el pago ya fue aprobado.
-    const refundBtn = status === 'APPROVED'
-      ? `<button class="btn btn-refund" onclick="doAction('refund')">↩️ Reembolsar</button>`
-      : '';
+    // El reembolso es una operación del comercio (/admin con API key), no del pagador.
     return `
       <div class="btn-row">
         <button class="btn btn-approve" onclick="doAction('approve')">✅ Aprobar</button>
@@ -402,7 +399,6 @@
         <button class="btn btn-fail"   onclick="doAction('fail')">⚠️ Fallar</button>
         <button class="btn btn-cancel" onclick="doAction('cancel')">🚫 Cancelar</button>
       </div>
-      ${refundBtn ? `<div class="btn-row">${refundBtn}</div>` : ''}
     `;
   }
 
