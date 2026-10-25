@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,10 +74,14 @@ public class CreatePaymentUseCaseImpl {
     private String gatewayName;
 
     @Transactional
-    public PaymentResponse execute(CreatePaymentRequest request) {
-        // 1. Cargar orden
+    public PaymentResponse execute(CreatePaymentRequest request, Long requesterId) {
+        // 1. Cargar orden y verificar que sea del solicitante: sin esto, cualquiera
+        //    podría pagar una orden ajena y gastar el saldo de wallet de su dueño
         Order order = orderRepository.findById(request.getOrderId())
             .orElseThrow(() -> new OrderNotFoundException(request.getOrderId()));
+        if (!order.isOwnedBy(requesterId)) {
+            throw new AccessDeniedException("You cannot pay this order");
+        }
 
         // 2. Transicionar orden a PAYMENT_PENDING
         initiateOrderPaymentUseCase.initiateOrderPayment(request.getOrderId());
