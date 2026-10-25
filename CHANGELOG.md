@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed — fix(web): landing images in production builds
+
+- **Landing images** (`ladingpage.png`, `ladingpage1.png`, `ladingpage2.png`) are imported instead of referenced as `/src/assets/...` strings, which only Vite's dev server serves; the build now emits them under `/assets/` with a content hash
+- **About us**: the team photos (`francisco.jpg`, `keiner.png`) were never committed; every member shows their initials until the photos are added
+- **`nginx.conf`**: a missing file (by extension) returns 404 instead of `index.html` as `text/html`; `/assets/`, `/api` and `/ws` use `^~` so the new rule never intercepts them
+
 ### Performance — fix(backend): bulk seat regeneration when saving a layout
 
 - **Saving a layout no longer writes seats one by one**: regenerating a section used `deleteById` per seat (two queries each), one `INSERT` per new seat and loaded every seat as an entity just to check their status. A 132,000-seat venue took ~4.3 minutes on a local PostgreSQL, inside a single transaction, long past the proxy timeout
