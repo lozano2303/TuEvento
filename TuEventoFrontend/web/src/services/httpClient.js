@@ -24,6 +24,7 @@
  */
 
 import { clearAccessToken, getAccessToken, setAccessToken } from './tokenStore.js';
+import { disableGoogleAutoSelect } from './googleIdentity.js';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -90,6 +91,8 @@ export async function performLogout() {
   }
 
   clearLocalSession();
+  // Que Google no vuelva a elegir la cuenta automáticamente en el próximo inicio de sesión
+  disableGoogleAutoSelect();
 }
 
 const withRefreshLock = (fn) =>
