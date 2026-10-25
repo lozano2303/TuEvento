@@ -23,7 +23,6 @@ All notable changes to this project will be documented in this file.
 - **`GET /api/v1/section-types?category=PALCO`**: optional filter; the response now includes `category`. Create and update accept it
 - **Catalog seed** (migration `104`): 22 section types in Spanish, the layout editor's language — boxes (Palco Diamante, Platino, Oro, Plata, Empresarial), VIP Plus, Backstage, Preferencial, Oriental, Occidental, Platea (alta/baja), Mezzanine, Balcón, Tribuna Norte/Sur, Gramilla, Gradería, Zona de movilidad reducida, Zona familiar and Prensa. Each insert is skipped if a type with that name already exists
 - **Translations** (migration `105`): en/pt/fr for every seeded type, published, so `/event-sections?languageCode=` shows them to end users on web and mobile; the editor keeps the Spanish names
-- **`SectionTypeTranslationController`** moved from the stray `modules.sectiontype` package into `modules.section`; its routes are unchanged
 
 ## [1.0.2] - 2026-10-25
 
