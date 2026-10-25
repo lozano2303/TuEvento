@@ -10,6 +10,10 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/${POSTGRES_DB}}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
+    hikari:
+      # El driver de PostgreSQL envía cada lote de inserts como un único INSERT multi-fila
+      data-source-properties:
+        reWriteBatchedInserts: true
   jpa:
     hibernate:
       ddl-auto: validate
@@ -51,6 +55,10 @@ minio:
   public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
 
 app:
+  # Refresh token de la web en cookie httpOnly; en local va por http, así que sin Secure
+  auth:
+    refresh-cookie:
+      secure: false
   jwt:
     secret: ${JWT_SECRET}
     access-token-expiration: 900000
@@ -125,6 +133,7 @@ payment:
   gateway: ${PAYMENT_GATEWAY:fake}
   fake-gateway:
     url: ${FAKE_GATEWAY_URL:http://localhost:4001}
+    api-key: ${FAKE_GATEWAY_API_KEY:dev-admin-key-change-in-production}
   webhook:
     secret: ${WEBHOOK_SECRET:default-secret-change-in-production}
 

@@ -10,6 +10,11 @@ import Footer from '../layouts/Footer';
 import BaseModal from '../components/common/BaseModal';
 import { getAllEvents } from '../services/EventService';
 import { getEventComments } from '../services/EventCommentService';
+import { getAccessToken } from '../services/tokenStore.js';
+// Imported (not '/src/...' strings): Vite only serves /src in dev; the build emits hashed files under /assets
+import heroImage from '../assets/images/ladingpage.png';
+import organizeImage from '../assets/images/ladingpage1.png';
+import discoverImage from '../assets/images/ladingpage2.png';
 
 /* ── Pasos "Cómo funciona" ─────────────────────────────────────────────── */
 const STEPS = [
@@ -40,7 +45,7 @@ export default function LadingPage() {
 
   /* Auth */
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     const uid   = localStorage.getItem('userID');
     if (token && uid) {
       setUserData({
@@ -319,7 +324,7 @@ export default function LadingPage() {
               <div className="w-full max-w-sm">
                 <div className="lp2-hero-card">
                   <div className="rounded-xl overflow-hidden mb-4" style={{ height: '200px' }}>
-                    <img src="/src/assets/images/ladingpage.png" alt="TuEvento" className="w-full h-full object-cover" />
+                    <img src={heroImage} alt="TuEvento" className="w-full h-full object-cover" />
                   </div>
                   <div className="space-y-3">
                     <div className="lp2-stat-pill">
@@ -436,7 +441,7 @@ export default function LadingPage() {
             </div>
             <div className="rounded-2xl shadow-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, var(--color-surface), var(--color-background))', padding: '1.25rem' }}>
               <div className="rounded-xl overflow-hidden" style={{ height: '280px' }}>
-                <img src="/src/assets/images/ladingpage1.png" alt="Organiza tu evento" className="w-full h-full object-cover" />
+                <img src={organizeImage} alt="Organiza tu evento" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-wrap gap-2 mt-4">
                 {['Plano interactivo', 'Venta de tickets', 'Analíticas'].map(tag => (
@@ -462,7 +467,7 @@ export default function LadingPage() {
           <div className="grid md:grid-cols-2 gap-14 items-center">
             <div className="rounded-2xl shadow-xl overflow-hidden order-2 md:order-1" style={{ background: 'linear-gradient(135deg, var(--color-surface), var(--color-background))', padding: '1.25rem' }}>
               <div className="rounded-xl overflow-hidden aspect-video">
-                <img src="/src/assets/images/ladingpage2.png" alt="Eventos disponibles" className="w-full h-full object-cover" />
+                <img src={discoverImage} alt="Eventos disponibles" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-wrap gap-2 mt-4">
                 {['Búsqueda avanzada', 'Por ubicación', 'Por categoría'].map(tag => (
