@@ -312,7 +312,9 @@
     "rememberMe": "Recordarme",
     "noAccount": "¿No tienes cuenta?",
     "hasAccount": "¿Ya tienes cuenta?",
-    "sessionExpired": "Tu sesión expiró, iniciá sesión de nuevo"
+    "sessionExpired": "Tu sesión expiró, iniciá sesión de nuevo",
+    "tooManyRequests": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
+    "tooManyRequestsWait": "Demasiados intentos. Inténtalo de nuevo en {{seconds}} s."
   },
   "events": {
     "title": "Eventos",
