@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 import { Group, Rect, Text, Transformer } from 'react-konva';
-import { snapToGrid, getElementAABB, CANVAS_MARGIN } from '../layoutEditorUtils';
+import { snapToGrid, getElementAABB, CANVAS_MARGIN, TRANSFORMER_ANCHOR_SIZE } from '../layoutEditorUtils';
 
 export default function InfraElement({
   element,
@@ -160,6 +160,10 @@ export default function InfraElement({
           rotationSnapTolerance={10}
           rotateAnchorOffset={28}
           rotateAnchorCursor="grab"
+          anchorSize={TRANSFORMER_ANCHOR_SIZE}
+          anchorCornerRadius={3}
+          anchorStrokeWidth={1.5}
+          borderStrokeWidth={1.5}
           enabledAnchors={[
             'top-left', 'top-right',
             'bottom-left', 'bottom-right',
