@@ -52,21 +52,26 @@ public class AdminChangeEventStatusUseCase implements AdminChangeEventStatusPort
     private final EventDateValidator        eventDateValidator;
 
     /**
-     * Debe tener su propio @Transactional: si fuera un método default de la interfaz, el proxy
-     * no abriría transacción y la llamada interna a la variante con causa no pasaría por él.
-     * Sin transacción, los listeners AFTER_COMMIT (la notificación EVENT_PUBLISHED al
-     * organizador) se descartan en silencio y cada save se confirma por separado.
+     * Cada variante pública abre su propia transacción y delega en {@link #changeStatus}, que no
+     * pasa por el proxy. Antes la variante de 3 parámetros era un método default de la interfaz:
+     * el proxy no abría transacción, los listeners AFTER_COMMIT (la notificación EVENT_PUBLISHED
+     * al organizador) se descartaban en silencio y cada save se confirmaba por separado.
      */
     @Override
     @Transactional
     public EventStatusLogResponse execute(Long eventId, ChangeEventStatusRequest request, Long adminUserId) {
-        return execute(eventId, request, adminUserId, null);
+        return changeStatus(eventId, request, adminUserId, null);
     }
 
     @Override
     @Transactional
     public EventStatusLogResponse execute(Long eventId, ChangeEventStatusRequest request, Long adminUserId,
                                           String cause) {
+        return changeStatus(eventId, request, adminUserId, cause);
+    }
+
+    private EventStatusLogResponse changeStatus(Long eventId, ChangeEventStatusRequest request, Long adminUserId,
+                                                String cause) {
 
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("EVENT_NOT_FOUND",
