@@ -55,6 +55,7 @@ class AuthRateLimitFilterTest {
     private static MockHttpServletRequest post(String uri) {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", uri);
         request.setRemoteAddr("10.0.0.1");
+        request.setServletPath(uri);
         return request;
     }
 
@@ -123,12 +124,46 @@ class AuthRateLimitFilterTest {
     }
 
     @Test
-    @DisplayName("con menos entradas que proxies usa la primera")
-    void shortForwardedForUsesFirstEntry() {
+    @DisplayName("con menos entradas que proxies usa la IP de la conexión")
+    void shortForwardedForUsesPeer() {
         MockHttpServletRequest request = post(LOGIN);
-        request.addHeader("X-Forwarded-For", "203.0.113.7");
+        request.addHeader("X-Forwarded-For", "6.6.6.6");
 
-        assertThat(newFilter(true, 2).resolveClientIp(request)).isEqualTo("203.0.113.7");
+        assertThat(newFilter(true, 2).resolveClientIp(request)).isEqualTo("10.0.0.1");
+    }
+
+    @Test
+    @DisplayName("ignora X-Forwarded-For si la conexión no viene de una red privada")
+    void ignoresForwardedForFromPublicPeer() {
+        MockHttpServletRequest request = post(LOGIN);
+        request.setRemoteAddr("198.51.100.20");
+        request.addHeader("X-Forwarded-For", "6.6.6.6");
+
+        assertThat(newFilter(true, 1).resolveClientIp(request)).isEqualTo("198.51.100.20");
+    }
+
+    @Test
+    @DisplayName("reconoce direcciones privadas IPv4 e IPv6")
+    void detectsPrivateAddresses() {
+        assertThat(AuthRateLimitFilter.isPrivateAddress("127.0.0.1")).isTrue();
+        assertThat(AuthRateLimitFilter.isPrivateAddress("172.18.0.5")).isTrue();
+        assertThat(AuthRateLimitFilter.isPrivateAddress("192.168.1.8")).isTrue();
+        assertThat(AuthRateLimitFilter.isPrivateAddress("fd00::1")).isTrue();
+        assertThat(AuthRateLimitFilter.isPrivateAddress("203.0.113.7")).isFalse();
+        assertThat(AuthRateLimitFilter.isPrivateAddress("not-an-ip")).isFalse();
+        assertThat(AuthRateLimitFilter.isPrivateAddress(null)).isFalse();
+    }
+
+    @Test
+    @DisplayName("normaliza la ruta: ';' o '//' no esquivan el límite")
+    void normalizesPathVariants() throws Exception {
+        redisReturns(1);
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/auth//login;jsessionid=x");
+        request.setRemoteAddr("10.0.0.1");
+
+        filter.doFilter(request, response, chain);
+
+        verify(values).increment(AuthRateLimitFilter.KEY_PREFIX + LOGIN + ":10.0.0.1");
     }
 
     @Test

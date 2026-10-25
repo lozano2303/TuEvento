@@ -1,6 +1,8 @@
 package com.capysoft.tuevento.shared.infrastructure.security;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Set;
 
@@ -12,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.UrlPathHelper;
 
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,6 +52,9 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
             "/api/v1/auth/reactivate-request",
             "/api/v1/auth/reactivate-confirm");
 
+    // Ruta decodificada y normalizada (sin ';', '//', %xx) para que variantes de la URL no esquiven el límite
+    private static final UrlPathHelper PATH_HELPER = new UrlPathHelper();
+
     private final ObjectProvider<StringRedisTemplate> redisProvider;
     private final ObjectMapper objectMapper;
     private final boolean enabled;
@@ -72,18 +78,22 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return !enabled
                 || !"POST".equalsIgnoreCase(request.getMethod())
-                || !LIMITED_PATHS.contains(request.getRequestURI());
+                || !LIMITED_PATHS.contains(limitedPath(request));
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
-        long retryAfterSeconds = consume(KEY_PREFIX + request.getRequestURI() + ":" + resolveClientIp(request));
+        long retryAfterSeconds = consume(KEY_PREFIX + limitedPath(request) + ":" + resolveClientIp(request));
         if (retryAfterSeconds > 0) {
             reject(response, retryAfterSeconds);
             return;
         }
         chain.doFilter(request, response);
+    }
+
+    private static String limitedPath(HttpServletRequest request) {
+        return PATH_HELPER.getPathWithinApplication(request);
     }
 
     /**
@@ -115,18 +125,42 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
      * es la N-ésima empezando por la derecha; las entradas anteriores las puede
      * inventar el propio cliente y se ignoran. Con 0 se usa la conexión directa.
      * <p>
+     * Solo se confía en la cabecera si la conexión llega desde una red privada (el
+     * proxy) y trae al menos N entradas; si no, la petición no pasó por la cadena
+     * de proxies esperada y se usa la IP de la conexión.
+     * <p>
      * Se lee la petición original porque {@code ForwardedHeaderFilter}
      * ({@code forward-headers-strategy: framework}) quita esas cabeceras del wrapper.
      */
     String resolveClientIp(HttpServletRequest request) {
         HttpServletRequest original = unwrap(request);
+        String peer = original.getRemoteAddr();
         String forwardedFor = original.getHeader("X-Forwarded-For");
-        if (trustedProxies <= 0 || forwardedFor == null || forwardedFor.isBlank()) {
-            return original.getRemoteAddr();
+        if (trustedProxies <= 0 || forwardedFor == null || forwardedFor.isBlank() || !isPrivateAddress(peer)) {
+            return peer;
         }
         String[] hops = forwardedFor.split(",");
-        int index = Math.max(0, hops.length - trustedProxies);
-        return hops[index].trim();
+        if (hops.length < trustedProxies) {
+            return peer;
+        }
+        return hops[hops.length - trustedProxies].trim();
+    }
+
+    /** Loopback, link-local o rango privado (10/8, 172.16/12, 192.168/16, fc00::/7). */
+    static boolean isPrivateAddress(String ip) {
+        if (ip == null || ip.isBlank() || !ip.matches("[0-9a-fA-F:.]+")) {
+            return false;
+        }
+        try {
+            // Literal IP: getByName no hace consulta DNS
+            InetAddress address = InetAddress.getByName(ip);
+            byte[] raw = address.getAddress();
+            boolean uniqueLocalV6 = raw.length == 16 && (raw[0] & 0xFE) == 0xFC;
+            return address.isLoopbackAddress() || address.isSiteLocalAddress()
+                    || address.isLinkLocalAddress() || uniqueLocalV6;
+        } catch (UnknownHostException e) {
+            return false;
+        }
     }
 
     private static HttpServletRequest unwrap(HttpServletRequest request) {
