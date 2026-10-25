@@ -5,6 +5,7 @@ import com.capysoft.tuevento.modules.ticket.domain.model.Ticket;
 import com.capysoft.tuevento.modules.ticket.domain.model.TicketNotFoundException;
 import com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,9 +19,12 @@ public class GetTicketUseCaseImpl {
     private final TicketRepository ticketRepository;
     
     @Transactional(readOnly = true)
-    public TicketResponse execute(Long ticketId) {
+    public TicketResponse execute(Long ticketId, Long requesterId) {
         Ticket ticket = ticketRepository.findById(ticketId)
             .orElseThrow(() -> new TicketNotFoundException(ticketId));
+        if (!ticket.isOwnedBy(requesterId)) {
+            throw new AccessDeniedException("You do not have access to this ticket");
+        }
         
         return TicketResponse.fromDomain(ticket);
     }

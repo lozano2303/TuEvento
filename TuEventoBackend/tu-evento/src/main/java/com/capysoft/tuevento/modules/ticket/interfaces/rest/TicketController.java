@@ -37,20 +37,25 @@ public class TicketController {
     private final ScanQrUseCaseImpl scanQrUseCase;
     
     /**
-     * Obtener un ticket por ID.
+     * Obtener un ticket por ID (solo el comprador).
      */
     @GetMapping("/{ticketId:\\d+}")
-    public ResponseEntity<ApiResponse<TicketResponse>> getTicket(@PathVariable Long ticketId) {
-        TicketResponse response = getTicketUseCase.execute(ticketId);
+    public ResponseEntity<ApiResponse<TicketResponse>> getTicket(
+            @PathVariable Long ticketId,
+            @AuthenticationPrincipal SecurityUser principal) {
+        TicketResponse response = getTicketUseCase.execute(ticketId, principal.getUserId().longValue());
         return ResponseEntity.ok(ApiResponse.ok("Ticket retrieved successfully", response));
     }
     
     /**
-     * Obtener los tickets de un usuario.
+     * Obtener los tickets de un usuario (el propio usuario o un administrador).
      */
     @GetMapping("/user/{userId}")
-    public ResponseEntity<ApiResponse<List<TicketResponse>>> getUserTickets(@PathVariable Long userId) {
-        List<TicketResponse> tickets = getUserTicketsUseCase.execute(userId);
+    public ResponseEntity<ApiResponse<List<TicketResponse>>> getUserTickets(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal SecurityUser principal) {
+        List<TicketResponse> tickets = getUserTicketsUseCase.executeFor(
+                userId, principal.getUserId().longValue(), principal.isAdmin());
         return ResponseEntity.ok(ApiResponse.ok("User tickets retrieved successfully", tickets));
     }
 
