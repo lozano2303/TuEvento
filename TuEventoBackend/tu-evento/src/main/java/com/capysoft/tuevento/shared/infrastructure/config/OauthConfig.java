@@ -14,9 +14,13 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
 import com.capysoft.tuevento.modules.security.application.dto.OauthProfile;
+import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Configuration
 public class OauthConfig {
 
@@ -217,8 +221,9 @@ public class OauthConfig {
                         .build();
 
             } catch (Exception e) {
-                throw new com.capysoft.tuevento.shared.domain.exception.BusinessException(
-                        "FACEBOOK_OAUTH_FAILED", "Facebook OAuth failed: " + e.getMessage());
+                // The Graph API error may carry the redirect_uri, app id or token details.
+                log.error("Facebook OAuth code exchange or profile fetch failed", e);
+                throw new BusinessException("FACEBOOK_OAUTH_FAILED", "Facebook sign-in failed");
             }
         };
     }
