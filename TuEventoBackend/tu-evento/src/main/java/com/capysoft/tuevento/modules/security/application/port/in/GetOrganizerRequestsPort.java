@@ -8,6 +8,8 @@ public interface GetOrganizerRequestsPort {
     /**
      * Returns organizer requests filtered by status.
      * Pass {@code null} to retrieve all statuses.
+     *
+     * @param adminUserId the ADMIN listing the requests (used for storage access and audit)
      */
-    List<OrganizerRequestResponse> getRequests(String status);
+    List<OrganizerRequestResponse> getRequests(String status, Integer adminUserId);
 }

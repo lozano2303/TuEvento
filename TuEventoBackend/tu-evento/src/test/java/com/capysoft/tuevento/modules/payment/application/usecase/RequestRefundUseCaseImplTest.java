@@ -10,6 +10,8 @@ import com.capysoft.tuevento.modules.payment.domain.model.RefundStatus;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentLogRepository;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentRepository;
 import com.capysoft.tuevento.modules.payment.domain.repository.RefundRepository;
+import com.capysoft.tuevento.modules.ticket.application.dto.response.RefundableTicketsSummary;
+import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.modules.ticket.application.port.in.ConfirmRefundUseCase;
 import com.capysoft.tuevento.modules.ticket.domain.model.Money;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
@@ -78,6 +80,9 @@ class RequestRefundUseCaseImplTest {
     @BeforeEach
     void saveReturnsArgument() {
         lenient().when(refundRepository.save(any(Refund.class))).thenAnswer(inv -> inv.getArgument(0));
+        // Por defecto ningún ticket se usó: reembolso completo (flujos anteriores)
+        lenient().when(confirmRefundUseCase.getRefundableTickets(any()))
+                .thenReturn(new RefundableTicketsSummary(new BigDecimal("100000"), "COP", 2, 2));
     }
 
     @Nested
@@ -174,7 +179,9 @@ class RequestRefundUseCaseImplTest {
             useCase.execute(PAYMENT_ID, REASON);
 
             verify(paymentGatewayPort).refundPayment("gw-tx-1");
-            verifyNoInteractions(confirmRefundUseCase, reverseWalletPaymentUseCase);
+            // Solo consulta los tickets reembolsables; el cierre local lo hace el webhook
+            verify(confirmRefundUseCase, never()).confirmRefund(any());
+            verifyNoInteractions(reverseWalletPaymentUseCase);
         }
 
         @Test
@@ -191,6 +198,119 @@ class RequestRefundUseCaseImplTest {
             verify(eventPublisher, never()).publishEvent(any());
             verify(paymentGatewayPort, never()).refundPayment(anyString());
             verify(creditWalletUseCase, never()).execute(anyLong(), any(), any(), anyLong(), anyString(), anyString());
+        }
+    }
+
+    @Nested
+    @DisplayName("tickets usados")
+    class UsedTickets {
+
+        private final RefundableTicketsSummary partial =
+                new RefundableTicketsSummary(new BigDecimal("50000"), "COP", 1, 2);
+        private final RefundableTicketsSummary allUsed =
+                new RefundableTicketsSummary(BigDecimal.ZERO, "COP", 0, 2);
+
+        @Test
+        @DisplayName("todos usados → NOTHING_TO_REFUND sin crear reembolso ni llamar al gateway")
+        void execute_allTicketsUsed_isRejected() {
+            when(paymentRepository.findById(PAYMENT_ID))
+                    .thenReturn(Optional.of(payment(PaymentStatus.APPROVED, "80000", "0")));
+            when(confirmRefundUseCase.getRefundableTickets(ORDER_ID)).thenReturn(allUsed);
+
+            assertThatThrownBy(() -> useCase.execute(PAYMENT_ID, REASON))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("already used");
+            verify(refundRepository, never()).save(any());
+            verifyNoInteractions(paymentGatewayPort, creditWalletUseCase);
+        }
+
+        @Test
+        @DisplayName("parcial → solo el precio de los tickets sin usar vuelve a la wallet; el pago sigue APPROVED")
+        void execute_partial_creditsOnlyUnusedTickets() {
+            Payment payment = payment(PaymentStatus.APPROVED, "80000", "20000");
+            when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
+            when(confirmRefundUseCase.getRefundableTickets(ORDER_ID)).thenReturn(partial);
+            when(confirmRefundUseCase.confirmRefund(ORDER_ID)).thenReturn(partial);
+
+            useCase.execute(PAYMENT_ID, REASON);
+
+            assertThat(payment.getStatus()).isEqualTo(PaymentStatus.APPROVED);
+            verify(confirmRefundUseCase).confirmRefund(ORDER_ID);
+            verify(creditWalletUseCase).execute(eq(USER_ID), eq(new BigDecimal("50000")),
+                    eq(WalletReferenceEntityType.ORDER), eq(ORDER_ID), anyString(),
+                    eq("partial-refund-payment-" + PAYMENT_ID));
+            verifyNoInteractions(paymentGatewayPort, reverseWalletPaymentUseCase);
+            verify(paymentRepository, never()).save(any());
+
+            ArgumentCaptor<Refund> refunds = ArgumentCaptor.forClass(Refund.class);
+            verify(refundRepository, times(2)).save(refunds.capture());
+            assertThat(refunds.getAllValues()).extracting(Refund::getStatus)
+                    .containsExactly(RefundStatus.REQUESTED, RefundStatus.PROCESSED);
+        }
+
+        @Test
+        @DisplayName("se acredita lo realmente reembolsado, no el cálculo previo")
+        void execute_partial_creditsWhatWasActuallyRefunded() {
+            when(paymentRepository.findById(PAYMENT_ID))
+                    .thenReturn(Optional.of(payment(PaymentStatus.APPROVED, "80000", "0")));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
+            when(confirmRefundUseCase.getRefundableTickets(ORDER_ID))
+                    .thenReturn(new RefundableTicketsSummary(new BigDecimal("100000"), "COP", 2, 3));
+            when(confirmRefundUseCase.confirmRefund(ORDER_ID)).thenReturn(partial);
+
+            useCase.execute(PAYMENT_ID, REASON);
+
+            verify(creditWalletUseCase).execute(eq(USER_ID), eq(new BigDecimal("50000")),
+                    eq(WalletReferenceEntityType.ORDER), eq(ORDER_ID), anyString(), anyString());
+        }
+
+        @Test
+        @DisplayName("si al confirmar ya no queda ningún ticket sin usar → no acredita nada")
+        void execute_partial_nothingLeftAtConfirmation_creditsNothing() {
+            when(paymentRepository.findById(PAYMENT_ID))
+                    .thenReturn(Optional.of(payment(PaymentStatus.APPROVED, "80000", "0")));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
+            when(confirmRefundUseCase.getRefundableTickets(ORDER_ID)).thenReturn(partial);
+            when(confirmRefundUseCase.confirmRefund(ORDER_ID)).thenReturn(allUsed);
+
+            useCase.execute(PAYMENT_ID, REASON);
+
+            verifyNoInteractions(creditWalletUseCase, paymentGatewayPort);
+            verify(refundRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("cancelación con todos usados → se omite el pago sin error")
+        void executeToWallet_allTicketsUsed_isSkipped() {
+            when(paymentRepository.findById(PAYMENT_ID))
+                    .thenReturn(Optional.of(payment(PaymentStatus.APPROVED, "80000", "0")));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
+            when(confirmRefundUseCase.getRefundableTickets(ORDER_ID)).thenReturn(allUsed);
+
+            useCase.executeToWallet(PAYMENT_ID, EVENT_ID, REASON);
+
+            verify(refundRepository, never()).save(any());
+            verify(confirmRefundUseCase, never()).confirmRefund(any());
+            verifyNoInteractions(creditWalletUseCase, reverseWalletPaymentUseCase);
+        }
+
+        @Test
+        @DisplayName("cancelación parcial → acredita solo los tickets sin usar, sin revertir la wallet completa")
+        void executeToWallet_partial_creditsOnlyUnusedTickets() {
+            Payment payment = payment(PaymentStatus.APPROVED, "80000", "20000");
+            when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
+            when(confirmRefundUseCase.getRefundableTickets(ORDER_ID)).thenReturn(partial);
+            when(confirmRefundUseCase.confirmRefund(ORDER_ID)).thenReturn(partial);
+
+            useCase.executeToWallet(PAYMENT_ID, EVENT_ID, REASON);
+
+            assertThat(payment.getStatus()).isEqualTo(PaymentStatus.APPROVED);
+            verify(creditWalletUseCase).execute(eq(USER_ID), eq(new BigDecimal("50000")),
+                    eq(WalletReferenceEntityType.EVENT_CANCELLATION), eq(EVENT_ID), anyString(),
+                    eq("event-cancel-refund-payment-" + PAYMENT_ID));
+            verifyNoInteractions(reverseWalletPaymentUseCase, paymentGatewayPort);
         }
     }
 }

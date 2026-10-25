@@ -1,5 +1,5 @@
 # ============================================================
-# application-prod.yml — Perfil de Producción (Render)
+# application-prod.yml — Perfil de Producción (Render / VPS con Docker)
 # ============================================================
 # Este archivo se activa cuando SPRING_PROFILES_ACTIVE=prod
 # Todas las configuraciones sensibles se leen desde variables
@@ -12,6 +12,12 @@ server:
   # forward-headers-strategy expone el esquema HTTPS correcto en los
   # redirect URIs de OAuth y en los presigned URLs de S3.
   forward-headers-strategy: framework
+  # Never leak internals in Spring's default error responses
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+    include-exception: false
 
 spring:
   servlet:
@@ -101,9 +107,28 @@ logging:
 springdoc:
   api-docs:
     path: /api-docs
+    enabled: ${SWAGGER_ENABLED:false}
   swagger-ui:
     path: /swagger-ui
-    enabled: true   # Cambiar a false cuando el proyecto pase a producción real
+    enabled: ${SWAGGER_ENABLED:false}
+
+# ── Actuator: solo /actuator/health, sin detalles ─────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+      # No /actuator index page listing the exposed endpoints
+      discovery:
+        enabled: false
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
+  health:
+    # SMTP availability must not mark the app as down
+    mail:
+      enabled: false
 
 # ── MinIO / AWS S3 ─────────────────────────────────────────
 minio:
@@ -129,10 +154,21 @@ app:
     secret-key: ${MINIO_ROOT_PASSWORD}
     region: us-east-1
     bucket-default: tuevento
+    # Strategy de almacenamiento: minio (por defecto) | rustfs
+    provider: ${STORAGE_PROVIDER:minio}
+    rustfs:
+      endpoint: ${RUSTFS_ENDPOINT:http://rustfs:9000}
+      # Host público que firma las presigned URLs — debe ser alcanzable desde el navegador
+      public-url: ${RUSTFS_PUBLIC_URL:${RUSTFS_ENDPOINT:http://rustfs:9000}}
+      access-key: ${RUSTFS_ACCESS_KEY}
+      secret-key: ${RUSTFS_SECRET_KEY}
+      region: us-east-1
 
   # ── OAuth ─────────────────────────────────────────────────
   oauth:
-    allowed-frontend-redirect-uris: "${APP_CORS_ALLOWED_ORIGINS}"
+    # Exact URLs the browser may be sent to after OAuth (the web sends <origin>/login).
+    # Falls back to the CORS origins for backwards compatibility with Render.
+    allowed-frontend-redirect-uris: "${APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS:${APP_CORS_ALLOWED_ORIGINS}}"
     google:
       client-id: ${GOOGLE_CLIENT_ID}
       client-secret: ${GOOGLE_CLIENT_SECRET}

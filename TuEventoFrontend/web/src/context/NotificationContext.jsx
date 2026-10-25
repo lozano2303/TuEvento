@@ -10,7 +10,14 @@ import { useTokenRefresh } from '../hooks/useTokenRefresh';
 import { refreshAccessToken } from '../services/httpClient';
 import { ORGANIZER_WELCOME_KEY } from '../components/common/OrganizerWelcomeModal';
 import { getActiveLanguages } from '../services/LanguageService';
-import { changeUILanguage, getCurrentUILanguage } from '../i18n';
+import i18n, { changeUILanguage, getCurrentUILanguage } from '../i18n';
+import {
+  baseLanguage,
+  isAwaitingTranslation,
+  mergeTranslations,
+  TRANSLATION_POLL_MS,
+} from '../utils/notificationI18n';
+import { EVENT_CANCELLED_TOPIC, emitEventCancelled } from '../utils/eventCancellation';
 
 /** Evento del DOM que dispara el aviso THEME_UPDATED del WebSocket (lo escucha ThemeContext). */
 export const THEME_UPDATED_EVENT = 'tuevento:theme-updated';
@@ -134,6 +141,21 @@ function subscribeSessionEvents(client, userId, subscriptionsRef) {
   subscriptionsRef.current.set('session', sub);
 }
 
+/** Canal global de eventos cancelados: los listados abiertos quitan el evento en vivo. */
+function subscribeEventCancellations(client, subscriptionsRef) {
+  const sub = client.subscribe(EVENT_CANCELLED_TOPIC, (message) => {
+    try {
+      const payload = JSON.parse(message.body);
+      if (payload?.type === 'EVENT_CANCELLED' && payload.eventId != null) {
+        emitEventCancelled(payload.eventId);
+      }
+    } catch (err) {
+      // Error parsing event cancellation
+    }
+  });
+  subscriptionsRef.current.set('events-cancelled', sub);
+}
+
 /**
  * Provider de notificaciones que mantiene UN SOLO WebSocket centralizado.
  * Este WebSocket maneja:
@@ -141,6 +163,7 @@ function subscribeSessionEvents(client, userId, subscriptionsRef) {
  * - Actualizaciones de sillas (dinámico, solo en páginas de eventos)
  * - Role-change signals (/topic/role-change/{userId}) — revocación de rol
  * - Session events (/topic/users/{userId}/session) — aprobación de rol
+ * - Eventos cancelados (/topic/events/cancelled) — se quitan de los listados en vivo
  */
 export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
@@ -159,7 +182,6 @@ export function NotificationProvider({ children }) {
   const subscriptionsRef = useRef(new Map());
   
   // Polling para traducciones pendientes
-  const pollingIntervalRef = useRef(null);
   
   // Actualizar ref cuando cambia el estado
   useEffect(() => {
@@ -225,109 +247,39 @@ export function NotificationProvider({ children }) {
     }
   }, []);
 
-  /**
-   * Verificar si una notificación necesita polling de traducción.
-   * Retorna true si:
-   * - El idioma preferido del usuario NO es español
-   * - No existe traducción PUBLISHED para ese idioma
-   * - La notificación es reciente (menos de 2 minutos)
-   */
-  const needsTranslationPolling = useCallback((notification) => {
-    const userLanguage = localStorage.getItem('i18nextLng') || 'es';
-    
-    // Si es español, no necesita traducción
-    if (userLanguage === 'es') {
-      return false;
-    }
+  /** true si la notificación es reciente y aún no llegó su traducción al idioma de la UI. */
+  const isPendingTranslation = useCallback(
+    (notification) => isAwaitingTranslation(notification, baseLanguage(i18n)),
+    []
+  );
 
-    // Si no tiene translations array, asumir que necesita
-    if (!notification.translations || notification.translations.length === 0) {
-      return true;
-    }
-
-    // Buscar traducción para el idioma actual
-    const translation = notification.translations.find(t => t.languageCode === userLanguage);
-    
-    // Si no existe o no está PUBLISHED, necesita polling
-    if (!translation || translation.status !== 'PUBLISHED') {
-      // Solo hacer polling si es reciente (últimos 2 minutos)
-      const notificationTime = new Date(notification.sentAt).getTime();
-      const now = Date.now();
-      const twoMinutes = 2 * 60 * 1000;
-      
-      return (now - notificationTime) < twoMinutes;
-    }
-
-    return false;
-  }, []);
-
-  /**
-   * Actualizar una notificación específica desde el backend.
-   */
-  const updateNotification = useCallback(async (notificationUserId) => {
+  /** Una sola petición por ciclo: trae la lista y copia solo las traducciones nuevas. */
+  const refreshTranslations = useCallback(async () => {
     try {
       const response = await getUserNotifications();
-      const notificationList = response.data?.content || [];
-      
-      const updatedNotification = notificationList.find(
-        n => n.notificationUserId === notificationUserId
-      );
-
-      if (updatedNotification) {
-        setNotifications(prev => 
-          prev.map(n => 
-            n.notificationUserId === notificationUserId ? updatedNotification : n
-          )
-        );
-      }
-    } catch (err) {
-      // Error silenciado
+      setNotifications(prev => mergeTranslations(prev, response.data?.content));
+    } catch {
+      // Se reintenta en el siguiente ciclo
     }
   }, []);
 
   /**
-   * Iniciar polling para notificaciones que necesitan traducción.
+   * Polling de traducciones: solo mientras alguna notificación reciente (TRANSLATION_WAIT_MS)
+   * siga sin traducción al idioma de la UI. Se detiene solo al llegar todas o al vencer la ventana.
    */
   useEffect(() => {
-    // Buscar notificaciones que necesitan polling
-    const notificationsNeedingPolling = notifications.filter(needsTranslationPolling);
+    if (!notifications.some(isPendingTranslation)) return undefined;
 
-    if (notificationsNeedingPolling.length === 0) {
-      // No hay notificaciones pendientes, limpiar polling
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
+    const intervalId = setInterval(() => {
+      if (notificationsRef.current.some(isPendingTranslation)) {
+        void refreshTranslations();
+      } else {
+        clearInterval(intervalId);
       }
-      return;
-    }
+    }, TRANSLATION_POLL_MS);
 
-    // Iniciar polling cada 3 segundos
-    if (!pollingIntervalRef.current) {
-      pollingIntervalRef.current = setInterval(async () => {
-        const currentNotifications = notificationsRef.current;
-        const pendingNotifications = currentNotifications.filter(needsTranslationPolling);
-
-        if (pendingNotifications.length === 0) {
-          clearInterval(pollingIntervalRef.current);
-          pollingIntervalRef.current = null;
-          return;
-        }
-
-        // Actualizar cada notificación pendiente
-        for (const notification of pendingNotifications) {
-          await updateNotification(notification.notificationUserId);
-        }
-      }, 3000);
-    }
-
-    // Cleanup
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-    };
-  }, [notifications, needsTranslationPolling, updateNotification]);
+    return () => clearInterval(intervalId);
+  }, [notifications, isPendingTranslation, refreshTranslations]);
 
   /**
    * Suscribirse a un topic/queue dinámicamente.
@@ -425,6 +377,9 @@ export function NotificationProvider({ children }) {
 
         // Session events subscription: ROLE_UPDATED (solicitud de organizador aprobada)
         subscribeSessionEvents(client, userId, subscriptionsRef);
+
+        // Eventos cancelados: los listados abiertos los quitan sin recargar
+        subscribeEventCancellations(client, subscriptionsRef);
       },
 
       onStompError: (frame) => {
@@ -528,6 +483,9 @@ export function NotificationProvider({ children }) {
 
         // Session events subscription: ROLE_UPDATED (solicitud de organizador aprobada)
         subscribeSessionEvents(client, userId, subscriptionsRef);
+
+        // Eventos cancelados: los listados abiertos los quitan sin recargar
+        subscribeEventCancellations(client, subscriptionsRef);
       },
 
       onStompError: (frame) => {

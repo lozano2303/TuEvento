@@ -74,12 +74,13 @@ public class ScanQrUseCaseImpl {
         // 4. Resolver los tickets a validar según el alcance
         List<Ticket> targetTickets = switch (payload.scope()) {
             case TICKET -> {
-                Ticket t = ticketRepository.findById(payload.targetId())
+                // Lectura con bloqueo: si hay un reembolso en curso, espera y ve su resultado
+                Ticket t = ticketRepository.findByIdForUpdate(payload.targetId())
                         .orElseThrow(() -> new NotFoundException("TICKET_NOT_FOUND",
                                 "Ticket not found for this QR"));
                 yield List.of(t);
             }
-            case ORDER -> ticketRepository.findByOrderId(payload.targetId());
+            case ORDER -> ticketRepository.findByOrderIdForUpdate(payload.targetId());
         };
 
         if (targetTickets.isEmpty()) {
