@@ -9,4 +9,10 @@ export default defineConfig({
   define: {
     global: 'globalThis',
   },
+  // Vitest: los tests viven en tests/ (fuera de src/, que es lo que analiza Sonar)
+  test: {
+    environment: 'jsdom',
+    include: ['tests/**/*.test.{js,jsx}'],
+    setupFiles: ['tests/setup.js'],
+  },
 })
