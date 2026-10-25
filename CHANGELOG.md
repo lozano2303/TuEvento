@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed — fix(events): organizers are notified again when an admin approves or rejects their event
+
+- **Approving or rejecting an event** from the admin panel no longer notified the organizer (in-app, WebSocket and email) since 1.0.1: `AdminChangeEventStatusPort.execute(eventId, request, adminUserId)` was a `default` method, so Spring's proxy opened no transaction and the inner call to the variant with `cause` bypassed it. Without a transaction the `AFTER_COMMIT` listener that sends `EVENT_PUBLISHED` / `EVENT_REJECTED` was silently dropped, and each save committed on its own. The method is now implemented by the use case with its own `@Transactional`
+
 ### Fixed — fix(layout): layout editor usability and performance with large sections
 
 - **Section wizard validations**: errors show when leaving a field or pressing "Crear sección" (the button is no longer silently disabled), with a summary at the top; the seat count cannot go above 200,000, the backend limit per section, also in Properties
