@@ -8,6 +8,7 @@ import { searchEvents } from '../services/searchEvents.js';
 import { getProfileByUserId } from '../services/ProfileService';
 import { getActiveLanguages } from '../services/LanguageService';
 import EventCard from '../components/events/EventCard.jsx';
+import { onEventCancelled, withoutEvent } from '../utils/eventCancellation';
 const TuEvento = () => {
   const { t } = useTranslation();
   const currentLanguage = useLanguageSync();
@@ -28,6 +29,12 @@ const TuEvento = () => {
   const visibleEvents = popularOnly
     ? filteredEvents.filter(e => e.ticketsSold > 0).sort((a, b) => b.ticketsSold - a.ticketsSold)
     : filteredEvents;
+
+  // Evento cancelado en vivo (WebSocket): se quita del listado sin recargar
+  useEffect(() => onEventCancelled((eventId) => {
+    setEvents(prev => withoutEvent(prev, eventId));
+    setFilteredEvents(prev => withoutEvent(prev, eventId));
+  }), []);
 
   // Fecha mínima permitida: hoy (YYYY-MM-DD en hora local)
   const today = new Date().toISOString().split('T')[0];
