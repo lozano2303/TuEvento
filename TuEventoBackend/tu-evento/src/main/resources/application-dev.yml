@@ -123,6 +123,7 @@ payment:
   gateway: ${PAYMENT_GATEWAY:fake}
   fake-gateway:
     url: ${FAKE_GATEWAY_URL:http://localhost:4001}
+    api-key: ${FAKE_GATEWAY_API_KEY:dev-admin-key-change-in-production}
   webhook:
     secret: ${WEBHOOK_SECRET:default-secret-change-in-production}
 
