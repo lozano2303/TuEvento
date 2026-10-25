@@ -111,9 +111,12 @@ public class UploadFileUseCase implements UploadFilePort, UploadUserFilePort {
                     .occurredAt(LocalDateTime.now())
                     .build());
 
+        } catch (BusinessException e) {
+            // Already carries a safe code and message (e.g. S3_UPLOAD_FAILED from the storage client).
+            throw e;
         } catch (Exception e) {
             log.error("Failed to upload file: {}", request.getOriginalFilename(), e);
-            throw new BusinessException("UPLOAD_FAILED", "Failed to upload file: " + e.getMessage());
+            throw new BusinessException("UPLOAD_FAILED", "Failed to upload file");
         }
 
         eventPublisher.publishEvent(FileUploadedEvent.builder()

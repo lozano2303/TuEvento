@@ -110,4 +110,40 @@ class UploadFileUseCaseTest {
             assertThat(saved.getValue().getPublicUrl()).isEqualTo("https://s3.example.com/x");
         }
     }
+
+    @Nested
+    @DisplayName("Error messages")
+    class ErrorMessages {
+
+        private UploadFileRequest request() {
+            return UploadFileRequest.builder()
+                    .fileCategoryCode("PROFILE_PICTURE").uploadedBy(OWNER_ID)
+                    .originalFilename("a.jpg").contentType("image/jpeg").content(CONTENT).build();
+        }
+
+        @Test
+        @DisplayName("unexpected failure → UPLOAD_FAILED with a fixed message")
+        void unexpectedFailure_fixedMessage() {
+            givenProfilePictureCategory();
+            when(storageClient.uploadFile(any(), any(), any(), any()))
+                    .thenThrow(new RuntimeException("Connection refused: minio:9000 secret=abc"));
+
+            assertThatThrownBy(() -> useCase.upload(request()))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("code", "UPLOAD_FAILED")
+                    .hasMessage("Failed to upload file");
+        }
+
+        @Test
+        @DisplayName("storage client BusinessException → propagated with its own code")
+        void storageClientError_keepsCode() {
+            givenProfilePictureCategory();
+            when(storageClient.uploadFile(any(), any(), any(), any()))
+                    .thenThrow(new BusinessException("S3_UPLOAD_FAILED", "Failed to upload file"));
+
+            assertThatThrownBy(() -> useCase.upload(request()))
+                    .hasFieldOrPropertyWithValue("code", "S3_UPLOAD_FAILED")
+                    .hasMessage("Failed to upload file");
+        }
+    }
 }
