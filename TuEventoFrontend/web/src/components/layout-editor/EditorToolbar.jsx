@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Code2, Trash2, Save, X } from 'lucide-react';
+import { Code2, Gift, Trash2, Save, X } from 'lucide-react';
 import { serializeLayout } from './layoutEditorUtils';
+import { formatCOP } from './layoutEarnings';
 
 /**
  * EditorToolbar
@@ -14,6 +15,9 @@ import { serializeLayout } from './layoutEditorUtils';
  *   onSave        — async callback de guardado real (recibe nada, lanzado desde aquí)
  *   isSaving      — boolean, bloqueado mientras guarda
  *   isReadOnly    — boolean — true cuando el evento no está en DRAFT (bloquea guardar)
+ *   courtesyCount     — total de sillas de cortesía del layout
+ *   estimatedEarnings — Σ precio × (sillas − cortesías)
+ *   onOpenCourtesy    — abre el menú de sillas de cortesía
  */
 export default function EditorToolbar({
   elements,
@@ -28,6 +32,9 @@ export default function EditorToolbar({
   isSaving = false,
   maxSeats = null,
   isReadOnly = false,
+  courtesyCount = 0,
+  estimatedEarnings = 0,
+  onOpenCourtesy,
 }) {
   const [showJson, setShowJson] = useState(false);
 
@@ -79,6 +86,22 @@ export default function EditorToolbar({
             Excede aforo
           </span>
         )}
+
+        <div className="w-px h-5 bg-surfaceAlt" />
+
+        {/* Cortesías y ganancia estimada */}
+        <button
+          onClick={onOpenCourtesy}
+          disabled={isReadOnly}
+          className={`${btnBase} text-textSecondary hover:bg-surfaceAlt disabled:opacity-40 disabled:cursor-not-allowed`}
+          title="Sillas de cortesía por sección"
+        >
+          <Gift className="w-3.5 h-3.5" />
+          Cortesías ({courtesyCount})
+        </button>
+        <span className="text-xs text-textMuted" title="Si se venden todas las sillas que no son de cortesía">
+          Ganancia estimada: <span className="font-semibold text-textPrimary">{formatCOP(estimatedEarnings)}</span>
+        </span>
 
         <div className="w-px h-5 bg-surfaceAlt" />
 

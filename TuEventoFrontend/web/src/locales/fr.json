@@ -1463,7 +1463,11 @@
       },
       "ticketsSold": {
         "label": "Billets vendus",
-        "sub": "Transactions terminées"
+        "sub": "Billets payés ou déjà utilisés"
+      },
+      "potential": {
+        "label": "Gains potentiels",
+        "sub": "Si toutes les places hors invitations sont vendues"
       },
       "eventsWithSales": {
         "label": "Événements avec ventes",
@@ -1476,14 +1480,17 @@
       "columns": {
         "event": "Événement",
         "tickets": "Billets vendus",
-        "revenue": "Encaissé"
+        "revenue": "Encaissé",
+        "potential": "Potentiel",
+        "courtesy": "Invitations"
       },
-      "total": "Total"
+      "total": "Total",
+      "soldOfPotential": "{{pct}} % du potentiel"
     },
     "info": {
       "howCalculated": {
         "title": "Comment est-ce calculé ?",
-        "text": "Tous les paiements approuvés de vos événements sont additionnés. Le montant affiché reflète le total facturé aux participants."
+        "text": "Le montant encaissé additionne les paiements approuvés de vos événements. Le potentiel est le prix de chaque place hors invitation dans les événements non annulés : les invitations ne sont jamais vendues, elles réduisent donc seulement le potentiel."
       },
       "realTime": {
         "title": "Informations en temps réel",

@@ -6,7 +6,9 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -47,6 +49,9 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
      * estadio más grande del mundo (~132.000 asientos) como una sola sección.
      */
     static final int MAX_SEATS_PER_SECTION = 200_000;
+
+    /** Estados que impiden regenerar una sección: alguien ya reservó o compró. Las cortesías sí se regeneran. */
+    private static final Set<SeatStatus> TAKEN_STATUSES = EnumSet.of(SeatStatus.RESERVED, SeatStatus.SOLD);
 
     private final EventRepository eventRepository;
     private final EventLayoutRepository eventLayoutRepository;
@@ -121,9 +126,8 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
 
             // Los ids de sección vienen del cliente: solo se aceptan las secciones de este evento,
             // para que un layout no pueda borrar ni regenerar sillas de otro evento
-            Set<Integer> eventSectionIds = eventSectionRepository.findAllByEventId(Math.toIntExact(eventId)).stream()
-                    .map(EventSection::getEventSectionId)
-                    .collect(Collectors.toSet());
+            Map<Integer, EventSection> eventSections = eventSectionRepository.findAllByEventId(Math.toIntExact(eventId)).stream()
+                    .collect(Collectors.toMap(EventSection::getEventSectionId, Function.identity()));
 
             // Paso 1: Agrupar elementos de sección por backendSectionId
             Map<Integer, List<SectionElement>> sectionGroups = new HashMap<>();
@@ -148,11 +152,12 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                 int targetSeats = seatLayoutNode.has("targetSeats") ? seatLayoutNode.get("targetSeats").asInt() : 0;
                 int rows = seatLayoutNode.has("rows") ? seatLayoutNode.get("rows").asInt() : 1;
                 int seatsPerRow = seatLayoutNode.has("seatsPerRow") ? seatLayoutNode.get("seatsPerRow").asInt() : 1;
+                int courtesySeats = elementNode.has("courtesySeats") ? elementNode.get("courtesySeats").asInt() : 0;
 
                 if (targetSeats <= 0) {
                     continue;
                 }
-                if (!eventSectionIds.contains(backendSectionId)) {
+                if (!eventSections.containsKey(backendSectionId)) {
                     throw new BusinessException("LAYOUT_SECTION_NOT_IN_EVENT",
                             "La sección " + backendSectionId + " no pertenece a este evento");
                 }
@@ -161,17 +166,24 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                             "Una sección no puede tener más de " + MAX_SEATS_PER_SECTION + " sillas");
                 }
 
-                SectionElement element = new SectionElement(targetSeats, rows, seatsPerRow, i);
+                SectionElement element = new SectionElement(targetSeats, rows, seatsPerRow, courtesySeats, i);
                 sectionGroups.computeIfAbsent(backendSectionId, k -> new ArrayList<>()).add(element);
             }
 
-            // Validar el total de cada sección lógica antes de tocar ninguna
+            // Validar el total y las cortesías de cada sección lógica antes de tocar ninguna
             // (long: la suma de sub-elementos no puede desbordar)
             for (List<SectionElement> elements : sectionGroups.values()) {
+                // Ordenar elementos por su índice original para consistencia
+                elements.sort(Comparator.comparingInt(e -> e.originalIndex));
                 long totalSeats = elements.stream().mapToLong(e -> e.targetSeats).sum();
                 if (totalSeats > MAX_SEATS_PER_SECTION) {
                     throw new BusinessException("LAYOUT_TOO_MANY_SEATS",
                             "Una sección no puede tener más de " + MAX_SEATS_PER_SECTION + " sillas");
+                }
+                int courtesySeats = courtesySeatsOf(elements);
+                if (courtesySeats < 0 || courtesySeats > totalSeats) {
+                    throw new BusinessException("LAYOUT_INVALID_COURTESY_SEATS",
+                            "Las sillas de cortesía de una sección deben estar entre 0 y sus " + totalSeats + " sillas");
                 }
             }
 
@@ -183,12 +195,9 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                 Integer eventSectionId = entry.getKey();
                 List<SectionElement> elements = entry.getValue();
 
-                // Ordenar elementos por su índice original para consistencia
-                elements.sort(Comparator.comparingInt(e -> e.originalIndex));
-
                 // Validación defensiva: verificar que ninguna silla existente esté reservada/vendida
                 // Una sola consulta (EXISTS) en lugar de cargar todas las sillas en memoria
-                if (seatRepository.existsByEventSectionIdAndStatusNot(eventSectionId, SeatStatus.AVAILABLE)) {
+                if (seatRepository.existsByEventSectionIdAndStatusIn(eventSectionId, TAKEN_STATUSES)) {
                     throw new BusinessException("SEAT_REGENERATION_CONFLICT",
                             "No se puede regenerar las sillas de la sección " + eventSectionId +
                             " porque algunas ya tienen reservas o ventas. " +
@@ -211,13 +220,27 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
 
                 // Generar sillas con numeración continua a través de todos los elementos
                 // Las sillas se construyen en memoria y se insertan por lotes
+                int courtesySeats = courtesySeatsOf(elements);
                 List<Seat> seats = buildContinuousSeatsForSection(
                         seatBlock.getSeatBlockId(),
                         eventSectionId,
-                        elements
+                        elements,
+                        courtesySeats
                 );
                 seatRepository.insertAll(seats);
                 int generatedCount = seats.size();
+
+                // La sección vende todas sus sillas menos las cortesías
+                EventSection section = eventSections.get(eventSectionId);
+                eventSectionRepository.save(EventSection.builder()
+                        .eventSectionId(section.getEventSectionId())
+                        .eventId(section.getEventId())
+                        .sectionTypeId(section.getSectionTypeId())
+                        .capacity(totalCapacity)
+                        .availableSeats(totalCapacity - courtesySeats)
+                        .price(section.getPrice())
+                        .isActive(section.getIsActive())
+                        .build());
 
                 sectionsProcessed++;
                 seatsGenerated += generatedCount;
@@ -245,14 +268,21 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
         public final int targetSeats;
         public final int rows;
         public final int seatsPerRow;
+        public final int courtesySeats; // Cortesías de toda la sección lógica (el editor las repite en cada parte)
         public final int originalIndex; // Para mantener orden determinístico
 
-        SectionElement(int targetSeats, int rows, int seatsPerRow, int originalIndex) {
+        SectionElement(int targetSeats, int rows, int seatsPerRow, int courtesySeats, int originalIndex) {
             this.targetSeats = targetSeats;
             this.rows = rows;
             this.seatsPerRow = seatsPerRow;
+            this.courtesySeats = courtesySeats;
             this.originalIndex = originalIndex;
         }
+    }
+
+    /** Cortesías de una sección lógica: las del primer elemento (ya ordenados por índice). */
+    private static int courtesySeatsOf(List<SectionElement> elements) {
+        return elements.get(0).courtesySeats;
     }
 
     /**
@@ -262,10 +292,14 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
      *
      * La numeración de códigos (A1, A2, B1...) continúa a través de todos los
      * elementos del grupo, sin reiniciarse entre sub-secciones.
+     *
+     * Las últimas {@code courtesySeats} sillas quedan como cortesía (tipo y estado COURTESY):
+     * no se pueden reservar ni comprar.
      */
     List<Seat> buildContinuousSeatsForSection(Integer seatBlockId, Integer eventSectionId,
-                                              List<SectionElement> elements) {
+                                              List<SectionElement> elements, int courtesySeats) {
         int total = elements.stream().mapToInt(e -> e.targetSeats).sum();
+        int firstCourtesyIndex = total - courtesySeats;
         List<Seat> seats = new ArrayList<>(total);
         int globalCurrentRow = 1;
         int globalCurrentPosition = 1;
@@ -278,6 +312,7 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                 // Usar numeración global continua
                 String rowLabel = getRowLabel(globalCurrentRow);
                 String code = rowLabel + globalCurrentPosition;
+                boolean courtesy = seats.size() >= firstCourtesyIndex;
 
                 seats.add(Seat.builder()
                         .seatBlockId(seatBlockId)
@@ -285,8 +320,8 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                         .code(code)
                         .row(globalCurrentRow)
                         .position(globalCurrentPosition)
-                        .type(SeatType.REGULAR)
-                        .status(SeatStatus.AVAILABLE)
+                        .type(courtesy ? SeatType.COURTESY : SeatType.REGULAR)
+                        .status(courtesy ? SeatStatus.COURTESY : SeatStatus.AVAILABLE)
                         .reservedBy(null)
                         .reservedUntil(null)
                         .build());
