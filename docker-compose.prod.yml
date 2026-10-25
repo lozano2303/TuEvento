@@ -191,6 +191,8 @@ services:
       POSTGRES_PASSWORD: ${GATEWAY_POSTGRES_PASSWORD:?}
       PAYMENT_CALLBACK_URL: http://backend:8080/api/v1/webhooks/payment
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:?}
+      # X-Api-Key exigida en /admin/** (cancelar/reembolsar); mismo valor que FAKE_GATEWAY_API_KEY del backend
+      ADMIN_API_KEY: ${ADMIN_API_KEY:?}
       LOG_LEVEL: INFO
     depends_on:
       postgres-gateway:
@@ -307,6 +309,8 @@ services:
       # Pagos
       PAYMENT_GATEWAY: fake
       FAKE_GATEWAY_URL: http://fake-payment-gateway:4001
+      # Se envía como X-Api-Key al cancelar/reembolsar; mismo valor que ADMIN_API_KEY de la pasarela
+      FAKE_GATEWAY_API_KEY: ${FAKE_GATEWAY_API_KEY:?}
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:?}
 
       # Traducción (solo responde si se levanta el perfil "translate")

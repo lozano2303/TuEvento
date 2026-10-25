@@ -234,6 +234,7 @@ payment:
   gateway: ${PAYMENT_GATEWAY:fake}
   fake-gateway:
     url: ${FAKE_GATEWAY_URL}
+    api-key: ${FAKE_GATEWAY_API_KEY}
   webhook:
     secret: ${WEBHOOK_SECRET}
 
