@@ -9,6 +9,7 @@ import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentLogRepository;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentRepository;
 import com.capysoft.tuevento.modules.payment.domain.repository.RefundRepository;
+import com.capysoft.tuevento.modules.ticket.application.dto.response.RefundableTicketsSummary;
 import com.capysoft.tuevento.modules.ticket.application.port.in.ConfirmRefundUseCase;
 import com.capysoft.tuevento.modules.ticket.application.port.in.FailOrderPaymentUseCase;
 import com.capysoft.tuevento.modules.ticket.application.port.in.InitiateOrderPaymentUseCase;
@@ -147,6 +148,9 @@ class PaymentOwnershipTest {
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
             when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(Event.builder().userId(ORGANIZER_ID).build()));
             when(refundRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            // Ningún ticket usado: reembolso completo por la pasarela
+            when(confirmRefundUseCase.getRefundableTickets(ORDER_ID))
+                    .thenReturn(new RefundableTicketsSummary(new BigDecimal("80000"), "COP", 2, 2));
 
             requestRefund.execute(PAYMENT_ID, "reason", ORGANIZER_ID, false);
 
