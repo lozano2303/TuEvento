@@ -21,7 +21,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GetActivePaletteUseCase implements GetActivePalettePort {
 
-    private static final String DEFAULT_THEME_NAME = "PRINCIPAL";
+    // La migración 099 renombró "PRINCIPAL" a "Principal"; se acepta también el nombre
+    // anterior para bases de datos que aún no corrieron esa migración.
+    private static final List<String> DEFAULT_THEME_NAMES = List.of("Principal", "PRINCIPAL");
 
     private final ThemeRepository              themeRepository;
     private final UserThemeRepository          userThemeRepository;
@@ -55,9 +57,12 @@ public class GetActivePaletteUseCase implements GetActivePalettePort {
     }
 
     private ResolvedPaletteResponse activateDefaultTheme(Integer userId) {
-        Theme defaultTheme = themeRepository.findByName(DEFAULT_THEME_NAME)
+        Theme defaultTheme = DEFAULT_THEME_NAMES.stream()
+                .map(themeRepository::findByName)
+                .flatMap(java.util.Optional::stream)
+                .findFirst()
                 .orElseThrow(() -> new NotFoundException("DEFAULT_THEME_NOT_FOUND",
-                        "Default theme '" + DEFAULT_THEME_NAME + "' not found"));
+                        "Default theme 'Principal' not found"));
         return activateThemePort.activate(userId, defaultTheme.getId());
     }
 }

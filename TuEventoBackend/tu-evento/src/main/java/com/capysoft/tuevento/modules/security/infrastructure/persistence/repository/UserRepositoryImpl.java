@@ -22,7 +22,7 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public Optional<User> findById(Integer userId) {
-        return jpaRepository.findById(userId).map(mapper::toDomain);
+        return jpaRepository.findByIdEager(userId).map(mapper::toDomain);
     }
 
     @Override

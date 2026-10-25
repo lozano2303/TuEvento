@@ -16,4 +16,6 @@ public interface TicketRepository {
     List<Ticket> findByUserId(Long userId);
     Optional<Ticket> findByCode(String code);
     boolean existsById(Long ticketId);
+    /** Entradas vendidas de un evento (pagadas o ya usadas). */
+    long countSoldByEventId(Long eventId);
 }

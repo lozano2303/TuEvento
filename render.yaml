@@ -184,6 +184,9 @@ services:
         value: https://tuevento-fake-gateway.onrender.com
         # Actualizar en Fase 3 cuando se despliegue el fake-gateway
 
+      - key: FAKE_GATEWAY_API_KEY
+        sync: false   # Igual al ADMIN_API_KEY del fake-gateway
+
       - key: WEBHOOK_SECRET
         sync: false   # Mínimo 32 caracteres aleatorios
 

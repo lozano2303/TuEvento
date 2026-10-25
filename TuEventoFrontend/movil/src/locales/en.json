@@ -876,7 +876,11 @@
     "errorTitle": "Loading error",
     "notFound": "Event not found",
     "availability": "Availability",
-    "gallery": "Gallery"
+    "gallery": "Gallery",
+    "cancelledLiveTitle": "This event has been cancelled",
+    "cancelledLiveMessage": "If you made a payment, the refund has been credited to your wallet. Check your inbox and notifications for the details.",
+    "cancelledLiveButton": "Back to home",
+    "cancelledLiveOrganizerMessage": "The administrator removed this event's organizer for breaking the platform rules, so the event was cancelled. If you made a payment, the refund has been credited to your wallet. Check your inbox and notifications for the details."
   },
   "paymentApproved": {
     "title": "Payment approved!",
@@ -1479,7 +1483,6 @@
     "appearance": "Appearance",
     "themeColor": "Color theme",
     "themeDesc": "Choose the theme that best fits your preferences. The change applies immediately.",
-    "themeSaved": "The theme is saved automatically and restored the next time you open the app.",
     "languageSection": "Language",
     "languageTitle": "App language",
     "languageDesc": "Select the language you want to see the app in.",
@@ -1508,16 +1511,11 @@
     "title": "My Profile",
     "sections": {
       "organizer": "Organizer",
-      "admin": "Administration",
       "account": "Account"
     },
     "scan": {
       "label": "Validate tickets",
       "desc": "Scan QR codes for your events"
-    },
-    "adminPanel": {
-      "label": "Admin panel",
-      "desc": "Platform management"
     },
     "menu": {
       "profile": {
@@ -1537,42 +1535,6 @@
         "sub": "Manage your alerts"
       }
     },
-    "admin": {
-      "dashboard": {
-        "label": "Dashboard",
-        "sub": "Overview"
-      },
-      "financial": {
-        "label": "Financial Control",
-        "sub": "Payments and refunds"
-      },
-      "events": {
-        "label": "Events",
-        "sub": "Manage and review events"
-      },
-      "reports": {
-        "label": "Reports",
-        "sub": "Platform statistics"
-      },
-      "refunds": {
-        "label": "Refunds",
-        "sub": "Manage refunds"
-      },
-      "requests": {
-        "label": "Requests",
-        "sub": "Organizer requests"
-      },
-      "categories": {
-        "label": "Categories",
-        "sub": "Manage categories"
-      },
-      "sectionTypes": {
-        "label": "Section Types",
-        "sub": "Manage section types"
-      }
-    },
-    "comingSoon": "Coming soon",
-    "comingSoonBadge": "SOON",
     "logout": "Log out",
     "defaultUser": "User"
   },
@@ -1729,9 +1691,38 @@
     "heroEvents": "unique",
     "heroLine2": " events.",
     "quickAccess": "Quick access",
-    "searchEvents": "Search\nevents",
-    "myTickets": "My\ntickets",
-    "upcomingEvents": "Upcoming events"
+    "searchEvents": "Find events",
+    "myTickets": "My tickets",
+    "upcomingEvents": "Upcoming events",
+    "wallet": "My wallet",
+    "notifications": "Notifications",
+    "seeAll": "See all",
+    "noUpcoming": "No upcoming events right now",
+    "exploreCategories": "Explore by category",
+    "stats": {
+      "available": "Available events",
+      "thisWeek": "This week",
+      "categories": "Categories"
+    },
+    "steps": {
+      "title": "How it works",
+      "explore": {
+        "title": "Explore",
+        "desc": "Find events by name, date or category."
+      },
+      "seat": {
+        "title": "Pick your spot",
+        "desc": "Choose your seats on the venue map."
+      },
+      "pay": {
+        "title": "Pay securely",
+        "desc": "Pay through the gateway or use your wallet balance."
+      },
+      "enter": {
+        "title": "Enter with QR",
+        "desc": "Show your ticket code at the entrance."
+      }
+    }
   },
   "mobileQr": {
     "titleOrder": "Order QR",
@@ -1805,7 +1796,8 @@
     },
     "oauthCancelled": "You cancelled the sign-in",
     "oauthFailed": "Could not sign in with the external account. Please try again",
-    "googleExpoGo": "Google sign-in does not work in Expo Go. Use the development build (dev client)."
+    "googleExpoGo": "Google sign-in does not work in Expo Go. Use the development build (dev client).",
+    "googleDeveloperError": "Google rejected the app configuration (DEVELOPER_ERROR). Register this build's signing SHA-1 in Google Cloud."
   },
   "mobileSeats": {
     "sectionSoldOut": "No seats left available in this section",
@@ -1845,7 +1837,17 @@
     "invalidHex": "Invalid format — use #RGB or #RRGGBB",
     "reset": "Reset",
     "applyError": "Could not apply the color. Please try again.",
-    "resetError": "Could not reset the color. Please try again."
+    "resetError": "Could not reset the color. Please try again.",
+    "names": {
+      "PRINCIPAL": "Main",
+      "DARK": "Dark",
+      "LIGHT": "Light",
+      "PASTEL": "Pastel",
+      "VIBRANT": "Vibrant",
+      "NATURE": "Nature",
+      "OCEAN": "Ocean",
+      "SUNSET": "Sunset"
+    }
   },
   "mobileAuth": {
     "passwordPlaceholder": "Min. 8 characters, uppercase, number and symbol"
@@ -1878,5 +1880,35 @@
     "logoutMessage": "Your session will end and you'll need to sign in again to access.",
     "logoutConfirm": "Yes, sign out",
     "accept": "OK"
+  },
+  "mobileEvents": {
+    "allCategories": "All",
+    "results_one": "{{count}} event",
+    "results_other": "{{count}} events",
+    "clearFilters": "Clear filters",
+    "noMatches": "Try another search or remove some filters.",
+    "popular": "Popular"
+  },
+  "mobileCart": {
+    "reservationHint": "Your seats are held for a limited time. Complete the payment before they expire.",
+    "total": "Total",
+    "selectMore_one": "Select {{count}} more seat to continue",
+    "selectMore_other": "Select {{count}} more seats to continue",
+    "pay_one": "Go to payment · {{count}} seat",
+    "pay_other": "Go to payment · {{count}} seats",
+    "selectedOf": "{{count}} of {{total}} selected"
+  },
+  "mobileComments": {
+    "login": "Log in",
+    "yourRating": "Your rating",
+    "errors": {
+      "sessionExpired": "Your session expired. Please log in again.",
+      "rateLimited": "Wait a few seconds before commenting again.",
+      "ratingRequired": "Select a rating from 1 to 5 stars before posting.",
+      "parentInvalid": "This comment can't receive replies.",
+      "editExpired": "The time to edit this comment has expired.",
+      "forbidden": "You don't have permission to do this.",
+      "generic": "The action couldn't be completed. Please try again."
+    }
   }
 }

@@ -38,4 +38,12 @@ public class EventStatusChangedEvent {
      * null for all other transitions.
      */
     private String reason;
+
+    /**
+     * Causa especial del cambio, p. ej. {@link #CAUSE_ORGANIZER_REVOKED} cuando el evento se
+     * cancela porque un admin quitó el rol de organizador; null en cambios normales.
+     */
+    private String cause;
+
+    public static final String CAUSE_ORGANIZER_REVOKED = "ORGANIZER_REVOKED";
 }

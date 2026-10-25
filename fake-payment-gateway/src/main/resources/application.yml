@@ -28,6 +28,17 @@ spring:
 webhook:
   callback-url: ${PAYMENT_CALLBACK_URL:http://localhost:8080/api/v1/webhooks/payment}
   secret: ${WEBHOOK_SECRET:default-secret-change-in-production}
+  connect-timeout-ms: ${WEBHOOK_CONNECT_TIMEOUT_MS:3000}
+  read-timeout-ms: ${WEBHOOK_READ_TIMEOUT_MS:5000}
+  retry:
+    # Espera antes de cada reintento; intentos totales = elementos + 1
+    backoff-ms: ${WEBHOOK_RETRY_BACKOFF_MS:2000,10000}
+
+gateway:
+  admin:
+    # API key exigida en la cabecera X-Api-Key para /admin/**.
+    # Sin valor por defecto: si falta, el servicio no arranca (fail-closed)
+    api-key: ${ADMIN_API_KEY}
 
 logging:
   level:

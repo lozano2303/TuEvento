@@ -376,7 +376,9 @@
       "autoReload": "La page se rechargera automatiquement."
     },
     "soldOut": "Complet",
-    "almostGone": "Dernières places"
+    "almostGone": "Dernières places",
+    "popularFilter": "Populaires",
+    "popularEmpty": "Aucun événement avec des billets vendus pour le moment."
   },
   "myEvents": {
     "title": "Mes Événements",
@@ -891,7 +893,11 @@
     "deleteCommentTitle": "Supprimer ce commentaire?",
     "deleteCommentMessage": "Une fois supprimé, il n'y a pas de retour en arrière — le commentaire et ses réponses disparaîtront pour toujours. Continuer?",
     "yesDelete": "Oui, supprimer",
-    "noCancel": "Non, annuler"
+    "noCancel": "Non, annuler",
+    "cancelledLiveTitle": "Cet événement a été annulé",
+    "cancelledLiveMessage": "Si vous avez effectué un paiement, le remboursement a été crédité sur votre portefeuille. Consultez votre boîte de réception et vos notifications pour plus de détails.",
+    "cancelledLiveButton": "Retour à l'accueil",
+    "cancelledLiveOrganizerMessage": "L'administrateur a retiré l'organisateur de cet événement pour non-respect des règles de la plateforme, l'événement a donc été annulé. Si vous avez effectué un paiement, le remboursement a été crédité sur votre portefeuille. Consultez votre boîte de réception et vos notifications pour plus de détails."
   },
   "paymentApproved": {
     "title": "Paiement approuvé!",

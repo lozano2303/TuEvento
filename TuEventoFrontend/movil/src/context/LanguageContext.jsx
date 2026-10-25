@@ -5,6 +5,7 @@ import i18n, { bootstrapLanguage, changeUILanguage } from '../i18n';
 import { getActiveLanguages } from '../services/languageService';
 import { profileService } from '../services/profileService';
 import { useAuth } from './AuthContext';
+import { onSessionEvent } from '../utils/sessionEvents';
 
 /**
  * LanguageContext — equivalente móvil del sistema de idioma de la web
@@ -74,6 +75,24 @@ export function LanguageProvider({ children }) {
       }
     })();
   }, [user?.userId, languages]);
+
+  // 3. Cambios en vivo: LANGUAGE_UPDATED llega por WebSocket cuando el idioma
+  //    preferido cambia en otro dispositivo o en la web (solo se aplica local).
+  useEffect(() => {
+    if (!user?.userId) return;
+    return onSessionEvent((event) => {
+      if (event?.type !== 'LANGUAGE_UPDATED') return;
+      void (async () => {
+        try {
+          const list = await getActiveLanguages();
+          const lang = list.find((l) => l.languageId === event.languageId);
+          if (lang && lang.code !== i18n.language) await changeUILanguage(lang.code);
+        } catch {
+          // no crítico — mantener idioma actual
+        }
+      })();
+    });
+  }, [user?.userId]);
 
   /**
    * Cambia el idioma de la UI. Persiste local siempre; en el perfil si hay sesión.
