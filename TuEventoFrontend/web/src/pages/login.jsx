@@ -241,14 +241,11 @@ export default function Login() {
   };
 
   const handleVerificationSuccess = () => setView('login');
-  const handleContinueToVerification = async () => {
+  // El registro ya envía el correo de activación: no se reenvía aquí, porque eso mandaba un
+  // segundo correo con otro código que invalidaba el primero. El usuario puede pedir
+  // un reenvío explícito desde la pantalla de verificación.
+  const handleContinueToVerification = () => {
     setShowSuccessNotification(false);
-    try {
-      await resendActivationCode(formData.email);
-    } catch (err) {
-      // Si falla el reenvío, igual se permite ir a verificación
-      console.error('No se pudo reenviar el código de activación:', err);
-    }
     setUserID(formData.userID);
     setView('verification');
   };
