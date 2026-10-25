@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added — feat(sections): section type categories and catalog
+
+- **`section_type.category`** (migration `103`): `GENERAL`, `PREFERENCIAL`, `VIP`, `PALCO` or `ESPECIAL`, so the layout editor can group and filter the catalog. Existing types default to `GENERAL`
+- **`GET /api/v1/section-types?category=PALCO`**: optional filter; the response now includes `category`. Create and update accept it
+- **Catalog seed** (migration `104`): 22 section types in Spanish, the layout editor's language — boxes (Palco Diamante, Platino, Oro, Plata, Empresarial), VIP Plus, Backstage, Preferencial, Oriental, Occidental, Platea (alta/baja), Mezzanine, Balcón, Tribuna Norte/Sur, Gramilla, Gradería, Zona de movilidad reducida, Zona familiar and Prensa. Each insert is skipped if a type with that name already exists
+- **Translations** (migration `105`): en/pt/fr for every seeded type, published, so `/event-sections?languageCode=` shows them to end users on web and mobile; the editor keeps the Spanish names
+- **`SectionTypeTranslationController`** moved from the stray `modules.sectiontype` package into `modules.section`; its routes are unchanged
+
 ## [1.0.2] - 2026-10-25
 
 Imágenes Docker `v1.0.2`: se reconstruyen `backend` y `frontend` (web); `gateway`, `nsfw` y `movil` se reetiquetan desde `v1.0.1`. Incluye corrección de Google Sign-In (#119), imágenes de la landing (#121), permisos de secciones (#120), rendimiento del mapa de asientos en móvil (#116) y regeneración de asientos en bloque (#117).
