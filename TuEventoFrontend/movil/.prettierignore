@@ -1,0 +1,7 @@
+dist
+.expo
+android
+ios
+node_modules
+package-lock.json
+src/locales
