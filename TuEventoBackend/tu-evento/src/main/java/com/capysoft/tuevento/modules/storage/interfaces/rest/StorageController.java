@@ -5,6 +5,7 @@ import com.capysoft.tuevento.modules.storage.application.dto.request.UploadFileR
 import com.capysoft.tuevento.modules.storage.application.dto.response.PublicUrlResponse;
 import com.capysoft.tuevento.modules.storage.application.dto.response.StoredFileResponse;
 import com.capysoft.tuevento.modules.storage.application.dto.response.UploadFileResponse;
+import com.capysoft.tuevento.modules.storage.application.port.in.CheckFileAccessPort;
 import com.capysoft.tuevento.modules.storage.application.port.in.DeleteFilePort;
 import com.capysoft.tuevento.modules.storage.application.port.in.GeneratePublicUrlPort;
 import com.capysoft.tuevento.modules.storage.application.port.in.GetFilePort;
@@ -16,13 +17,17 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Todos los endpoints exigen autenticación. Los archivos privados (documentos
+ * de organizador) solo los ve o borra quien los subió o un administrador.
+ */
 @RestController
 @RequestMapping("/api/v1/storage")
 @RequiredArgsConstructor
@@ -34,6 +39,7 @@ public class StorageController {
     private final GetFilePort           getFilePort;
     private final GetFilesByOwnerPort   getFilesByOwnerPort;
     private final GeneratePublicUrlPort generatePublicUrlPort;
+    private final CheckFileAccessPort   checkFileAccessPort;
 
     @Operation(summary = "Upload a file — requires authentication")
     @PostMapping(value = "/upload", consumes = "multipart/form-data")
@@ -41,11 +47,12 @@ public class StorageController {
             @RequestParam MultipartFile file,
             @RequestParam String categoryCode,
             @RequestParam(required = false) Integer ownerEntityId,
-            @RequestParam(required = false) String ownerEntityType) throws IOException {
+            @RequestParam(required = false) String ownerEntityType,
+            @AuthenticationPrincipal SecurityUser principal) throws IOException {
 
         UploadFileRequest request = UploadFileRequest.builder()
                 .fileCategoryCode(categoryCode)
-                .uploadedBy(resolveCurrentUserId())
+                .uploadedBy(principal.getUserId())
                 .originalFilename(file.getOriginalFilename())
                 .contentType(file.getContentType())
                 .content(file.getBytes())
@@ -56,45 +63,49 @@ public class StorageController {
         return ResponseEntity.ok(ApiResponse.ok("File uploaded successfully", uploadFilePort.upload(request)));
     }
 
-    @Operation(summary = "Delete a file — requires authentication")
+    @Operation(summary = "Delete a file — uploader or admin only")
     @DeleteMapping("/{fileId}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Integer fileId) {
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable Integer fileId,
+            @AuthenticationPrincipal SecurityUser principal) {
+        checkFileAccessPort.assertCanDelete(fileId, principal.getUserId(), principal.isAdmin());
+
         DeleteFileRequest request = DeleteFileRequest.builder()
                 .storedFileId(fileId)
-                .deletedBy(resolveCurrentUserId())
+                .deletedBy(principal.getUserId())
                 .build();
 
         deleteFilePort.delete(request);
         return ResponseEntity.ok(ApiResponse.ok("File deleted successfully"));
     }
 
-    @Operation(summary = "Get file info — public")
+    @Operation(summary = "Get file info — public categories or uploader/admin")
     @GetMapping("/{fileId}")
-    public ResponseEntity<ApiResponse<StoredFileResponse>> getFile(@PathVariable Integer fileId) {
+    public ResponseEntity<ApiResponse<StoredFileResponse>> getFile(
+            @PathVariable Integer fileId,
+            @AuthenticationPrincipal SecurityUser principal) {
+        checkFileAccessPort.assertCanRead(fileId, principal.getUserId(), principal.isAdmin());
         return ResponseEntity.ok(ApiResponse.ok("File retrieved", getFilePort.getById(fileId)));
     }
 
-    @Operation(summary = "Get files by owner entity — public")
+    @Operation(summary = "Get files by owner entity — only the files the requester can see")
     @GetMapping("/owner/{ownerEntityType}/{ownerEntityId}")
     public ResponseEntity<ApiResponse<List<StoredFileResponse>>> getByOwner(
             @PathVariable String ownerEntityType,
-            @PathVariable Integer ownerEntityId) {
+            @PathVariable Integer ownerEntityId,
+            @AuthenticationPrincipal SecurityUser principal) {
 
         return ResponseEntity.ok(ApiResponse.ok("Files retrieved",
-                getFilesByOwnerPort.getByOwner(ownerEntityId, ownerEntityType)));
+                getFilesByOwnerPort.getByOwner(ownerEntityId, ownerEntityType,
+                        principal.getUserId(), principal.isAdmin())));
     }
 
-    @Operation(summary = "Generate presigned URL for a file — requires authentication")
+    @Operation(summary = "Generate presigned URL — public categories or uploader/admin")
     @GetMapping("/{fileId}/url")
-    public ResponseEntity<ApiResponse<PublicUrlResponse>> generateUrl(@PathVariable Integer fileId) {
+    public ResponseEntity<ApiResponse<PublicUrlResponse>> generateUrl(
+            @PathVariable Integer fileId,
+            @AuthenticationPrincipal SecurityUser principal) {
+        checkFileAccessPort.assertCanRead(fileId, principal.getUserId(), principal.isAdmin());
         return ResponseEntity.ok(ApiResponse.ok("URL generated", generatePublicUrlPort.generate(fileId)));
-    }
-
-    private Integer resolveCurrentUserId() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof SecurityUser securityUser) {
-            return securityUser.getUserId();
-        }
-        return null;
     }
 }
