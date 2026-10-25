@@ -6,6 +6,7 @@ import VertexEditorOverlay from './VertexEditorOverlay';
 import {
   generateId, snapToGrid, rectsIntersect,
   findSnapGuides, migratePolygonPoints, getElementAABB,
+  fillSeatsOnResize, polyBoundingBox,
 } from './layoutEditorUtils';
 
 const GRID_SIZE          = 20;
@@ -208,7 +209,11 @@ export default function LayoutEditorCanvas({
     if (!el) { onEndVertexEdit?.(); return; }
     const migrated = migratePolygonPoints(vertexPreview);
     const patch = normalizePoints(migrated, el.x, el.y);
-    onChange({ ...el, ...patch });
+    // Comparar con la forma al entrar en edición: si creció, se llena de sillas
+    const before = vertexSnapshotRef.current
+      ? polyBoundingBox(migratePolygonPoints(vertexSnapshotRef.current))
+      : el;
+    onChange(fillSeatsOnResize({ width: before.width, height: before.height }, { ...el, ...patch }));
     setVertexPreview(null);
     vertexPreviewRef.current = null;
     vertexSnapshotRef.current = null;
@@ -947,23 +952,23 @@ export default function LayoutEditorCanvas({
           className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-accent text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg hover:bg-accent/90 transition-colors"
           onClick={commitVertexEdit}
         >
-          ✓ Guardar forma
+          Guardar forma
         </button>
       )}
 
       {!editingPolygonId && (
         <div className="absolute bottom-4 left-4 text-[10px] text-textMuted pointer-events-none select-none space-y-0.5">
-          <div>🖱 Rueda → zoom · Derecho+drag → pan</div>
-          <div>⌨ Ctrl+drag fondo → selección múltiple</div>
+          <div>Rueda → zoom · Derecho+drag → pan</div>
+          <div>Ctrl+drag fondo → selección múltiple</div>
         </div>
       )}
       {editingPolygonId && (
         <div className="absolute bottom-4 left-4 text-[10px] text-accent pointer-events-none select-none space-y-0.5">
-          <div>✏ Click fuera o <kbd className="bg-surfaceAlt px-1 rounded text-textMuted">Guardar forma</kbd> → guardar</div>
+          <div>Click fuera o <kbd className="bg-surfaceAlt px-1 rounded text-textMuted">Guardar forma</kbd> → guardar</div>
           <div><kbd className="bg-surfaceAlt px-1 rounded text-textMuted">Esc</kbd> → descartar</div>
           <div className="mt-1 pt-1 border-t border-accent/20 space-y-0.5">
-            <div>⌥ Alt+arrastrar punto medio → convierte segmento en curva</div>
-            <div>⬤ Arrastrar handle (círculo) → ajusta la curvatura</div>
+            <div>Alt+arrastrar punto medio → convierte segmento en curva</div>
+            <div>Arrastrar handle (círculo) → ajusta la curvatura</div>
             <div className="flex items-center gap-1">
               <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', border:'1.5px solid #A78BFA', marginRight:2 }} />
               hueco morado = simétrico (ambos lados se mueven juntos)
@@ -972,10 +977,10 @@ export default function LayoutEditorCanvas({
               <span style={{ display:'inline-block', width:8, height:8, borderRadius:'50%', border:'1.5px solid #F59E0B', background:'rgba(245,158,11,0.15)', marginRight:2 }} />
               relleno ámbar = independiente (cada lado se mueve solo)
             </div>
-            <div>↔ Click derecho en handle → alterna simétrico / independiente</div>
-            <div>✕ Shift+click derecho en handle → elimina la curva (vuelve a recto)</div>
-            <div>✕ Click derecho en vértice ancla → elimina vértice</div>
-            <div>＋ Click en punto medio → inserta vértice</div>
+            <div>Click derecho en handle → alterna simétrico / independiente</div>
+            <div>Shift+click derecho en handle → elimina la curva (vuelve a recto)</div>
+            <div>Click derecho en vértice ancla → elimina vértice</div>
+            <div>Click en punto medio → inserta vértice</div>
           </div>
         </div>
       )}
