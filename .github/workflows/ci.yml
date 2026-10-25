@@ -57,7 +57,7 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   web:
-    name: Web (lint + tests + build)
+    name: Web (build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -79,7 +79,7 @@ jobs:
       - run: npm run build
 
   mobile:
-    name: Móvil (lint + tests + bundle Expo)
+    name: Móvil (bundle Expo)
     runs-on: ubuntu-latest
     defaults:
       run:
