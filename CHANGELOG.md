@@ -43,6 +43,10 @@ Imágenes Docker `v1.0.1`: se reconstruyen `backend`, `frontend` y `gateway` (el
 - **`FACEBOOK_OAUTH_FAILED`** returns a fixed message; the Graph API detail only goes to the log
 - **`APP_OAUTH_GOOGLE_REDIRECT_URI` / `APP_OAUTH_FACEBOOK_REDIRECT_URI` are the full callback URL** (`https://<domain>/api/v1/auth/oauth/{google|facebook}/callback`), used as-is by the authorization request and the code exchange. The YAML no longer appends the path (it only took effect when the variable did not come from the environment)
 
+## [1.0.0] - 2026-10-24
+
+Primer despliegue en el VPS (imágenes Docker `v1.0.0`). Incluye todo lo acumulado en `develop` hasta esa fecha.
+
 ### Security — fix(storage): access control on storage endpoints
 
 - **`/api/v1/storage/**` is no longer public**: every route requires a login (no client calls storage anonymously)
@@ -52,10 +56,6 @@ Imágenes Docker `v1.0.1`: se reconstruyen `backend`, `frontend` y `gateway` (el
 - **New error codes**: `STORAGE_AUTHENTICATION_REQUIRED` (401), `STORAGE_ACCESS_DENIED` (403), `STORAGE_CATEGORY_NOT_ALLOWED` (403) and `INVALID_PARAMETER` (400, mistyped path/query parameters); `ForbiddenException`/`UnauthorizedException` keep the `code` in the response
 - **No internal details in errors**: storage clients and `UploadFileUseCase` return fixed messages (`S3_UPLOAD_FAILED`, `S3_DELETE_FAILED`, `S3_PRESIGN_FAILED`, `UPLOAD_FAILED`); the SDK detail only goes to the log
 - **Public URLs use the public host** (`MINIO_PUBLIC_URL` / `RUSTFS_PUBLIC_URL`) instead of the internal endpoint, both when stored and when file metadata is read; see `docs/deployment-vps.md` to fix rows saved before this change
-
-## [1.0.0] - 2026-10-24
-
-Primer despliegue en el VPS (imágenes Docker `v1.0.0`). Incluye todo lo acumulado en `develop` hasta esa fecha.
 
 ### Added — chore(deploy): production stack for a self-hosted VPS
 
