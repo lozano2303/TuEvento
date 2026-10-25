@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { useNotifications } from "../context/NotificationContext";
+import { baseLanguage, isAwaitingTranslation, localizeNotification } from "../utils/notificationI18n";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -67,9 +68,11 @@ function getTypeConfig(type) {
 // ─── Modal de detalle ─────────────────────────────────────────────────────────
 
 function NotificationDetailModal({ notification, onClose, colors }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { icon, color } = getTypeConfig(notification.type);
-  const body = stripHtml(notification.body);
+  // Traducción al idioma de la UI si ya llegó; si no, el original
+  const { subject, body: rawBody } = localizeNotification(notification, baseLanguage(i18n));
+  const body = stripHtml(rawBody);
   const isUnread = !notification.readAt;
 
   const tipKey = `mobileNotifications.tips.${notification.type}`;
@@ -104,7 +107,7 @@ function NotificationDetailModal({ notification, onClose, colors }) {
                   color: colors.textPrimary, fontSize: 16,
                   fontWeight: "700", flex: 1,
                 }}>
-                  {notification.subject}
+                  {subject}
                 </Text>
                 {isUnread && (
                   <View style={{
@@ -196,11 +199,15 @@ function NotificationDetailModal({ notification, onClose, colors }) {
 // ─── Card de notificación ─────────────────────────────────────────────────────
 
 function NotificationCard({ notification, onMarkAsRead, colors }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [showModal, setShowModal] = useState(false);
   const { icon, color } = getTypeConfig(notification.type);
   const isUnread = !notification.readAt;
-  const body = stripHtml(notification.body);
+  // Traducción al idioma de la UI si ya llegó; si no, el original (y aviso mientras llega)
+  const language = baseLanguage(i18n);
+  const { subject, body: rawBody } = localizeNotification(notification, language);
+  const body = stripHtml(rawBody);
+  const isTranslating = isAwaitingTranslation(notification, language);
 
   const handlePress = () => {
     if (isUnread) onMarkAsRead(notification.notificationUserId);
@@ -239,7 +246,7 @@ function NotificationCard({ notification, onMarkAsRead, colors }) {
               fontSize: 14, fontWeight: isUnread ? "700" : "600",
               flex: 1, lineHeight: 20,
             }}>
-              {notification.subject}
+              {subject}
             </Text>
             {isUnread && (
               <View style={{
@@ -255,6 +262,12 @@ function NotificationCard({ notification, onMarkAsRead, colors }) {
           >
             {body}
           </Text>
+
+          {isTranslating && (
+            <Text style={{ color: colors.textMuted, fontSize: 11, fontStyle: "italic", marginTop: 3 }}>
+              {t("notifications.translating")}
+            </Text>
+          )}
 
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 }}>
             <Text style={{ color: colors.textMuted, fontSize: 11 }}>
