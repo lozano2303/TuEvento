@@ -62,6 +62,7 @@ class OauthLoginUseCaseOnboardingTest {
     @Mock ApplicationEventPublisher  eventPublisher;
     @Mock CreateProfilePort          createProfilePort;
     @Mock ProfileRepository          profileRepository;
+    @Mock AccountAccessGuard         accountAccessGuard;
 
     @InjectMocks
     OauthLoginUseCase useCase;
@@ -96,6 +97,7 @@ class OauthLoginUseCaseOnboardingTest {
                 eventPublisher,
                 createProfilePort,
                 profileRepository,
+                accountAccessGuard,
                 Map.of()   // no provider resolvers needed for loginWithProfile()
         );
 
