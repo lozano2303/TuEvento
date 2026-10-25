@@ -43,6 +43,7 @@ import SpanishOnlyRoute from './components/common/SpanishOnlyRoute';
 import OrganizerWelcomeModal from './components/common/OrganizerWelcomeModal';
 import RoleRevokedModal from './components/common/RoleRevokedModal';
 import { useNotifications } from './context/NotificationContext';
+import { getAccessToken } from './services/tokenStore.js';
 
 /**
  * Redirects to /login if no token, or to /events if the user's role
@@ -50,7 +51,7 @@ import { useNotifications } from './context/NotificationContext';
  * Reads role from localStorage (written at login time, source of truth until next login).
  */
 function ProtectedRoute({ children, requiredRoles }) {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const role  = localStorage.getItem('role');
 
   if (!token) return <Navigate to="/login" replace />;
@@ -67,7 +68,7 @@ function ProtectedRoute({ children, requiredRoles }) {
  * Redirects them to /admin-panel if they try to navigate there manually.
  */
 function UserOnlyRoute({ children }) {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const role  = localStorage.getItem('role');
 
   if (token && role === 'ADMIN') return <Navigate to="/admin-panel" replace />;

@@ -21,6 +21,7 @@ import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
 import { useNotifications } from '../context/NotificationContext';
+import { getAccessToken } from '../services/tokenStore.js';
 
 export default function EventDetail() {
   const { eventId } = useParams();
@@ -490,7 +491,7 @@ export default function EventDetail() {
 
   const handleReserveSeat = useCallback(async (seatId) => {
     // CASO 9: Usuario anónimo intenta reservar
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     if (!token) {
       showToast('auth-required', 'Iniciá sesión para reservar sillas', 'warning');
       setTimeout(() => navigate('/login'), 2000);
@@ -1046,7 +1047,7 @@ export default function EventDetail() {
           </h2>
 
           {/* Formulario principal — cualquier usuario autenticado (R1) */}
-          {localStorage.getItem('token') ? (
+          {getAccessToken() ? (
             canUserComment() ? (
               <form
                 id="comment-form"
@@ -1148,7 +1149,7 @@ export default function EventDetail() {
                             )}
                           </div>
                           {/* Botones Editar + Eliminar — solo para el dueño, solo con sesión */}
-                          {isOwn && localStorage.getItem('token') && (
+                          {isOwn && getAccessToken() && (
                             <div className="flex items-center gap-2 shrink-0">
                               {canEdit(c) && !isEditingThis && (
                                 <button
@@ -1241,7 +1242,7 @@ export default function EventDetail() {
                         </div>
 
                         {/* Botón Responder — solo en principales, solo con sesión */}
-                        {localStorage.getItem('token') && canUserComment() && replyParentId !== c.ratingId && (
+                        {getAccessToken() && canUserComment() && replyParentId !== c.ratingId && (
                           <button
                             type="button"
                             onClick={() => { 
@@ -1366,7 +1367,7 @@ export default function EventDetail() {
                                     {replyIsOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>Tú</span>}
                                     {r.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>Organizador</span>}
                                   </div>
-                                  {replyIsOwn && localStorage.getItem('token') && (
+                                  {replyIsOwn && getAccessToken() && (
                                     <div className="flex items-center gap-2 shrink-0">
                                       {canEdit(r) && !isEditingReply && editingId !== c.ratingId && (
                                         <button
@@ -1511,7 +1512,7 @@ export default function EventDetail() {
                                 </div>
 
                                 {/* Botón Responder en respuestas */}
-                                {localStorage.getItem('token') && canUserComment() && replyParentId !== c.ratingId && !isEditingReply && (
+                                {getAccessToken() && canUserComment() && replyParentId !== c.ratingId && !isEditingReply && (
                                   <button
                                     type="button"
                                     onClick={() => { 

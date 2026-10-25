@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import { getActivePalette, activateTheme as activateThemeService, getThemes } from '../services/themeService';
 import { THEMES, DEFAULT_THEME_ID } from '../theme/themes';
 import { THEME_UPDATED_EVENT } from './NotificationContext';
+import { getAccessToken } from '../services/tokenStore.js';
 
 // ── Paleta por defecto (tema PRINCIPAL) ─────────────────────────────────────
 // Debe coincidir con THEMES[0].palette y con la mobile src/theme/colors.js
@@ -107,7 +108,7 @@ export function ThemeProvider({ children }) {
 
   // ── refreshPalette: obtiene la paleta activa del backend y la aplica ───────
   const refreshPalette = useCallback(async () => {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     if (!token) {
       // Sin sesión: resetear al tema PRINCIPAL
       applyPaletteToDOM(DEFAULT_PALETTE);
@@ -147,7 +148,7 @@ export function ThemeProvider({ children }) {
   // ── syncTheme: fuerza sincronización con el backend (para usar post-login) ─
   // Equivalente a mobile.syncTheme.
   const syncTheme = useCallback(async () => {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     if (!token) return;
     try {
       const data = await getActivePalette();
@@ -198,7 +199,7 @@ export function ThemeProvider({ children }) {
 
   // ── Efecto 1: carga del tema al montar si hay sesión ──────────────────────
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     if (token) {
       refreshPalette();
     }
@@ -242,7 +243,7 @@ export function ThemeProvider({ children }) {
   // puede usar su contexto).
   useEffect(() => {
     const handleThemeUpdated = () => {
-      if (localStorage.getItem('token')) refreshPalette();
+      if (getAccessToken()) refreshPalette();
     };
     window.addEventListener(THEME_UPDATED_EVENT, handleThemeUpdated);
     return () => window.removeEventListener(THEME_UPDATED_EVENT, handleThemeUpdated);
