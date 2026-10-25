@@ -74,20 +74,43 @@ exige reconstruir la imagen):
 | `VITE_GOOGLE_CLIENT_ID` | Client ID OAuth web de Google |
 | `VITE_GATEWAY_URL` | `https://pay.tuevento.example.com` |
 
-### Publicar una versión que solo cambia algunas imágenes (p. ej. `v1.0.1`)
+### Publicar una versión: qué imágenes reconstruir y cuáles reetiquetar
 
 `docker-compose.prod.yml` usa un único `TUEVENTO_VERSION` para las 4 imágenes, así que
 **los 4 tags tienen que existir** con la versión nueva o el stack falla al hacer pull.
-Las imágenes que no cambian no se reconstruyen: se reetiquetan en Docker Hub copiando el
-manifiesto de la versión anterior (no descarga ni sube capas, el digest es el mismo).
 
-Ejemplo de `v1.0.1`, donde solo cambian backend y frontend:
+**Regla:** reconstruye las imágenes cuyo código cambió desde la versión anterior y
+**reetiqueta solo las que no cambiaron**. Reetiquetar copia el manifiesto de la versión
+anterior en Docker Hub (no descarga ni sube capas; el digest es el mismo). Construye
+desde el commit de la versión (el tag `vX.Y.Z` en `main`, ver `docs/versioning.md`).
+
+| Imagen | Tag | Carpeta que decide si cambió |
+|---|---|---|
+| backend | `vX.Y.Z` | `TuEventoBackend/tu-evento` |
+| frontend | `frontend-vX.Y.Z` | `TuEventoFrontend/web` |
+| gateway | `gateway-vX.Y.Z` | `fake-payment-gateway` |
+| nsfw | `nsfw-vX.Y.Z` | `nsfw-service` |
+
+Para cada carpeta, compara con el tag anterior; si no sale nada, esa imagen se reetiqueta:
+
+```bash
+for d in TuEventoBackend/tu-evento TuEventoFrontend/web fake-payment-gateway nsfw-service; do
+  echo "== $d"; git diff --stat <tag-anterior>..HEAD -- "$d" | tail -1
+done
+```
+
+> Las imágenes `v1.0.0` se construyeron desde el commit `98d1ad7`, que no tiene tag:
+> úsalo como `<tag-anterior>` hasta que exista `v1.0.0` en git.
+
+**Ejemplo: `v1.0.1`.** Desde `98d1ad7` cambian `TuEventoBackend/tu-evento`,
+`TuEventoFrontend/web` y `fake-payment-gateway` (el sandbox de pagos, #100); `nsfw-service`
+no cambia. Se reconstruyen backend, frontend y gateway, y solo se reetiqueta nsfw:
 
 ```bash
 docker login -u jhampier23
 export $(grep -E '^VITE_' .env.prod | xargs)
 
-# 1. Construir y publicar solo lo que cambió (una imagen a la vez)
+# 1. Reconstruir y publicar lo que cambió (una imagen a la vez)
 docker build -t jhampier23/tu-evento:v1.0.1 TuEventoBackend/tu-evento
 docker push jhampier23/tu-evento:v1.0.1
 
@@ -98,12 +121,14 @@ docker build -t jhampier23/tu-evento:frontend-v1.0.1 \
   TuEventoFrontend/web
 docker push jhampier23/tu-evento:frontend-v1.0.1
 
-# 2. Reetiquetar las que no cambiaron, sin reconstruirlas
-docker buildx imagetools create -t jhampier23/tu-evento:nsfw-v1.0.1    jhampier23/tu-evento:nsfw-v1.0.0
-docker buildx imagetools create -t jhampier23/tu-evento:gateway-v1.0.1 jhampier23/tu-evento:gateway-v1.0.0
+docker build -t jhampier23/tu-evento:gateway-v1.0.1 fake-payment-gateway
+docker push jhampier23/tu-evento:gateway-v1.0.1
+
+# 2. Reetiquetar la que no cambió, sin reconstruirla
+docker buildx imagetools create -t jhampier23/tu-evento:nsfw-v1.0.1 jhampier23/tu-evento:nsfw-v1.0.0
 
 # 3. Comprobar que existen los 4 tags antes de tocar el VPS
-for t in v1.0.1 frontend-v1.0.1 nsfw-v1.0.1 gateway-v1.0.1; do
+for t in v1.0.1 frontend-v1.0.1 gateway-v1.0.1 nsfw-v1.0.1; do
   docker manifest inspect jhampier23/tu-evento:$t > /dev/null && echo "OK  $t" || echo "FALTA  $t"
 done
 ```
