@@ -5,8 +5,8 @@ spring:
       max-request-size: 12MB
   datasource:
     url: jdbc:postgresql://postgres-service:5432/tuevento
-    username: postgres
-    password: secret
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: none

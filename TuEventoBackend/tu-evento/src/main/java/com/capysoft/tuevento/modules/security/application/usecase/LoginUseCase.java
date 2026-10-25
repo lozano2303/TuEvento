@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.security.application.usecase;
 
 import java.time.LocalDateTime;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +32,6 @@ import lombok.RequiredArgsConstructor;
 public class LoginUseCase implements LoginPort {
 
     private static final int    MAX_FAILED_ATTEMPTS  = 5;
-    private static final int    LOCKOUT_MINUTES       = 1; // TODO: restore to 30 for production
     private static final int    WINDOW_MINUTES        = 15;
     private static final int    ACCESS_TOKEN_MINUTES  = 15;
     private static final int    REFRESH_TOKEN_DAYS    = 7;
@@ -44,6 +44,10 @@ public class LoginUseCase implements LoginPort {
     private final PasswordEncoderPort        passwordEncoder;
     private final TokenGeneratorPort         tokenGenerator;
     private final ApplicationEventPublisher  eventPublisher;
+
+    // Duración del bloqueo tras MAX_FAILED_ATTEMPTS intentos fallidos; dev puede reducirla
+    @Value("${security.lockout.minutes:30}")
+    private long lockoutMinutes;
 
     @Override
     @Transactional
@@ -150,7 +154,7 @@ public class LoginUseCase implements LoginPort {
         }
 
         if (lockout.getFailedAttempts() >= MAX_FAILED_ATTEMPTS) {
-            LocalDateTime lockedUntil = now.plusMinutes(LOCKOUT_MINUTES);
+            LocalDateTime lockedUntil = now.plusMinutes(lockoutMinutes);
             lockout.setLockedUntil(lockedUntil);
             accountLockoutService.saveLockout(lockout);
             eventPublisher.publishEvent(UserLockedEvent.builder()
