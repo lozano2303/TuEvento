@@ -40,7 +40,7 @@ Additional roles include **anonymous users** (browse-only on web) and **administ
 | Backend | Java 17, Spring Boot |
 | Persistence | Spring Data JPA |
 | Database | PostgreSQL 17 |
-| Authentication | JWT + Refresh Token |
+| Authentication | JWT + Refresh Token + OAuth (Google) |
 | Payment Gateway | Wompi |
 | Notifications | SMTP (email), Push notifications |
 | API Style | RESTful (JSON over HTTP) |
@@ -65,7 +65,9 @@ The system is built on a modular **N-Layer architecture with Domain-Driven Desig
 The backend is organized into the following functional modules:
 
 ### Security
-Handles user authentication, session management, and authorization. Includes JWT issuance, Refresh Token rotation, OAuth social login, account lockout, password recovery, and role/permission management.
+Handles user authentication, session management, and authorization. Includes JWT issuance, Refresh Token rotation, OAuth social login (Google), account lockout, password recovery, and role/permission management.
+
+> **Note:** Facebook sign-in was removed. While the Meta app stays in development mode it only works for the app admin and accounts manually added as testers — all other users see "La aplicación no está activa". Going live requires a privacy policy URL, a data-deletion endpoint, a Meta app review, and potentially business verification: requirements beyond the scope of this academic project. Sign-in with email/password and Google remain fully supported.
 
 ### Profile
 Manages user profile data, city and department references, activity logs, purchase history, and user preferences (language, theme, notifications).
@@ -480,7 +482,7 @@ Los roles adicionales incluyen **usuarios anónimos** (solo navegación en web) 
 | Backend | Java 17, Spring Boot |
 | Persistencia | Spring Data JPA |
 | Base de Datos | PostgreSQL 17 |
-| Autenticación | JWT + Refresh Token |
+| Autenticación | JWT + Refresh Token + OAuth (Google) |
 | Pasarela de Pago | Wompi |
 | Notificaciones | SMTP (email), Notificaciones push |
 | Estilo de API | RESTful (JSON sobre HTTP) |
@@ -505,7 +507,9 @@ El sistema está construido sobre una **arquitectura modular N-Layer con Domain-
 El backend está organizado en los siguientes módulos funcionales:
 
 ### Seguridad
-Maneja la autenticación de usuarios, gestión de sesiones y autorización. Incluye emisión de JWT, rotación de Refresh Token, login social OAuth, bloqueo de cuentas, recuperación de contraseña, y gestión de roles/permisos.
+Maneja la autenticación de usuarios, gestión de sesiones y autorización. Incluye emisión de JWT, rotación de Refresh Token, login social OAuth (Google), bloqueo de cuentas, recuperación de contraseña, y gestión de roles/permisos.
+
+> **Nota:** el inicio de sesión con Facebook fue removido. Mientras la app de Meta permanece en modo desarrollo, solo funciona para el administrador de la app y las cuentas agregadas manualmente como evaluadores; cualquier otro usuario ve "La aplicación no está activa". Pasar a modo Live exige política de privacidad, endpoint de eliminación de datos, revisión de Meta y posiblemente verificación de negocio, lo cual está fuera del alcance de este proyecto académico. Se mantiene correo/contraseña y Google.
 
 ### Perfil
 Gestiona datos del perfil de usuario, referencias de ciudad y departamento, registros de actividad, historial de compras, y preferencias de usuario (idioma, tema, notificaciones).

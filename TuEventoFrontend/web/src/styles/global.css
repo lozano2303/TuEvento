@@ -752,26 +752,6 @@ input[type="password"]::-ms-reveal { display: none; }
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
-/* ── Botón Facebook OAuth — azul de marca fijo ───────────────────────────── */
-.btn-oauth-facebook {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background-color: #1877f2;
-  color: #ffffff;
-  padding: 0.625rem 1.25rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border: none;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.20);
-  transition: background-color 150ms ease, box-shadow 150ms ease;
-  cursor: pointer;
-}
-.btn-oauth-facebook:hover {
-  background-color: #166fe5;
-}
-
 /* ── Toggle knob (interruptor on/off) — blanco fijo para contraste ───────── */
 .toggle-knob {
   display: inline-block;

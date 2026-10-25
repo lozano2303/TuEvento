@@ -13,13 +13,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
-import com.capysoft.tuevento.modules.security.application.dto.OauthProfile;
-import com.capysoft.tuevento.shared.domain.exception.BusinessException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 @Configuration
 public class OauthConfig {
@@ -44,26 +37,6 @@ public class OauthConfig {
     @Value("${app.oauth.google.authorization-uri}")
     private String googleAuthorizationUri;
 
-    // ── Facebook properties ──────────────────────────────────────────────────
-
-    @Value("${app.oauth.facebook.client-id}")
-    private String facebookClientId;
-
-    @Value("${app.oauth.facebook.client-secret}")
-    private String facebookClientSecret;
-
-    @Value("${app.oauth.facebook.redirect-uri}")
-    private String facebookRedirectUri;
-
-    @Value("${app.oauth.facebook.auth-uri}")
-    private String facebookAuthUri;
-
-    @Value("${app.oauth.facebook.token-uri}")
-    private String facebookTokenUri;
-
-    @Value("${app.oauth.facebook.profile-uri}")
-    private String facebookProfileUri;
-
     // ── Frontend redirect whitelist ──────────────────────────────────────────
 
     /**
@@ -86,8 +59,7 @@ public class OauthConfig {
     @Bean
     public Map<String, Function<String, OauthProfile>> oauthProviderResolvers() {
         return Map.of(
-                "google",   googleProfileResolver(),
-                "facebook", facebookProfileResolver()
+                "google", googleProfileResolver()
         );
     }
 
@@ -119,15 +91,8 @@ public class OauthConfig {
                 + "&scope=openid%20email%20profile"
                 + "&access_type=offline";
 
-        String facebookUrl = facebookAuthUri
-                + "?client_id=" + facebookClientId
-                + "&redirect_uri=" + facebookRedirectUri
-                + "&scope=email,public_profile"
-                + "&response_type=code";
-
         return Map.of(
-                "google",   googleUrl,
-                "facebook", facebookUrl
+                "google", googleUrl
         );
     }
 
@@ -170,61 +135,6 @@ public class OauthConfig {
                     .fullName(googleName)   // needed by OauthLoginUseCase to skip onboarding
                     .alias(googleName)
                     .build();
-        };
-    }
-
-    // ── Facebook resolver ────────────────────────────────────────────────────
-
-    private Function<String, OauthProfile> facebookProfileResolver() {
-        RestClient restClient = RestClient.create();
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        return authorizationCode -> {
-            try {
-                // Step 1 — exchange authorization code for access token
-                // Facebook responds with Content-Type: text/javascript, so we read as String
-                // and parse manually to avoid HttpMessageConverter restrictions.
-                MultiValueMap<String, String> tokenParams = new LinkedMultiValueMap<>();
-                tokenParams.add("code",          authorizationCode);
-                tokenParams.add("client_id",     facebookClientId);
-                tokenParams.add("client_secret", facebookClientSecret);
-                tokenParams.add("redirect_uri",  facebookRedirectUri);
-
-                String tokenRaw = restClient.post()
-                        .uri(facebookTokenUri)
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .body(tokenParams)
-                        .retrieve()
-                        .body(String.class);
-
-                Map<String, Object> tokenResponse = objectMapper.readValue(
-                        tokenRaw, new TypeReference<>() {});
-
-                String accessToken = (String) tokenResponse.get("access_token");
-
-                // Step 2 — fetch user profile from Graph API (id differs from Google's sub)
-                // Same pattern: read as String, parse with ObjectMapper.
-                String profileRaw = restClient.get()
-                        .uri(facebookProfileUri + "?fields=id,name,email&access_token=" + accessToken)
-                        .retrieve()
-                        .body(String.class);
-
-                Map<String, Object> userInfo = objectMapper.readValue(
-                        profileRaw, new TypeReference<>() {});
-
-                String facebookName = (String) userInfo.get("name");
-                return OauthProfile.builder()
-                        .providerUserId((String) userInfo.get("id"))
-                        .email((String) userInfo.get("email"))
-                        .fullName(facebookName)   // needed by OauthLoginUseCase to skip onboarding
-                        .alias(facebookName)
-                        .build();
-
-            } catch (Exception e) {
-                // The Graph API error may carry the redirect_uri, app id or token details.
-                log.error("Facebook OAuth code exchange or profile fetch failed", e);
-                throw new BusinessException("FACEBOOK_OAUTH_FAILED", "Facebook sign-in failed");
-            }
         };
     }
 }

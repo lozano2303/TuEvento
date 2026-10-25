@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed — chore: remove Facebook login
+
+- **Facebook sign-in removed** from the web (login and register), the mobile app (LoginScreen, RegisterScreen), and the backend (`OauthConfig` resolver, `oauthAuthorizationUrls`, all `app.oauth.facebook.*` YAML properties and env vars). Facebook Login was designed for real users in production, but while the Meta app stays in **development mode** it only works for the app admin and accounts manually added as testers — everyone else saw "La aplicación no está activa". Going **live** requires a privacy policy URL, a data-deletion endpoint, a Meta app review, and potentially business verification: requirements that go beyond the scope of this academic project. The mobile implementation was also broken (`AuthSession.startAsync` was removed in the current Expo SDK). Sign-in with **email/password** and **Google** remain fully supported. Existing `oauth_account` rows with `provider = 'facebook'` are kept in the database unchanged.
+
 ### Added — feat(seats): courtesy seats and potential earnings
 
 - **Courtesy seats in the layout editor**: a "Cortesías" menu asks how many courtesy seats each section has and shows the estimated earnings live. The toolbar shows the courtesy total and the estimate, Σ price × (seats − courtesy)
