@@ -67,16 +67,8 @@ export default function LoginScreen() {
   const handleOAuthLogin = async (provider) => {
     setOauthLoading(provider);
     try {
-      // Google: id_token nativo → POST /auth/google (mismo flujo que la web).
-      // Facebook: authorization code → callback del backend.
-      let result;
-      if (provider === "google") {
-        const { idToken } = await oauthService.loginWithGoogle();
-        result = await authService.googleLogin(idToken);
-      } else {
-        const { code } = await oauthService.loginWithFacebook();
-        result = await authService.oauthLogin(provider, code);
-      }
+      const { idToken } = await oauthService.loginWithGoogle();
+      const result = await authService.googleLogin(idToken);
       const role = await setSession(result);
       navigation.navigate(homeRouteFor(role));
     } catch (e) {
@@ -251,24 +243,6 @@ export default function LoginScreen() {
               : <Ionicons name="logo-google" size={20} color="#EA4335" />}
             <Text style={{ color: "#111827", fontSize: 15, fontWeight: "600" }}>
               {oauthLoading === "google" ? t("login.loading") : `${t("login.signInWith")} ${t("login.google")}`}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.75}
-            disabled={oauthLoading !== null}
-            onPress={() => handleOAuthLogin("facebook")}
-            style={{
-              flexDirection: "row", alignItems: "center", justifyContent: "center",
-              gap: 10, backgroundColor: "#1877F2", borderRadius: 14,
-              paddingVertical: 14, opacity: oauthLoading === "facebook" ? 0.7 : 1,
-            }}
-          >
-            {oauthLoading === "facebook"
-              ? <ActivityIndicator size="small" color="#FFFFFF" />
-              : <Ionicons name="logo-facebook" size={20} color="#FFFFFF" />}
-            <Text style={{ color: "#FFFFFF", fontSize: 15, fontWeight: "600" }}>
-              {oauthLoading === "facebook" ? t("login.loading") : `${t("login.signInWith")} ${t("login.facebook")}`}
             </Text>
           </TouchableOpacity>
 
