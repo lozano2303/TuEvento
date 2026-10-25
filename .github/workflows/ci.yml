@@ -72,6 +72,10 @@ jobs:
           cache-dependency-path: TuEventoFrontend/web/package-lock.json
 
       - run: npm ci
+      # Lint informativo: aún hay avisos en código existente (ver docs/frontend-quality.md)
+      - run: npm run lint
+        continue-on-error: true
+      - run: npm test
       - run: npm run build
 
   mobile:
@@ -90,5 +94,9 @@ jobs:
           cache-dependency-path: TuEventoFrontend/movil/package-lock.json
 
       - run: npm ci
+      # Lint informativo: aún hay avisos en código existente (ver docs/frontend-quality.md)
+      - run: npm run lint
+        continue-on-error: true
+      - run: npm test
       # Genera el bundle JS de Android: falla si hay imports rotos o errores de sintaxis
       - run: npx expo export --platform android --output-dir dist

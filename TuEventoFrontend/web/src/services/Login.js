@@ -1,6 +1,7 @@
 // Servicio de autenticación - conexión con el backend
 
 import { AUTH_MODE_HEADERS, httpRequest } from './httpClient.js';
+import { throwIfRateLimited } from '../utils/rateLimit.js';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
@@ -16,6 +17,7 @@ export const loginUser = async (email, password) => {
       },
       body: JSON.stringify({ email, password }),
     });
+    throwIfRateLimited(response);
 
     const data = await response.json();
 
@@ -56,6 +58,7 @@ export const registerUser = async (name, email, password) => {
       },
       body: JSON.stringify({ fullName: name, email, password }),
     });
+    throwIfRateLimited(response);
 
     const data = await response.json();
 
@@ -106,6 +109,7 @@ export const verifyActivationCode = async (email, code) => {
       },
       body: JSON.stringify({ email, activationCode: code }),
     });
+    throwIfRateLimited(response);
 
     const data = await response.json();
 
@@ -138,6 +142,7 @@ export const resendActivationCode = async (email) => {
       },
       body: JSON.stringify({ email }),
     });
+    throwIfRateLimited(response);
 
     const data = await response.json();
 
@@ -170,6 +175,7 @@ export const forgotPassword = async (email) => {
       },
       body: JSON.stringify({ email }),
     });
+    throwIfRateLimited(response);
 
     const data = await response.json();
 
@@ -202,6 +208,7 @@ export const resetPassword = async (code, newPassword, email) => {
         confirmPassword: newPassword 
       }),
     });
+    throwIfRateLimited(response);
 
     const data = await response.json();
 
@@ -272,6 +279,7 @@ export const requestReactivation = async (email) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
+  throwIfRateLimited(response);
   const data = await response.json();
   // El backend siempre devuelve 200 para no revelar si el email existe.
   // Solo propagamos error en casos de red o validación (@NotBlank, @Email).
@@ -286,6 +294,7 @@ export const confirmReactivation = async (token) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token }),
   });
+  throwIfRateLimited(response);
   const data = await response.json();
   if (!response.ok) throw new Error(data?.message || 'Error al confirmar la reactivación');
   return { success: true, message: data.message };
