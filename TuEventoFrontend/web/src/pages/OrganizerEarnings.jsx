@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   TrendingUp, Ticket, Calendar, ChevronRight,
   LayoutDashboard, Loader2, AlertTriangle, DollarSign,
-  BarChart2, ShieldCheck,
+  BarChart2, ShieldCheck, Target,
 } from 'lucide-react';
 
 import Footer from '../layouts/Footer';
@@ -18,6 +18,39 @@ const fmtCOP = (n) =>
     currency: 'COP',
     maximumFractionDigits: 0,
   }).format(n ?? 0);
+
+// Porcentaje de lo potencial que ya se cobró (null si no hay potencial)
+const soldPct = (revenue, potential) =>
+  Number(potential) > 0 ? Math.round((Number(revenue) / Number(potential)) * 100) : null;
+
+// ── Tarjeta KPI con fondo de superficie ────────────────────────────────────────
+function KpiCard({ palette, icon: Icon, label, value, sub }) {
+  return (
+    <div
+      className="rounded-2xl p-5"
+      style={{
+        backgroundColor: palette.surface,
+        border: `1px solid ${palette.textPrimary}15`,
+      }}
+    >
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span
+            className="text-[10px] font-bold uppercase tracking-widest"
+            style={{ color: palette.textMuted }}
+          >
+            {label}
+          </span>
+          <Icon className="w-4 h-4" style={{ color: palette.textMuted }} />
+        </div>
+        <p className="text-3xl font-black">{value}</p>
+        <p className="text-xs" style={{ color: palette.textSecondary }}>
+          {sub}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // ── Componente principal ───────────────────────────────────────────────────────
 export default function OrganizerEarnings() {
@@ -72,7 +105,12 @@ export default function OrganizerEarnings() {
 
   const totalEarnings  = earnings?.totalEarnings  ?? 0;
   const totalTickets   = earnings?.totalTicketsSold ?? 0;
+  const totalPotential = earnings?.totalPotentialEarnings ?? 0;
+  const totalCourtesy  = earnings?.totalCourtesySeats ?? 0;
   const byEvent        = earnings?.earningsByEvent  ?? [];
+  // La lista incluye eventos con sillas aún sin ventas; el KPI cuenta solo los que vendieron
+  const eventsWithSales = byEvent.filter((e) => Number(e.totalRevenue) > 0).length;
+  const totalSoldPct    = soldPct(totalEarnings, totalPotential);
 
   // ── Estado vacío ───────────────────────────────────────────────────────────
   if (byEvent.length === 0) {
@@ -136,7 +174,7 @@ export default function OrganizerEarnings() {
         </section>
 
         {/* ── KPI cards ─────────────────────────────────────────────────────── */}
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
           {/* Total recaudado */}
           <div
@@ -165,55 +203,29 @@ export default function OrganizerEarnings() {
             </div>
           </div>
 
-          {/* Tickets vendidos */}
-          <div
-            className="rounded-2xl p-5"
-            style={{
-              backgroundColor: palette.surface,
-              border: `1px solid ${palette.textPrimary}15`,
-            }}
-          >
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span
-                  className="text-[10px] font-bold uppercase tracking-widest"
-                  style={{ color: palette.textMuted }}
-                >
-                  {t('organizerEarnings.kpi.ticketsSold.label')}
-                </span>
-                <Ticket className="w-4 h-4" style={{ color: palette.textMuted }} />
-              </div>
-              <p className="text-3xl font-black">{totalTickets.toLocaleString('es-CO')}</p>
-              <p className="text-xs" style={{ color: palette.textSecondary }}>
-                {t('organizerEarnings.kpi.ticketsSold.sub')}
-              </p>
-            </div>
-          </div>
-
-          {/* Eventos con ventas */}
-          <div
-            className="rounded-2xl p-5"
-            style={{
-              backgroundColor: palette.surface,
-              border: `1px solid ${palette.textPrimary}15`,
-            }}
-          >
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span
-                  className="text-[10px] font-bold uppercase tracking-widest"
-                  style={{ color: palette.textMuted }}
-                >
-                  {t('organizerEarnings.kpi.eventsWithSales.label')}
-                </span>
-                <Calendar className="w-4 h-4" style={{ color: palette.textMuted }} />
-              </div>
-              <p className="text-3xl font-black">{byEvent.length}</p>
-              <p className="text-xs" style={{ color: palette.textSecondary }}>
-                {t('organizerEarnings.kpi.eventsWithSales.sub')}
-              </p>
-            </div>
-          </div>
+          <KpiCard
+            palette={palette}
+            icon={Target}
+            label={t('organizerEarnings.kpi.potential.label')}
+            value={fmtCOP(totalPotential)}
+            sub={totalSoldPct == null
+              ? t('organizerEarnings.kpi.potential.sub')
+              : t('organizerEarnings.table.soldOfPotential', { pct: totalSoldPct })}
+          />
+          <KpiCard
+            palette={palette}
+            icon={Ticket}
+            label={t('organizerEarnings.kpi.ticketsSold.label')}
+            value={totalTickets.toLocaleString('es-CO')}
+            sub={t('organizerEarnings.kpi.ticketsSold.sub')}
+          />
+          <KpiCard
+            palette={palette}
+            icon={Calendar}
+            label={t('organizerEarnings.kpi.eventsWithSales.label')}
+            value={eventsWithSales}
+            sub={t('organizerEarnings.kpi.eventsWithSales.sub')}
+          />
         </div>
 
         {/* ── Tabla de ganancias por evento ─────────────────────────────────── */}
@@ -252,6 +264,8 @@ export default function OrganizerEarnings() {
                     { key: 'event',   label: t('organizerEarnings.table.columns.event'),   align: 'left'  },
                     { key: 'tickets', label: t('organizerEarnings.table.columns.tickets'), align: 'right' },
                     { key: 'revenue', label: t('organizerEarnings.table.columns.revenue'), align: 'right' },
+                    { key: 'potential', label: t('organizerEarnings.table.columns.potential'), align: 'right' },
+                    { key: 'courtesy',  label: t('organizerEarnings.table.columns.courtesy'),  align: 'right' },
                   ].map(({ key, label, align }) => (
                     <th
                       key={key}
@@ -335,6 +349,21 @@ export default function OrganizerEarnings() {
                       >
                         {fmtCOP(ev.totalRevenue)}
                       </td>
+
+                      {/* Potencial y % ya cobrado */}
+                      <td className="px-6 py-4 text-right text-sm">
+                        <span className="font-semibold">{fmtCOP(ev.potentialRevenue)}</span>
+                        {soldPct(ev.totalRevenue, ev.potentialRevenue) != null && (
+                          <span className="block text-[11px]" style={{ color: palette.textMuted }}>
+                            {t('organizerEarnings.table.soldOfPotential', { pct: soldPct(ev.totalRevenue, ev.potentialRevenue) })}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Cortesías */}
+                      <td className="px-6 py-4 text-right text-sm" style={{ color: palette.textSecondary }}>
+                        {Number(ev.courtesySeats ?? 0).toLocaleString('es-CO')}
+                      </td>
                     </tr>
                   );
                 })}
@@ -366,6 +395,12 @@ export default function OrganizerEarnings() {
                     style={{ color: palette.success }}
                   >
                     {fmtCOP(totalEarnings)}
+                  </td>
+                  <td className="px-6 py-4 text-right text-sm font-black">
+                    {fmtCOP(totalPotential)}
+                  </td>
+                  <td className="px-6 py-4 text-right text-sm font-bold" style={{ color: palette.textSecondary }}>
+                    {Number(totalCourtesy).toLocaleString('es-CO')}
                   </td>
                 </tr>
               </tfoot>

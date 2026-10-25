@@ -9,6 +9,7 @@ import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.seat.domain.model.Seat;
 import com.capysoft.tuevento.modules.seat.domain.model.SeatBlock;
 import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
+import com.capysoft.tuevento.modules.seat.domain.model.SeatType;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatBlockRepository;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
 import com.capysoft.tuevento.modules.section.domain.model.EventSection;
@@ -23,6 +24,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,8 +66,12 @@ class SaveEventLayoutServiceTest {
         when(eventLayoutRepository.findByEventId(EVENT_ID)).thenReturn(Optional.empty());
         when(eventLayoutRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(eventSectionRepository.findAllByEventId((int) EVENT_ID))
-                .thenReturn(List.of(EventSection.builder().eventSectionId(SECTION_ID).eventId((int) EVENT_ID).build()));
+                .thenReturn(List.of(EventSection.builder().eventSectionId(SECTION_ID).eventId((int) EVENT_ID)
+                        .sectionTypeId(3).capacity(1).availableSeats(1).price(new BigDecimal("50000")).isActive(true)
+                        .build()));
     }
+
+    private static final EnumSet<SeatStatus> TAKEN = EnumSet.of(SeatStatus.RESERVED, SeatStatus.SOLD);
 
     /** Layout con una sección lógica partida en sub-elementos (targetSeats, seatsPerRow). */
     private static String layout(int[]... subElements) {
@@ -72,10 +79,16 @@ class SaveEventLayoutServiceTest {
     }
 
     private static String layoutForSection(int sectionId, int[]... subElements) {
+        return layoutWithCourtesy(sectionId, 0, subElements);
+    }
+
+    /** Igual que layoutForSection, con las cortesías de la sección repetidas en cada parte (como el editor). */
+    private static String layoutWithCourtesy(int sectionId, int courtesySeats, int[]... subElements) {
         StringBuilder json = new StringBuilder("{\"elements\":[");
         for (int i = 0; i < subElements.length; i++) {
             if (i > 0) json.append(',');
             json.append("{\"type\":\"section\",\"backendSectionId\":").append(sectionId)
+                    .append(",\"courtesySeats\":").append(courtesySeats)
                     .append(",\"seatLayout\":{\"targetSeats\":").append(subElements[i][0])
                     .append(",\"rows\":1,\"seatsPerRow\":").append(subElements[i][1]).append("}}");
         }
@@ -100,7 +113,7 @@ class SaveEventLayoutServiceTest {
 
         save(layout(new int[]{3, 2}, new int[]{2, 2}));
 
-        verify(seatRepository).existsByEventSectionIdAndStatusNot(SECTION_ID, SeatStatus.AVAILABLE);
+        verify(seatRepository).existsByEventSectionIdAndStatusIn(SECTION_ID, TAKEN);
         verify(seatRepository).deleteAllByEventSectionId(SECTION_ID);
         verify(seatBlockRepository).deleteAllByEventSectionId(SECTION_ID);
         verify(seatRepository, never()).findAllByEventSectionId(anyInt());
@@ -134,7 +147,7 @@ class SaveEventLayoutServiceTest {
     @Test
     @DisplayName("si alguna silla no está disponible, no borra ni inserta nada")
     void rejectsRegenerationWhenSeatsAreTaken() {
-        when(seatRepository.existsByEventSectionIdAndStatusNot(SECTION_ID, SeatStatus.AVAILABLE)).thenReturn(true);
+        when(seatRepository.existsByEventSectionIdAndStatusIn(SECTION_ID, TAKEN)).thenReturn(true);
 
         assertThatThrownBy(() -> save(layout(new int[]{10, 5})))
                 .isInstanceOf(BusinessException.class)
@@ -143,6 +156,53 @@ class SaveEventLayoutServiceTest {
         verify(seatRepository, never()).deleteAllByEventSectionId(anyInt());
         verify(seatBlockRepository, never()).deleteAllByEventSectionId(anyInt());
         verify(seatRepository, never()).insertAll(any());
+    }
+
+    @Test
+    @DisplayName("las últimas sillas de la sección quedan como cortesía y la sección vende el resto")
+    void marksTheLastSeatsAsCourtesy() {
+        when(seatBlockRepository.save(any())).thenReturn(SeatBlock.builder().seatBlockId(33).build());
+
+        save(layoutWithCourtesy(SECTION_ID, 2, new int[]{3, 2}, new int[]{2, 2}));
+
+        List<Seat> seats = insertedSeats();
+        assertThat(seats).extracting(Seat::getStatus).containsExactly(
+                SeatStatus.AVAILABLE, SeatStatus.AVAILABLE, SeatStatus.AVAILABLE, SeatStatus.COURTESY, SeatStatus.COURTESY);
+        assertThat(seats).extracting(Seat::getType).containsExactly(
+                SeatType.REGULAR, SeatType.REGULAR, SeatType.REGULAR, SeatType.COURTESY, SeatType.COURTESY);
+
+        ArgumentCaptor<EventSection> section = ArgumentCaptor.forClass(EventSection.class);
+        verify(eventSectionRepository).save(section.capture());
+        assertThat(section.getValue().getCapacity()).isEqualTo(5);
+        assertThat(section.getValue().getAvailableSeats()).isEqualTo(3);
+        assertThat(section.getValue().getPrice()).isEqualByComparingTo("50000");
+        assertThat(section.getValue().getSectionTypeId()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("una sección con cortesías se puede regenerar: solo bloquean las reservas y las ventas")
+    void courtesySeatsDoNotBlockRegeneration() {
+        when(seatBlockRepository.save(any())).thenReturn(SeatBlock.builder().seatBlockId(33).build());
+
+        save(layoutWithCourtesy(SECTION_ID, 5, new int[]{5, 5}));
+
+        verify(seatRepository).existsByEventSectionIdAndStatusIn(SECTION_ID, TAKEN);
+        assertThat(insertedSeats()).allSatisfy(seat -> assertThat(seat.getStatus()).isEqualTo(SeatStatus.COURTESY));
+    }
+
+    @Test
+    @DisplayName("rechaza más cortesías que sillas o cortesías negativas sin tocar nada")
+    void rejectsInvalidCourtesySeats() {
+        assertThatThrownBy(() -> save(layoutWithCourtesy(SECTION_ID, 6, new int[]{3, 3}, new int[]{2, 2})))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("cortesía");
+        assertThatThrownBy(() -> save(layoutWithCourtesy(SECTION_ID, -1, new int[]{3, 3})))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("cortesía");
+
+        verify(seatRepository, never()).deleteAllByEventSectionId(anyInt());
+        verify(seatRepository, never()).insertAll(any());
+        verify(eventSectionRepository, never()).save(any());
     }
 
     @Test

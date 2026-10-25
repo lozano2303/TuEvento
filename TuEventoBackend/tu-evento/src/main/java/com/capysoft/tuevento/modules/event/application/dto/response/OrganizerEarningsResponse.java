@@ -20,5 +20,8 @@ public class OrganizerEarningsResponse {
     private BigDecimal totalEarnings;
     private int totalTicketsSold;
     private String currency;
+    /** Σ ganancia potencial de los eventos no cancelados: precio × sillas que no son de cortesía. */
+    private BigDecimal totalPotentialEarnings;
+    private long totalCourtesySeats;
     private List<OrganizerEarningsByEventResponse> earningsByEvent;
 }
