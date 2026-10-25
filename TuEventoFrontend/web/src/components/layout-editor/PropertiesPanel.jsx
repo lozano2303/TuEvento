@@ -1,5 +1,5 @@
 import { computeMaxSeats, fillSeatsOnResize, normalizeSeatLayout, polyBoundingBox, migratePolygonPoints } from './layoutEditorUtils';
-import { SECTION_SHAPES, getShapePoints } from './sectionShapes';
+import { MAX_SECTION_SEATS, SECTION_SHAPES, SEAT_SIZES, getShapePoints, seatSizeOf } from './sectionShapes';
 import { ShapeGrid } from './ShapeIcon';
 
 const SECTION_COLORS = [
@@ -90,10 +90,10 @@ export default function PropertiesPanel({
 
   const updateSeatLayout = (patch) => {
     const updated = { ...sl, ...patch };
-    // Clampear targetSeats al máximo físico disponible — previene renderizado masivo
+    // Clampear targetSeats al máximo físico disponible y al tope por sección del backend
     if (updated.targetSeats !== undefined) {
       const newMax = computeMaxSeats(element, updated.seatRadius, updated.gap);
-      updated.targetSeats = Math.min(newMax || updated.targetSeats, Math.max(1, updated.targetSeats));
+      updated.targetSeats = Math.min(MAX_SECTION_SEATS, newMax || updated.targetSeats, Math.max(1, updated.targetSeats));
     }
     update({ seatLayout: updated });
   };
@@ -330,6 +330,27 @@ export default function PropertiesPanel({
                 <span className="ml-1 text-accent normal-case font-normal">(contorno)</span>
               )}
             </label>
+
+            {/* Tamaño de las sillas: más pequeñas caben más en el mismo espacio */}
+            <div className="grid grid-cols-3 gap-1" role="radiogroup" aria-label="Tamaño de las sillas">
+              {SEAT_SIZES.map((size) => (
+                <button
+                  key={size.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={seatSizeOf(sl).id === size.id}
+                  onClick={() => updateSeatLayout({ seatRadius: size.seatRadius, gap: size.gap, targetSeats })}
+                  className={[
+                    'rounded px-1 py-1 text-[10px] border transition-colors',
+                    seatSizeOf(sl).id === size.id
+                      ? 'bg-accent/20 border-accent/60 text-textPrimary'
+                      : 'border-surfaceAlt text-textMuted hover:text-textSecondary',
+                  ].join(' ')}
+                >
+                  {size.label}
+                </button>
+              ))}
+            </div>
 
             {/* Input targetSeats + botones ±  + botón Máx + badge */}
             <div>

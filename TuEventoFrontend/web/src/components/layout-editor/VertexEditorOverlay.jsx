@@ -5,9 +5,12 @@ import {
   migratePolygonPoints,
 } from './layoutEditorUtils';
 
-const VERTEX_RADIUS   = 7;
-const MIDPOINT_RADIUS = 5;
-const HANDLE_RADIUS   = 5;
+// Tamaños en píxeles de PANTALLA: se dividen por el zoom para que los controles se vean
+// y se puedan agarrar igual a cualquier nivel de zoom
+const VERTEX_RADIUS   = 8;
+const MIDPOINT_RADIUS = 6;
+const HANDLE_RADIUS   = 6;
+const SNAP_THRESHOLD  = 6;
 const GUIDE_MARGIN    = 10;
 
 /**
@@ -131,8 +134,12 @@ export default function VertexEditorOverlay({
   onClearCurve,
   onVertexGuideChange,
   otherElements,
+  zoom = 1,
 }) {
   if (!element) return null;
+
+  // Factor para pasar de píxeles de pantalla a unidades del canvas
+  const ui = 1 / Math.max(zoom, 0.01);
 
   // Usar previewPoints si está disponible, sino los puntos del elemento — migrar siempre
   const rawPoints = previewPoints ?? element.polygonPoints;
@@ -165,7 +172,7 @@ export default function VertexEditorOverlay({
     <>
       {/* ── Líneas "bigotes" de handles Bézier ─────────────────────────── */}
       {absPoints.map((pt, i) => (
-        <BezierWhiskers key={`whiskers-${i}`} pt={pt} />
+        <BezierWhiskers key={`whiskers-${i}`} pt={pt} ui={ui} />
       ))}
 
       {/* ── Puntos medios — insertar vértice o Alt+drag para curvar ──────── */}
@@ -196,6 +203,7 @@ export default function VertexEditorOverlay({
             elementId={element.id}
             onMidpointClick={onMidpointClick}
             onSegmentCurve={onSegmentCurve}
+            ui={ui}
           />
         );
       })}
@@ -213,6 +221,7 @@ export default function VertexEditorOverlay({
           onHandleDragEnd={onHandleDragEnd}
           onHandleRightClick={onHandleRightClick}
           onClearCurve={onClearCurve}
+          ui={ui}
         />
       ))}
 
@@ -231,6 +240,7 @@ export default function VertexEditorOverlay({
           onVertexDragEnd={onVertexDragEnd}
           onVertexRightClick={onVertexRightClick}
           onVertexGuideChange={onVertexGuideChange}
+          ui={ui}
         />
       ))}
     </>
@@ -242,15 +252,15 @@ export default function VertexEditorOverlay({
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Líneas finas "bigotes" que conectan cada vértice con sus handles. */
-const BezierWhiskers = memo(function BezierWhiskers({ pt }) {
+const BezierWhiskers = memo(function BezierWhiskers({ pt, ui }) {
   return (
     <>
       {pt.absHandleIn && (
         <Line
           points={[pt.absX, pt.absY, pt.absHandleIn.x, pt.absHandleIn.y]}
           stroke="rgba(167,139,250,0.45)"
-          strokeWidth={1}
-          dash={[3, 3]}
+          strokeWidth={ui}
+          dash={[3 * ui, 3 * ui]}
           listening={false}
         />
       )}
@@ -258,8 +268,8 @@ const BezierWhiskers = memo(function BezierWhiskers({ pt }) {
         <Line
           points={[pt.absX, pt.absY, pt.absHandleOut.x, pt.absHandleOut.y]}
           stroke="rgba(167,139,250,0.45)"
-          strokeWidth={1}
-          dash={[3, 3]}
+          strokeWidth={ui}
+          dash={[3 * ui, 3 * ui]}
           listening={false}
         />
       )}
@@ -280,7 +290,7 @@ const BezierWhiskers = memo(function BezierWhiskers({ pt }) {
  * en LayoutEditorCanvas los reconozca como clicks internos al modo edición
  * y NO expulse al usuario cuando inicia el drag de un handle.
  */
-const BezierHandles = memo(function BezierHandles({ pt, vertexIdx, elementId, onHandleDrag, onHandleDragEnd, onHandleRightClick, onClearCurve }) {
+const BezierHandles = memo(function BezierHandles({ pt, vertexIdx, elementId, onHandleDrag, onHandleDragEnd, onHandleRightClick, onClearCurve, ui }) {
   // El estado simétrico/independiente vive en el vértice ancla, no en el handle.
   // Ambos handles (handleIn y handleOut) del mismo vértice comparten el mismo estado.
   const isSymmetric = pt.symmetric !== false; // true por defecto si undefined
@@ -293,10 +303,10 @@ const BezierHandles = memo(function BezierHandles({ pt, vertexIdx, elementId, on
       name={`bezier-handle-${elementId}`}
       x={absHandle.x}
       y={absHandle.y}
-      radius={HANDLE_RADIUS}
+      radius={HANDLE_RADIUS * ui}
       fill={fillColor}
       stroke={strokeColor}
-      strokeWidth={1.5}
+      strokeWidth={1.5 * ui}
       draggable
       onDragMove={(e) => {
         const node = e.target;
@@ -332,7 +342,7 @@ const BezierHandles = memo(function BezierHandles({ pt, vertexIdx, elementId, on
  * - Click simple → insertar vértice (onMidpointClick)
  * - Alt + DragStart → curvar el segmento (onSegmentCurve)
  */
-const MidpointHandle = memo(function MidpointHandle({ mx, my, segmentIdx, pt, next, elementId, onMidpointClick, onSegmentCurve }) {
+const MidpointHandle = memo(function MidpointHandle({ mx, my, segmentIdx, pt, next, elementId, onMidpointClick, onSegmentCurve, ui }) {
   // Guardamos si el drag fue iniciado con Alt
   const altDragRef = useRef(false);
   // Posición inicial del midpoint al empezar el drag (para calcular deltas)
@@ -341,11 +351,11 @@ const MidpointHandle = memo(function MidpointHandle({ mx, my, segmentIdx, pt, ne
   return (
     <Circle
       x={mx} y={my}
-      radius={MIDPOINT_RADIUS}
+      radius={MIDPOINT_RADIUS * ui}
       name={`midpoint-handle-${elementId}`}
       fill="rgba(167,139,250,0.45)"
       stroke="rgba(167,139,250,0.85)"
-      strokeWidth={1}
+      strokeWidth={ui}
       draggable
       onDragStart={(e) => {
         altDragRef.current = e.evt.altKey;
@@ -398,18 +408,18 @@ const MidpointHandle = memo(function MidpointHandle({ mx, my, segmentIdx, pt, ne
  * dispare dragmove más rápido. Esto elimina el freeze en polígonos con muchos
  * vértices donde el cálculo O(n) en cada evento de mouse era el cuello de botella.
  */
-const AnchorVertex = memo(function AnchorVertex({ pt, vertexIdx, elementId, absPoints, otherElements, onVertexDrag, onVertexDragEnd, onVertexRightClick, onVertexGuideChange }) {
+const AnchorVertex = memo(function AnchorVertex({ pt, vertexIdx, elementId, absPoints, otherElements, onVertexDrag, onVertexDragEnd, onVertexRightClick, onVertexGuideChange, ui }) {
   // RAF handle para throttling del snap — un único rAF pendiente a la vez.
   const rafRef = useRef(null);
 
   return (
     <Circle
       x={pt.absX} y={pt.absY}
-      radius={VERTEX_RADIUS}
+      radius={VERTEX_RADIUS * ui}
       name={`vertex-handle-${elementId}`}
       fill="#A78BFA"
       stroke="#ffffff"
-      strokeWidth={1.5}
+      strokeWidth={1.5 * ui}
       draggable
       onDragMove={(e) => {
         const node = e.target;
@@ -441,7 +451,7 @@ const AnchorVertex = memo(function AnchorVertex({ pt, vertexIdx, elementId, absP
             { x: currentAbsX, y: currentAbsY },
             ownOthers,
             otherElements ?? [],
-            6,
+            SNAP_THRESHOLD * ui,
           );
 
           if (guides.vertical)   node.x(currentAbsX + guides.vertical.delta);

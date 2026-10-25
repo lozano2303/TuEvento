@@ -21,6 +21,8 @@ public interface SeatJpaRepository extends JpaRepository<SeatEntity, Integer> {
 
     boolean existsByEventSectionIdAndStatusIn(Integer eventSectionId, Collection<SeatStatus> statuses);
 
+    long countByEventSectionId(Integer eventSectionId);
+
     // DELETE explícito: el deleteAllBy derivado de Spring Data carga y borra las filas una a una
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("DELETE FROM SeatEntity s WHERE s.eventSectionId = :eventSectionId")
