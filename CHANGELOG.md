@@ -12,6 +12,13 @@ All notable changes to this project will be documented in this file.
 - Removed the unused `generateSeatsForBlock`, which also saved seats one by one
 - **Security**: the layout comes from the client, so its `backendSectionId`s are now checked against the event's own sections (`LAYOUT_SECTION_NOT_IN_EVENT`); before, a layout could delete and regenerate another event's seats. Each section is capped at 200,000 seats (`LAYOUT_TOO_MANY_SEATS`, also when summing sub-elements). Both checks run before anything is deleted
 
+### Fixed — fix(web-auth): Google Sign-In after logging out without a reload
+
+- **Google button stopped responding** after logging out from the profile view of `/login` (or coming back to `/login` without a reload) until F5. `@react-oauth/google` re-injected `gsi/client` and called `google.accounts.id.initialize()` on every mount, which Google warns causes unexpected behaviour
+- **`services/googleIdentity.js`** loads Google Identity Services once per page load and calls `initialize()` once per client ID; the button is re-rendered on every mount and the credential goes to the button mounted at that moment
+- **Logout** calls `google.accounts.id.disableAutoSelect()` (`performLogout`)
+- **`@react-oauth/google` removed** from the web dependencies
+
 ## [1.0.1] - 2026-10-25
 
 Imágenes Docker `v1.0.1`: se reconstruyen `backend`, `frontend` y `gateway` (el gateway cambia con el sandbox de pagos, #100); solo `nsfw` se reetiqueta desde `v1.0.0`. Incluyen también la cancelación de eventos y reembolsos (PR #105), que no estaba en las imágenes `v1.0.0`.
