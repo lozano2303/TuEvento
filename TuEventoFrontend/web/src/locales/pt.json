@@ -47,6 +47,7 @@
     "selected": "{{count}} de {{total}} selecionados",
     "sections": "Seções",
     "seatMap": "Mapa de Lugares",
+    "loadingSeats": "Carregando assentos…",
     "myCart": "Seu Carrinho",
     "noSeatsSelected": "Você não selecionou nenhum lugar",
     "section": "Seção",
