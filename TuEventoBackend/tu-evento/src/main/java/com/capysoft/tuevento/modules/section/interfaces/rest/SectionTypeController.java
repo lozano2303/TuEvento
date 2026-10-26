@@ -4,6 +4,7 @@ import com.capysoft.tuevento.modules.section.application.dto.request.CreateSecti
 import com.capysoft.tuevento.modules.section.application.dto.request.UpdateSectionTypeRequest;
 import com.capysoft.tuevento.modules.section.application.dto.response.SectionTypeResponse;
 import com.capysoft.tuevento.modules.section.application.port.in.SectionTypeUseCase;
+import com.capysoft.tuevento.modules.section.domain.model.SectionCategory;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,11 +25,12 @@ public class SectionTypeController {
 
     private final SectionTypeUseCase sectionTypeUseCase;
 
-    @Operation(summary = "List all section types — public")
+    @Operation(summary = "List section types, optionally filtered by category — public")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SectionTypeResponse>>> getAll() {
+    public ResponseEntity<ApiResponse<List<SectionTypeResponse>>> getAll(
+            @RequestParam(required = false) SectionCategory category) {
         return ResponseEntity.ok(ApiResponse.ok("Tipos de sección obtenidos correctamente",
-                sectionTypeUseCase.getAllSectionTypes()));
+                sectionTypeUseCase.getAllSectionTypes(category)));
     }
 
     @Operation(summary = "Create a new section type")

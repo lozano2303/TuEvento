@@ -7,7 +7,11 @@ import PropertiesPanel from '../components/layout-editor/PropertiesPanel';
 import EditorToolbar from '../components/layout-editor/EditorToolbar';
 import SectionsList from '../components/layout-editor/SectionsList';
 import HelpModal from '../components/layout-editor/HelpModal';
+import SectionWizardModal from '../components/layout-editor/SectionWizardModal';
+import CourtesySeatsModal from '../components/layout-editor/CourtesySeatsModal';
+import LayoutAccessModal from '../components/layout-editor/LayoutAccessModal';
 import BackButton from '../components/common/BackButton';
+import SpanishOnlyRoute from '../components/common/SpanishOnlyRoute';
 import {
   generateId,
   generateSectionId,
@@ -15,7 +19,15 @@ import {
   CANVAS_MARGIN,
   serializeLayout,
   groupBy,
+  normalizeSeatLayout,
 } from '../components/layout-editor/layoutEditorUtils';
+import { sizeSectionForSeats } from '../components/layout-editor/sectionShapes';
+import {
+  applyCourtesySeats,
+  countCourtesySeats,
+  estimateEarnings,
+  getSectionGroups,
+} from '../components/layout-editor/layoutEarnings';
 import * as EventService        from '../services/EventService';
 import * as SectionTypeService  from '../services/SectionTypeService';
 import * as EventSectionService from '../services/EventSectionService';
@@ -26,6 +38,7 @@ const CANVAS_MIN_W          = 1200;
 const CANVAS_MIN_H          = 800;
 const CANVAS_DEFAULT_MANUAL = { width: CANVAS_MIN_W, height: CANVAS_MIN_H };
 const MAX_HISTORY = 15;
+const LAYOUT_ROLES = ['ORGANIZER', 'ADMIN'];
 
 function normalizePositions(els) {
   if (els.length === 0) return els;
@@ -41,6 +54,8 @@ function normalizePositions(els) {
 export default function EventLayoutEditor() {
   const { eventId } = useParams();
   const navigate    = useNavigate();
+  const role        = localStorage.getItem('role');
+  const isAdmin     = role === 'ADMIN';
 
   // ── Estado backend ────────────────────────────────────────────────────────
   const [sectionTypes,  setSectionTypes]  = useState(null);
@@ -50,9 +65,12 @@ export default function EventLayoutEditor() {
   const [isSaving,      setIsSaving]      = useState(false);
   const [saveMsg,       setSaveMsg]       = useState(null);
   const [loadError,     setLoadError]     = useState(null);
+  // Acceso al editor, en este orden: rol, propiedad del evento y (al renderizar) idioma.
+  // 'checking' | 'granted' | 'notOrganizer' | 'notOwner'
+  const [access,        setAccess]        = useState(() => (LAYOUT_ROLES.includes(role) ? 'checking' : 'notOrganizer'));
 
-  // El layout solo es editable cuando el evento está en DRAFT
-  const isReadOnly = eventStatus !== null && eventStatus !== 'DRAFT';
+  // El layout solo es editable cuando el evento está en DRAFT; ADMIN solo puede verlo
+  const isReadOnly = isAdmin || (eventStatus !== null && eventStatus !== 'DRAFT');
 
   // ── Estado del editor ─────────────────────────────────────────────────────
   const [elements,          setElements]          = useState([]);
@@ -69,6 +87,9 @@ export default function EventLayoutEditor() {
   const [helpOpen,  setHelpOpen]  = useState(false);
   const [isLeftPanelOpen,  setIsLeftPanelOpen]  = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+  // Sección elegida en la paleta, a la espera de que el asistente la configure
+  const [pendingSection, setPendingSection] = useState(null);
+  const [courtesyOpen,   setCourtesyOpen]   = useState(false);
 
   // ── canvasSize derivado ───────────────────────────────────────────────────
   const canvasSize = useMemo(() => {
@@ -95,24 +116,23 @@ export default function EventLayoutEditor() {
 
   // ── Carga inicial ─────────────────────────────────────────────────────────
   useEffect(() => {
+    if (access === 'notOrganizer') return;
     if (!eventId) { setLoadError('No se especificó un evento'); return; }
     void (async () => {
       try {
         const eventRes = await EventService.getEventById(eventId);
         const eventData = eventRes.data;
+
+        // Verificar propiedad del evento antes de mostrar nada (solo UX, el backend valida de verdad)
+        const currentUserId = localStorage.getItem('userID');
+        if (!isAdmin && String(eventData?.userId) !== String(currentUserId)) {
+          setAccess('notOwner');
+          return;
+        }
+        setAccess('granted');
         setMaxSeats(eventData?.availableSeats ?? null);
         setEventStatus(eventData?.status ?? null);
         setEventOwnerId(eventData?.userId ?? null);
-
-        // Verificar propiedad del evento (solo UX, backend valida de verdad)
-        const currentUserId = localStorage.getItem('userID');
-        const currentRole = localStorage.getItem('role');
-        if (eventData?.userId && currentUserId && currentRole !== 'ADMIN') {
-          if (String(eventData.userId) !== String(currentUserId)) {
-            setLoadError('No tienes permiso para editar el layout de este evento');
-            return;
-          }
-        }
 
         const stRes = await SectionTypeService.getAllSectionTypes();
         setSectionTypes(stRes.data ?? []);
@@ -143,22 +163,6 @@ export default function EventLayoutEditor() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
-  // ── Salida de error con botón volver ──────────────────────────────────────
-  if (loadError) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4 bg-background text-textPrimary">
-        <p className="text-textMuted text-sm">No se pudo cargar este evento.</p>
-        <p className="text-[11px] text-red-400 font-mono max-w-sm text-center">{loadError}</p>
-        <button
-          onClick={() => navigate('/events/manage')}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surfaceAlt text-textSecondary hover:text-textPrimary transition-colors text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" /> Volver a mis eventos
-        </button>
-      </div>
-    );
-  }
-
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleSelect = useCallback((ids) => setSelectedIds(Array.isArray(ids) ? ids : [ids]), []);
 
@@ -172,6 +176,7 @@ export default function EventLayoutEditor() {
           const patch = {};
           if (el.color !== updated.color) patch.color = updated.color;
           if (el.price !== updated.price) patch.price = updated.price;
+          if (el.courtesySeats !== updated.courtesySeats) patch.courtesySeats = updated.courtesySeats;
           if (Object.keys(patch).length > 0) return { ...el, ...patch };
         }
         return el;
@@ -187,12 +192,34 @@ export default function EventLayoutEditor() {
   }, []);
 
   const handleAddElement = useCallback((newElement) => {
-    const el = newElement.type === 'section' && !newElement.eventSectionId
-      ? { ...newElement, eventSectionId: generateSectionId() }
-      : newElement;
-    setElements((prev) => normalizePositions([...prev, el]));
+    if (isReadOnly) return;
+    // Una sección nueva pasa primero por el asistente (sillas, forma y precio)
+    if (newElement.type === 'section' && !newElement.eventSectionId) {
+      setPendingSection(newElement);
+      return;
+    }
+    setElements((prev) => normalizePositions([...prev, newElement]));
+    setSelectedIds([newElement.id]);
+  }, [isReadOnly]);
+
+  const handleWizardConfirm = useCallback(({ targetSeats, shapeId, price }) => {
+    if (!pendingSection) return;
+    const seatLayout = { ...normalizeSeatLayout(pendingSection.seatLayout), targetSeats };
+    const el = {
+      ...pendingSection,
+      ...sizeSectionForSeats(shapeId, targetSeats, seatLayout),
+      seatLayout,
+      price,
+      eventSectionId: generateSectionId(),
+    };
+    setElements((prev) => {
+      setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), prev]);
+      setFuture([]);
+      return normalizePositions([...prev, el]);
+    });
     setSelectedIds([el.id]);
-  }, []);
+    setPendingSection(null);
+  }, [pendingSection]);
 
   const handleDelete = useCallback(() => {
     setEditingPolygonId(null);
@@ -299,11 +326,28 @@ export default function EventLayoutEditor() {
     elements.filter((el) => el.type === 'section').reduce((s, el) => s + (el.seatLayout?.targetSeats ?? 0), 0),
     [elements]);
   const isOverCapacity = maxSeats != null && totalSeats > maxSeats;
+  const remainingSeats = maxSeats == null ? null : Math.max(0, maxSeats - totalSeats);
+
+  // Secciones lógicas con sus cortesías; la ganancia estimada usa la misma fórmula que el backend
+  const sectionGroups     = useMemo(() => getSectionGroups(elements), [elements]);
+  const estimatedEarnings = useMemo(() => estimateEarnings(sectionGroups), [sectionGroups]);
+  const courtesyCount     = useMemo(() => countCourtesySeats(sectionGroups), [sectionGroups]);
+
+  const handleApplyCourtesy = useCallback((courtesyBySection) => {
+    setElements((prev) => {
+      setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), prev]);
+      setFuture([]);
+      return applyCourtesySeats(prev, courtesyBySection);
+    });
+    setCourtesyOpen(false);
+  }, []);
 
   // ── handleSave ────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     if (isReadOnly) {
-      setSaveMsg('El layout solo se puede editar cuando el evento está en DRAFT');
+      setSaveMsg(isAdmin
+        ? 'Como administrador solo puedes ver el layout'
+        : 'El layout solo se puede editar cuando el evento está en DRAFT');
       setTimeout(() => setSaveMsg(null), 4000);
       return;
     }
@@ -323,7 +367,9 @@ export default function EventLayoutEditor() {
           capacity: g.reduce((s, el) => s + (el.seatLayout?.targetSeats ?? 0), 0),
         })), null, 2));
 
-      const updatedElements = [...elements];
+      // Cortesías recortadas a las sillas actuales de cada sección (pudieron reducirse)
+      const updatedElements = applyCourtesySeats(elements, Object.fromEntries(
+        getSectionGroups(elements).map((g) => [g.eventSectionId, g.courtesySeats])));
       for (const [, group] of Object.entries(groups)) {
         const capacity = group.reduce((s, el) => s + (el.seatLayout?.targetSeats ?? 0), 0);
         const price    = group[0].price ?? 0;
@@ -353,7 +399,7 @@ export default function EventLayoutEditor() {
 
       setElements(updatedElements);
       await LayoutService.saveLayout(eventId, serializeLayout(updatedElements, canvasSize?.width, canvasSize?.height));
-      setSaveMsg('✓ Guardado y sincronizado correctamente');
+      setSaveMsg('Guardado y sincronizado correctamente');
     } catch (err) {
       console.error('[LayoutEditor] Error al guardar:', err);
       setSaveMsg(`Error al guardar: ${err.message}`);
@@ -361,7 +407,7 @@ export default function EventLayoutEditor() {
       setIsSaving(false);
       setTimeout(() => setSaveMsg(null), 4000);
     }
-  }, [eventId, isReadOnly, isOverCapacity, elements, canvasSize]);
+  }, [eventId, isReadOnly, isAdmin, isOverCapacity, elements, canvasSize]);
 
   const selectedElement   = selectedIds.length === 1 ? elements.find((el) => el.id === selectedIds[0]) ?? null : null;
 
@@ -388,7 +434,37 @@ export default function EventLayoutEditor() {
   }, [selectedElement, elements]);
   const isEditingVertices = editingPolygonId !== null;
 
+  // ── Guards y estados de carga (después de todos los hooks) ────────────────
+  if (access === 'notOrganizer') {
+    return <LayoutAccessModal reason="notOrganizer" onBack={() => navigate('/events', { replace: true })} />;
+  }
+  if (access === 'notOwner') {
+    return <LayoutAccessModal reason="notOwner" onBack={() => navigate('/events/manage', { replace: true })} />;
+  }
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-4 bg-background text-textPrimary">
+        <p className="text-textMuted text-sm">No se pudo cargar este evento.</p>
+        <p className="text-[11px] text-red-400 font-mono max-w-sm text-center">{loadError}</p>
+        <button
+          onClick={() => navigate('/events/manage')}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surfaceAlt text-textSecondary hover:text-textPrimary transition-colors text-sm"
+        >
+          <ArrowLeft className="w-4 h-4" /> Volver a mis eventos
+        </button>
+      </div>
+    );
+  }
+  if (access === 'checking') {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background text-textMuted text-sm">
+        Cargando el editor…
+      </div>
+    );
+  }
+
   return (
+    <SpanishOnlyRoute redirectTo="/events/manage">
     <div className="fixed inset-0 flex flex-col bg-background text-textPrimary overflow-hidden" style={{ fontFamily: 'Inter, sans-serif' }}>
 
       {/* Topbar */}
@@ -401,12 +477,12 @@ export default function EventLayoutEditor() {
         </span>
         {isEditingVertices && (
           <span className="text-[10px] font-bold text-accent border border-accent/40 px-2 py-0.5 rounded-full">
-            ✏ Editando vértices — Esc para salir
+            Editando vértices — Esc para salir
           </span>
         )}
         {isReadOnly && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 border border-yellow-400/30">
-            Solo lectura — el evento está {eventStatus}
+            {isAdmin ? 'Solo lectura — vista de administrador' : `Solo lectura — el evento está ${eventStatus}`}
           </span>
         )}
         {selectedElement?.type === 'section' && !isReadOnly && (
@@ -431,6 +507,8 @@ export default function EventLayoutEditor() {
         onUndo={handleUndo} onRedo={handleRedo}
         onOpenHelp={() => setHelpOpen(true)}
         onSave={handleSave} isSaving={isSaving} maxSeats={maxSeats} isReadOnly={isReadOnly}
+        courtesyCount={courtesyCount} estimatedEarnings={estimatedEarnings}
+        onOpenCourtesy={() => setCourtesyOpen(true)}
         onClear={() => {
           setElements([]); setSelectedIds([]); setManualCanvasSize(CANVAS_DEFAULT_MANUAL);
           setUserResizedCanvas(false); setEditingPolygonId(null);
@@ -442,7 +520,7 @@ export default function EventLayoutEditor() {
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-surface border border-accent/40
                         text-textPrimary text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-primary/20
                         flex items-center gap-2 max-w-sm text-center pointer-events-none">
-          <span>💾</span><span>{saveMsg}</span>
+          <span>{saveMsg}</span>
         </div>
       )}
 
@@ -450,7 +528,8 @@ export default function EventLayoutEditor() {
         {/* Panel izquierdo */}
         <div className="relative flex-shrink-0">
           <div className={`overflow-hidden transition-[max-width] duration-200 ease-in-out h-full ${isLeftPanelOpen ? 'max-w-[220px]' : 'max-w-0'}`}>
-            <ElementPalette onAddElement={handleAddElement} occupiedSectionCounts={occupiedSectionCounts} sectionTypes={sectionTypes} />
+            <ElementPalette onAddElement={handleAddElement} occupiedSectionCounts={occupiedSectionCounts}
+              sectionTypes={sectionTypes} disabled={isReadOnly} />
           </div>
           <button onClick={() => setIsLeftPanelOpen((v) => !v)}
             className="absolute top-1/2 -right-3 -translate-y-1/2 z-30 w-6 h-6 rounded-full bg-surface border border-surfaceAlt shadow-md flex items-center justify-center text-textMuted hover:text-textPrimary hover:bg-surfaceAlt transition-colors">
@@ -489,6 +568,19 @@ export default function EventLayoutEditor() {
       </div>
 
       <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
+      <SectionWizardModal
+        template={pendingSection}
+        remainingSeats={remainingSeats}
+        onCancel={() => setPendingSection(null)}
+        onConfirm={handleWizardConfirm}
+      />
+      <CourtesySeatsModal
+        isOpen={courtesyOpen}
+        groups={sectionGroups}
+        onClose={() => setCourtesyOpen(false)}
+        onApply={handleApplyCourtesy}
+      />
     </div>
+    </SpanishOnlyRoute>
   );
 }

@@ -41,12 +41,15 @@ public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, Long>
      * Hace JOIN: payment → order → event filtrando por event.userId = :organizerId
      * y payment.status = APPROVED.
      * Retorna una proyección con (eventId, eventName, ticketsSold, totalRevenue, currency).
+     * ticketsSold cuenta entradas (una por silla) pagadas o ya usadas, no pagos: una compra
+     * de 4 sillas son 4 entradas, y las reembolsadas no cuentan.
      */
     @Query("""
             SELECT new com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsByEventResponse(
                 e.eventId,
                 e.eventName,
-                CAST(COUNT(p.paymentId) AS int),
+                CAST((SELECT COUNT(t.ticketId) FROM TicketEntity t
+                      WHERE t.eventId = e.eventId AND t.status IN ('PAID', 'USED')) AS int),
                 COALESCE(SUM(p.amount + p.walletAmountApplied), 0),
                 MAX(o.currency)
             )

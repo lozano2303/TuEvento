@@ -1,0 +1,31 @@
+databaseChangeLog:
+  # Categoría de cada tipo de sección, para agrupar y filtrar el catálogo en el editor de layout
+  # (GENERAL, PREFERENCIAL, VIP, PALCO, ESPECIAL).
+  - changeSet:
+      id: 103-add-section-type-category
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: section_type
+                columnName: category
+      changes:
+        - addColumn:
+            tableName: section_type
+            columns:
+              - column:
+                  name: category
+                  type: VARCHAR(30)
+                  defaultValue: GENERAL
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 103-categorize-existing-section-types
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              UPDATE section_type SET category = 'VIP' WHERE name = 'VIP';
+              UPDATE section_type SET category = 'PALCO' WHERE name = 'Palco';

@@ -18,35 +18,38 @@ function TabNavegacion() {
 
 function TabSecciones() {
   const items = [
-    ['Crear', 'Arrastra desde la paleta izquierda al canvas. También puedes hacer clic en el ítem.'],
+    ['Crear', 'Arrastra un tipo desde la paleta izquierda al canvas, o haz clic en él. Se abre un asistente que pregunta cuántas sillas tendrá, la forma base y el precio por silla.'],
+    ['Buscar y filtrar', 'La paleta tiene un buscador y filtros por categoría (General, Preferencial, VIP, Palcos, Especiales).'],
+    ['Precio', 'El precio es por silla y es el mismo para todas las sub-secciones de una sección.'],
     ['Tipos únicos', 'Cada tipo de sección (VIP, General…) es único. Una vez creado queda bloqueado en la paleta con badge "En uso".'],
     ['Copiar / Pegar', 'Ctrl+C sobre una sección la copia. Ctrl+V crea una subsección con el mismo color e id lógico, posicionada 20 px más abajo.'],
     ['Cambiar color', 'Cambiar el color en el panel de propiedades lo propaga a todas las subsecciones del mismo tipo.'],
     ['Capacidad', 'Escribe cuántas sillas quieres. El editor calcula cuántas caben físicamente y muestra el badge verde/amarillo/rojo.'],
     ['Botón "Máx"', 'Establece automáticamente el máximo de sillas posibles según el tamaño y forma actual de la sección.'],
+    ['Agrandar', 'Al agrandar una sección se llena con el máximo de sillas que caben; después puedes reducir la cantidad. El tamaño de cada silla no cambia.'],
   ];
   return <HelpList items={items} />;
 }
 
 function TabFormas() {
   const items = [
-    ['Forma por defecto', 'Las secciones se crean como rectángulos.'],
-    ['Convertir a forma libre', 'El botón "✦ Convertir a forma libre" en propiedades activa el modo polígono editable.'],
-    ['Formas sugeridas', 'Aparecen en modo edición de vértices. Un clic aplica la forma al tamaño actual de la sección (rectángulo, círculo, semicírculo, trapecio, triángulo, hexágono, L).'],
+    ['Forma base', 'Se elige al crear la sección, entre más de 20 formas: rectángulos, círculo, óvalo, semicírculo, arco de tribuna, anillo, herradura, trapecios, polígonos, L, U, T y cruz.'],
+    ['Convertir a forma libre', 'El botón "Convertir a forma libre" en propiedades activa el modo polígono editable.'],
+    ['Formas sugeridas', 'Aparecen en modo edición de vértices. Un clic aplica cualquier forma del catálogo al tamaño actual de la sección.'],
     ['Escalado automático', 'La forma siempre se escala al bounding box actual — cambia el tamaño de la sección y la forma se adapta.'],
-    ['Volver a rectángulo', 'El botón "↩ Volver a rectángulo" revierte la sección a rect con confirmación.'],
+    ['Volver a rectángulo', 'El botón "Volver a rectángulo" revierte la sección a rect con confirmación.'],
   ];
   return <HelpList items={items} />;
 }
 
 function TabVertices() {
   const items = [
-    ['Entrar al modo edición', 'Doble clic en una sección poligonal, o el botón "✏ Editar forma".'],
+    ['Entrar al modo edición', 'Doble clic en una sección poligonal, o el botón "Editar forma".'],
     ['Mover vértice', 'Arrastrar el punto sólido.'],
     ['Insertar vértice', 'Clic en el punto medio semitransparente de un segmento.'],
     ['Eliminar vértice', 'Clic derecho sobre un vértice (mínimo 3 vértices).'],
     ['Descartar cambios', 'Escape descarta toda la sesión de edición y revierte.'],
-    ['Confirmar cambios', 'Enter o botón "✓ Guardar forma".'],
+    ['Confirmar cambios', 'Enter o botón "Guardar forma".'],
     ['Convertir a curva Bézier', 'Alt + arrastrar el punto medio de un segmento.'],
     ['Ajustar curva', 'Arrastrar el handle (círculo hueco) que aparece en los extremos del segmento curvo.'],
     ['Simétrico / Independiente', 'Clic derecho en un handle alterna entre modos: simétrico da curva suave, independiente permite esquina con curva.'],

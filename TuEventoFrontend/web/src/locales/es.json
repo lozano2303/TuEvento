@@ -481,6 +481,7 @@
     "selected": "{{count}} de {{total}} seleccionadas",
     "sections": "Secciones",
     "seatMap": "Mapa de Sillas",
+    "loadingSeats": "Cargando sillas…",
     "myCart": "Tu Carrito",
     "noSeatsSelected": "No has seleccionado ninguna silla",
     "section": "Sección",
@@ -1465,7 +1466,11 @@
       },
       "ticketsSold": {
         "label": "Tickets vendidos",
-        "sub": "Transacciones completadas"
+        "sub": "Entradas pagadas o ya usadas"
+      },
+      "potential": {
+        "label": "Ganancia potencial",
+        "sub": "Si se venden todas las sillas que no son de cortesía"
       },
       "eventsWithSales": {
         "label": "Eventos con ventas",
@@ -1478,14 +1483,17 @@
       "columns": {
         "event": "Evento",
         "tickets": "Tickets vendidos",
-        "revenue": "Recaudado"
+        "revenue": "Recaudado",
+        "potential": "Potencial",
+        "courtesy": "Cortesías"
       },
-      "total": "Total"
+      "total": "Total",
+      "soldOfPotential": "{{pct}} % de lo potencial"
     },
     "info": {
       "howCalculated": {
         "title": "¿Cómo se calcula?",
-        "text": "Se suman todos los pagos aprobados en tus eventos. El monto mostrado refleja el total cobrado a los asistentes."
+        "text": "Lo recaudado suma los pagos aprobados en tus eventos. Lo potencial es el precio de cada silla que no es de cortesía, en los eventos no cancelados: las cortesías no se venden, así que solo reducen lo potencial."
       },
       "realTime": {
         "title": "Información en tiempo real",
@@ -1497,7 +1505,22 @@
     "title": "Cambia el idioma a español",
     "subtitle": "Esta sección sólo está disponible en español",
     "description": "La creación y edición de eventos sólo está disponible con el idioma español seleccionado. Cambia tu idioma a español en tu perfil para continuar.",
-    "action": "Volver"
+    "action": "Volver",
+    "switchAction": "Cambiar a español"
+  },
+  "layoutGuard": {
+    "notOrganizer": {
+      "title": "No eres organizador",
+      "subtitle": "El editor de layout es solo para organizadores",
+      "description": "Solo los organizadores pueden diseñar el mapa de un evento. Si quieres crear eventos, solicita el rol de organizador desde tu perfil.",
+      "action": "Ir a eventos"
+    },
+    "notOwner": {
+      "title": "No eres el organizador de este evento",
+      "subtitle": "Solo quien creó el evento puede editar su layout",
+      "description": "Este evento pertenece a otro organizador, así que no puedes ver ni modificar su mapa de secciones.",
+      "action": "Volver a mis eventos"
+    }
   },
   "paymentConfirmation": {
     "loading": "Cargando tu confirmación…",

@@ -72,6 +72,7 @@ export const serializeLayout = (elements, canvasWidth = 1200, canvasHeight = 800
       eventSectionId:   el.eventSectionId   ?? null, // antes hardcodeado a null — BUG CORREGIDO
       backendSectionId: el.backendSectionId ?? null, // necesario para update en handleSave (evita duplicados)
       price:            el.price            ?? null,
+      courtesySeats:    el.courtesySeats    ?? 0,    // sillas de cortesía de la sección lógica (COURTESY al guardar)
       seatLayout:       el.seatLayout,
       shapeMode:        el.shapeMode ?? 'rect',
       polygonPoints:    el.polygonPoints ?? null,
@@ -170,6 +171,21 @@ export const computeMaxSeats = (element, seatRadius, gap) => {
   const cols = Math.floor((element.width  - PADDING * 2 + g) / cellSize);
   const rows = Math.floor((element.height - PADDING * 2 - LABEL_H + g) / cellSize);
   return Math.max(0, cols * rows);
+};
+
+/**
+ * Ajusta las sillas de una sección tras cambiar su tamaño o su forma.
+ * Si la sección creció se llena con el máximo de sillas que caben (luego se puede
+ * reducir desde Propiedades); si se achicó solo se recortan las que ya no caben.
+ * El tamaño de cada silla no cambia, así que la grilla del selector se conserva.
+ */
+export const fillSeatsOnResize = (prev, next) => {
+  const sl = normalizeSeatLayout(next.seatLayout);
+  if (!sl) return next;
+  const max  = computeMaxSeats(next, sl.seatRadius, sl.gap);
+  const grew = next.width * next.height > prev.width * prev.height;
+  const targetSeats = grew ? max : Math.min(sl.targetSeats, max);
+  return { ...next, seatLayout: { ...sl, targetSeats: Math.max(1, targetSeats) } };
 };
 
 // ── Fase 1.5: distribuir sillas a partir de targetSeats ───────────────────────
@@ -613,137 +629,6 @@ export const polyCentroid = (points) => {
   }
   return { x: sumX / points.length, y: sumY / points.length };
 };
-
-// ── Formas sugeridas (preset polygons) ───────────────────────────────────────
-
-/**
- * Devuelve un array de polygonPoints en formato nuevo [{x,y,handleIn,handleOut,symmetric}]
- * en coordenadas relativas al elemento (minX=0, minY=0), escalados al bounding box dado.
- *
- * @param {'rect'|'circle'|'semicircle'|'trapezoid'|'triangle'|'hexagon'|'lshape'} preset
- * @param {number} width  — ancho actual del bounding box del elemento
- * @param {number} height — alto actual del bounding box del elemento
- * @returns {Array<{x,y,handleIn,handleOut,symmetric}>}
- */
-export function getPresetPolygonPoints(preset, width, height) {
-  const w = width;
-  const h = height;
-
-  // Helper: punto ancla sin curvas
-  const pt = (x, y) => ({ x, y, handleIn: null, handleOut: null, symmetric: true });
-
-  switch (preset) {
-    case 'rect':
-      return [pt(0, 0), pt(w, 0), pt(w, h), pt(0, h)];
-
-    case 'circle': {
-      // 8 puntos cardinales, handles tangentes al elipse inscrito.
-      // Magnitud del handle para aproximar un círculo con cúbicas: k = 0.5523 * radio.
-      const cx = w / 2, cy = h / 2;
-      const rx = w / 2, ry = h / 2;
-      const kx = 0.5523 * rx;   // handle horizontal
-      const ky = 0.5523 * ry;   // handle vertical
-
-      // Los 8 puntos en ángulos 0°,45°,90°,135°,180°,225°,270°,315°
-      // con handles siempre perpendiculares al radio en ese punto.
-      // Para los 4 cardinales los handles son puros; para los diagonales
-      // los handles se derivan geométricamente para mantener continuidad.
-      // Simplificación práctica: usamos solo los 4 cardinales + handles k —
-      // visualmente indistinguible de un elipse real.
-      return [
-        // Derecha (0°)
-        { x: cx + rx, y: cy,      handleIn:  { x: cx + rx,  y: cy - ky }, handleOut: { x: cx + rx,  y: cy + ky }, symmetric: true },
-        // Abajo (90°)
-        { x: cx,      y: cy + ry, handleIn:  { x: cx + kx,  y: cy + ry }, handleOut: { x: cx - kx,  y: cy + ry }, symmetric: true },
-        // Izquierda (180°)
-        { x: cx - rx, y: cy,      handleIn:  { x: cx - rx,  y: cy + ky }, handleOut: { x: cx - rx,  y: cy - ky }, symmetric: true },
-        // Arriba (270°)
-        { x: cx,      y: cy - ry, handleIn:  { x: cx - kx,  y: cy - ry }, handleOut: { x: cx + kx,  y: cy - ry }, symmetric: true },
-      ];
-    }
-
-    case 'semicircle': {
-      // Semicírculo: arco superior (media elipse) + base plana inferior.
-      // Modelado con los 3 puntos cardinales de la media elipse superior
-      // (izquierdo, cima, derecho) usando handles Bézier estándar k=0.5523.
-      //
-      //   rx = w/2, ry = h/2  →  kx = 0.5523*rx, ky = 0.5523*ry
-      //
-      // Punto cardinal izquierdo (180°): (0, h/2)
-      //   tangente vertical  → handles en ±Y
-      //   handleIn  (viene del inferior-izq): (0, h/2 + ky)
-      //   handleOut (sale hacia la cima):     (0, h/2 - ky)
-      //
-      // Punto cardinal superior (270°): (w/2, 0)
-      //   tangente horizontal → handles en ±X
-      //   handleIn  (viene de la izquierda):  (w/2 - kx, 0)
-      //   handleOut (sale hacia la derecha):  (w/2 + kx, 0)
-      //
-      // Punto cardinal derecho (0°): (w, h/2)
-      //   tangente vertical → handles en ±Y
-      //   handleIn  (viene de la cima):        (w, h/2 - ky)
-      //   handleOut (sale hacia la base):      (w, h/2 + ky)
-      //
-      // Base plana: (w,h) → (0,h) sin handles (segmento recto).
-      const rx = w / 2;
-      const ry = h / 2;
-      const kx = 0.5523 * rx;
-      const ky = 0.5523 * ry;
-      const cx = w / 2;
-      const cy = h / 2;
-      return [
-        // Esquina inferior izquierda — base recta, sin handles
-        pt(0, h),
-        // Cardinal izquierdo del arco (180°)
-        { x: 0,  y: cy, handleIn:  { x: 0,       y: cy + ky }, handleOut: { x: 0,       y: cy - ky }, symmetric: true },
-        // Cima del arco (270°)
-        { x: cx, y: 0,  handleIn:  { x: cx - kx,  y: 0       }, handleOut: { x: cx + kx,  y: 0       }, symmetric: true },
-        // Cardinal derecho del arco (0°)
-        { x: w,  y: cy, handleIn:  { x: w,        y: cy - ky }, handleOut: { x: w,        y: cy + ky }, symmetric: true },
-        // Esquina inferior derecha — base recta, sin handles
-        pt(w, h),
-      ];
-    }
-
-    case 'trapezoid':
-      return [
-        pt(w * 0.15, 0),
-        pt(w * 0.85, 0),
-        pt(w, h),
-        pt(0, h),
-      ];
-
-    case 'triangle':
-      return [
-        pt(w / 2, 0),
-        pt(w, h),
-        pt(0, h),
-      ];
-
-    case 'hexagon':
-      return [
-        pt(w / 2,    0),
-        pt(w,        h * 0.25),
-        pt(w,        h * 0.75),
-        pt(w / 2,    h),
-        pt(0,        h * 0.75),
-        pt(0,        h * 0.25),
-      ];
-
-    case 'lshape':
-      return [
-        pt(0,       0),
-        pt(w * 0.5, 0),
-        pt(w * 0.5, h * 0.5),
-        pt(w,       h * 0.5),
-        pt(w,       h),
-        pt(0,       h),
-      ];
-
-    default:
-      return [pt(0, 0), pt(w, 0), pt(w, h), pt(0, h)];
-  }
-}
 
 // ── AABB rotado ───────────────────────────────────────────────────────────────
 

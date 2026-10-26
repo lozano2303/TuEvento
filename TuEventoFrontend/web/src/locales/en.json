@@ -481,6 +481,7 @@
     "selected": "{{count}} of {{total}} selected",
     "sections": "Sections",
     "seatMap": "Seat Map",
+    "loadingSeats": "Loading seats…",
     "myCart": "Your Cart",
     "noSeatsSelected": "You haven't selected any seats",
     "section": "Section",
@@ -1465,7 +1466,11 @@
       },
       "ticketsSold": {
         "label": "Tickets sold",
-        "sub": "Completed transactions"
+        "sub": "Tickets paid or already used"
+      },
+      "potential": {
+        "label": "Potential earnings",
+        "sub": "If every non-courtesy seat is sold"
       },
       "eventsWithSales": {
         "label": "Events with sales",
@@ -1478,14 +1483,17 @@
       "columns": {
         "event": "Event",
         "tickets": "Tickets sold",
-        "revenue": "Collected"
+        "revenue": "Collected",
+        "potential": "Potential",
+        "courtesy": "Courtesy"
       },
-      "total": "Total"
+      "total": "Total",
+      "soldOfPotential": "{{pct}}% of potential"
     },
     "info": {
       "howCalculated": {
         "title": "How is it calculated?",
-        "text": "All approved payments across your events are added up. The amount shown reflects the total charged to attendees."
+        "text": "Revenue adds up the approved payments for your events. Potential is the price of every non-courtesy seat in events that are not cancelled: courtesy seats are never sold, so they only lower the potential."
       },
       "realTime": {
         "title": "Real-time information",
@@ -1497,7 +1505,22 @@
     "title": "Switch the language to Spanish",
     "subtitle": "This section is only available in Spanish",
     "description": "Creating and editing events is only available with Spanish selected as your language. Change your language to Spanish in your profile to continue.",
-    "action": "Go back"
+    "action": "Go back",
+    "switchAction": "Switch to Spanish"
+  },
+  "layoutGuard": {
+    "notOrganizer": {
+      "title": "You are not an organizer",
+      "subtitle": "The layout editor is only for organizers",
+      "description": "Only organizers can design an event map. If you want to create events, request the organizer role from your profile.",
+      "action": "Go to events"
+    },
+    "notOwner": {
+      "title": "You are not the organizer of this event",
+      "subtitle": "Only the event creator can edit its layout",
+      "description": "This event belongs to another organizer, so you cannot view or change its section map.",
+      "action": "Back to my events"
+    }
   },
   "paymentConfirmation": {
     "loading": "Loading your confirmation…",

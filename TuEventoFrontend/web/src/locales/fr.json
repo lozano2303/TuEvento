@@ -47,6 +47,7 @@
     "selected": "{{count}} sur {{total}} sélectionnées",
     "sections": "Sections",
     "seatMap": "Plan des Places",
+    "loadingSeats": "Chargement des places…",
     "myCart": "Votre Panier",
     "noSeatsSelected": "Vous n'avez sélectionné aucune place",
     "section": "Section",
@@ -1463,7 +1464,11 @@
       },
       "ticketsSold": {
         "label": "Billets vendus",
-        "sub": "Transactions terminées"
+        "sub": "Billets payés ou déjà utilisés"
+      },
+      "potential": {
+        "label": "Gains potentiels",
+        "sub": "Si toutes les places hors invitations sont vendues"
       },
       "eventsWithSales": {
         "label": "Événements avec ventes",
@@ -1476,14 +1481,17 @@
       "columns": {
         "event": "Événement",
         "tickets": "Billets vendus",
-        "revenue": "Encaissé"
+        "revenue": "Encaissé",
+        "potential": "Potentiel",
+        "courtesy": "Invitations"
       },
-      "total": "Total"
+      "total": "Total",
+      "soldOfPotential": "{{pct}} % du potentiel"
     },
     "info": {
       "howCalculated": {
         "title": "Comment est-ce calculé ?",
-        "text": "Tous les paiements approuvés de vos événements sont additionnés. Le montant affiché reflète le total facturé aux participants."
+        "text": "Le montant encaissé additionne les paiements approuvés de vos événements. Le potentiel est le prix de chaque place hors invitation dans les événements non annulés : les invitations ne sont jamais vendues, elles réduisent donc seulement le potentiel."
       },
       "realTime": {
         "title": "Informations en temps réel",
@@ -1495,7 +1503,22 @@
     "title": "Passez la langue en espagnol",
     "subtitle": "Cette section est uniquement disponible en espagnol",
     "description": "La création et la modification d’événements ne sont disponibles qu’avec l’espagnol sélectionné comme langue. Changez votre langue en espagnol dans votre profil pour continuer.",
-    "action": "Retour"
+    "action": "Retour",
+    "switchAction": "Passer en espagnol"
+  },
+  "layoutGuard": {
+    "notOrganizer": {
+      "title": "Vous n’êtes pas organisateur",
+      "subtitle": "L’éditeur de plan est réservé aux organisateurs",
+      "description": "Seuls les organisateurs peuvent concevoir le plan d’un événement. Pour créer des événements, demandez le rôle d’organisateur depuis votre profil.",
+      "action": "Aller aux événements"
+    },
+    "notOwner": {
+      "title": "Vous n’êtes pas l’organisateur de cet événement",
+      "subtitle": "Seul le créateur de l’événement peut modifier son plan",
+      "description": "Cet événement appartient à un autre organisateur : vous ne pouvez ni voir ni modifier son plan des sections.",
+      "action": "Retour à mes événements"
+    }
   },
   "paymentConfirmation": {
     "loading": "Chargement de votre confirmation…",

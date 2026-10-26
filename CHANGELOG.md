@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed — chore: remove Facebook login
+
+- **Facebook sign-in removed** from the web (login and register), the mobile app (LoginScreen, RegisterScreen), and the backend (`OauthConfig` resolver, `oauthAuthorizationUrls`, all `app.oauth.facebook.*` YAML properties and env vars). Facebook Login was designed for real users in production, but while the Meta app stays in **development mode** it only works for the app admin and accounts manually added as testers — everyone else saw "La aplicación no está activa". Going **live** requires a privacy policy URL, a data-deletion endpoint, a Meta app review, and potentially business verification: requirements that go beyond the scope of this academic project. The mobile implementation was also broken (`AuthSession.startAsync` was removed in the current Expo SDK). Sign-in with **email/password** and **Google** remain fully supported. Existing `oauth_account` rows with `provider = 'facebook'` are kept in the database unchanged.
+
+### Added — feat(seats): courtesy seats and potential earnings
+
+- **Courtesy seats in the layout editor**: a "Cortesías" menu asks how many courtesy seats each section has and shows the estimated earnings live. The toolbar shows the courtesy total and the estimate, Σ price × (seats − courtesy)
+- **Saving the layout** reads `courtesySeats` for each logical section (0 to its seats, otherwise `LAYOUT_INVALID_COURTESY_SEATS`) and creates its last seats with type and status `COURTESY`, which cannot be reserved or bought. The section is saved with `capacity` = its seats and `availableSeats` = seats − courtesy; until now `availableSeats` was never updated after the capacity changed
+- **Regeneration** is only blocked by `RESERVED` or `SOLD` seats (`existsByEventSectionIdAndStatusIn`), so a section with courtesy seats can be saved again
+- **Potential earnings** in `GET /api/v1/organizer/earnings`: `totalPotentialEarnings`, `totalCourtesySeats` and, per event, `potentialRevenue`, `courtesySeats` and `totalSeats`. Potential is the section price of every non-courtesy seat, in events that are not cancelled. Courtesy seats never reduce what was collected, since they never produce a payment. The list now also includes events with seats but no sales yet
+- **Earnings panel (web)**: new "Potential earnings" card with the % already collected, and Potential and Courtesy columns per event
+
+### Fixed — fix(earnings): tickets sold counted payments
+
+- **"Tickets sold"** counted payments (`COUNT(p.paymentId)`), so a 4-seat purchase showed as 1. It now counts tickets (one per seat) that are `PAID` or `USED`; refunded tickets no longer count
+
+### Added — feat(layout): section creation wizard and shape catalog in the layout editor
+
+- **Section wizard**: adding a section type (click or drag) opens a dialog that asks how many seats it has, its base shape and the price per seat, shared by all of its sub-sections. The section is created at the smallest size that fits those seats; the seat count can be changed later in Properties > Sillas
+- **Shape catalog** (`sectionShapes.js`): 22 base shapes — rectangle, rounded rectangle, circle, oval, semicircle, quarter circle, grandstand arc, ring, horseshoe, trapezoids, parallelogram, rhombus, triangles, pentagon, hexagon, octagon, L, U, T and cross — built as Bézier vertices, so they can be edited afterwards and render the same on the web and mobile seat maps. They also replace the 7 suggested shapes of the vertex editor
+- **Resizing fills the section**: making a section larger (handles, size fields or vertex editing) fills it with the maximum seats that fit; making it smaller only trims the seats that no longer fit. The seat size never changes, so the 10 × 10 pages of the seat selector stay the same
+- **Palette**: section types from the backend as plain text (no emojis), sorted, with a search box and category filters (General, Preferencial, VIP, Palcos, Especiales). Emojis were also removed from infrastructure elements, buttons and hints
+- **Access checks in order**: role (`No eres organizador`), event ownership (`No eres el organizador de este evento`) and then language, each with its own modal. Changing the language no longer comes before the ownership check. The language modal can switch the profile to Spanish directly
+- **ADMIN is view-only** in the layout editor, matching the backend
+
+### Fixed — fix(layout): hooks order in the layout editor
+
+- **`EventLayoutEditor`** returned early on a load error before declaring its callbacks, so React saw a different number of hooks between renders. All hooks now run before any conditional return
+
+### Added — feat(sections): section type categories and catalog
+
+- **`section_type.category`** (migration `103`): `GENERAL`, `PREFERENCIAL`, `VIP`, `PALCO` or `ESPECIAL`, so the layout editor can group and filter the catalog. Existing types default to `GENERAL`
+- **`GET /api/v1/section-types?category=PALCO`**: optional filter; the response now includes `category`. Create and update accept it
+- **Catalog seed** (migration `104`): 22 section types in Spanish, the layout editor's language — boxes (Palco Diamante, Platino, Oro, Plata, Empresarial), VIP Plus, Backstage, Preferencial, Oriental, Occidental, Platea (alta/baja), Mezzanine, Balcón, Tribuna Norte/Sur, Gramilla, Gradería, Zona de movilidad reducida, Zona familiar and Prensa. Each insert is skipped if a type with that name already exists
+- **Translations** (migration `105`): en/pt/fr for every seeded type, published, so `/event-sections?languageCode=` shows them to end users on web and mobile; the editor keeps the Spanish names
+
 ## [1.0.2] - 2026-10-25
 
 Imágenes Docker `v1.0.2`: se reconstruyen `backend` y `frontend` (web); `gateway`, `nsfw` y `movil` se reetiquetan desde `v1.0.1`. Incluye corrección de Google Sign-In (#119), imágenes de la landing (#121), permisos de secciones (#120), rendimiento del mapa de asientos en móvil (#116) y regeneración de asientos en bloque (#117).
