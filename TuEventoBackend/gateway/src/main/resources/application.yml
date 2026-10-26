@@ -1,0 +1,106 @@
+server:
+  port: ${GATEWAY_PORT:8090}
+
+spring:
+  application:
+    name: tuevento-gateway
+
+  # ── Redis (rate limiting futuro) ───────────────────────────────────────────
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  # ── Cloud Gateway routes ───────────────────────────────────────────────────
+  cloud:
+    gateway:
+      # Los frontends no cambian ninguna URL: el gateway preserva /api/v1/* y /ws/*
+      # exactamente como los recibe, y los reenvía al monolito (o al microservicio
+      # correspondiente en fases posteriores).
+      routes:
+
+        # ── WebSocket (STOMP) ────────────────────────────────────────────────
+        # Debe ir ANTES que las rutas HTTP porque SockJS usa /ws/info (GET)
+        # y /ws/<session>/<token>/websocket (Upgrade). Si el matcher HTTP
+        # captura /ws/**, el handshake WS nunca llega.
+        - id: websocket
+          uri: ${MONOLITH_URI:http://localhost:8080}
+          predicates:
+            - Path=/ws/**
+          filters:
+            - RewritePath=/ws/(?<segment>.*), /ws/${segment}
+          metadata:
+            # WebSocket requiere upgrade HTTP→WS; desactivar el timeout de respuesta
+            connect-timeout: 5000
+            response-timeout: 0
+
+        # ── JWKS público del servicio Identidad (monolito hoy) ───────────────
+        - id: jwks
+          uri: ${MONOLITH_URI:http://localhost:8080}
+          predicates:
+            - Path=/.well-known/jwks.json
+
+        # ── Microservicio de Archivos/Storage (PRIMERA EXTRACCIÓN) ───────────
+        # Más específico: debe ir ANTES que monolith. Los frontends siguen
+        # llamando a /api/v1/storage/** exactamente igual.
+        - id: storage-service
+          uri: ${STORAGE_SERVICE_URI:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/storage/**
+          filters:
+            - PreserveHostHeader
+          metadata:
+            connect-timeout: 5000
+            response-timeout: 30000
+
+        # ── API REST principal ────────────────────────────────────────────────
+        # Captura todo /api/v1/** y lo reenvía al monolito sin modificar la ruta.
+        # En Fases 1-5 se irán añadiendo rutas específicas ANTES de esta.
+        - id: monolith
+          uri: ${MONOLITH_URI:http://localhost:8080}
+          predicates:
+            - Path=/api/v1/**
+          filters:
+            # Añade X-Forwarded-* headers para que el monolito conozca la IP real
+            - PreserveHostHeader
+          metadata:
+            connect-timeout: 5000
+            response-timeout: 30000
+
+      # Configuración global de timeout y HTTP/2
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 30s
+        pool:
+          max-connections: 500
+          acquire-timeout: 45000
+
+      # CORS global — los frontends apuntan al gateway
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns: ${GATEWAY_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:19000}
+            allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+            allowed-headers: ['*']
+            exposed-headers: [Retry-After]
+            allow-credentials: true
+            max-age: 3600
+
+      # Desactivar el default-filters global (se definen por ruta)
+      default-filters: []
+
+# ── Actuator ──────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  level:
+    org.springframework.cloud.gateway: ${GATEWAY_LOG_LEVEL:INFO}
+    reactor.netty: WARN
