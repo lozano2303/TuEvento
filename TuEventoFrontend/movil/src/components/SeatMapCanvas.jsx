@@ -8,6 +8,7 @@ import {
   computeTotalAABB,
   flattenPolygonForFill,
   filterSeatsByPage,
+  rowsInColumnWindow,
 } from "../utils/layoutUtils";
 import { findSeatAt, findSectionAt } from "../utils/seatHitTesting";
 
@@ -256,11 +257,12 @@ function computeView({
       const rowStart = currentRowPage * PAGE_SIZE;
       const rowEnd = Math.min(rowStructure.length, rowStart + PAGE_SIZE);
       const maxColsInVisibleRows = Math.max(1, ...rowStructure.slice(rowStart, rowEnd));
-      const gridInfo = { totalRows: rowStructure.length, rowStructure, maxColsInVisibleRows };
-      pageSeatsByElement.set(el.id, filterSeatsByPage(positions, gridInfo, currentColPage, currentRowPage, false));
+      pageSeatsByElement.set(el.id, filterSeatsByPage(positions, currentColPage, currentRowPage, PAGE_SIZE));
       // Las páginas las define la primera sección con sillas (igual que antes)
       if (!pagesCounted) {
-        totalRowPages = Math.ceil(rowStructure.length / PAGE_SIZE);
+        // Filas con sillas en la ventana de columnas actual: respeta los huecos de la forma
+        totalRowPages = Math.max(1, Math.ceil(
+          rowsInColumnWindow(positions, currentColPage, PAGE_SIZE).length / PAGE_SIZE));
         totalColPages = Math.ceil(maxColsInVisibleRows / PAGE_SIZE);
         pagesCounted = true;
       }
