@@ -247,8 +247,10 @@ services:
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      # nginx-proxy-manager + nginx del frontend + api-gateway: tres entradas en X-Forwarded-For
-      RATE_LIMIT_TRUSTED_PROXIES: "3"
+      # nginx-proxy-manager + nginx del frontend: dos entradas en X-Forwarded-For. El api-gateway
+      # (Spring Cloud Gateway 4.3, sin trusted-proxies) reenvía la cabecera sin añadir la suya;
+      # subir este número dejaría elegir como IP del cliente una entrada que el cliente inventa.
+      RATE_LIMIT_TRUSTED_PROXIES: "2"
       JAVA_OPTS: ${BACKEND_JAVA_OPTS:--Xms256m -Xmx768m -XX:MaxMetaspaceSize=256m}
 
       # Base de datos
