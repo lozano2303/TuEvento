@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -103,6 +104,7 @@ public class GeolocationController {
 
     @Operation(summary = "Create a new site (ADMIN or ORGANIZER)")
     @PostMapping("/sites")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ORGANIZER')")
     public ResponseEntity<ApiResponse<SiteResponse>> createSite(
             @Valid @RequestBody CreateSiteRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -112,6 +114,7 @@ public class GeolocationController {
 
     @Operation(summary = "Update an existing site (ADMIN or ORGANIZER)")
     @PutMapping("/sites/{siteId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ORGANIZER')")
     public ResponseEntity<ApiResponse<SiteResponse>> updateSite(
             @PathVariable Integer siteId,
             @Valid @RequestBody UpdateSiteRequest request) {

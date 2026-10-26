@@ -48,7 +48,6 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/**",
-            "/api/v1/geolocation/**",
             "/api/v1/profiles/*/",
             "/api/v1/profiles/user/**",
             "/api/v1/webhooks/**",  // Webhook endpoints — autenticación por HMAC signature
@@ -62,6 +61,7 @@ public class SecurityConfig {
     };
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {
+            "/api/v1/geolocation/**",    // GET departamentos, ciudades y sedes — público; crear/editar sedes no
             "/api/v1/themes",
             "/api/v1/languages",          // GET idiomas activos — público
             "/api/v1/languages/*",        // GET idioma por ID — público
