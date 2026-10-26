@@ -30,9 +30,11 @@ export const suggestedSeatSize = (seats) => {
 export const getSeatSize = (id) => SEAT_SIZES.find((s) => s.id === id) ?? SEAT_SIZES[0];
 
 /** Tamaño del catálogo que corresponde a un seatLayout (o el más parecido por radio). */
-export const seatSizeOf = (seatLayout) => SEAT_SIZES.reduce((best, s) =>
-  Math.abs(s.seatRadius - (seatLayout?.seatRadius ?? 8)) < Math.abs(best.seatRadius - (seatLayout?.seatRadius ?? 8))
-    ? s : best);
+export const seatSizeOf = (seatLayout) => {
+  const radius = seatLayout?.seatRadius ?? SEAT_SIZES[0].seatRadius;
+  const distance = (size) => Math.abs(size.seatRadius - radius);
+  return SEAT_SIZES.reduce((best, size) => (distance(size) < distance(best) ? size : best), SEAT_SIZES[0]);
+};
 
 const MIN_WIDTH  = 80;
 const MIN_HEIGHT = 60;
