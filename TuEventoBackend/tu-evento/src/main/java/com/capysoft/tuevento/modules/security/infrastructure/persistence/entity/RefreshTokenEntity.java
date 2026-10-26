@@ -27,7 +27,7 @@ public class RefreshTokenEntity {
     @JoinColumn(name = "auth_session_id", nullable = false)
     private AuthSessionEntity authSession;
 
-    @Column(name = "token", nullable = false, unique = true, length = 512)
+    @Column(name = "token", nullable = false, unique = true, length = 2048)
     private String token;
 
     @Column(name = "issued_at", nullable = false)
