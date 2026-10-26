@@ -8,6 +8,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -21,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import com.capysoft.tuevento.modules.payment.application.dto.GatewayPaymentEvent;
 import com.capysoft.tuevento.modules.payment.application.port.out.PaymentGatewayPort;
 import com.capysoft.tuevento.modules.payment.domain.event.PaymentApprovedEvent;
 import com.capysoft.tuevento.modules.payment.domain.model.Payment;
@@ -116,5 +118,32 @@ class ApplyGatewayStatusTest {
 
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REJECTED);
         verify(failOrderPaymentUseCase).failOrderPayment(9L, "Payment declined");
+    }
+
+    @Test
+    @DisplayName("execute: un webhook nuevo se guarda y aplica su estado al pago de esa transacción")
+    void execute_newWebhook_appliesStatus() {
+        Payment payment = payment(PaymentStatus.PENDING, null);
+        when(paymentGatewayPort.processWebhook("{}", "sig")).thenReturn(GatewayPaymentEvent.builder()
+                .eventId("evt-1").eventType("payment.declined").paymentId("gw-1").status("DECLINED").build());
+        when(webhookRepository.existsByGatewayEventId("evt-1")).thenReturn(false);
+        when(paymentRepository.findByGatewayTransactionId("gw-1")).thenReturn(Optional.of(payment));
+
+        useCase.execute("{}", "sig");
+
+        verify(webhookRepository).save(any());
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.REJECTED);
+    }
+
+    @Test
+    @DisplayName("execute: un webhook ya procesado se ignora")
+    void execute_duplicateWebhook_isIgnored() {
+        when(paymentGatewayPort.processWebhook("{}", "sig")).thenReturn(GatewayPaymentEvent.builder()
+                .eventId("evt-1").paymentId("gw-1").status("APPROVED").build());
+        when(webhookRepository.existsByGatewayEventId("evt-1")).thenReturn(true);
+
+        useCase.execute("{}", "sig");
+
+        verifyNoInteractions(paymentRepository, confirmOrderPaymentUseCase);
     }
 }
