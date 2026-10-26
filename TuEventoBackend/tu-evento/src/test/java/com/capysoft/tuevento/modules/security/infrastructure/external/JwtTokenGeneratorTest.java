@@ -1,53 +1,75 @@
 package com.capysoft.tuevento.modules.security.infrastructure.external;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.core.io.ClassPathResource;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.util.Base64;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * Tokens issued to the same user within the same second used to be identical (iat/exp have
- * second precision and there was no jti), which created auth_session / refresh_token rows that
- * shared a token. Every token now carries a random jti.
+ * Verifica que JwtTokenGenerator firma con RS256 y que los tokens son únicos (jti).
+ *
+ * <p>El par de claves RSA se genera en memoria para no depender de archivos en disco.
+ * Se inyectan como {@code ByteArrayResource} en formato PEM para que el código de
+ * producción los lea exactamente igual que si viniera del classpath.
  */
-@DisplayName("JwtTokenGenerator")
+@DisplayName("JwtTokenGenerator — RS256")
 class JwtTokenGeneratorTest {
 
-    private static final String SECRET = "test-secret-with-at-least-thirty-two-characters!!";
-
     private JwtTokenGenerator generator;
+    private RSAPublicKey       testPublicKey;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        // Generar par RSA-2048 en memoria para los tests
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+        kpg.initialize(2048);
+        KeyPair pair = kpg.generateKeyPair();
+
+        RSAPrivateKey privateKey = (RSAPrivateKey) pair.getPrivate();
+        testPublicKey = (RSAPublicKey) pair.getPublic();
+
+        // Serializar a PEM para que JwtTokenGenerator los cargue igual que en producción
+        String privatePem = "-----BEGIN PRIVATE KEY-----\n"
+                + Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(privateKey.getEncoded())
+                + "\n-----END PRIVATE KEY-----\n";
+
         generator = new JwtTokenGenerator();
-        ReflectionTestUtils.setField(generator, "secret", SECRET);
-        ReflectionTestUtils.setField(generator, "accessTokenExpiration", 900_000L);
+        ReflectionTestUtils.setField(generator, "privateKeyResource",
+                new ByteArrayResource(privatePem.getBytes()));
+        ReflectionTestUtils.setField(generator, "accessTokenExpiration",  900_000L);
         ReflectionTestUtils.setField(generator, "refreshTokenExpiration", 604_800_000L);
         generator.init();
     }
 
     private Claims claims(String token) {
         return Jwts.parser()
-                .verifyWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8)))
+                .verifyWith(testPublicKey)   // RS256: verificar con la clave pública del test
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
     }
 
     @Test
-    @DisplayName("two access tokens for the same user in the same second are different")
+    @DisplayName("dos access tokens para el mismo usuario en el mismo segundo son distintos (jti)")
     void accessTokens_sameSecond_areUnique() {
-        // The pair can straddle a second boundary (the first token is slow while JJWT warms up),
-        // so retry until both share the same iat; that is the case the jti must disambiguate.
         String first;
         String second;
         int attempts = 0;
@@ -61,22 +83,108 @@ class JwtTokenGeneratorTest {
     }
 
     @Test
-    @DisplayName("two refresh tokens for the same user in the same second are different")
+    @DisplayName("dos refresh tokens para el mismo usuario son distintos (jti)")
     void refreshTokens_sameSecond_areUnique() {
-        assertThat(generator.generateRefreshToken(42)).isNotEqualTo(generator.generateRefreshToken(42));
+        assertThat(generator.generateRefreshToken(42))
+                .isNotEqualTo(generator.generateRefreshToken(42));
     }
 
     @Test
-    @DisplayName("access and refresh tokens carry a UUID jti and keep their existing claims")
-    void tokens_carryUuidJti() {
+    @DisplayName("los tokens llevan jti UUID y conservan los claims originales")
+    void tokens_carryUuidJti_andClaims() {
         String access  = generator.generateAccessToken(42, "alias", "ORGANIZER");
         String refresh = generator.generateRefreshToken(42);
 
         assertThatCode(() -> UUID.fromString(claims(access).getId())).doesNotThrowAnyException();
         assertThatCode(() -> UUID.fromString(claims(refresh).getId())).doesNotThrowAnyException();
+
         assertThat(generator.extractUserId(access)).contains(42);
         assertThat(generator.extractRole(access)).contains("ORGANIZER");
         assertThat(generator.extractSubject(access)).contains("alias");
         assertThat(generator.isTokenValid(refresh)).isTrue();
+    }
+
+    @Test
+    @DisplayName("getPublicKey devuelve la clave pública RSA cargada")
+    void getPublicKey_returnsLoadedKey() {
+        assertThat(generator.getPublicKey()).isNotNull();
+        assertThat(generator.getPublicKey().getAlgorithm()).isEqualTo("RSA");
+        assertThat(generator.getPublicKey().getModulus().bitLength()).isGreaterThanOrEqualTo(2048);
+    }
+
+    @Test
+    @DisplayName("un token con firma inválida no pasa la validación")
+    void invalidToken_isRejected() {
+        String valid = generator.generateAccessToken(1, "user", "USER");
+        // Corromper la firma (último segmento del JWT)
+        String[] parts = valid.split("\\.");
+        String tampered = parts[0] + "." + parts[1] + ".invalidsignature";
+        assertThat(generator.isTokenValid(tampered)).isFalse();
+    }
+
+    @Test
+    @DisplayName("la clave pública se deriva de la privada y los tokens llevan el kid del JWKS")
+    void publicKey_isDerived_andTokensCarryKid() {
+        assertThat(generator.getPublicKey().getModulus()).isEqualTo(testPublicKey.getModulus());
+        String token = generator.generateAccessToken(1, "user", "USER");
+        assertThat(Jwts.parser().verifyWith(testPublicKey).build().parseSignedClaims(token).getHeader().getKeyId())
+                .isEqualTo(JwtTokenGenerator.KEY_ID);
+    }
+
+    @Test
+    @DisplayName("sin secreto legado, un token HS256 se rechaza")
+    void legacyHs256Token_rejectedWithoutSecret() {
+        assertThat(generator.isTokenValid(hs256Token(LEGACY_SECRET))).isFalse();
+    }
+
+    @Test
+    @DisplayName("con secreto legado, un token HS256 anterior sigue siendo válido")
+    void legacyHs256Token_acceptedWithSecret() {
+        ReflectionTestUtils.setField(generator, "legacySecret", LEGACY_SECRET);
+        generator.init();
+
+        String legacy = hs256Token(LEGACY_SECRET);
+        assertThat(generator.isTokenValid(legacy)).isTrue();
+        assertThat(generator.extractUserId(legacy)).contains(7);
+        assertThat(generator.isTokenValid(hs256Token("otro-secreto-distinto-de-al-menos-32-chars"))).isFalse();
+        // Los tokens nuevos siguen siendo RS256
+        assertThat(generator.isTokenValid(generator.generateAccessToken(1, "user", "USER"))).isTrue();
+    }
+
+    @Test
+    @DisplayName("sin clave privada y con claves efímeras permitidas, genera un par en memoria")
+    void missingKey_withEphemeralAllowed_generatesKeyPair() {
+        JwtTokenGenerator dev = generatorWithMissingKey(true);
+        dev.init();
+        String token = dev.generateAccessToken(3, "dev", "USER");
+        assertThat(dev.isTokenValid(token)).isTrue();
+        assertThat(dev.getPublicKey().getModulus().bitLength()).isGreaterThanOrEqualTo(2048);
+    }
+
+    @Test
+    @DisplayName("sin clave privada y sin claves efímeras, el arranque falla")
+    void missingKey_withoutEphemeral_failsFast() {
+        JwtTokenGenerator prod = generatorWithMissingKey(false);
+        assertThatThrownBy(prod::init).isInstanceOf(IllegalStateException.class);
+    }
+
+    private static final String LEGACY_SECRET = "test-secret-key-for-jenkins-ci-only-32chars";
+
+    private static String hs256Token(String secret) {
+        return Jwts.builder()
+                .claim("userId", 7)
+                .subject("legacy")
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)), Jwts.SIG.HS256)
+                .compact();
+    }
+
+    private static JwtTokenGenerator generatorWithMissingKey(boolean ephemeralAllowed) {
+        JwtTokenGenerator g = new JwtTokenGenerator();
+        ReflectionTestUtils.setField(g, "privateKeyResource", new ClassPathResource("keys/does-not-exist.pem"));
+        ReflectionTestUtils.setField(g, "ephemeralKeysAllowed", ephemeralAllowed);
+        ReflectionTestUtils.setField(g, "accessTokenExpiration", 900_000L);
+        ReflectionTestUtils.setField(g, "refreshTokenExpiration", 604_800_000L);
+        return g;
     }
 }

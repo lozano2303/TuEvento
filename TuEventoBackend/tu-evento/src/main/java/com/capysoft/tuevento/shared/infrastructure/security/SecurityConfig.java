@@ -57,7 +57,8 @@ public class SecurityConfig {
             "/api-docs/**",
             "/v3/api-docs/**",
             "/actuator/**",
-            "/ws/**"   // WebSocket endpoint con SockJS (web + móvil) — autenticación en JwtHandshakeInterceptor
+            "/ws/**",              // WebSocket endpoint con SockJS (web + móvil) — autenticación en JwtHandshakeInterceptor
+            "/.well-known/jwks.json" // JWK Set público — clave pública RSA para verificar JWT
     };
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {

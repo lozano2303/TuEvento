@@ -1,19 +1,39 @@
+# Maven / Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+hs_err_pid*.log
+
+# Node
+node_modules/
+dist/
+build/
+*.local
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env files
 .env
 .env.*
 !.env.example
-!.env.*.example
-node_modules/
-*.log
 
-.kilo/
-postgres*.tar
+# Docker
+docker-data/
+postgres_data/
 
-TuEventoFrontend/web/dist/
-
-TuEventoBackend/tu-evento/jar-listing.txt
-
-# Secret de Kubernetes con valores reales (usar k8s/secrets.example.yaml como plantilla)
-k8s/secrets.yaml
-
-# Volcados de error de la JVM
-hs_err_pid*.log
+# Keys
+TuEventoBackend/tu-evento/src/test/resources/keys/
+TuEventoBackend/tu-evento/src/main/resources/keys/jwt-private.pem

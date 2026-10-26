@@ -60,7 +60,12 @@ app:
     refresh-cookie:
       secure: false
   jwt:
-    secret: ${JWT_SECRET}
+    # RS256. Sin clave privada en la ruta, se usa un par en memoria (solo dev).
+    # Generar una fija: ver .env.example (APP_JWT_PRIVATE_KEY_PATH)
+    private-key-path: ${APP_JWT_PRIVATE_KEY_PATH:classpath:keys/jwt-private.pem}
+    ephemeral-keys-allowed: true
+    # Secreto HS256 anterior: solo valida tokens emitidos antes del cambio a RS256
+    secret: ${JWT_SECRET:}
     access-token-expiration: 900000
     refresh-token-expiration: 604800000
   qr:

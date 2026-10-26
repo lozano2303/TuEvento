@@ -5,8 +5,10 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
 import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
@@ -19,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Listens to UserActivatedEvent and sends a welcome notification after account activation.
+ * Solo tras el commit de la activación: si la activación hace rollback no hay bienvenida.
  */
 @Component
 @RequiredArgsConstructor
@@ -29,7 +32,8 @@ public class UserActivatedListener {
     private final SendNotificationUseCase sendNotificationUseCase;
     private final ProfileRepository profileRepository;
 
-    @EventListener
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onUserActivated(UserActivatedEvent event) {
         log.info("User activated event detected: userId={}, alias={}", event.getUserId(), event.getAlias());
 

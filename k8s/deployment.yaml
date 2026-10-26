@@ -101,6 +101,11 @@ spec:
             secretKeyRef:
               name: tu-evento-secrets
               key: mail-password
+        # Claves RS256 del JWT (Secret jwt-rsa-keys, ver secrets.example.yaml)
+        volumeMounts:
+        - name: jwt-rsa-keys
+          mountPath: /etc/jwt-keys
+          readOnly: true
         resources:
           requests:
             memory: "512Mi"
@@ -120,3 +125,7 @@ spec:
             port: 8080
           initialDelaySeconds: 15
           periodSeconds: 10
+      volumes:
+      - name: jwt-rsa-keys
+        secret:
+          secretName: jwt-rsa-keys

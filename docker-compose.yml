@@ -15,6 +15,7 @@ services:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh:ro
     networks:
       - tuevento-network
 
@@ -102,7 +103,7 @@ services:
   # Se usa con STORAGE_PROVIDER=rustfs; el backend crea el bucket y aplica las
   # políticas públicas al arrancar (no necesita un servicio init).
   rustfs:
-    image: rustfs/rustfs:latest
+    image: rustfs/rustfs:1.0.0-alpha.59
     container_name: tuevento-rustfs
     restart: unless-stopped
     environment:
@@ -136,6 +137,48 @@ services:
       - tuevento-network
 
    # ── Fake Payment Gateway ────────────────────────────────────────────────────
+
+  # ── Kafka (KRaft — sin Zookeeper) ──────────────────────────────────────────
+  kafka:
+    image: bitnamilegacy/kafka:3.7.0
+    container_name: tuevento-kafka
+    restart: unless-stopped
+    ports:
+      # Puerto externo para herramientas de desarrollo (ej: kafka-ui, kafkacat)
+      - "9094:9094"
+    environment:
+      # Modo KRaft: broker + controller en un solo nodo (suficiente para dev)
+      KAFKA_CFG_NODE_ID: "1"
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      # Listeners:
+      #   INTERNAL  — contenedores dentro de la red Docker (backend → kafka:9092)
+      #   CONTROLLER — comunicación interna KRaft
+      #   EXTERNAL  — acceso desde el host (localhost:9094)
+      KAFKA_CFG_LISTENERS: "INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "INTERNAL://kafka:9092,EXTERNAL://localhost:9094"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      # Retención 72 h en dev
+      KAFKA_CFG_LOG_RETENTION_HOURS: "72"
+      # Auto-crear topics al primer mensaje
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # Factor de replicación 1 (dev single-node)
+      KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: "1"
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+    volumes:
+      - kafka_data:/bitnami/kafka
+    networks:
+      - tuevento-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server kafka:9092 --list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
   fake-payment-gateway:
     build:
       context: ./fake-payment-gateway
@@ -193,13 +236,16 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
+    volumes:
+      - ./TuEventoBackend/tu-evento/src/main/resources/keys:/run/secrets:ro
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
 
-      - APP_JWT_SECRET=${JWT_SECRET}
+      # RS256: clave privada montada desde el host; si no existe, el perfil dev usa un par en memoria
+      - APP_JWT_PRIVATE_KEY_PATH=file:/run/secrets/jwt-private.pem
       - APP_JWT_ACCESS_TOKEN_EXPIRATION=900000
       - APP_JWT_REFRESH_TOKEN_EXPIRATION=604800000
 
@@ -243,6 +289,7 @@ services:
       # Translation service configuration
       - TRANSLATION_LIBRETRANSLATE_BASE_URL=http://libretranslate:5000
       - TRANSLATION_PROTECTED_TERMS=${TRANSLATION_PROTECTED_TERMS:-Tu Evento}
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
       postgres:
         condition: service_started
@@ -254,9 +301,86 @@ services:
         condition: service_started
       libretranslate:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
     networks:
       - tuevento-network
 
+
+  # ── API Gateway (Spring Cloud Gateway) ─────────────────────────────────────
+  # Los frontends apuntan a :8090 (gateway). El monolito en :8080 es interno.
+  # En Fases 1-5 el gateway irá enrutando prefijos a cada microservicio extraído.
+  gateway:
+    build:
+      context: ./TuEventoBackend/gateway
+      dockerfile: Dockerfile
+    container_name: tuevento-gateway
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      - GATEWAY_PORT=8090
+      - MONOLITH_URI=http://backend:8080
+      # Corte de /api/v1/storage al microservicio: descomentar tras la fase 1, pasos 2-4 (ver gateway application.yml)
+      # - STORAGE_SERVICE_URI=http://storage-service:8085
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - GATEWAY_CORS_ALLOWED_ORIGINS=${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      - GATEWAY_LOG_LEVEL=${GATEWAY_LOG_LEVEL:-INFO}
+    depends_on:
+      backend:
+        condition: service_started
+      storage-service:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - tuevento-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8090/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Microservicio de Archivos (primera extracción) ─────────────────────────
+  storage-service:
+    build:
+      context: ./TuEventoBackend/services/storage-service
+      dockerfile: Dockerfile
+    container_name: tuevento-storage-service
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      - STORAGE_SERVICE_PORT=8085
+      - STORAGE_DB_URL=jdbc:postgresql://postgres:5432/tuevento_storage
+      - STORAGE_DB_USER=${POSTGRES_USER}
+      - STORAGE_DB_PASSWORD=${POSTGRES_PASSWORD}
+      - JWK_SET_URI=http://backend:8080/.well-known/jwks.json
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - APP_STORAGE_PROVIDER=rustfs
+      - RUSTFS_ENDPOINT=http://rustfs:9000
+      # Mismas credenciales que el contenedor rustfs
+      - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin}
+      - STORAGE_BUCKET=${RUSTFS_BUCKET:-tuevento}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      # URL pública embebida en las presigned URLs: el puerto que rustfs publica al host
+      - RUSTFS_PUBLIC_URL=${RUSTFS_PUBLIC_URL:-http://localhost:9100}
+      - NSFW_SERVICE_URL=http://nsfw-classifier:8000
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      rustfs:
+        condition: service_started
+      backend:
+        condition: service_started
+    networks:
+      - tuevento-network
   # ── CI / CD ─────────────────────────────────────────────────────────────────
   # Inactivos: el CI corre en GitHub Actions + SonarQube Cloud. Solo arrancan con
   # `docker compose --profile ci up -d jenkins sonarqube` y no se reinician solos.
@@ -328,4 +452,6 @@ volumes:
   sonarqube_data:
   sonarqube_logs:
   sonarqube_extensions:
+  kafka_data:
   libretranslate-models:
+

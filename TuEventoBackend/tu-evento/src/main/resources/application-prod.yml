@@ -147,7 +147,10 @@ app:
       same-site: ${AUTH_COOKIE_SAME_SITE:Strict}
   # ── JWT ───────────────────────────────────────────────────
   jwt:
-    secret: ${JWT_SECRET}
+    # RS256: claves montadas como secretos externos (no van al repositorio)
+    private-key-path: ${APP_JWT_PRIVATE_KEY_PATH}
+    # Secreto HS256 anterior: solo valida tokens emitidos antes del cambio. Quitar tras 7 días
+    secret: ${JWT_SECRET:}
     access-token-expiration: 900000       # 15 minutos
     refresh-token-expiration: 604800000   # 7 días
 

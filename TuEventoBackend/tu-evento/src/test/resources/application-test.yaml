@@ -21,6 +21,9 @@ spring:
 
 app:
   jwt:
+    # RS256 con un par de claves en memoria; el secreto HS256 cubre la aceptación de tokens legados
+    ephemeral-keys-allowed: true
+    private-key-path: classpath:keys/missing-test-key.pem
     secret: test-secret-key-for-jenkins-ci-only-32chars
     access-token-expiration: 900000
     refresh-token-expiration: 604800000

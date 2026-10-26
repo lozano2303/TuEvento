@@ -94,7 +94,8 @@ public class SeatService implements SeatUseCase {
     @Transactional
     public SeatResponse updateSeatStatus(Integer seatId, UpdateSeatStatusRequest request,
                                          Integer changedBy) {
-        Seat existing = lockSeat(seatId);
+        // Lock pesimista: serializa confirmaciones/fallos de pago y cancelaciones sobre la misma silla
+        Seat existing = findSeat(seatId);
         SeatStatus newStatus = request.getNewStatus();
 
         // Liberar es idempotente: la silla pudo liberarse ya al expirar la reserva. Repetir
@@ -117,7 +118,7 @@ public class SeatService implements SeatUseCase {
     @Override
     @Transactional
     public SeatResponse sellSeat(Integer seatId, Long buyerId, String reason) {
-        Seat existing = lockSeat(seatId);
+        Seat existing = findSeat(seatId);
         boolean free = existing.getStatus() == SeatStatus.AVAILABLE;
         boolean reservedByBuyer = existing.getStatus() == SeatStatus.RESERVED
                 && existing.getReservedBy() != null
@@ -133,7 +134,7 @@ public class SeatService implements SeatUseCase {
     @Transactional
     public SeatResponse updateSeatStatusByOrganizer(Integer seatId, UpdateSeatStatusRequest request,
                                                     Long organizerId) {
-        Seat existing = lockSeat(seatId);
+        Seat existing = findSeat(seatId);
         EventSection section = requireEditableOwnedSection(existing.getEventSectionId(), organizerId);
         SeatStatus newStatus = request.getNewStatus();
 
@@ -160,7 +161,8 @@ public class SeatService implements SeatUseCase {
     @Override
     @Transactional
     public void deleteSeat(Integer seatId, Long organizerId) {
-        Seat existing = lockSeat(seatId);
+        // Lock pesimista: evita borrar una silla que está siendo reservada simultáneamente
+        Seat existing = findSeat(seatId);
         requireEditableOwnedSection(existing.getEventSectionId(), organizerId);
         if (!MANUAL_STATUSES.contains(existing.getStatus())) {
             throw new BusinessException("SEAT_NOT_DELETABLE",
@@ -169,8 +171,11 @@ public class SeatService implements SeatUseCase {
         seatRepository.deleteById(seatId);
     }
 
-    /** Lee la silla bloqueada: todo cambio de estado se valida y se guarda sin carreras. */
-    private Seat lockSeat(Integer seatId) {
+    /**
+     * Lee la silla con lock pesimista (SELECT … FOR UPDATE) para los métodos que leen su estado
+     * y después lo escriben: el lock dura hasta el commit de la transacción que llama.
+     */
+    private Seat findSeat(Integer seatId) {
         return seatRepository.findByIdForUpdate(seatId)
                 .orElseThrow(() -> new NotFoundException("SEAT_NOT_FOUND", "La silla no existe"));
     }

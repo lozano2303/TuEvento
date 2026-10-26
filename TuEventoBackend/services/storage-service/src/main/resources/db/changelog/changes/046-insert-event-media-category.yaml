@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 046-insert-event-media-category
+      author: capysoft
+      changes:
+        - insert:
+            tableName: file_category
+            columns:
+              - column:
+                  name: storage_provider_id
+                  valueNumeric: 1
+              - column:
+                  name: name
+                  value: Event Media
+              - column:
+                  name: code
+                  value: EVENT_MEDIA
+              - column:
+                  name: is_public
+                  valueBoolean: true
+              - column:
+                  name: allowed_extensions
+                  value: jpg,jpeg,png,webp
+              - column:
+                  name: max_size_mb
+                  valueNumeric: 10

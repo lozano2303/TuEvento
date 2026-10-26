@@ -9,6 +9,17 @@ spring:
     show-sql: false
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
+  # Local: el broker del docker-compose publica 9094 al host. Dentro de Docker/k8s: kafka:9092
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+
+# ── Outbox relay ──────────────────────────────────────────────────────────────
+outbox:
+  relay:
+    enabled: ${OUTBOX_RELAY_ENABLED:true}
+    batch-size: ${OUTBOX_RELAY_BATCH_SIZE:100}
+    interval-ms: ${OUTBOX_RELAY_INTERVAL_MS:1000}
+    max-retries: ${OUTBOX_RELAY_MAX_RETRIES:5}
 
 server:
   port: 8080
@@ -18,6 +29,15 @@ security:
   lockout:
     minutes: ${SECURITY_LOCKOUT_MINUTES:30}
     cleanup-cron: "0 0/5 * * * *"
+
+# Conciliación de pagos PENDING sin webhook
+payment:
+  reconciliation:
+    enabled: ${PAYMENT_RECONCILIATION_ENABLED:true}
+    pending-threshold-minutes: ${PAYMENT_RECONCILIATION_THRESHOLD_MINUTES:15}
+    # Pago aún PENDING en la pasarela pasado este plazo: se cancela y se liberan los asientos
+    expire-after-minutes: ${PAYMENT_RECONCILIATION_EXPIRE_MINUTES:30}
+    cron: ${PAYMENT_RECONCILIATION_CRON:0 */5 * * * *}
 
 # Límite por IP en login, registro, recuperación y activación de cuenta
 rate-limit:
