@@ -13,6 +13,14 @@ public interface SeatRepository {
     List<Seat> findAllBySeatBlockId(Integer seatBlockId);
     List<Seat> findAllByEventSectionId(Integer eventSectionId);
     Optional<Seat> findById(Integer seatId);
+
+    /**
+     * Igual que {@link #findById} pero adquiere un lock pesimista de escritura
+     * (SELECT … FOR UPDATE). Debe usarse dentro de una transacción activa en
+     * cualquier operación que lea-y-modifique el estado de una silla para garantizar
+     * exclusión mutua y evitar doble reserva o venta duplicada.
+     */
+    Optional<Seat> findByIdForUpdate(Integer seatId);
     boolean existsByEventSectionIdAndCode(Integer eventSectionId, String code);
     Seat save(Seat seat);
     void deleteById(Integer seatId);
