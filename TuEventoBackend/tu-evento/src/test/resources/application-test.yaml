@@ -22,6 +22,8 @@ spring:
 app:
   jwt:
     secret: test-secret-key-for-jenkins-ci-only-32chars
+    private-key-path: classpath:keys/jwt-private-test.pem
+    public-key-path: classpath:keys/jwt-public-test.pem
     access-token-expiration: 900000
     refresh-token-expiration: 604800000
   mail:

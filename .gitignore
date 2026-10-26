@@ -35,5 +35,4 @@ docker-data/
 postgres_data/
 
 # Keys
-TuEventoBackend/tu-evento/src/test/resources/keys/
 TuEventoBackend/tu-evento/src/main/resources/keys/jwt-private.pem
