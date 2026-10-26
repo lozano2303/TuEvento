@@ -16,29 +16,24 @@ import LanguageSelector from "../components/common/LanguageSelector.jsx";
 import { renderGoogleButton, releaseGoogleButton } from "../services/googleIdentity.js";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 // oauth_error codes sent by GET /auth/oauth/{provider}/callback → i18n key.
 // ACCOUNT_DEACTIVATED opens the reactivation modal instead; unknown codes use the generic message.
 const OAUTH_ERROR_MESSAGES = {
   OAUTH_CANCELLED: 'login.oauthErrors.cancelled',
   OAUTH_FAILED: 'login.oauthErrors.failed',
-  FACEBOOK_OAUTH_FAILED: 'login.oauthErrors.facebookFailed',
   ACCOUNT_LOCKED: 'login.oauthErrors.locked',
   ACCOUNT_BLOCKED: 'login.errors.accountBlocked',
   ACCOUNT_DELETED: 'login.oauthErrors.deleted',
 };
 
 /**
- * GoogleButton — botón visualmente idéntico al de Facebook.
+ * GoogleButton — renders the Google Identity Services button with an overlay
+ * technique so it matches the card's visual style.
  *
- * Técnica overlay: el botón visual (con logo + "Google") está debajo. Encima, con
- * opacity-0 y position absolute (inset 0), vive el botón real de Google Identity
- * Services, que dispara el flujo OAuth auténtico; su iframe ocupa todo el wrapper.
- *
- * GSI se carga e inicializa una sola vez por carga de página (services/googleIdentity.js);
- * en cada montaje solo se vuelve a dibujar el botón. Así sigue funcionando al volver a
- * /login sin recargar (por ejemplo, tras cerrar sesión desde la vista de perfil).
+ * GSI is loaded and initialized once per page load (services/googleIdentity.js);
+ * each mount only re-renders the button, so it keeps working after navigating back
+ * to /login without a full page reload (e.g. after signing out from the profile view).
  */
 function GoogleButton({ onSuccess, onError }) {
   const containerRef = useRef(null);
@@ -136,9 +131,6 @@ export default function Login() {
     const oauth = urlParams.get('oauth');
 
     if (oauth === 'true' && userID && role) {
-      // Validate the CSRF state param produced by handleFacebookLogin.
-      // Google GSI does not come through this redirect path, so the check only
-      // fires when a stored state exists in sessionStorage.
       const storedState = sessionStorage.getItem('oauth_state');
       const returnedState = urlParams.get('state');
       if (storedState && returnedState !== storedState) {
@@ -384,34 +376,6 @@ export default function Login() {
   const handleGoogleError = () => {
     // User dismissed the popup or Google returned an error — no action needed
     // unless the user explicitly triggered an error (not a cancel).
-  };
-
-  // ─── Facebook OAuth redirect flow ────────────────────────────────────────
-  // Facebook does not support reliable popup flows the way Google GSI does,
-  // so we use a server-side redirect: the backend redirects to Facebook, Facebook
-  // redirects back to the backend callback, and the backend then redirects to
-  // /login?oauth=true&userID=...&role=... (the refresh token comes as an httpOnly cookie).
-  // The useEffect at the top of this component already handles that callback URL
-  // (same shape used by the original redirect-based OAuth flow).
-  const handleFacebookLogin = () => {
-    // Generate a random CSRF state token and persist it in sessionStorage.
-    // The backend encodes it inside the composite state that travels through
-    // Facebook and returns it in the final redirect, so we can verify it here.
-    const state = crypto.randomUUID();
-    sessionStorage.setItem('oauth_state', state);
-
-    // Pass the current page as the frontend_redirect_uri so the backend knows
-    // where to send the browser after a successful OAuth callback.
-    // Using window.location.origin + '/login' makes this work regardless of
-    // whether the app is running on localhost:5173 or a production domain,
-    // as long as the URL is on the server-side whitelist.
-    const frontendRedirectUri = `${window.location.origin}/login`;
-
-    const params = new URLSearchParams({
-      state,
-      frontend_redirect_uri: frontendRedirectUri,
-    });
-    window.location.href = `${API_URL}/auth/oauth/facebook?${params.toString()}`;
   };
 
   const handleSubmit = async (e) => {
@@ -900,25 +864,10 @@ export default function Login() {
                 </div>
               )}
 
-              {/* Botones sociales en grid 2 columnas */}
+              {/* Botones sociales */}
               <div className="login-social-grid">
                 {/* Google */}
                 <GoogleButton onSuccess={handleGoogleSuccess} onError={handleGoogleError} />
-
-                {/* Facebook */}
-                <button
-                  type="button"
-                  onClick={handleFacebookLogin}
-                  className="login-btn-social"
-                  title={t('login.signInWith') + ' Facebook'}
-                  aria-label={t('login.signInWith') + ' Facebook'}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <circle cx="12" cy="12" r="12" fill="#1877f2" />
-                    <path fill="white" d="M16.3 8H14c-.3 0-.7.3-.7.8V10h3l-.4 2.5H13.3V19h-2.6v-6.5H9V10h1.7V8.6C10.7 6.6 12 5.5 13.9 5.5c.9 0 1.9.1 2.4.2V8z"/>
-                  </svg>
-                  <span>{t('login.facebook')}</span>
-                </button>
               </div>
 
               {/* ¿Tienes cuenta? */}
