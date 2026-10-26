@@ -19,3 +19,4 @@ k8s/secrets.yaml
 hs_err_pid*.log
 TuEventoBackend/tu-evento/src/test/resources/keys/
 TuEventoBackend/tu-evento/src/main/resources/keys/jwt-private.pem
+TuEventoBackend/tu-evento/src/main/resources/keys/jwt-private.pem
