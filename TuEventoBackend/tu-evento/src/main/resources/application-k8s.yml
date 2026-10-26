@@ -41,16 +41,11 @@ management:
 
 app:
   jwt:
-    # RS256 en k8s: las claves se montan como Secret en /etc/jwt-keys/
-    # kubectl create secret generic jwt-rsa-keys \
-    #   --from-file=jwt-private.pem=./jwt-private.pem \
-    #   --from-file=jwt-public.pem=./jwt-public.pem
-    private-key-path: ${APP_JWT_PRIVATE_KEY_PATH:file:/etc/jwt-keys/jwt-private.pem}
-    public-key-path: ${APP_JWT_PUBLIC_KEY_PATH:file:/etc/jwt-keys/jwt-public.pem}
+    secret: ${JWT_SECRET}
     access-token-expiration: 900000
     refresh-token-expiration: 604800000
   qr:
-    secret: ${QR_SECRET}
+    secret: ${QR_SECRET:${JWT_SECRET}}
     expiration: ${QR_EXPIRATION:60000}
   storage:
     enabled: false

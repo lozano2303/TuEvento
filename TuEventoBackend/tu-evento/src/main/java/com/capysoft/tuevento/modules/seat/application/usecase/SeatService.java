@@ -8,7 +8,6 @@ import java.util.Set;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
@@ -91,12 +90,9 @@ public class SeatService implements SeatUseCase {
     }
 
     @Override
-    @Transactional
     public SeatResponse updateSeatStatus(Integer seatId, UpdateSeatStatusRequest request,
                                          Integer changedBy) {
-        // Lock pesimista: serializa confirmaciones/fallos de pago y cancelaciones sobre la misma silla
-        Seat existing = seatRepository.findByIdForUpdate(seatId)
-                .orElseThrow(() -> new NotFoundException("SEAT_NOT_FOUND", "La silla no existe"));
+        Seat existing = findSeat(seatId);
         SeatStatus newStatus = request.getNewStatus();
 
         // Liberar es idempotente: la silla pudo liberarse ya al expirar la reserva. Repetir
@@ -158,11 +154,8 @@ public class SeatService implements SeatUseCase {
     }
 
     @Override
-    @Transactional
     public void deleteSeat(Integer seatId, Long organizerId) {
-        // Lock pesimista: evita borrar una silla que está siendo reservada simultáneamente
-        Seat existing = seatRepository.findByIdForUpdate(seatId)
-                .orElseThrow(() -> new NotFoundException("SEAT_NOT_FOUND", "La silla no existe"));
+        Seat existing = findSeat(seatId);
         requireEditableOwnedSection(existing.getEventSectionId(), organizerId);
         if (!MANUAL_STATUSES.contains(existing.getStatus())) {
             throw new BusinessException("SEAT_NOT_DELETABLE",

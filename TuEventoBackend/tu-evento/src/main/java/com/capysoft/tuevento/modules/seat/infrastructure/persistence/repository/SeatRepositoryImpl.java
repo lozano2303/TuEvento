@@ -51,11 +51,6 @@ public class SeatRepositoryImpl implements SeatRepository {
     }
 
     @Override
-    public Optional<Seat> findByIdForUpdate(Integer seatId) {
-        return jpaRepository.findByIdForUpdate(seatId).map(this::toDomain);
-    }
-
-    @Override
     public boolean existsByEventSectionIdAndCode(Integer eventSectionId, String code) {
         return jpaRepository.existsByEventSectionIdAndCode(eventSectionId, code);
     }
@@ -85,13 +80,6 @@ public class SeatRepositoryImpl implements SeatRepository {
     @Override
     public List<Seat> findAllByStatusAndReservedUntilBefore(SeatStatus status, LocalDateTime dateTime) {
         return jpaRepository.findAllByStatusAndReservedUntilBefore(status, dateTime).stream()
-                .map(this::toDomain)
-                .toList();
-    }
-
-    @Override
-    public List<Seat> findExpiredReservationsWithoutPendingPayment(LocalDateTime now) {
-        return jpaRepository.findExpiredReservationsWithoutPendingPayment(now).stream()
                 .map(this::toDomain)
                 .toList();
     }

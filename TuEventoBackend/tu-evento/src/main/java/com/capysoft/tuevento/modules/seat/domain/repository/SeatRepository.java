@@ -13,14 +13,6 @@ public interface SeatRepository {
     List<Seat> findAllBySeatBlockId(Integer seatBlockId);
     List<Seat> findAllByEventSectionId(Integer eventSectionId);
     Optional<Seat> findById(Integer seatId);
-
-    /**
-     * Igual que {@link #findById} pero adquiere un lock pesimista de escritura
-     * (SELECT … FOR UPDATE). Debe usarse dentro de una transacción activa en
-     * cualquier operación que lea-y-modifique el estado de una silla para garantizar
-     * exclusión mutua y evitar doble reserva o venta duplicada.
-     */
-    Optional<Seat> findByIdForUpdate(Integer seatId);
     boolean existsByEventSectionIdAndCode(Integer eventSectionId, String code);
     Seat save(Seat seat);
     void deleteById(Integer seatId);
@@ -37,16 +29,6 @@ public interface SeatRepository {
     /** Inserta sillas nuevas por lotes. No devuelve los ids generados. */
     void insertAll(List<Seat> seats);
     List<Seat> findAllByStatusAndReservedUntilBefore(SeatStatus status, LocalDateTime dateTime);
-
-    /**
-     * Devuelve las sillas RESERVED cuyo TTL expiró y que NO tienen una orden en
-     * PAYMENT_PENDING asociada. Esto evita liberar un asiento cuyo pago está en vuelo:
-     * un webhook tardío de confirmación podría marcarla como SOLD sobre un asiento
-     * ya reservado por otro usuario (venta duplicada).
-     *
-     * <p>La cadena de relaciones es: seat → seat_ticket → ticket → order.
-     */
-    List<Seat> findExpiredReservationsWithoutPendingPayment(LocalDateTime now);
 
     /** Sillas y ganancia potencial de cada evento no cancelado del organizador, en una sola consulta. */
     List<EventSeatSummary> summarizeSeatsByOrganizer(Long organizerId);

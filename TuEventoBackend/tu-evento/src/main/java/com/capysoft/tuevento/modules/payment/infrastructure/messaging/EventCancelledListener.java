@@ -9,9 +9,9 @@ import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,20 +36,8 @@ public class EventCancelledListener {
     private final PaymentRepository paymentRepository;
     private final RequestRefundUseCaseImpl requestRefundUseCase;
 
-    /**
-     * Escucha la cancelación de un evento y dispara reembolsos automáticos.
-     *
-     * <p>Usa {@code @TransactionalEventListener(AFTER_COMMIT)} en lugar de
-     * {@code @Async @EventListener} para garantizar que los reembolsos solo se
-     * procesan si la cancelación del evento se confirmó en base de datos. Con
-     * {@code @EventListener} o {@code @Async @EventListener} los reembolsos se
-     * dispararían aunque la transacción de cancelación hiciera rollback.
-     *
-     * <p>Si {@code requestRefundUseCase.executeToWallet} falla, se loguea el error
-     * y se continúa con los demás pagos. En una futura migración a Kafka + outbox
-     * este método se reemplazará por un consumidor del evento {@code EventStatusChanged}.
-     */
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    @EventListener
     public void handleEventStatusChanged(EventStatusChangedEvent event) {
         // Solo procesar si el nuevo estado es CANCELLED
         if (!"CANCELLED".equals(event.getNewStatus())) {
