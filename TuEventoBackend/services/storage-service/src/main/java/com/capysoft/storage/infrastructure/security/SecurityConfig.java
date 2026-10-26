@@ -40,7 +40,7 @@ public class SecurityConfig {
      * reciban el usuario con {@code @AuthenticationPrincipal SecurityUser}. La autoridad es el rol
      * tal cual ({@code ADMIN}, {@code ORGANIZER}, {@code USER}), igual que en el monolito.
      */
-    static AbstractAuthenticationToken toAuthentication(Jwt jwt) {
+    public static AbstractAuthenticationToken toAuthentication(Jwt jwt) {
         Number userId = jwt.getClaim("userId");
         SecurityUser user = new SecurityUser(
                 userId != null ? userId.intValue() : null, jwt.getSubject(), jwt.getClaimAsString("role"));
