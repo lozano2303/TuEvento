@@ -14,7 +14,7 @@
 #   LibreTranslate es opcional (≈2 GB de RAM):
 #     docker compose -f docker-compose.prod.yml --env-file .env.prod --profile translate up -d
 # - Límites de memoria pensados para 8 GB de RAM + 4 GB de swap:
-#   ≈5.4 GB sin LibreTranslate y ≈7.4 GB con él (topes, no reservas).
+#   ≈6.3 GB sin LibreTranslate y ≈8.3 GB con él (topes, no reservas; con él se usa swap).
 # ============================================================
 
 name: tuevento
@@ -247,8 +247,8 @@ services:
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      # nginx-proxy-manager + nginx del frontend: dos entradas en X-Forwarded-For
-      RATE_LIMIT_TRUSTED_PROXIES: "2"
+      # nginx-proxy-manager + nginx del frontend + api-gateway: tres entradas en X-Forwarded-For
+      RATE_LIMIT_TRUSTED_PROXIES: "3"
       JAVA_OPTS: ${BACKEND_JAVA_OPTS:--Xms256m -Xmx768m -XX:MaxMetaspaceSize=256m}
 
       # Base de datos
@@ -271,7 +271,10 @@ services:
       RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?}
 
       # Seguridad
-      JWT_SECRET: ${JWT_SECRET:?}
+      # Clave privada RS256 (PKCS#8 en PEM; los saltos de línea pueden ir como \n). Ver .env.prod.example
+      APP_JWT_PRIVATE_KEY: ${APP_JWT_PRIVATE_KEY:?}
+      # HS256 anterior: solo valida tokens emitidos antes del cambio a RS256
+      JWT_SECRET: ${JWT_SECRET:-}
       QR_SECRET: ${QR_SECRET:?}
       QR_EXPIRATION: ${QR_EXPIRATION:-60000}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
@@ -342,13 +345,87 @@ services:
     networks:
       - internal
 
-  # ── Frontend (SPA + proxy de /api y /ws al backend) ────────────────────────
+  # ── API gateway: punto de entrada de /api y /ws ────────────────────────────
+  # Envía /api/v1/storage/** al microservicio de archivos y el resto al monolito.
+  api-gateway:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:api-gateway-${TUEVENTO_VERSION:?}
+    container_name: tuevento-api-gateway
+    restart: unless-stopped
+    environment:
+      MONOLITH_URI: http://backend:8080
+      STORAGE_SERVICE_URI: http://storage-service:8085
+      GATEWAY_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
+      JAVA_TOOL_OPTIONS: -Xmx256m
+    depends_on:
+      backend:
+        condition: service_healthy
+      storage-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8090/actuator/health | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+    logging: *default-logging
+    networks:
+      - internal
+
+  # ── Microservicio de archivos ──────────────────────────────────────────────
+  # Misma base de datos y mismo bucket que el monolito; valida los JWT con su JWKS.
+  storage-service:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:storage-${TUEVENTO_VERSION:?}
+    container_name: tuevento-storage-service
+    restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx320m
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
+      JWK_SET_URI: http://backend:8080/.well-known/jwks.json
+      STORAGE_PROVIDER: rustfs
+      RUSTFS_ENDPOINT: http://rustfs:9000
+      RUSTFS_PUBLIC_URL: ${RUSTFS_PUBLIC_URL:?}
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?}
+      NSFW_SERVICE_URL: http://nsfw-classifier:8000
+      NSFW_THRESHOLD: ${NSFW_THRESHOLD:-0.6}
+      SIGHTENGINE_API_USER: ${SIGHTENGINE_API_USER:-}
+      SIGHTENGINE_API_SECRET: ${SIGHTENGINE_API_SECRET:-}
+      SIGHTENGINE_MODELS: ${SIGHTENGINE_MODELS:-gore,nudity,weapon}
+      SIGHTENGINE_THRESHOLD: ${SIGHTENGINE_THRESHOLD:-0.6}
+      SIGHTENGINE_NUDITY_THRESHOLD: ${SIGHTENGINE_NUDITY_THRESHOLD:-0.15}
+    depends_on:
+      # El backend migra las tablas de storage y publica el JWKS
+      backend:
+        condition: service_healthy
+      rustfs:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging: *default-logging
+    networks:
+      - internal
+
+  # ── Frontend (SPA + proxy de /api y /ws al api-gateway) ─────────────────────
   frontend:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:frontend-${TUEVENTO_VERSION:?}
     container_name: tuevento-frontend
     restart: unless-stopped
     depends_on:
-      backend:
+      api-gateway:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]

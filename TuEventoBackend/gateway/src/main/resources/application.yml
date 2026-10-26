@@ -82,15 +82,17 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowed-origin-patterns: ${GATEWAY_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:19000}
+            allowed-origin-patterns: ${GATEWAY_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:19000}
             allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
             allowed-headers: ['*']
             exposed-headers: [Retry-After]
             allow-credentials: true
             max-age: 3600
 
-      # Desactivar el default-filters global (se definen por ruta)
-      default-filters: []
+      # El monolito también añade cabeceras CORS: sin esto el navegador recibiría
+      # Access-Control-Allow-Origin dos veces y rechazaría la respuesta
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
 
 # ── Actuator ──────────────────────────────────────────────────────────────────
 management:
