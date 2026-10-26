@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
@@ -90,9 +91,10 @@ public class SeatService implements SeatUseCase {
     }
 
     @Override
+    @Transactional
     public SeatResponse updateSeatStatus(Integer seatId, UpdateSeatStatusRequest request,
                                          Integer changedBy) {
-        Seat existing = findSeat(seatId);
+        Seat existing = lockSeat(seatId);
         SeatStatus newStatus = request.getNewStatus();
 
         // Liberar es idempotente: la silla pudo liberarse ya al expirar la reserva. Repetir
@@ -113,8 +115,9 @@ public class SeatService implements SeatUseCase {
      * o es de cortesía, falla: tratarlo como "sin cambios" entregaría dos veces la misma silla.
      */
     @Override
+    @Transactional
     public SeatResponse sellSeat(Integer seatId, Long buyerId, String reason) {
-        Seat existing = findSeat(seatId);
+        Seat existing = lockSeat(seatId);
         boolean free = existing.getStatus() == SeatStatus.AVAILABLE;
         boolean reservedByBuyer = existing.getStatus() == SeatStatus.RESERVED
                 && existing.getReservedBy() != null
@@ -127,9 +130,10 @@ public class SeatService implements SeatUseCase {
     }
 
     @Override
+    @Transactional
     public SeatResponse updateSeatStatusByOrganizer(Integer seatId, UpdateSeatStatusRequest request,
                                                     Long organizerId) {
-        Seat existing = findSeat(seatId);
+        Seat existing = lockSeat(seatId);
         EventSection section = requireEditableOwnedSection(existing.getEventSectionId(), organizerId);
         SeatStatus newStatus = request.getNewStatus();
 
@@ -154,8 +158,9 @@ public class SeatService implements SeatUseCase {
     }
 
     @Override
+    @Transactional
     public void deleteSeat(Integer seatId, Long organizerId) {
-        Seat existing = findSeat(seatId);
+        Seat existing = lockSeat(seatId);
         requireEditableOwnedSection(existing.getEventSectionId(), organizerId);
         if (!MANUAL_STATUSES.contains(existing.getStatus())) {
             throw new BusinessException("SEAT_NOT_DELETABLE",
@@ -164,8 +169,9 @@ public class SeatService implements SeatUseCase {
         seatRepository.deleteById(seatId);
     }
 
-    private Seat findSeat(Integer seatId) {
-        return seatRepository.findById(seatId)
+    /** Lee la silla bloqueada: todo cambio de estado se valida y se guarda sin carreras. */
+    private Seat lockSeat(Integer seatId) {
+        return seatRepository.findByIdForUpdate(seatId)
                 .orElseThrow(() -> new NotFoundException("SEAT_NOT_FOUND", "La silla no existe"));
     }
 

@@ -13,6 +13,13 @@ public interface SeatRepository {
     List<Seat> findAllBySeatBlockId(Integer seatBlockId);
     List<Seat> findAllByEventSectionId(Integer eventSectionId);
     Optional<Seat> findById(Integer seatId);
+
+    /**
+     * Lee la silla bloqueando su fila hasta el fin de la transacción. Úsalo antes de cambiar su
+     * estado: sin el bloqueo, dos transacciones pueden ver la misma silla libre y ganarla ambas.
+     */
+    Optional<Seat> findByIdForUpdate(Integer seatId);
+
     boolean existsByEventSectionIdAndCode(Integer eventSectionId, String code);
     Seat save(Seat seat);
     void deleteById(Integer seatId);

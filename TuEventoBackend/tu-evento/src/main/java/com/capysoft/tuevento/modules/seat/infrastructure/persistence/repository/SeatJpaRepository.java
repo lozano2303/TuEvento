@@ -4,7 +4,9 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.seat.domain.model.EventSeatSummary;
 import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 import com.capysoft.tuevento.modules.seat.infrastructure.persistence.entity.SeatEntity;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,8 +14,14 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface SeatJpaRepository extends JpaRepository<SeatEntity, Integer> {
+    // SELECT ... FOR UPDATE: quien llega segundo espera al commit del primero y ve el estado nuevo
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM SeatEntity s WHERE s.seatId = :seatId")
+    Optional<SeatEntity> findByIdForUpdate(@Param("seatId") Integer seatId);
+
     List<SeatEntity> findAllBySeatBlockId(Integer seatBlockId);
     List<SeatEntity> findAllByEventSectionId(Integer eventSectionId);
     boolean existsByEventSectionIdAndCode(Integer eventSectionId, String code);

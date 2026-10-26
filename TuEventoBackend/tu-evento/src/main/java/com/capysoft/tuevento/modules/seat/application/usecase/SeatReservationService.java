@@ -43,7 +43,8 @@ public class SeatReservationService {
      */
     @Transactional
     public SeatResponse reserveSeat(Integer seatId, Integer userId) {
-        Seat seat = seatRepository.findById(seatId)
+        // Con bloqueo: entre leer AVAILABLE y guardar RESERVED nadie más puede tomar la silla
+        Seat seat = seatRepository.findByIdForUpdate(seatId)
                 .orElseThrow(() -> new NotFoundException("SEAT_NOT_FOUND", "La silla no existe"));
 
         if (seat.getStatus() != SeatStatus.AVAILABLE) {
@@ -92,7 +93,7 @@ public class SeatReservationService {
      */
     @Transactional
     public SeatResponse releaseSeat(Integer seatId, Integer userId, boolean isAdmin) {
-        Seat seat = seatRepository.findById(seatId)
+        Seat seat = seatRepository.findByIdForUpdate(seatId)
                 .orElseThrow(() -> new NotFoundException("SEAT_NOT_FOUND", "La silla no existe"));
 
         if (seat.getStatus() != SeatStatus.RESERVED) {
