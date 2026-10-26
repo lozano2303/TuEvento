@@ -80,6 +80,7 @@ public class PaymentReconciliationScheduler {
      * {@code payment.reconciliation.cron} si se necesita ajustar en prod.
      */
     @Scheduled(cron = "${payment.reconciliation.cron:0 */5 * * * *}")
+    @Transactional
     public void reconcilePendingPayments() {
         if (!enabled) {
             return;
@@ -106,7 +107,6 @@ public class PaymentReconciliationScheduler {
      * correspondiente. Cada pago se procesa en su propia transacción para que
      * un fallo en uno no impida procesar los demás.
      */
-    @Transactional
     public void reconcileOne(Payment payment) {
         if (payment.getGatewayTransactionId() == null) {
             // Payment en ERROR guardado por handleGatewayFailure — no tiene gatewayTxId.
