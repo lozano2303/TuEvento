@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +20,7 @@ public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, Long>
     Optional<PaymentEntity> findByOrderId(Long orderId);
     Optional<PaymentEntity> findByGatewayTransactionId(String gatewayTransactionId);
     List<PaymentEntity> findByOrderIdInAndStatus(List<Long> orderIds, PaymentStatus status);
+    List<PaymentEntity> findByStatusAndCreatedAtBefore(PaymentStatus status, LocalDateTime threshold);
     long countByStatus(PaymentStatus status);
 
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM PaymentEntity p WHERE p.status = 'APPROVED'")

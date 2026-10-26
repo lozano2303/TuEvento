@@ -1,0 +1,13 @@
+version: 2
+
+# Ignore RSA public keys — these are intentionally public and safe to commit.
+# The private key is in .gitignore and never committed.
+ignored-paths:
+  - TuEventoBackend/tu-evento/src/main/resources/keys/jwt-public.pem
+  - TuEventoBackend/tu-evento/src/test/resources/keys/jwt-public-test.pem
+  - TuEventoBackend/tu-evento/src/test/resources/keys/jwt-private-test.pem
+
+ignored-detectors:
+  # RSA private key detector fires on test keys and public keys — both are safe here.
+  # Test keys are randomly generated per repo clone and have no production value.
+  - RSA Private Key
