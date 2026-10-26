@@ -51,6 +51,9 @@ export const migrateElement = (el) => {
   return el;
 };
 
+/** Lado de los controles de redimensionar (px de pantalla: Konva no los escala con el zoom). */
+export const TRANSFORMER_ANCHOR_SIZE = 14;
+
 // ── Snapping ─────────────────────────────────────────────────────────────────
 export const snapToGrid = (value, gridSize = 10) =>
   Math.round(value / gridSize) * gridSize;
@@ -208,18 +211,9 @@ export const distributeSeats = (element) => {
     // Generar todas las posiciones posibles y tomar las primeras targetSeats.
     // computePolygonSeatRows ya calcula las filas desde el espacio real del polígono.
     const allPositions = computePolygonSeatRows(element.polygonPoints, { seatRadius, gap });
-    const limitedPositions = allPositions.slice(0, targetSeats);
-    
-    // Derivar estructura de filas reales desde las posiciones generadas
-    const rowStructure = deriveRowStructureFromPositions(limitedPositions, seatRadius * 2 + gap);
-    
-    // Agregar metadatos de fila y columna a cada posición
-    const positionsWithIndices = addRowColIndices(limitedPositions, rowStructure);
-    
     return {
-      positions: positionsWithIndices,
-      rowStructure: rowStructure, // [seatsInRow0, seatsInRow1, seatsInRow2, ...]
-      isUniformGrid: false
+      ...indexPolygonSeats(allPositions.slice(0, targetSeats), cellSize),
+      isUniformGrid: false,
     };
   }
 
@@ -277,81 +271,68 @@ export const distributeSeats = (element) => {
 };
 
 /**
- * Deriva la estructura de filas reales desde las posiciones generadas por computePolygonSeatRows.
- * Agrupa sillas por fila basándose en coordenadas Y similares.
+ * Asigna fila y columna a las sillas de un polígono (vienen fila por fila, de arriba
+ * abajo y de izquierda a derecha, como las genera computePolygonSeatRows).
+ *
+ * La columna es FÍSICA: se calcula con la posición X, no con el orden dentro de la fila.
+ * Así, en formas con huecos (herradura, U, anillo) las sillas a ambos lados del hueco
+ * quedan en columnas separadas por columnas vacías, y una página de 10 × 10 del selector
+ * nunca junta los dos lados por encima del hueco.
+ *
+ * El orden de las posiciones no cambia: el índice de cada una sigue siendo el de su silla.
+ *
+ * @returns {{ positions, rowStructure }} rowStructure[fila] = columnas que ocupa la fila
+ *          (hasta su última silla, contando los huecos)
  */
-function deriveRowStructureFromPositions(positions, cellHeight) {
-  if (positions.length === 0) return [];
-  
-  // Agrupar por Y (fila) con tolerancia para redondeo
-  const tolerance = cellHeight * 0.1;
-  const rows = [];
-  
-  positions.forEach((pos, index) => {
-    let foundRow = rows.find(row => Math.abs(row.y - pos.y) <= tolerance);
-    if (!foundRow) {
-      foundRow = { y: pos.y, seats: [] };
-      rows.push(foundRow);
+export function indexPolygonSeats(positions, cellSize) {
+  if (positions.length === 0) return { positions: [], rowStructure: [] };
+  // reduce y no Math.min(...): con cientos de miles de sillas el spread desborda la pila
+  const minX      = positions.reduce((min, p) => Math.min(min, p.x), Infinity);
+  const tolerance = cellSize * 0.1;
+  const rowStructure = [];
+  let rowIndex = -1;
+  let rowY     = null;
+  const indexed = positions.map((pos) => {
+    if (rowY === null || Math.abs(pos.y - rowY) > tolerance) {
+      rowIndex++;
+      rowY = pos.y;
+      rowStructure.push(0);
     }
-    foundRow.seats.push({ ...pos, originalIndex: index });
+    const colIndex = Math.round((pos.x - minX) / cellSize);
+    rowStructure[rowIndex] = Math.max(rowStructure[rowIndex], colIndex + 1);
+    return { ...pos, rowIndex, colIndex };
   });
-  
-  // Ordenar filas por Y (de arriba hacia abajo)
-  rows.sort((a, b) => a.y - b.y);
-  
-  // Ordenar sillas dentro de cada fila por X (de izquierda a derecha)
-  rows.forEach(row => {
-    row.seats.sort((a, b) => a.x - b.x);
-  });
-  
-  // Retornar array con el conteo de sillas por fila
-  return rows.map(row => row.seats.length);
+  return { positions: indexed, rowStructure };
+}
+
+/** Filas (ordenadas) que tienen al menos una silla en la ventana de columnas `colPage`. */
+export function rowsInColumnWindow(seatPositions, colPage, pageSize = 10) {
+  const colStart = colPage * pageSize;
+  const rows = new Set();
+  for (const pos of seatPositions) {
+    if (pos.colIndex >= colStart && pos.colIndex < colStart + pageSize) rows.add(pos.rowIndex);
+  }
+  return [...rows].sort((a, b) => a - b);
 }
 
 /**
- * Agrega índices rowIndex y colIndex a cada posición basándose en la estructura real de filas.
+ * Sillas de una página de la vista enfocada: la ventana de 10 columnas `colPage` y,
+ * entre las filas que tienen sillas en esa ventana, el bloque de 10 filas `rowPage`.
+ * Filtra por la fila y columna de cada silla, así que respeta los huecos de la forma.
+ *
+ * @returns {{ pos, realIndex }[]} realIndex = índice de la silla dentro de la sección
  */
-function addRowColIndices(positions, rowStructure) {
-  if (positions.length === 0) return positions;
-  
-  // Crear mapa temporal por coordenadas Y
-  const tolerance = (positions[0].r || 7) * 2 + 4; // cellHeight aproximado
-  const rowGroups = [];
-  
-  positions.forEach((pos, index) => {
-    let foundRow = rowGroups.find(row => Math.abs(row.y - pos.y) <= tolerance * 0.1);
-    if (!foundRow) {
-      foundRow = { y: pos.y, seats: [] };
-      rowGroups.push(foundRow);
-    }
-    foundRow.seats.push({ ...pos, originalIndex: index });
+export function filterSeatsByPage(seatPositions, colPage, rowPage, pageSize = 10) {
+  if (!seatPositions || seatPositions.length === 0) return [];
+  const colStart = colPage * pageSize;
+  const pageRows = new Set(rowsInColumnWindow(seatPositions, colPage, pageSize)
+    .slice(rowPage * pageSize, (rowPage + 1) * pageSize));
+  const page = [];
+  seatPositions.forEach((pos, realIndex) => {
+    const inWindow = pos.colIndex >= colStart && pos.colIndex < colStart + pageSize;
+    if (inWindow && pageRows.has(pos.rowIndex)) page.push({ pos, realIndex });
   });
-  
-  // Ordenar filas por Y y sillas por X
-  rowGroups.sort((a, b) => a.y - b.y);
-  rowGroups.forEach(row => {
-    row.seats.sort((a, b) => a.x - b.x);
-  });
-  
-  // Asignar índices
-  const result = [];
-  let globalIndex = 0;
-  
-  rowGroups.forEach((row, rowIndex) => {
-    row.seats.forEach((seat, colIndex) => {
-      result.push({
-        ...seat,
-        rowIndex: rowIndex,
-        colIndex: colIndex
-      });
-      globalIndex++;
-    });
-  });
-  
-  // Reordenar según originalIndex para mantener orden original
-  result.sort((a, b) => a.originalIndex - b.originalIndex);
-  
-  return result;
+  return page;
 }
 
 // ── Intersección para rubber-band selection ───────────────────────────────────

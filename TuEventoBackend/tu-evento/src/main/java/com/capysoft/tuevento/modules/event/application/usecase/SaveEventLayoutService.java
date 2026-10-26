@@ -32,6 +32,7 @@ import com.capysoft.tuevento.modules.section.domain.model.EventSection;
 import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -78,6 +79,8 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
         }
 
         Optional<EventLayout> existing = eventLayoutRepository.findByEventId(eventId);
+        // El layout anterior permite saltar las secciones cuyas sillas no cambiaron
+        String previousLayoutData = existing.map(EventLayout::getLayoutData).orElse(null);
 
         EventLayout layout = existing
                 .map(l -> EventLayout.builder()
@@ -93,7 +96,7 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
         EventLayout saved = eventLayoutRepository.save(layout);
 
         // Generar automáticamente seat_block y seat a partir del layout
-        regenerateSeatsFromLayout(eventId, saved.getLayoutData());
+        regenerateSeatsFromLayout(eventId, saved.getLayoutData(), previousLayoutData);
 
         return EventLayoutResponse.builder()
                 .eventLayoutId(saved.getEventLayoutId())
@@ -114,11 +117,11 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
      * Corre en la misma transacción que guarda el EventLayout — si algo falla,
      * se revierten ambos cambios.
      */
-    private void regenerateSeatsFromLayout(Long eventId, String layoutData) {
+    private void regenerateSeatsFromLayout(Long eventId, String layoutData, String previousLayoutData) {
         try {
             JsonNode root = objectMapper.readTree(layoutData);
             JsonNode elementsNode = root.get("elements");
-            
+
             if (elementsNode == null || !elementsNode.isArray()) {
                 log.warn("[SaveEventLayout] layoutData no contiene 'elements' array válido");
                 return;
@@ -130,51 +133,20 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                     .collect(Collectors.toMap(EventSection::getEventSectionId, Function.identity()));
 
             // Paso 1: Agrupar elementos de sección por backendSectionId
-            Map<Integer, List<SectionElement>> sectionGroups = new HashMap<>();
-            
-            for (int i = 0; i < elementsNode.size(); i++) {
-                JsonNode elementNode = elementsNode.get(i);
-                String type = elementNode.has("type") ? elementNode.get("type").asText() : null;
-                
-                if (!"section".equals(type)) {
-                    continue;
-                }
-
-                JsonNode backendSectionIdNode = elementNode.get("backendSectionId");
-                JsonNode seatLayoutNode = elementNode.get("seatLayout");
-
-                if (backendSectionIdNode == null || backendSectionIdNode.isNull() || 
-                    seatLayoutNode == null || seatLayoutNode.isNull()) {
-                    continue;
-                }
-
-                Integer backendSectionId = backendSectionIdNode.asInt();
-                int targetSeats = seatLayoutNode.has("targetSeats") ? seatLayoutNode.get("targetSeats").asInt() : 0;
-                int rows = seatLayoutNode.has("rows") ? seatLayoutNode.get("rows").asInt() : 1;
-                int seatsPerRow = seatLayoutNode.has("seatsPerRow") ? seatLayoutNode.get("seatsPerRow").asInt() : 1;
-                int courtesySeats = elementNode.has("courtesySeats") ? elementNode.get("courtesySeats").asInt() : 0;
-
-                if (targetSeats <= 0) {
-                    continue;
-                }
-                if (!eventSections.containsKey(backendSectionId)) {
+            Map<Integer, List<SectionElement>> sectionGroups = groupSectionElements(elementsNode, (sectionId, element) -> {
+                if (!eventSections.containsKey(sectionId)) {
                     throw new BusinessException("LAYOUT_SECTION_NOT_IN_EVENT",
-                            "La sección " + backendSectionId + " no pertenece a este evento");
+                            "La sección " + sectionId + " no pertenece a este evento");
                 }
-                if (targetSeats > MAX_SEATS_PER_SECTION) {
+                if (element.targetSeats > MAX_SEATS_PER_SECTION) {
                     throw new BusinessException("LAYOUT_TOO_MANY_SEATS",
                             "Una sección no puede tener más de " + MAX_SEATS_PER_SECTION + " sillas");
                 }
-
-                SectionElement element = new SectionElement(targetSeats, rows, seatsPerRow, courtesySeats, i);
-                sectionGroups.computeIfAbsent(backendSectionId, k -> new ArrayList<>()).add(element);
-            }
+            });
 
             // Validar el total y las cortesías de cada sección lógica antes de tocar ninguna
             // (long: la suma de sub-elementos no puede desbordar)
             for (List<SectionElement> elements : sectionGroups.values()) {
-                // Ordenar elementos por su índice original para consistencia
-                elements.sort(Comparator.comparingInt(e -> e.originalIndex));
                 long totalSeats = elements.stream().mapToLong(e -> e.targetSeats).sum();
                 if (totalSeats > MAX_SEATS_PER_SECTION) {
                     throw new BusinessException("LAYOUT_TOO_MANY_SEATS",
@@ -187,6 +159,9 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                 }
             }
 
+            Map<Integer, List<Integer>> previousSignatures = seatSignatures(previousLayoutData);
+            int sectionsSkipped = 0;
+
             // Paso 2: Procesar cada sección lógica (grupo)
             int sectionsProcessed = 0;
             int seatsGenerated = 0;
@@ -194,6 +169,15 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
             for (Map.Entry<Integer, List<SectionElement>> entry : sectionGroups.entrySet()) {
                 Integer eventSectionId = entry.getKey();
                 List<SectionElement> elements = entry.getValue();
+                int totalCapacity = elements.stream().mapToInt(e -> e.targetSeats).sum();
+
+                // Sin cambios en sus sillas y con todas ya generadas: no se borra ni se inserta nada.
+                // Guardar un layout de 55.000 sillas donde solo se movió algo ya no las regenera todas
+                if (signature(elements).equals(previousSignatures.get(eventSectionId))
+                        && seatRepository.countByEventSectionId(eventSectionId) == totalCapacity) {
+                    sectionsSkipped++;
+                    continue;
+                }
 
                 // Validación defensiva: verificar que ninguna silla existente esté reservada/vendida
                 // Una sola consulta (EXISTS) en lugar de cargar todas las sillas en memoria
@@ -207,9 +191,6 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                 // Borrar sillas y seat_blocks existentes de esta sección: una sentencia por tabla
                 seatRepository.deleteAllByEventSectionId(eventSectionId);
                 seatBlockRepository.deleteAllByEventSectionId(eventSectionId);
-
-                // Calcular capacidad total de la sección lógica (ya validada contra el máximo)
-                int totalCapacity = elements.stream().mapToInt(e -> e.targetSeats).sum();
 
                 // Crear un único seat_block para toda la sección lógica
                 SeatBlock seatBlock = seatBlockRepository.save(SeatBlock.builder()
@@ -249,8 +230,8 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                         eventSectionId, generatedCount, elements.size());
             }
 
-            log.info("[SaveEventLayout] Regeneración completada: {} secciones lógicas procesadas, {} sillas generadas", 
-                    sectionsProcessed, seatsGenerated);
+            log.info("[SaveEventLayout] Regeneración completada: {} secciones regeneradas ({} sillas), {} sin cambios",
+                    sectionsProcessed, seatsGenerated, sectionsSkipped);
 
         } catch (BusinessException e) {
             throw e;
@@ -278,6 +259,78 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
             this.courtesySeats = courtesySeats;
             this.originalIndex = originalIndex;
         }
+    }
+
+    /** Regla que se aplica a cada elemento de sección al agruparlo (validaciones del layout nuevo). */
+    @FunctionalInterface
+    interface SectionElementCheck {
+        void check(Integer sectionId, SectionElement element);
+    }
+
+    /**
+     * Agrupa los elementos de sección con sillas por backendSectionId, cada grupo ordenado
+     * por su posición en el layout. Ignora los elementos sin sección, sin seatLayout o sin sillas.
+     */
+    private static Map<Integer, List<SectionElement>> groupSectionElements(JsonNode elementsNode,
+                                                                          SectionElementCheck check) {
+        Map<Integer, List<SectionElement>> groups = new HashMap<>();
+        for (int i = 0; i < elementsNode.size(); i++) {
+            JsonNode elementNode = elementsNode.get(i);
+            JsonNode backendSectionIdNode = elementNode.get("backendSectionId");
+            JsonNode seatLayoutNode = elementNode.get("seatLayout");
+            if (!"section".equals(elementNode.path("type").asText(null))
+                    || backendSectionIdNode == null || backendSectionIdNode.isNull()
+                    || seatLayoutNode == null || seatLayoutNode.isNull()) {
+                continue;
+            }
+            SectionElement element = new SectionElement(
+                    seatLayoutNode.path("targetSeats").asInt(0),
+                    seatLayoutNode.path("rows").asInt(1),
+                    seatLayoutNode.path("seatsPerRow").asInt(1),
+                    elementNode.path("courtesySeats").asInt(0),
+                    i);
+            if (element.targetSeats <= 0) {
+                continue;
+            }
+            Integer sectionId = backendSectionIdNode.asInt();
+            check.check(sectionId, element);
+            groups.computeIfAbsent(sectionId, k -> new ArrayList<>()).add(element);
+        }
+        groups.values().forEach(elements -> elements.sort(Comparator.comparingInt(e -> e.originalIndex)));
+        return groups;
+    }
+
+    /**
+     * Firma de las sillas de cada sección en un layout: lo que determina cuántas sillas se
+     * generan, su numeración y sus cortesías. Un layout ilegible no tiene firmas: se regenera todo.
+     */
+    private Map<Integer, List<Integer>> seatSignatures(String layoutData) {
+        if (layoutData == null) {
+            return Map.of();
+        }
+        try {
+            JsonNode elementsNode = objectMapper.readTree(layoutData).get("elements");
+            if (elementsNode == null || !elementsNode.isArray()) {
+                return Map.of();
+            }
+            Map<Integer, List<Integer>> signatures = new HashMap<>();
+            groupSectionElements(elementsNode, (sectionId, element) -> { })
+                    .forEach((sectionId, elements) -> signatures.put(sectionId, signature(elements)));
+            return signatures;
+        } catch (JsonProcessingException e) {
+            log.warn("[SaveEventLayout] No se pudo leer el layout anterior; se regeneran todas las secciones");
+            return Map.of();
+        }
+    }
+
+    private static List<Integer> signature(List<SectionElement> elements) {
+        List<Integer> signature = new ArrayList<>(elements.size() * 2 + 1);
+        signature.add(courtesySeatsOf(elements));
+        for (SectionElement element : elements) {
+            signature.add(element.targetSeats);
+            signature.add(element.seatsPerRow);
+        }
+        return signature;
     }
 
     /** Cortesías de una sección lógica: las del primer elemento (ya ordenados por índice). */

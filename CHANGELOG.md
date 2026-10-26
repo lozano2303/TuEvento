@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed — fix(events): organizers are notified again when an admin approves or rejects their event
+
+- **Approving or rejecting an event** from the admin panel no longer notified the organizer (in-app, WebSocket and email) since 1.0.1: `AdminChangeEventStatusPort.execute(eventId, request, adminUserId)` was a `default` method, so Spring's proxy opened no transaction and the inner call to the variant with `cause` bypassed it. Without a transaction the `AFTER_COMMIT` listener that sends `EVENT_PUBLISHED` / `EVENT_REJECTED` was silently dropped, and each save committed on its own. The method is now implemented by the use case with its own `@Transactional`
+
+### Fixed — fix(layout): layout editor usability and performance with large sections
+
+- **Section wizard validations**: errors show when leaving a field or pressing "Crear sección" (the button is no longer silently disabled), with a summary at the top; the seat count cannot go above 200,000, the backend limit per section, also in Properties
+- **Seat size** (Normal, Compacta, Mini), suggested by the seat count in the wizard and editable in Properties, so a 55,000-seat section no longer fills the whole map
+- **Large sections**: the editor only draws the seats on screen, draws them as squares when they are tiny and skips them below ~1 px
+- **Zoom out to 2 %** (was 20 %) with multiplicative steps; vertex, midpoint and Bézier handles and section labels keep the same on-screen size at any zoom, and the resize handles are larger
+- **Saving the layout** no longer deletes and re-inserts the seats of sections whose seats did not change (same count per sub-section, numbering and courtesy seats, and all seats already stored): moving or recoloring a section of a 55,000-seat event no longer regenerates every seat. The layout itself was already updated in place. The web only updates the sections whose capacity or price changed and lists them once
+- **10 × 10 seat pages in shapes with gaps** (horseshoe, U, ring): polygon seats get physical columns from their position, so a page never joins both sides of a gap. Web and mobile
 ### Removed — chore: remove Facebook login
 
 - **Facebook sign-in removed** from the web (login and register), the mobile app (LoginScreen, RegisterScreen), and the backend (`OauthConfig` resolver, `oauthAuthorizationUrls`, all `app.oauth.facebook.*` YAML properties and env vars). Facebook Login was designed for real users in production, but while the Meta app stays in **development mode** it only works for the app admin and accounts manually added as testers — everyone else saw "La aplicación no está activa". Going **live** requires a privacy policy URL, a data-deletion endpoint, a Meta app review, and potentially business verification: requirements that go beyond the scope of this academic project. The mobile implementation was also broken (`AuthSession.startAsync` was removed in the current Expo SDK). Sign-in with **email/password** and **Google** remain fully supported. Existing `oauth_account` rows with `provider = 'facebook'` are kept in the database unchanged.
