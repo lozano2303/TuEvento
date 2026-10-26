@@ -1487,3 +1487,430 @@ Primer despliegue en el VPS (imágenes Docker `v1.0.0`). Incluye todo lo acumula
 - JwtAuthenticationFilter: replaced fragile manual Base64 claim parser with JJWT-based extraction via TokenGeneratorPort; added debug log for loaded authorities
 - SecurityConfig: added @EnableMethodSecurity to enable @PreAuthorize on controllers
 - TokenGeneratorPort / JwtTokenGenerator: added extractRole() and extractSubject() methods
+
+
+---
+
+# 🎓 GUÍA DE SUSTENTACIÓN — PREGUNTAS DEL JURADO
+
+> Buscá por el número de pregunta (`PREGUNTA 01`, `PREGUNTA 02`, etc.) o por palabra clave (`idempotencia`, `i18n`, `nsfw`, `jwt`, `websocket`, `redis`, `ddd`, etc.) para encontrar rápido lo que necesitás.
+
+---
+
+### 📌 PREGUNTA 01: ARQUITECTURA DDD Y CAPAS DEL BACKEND
+
+> **Dirigido a:** Jhampier Ortiz / Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«Expliquen la arquitectura del backend. ¿Por qué separaron domain, application, infrastructure e interfaces?»*
+
+**🎯 Respuesta:**
+El backend usa Domain-Driven Design con 4 capas por módulo:
+- **`domain/`** — modelos POJO puros (sin Spring, sin JPA), interfaces de repositorio y eventos de dominio. Ej: `Event.java`, `EventRepository.java` (interfaz), `EventStatus.java` (enum con DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED, CANCELLED, COMPLETED).
+- **`application/`** — casos de uso (`CreateEventService`, `ChangeEventStatusService`), ports de entrada/salida, DTOs y mappers MapStruct. Nunca toca JPA directamente.
+- **`infrastructure/`** — implementaciones concretas: `EventRepositoryImpl` (JPA), listeners de Kafka (no activos), schedulers `@Scheduled`, WebSocket listeners, adaptadores de S3/MinIO.
+- **`interfaces/`** — controllers REST (`EventController`) que solo reciben HTTP, delegan al caso de uso y devuelven `ApiResponse<T>`. Sin lógica de negocio.
+
+La regla es: las capas internas no conocen las externas. El dominio no sabe que existe Spring. Si mañana cambiamos PostgreSQL por MongoDB, solo tocamos `infrastructure/`.
+
+**🚩 Red Flag:** decir que todo vive en el controller o que el `@Repository` de JPA es el mismo que el repositorio del dominio.
+
+---
+
+### 📌 PREGUNTA 02: AUTENTICACIÓN JWT Y FLUJO STATELESS
+
+> **Dirigido a:** Jhampier Ortiz
+
+**🗣️ Pregunta en Sala:**
+*«¿Cómo funciona la autenticación? ¿Por qué es stateless y qué pasa cuando el access token expira?»*
+
+**🎯 Respuesta:**
+Al hacer login (`POST /api/v1/auth/login`) el backend genera dos tokens HMAC-SHA con JJWT:
+- **Access token** (15 min): claims `userId`, `alias` (subject), `role`. Firmado con `${app.jwt.secret}`.
+- **Refresh token** (7 días): solo `userId`. Se guarda como cookie `httpOnly` en producción.
+
+Cada request lleva `Authorization: Bearer <token>`. El `JwtAuthenticationFilter` (extiende `OncePerRequestFilter`) valida la firma y expiración, extrae los claims y construye un `SecurityUser` en el `SecurityContextHolder`. No hay sesiones en memoria — es 100% stateless.
+
+Cuando el access token expira el backend responde **401**. El frontend (`useTokenRefresh.js`) detecta el 401, hace `POST /auth/refresh` con el refresh token, recibe un nuevo access token y reconecta el WebSocket con `reconnectWebSocket(newToken)`. El hook corre automáticamente cada 12 minutos (3 min antes del vencimiento).
+
+**🚩 Red Flag:** decir que el token se guarda en la base de datos en cada request o que hay un `HttpSession`.
+
+---
+
+### 📌 PREGUNTA 03: ROLES Y AUTORIZACIÓN (`ADMIN`, `ORGANIZER`, `USER`)
+
+> **Dirigido a:** Jhampier Ortiz / Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«¿Cómo controlan que un usuario normal no pueda publicar eventos o que un organizador no pueda administrar categorías?»*
+
+**🎯 Respuesta:**
+Hay dos niveles de control:
+
+1. **`SecurityConfig`** — reglas por verbo HTTP y path. Ejemplos reales:
+   - `POST /api/v1/categories/**` → solo `ADMIN`
+   - `DELETE/PUT/PATCH /api/v1/events/**` → solo `ORGANIZER`
+   - `POST /api/v1/wallet/credit` → solo `ADMIN`
+   - Todo lo demás → `authenticated()`
+
+2. **`@PreAuthorize`** en controllers — capa extra por método. Ejemplos: `AdminController` tiene `@PreAuthorize("hasAuthority('ADMIN')")` a nivel de clase; `EventController` lo tiene por método.
+
+Los roles son instancias de la clase `Role` con campo `code` (String): `"ADMIN"`, `"ORGANIZER"`, `"USER"`. En el JWT van como claim `role`. El `SecurityUser` los expone como `SimpleGrantedAuthority(role)` sin prefijo `ROLE_`, por eso se usa `hasAuthority()` y no `hasRole()`.
+
+**🚩 Red Flag:** confundir `hasRole("ADMIN")` (que busca `ROLE_ADMIN`) con `hasAuthority("ADMIN")`.
+
+---
+
+### 📌 PREGUNTA 04: WEBSOCKET / STOMP Y TIEMPO REAL
+
+> **Dirigido a:** Jhampier Ortiz / Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«¿Cómo se actualiza el estado de las sillas en tiempo real sin que el usuario tenga que refrescar la página?»*
+
+**🎯 Respuesta:**
+Se usa **STOMP sobre WebSocket** con fallback SockJS. Configurado en `WebSocketConfig.java` (`@EnableWebSocketMessageBroker`):
+- Broker in-memory con prefijos `/topic` (broadcast) y `/queue` (personal).
+- Endpoint de handshake: `/ws` (con SockJS).
+- El JWT se pasa como query param (`/ws?token=<JWT>`) porque los navegadores no permiten headers custom en el handshake WebSocket. El `JwtHandshakeInterceptor` lo valida antes de aceptar la conexión.
+
+Topics activos en producción:
+- `/topic/events/{eventId}/seats` — cuando cambia el estado de una silla (`SeatStatusChangedEvent`)
+- `/topic/notifications/{userId}` — notificaciones in-app en tiempo real
+- `/topic/events/{eventId}/comments` — comentario nuevo, editado o eliminado
+
+En el frontend, `NotificationContext.jsx` mantiene **un solo cliente STOMP** (singleton con `useRef`) para toda la app. Los componentes llaman a `subscribe(destination, callback, key)` del contexto para suscribirse dinámicamente.
+
+**🚩 Red Flag:** decir que se usa polling cada X segundos para actualizar las sillas.
+
+---
+
+### 📌 PREGUNTA 05: BASE DE DATOS, JPA Y LIQUIBASE
+
+> **Dirigido a:** Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«¿Por qué usan Liquibase si Hibernate puede crear las tablas automáticamente?»*
+
+**🎯 Respuesta:**
+`ddl-auto: validate` — Hibernate **nunca** crea ni modifica tablas, solo valida que el schema coincida con las entidades. Liquibase controla el schema mediante changelogs versionados en `classpath:db/changelog/db.changelog-master.yaml`.
+
+Esto es la práctica correcta en producción: los cambios de schema son explícitos, reversibles, auditables y se ejecutan en orden determinístico. Con `ddl-auto: create` o `update`, un despliegue accidental podría truncar tablas o perder columnas.
+
+Hay dos objetos separados: `Event.java` (dominio, POJO puro) y `EventEntity.java` (JPA, con `@Entity @Table`). MapStruct convierte entre ellos en `EventRepositoryImpl`. Esto desacopla el modelo de negocio del modelo de persistencia.
+
+**🚩 Red Flag:** decir que usan `ddl-auto: create-drop` en producción.
+
+---
+
+### 📌 PREGUNTA 06: IDEMPOTENCIA EN PAGOS Y WEBHOOKS
+
+> **Dirigido a:** Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«Si el webhook de pago se dispara dos veces (red inestable, retry del gateway), ¿cómo evitan que se procese dos veces el mismo pago?»*
+
+**🎯 Respuesta:**
+El `ProcessWebhookUseCaseImpl` implementa **idempotencia** verificando el estado del pago antes de procesarlo. Si el pago ya está en estado `PAID` o `FAILED`, ignora el webhook duplicado y retorna sin modificar nada.
+
+Adicionalmente, los webhooks del fake-payment-gateway se autentican con **HMAC-SHA256** (`X-Webhook-Signature` header). El `WebhookController` verifica la firma con `${WEBHOOK_SECRET}` antes de procesar cualquier evento — esto evita que actores externos inyecten pagos falsos. Las rutas `/api/v1/webhooks/**` están excluidas del filtro JWT (usan su propio mecanismo de autenticación) y también excluidas del `JwtAuthenticationFilter` vía `shouldNotFilter()`.
+
+**🚩 Red Flag:** procesar el pago sin verificar el estado actual o sin validar la firma HMAC.
+
+---
+
+### 📌 PREGUNTA 07: INTERNACIONALIZACIÓN (i18n) EN EL FRONTEND
+
+> **Dirigido a:** Jhampier Ortiz
+
+**🗣️ Pregunta en Sala:**
+*«¿Cómo implementaron el soporte multiidioma en la web? ¿Dónde están las traducciones y cómo cambia el idioma en tiempo real?»*
+
+**🎯 Respuesta:**
+El frontend web usa **react-i18next**. Las traducciones están en archivos JSON por idioma en `src/locales/` (es, en, fr, pt). Los componentes usan el hook `useTranslation()` y la función `t('login.signIn')` para obtener el texto traducido.
+
+El selector de idioma (`LanguageSelector`) llama a `i18n.changeLanguage(code)` — react-i18next re-renderiza todos los componentes que usan `useTranslation()` automáticamente sin recargar la página.
+
+En el backend hay un servicio de traducción automática con **LibreTranslate** (`translation.provider: libretranslate`) que traduce contenido generado por usuarios (nombres de secciones, descripciones de eventos) a los idiomas activos del sistema. Las traducciones se guardan en la BD para no repetir llamadas. El perfil `translate` del docker-compose levanta el contenedor de LibreTranslate (≈2 GB de RAM, opcional).
+
+**🚩 Red Flag:** hardcodear textos en español directo en el JSX sin usar `t()`.
+
+---
+
+### 📌 PREGUNTA 08: MODERACIÓN DE CONTENIDO (NSFW)
+
+> **Dirigido a:** Jhampier Ortiz / Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«¿Qué pasa si un organizador intenta subir una imagen inapropiada como portada de su evento?»*
+
+**🎯 Respuesta:**
+Hay **dos capas de moderación de imágenes** antes de guardarlas en MinIO/RustFS:
+
+1. **Clasificador NSFW propio** (`nsfw-classifier` en docker-compose): modelo Python servido en `http://nsfw-classifier:8000`. El backend hace POST con la imagen y recibe un score. Si supera el threshold (`NSFW_THRESHOLD=0.4` en dev, `0.6` en prod), rechaza el upload con un error de negocio.
+
+2. **Sightengine** (opcional, API externa): detecta gore, nudity y weapons. Se activa si `SIGHTENGINE_API_USER` y `SIGHTENGINE_API_SECRET` están configurados.
+
+Si ambos servicios están inactivos, el sistema sigue funcionando (degradación elegante). El módulo de almacenamiento (`StorageService`) orquesta la validación antes de hacer el upload efectivo.
+
+**🚩 Red Flag:** subir cualquier imagen sin validación o depender solo de la revisión manual del admin.
+
+---
+
+### 📌 PREGUNTA 09: EVENTOS DE DOMINIO INTERNOS (ApplicationEventPublisher)
+
+> **Dirigido a:** Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«¿Tienen mensajería asíncrona? ¿Usan Kafka?»*
+
+**🎯 Respuesta:**
+**Kafka está en el `pom.xml` pero no está activo** — no hay `@KafkaListener` ni `KafkaTemplate` en ningún archivo. Está previsto para una Fase 3 del proyecto.
+
+Lo que **sí funciona** es el `ApplicationEventPublisher` de Spring para comunicación asíncrona **interna** entre módulos del mismo monolito. Ejemplos reales:
+
+- `RegisterUserUseCase` publica `UserRegisteredEvent` → un listener envía el email de bienvenida
+- `LoginUseCase` publica `UserLockedEvent` (tras 5 intentos fallidos) → notificación al usuario
+- `ChangeEventStatusService` publica `EventStatusChangedEvent` → `SeatStatusWebSocketListener` manda el update por STOMP
+- `RequestOrganizerUseCase` publica `OrganizerPetitionCreatedEvent` → badge de pendientes en el panel del admin se actualiza en tiempo real
+
+Los listeners usan `@TransactionalEventListener(phase = AFTER_COMMIT)` — se ejecutan **después** de que la transacción de BD confirme, evitando enviar notificaciones si algo falla.
+
+**🚩 Red Flag:** confundir `ApplicationEventPublisher` (interno, in-process) con Kafka (externo, distribuido).
+
+---
+
+### 📌 PREGUNTA 10: MANEJO DE ERRORES GLOBAL CON @RestControllerAdvice
+
+> **Dirigido a:** Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«Si una compra falla por silla ya vendida, ¿cómo evitan que el StackTrace de Java llegue al cliente?»*
+
+**🎯 Respuesta:**
+El proyecto usa `@RestControllerAdvice` con métodos `@ExceptionHandler` para cada excepción de dominio. Cuando una excepción sube hasta la capa de interfaces, el advice la intercepta y devuelve una respuesta limpia:
+
+```java
+@ExceptionHandler(SeatAlreadySoldException.class)
+public ResponseEntity<ApiResponse<Void>> handleSeatSold(SeatAlreadySoldException ex) {
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+        .body(ApiResponse.error(ex.getMessage()));
+}
+```
+
+La respuesta que llega al cliente siempre tiene la forma `{"success": false, "message": "...", "data": null}` — nunca un StackTrace. El `SecurityConfig` también tiene handlers para 401 y 403 que devuelven JSON limpio.
+
+**🚩 Red Flag:** el cliente recibe un HTML con 100 líneas de StackTrace de Java con código 500.
+
+---
+
+### 📌 PREGUNTA 11: CONCURRENCIA EN RESERVA DE SILLAS
+
+> **Dirigido a:** Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«¿Cómo evitan que dos usuarios compren la misma silla al mismo tiempo?»*
+
+**🎯 Respuesta:**
+El flujo usa un mecanismo de **bloqueo temporal** (reserva optimista):
+
+1. Usuario selecciona silla → pasa a estado `RESERVED` con timestamp de expiración en Redis.
+2. La operación de cambio de estado usa una actualización condicional: solo tiene éxito si el estado actual es `AVAILABLE`. Si dos usuarios intentan reservar simultáneamente, solo uno gana.
+3. Un job `@Scheduled` (habilitado por `@EnableScheduling` en `TuEventoApplication`) libera las sillas en estado `RESERVED` cuyo tiempo de expiración ya venció.
+4. El cambio de estado se propaga por WebSocket al topic `/topic/events/{eventId}/seats` — todos los browsers que están viendo el mapa ven la silla cambiar de color en tiempo real.
+
+**🚩 Red Flag:** no tener ningún mecanismo de bloqueo y dejar que la BD arroje un error de constraint único.
+
+---
+
+### 📌 PREGUNTA 12: ALMACENAMIENTO DE ARCHIVOS (MinIO / RustFS)
+
+> **Dirigido a:** Jhampier Ortiz
+
+**🗣️ Pregunta en Sala:**
+*«¿Por qué usan MinIO en vez de guardar las imágenes en la base de datos o en el filesystem del servidor?»*
+
+**🎯 Respuesta:**
+MinIO es un object store compatible con la **API de AWS S3**. El código usa el SDK `software.amazon.awssdk:s3`, lo que significa que cambiar a S3 real en producción solo requiere cambiar variables de entorno (`endpoint`, `access-key`, `secret-key`), sin tocar código.
+
+En producción se usa **RustFS** (`STORAGE_PROVIDER=rustfs`) — una alternativa a MinIO escrita en Rust, más ligera. La URL pública (`RUSTFS_PUBLIC_URL=https://s3.tuevento-capysoft.tech`) es la que se incrusta en las URLs presignadas que llegan al browser. La URL interna (`APP_STORAGE_ENDPOINT=http://rustfs:9000`) es la que usa el backend container-to-container.
+
+Guardar imágenes en la BD (BYTEA/BLOB) satura la BD con datos binarios y hace lentas todas las queries. Guardar en el filesystem del servidor no escala y se pierde si el contenedor se recrea.
+
+**🚩 Red Flag:** guardar imágenes como base64 en una columna TEXT de PostgreSQL.
+
+---
+
+### 📌 PREGUNTA 13: MANEJO DE ERRORES Y EXCEPCIONES GLOBALES CON @ControllerAdvice
+
+> **Dirigido a:** Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«Si una orden de compra falla por fondos insuficientes o boletos agotados, ¿cómo captura Spring Boot la excepción para no enviar el StackTrace de Java en la respuesta HTTP?»*
+
+**🎯 Respuesta:**
+Se usa `@RestControllerAdvice` con métodos `@ExceptionHandler` tipados por excepción de dominio. Cada excepción de negocio (fondos insuficientes, silla vendida, evento no disponible) tiene su propio handler que devuelve un `ResponseEntity<ApiResponse<Void>>` con el código HTTP semántico correcto (409 Conflict para conflictos de estado, 422 Unprocessable Entity para reglas de negocio violadas, 404 para entidades no encontradas). El cliente siempre recibe `{"success": false, "message": "mensaje legible", "data": null}`. El StackTrace nunca sale del servidor — queda en los logs internos del backend (nivel ERROR con SLF4J/Logback).
+
+**🚩 Red Flag:** enviar el StackTrace de Java con 100 líneas de error interno y código 500 al cliente web.
+
+---
+
+### 📌 PREGUNTA 14: TÉRMINOS LEGALES, PRIVACIDAD Y COOKIES
+
+> **Dirigido a:** Jhampier Ortiz
+
+**🗣️ Pregunta en Sala:**
+*«¿Qué consideraciones legales exige la legislación colombiana en plataformas de venta de boletería digital?»*
+
+**🎯 Respuesta:**
+El proyecto implementa los términos y condiciones accesibles desde el modal de login/registro. Según la **Ley 1480 de 2011 (Estatuto del Consumidor)** y la **Ley 527 de 1999 (Comercio Electrónico)**:
+
+- **Derecho de retracto**: el consumidor puede arrepentirse dentro de los 5 días hábiles en compras a distancia. Excepción: espectáculos públicos con fecha fija (la Ley 1480 tiene excepciones para eventos con fecha determinada).
+- **Tratamiento de datos personales** (Ley 1581 de 2012): se debe informar qué datos se recolectan, con qué fin y cómo se pueden eliminar. Los emails solo se usan para autenticación y notificaciones.
+- **Cargo por servicio transparente**: el precio final mostrado al usuario debe incluir todos los cargos antes de confirmar la compra.
+- **Consentimiento informado**: el checkbox de "Acepto términos y condiciones" en el registro es el mecanismo de consentimiento explícito.
+
+**🚩 Red Flag:** decir que los términos legales no tienen importancia técnica o no saber dónde están en el proyecto.
+
+---
+
+### 📌 PREGUNTA 15: CACHÉ CON REDIS
+
+> **Dirigido a:** Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«¿Cómo usan Redis en el proyecto?»*
+
+**🎯 Respuesta:**
+Redis tiene dos usos activos en el proyecto:
+
+1. **Spring Session** (`spring-session-data-redis`): almacena sesiones distribuidas. En una arquitectura donde el backend puede tener múltiples instancias, las sesiones deben vivir fuera de la JVM.
+
+2. **Bloqueo temporal de sillas**: cuando un usuario reserva una silla, el backend guarda en Redis el estado `RESERVED` con TTL (tiempo de expiración). Esto permite liberar automáticamente las sillas abandonadas sin depender de un job de BD.
+
+La dependencia `spring-boot-starter-data-redis` está en el `pom.xml` y la conexión se configura con `REDIS_HOST` y `REDIS_PORT`. En producción corre el contenedor `tuevento-redis` (imagen `redis:7-alpine`).
+
+**🚩 Red Flag:** decir que Redis no se usa o que es solo para caché de queries (no está `@Cacheable` activo en el proyecto actualmente).
+
+---
+
+### 📌 PREGUNTA 16: PRUEBAS AUTOMATIZADAS CON JUNIT 5
+
+> **Dirigido a:** Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«¿Cómo verifican automáticamente que un usuario sin rol de admin recibe 403 al intentar publicar un evento?»*
+
+**🎯 Respuesta:**
+El proyecto tiene tests unitarios con **JUnit 5 + Mockito** para los casos de uso. Ejemplos reales en el repositorio:
+- `AdminChangeEventStatusUseCaseTest` — verifica que solo ADMIN puede cambiar el estado a PUBLISHED.
+- `ApproveOrganizerRequestUseCaseTest` — verifica que se publica `OrganizerApprovedEvent` tras aprobar.
+- `LoginUseCaseLockoutTest` — verifica que se publica `UserLockedEvent` tras 5 intentos fallidos.
+- `PaymentOwnershipTest` — verifica que un usuario no puede acceder al pago de otro.
+
+La cobertura se mide con **JaCoCo** (`jacoco-maven-plugin 0.8.12`) y el reporte se envía a **SonarQube** (`sonar-maven-plugin`). El pipeline de Jenkins ejecuta `./mvnw test` en la etapa `Unit Tests` antes de empaquetar el JAR.
+
+**🚩 Red Flag:** no tener tests en el repositorio o decir que los tests son comentarios.
+
+---
+
+### 📌 PREGUNTA 17: DISEÑO RESPONSIVO Y EXPERIENCIA MÓVIL
+
+> **Dirigido a:** Jhampier Ortiz
+
+**🗣️ Pregunta en Sala:**
+*«¿Cómo adaptaron la selección de asientos en pantallas pequeñas?»*
+
+**🎯 Respuesta:**
+La web usa **Tailwind CSS v4** con breakpoints utilitarios (`sm:`, `md:`, `lg:`). El mapa de asientos en la web usa **Konva + React Konva** (canvas 2D) con soporte de zoom y pan táctil.
+
+La app **móvil** (React Native / Expo) tiene su propio componente de mapa de asientos optimizado para touch: `websocketService.js` maneja la conexión STOMP desde el móvil para actualizaciones en tiempo real de sillas usando `@stomp/stompjs` con `sockjs-client`. El cliente se conecta a `/topic/events/{eventId}/seats` y actualiza el estado local de las sillas sin recargar.
+
+**🚩 Red Flag:** tener un mapa de asientos que no funciona en móvil o requiere scroll infinito.
+
+---
+
+### 📌 PREGUNTA 18: BACKUPS DE BASE DE DATOS
+
+> **Dirigido a:** Cristofer Lozano
+
+**🗣️ Pregunta en Sala:**
+*«¿Cómo automatizaron los backups de PostgreSQL?»*
+
+**🎯 Respuesta:**
+PostgreSQL corre en el contenedor `tuevento-postgres` con volumen persistente `postgres_data`. Para backup se usa `pg_dump` contra el contenedor:
+
+```bash
+docker exec tuevento-postgres pg_dump -U tuevento tuevento_db | gzip > backup_$(date +%Y%m%d).sql.gz
+```
+
+Este comando se puede automatizar con un cronjob en el VPS. El RPO (Recovery Point Objective) depende de la frecuencia del cronjob. Para producción académica se hace backup diario. Los dumps se almacenan en RustFS (el mismo object store del proyecto) o en almacenamiento externo.
+
+Liquibase garantiza que el schema puede recrearse desde cero ejecutando los changelogs — esto complementa el backup de datos.
+
+**🚩 Red Flag:** no tener ningún mecanismo de backup o decir que confían en que el disco nunca falla.
+
+---
+
+### 📌 PREGUNTA 19: MATRIZ DE TRAZABILIDAD SRS
+
+> **Dirigido a:** Cristofer Lozano / Jhampier Ortiz
+
+**🗣️ Pregunta en Sala:**
+*«Demuestren dónde está la matriz de trazabilidad y cómo mapearon los requisitos con el código.»*
+
+**🎯 Respuesta:**
+La matriz de trazabilidad relaciona los requisitos funcionales (RF) con los artefactos de código:
+
+| RF | Descripción | Backend | Frontend |
+|---|---|---|---|
+| RF01 | Registro de usuarios | `RegisterUserUseCase` | `login.jsx` (vista registro) |
+| RF02 | Autenticación JWT | `LoginUseCase`, `JwtAuthenticationFilter` | `Login.js`, `tokenStore.js` |
+| RF03 | Gestión de eventos | `CreateEventService`, `EventController` | `EventCreateWizard.jsx` |
+| RF04 | Selección de sillas | `SeatController`, `SeatBlockController` | `EventDetail.jsx`, Konva map |
+| RF05 | Procesamiento de pagos | `ProcessWebhookUseCaseImpl`, `WebhookController` | `PaymentFlow` |
+| RF06 | Generación de tickets QR | `TicketService` (QR firmado con `QR_SECRET`) | Vista de ticket |
+| RF07 | Notificaciones en tiempo real | `InAppChannelAdapter`, WebSocket | `NotificationContext.jsx` |
+| RF08 | Panel de administración | `AdminController`, `AdminEventManagement` | `AdminEventManagement.jsx` |
+| RF09 | Moderación de imágenes | `NsfwClassifier`, `SightengineAdapter` | Upload en wizard |
+| RF10 | Multiidioma | `LibreTranslate` adapter, `language` module | `i18n`, `LanguageSelector` |
+
+**🚩 Red Flag:** no saber dónde está la matriz o decir que no la terminaron.
+
+---
+
+### 📌 PREGUNTA 20: DEMOSTRACIÓN TRANSACCIONAL EN VIVO
+
+> **Dirigido a:** Cristofer Lozano / Jhampier Ortiz
+
+**🗣️ Pregunta en Sala:**
+*«Demuestren en vivo: publicación de evento, compra de boleta, generación de QR y escaneo.»*
+
+**🎯 Respuesta — Flujo completo:**
+
+1. **Admin publica evento**: Login como admin → Panel admin → Eventos pendientes de revisión → Aprobar → Estado cambia a `PUBLISHED` (WebSocket notifica al organizador en tiempo real).
+
+2. **Usuario compra boleta**: Login como user → Buscar evento → Seleccionar silla en el mapa Konva → Checkout → Fake Payment Gateway popup → Pago exitoso → Webhook HMAC enviado al backend → `ProcessWebhookUseCaseImpl` procesa → Ticket generado con QR firmado con HMAC-SHA256 (`QR_SECRET`).
+
+3. **QR tiene TTL de 60 segundos** (`QR_EXPIRATION=60000`): el QR es válido solo 60 segundos para evitar capturas de pantalla. El escáner llama al endpoint de validación antes de que expire.
+
+4. **Escaneo**: Módulo de puerta escanea QR → Backend valida firma y TTL → Cambia estado del ticket a `USED` → Segundo intento de escaneo devuelve error "Ticket ya utilizado".
+
+**🚩 Red Flag:** que el checkout falle con 500, que el QR no se genere, o que el mismo boleto pueda entrar dos veces.
+
+---
+
+## 📋 MATRIZ DE CALIFICACIÓN RÁPIDA (SENA GFPI-F-016 v2)
+
+| Criterio Evaluado | Peso | Calificación (1.0 - 5.0) |
+| :--- | :---: | :---: |
+| **1. Dominio Arquitectónico y Desacople de Capas** | 25% | `___ / 5.0` |
+| **2. Persistencia, Concurrencia y Seguridad en Backend** | 25% | `___ / 5.0` |
+| **3. Front-End Web, Móvil, Integración y Experiencia de Usuario** | 20% | `___ / 5.0` |
+| **4. Componente Diferenciador (IoT / IA / Visión / DevOps)** | 15% | `___ / 5.0` |
+| **5. Sustentación, Fluidez, Ética y Veracidad Técnica** | 15% | `___ / 5.0` |
+| **TOTAL DEFINITIVO PONDERADO** | **100%** | **`___ / 5.0`** |
+
+---
+
+*🔍 Palabras clave de búsqueda: `idempotencia`, `i18n`, `nsfw`, `jwt`, `websocket`, `stomp`, `redis`, `ddd`, `liquibase`, `roles`, `kafka`, `minio`, `rustfs`, `qr`, `tailwind`, `konva`, `backup`, `trazabilidad`, `controlleradvice`, `@preauthorize`, `stateless`, `stomp`, `sockjs`, `mapstruct`, `jacoco`, `sonarqube`*

@@ -21,6 +21,8 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
   mail:
     host: smtp.gmail.com
     port: 587
@@ -60,7 +62,10 @@ app:
     refresh-cookie:
       secure: false
   jwt:
-    secret: ${JWT_SECRET}
+    # RS256: firma con clave privada, verificación con clave pública.
+    # En dev se cargan desde el classpath; en prod se montan como secrets de k8s.
+    private-key-path: ${APP_JWT_PRIVATE_KEY_PATH:classpath:keys/jwt-private.pem}
+    public-key-path: ${APP_JWT_PUBLIC_KEY_PATH:classpath:keys/jwt-public.pem}
     access-token-expiration: 900000
     refresh-token-expiration: 604800000
   qr:
@@ -136,6 +141,11 @@ payment:
     api-key: ${FAKE_GATEWAY_API_KEY:dev-admin-key-change-in-production}
   webhook:
     secret: ${WEBHOOK_SECRET:default-secret-change-in-production}
+  reconciliation:
+    enabled: ${PAYMENT_RECONCILIATION_ENABLED:true}
+    # En dev se usa un umbral corto para facilitar pruebas manuales
+    pending-threshold-minutes: ${PAYMENT_RECONCILIATION_THRESHOLD_MINUTES:5}
+    cron: ${PAYMENT_RECONCILIATION_CRON:0 */2 * * * *}
 
 notification:
   email:

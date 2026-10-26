@@ -147,13 +147,16 @@ app:
       same-site: ${AUTH_COOKIE_SAME_SITE:Strict}
   # ── JWT ───────────────────────────────────────────────────
   jwt:
-    secret: ${JWT_SECRET}
+    # RS256: firma con clave privada, verificación con clave pública.
+    # En prod se montan como secrets externos (no van al repositorio).
+    private-key-path: ${APP_JWT_PRIVATE_KEY_PATH}
+    public-key-path: ${APP_JWT_PUBLIC_KEY_PATH}
     access-token-expiration: 900000       # 15 minutos
     refresh-token-expiration: 604800000   # 7 días
 
   # ── QR de tickets ─────────────────────────────────────────
   qr:
-    secret: ${QR_SECRET:${JWT_SECRET}}
+    secret: ${QR_SECRET}
     expiration: ${QR_EXPIRATION:60000}    # 60 segundos
 
   # ── Almacenamiento S3 ─────────────────────────────────────

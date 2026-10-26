@@ -1667,8 +1667,8 @@ input[type="password"]::-ms-reveal { display: none; }
 
 /* ── Botones sociales (grid 2 columnas) ──────────────────────────────────── */
 .login-social-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  justify-content: center;
   gap: 0.875rem;
 }
 
@@ -1700,6 +1700,7 @@ input[type="password"]::-ms-reveal { display: none; }
 .login-google-wrapper {
   position: relative;
   width: 100%;
+  max-width: 280px;
   height: 56px;
   border-radius: 12px;
   border: 1px solid rgba(124, 58, 237, 0.35);

@@ -73,19 +73,24 @@ public class SeatReservationExpirationScheduler {
 
     /**
      * Cron cada 10 segundos — optimizado para liberación casi instantánea.
-     * 
-     * Frecuencia aumentada de 60s a 10s para que el TTL se sienta instantáneo en el cliente.
-     * La query está optimizada con un índice compuesto en (status, reserved_until) para
-     * mantener el rendimiento a alta frecuencia.
-     * 
+     *
+     * <p>Solo libera sillas RESERVED cuyo TTL expiró y que NO tienen una orden en
+     * PAYMENT_PENDING. Esto previene la venta duplicada: si el webhook de confirmación
+     * llega justo después de que el scheduler liberó la silla, el asiento ya podría
+     * estar reservado por otro usuario.
+     *
+     * <p>El lock pesimista individual en {@code updateSeatStatus} garantiza que la
+     * liberación y la confirmación de pago sean mutuamente excluyentes.
+     *
      * @Transactional aplica igual tanto al ser disparado por el cron como
      * desde onStartup(), ya que el proxy de Spring está activo en ambos casos.
      */
     @Scheduled(cron = "*/10 * * * * *") // cada 10 segundos
     @Transactional
     public void releaseExpiredReservations() {
-        List<Seat> expired = seatRepository.findAllByStatusAndReservedUntilBefore(
-                SeatStatus.RESERVED, LocalDateTime.now());
+        // Excluye sillas con órdenes en PAYMENT_PENDING para evitar venta duplicada
+        List<Seat> expired = seatRepository.findExpiredReservationsWithoutPendingPayment(
+                LocalDateTime.now());
 
         if (expired.isEmpty()) {
             // INFO (no debug) para que sea visible tanto en cron como en catch-up

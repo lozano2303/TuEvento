@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.payment.domain.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +18,12 @@ public interface PaymentRepository {
     Optional<Payment> findByGatewayTransactionId(String gatewayTransactionId);
     boolean existsById(Long paymentId);
     List<Payment> findByOrderIdInAndStatus(List<Long> orderIds, PaymentStatus status);
+
+    /**
+     * Pagos en PENDING cuyo {@code createdAt} es anterior a {@code olderThan}.
+     * Usado por el job de conciliación para detectar pagos sin webhook.
+     */
+    List<Payment> findPendingOlderThan(LocalDateTime olderThan);
 
     /** Retorna las ganancias desglosadas por evento para el organizador indicado. */
     List<OrganizerEarningsByEventResponse> findEarningsByOrganizer(Long organizerId);

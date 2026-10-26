@@ -34,3 +34,7 @@ build/
 
 ### Environment variables ###
 .env
+
+# JWT RSA private key — never commit to VCS
+# In CI/CD, inject via secret mount or environment variable
+src/main/resources/keys/jwt-private.pem
