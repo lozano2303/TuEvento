@@ -1,9 +1,0 @@
-com/capysoft/common/domain/exception/BusinessException.class
-com/capysoft/common/interfaces/ApiResponse.class
-com/capysoft/common/infrastructure/persistence/JpaAuditingEntity.class
-com/capysoft/common/domain/exception/NotFoundException.class
-com/capysoft/common/infrastructure/security/SecurityUser.class
-com/capysoft/common/domain/exception/ForbiddenException.class
-com/capysoft/common/domain/model/AuditableEntity.class
-com/capysoft/common/domain/exception/ImagePolicyViolationException.class
-com/capysoft/common/domain/exception/UnauthorizedException.class
