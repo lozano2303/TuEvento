@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Relay del patrón Transactional Outbox.
@@ -55,6 +56,9 @@ public class OutboxRelayScheduler {
     @Value("${outbox.relay.max-retries:5}")
     private int maxRetries;
 
+    @Value("${outbox.relay.send-timeout-ms:10000}")
+    private long sendTimeoutMs;
+
     @Scheduled(fixedDelayString = "${outbox.relay.interval-ms:1000}")
     @Transactional
     public void relay() {
@@ -89,22 +93,17 @@ public class OutboxRelayScheduler {
         try {
             // La key del mensaje es aggregateId para garantizar orden por agregado
             // dentro del mismo topic (Kafka asigna la misma partición por key).
+            // Envío síncrono: el resultado se marca dentro de la transacción que tiene el lock
+            // de la fila; con un callback asíncrono la marca llegaría tras el commit, sin lock.
             kafkaTemplate.send(event.getTopic(), event.getAggregateId(), event.getPayload())
-                    .whenComplete((result, ex) -> {
-                        if (ex != null) {
-                            log.error("[OutboxRelay] Kafka send failed for event {}: {}",
-                                    event.getId(), ex.getMessage());
-                            outboxEventRepository.markFailed(event.getId(), ex.getMessage());
-                        } else {
-                            outboxEventRepository.markProcessed(event.getId());
-                            log.debug("[OutboxRelay] Published event {} to topic {} partition {}",
-                                    event.getId(), event.getTopic(),
-                                    result.getRecordMetadata().partition());
-                        }
-                    });
+                    .get(sendTimeoutMs, TimeUnit.MILLISECONDS);
+            outboxEventRepository.markProcessed(event.getId());
+            log.debug("[OutboxRelay] Published event {} to topic {}", event.getId(), event.getTopic());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            outboxEventRepository.markFailed(event.getId(), "interrupted");
         } catch (Exception e) {
-            log.error("[OutboxRelay] Unexpected error publishing event {}: {}",
-                    event.getId(), e.getMessage(), e);
+            log.error("[OutboxRelay] Kafka send failed for event {}: {}", event.getId(), e.getMessage());
             outboxEventRepository.markFailed(event.getId(), e.getMessage());
         }
     }

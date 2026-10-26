@@ -9,9 +9,9 @@ spring:
     show-sql: false
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
-  # bootstrap-servers se sobreescribe por perfil (dev apunta a kafka:9092, prod al MSK/Confluent)
+  # Local: el broker del docker-compose publica 9094 al host. Dentro de Docker/k8s: kafka:9092
   kafka:
-    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
 
 # ── Outbox relay ──────────────────────────────────────────────────────────────
 outbox:
@@ -35,6 +35,8 @@ payment:
   reconciliation:
     enabled: ${PAYMENT_RECONCILIATION_ENABLED:true}
     pending-threshold-minutes: ${PAYMENT_RECONCILIATION_THRESHOLD_MINUTES:15}
+    # Pago aún PENDING en la pasarela pasado este plazo: se cancela y se liberan los asientos
+    expire-after-minutes: ${PAYMENT_RECONCILIATION_EXPIRE_MINUTES:30}
     cron: ${PAYMENT_RECONCILIATION_CRON:0 */5 * * * *}
 
 # Límite por IP en login, registro, recuperación y activación de cuenta
