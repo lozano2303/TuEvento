@@ -89,11 +89,20 @@ public class ProcessWebhookUseCaseImpl {
         webhookRepository.save(webhook);
 
         // 5. Actualizar Payment según el evento
+        applyGatewayStatus(payment, event.getStatus(), "Webhook: " + event.getEventType());
+    }
+
+    /**
+     * Aplica el estado que reporta la pasarela sobre el pago y sus efectos en orden,
+     * tickets y wallet. Lo usan el webhook y el job de conciliación, para que ambos
+     * sigan las mismas transiciones. Es idempotente: un estado ya aplicado se ignora.
+     */
+    @Transactional
+    public void applyGatewayStatus(Payment payment, String gatewayStatus, String reason) {
         PaymentStatus oldStatus = payment.getStatus();
-        String reason = "Webhook: " + event.getEventType();
 
         try {
-            switch (event.getStatus().toUpperCase()) {
+            switch (gatewayStatus.toUpperCase()) {
                 case "APPROVED":
                     // Idempotencia: si ya está APPROVED, ignorar el webhook duplicado
                     if (payment.getStatus() == PaymentStatus.APPROVED) {
@@ -106,7 +115,7 @@ public class ProcessWebhookUseCaseImpl {
 
                     // Confirmar orden y tickets
                     confirmOrderPaymentUseCase.confirmOrderPayment(
-                        payment.getOrderId(), event.getPaymentId());
+                        payment.getOrderId(), payment.getGatewayTransactionId());
 
                     // Si había reserva wallet, confirmarla (descuenta balance)
                     if (payment.getWalletTransactionId() != null) {
@@ -187,7 +196,7 @@ public class ProcessWebhookUseCaseImpl {
                     payment.markAsError();
                     paymentRepository.save(payment);
                     savePaymentLog(payment.getPaymentId(), oldStatus, PaymentStatus.ERROR,
-                        "Webhook: payment cancelled by user");
+                        reason + " (payment cancelled by user)");
 
                     failOrderPaymentUseCase.failOrderPayment(payment.getOrderId(), "Payment cancelled");
 
@@ -266,12 +275,12 @@ public class ProcessWebhookUseCaseImpl {
                     break;
 
                 default:
-                    log.warn("Unhandled payment status from webhook: status={}, eventId={}",
-                        event.getStatus(), event.getEventId());
+                    log.warn("Unhandled payment status from gateway: status={}, paymentId={}",
+                        gatewayStatus, payment.getPaymentId());
             }
         } catch (InvalidPaymentStatusTransitionException e) {
             log.error("Invalid payment status transition: paymentId={}, from={}, to={}, reason={}",
-                payment.getPaymentId(), oldStatus, event.getStatus(), e.getMessage());
+                payment.getPaymentId(), oldStatus, gatewayStatus, e.getMessage());
             throw e;
         }
     }

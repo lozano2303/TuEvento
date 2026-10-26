@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -60,6 +61,14 @@ public class PaymentRepositoryImpl implements PaymentRepository {
     @Override
     public List<OrganizerEarningsByEventResponse> findEarningsByOrganizer(Long organizerId) {
         return jpaRepository.findEarningsByOrganizer(organizerId);
+    }
+
+    @Override
+    public List<Payment> findPendingOlderThan(LocalDateTime olderThan) {
+        return jpaRepository.findByStatusAndCreatedAtBefore(PaymentStatus.PENDING, olderThan)
+                .stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
     }
 
     private PaymentEntity toEntity(Payment payment) {

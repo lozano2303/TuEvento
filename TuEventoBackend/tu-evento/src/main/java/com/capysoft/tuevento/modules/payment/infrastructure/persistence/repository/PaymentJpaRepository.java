@@ -21,6 +21,12 @@ public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, Long>
     List<PaymentEntity> findByOrderIdInAndStatus(List<Long> orderIds, PaymentStatus status);
     long countByStatus(PaymentStatus status);
 
+    /**
+     * Pagos en PENDING cuyo {@code createdAt} es anterior a {@code olderThan}.
+     * Usado por el job de conciliación.
+     */
+    List<PaymentEntity> findByStatusAndCreatedAtBefore(PaymentStatus status, java.time.LocalDateTime olderThan);
+
     @Query("SELECT COALESCE(SUM(p.amount), 0) FROM PaymentEntity p WHERE p.status = 'APPROVED'")
     BigDecimal sumApprovedRevenue();
 
