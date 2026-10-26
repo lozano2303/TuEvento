@@ -30,6 +30,29 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
+app:
+  storage:
+    # Strategy de almacenamiento: solo rustfs tiene configuración en este servicio
+    provider: ${APP_STORAGE_PROVIDER:rustfs}
+    bucket-default: ${STORAGE_BUCKET:tuevento}
+    rustfs:
+      endpoint: ${RUSTFS_ENDPOINT:http://localhost:9100}
+      public-url: ${RUSTFS_PUBLIC_URL:http://localhost:9100}
+      access-key: ${RUSTFS_ACCESS_KEY:rustfsadmin}
+      secret-key: ${RUSTFS_SECRET_KEY:rustfsadmin}
+      region: ${AWS_REGION:us-east-1}
+
+moderation:
+  nsfw:
+    url: ${NSFW_SERVICE_URL:http://localhost:8001}
+    threshold: ${NSFW_THRESHOLD:0.4}
+  sightengine:
+    api-user: ${SIGHTENGINE_API_USER:}
+    api-secret: ${SIGHTENGINE_API_SECRET:}
+    models: ${SIGHTENGINE_MODELS:gore,nudity,weapon}
+    threshold: ${SIGHTENGINE_THRESHOLD:0.4}
+    nudity-threshold: ${SIGHTENGINE_NUDITY_THRESHOLD:0.15}
+
 management:
   endpoints:
     web:

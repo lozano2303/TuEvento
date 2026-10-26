@@ -47,7 +47,7 @@ services:
 
   # ── Object storage (MinIO) ──────────────────────────────────────────────────
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: tuevento-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -78,7 +78,7 @@ services:
   # Prefijos que quedan privados (no se tocan aquí):
   #   - organizer_document/*  — PDFs de solicitud de organizador (sensibles)
   minio-init:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: tuevento-minio-init
     depends_on:
       minio:
@@ -207,7 +207,7 @@ services:
 
   # ── Translation Service ────────────────────────────────────────────────────
   libretranslate:
-    image: libretranslate/libretranslate:v1.6.2
+    image: libretranslate/libretranslate:v1.9.6
     container_name: tuevento-libretranslate
     restart: unless-stopped
     ports:
@@ -244,9 +244,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
 
-      # RS256: clave privada montada en el contenedor desde el host
+      # RS256: clave privada montada desde el host; si no existe, el perfil dev usa un par en memoria
       - APP_JWT_PRIVATE_KEY_PATH=file:/run/secrets/jwt-private.pem
-      - APP_JWT_PUBLIC_KEY_PATH=classpath:keys/jwt-public.pem
       - APP_JWT_ACCESS_TOKEN_EXPIRATION=900000
       - APP_JWT_REFRESH_TOKEN_EXPIRATION=604800000
 
@@ -306,7 +305,6 @@ services:
         condition: service_healthy
     networks:
       - tuevento-network
-    # secrets removidos por compatibilidad con el montaje actual
 
 
   # ── API Gateway (Spring Cloud Gateway) ─────────────────────────────────────
@@ -323,7 +321,8 @@ services:
     environment:
       - GATEWAY_PORT=8090
       - MONOLITH_URI=http://backend:8080
-      - STORAGE_SERVICE_URI=http://storage-service:8085
+      # Corte de /api/v1/storage al microservicio: descomentar tras la fase 1, pasos 2-4 (ver gateway application.yml)
+      # - STORAGE_SERVICE_URI=http://storage-service:8085
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - GATEWAY_CORS_ALLOWED_ORIGINS=${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000}
@@ -363,13 +362,14 @@ services:
       - REDIS_PORT=6379
       - APP_STORAGE_PROVIDER=rustfs
       - RUSTFS_ENDPOINT=http://rustfs:9000
-      - RUSTFS_ACCESS_KEY=${MINIO_ROOT_USER}
-      - RUSTFS_SECRET_KEY=${MINIO_ROOT_PASSWORD}
-      - RUSTFS_BUCKET_NAME=${RUSTFS_BUCKET:-tuevento-files}
+      # Mismas credenciales que el contenedor rustfs
+      - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY:-rustfsadmin}
+      - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin}
+      - STORAGE_BUCKET=${RUSTFS_BUCKET:-tuevento}
       - AWS_REGION=${AWS_REGION:-us-east-1}
-      - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER}
-      - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
-      - RUSTFS_PUBLIC_URL=${RUSTFS_PUBLIC_URL:-http://localhost:9000}
+      # URL pública embebida en las presigned URLs: el puerto que rustfs publica al host
+      - RUSTFS_PUBLIC_URL=${RUSTFS_PUBLIC_URL:-http://localhost:9100}
+      - NSFW_SERVICE_URL=http://nsfw-classifier:8000
     depends_on:
       postgres:
         condition: service_started
@@ -455,9 +455,3 @@ volumes:
   kafka_data:
   libretranslate-models:
 
-# ── Secrets ───────────────────────────────────────────────────────────────────
-# En dev la clave privada se monta desde el filesystem local.
-# En CI/CD se reemplaza por un Docker secret externo o se inyecta via variable.
-secrets:
-  jwt-private-key:
-    file: ./TuEventoBackend/tu-evento/src/main/resources/keys/jwt-private.pem

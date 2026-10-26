@@ -43,8 +43,11 @@ spring:
         # ── Microservicio de Archivos/Storage (PRIMERA EXTRACCIÓN) ───────────
         # Más específico: debe ir ANTES que monolith. Los frontends siguen
         # llamando a /api/v1/storage/** exactamente igual.
+        # Por defecto sigue yendo al monolito: el corte (STORAGE_SERVICE_URI=http://storage-service:8085)
+        # espera a que profile, event y organizer_petition dejen de tener FK a stored_file y a migrar
+        # los datos (plan, fase 1, pasos 2-4). Volver atrás = quitar la variable.
         - id: storage-service
-          uri: ${STORAGE_SERVICE_URI:http://localhost:8085}
+          uri: ${STORAGE_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
           predicates:
             - Path=/api/v1/storage/**
           filters:
