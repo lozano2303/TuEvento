@@ -179,6 +179,24 @@ class JwtTokenGeneratorTest {
                 .compact();
     }
 
+    @Test
+    @DisplayName("una clave en línea con saltos escritos como \\n tiene prioridad sobre la ruta")
+    void inlineKey_withEscapedNewlines_takesPrecedence() throws Exception {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+        kpg.initialize(2048);
+        RSAPrivateKey inline = (RSAPrivateKey) kpg.generateKeyPair().getPrivate();
+        String oneLinePem = ("-----BEGIN PRIVATE KEY-----\n"
+                + Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(inline.getEncoded())
+                + "\n-----END PRIVATE KEY-----").replace("\n", "\\n");
+
+        JwtTokenGenerator fromEnv = generatorWithMissingKey(false);
+        ReflectionTestUtils.setField(fromEnv, "inlinePrivateKey", oneLinePem);
+        fromEnv.init();
+
+        assertThat(fromEnv.getPublicKey().getModulus()).isEqualTo(inline.getModulus());
+        assertThat(fromEnv.isTokenValid(fromEnv.generateAccessToken(1, "u", "USER"))).isTrue();
+    }
+
     private static JwtTokenGenerator generatorWithMissingKey(boolean ephemeralAllowed) {
         JwtTokenGenerator g = new JwtTokenGenerator();
         ReflectionTestUtils.setField(g, "privateKeyResource", new ClassPathResource("keys/does-not-exist.pem"));

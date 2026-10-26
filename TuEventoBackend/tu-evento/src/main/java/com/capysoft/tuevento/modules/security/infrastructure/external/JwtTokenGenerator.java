@@ -78,6 +78,13 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
     @Value("${app.jwt.private-key-path:classpath:keys/jwt-private.pem}")
     private Resource privateKeyResource;
 
+    /**
+     * Clave privada PEM en línea (p. ej. una variable de entorno de Portainer). Si tiene valor,
+     * tiene prioridad sobre {@code app.jwt.private-key-path}.
+     */
+    @Value("${app.jwt.private-key:}")
+    private String inlinePrivateKey;
+
     @Value("${app.jwt.access-token-expiration}")
     private long accessTokenExpiration;
 
@@ -98,7 +105,10 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
     @PostConstruct
     void init() {
         try {
-            if (privateKeyResource.exists()) {
+            if (inlinePrivateKey != null && !inlinePrivateKey.isBlank()) {
+                privateKey = parsePrivateKey(inlinePrivateKey);
+                publicKey  = derivePublicKey(privateKey);
+            } else if (privateKeyResource.exists()) {
                 privateKey = loadPrivateKey(privateKeyResource);
                 publicKey  = derivePublicKey(privateKey);
             } else if (ephemeralKeysAllowed) {
@@ -233,7 +243,15 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
      * porque jjwt 0.12+ acepta ambos formatos internamente.
      */
     private RSAPrivateKey loadPrivateKey(Resource resource) throws Exception {
-        String pem = new String(resource.getInputStream().readAllBytes())
+        return parsePrivateKey(new String(resource.getInputStream().readAllBytes()));
+    }
+
+    /**
+     * Lee una clave privada PKCS#8 en PEM. Acepta los saltos de línea escritos como {@code \n}
+     * literal, que es como suelen quedar al pegar la clave en una variable de entorno de una sola línea.
+     */
+    private RSAPrivateKey parsePrivateKey(String rawPem) throws Exception {
+        String pem = rawPem.replace("\\n", "\n")
                 .replaceAll("-----BEGIN.*?-----", "")
                 .replaceAll("-----END.*?-----", "")
                 .replaceAll("\\s", "");

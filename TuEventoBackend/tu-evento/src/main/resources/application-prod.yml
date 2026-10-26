@@ -147,8 +147,10 @@ app:
       same-site: ${AUTH_COOKIE_SAME_SITE:Strict}
   # ── JWT ───────────────────────────────────────────────────
   jwt:
-    # RS256: claves montadas como secretos externos (no van al repositorio)
-    private-key-path: ${APP_JWT_PRIVATE_KEY_PATH}
+    # RS256: la clave privada (PKCS#8) llega como contenido en APP_JWT_PRIVATE_KEY o como
+    # archivo montado en APP_JWT_PRIVATE_KEY_PATH. Nunca va al repositorio.
+    private-key: ${APP_JWT_PRIVATE_KEY:}
+    private-key-path: ${APP_JWT_PRIVATE_KEY_PATH:file:/run/secrets/jwt-private.pem}
     # Secreto HS256 anterior: solo valida tokens emitidos antes del cambio. Quitar tras 7 días
     secret: ${JWT_SECRET:}
     access-token-expiration: 900000       # 15 minutos
