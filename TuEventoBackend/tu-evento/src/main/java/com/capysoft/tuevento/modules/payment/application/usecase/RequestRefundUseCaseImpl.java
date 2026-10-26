@@ -23,6 +23,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -92,11 +94,15 @@ public class RequestRefundUseCaseImpl {
                 throw new AccessDeniedException("You can only refund payments of your own events");
             }
         }
-        execute(paymentId, reason);
+        requestRefund(paymentId, reason);
     }
 
     @Transactional
     public void execute(Long paymentId, String reason) {
+        requestRefund(paymentId, reason);
+    }
+
+    private void requestRefund(Long paymentId, String reason) {
         Payment payment = paymentRepository.findById(paymentId)
             .orElseThrow(() -> new PaymentNotFoundException(paymentId));
 
@@ -135,9 +141,28 @@ public class RequestRefundUseCaseImpl {
             // Pago 100% wallet — cerrar localmente sin gateway
             closeRefundLocally(payment, savedRefund, "Wallet-only refund: " + reason);
         } else {
-            // Pago con pasarela — el gateway dispara el webhook payment.refunded
-            paymentGatewayPort.refundPayment(payment.getGatewayTransactionId());
+            // Pago con pasarela — el gateway dispara el webhook payment.refunded.
+            // Se llama DESPUÉS del commit: esta transacción tiene bloqueados los tickets
+            // (getRefundableTickets) y la pasarela envía el webhook antes de responder; si la
+            // llamada fuera aquí dentro, el webhook esperaría esos bloqueos, la llamada expiraría
+            // a los 30 s con un 500 y el rollback borraría el Refund REQUESTED.
+            String gatewayTransactionId = payment.getGatewayTransactionId();
+            runAfterCommit(() -> paymentGatewayPort.refundPayment(gatewayTransactionId));
         }
+    }
+
+    /** Ejecuta la acción tras el commit de la transacción actual (o ya, si no hay transacción). */
+    private static void runAfterCommit(Runnable action) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            action.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                action.run();
+            }
+        });
     }
 
     /**

@@ -143,6 +143,8 @@ class EventSectionServiceOwnershipTest {
 
             assertThat(response.getCapacity()).isEqualTo(80);
             assertThat(response.getPrice()).isEqualByComparingTo(BigDecimal.ONE);
+            // Las disponibles bajan lo mismo que el aforo (antes se quedaban en 100)
+            assertThat(response.getAvailableSeats()).isEqualTo(80);
         }
 
         @Test
