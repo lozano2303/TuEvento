@@ -69,13 +69,17 @@ public class EventSectionService implements EventSectionUseCase {
                         "La sección no existe"));
         requireEditableOwnedEvent(existing.getEventId(), userId);
 
+        // Al cambiar la capacidad, las disponibles cambian lo mismo (nunca por debajo de 0);
+        // antes quedaban con el valor de la capacidad original
+        int capacity = request.getCapacity() != null ? request.getCapacity() : existing.getCapacity();
+        int availableSeats = Math.max(0, existing.getAvailableSeats() + capacity - existing.getCapacity());
+
         EventSection updated = EventSection.builder()
                 .eventSectionId(existing.getEventSectionId())
                 .eventId(existing.getEventId())
                 .sectionTypeId(existing.getSectionTypeId())
-                .capacity(request.getCapacity() != null
-                        ? request.getCapacity() : existing.getCapacity())
-                .availableSeats(existing.getAvailableSeats())
+                .capacity(capacity)
+                .availableSeats(availableSeats)
                 .price(request.getPrice() != null
                         ? request.getPrice() : existing.getPrice())
                 .isActive(request.getIsActive() != null

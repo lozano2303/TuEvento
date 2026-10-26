@@ -29,6 +29,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -182,6 +184,42 @@ class RequestRefundUseCaseImplTest {
             // Solo consulta los tickets reembolsables; el cierre local lo hace el webhook
             verify(confirmRefundUseCase, never()).confirmRefund(any());
             verifyNoInteractions(reverseWalletPaymentUseCase);
+        }
+
+        @Test
+        @DisplayName("dentro de una transacción, el gateway se llama recién después del commit (sin interbloqueo con el webhook)")
+        void gatewayIsCalledAfterCommit() {
+            when(paymentRepository.findById(PAYMENT_ID))
+                    .thenReturn(Optional.of(payment(PaymentStatus.APPROVED, "80000", "0")));
+            TransactionSynchronizationManager.initSynchronization();
+            try {
+                useCase.execute(PAYMENT_ID, REASON, 1L, true);
+
+                // Mientras la transacción sigue abierta (tickets bloqueados) no se llama al gateway
+                verify(paymentGatewayPort, never()).refundPayment(anyString());
+                verify(refundRepository).save(any(Refund.class));
+
+                TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+                verify(paymentGatewayPort).refundPayment("gw-tx-1");
+            } finally {
+                TransactionSynchronizationManager.clearSynchronization();
+            }
+        }
+
+        @Test
+        @DisplayName("si la transacción hace rollback, no se pide el reembolso al gateway")
+        void gatewayIsNotCalledOnRollback() {
+            when(paymentRepository.findById(PAYMENT_ID))
+                    .thenReturn(Optional.of(payment(PaymentStatus.APPROVED, "80000", "0")));
+            TransactionSynchronizationManager.initSynchronization();
+            try {
+                useCase.execute(PAYMENT_ID, REASON);
+                TransactionSynchronizationManager.getSynchronizations()
+                        .forEach(s -> s.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK));
+                verify(paymentGatewayPort, never()).refundPayment(anyString());
+            } finally {
+                TransactionSynchronizationManager.clearSynchronization();
+            }
         }
 
         @Test

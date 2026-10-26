@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.capysoft.tuevento.modules.seat.domain.model.Seat;
+import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
 import com.capysoft.tuevento.modules.section.domain.exception.EventSectionNotFoundException;
 import com.capysoft.tuevento.modules.section.domain.model.EventSection;
@@ -59,7 +60,11 @@ public class CreateOrderWithTicketsUseCaseImpl {
             Seat seat = seatRepository.findById(seatId)
                 .orElseThrow(() -> new IllegalArgumentException("Seat not found: " + seatId));
             
-            // Validar que la silla esté reservada por este usuario y la reserva siga vigente
+            // Validar que la silla siga RESERVADA por este usuario y la reserva siga vigente
+            // (sin el estado, una silla ya vendida que conservara reservedBy pasaría la validación)
+            if (seat.getStatus() != SeatStatus.RESERVED) {
+                throw new IllegalStateException("Seat " + seatId + " is not reserved (status " + seat.getStatus() + ")");
+            }
             if (seat.getReservedBy() == null || !seat.getReservedBy().equals(userId.intValue())) {
                 throw new IllegalStateException("Seat " + seatId + " is not reserved by this user");
             }
@@ -81,6 +86,11 @@ public class CreateOrderWithTicketsUseCaseImpl {
         for (Integer sectionId : uniqueSectionIds) {
             EventSection section = eventSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new EventSectionNotFoundException(sectionId));
+            // Todas las sillas deben ser del evento de la orden: si no, sus entradas y su dinero
+            // quedarían atribuidos a otro evento
+            if (!section.getEventId().equals(Math.toIntExact(request.getEventId()))) {
+                throw new IllegalStateException("Seat section " + sectionId + " does not belong to event " + request.getEventId());
+            }
             sectionPrices.put(sectionId, section.getPrice());
         }
         
