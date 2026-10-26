@@ -138,7 +138,6 @@ public class SeatReservationExpirationScheduler {
                     .build();
 
             seatRepository.save(released);
-            releasedCount++;
 
             // Obtener eventId para el evento de WebSocket
             EventSection section = eventSectionRepository.findById(seat.getEventSectionId())
