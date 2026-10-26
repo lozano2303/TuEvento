@@ -1,0 +1,22 @@
+databaseChangeLog:
+  # Los JWT pasaron de HS256 a RS256 (con cabecera kid): la firma RSA-2048 ocupa 342 caracteres y
+  # el token completo supera los 512 de estas columnas, así que el login fallaba al guardar la
+  # sesión. 2048 deja margen para claves de 4096 bits. Ampliar un VARCHAR en PostgreSQL no
+  # reescribe la tabla y conserva las restricciones únicas de la migración 102.
+  - changeSet:
+      id: 107-widen-auth-session-access-token
+      author: capysoft
+      changes:
+        - modifyDataType:
+            tableName: auth_session
+            columnName: access_token
+            newDataType: VARCHAR(2048)
+
+  - changeSet:
+      id: 107-widen-refresh-token-token
+      author: capysoft
+      changes:
+        - modifyDataType:
+            tableName: refresh_token
+            columnName: token
+            newDataType: VARCHAR(2048)

@@ -23,7 +23,7 @@ public class AuthSessionEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    @Column(name = "access_token", nullable = false, unique = true, length = 512)
+    @Column(name = "access_token", nullable = false, unique = true, length = 2048)
     private String accessToken;
 
     @Column(name = "issued_at", nullable = false)
