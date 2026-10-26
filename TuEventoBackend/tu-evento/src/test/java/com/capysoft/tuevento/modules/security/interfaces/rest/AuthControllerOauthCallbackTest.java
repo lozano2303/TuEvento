@@ -47,7 +47,7 @@ class AuthControllerOauthCallbackTest {
                 mock(ResetPasswordPort.class), oauthLoginPort, mock(GoogleAuthPort.class),
                 mock(RequestReactivationPort.class), mock(ConfirmReactivationPort.class),
                 new RefreshTokenCookie(true, "Strict"),
-                Map.of("facebook", "https://www.facebook.com/dialog/oauth?client_id=1"),
+                Map.of("google", "https://accounts.google.com/o/oauth2/v2/auth?client_id=1"),
                 Set.of(LOGIN_URI));
     }
 
@@ -68,7 +68,7 @@ class AuthControllerOauthCallbackTest {
         @Test
         @DisplayName("user cancels (error=access_denied, no code) → /login?oauth_error=OAUTH_CANCELLED, no 500")
         void cancelled_redirectsWithError() {
-            ResponseEntity<?> response = controller.oauthCallback("facebook", null, STATE, "access_denied", null);
+            ResponseEntity<?> response = controller.oauthCallback("google", null, STATE, "access_denied", null);
 
             assertThat(location(response)).isEqualTo(LOGIN_URI + "?oauth_error=OAUTH_CANCELLED&state=csrf-123");
             verifyNoInteractions(oauthLoginPort);
@@ -77,7 +77,7 @@ class AuthControllerOauthCallbackTest {
         @Test
         @DisplayName("no code and no error → OAUTH_FAILED")
         void missingCode_redirectsWithFailed() {
-            ResponseEntity<?> response = controller.oauthCallback("facebook", "", STATE, null, null);
+            ResponseEntity<?> response = controller.oauthCallback("google", "", STATE, null, null);
 
             assertThat(location(response)).startsWith(LOGIN_URI + "?oauth_error=OAUTH_FAILED");
             verifyNoInteractions(oauthLoginPort);
@@ -86,10 +86,10 @@ class AuthControllerOauthCallbackTest {
         @Test
         @DisplayName("sign-in rejected (ACCOUNT_BLOCKED) → redirect carries that code")
         void businessError_redirectsWithItsCode() {
-            when(oauthLoginPort.login("facebook", "code-1"))
+            when(oauthLoginPort.login("google", "code-1"))
                     .thenThrow(new BusinessException("ACCOUNT_BLOCKED", "blocked"));
 
-            ResponseEntity<?> response = controller.oauthCallback("facebook", "code-1", STATE, null, null);
+            ResponseEntity<?> response = controller.oauthCallback("google", "code-1", STATE, null, null);
 
             assertThat(location(response)).startsWith(LOGIN_URI + "?oauth_error=ACCOUNT_BLOCKED");
         }
@@ -99,7 +99,7 @@ class AuthControllerOauthCallbackTest {
         void unexpectedError_redirectsWithFailed() {
             when(oauthLoginPort.login(any(), any())).thenThrow(new IllegalStateException("graph.facebook.com said: secret"));
 
-            String location = location(controller.oauthCallback("facebook", "code-1", STATE, null, null));
+            String location = location(controller.oauthCallback("google", "code-1", STATE, null, null));
 
             assertThat(location).startsWith(LOGIN_URI + "?oauth_error=OAUTH_FAILED").doesNotContain("secret");
         }
@@ -109,7 +109,7 @@ class AuthControllerOauthCallbackTest {
         void unlistedStateUri_usesWhitelist() {
             String evilState = state("x", "https://evil.example.com/login");
 
-            String location = location(controller.oauthCallback("facebook", null, evilState, "access_denied", null));
+            String location = location(controller.oauthCallback("google", null, evilState, "access_denied", null));
 
             assertThat(location).startsWith(LOGIN_URI + "?oauth_error=");
         }
@@ -117,10 +117,10 @@ class AuthControllerOauthCallbackTest {
         @Test
         @DisplayName("success → /login?oauth=true with the original state; refresh token only in the httpOnly cookie")
         void success_redirectsWithCookie() {
-            when(oauthLoginPort.login("facebook", "code-1")).thenReturn(LoginResponse.builder()
+            when(oauthLoginPort.login("google", "code-1")).thenReturn(LoginResponse.builder()
                     .accessToken("access").refreshToken("refresh").userId(5).alias("ana").role("USER").build());
 
-            ResponseEntity<?> response = controller.oauthCallback("facebook", "code-1", STATE, null, null);
+            ResponseEntity<?> response = controller.oauthCallback("google", "code-1", STATE, null, null);
             String location = location(response);
 
             assertThat(location).startsWith(LOGIN_URI + "?oauth=true&userID=5")
@@ -133,7 +133,7 @@ class AuthControllerOauthCallbackTest {
         @Test
         @DisplayName("an error redirect sets no session cookie")
         void error_setsNoCookie() {
-            ResponseEntity<?> response = controller.oauthCallback("facebook", null, STATE, "access_denied", null);
+            ResponseEntity<?> response = controller.oauthCallback("google", null, STATE, "access_denied", null);
 
             assertThat(response.getHeaders().getFirst(HttpHeaders.SET_COOKIE)).isNull();
         }
@@ -146,7 +146,7 @@ class AuthControllerOauthCallbackTest {
         @Test
         @DisplayName("cancelled → 400 with OAUTH_CANCELLED")
         void cancelled_badRequest() {
-            ResponseEntity<?> response = controller.oauthCallback("facebook", null, null, "access_denied", "json");
+            ResponseEntity<?> response = controller.oauthCallback("google", null, null, "access_denied", "json");
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(((ApiResponse<?>) response.getBody()).getCode()).isEqualTo("OAUTH_CANCELLED");
@@ -158,7 +158,7 @@ class AuthControllerOauthCallbackTest {
             when(oauthLoginPort.login(any(), any()))
                     .thenThrow(new BusinessException("ACCOUNT_DEACTIVATED", "deactivated"));
 
-            ResponseEntity<?> response = controller.oauthCallback("facebook", "code-1", null, null, "json");
+            ResponseEntity<?> response = controller.oauthCallback("google", "code-1", null, null, "json");
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(((ApiResponse<?>) response.getBody()).getCode()).isEqualTo("ACCOUNT_DEACTIVATED");

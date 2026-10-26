@@ -36,15 +36,15 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Google (GSI) and Facebook both end in loginWithProfile: an existing account must pass the
+ * OAuth social sign-in (Google) ends in loginWithProfile: an existing account must pass the
  * same account checks as the password login before any token or session is issued.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OauthLoginUseCase — account status")
 class OauthLoginUseCaseAccountStatusTest {
 
-    private static final String PROVIDER = "facebook";
-    private static final String FB_ID    = "fb-123";
+    private static final String PROVIDER = "google";
+    private static final String OAUTH_ID = "google-sub-123";
     private static final String EMAIL    = "ana.perez@gmail.com";
 
     @Mock OauthAccountRepository     oauthAccountRepository;
@@ -80,7 +80,7 @@ class OauthLoginUseCaseAccountStatusTest {
                 .build();
 
         profile = OauthProfile.builder()
-                .providerUserId(FB_ID)
+                .providerUserId(OAUTH_ID)
                 .email(EMAIL)
                 .fullName("Ana Perez")
                 .alias("Ana Perez")
@@ -88,7 +88,7 @@ class OauthLoginUseCaseAccountStatusTest {
     }
 
     private void givenLinkedOauthAccount() {
-        when(oauthAccountRepository.findByProviderAndProviderUserId(PROVIDER, FB_ID))
+        when(oauthAccountRepository.findByProviderAndProviderUserId(PROVIDER, OAUTH_ID))
                 .thenReturn(Optional.of(OauthAccount.builder().user(existingUser).build()));
     }
 
@@ -114,7 +114,7 @@ class OauthLoginUseCaseAccountStatusTest {
     @Test
     @DisplayName("local account found by email that is deactivated → rejected and the provider is not linked")
     void emailMatch_deactivated_rejectedAndNotLinked() {
-        when(oauthAccountRepository.findByProviderAndProviderUserId(PROVIDER, FB_ID)).thenReturn(Optional.empty());
+        when(oauthAccountRepository.findByProviderAndProviderUserId(PROVIDER, OAUTH_ID)).thenReturn(Optional.empty());
         when(loginCredentialsRepository.findByEmail(EMAIL))
                 .thenReturn(Optional.of(LoginCredentials.builder().user(existingUser).email(EMAIL).build()));
         doThrow(new BusinessException("ACCOUNT_DEACTIVATED", "deactivated"))
