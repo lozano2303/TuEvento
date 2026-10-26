@@ -55,9 +55,12 @@ public class CreateOrderWithTicketsUseCaseImpl {
     @Transactional
     public OrderResponse execute(CreateOrderRequest request, Long userId) {
         // 1. Validar que todas las sillas estén reservadas temporalmente por este usuario
+        // Las sillas se bloquean en orden ascendente (dos órdenes con sillas cruzadas no se
+        // interbloquean) y sin repetidas (una silla enviada dos veces daría dos entradas)
+        List<Integer> seatIds = request.getSeatIds().stream().distinct().sorted().toList();
         List<Seat> seats = new ArrayList<>();
-        for (Integer seatId : request.getSeatIds()) {
-            Seat seat = seatRepository.findById(seatId)
+        for (Integer seatId : seatIds) {
+            Seat seat = seatRepository.findByIdForUpdate(seatId)
                 .orElseThrow(() -> new IllegalArgumentException("Seat not found: " + seatId));
             
             // Validar que la silla siga RESERVADA por este usuario y la reserva siga vigente

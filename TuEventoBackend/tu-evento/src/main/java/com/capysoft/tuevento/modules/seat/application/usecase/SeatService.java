@@ -118,7 +118,7 @@ public class SeatService implements SeatUseCase {
     @Override
     @Transactional
     public SeatResponse sellSeat(Integer seatId, Long buyerId, String reason) {
-        Seat existing = findSeat(seatId);
+        Seat existing = lockSeat(seatId);
         boolean free = existing.getStatus() == SeatStatus.AVAILABLE;
         boolean reservedByBuyer = existing.getStatus() == SeatStatus.RESERVED
                 && existing.getReservedBy() != null
@@ -134,7 +134,7 @@ public class SeatService implements SeatUseCase {
     @Transactional
     public SeatResponse updateSeatStatusByOrganizer(Integer seatId, UpdateSeatStatusRequest request,
                                                     Long organizerId) {
-        Seat existing = findSeat(seatId);
+        Seat existing = lockSeat(seatId);
         EventSection section = requireEditableOwnedSection(existing.getEventSectionId(), organizerId);
         SeatStatus newStatus = request.getNewStatus();
 

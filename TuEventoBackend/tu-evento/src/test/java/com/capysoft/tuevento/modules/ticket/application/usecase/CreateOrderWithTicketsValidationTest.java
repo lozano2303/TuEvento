@@ -53,7 +53,7 @@ class CreateOrderWithTicketsValidationTest {
     @InjectMocks CreateOrderWithTicketsUseCaseImpl useCase;
 
     private void seatIs(SeatStatus status) {
-        when(seatRepository.findById(SEAT_ID)).thenReturn(Optional.of(Seat.builder()
+        when(seatRepository.findByIdForUpdate(SEAT_ID)).thenReturn(Optional.of(Seat.builder()
                 .seatId(SEAT_ID).eventSectionId(SECTION_ID).status(status)
                 .reservedBy((int) USER_ID).reservedUntil(LocalDateTime.now().plusMinutes(5)).build()));
     }
@@ -90,14 +90,27 @@ class CreateOrderWithTicketsValidationTest {
     @Test
     @DisplayName("una reserva de otro usuario o vencida se rechaza")
     void reservationMustBeOwnAndActive() {
-        when(seatRepository.findById(SEAT_ID)).thenReturn(Optional.of(Seat.builder()
+        when(seatRepository.findByIdForUpdate(SEAT_ID)).thenReturn(Optional.of(Seat.builder()
                 .seatId(SEAT_ID).eventSectionId(SECTION_ID).status(SeatStatus.RESERVED)
                 .reservedBy(8).reservedUntil(LocalDateTime.now().plusMinutes(5)).build()));
         assertThatThrownBy(() -> useCase.execute(request(), USER_ID)).hasMessageContaining("not reserved by this user");
 
-        when(seatRepository.findById(SEAT_ID)).thenReturn(Optional.of(Seat.builder()
+        when(seatRepository.findByIdForUpdate(SEAT_ID)).thenReturn(Optional.of(Seat.builder()
                 .seatId(SEAT_ID).eventSectionId(SECTION_ID).status(SeatStatus.RESERVED)
                 .reservedBy((int) USER_ID).reservedUntil(LocalDateTime.now().minusMinutes(1)).build()));
         assertThatThrownBy(() -> useCase.execute(request(), USER_ID)).hasMessageContaining("expired");
+    }
+
+    @Test
+    @DisplayName("las sillas se bloquean en orden ascendente y una repetida se bloquea una sola vez")
+    void seatsAreLockedInAscendingOrderWithoutRepeats() {
+        // La 10 (la menor) falla: si se bloqueara primero la 12, este test lo detectaría
+        seatIs(SeatStatus.AVAILABLE);
+        CreateOrderRequest request = new CreateOrderRequest(EVENT_ID, List.of(12, SEAT_ID, 12));
+
+        assertThatThrownBy(() -> useCase.execute(request, USER_ID)).isInstanceOf(IllegalStateException.class);
+        verify(seatRepository).findByIdForUpdate(SEAT_ID);
+        verify(seatRepository, never()).findByIdForUpdate(12);
+        verify(seatRepository, never()).findById(any());
     }
 }
