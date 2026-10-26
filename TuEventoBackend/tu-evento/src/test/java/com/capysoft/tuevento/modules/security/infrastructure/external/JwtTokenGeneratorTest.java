@@ -1,5 +1,10 @@
 package com.capysoft.tuevento.modules.security.infrastructure.external;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.core.io.ClassPathResource;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,15 +51,9 @@ class JwtTokenGeneratorTest {
                 + Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(privateKey.getEncoded())
                 + "\n-----END PRIVATE KEY-----\n";
 
-        String publicPem  = "-----BEGIN PUBLIC KEY-----\n"
-                + Base64.getMimeEncoder(64, new byte[]{'\n'}).encodeToString(testPublicKey.getEncoded())
-                + "\n-----END PUBLIC KEY-----\n";
-
         generator = new JwtTokenGenerator();
         ReflectionTestUtils.setField(generator, "privateKeyResource",
                 new ByteArrayResource(privatePem.getBytes()));
-        ReflectionTestUtils.setField(generator, "publicKeyResource",
-                new ByteArrayResource(publicPem.getBytes()));
         ReflectionTestUtils.setField(generator, "accessTokenExpiration",  900_000L);
         ReflectionTestUtils.setField(generator, "refreshTokenExpiration", 604_800_000L);
         generator.init();
@@ -121,5 +120,71 @@ class JwtTokenGeneratorTest {
         String[] parts = valid.split("\\.");
         String tampered = parts[0] + "." + parts[1] + ".invalidsignature";
         assertThat(generator.isTokenValid(tampered)).isFalse();
+    }
+
+    @Test
+    @DisplayName("la clave pública se deriva de la privada y los tokens llevan el kid del JWKS")
+    void publicKey_isDerived_andTokensCarryKid() {
+        assertThat(generator.getPublicKey().getModulus()).isEqualTo(testPublicKey.getModulus());
+        String token = generator.generateAccessToken(1, "user", "USER");
+        assertThat(Jwts.parser().verifyWith(testPublicKey).build().parseSignedClaims(token).getHeader().getKeyId())
+                .isEqualTo(JwtTokenGenerator.KEY_ID);
+    }
+
+    @Test
+    @DisplayName("sin secreto legado, un token HS256 se rechaza")
+    void legacyHs256Token_rejectedWithoutSecret() {
+        assertThat(generator.isTokenValid(hs256Token(LEGACY_SECRET))).isFalse();
+    }
+
+    @Test
+    @DisplayName("con secreto legado, un token HS256 anterior sigue siendo válido")
+    void legacyHs256Token_acceptedWithSecret() {
+        ReflectionTestUtils.setField(generator, "legacySecret", LEGACY_SECRET);
+        generator.init();
+
+        String legacy = hs256Token(LEGACY_SECRET);
+        assertThat(generator.isTokenValid(legacy)).isTrue();
+        assertThat(generator.extractUserId(legacy)).contains(7);
+        assertThat(generator.isTokenValid(hs256Token("otro-secreto-distinto-de-al-menos-32-chars"))).isFalse();
+        // Los tokens nuevos siguen siendo RS256
+        assertThat(generator.isTokenValid(generator.generateAccessToken(1, "user", "USER"))).isTrue();
+    }
+
+    @Test
+    @DisplayName("sin clave privada y con claves efímeras permitidas, genera un par en memoria")
+    void missingKey_withEphemeralAllowed_generatesKeyPair() {
+        JwtTokenGenerator dev = generatorWithMissingKey(true);
+        dev.init();
+        String token = dev.generateAccessToken(3, "dev", "USER");
+        assertThat(dev.isTokenValid(token)).isTrue();
+        assertThat(dev.getPublicKey().getModulus().bitLength()).isGreaterThanOrEqualTo(2048);
+    }
+
+    @Test
+    @DisplayName("sin clave privada y sin claves efímeras, el arranque falla")
+    void missingKey_withoutEphemeral_failsFast() {
+        JwtTokenGenerator prod = generatorWithMissingKey(false);
+        assertThatThrownBy(prod::init).isInstanceOf(IllegalStateException.class);
+    }
+
+    private static final String LEGACY_SECRET = "test-secret-key-for-jenkins-ci-only-32chars";
+
+    private static String hs256Token(String secret) {
+        return Jwts.builder()
+                .claim("userId", 7)
+                .subject("legacy")
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)), Jwts.SIG.HS256)
+                .compact();
+    }
+
+    private static JwtTokenGenerator generatorWithMissingKey(boolean ephemeralAllowed) {
+        JwtTokenGenerator g = new JwtTokenGenerator();
+        ReflectionTestUtils.setField(g, "privateKeyResource", new ClassPathResource("keys/does-not-exist.pem"));
+        ReflectionTestUtils.setField(g, "ephemeralKeysAllowed", ephemeralAllowed);
+        ReflectionTestUtils.setField(g, "accessTokenExpiration", 900_000L);
+        ReflectionTestUtils.setField(g, "refreshTokenExpiration", 604_800_000L);
+        return g;
     }
 }

@@ -44,9 +44,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class JwksController {
 
-    /** ID de la clave — permite rotar claves sin romper tokens en vuelo. */
-    private static final String KEY_ID = "tuevento-jwt-key-1";
-
     private final JwtTokenGenerator jwtTokenGenerator;
 
     /**
@@ -68,7 +65,7 @@ public class JwksController {
                 "kty", "RSA",
                 "use", "sig",
                 "alg", "RS256",
-                "kid", KEY_ID,
+                "kid", JwtTokenGenerator.KEY_ID,
                 "n",   n,
                 "e",   e
         );

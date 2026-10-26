@@ -1,10 +1,15 @@
 package com.capysoft.tuevento.modules.security.infrastructure.external;
 
+import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Optional;
@@ -22,6 +27,10 @@ import com.capysoft.tuevento.modules.security.application.port.out.TokenGenerato
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.Locator;
+import io.jsonwebtoken.security.Keys;
+
+import javax.crypto.SecretKey;
 
 /**
  * Generador y validador de JWT firmados con RSA-256 (RS256).
@@ -34,11 +43,18 @@ import io.jsonwebtoken.Jwts;
  * drásticamente la superficie de ataque en caso de compromiso de un servicio.
  *
  * <h3>Carga de claves</h3>
- * <p>Las claves se leen desde recursos del classpath en formato PEM estándar.
- * La clave privada ({@code keys/jwt-private.pem}) se inyecta via classpath en
- * desarrollo; en producción se monta como un Secret de k8s en la ruta
- * correspondiente. La clave pública ({@code keys/jwt-public.pem}) se expone en
- * {@code /.well-known/jwks.json} para que los demás servicios puedan descargarla.
+ * <p>La clave privada se lee en PEM (PKCS#8) desde {@code app.jwt.private-key-path}: un
+ * archivo local en dev o un Secret de k8s montado en producción. La pública se deriva de
+ * ella y se expone en {@code /.well-known/jwks.json} para que los demás servicios la descarguen.
+ *
+ * <p>Si la clave privada no existe y {@code app.jwt.ephemeral-keys-allowed=true} (solo dev y
+ * tests), se genera un par RSA en memoria: los tokens dejan de valer al reiniciar.
+ *
+ * <h3>Transición desde HS256</h3>
+ * <p>Mientras {@code app.jwt.secret} tenga valor, también se aceptan los tokens HS256 emitidos
+ * antes del cambio (access 15 min, refresh 7 días). Los tokens nuevos siempre son RS256. La
+ * clave se elige por el {@code alg} de la cabecera y HS256 solo se valida contra ese secreto,
+ * nunca contra la clave pública. Cuando pase el periodo de los refresh tokens, quitar el secreto.
  *
  * <h3>Notas de seguridad</h3>
  * <ul>
@@ -54,11 +70,13 @@ import io.jsonwebtoken.Jwts;
 @RequiredArgsConstructor
 public class JwtTokenGenerator implements TokenGeneratorPort {
 
+    /** ID de la clave activa; va en la cabecera {@code kid} y en el JWK Set. */
+    public static final String KEY_ID = "tuevento-jwt-key-1";
+
+    private static final String LEGACY_ALGORITHM = "HS256";
+
     @Value("${app.jwt.private-key-path:classpath:keys/jwt-private.pem}")
     private Resource privateKeyResource;
-
-    @Value("${app.jwt.public-key-path:classpath:keys/jwt-public.pem}")
-    private Resource publicKeyResource;
 
     @Value("${app.jwt.access-token-expiration}")
     private long accessTokenExpiration;
@@ -66,20 +84,43 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
     @Value("${app.jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
 
+    /** Secreto HS256 anterior; solo para validar tokens emitidos antes del cambio. Vacío = no se aceptan. */
+    @Value("${app.jwt.secret:}")
+    private String legacySecret;
+
+    @Value("${app.jwt.ephemeral-keys-allowed:false}")
+    private boolean ephemeralKeysAllowed;
+
     private RSAPrivateKey privateKey;
     private RSAPublicKey  publicKey;
+    private SecretKey     legacyKey;
 
     @PostConstruct
     void init() {
         try {
-            privateKey = loadPrivateKey(privateKeyResource);
-            publicKey  = loadPublicKey(publicKeyResource);
-            log.info("JWT RS256 keys loaded successfully. Public key modulus length: {} bits",
-                    publicKey.getModulus().bitLength());
+            if (privateKeyResource.exists()) {
+                privateKey = loadPrivateKey(privateKeyResource);
+                publicKey  = derivePublicKey(privateKey);
+            } else if (ephemeralKeysAllowed) {
+                KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+                generator.initialize(2048);
+                KeyPair pair = generator.generateKeyPair();
+                privateKey = (RSAPrivateKey) pair.getPrivate();
+                publicKey  = (RSAPublicKey) pair.getPublic();
+                log.warn("JWT private key not found at {}: using an in-memory RSA key pair. "
+                        + "Tokens will not survive a restart (dev/test only)", privateKeyResource);
+            } else {
+                throw new IllegalStateException("JWT private key not found: " + privateKeyResource);
+            }
         } catch (Exception e) {
             throw new IllegalStateException("Failed to load JWT RSA keys — check app.jwt.private-key-path " +
                     "and app.jwt.public-key-path", e);
         }
+        if (legacySecret != null && !legacySecret.isBlank()) {
+            legacyKey = Keys.hmacShaKeyFor(legacySecret.getBytes(StandardCharsets.UTF_8));
+            log.info("Legacy HS256 tokens are still accepted (app.jwt.secret is set)");
+        }
+        log.info("JWT RS256 keys ready. Public key modulus length: {} bits", publicKey.getModulus().bitLength());
     }
 
     /**
@@ -95,6 +136,7 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
     @Override
     public String generateAccessToken(Integer userId, String alias, String role) {
         return Jwts.builder()
+                .header().keyId(KEY_ID).and()
                 .id(UUID.randomUUID().toString())
                 .subject(alias)
                 .claim("userId", userId)
@@ -108,6 +150,7 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
     @Override
     public String generateRefreshToken(Integer userId) {
         return Jwts.builder()
+                .header().keyId(KEY_ID).and()
                 .id(UUID.randomUUID().toString())
                 .subject(String.valueOf(userId))
                 .claim("userId", userId)
@@ -160,10 +203,27 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
 
     private Claims parseClaims(String token) {
         return Jwts.parser()
-                .verifyWith(publicKey)       // RS256: verificar con clave pública
+                .keyLocator(signingKeyLocator())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    /**
+     * RS256 se valida con la clave pública; HS256 solo con el secreto legado, si existe.
+     * Cualquier otro algoritmo se rechaza.
+     */
+    private Locator<Key> signingKeyLocator() {
+        return header -> {
+            String algorithm = header.getAlgorithm();
+            if ("RS256".equals(algorithm)) {
+                return publicKey;
+            }
+            if (LEGACY_ALGORITHM.equals(algorithm) && legacyKey != null) {
+                return legacyKey;
+            }
+            throw new JwtException("Unsupported JWT algorithm: " + algorithm);
+        };
     }
 
     /**
@@ -192,16 +252,14 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
     }
 
     /**
-     * Carga una clave pública X.509/SubjectPublicKeyInfo desde un recurso PEM.
-     * {@code openssl rsa -pubout} genera este formato directamente.
+     * Deriva la clave pública del módulo y el exponente que guarda la privada (PKCS#8 de
+     * openssl siempre es CRT). Así la pública nunca puede quedar desemparejada de la privada.
      */
-    private RSAPublicKey loadPublicKey(Resource resource) throws Exception {
-        String pem = new String(resource.getInputStream().readAllBytes())
-                .replaceAll("-----BEGIN.*?-----", "")
-                .replaceAll("-----END.*?-----", "")
-                .replaceAll("\\s", "");
-        byte[] decoded = Base64.getDecoder().decode(pem);
-        X509EncodedKeySpec spec = new X509EncodedKeySpec(decoded);
+    private RSAPublicKey derivePublicKey(RSAPrivateKey key) throws Exception {
+        if (!(key instanceof RSAPrivateCrtKey crtKey)) {
+            throw new IllegalArgumentException("JWT private key must include its CRT parameters");
+        }
+        RSAPublicKeySpec spec = new RSAPublicKeySpec(crtKey.getModulus(), crtKey.getPublicExponent());
         return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(spec);
     }
 }

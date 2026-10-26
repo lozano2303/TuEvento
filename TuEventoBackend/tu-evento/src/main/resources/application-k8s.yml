@@ -41,7 +41,10 @@ management:
 
 app:
   jwt:
-    secret: ${JWT_SECRET}
+    # RS256: Secret jwt-rsa-keys montado en /etc/jwt-keys/
+    private-key-path: ${APP_JWT_PRIVATE_KEY_PATH:file:/etc/jwt-keys/jwt-private.pem}
+    # Secreto HS256 anterior: solo valida tokens emitidos antes del cambio. Quitar tras 7 días
+    secret: ${JWT_SECRET:}
     access-token-expiration: 900000
     refresh-token-expiration: 604800000
   qr:
