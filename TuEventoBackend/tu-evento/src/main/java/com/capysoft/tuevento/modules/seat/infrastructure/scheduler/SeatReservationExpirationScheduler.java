@@ -84,8 +84,8 @@ public class SeatReservationExpirationScheduler {
     @Scheduled(cron = "*/10 * * * * *") // cada 10 segundos
     @Transactional
     public void releaseExpiredReservations() {
-        List<Seat> expired = seatRepository.findAllByStatusAndReservedUntilBefore(
-                SeatStatus.RESERVED, LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        List<Seat> expired = seatRepository.findAllByStatusAndReservedUntilBefore(SeatStatus.RESERVED, now);
 
         if (expired.isEmpty()) {
             // INFO (no debug) para que sea visible tanto en cron como en catch-up
@@ -95,7 +95,17 @@ public class SeatReservationExpirationScheduler {
 
         log.info("[Scheduler] Auto-releasing {} expired seat reservation(s).", expired.size());
 
-        for (Seat seat : expired) {
+        int releasedCount = 0;
+        // Orden ascendente, igual que al crear una orden, para no interbloquearse con ella
+        List<Integer> seatIds = expired.stream().map(Seat::getSeatId).sorted().toList();
+        for (Integer seatId : seatIds) {
+            // Se relee bloqueada: desde la consulta la silla pudo venderse o liberarse, y
+            // pisarla con AVAILABLE pondría a la venta una silla ya vendida
+            Seat seat = seatRepository.findByIdForUpdate(seatId).orElse(null);
+            if (seat == null || seat.getStatus() != SeatStatus.RESERVED
+                    || seat.getReservedUntil() == null || !seat.getReservedUntil().isBefore(now)) {
+                continue;
+            }
             SeatStatus oldStatus = seat.getStatus();
 
             // Construir la silla liberada (Seat es inmutable via Builder)
@@ -113,6 +123,7 @@ public class SeatReservationExpirationScheduler {
                     .build();
 
             seatRepository.save(released);
+            releasedCount++;
 
             // Obtener eventId para el evento de WebSocket
             EventSection section = eventSectionRepository.findById(seat.getEventSectionId())
@@ -137,6 +148,6 @@ public class SeatReservationExpirationScheduler {
             }
         }
 
-        log.info("[Scheduler] Finished releasing {} seat reservation(s).", expired.size());
+        log.info("[Scheduler] Finished releasing {} seat reservation(s).", releasedCount);
     }
 }

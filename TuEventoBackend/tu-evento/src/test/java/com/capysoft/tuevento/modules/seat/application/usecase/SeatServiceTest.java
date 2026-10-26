@@ -73,7 +73,7 @@ class SeatServiceTest {
     }
 
     private void seatIs(SeatStatus status) {
-        when(seatRepository.findById(SEAT_ID)).thenReturn(Optional.of(Seat.builder()
+        when(seatRepository.findByIdForUpdate(SEAT_ID)).thenReturn(Optional.of(Seat.builder()
                 .seatId(SEAT_ID).seatBlockId(1).eventSectionId(SECTION_ID).code("A1").row(1).position(1)
                 .type(SeatType.REGULAR).status(status)
                 .reservedBy(status == SeatStatus.RESERVED ? 7 : null)
@@ -151,7 +151,7 @@ class SeatServiceTest {
         @Test
         @DisplayName("una silla inexistente da 404")
         void missingSeat() {
-            when(seatRepository.findById(SEAT_ID)).thenReturn(Optional.empty());
+            when(seatRepository.findByIdForUpdate(SEAT_ID)).thenReturn(Optional.empty());
             assertThatThrownBy(() -> service.updateSeatStatus(SEAT_ID, to(SeatStatus.SOLD), null))
                     .isInstanceOf(NotFoundException.class);
         }

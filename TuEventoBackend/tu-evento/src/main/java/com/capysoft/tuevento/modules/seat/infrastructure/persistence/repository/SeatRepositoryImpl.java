@@ -51,6 +51,11 @@ public class SeatRepositoryImpl implements SeatRepository {
     }
 
     @Override
+    public Optional<Seat> findByIdForUpdate(Integer seatId) {
+        return jpaRepository.findByIdForUpdate(seatId).map(this::toDomain);
+    }
+
+    @Override
     public boolean existsByEventSectionIdAndCode(Integer eventSectionId, String code) {
         return jpaRepository.existsByEventSectionIdAndCode(eventSectionId, code);
     }
