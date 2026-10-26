@@ -18,3 +18,4 @@ k8s/secrets.yaml
 # Volcados de error de la JVM
 hs_err_pid*.log
 TuEventoBackend/tu-evento/src/test/resources/keys/
+TuEventoBackend/tu-evento/src/main/resources/keys/jwt-private.pem
