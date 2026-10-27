@@ -25,7 +25,7 @@ const NotificationContext = createContext(null);
 const EMPTY_ADMIN_PENDING = { organizerRequests: 0, eventsInReview: 0 };
 
 function getWsBaseUrl() {
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8090/api/v1";
   return apiUrl.replace("/api/v1", "");
 }
 

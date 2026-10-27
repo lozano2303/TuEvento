@@ -14,7 +14,7 @@ import {
 import { httpRequest } from '../services/httpClient';
 import AdminSidebar from '../components/admin/AdminSidebar';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8090/api/v1';
 
 const fmtCOP = (n) =>
   new Intl.NumberFormat('es-CO', {

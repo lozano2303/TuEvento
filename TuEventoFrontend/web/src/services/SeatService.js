@@ -1,6 +1,6 @@
 import { httpRequest } from './httpClient.js';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8090/api/v1';
 
 /**
  * Obtiene todas las sillas de una sección de evento.
