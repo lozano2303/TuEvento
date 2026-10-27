@@ -60,8 +60,11 @@ public class NotificationConfig {
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
+        // Sin STARTTLS no se envía nada: las credenciales nunca viajan en claro
+        props.put("mail.smtp.starttls.required", "true");
+        // Valida el certificado del servidor SMTP (no se confía a ciegas en el host)
+        props.put("mail.smtp.ssl.checkserveridentity", "true");
         props.put("mail.debug", "false");
-        props.put("mail.smtp.ssl.trust", mailHost);
 
         return mailSender;
     }

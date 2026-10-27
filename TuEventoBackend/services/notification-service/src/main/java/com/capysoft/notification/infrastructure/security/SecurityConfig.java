@@ -1,7 +1,5 @@
 package com.capysoft.notification.infrastructure.security;
 
-import java.util.List;
-
 import com.capysoft.common.infrastructure.security.SecurityUser;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +8,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.SecurityFilterChain;
@@ -42,9 +41,13 @@ public class SecurityConfig {
      */
     public static AbstractAuthenticationToken toAuthentication(Jwt jwt) {
         Number userId = jwt.getClaim("userId");
-        SecurityUser user = new SecurityUser(
-                userId != null ? userId.intValue() : null, jwt.getSubject(), jwt.getClaimAsString("role"));
-        return new UsernamePasswordAuthenticationToken(user, jwt,
-                user.getRole() != null ? user.getAuthorities() : List.of());
+        String role = jwt.getClaimAsString("role");
+        // El refresh token se firma con la misma clave pero no lleva rol: solo el access token
+        // (15 min) sirve para llamar a la API; el refresh (7 días) solo para /auth/refresh
+        if (userId == null || role == null || role.isBlank()) {
+            throw new BadCredentialsException("Not an access token");
+        }
+        SecurityUser user = new SecurityUser(userId.intValue(), jwt.getSubject(), role);
+        return new UsernamePasswordAuthenticationToken(user, jwt, user.getAuthorities());
     }
 }

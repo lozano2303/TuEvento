@@ -45,8 +45,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (StringUtils.hasText(token) && tokenGenerator.isTokenValid(token)) {
             tokenGenerator.extractUserId(token).ifPresent(userId -> {
+                String tokenRole = tokenGenerator.extractRole(token).orElse("");
+                // El refresh token (7 días) se firma igual pero no lleva rol: no sirve como access token
+                if (tokenRole.isBlank()) {
+                    log.debug("JWT without role ignored (not an access token) for userId={}", userId);
+                    return;
+                }
                 String alias = tokenGenerator.extractSubject(token).orElse("");
-                String role  = resolveRole(userId, tokenGenerator.extractRole(token).orElse(""));
+                String role  = resolveRole(userId, tokenRole);
 
                 log.debug("JWT authorities loaded for userId={}: [{}]", userId, role);
 

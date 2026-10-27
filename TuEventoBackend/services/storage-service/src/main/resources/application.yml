@@ -72,7 +72,8 @@ management:
         include: health,info,metrics
   endpoint:
     health:
-      show-details: always
+      # El estado (UP/DOWN) es público para los healthchecks; el detalle, solo autenticado
+      show-details: when-authorized
 
 logging:
   level:

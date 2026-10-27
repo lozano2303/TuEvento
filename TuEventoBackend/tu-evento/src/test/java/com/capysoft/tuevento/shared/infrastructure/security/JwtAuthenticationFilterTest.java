@@ -116,4 +116,17 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         verify(filterChain).doFilter(request, response);
     }
+
+    @Test
+    @DisplayName("un refresh token (sin rol) no autentica la petición, que sigue como anónima")
+    void tokenWithoutRole_isNotAnAccessToken() throws Exception {
+        when(tokenGenerator.isTokenValid(TOKEN)).thenReturn(true);
+        when(tokenGenerator.extractUserId(TOKEN)).thenReturn(Optional.of(15));
+        when(tokenGenerator.extractRole(TOKEN)).thenReturn(Optional.empty());
+
+        filter.doFilter(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verify(filterChain).doFilter(request, response);
+    }
 }
