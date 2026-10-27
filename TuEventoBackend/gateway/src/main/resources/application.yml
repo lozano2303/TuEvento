@@ -14,83 +14,94 @@ spring:
   # ── Cloud Gateway routes ───────────────────────────────────────────────────
   cloud:
     gateway:
-      # Los frontends no cambian ninguna URL: el gateway preserva /api/v1/* y /ws/*
-      # exactamente como los recibe, y los reenvía al monolito (o al microservicio
-      # correspondiente en fases posteriores).
-      routes:
+      # Spring Cloud Gateway 4.3: las propiedades viven bajo server.webflux (las antiguas,
+      # sin este prefijo, se traducían en parte y default-filters se ignoraba)
+      server:
+        webflux:
+          # Los frontends no cambian ninguna URL: el gateway preserva /api/v1/* y /ws/*
+          # exactamente como los recibe, y los reenvía al monolito (o al microservicio
+          # correspondiente en fases posteriores).
+          routes:
 
-        # ── WebSocket (STOMP) ────────────────────────────────────────────────
-        # Debe ir ANTES que las rutas HTTP porque SockJS usa /ws/info (GET)
-        # y /ws/<session>/<token>/websocket (Upgrade). Si el matcher HTTP
-        # captura /ws/**, el handshake WS nunca llega.
-        - id: websocket
-          uri: ${MONOLITH_URI:http://localhost:8080}
-          predicates:
-            - Path=/ws/**
-          filters:
-            - RewritePath=/ws/(?<segment>.*), /ws/${segment}
-          metadata:
-            # WebSocket requiere upgrade HTTP→WS; desactivar el timeout de respuesta
+            # ── WebSocket (STOMP) ────────────────────────────────────────────────
+            # Debe ir ANTES que las rutas HTTP porque SockJS usa /ws/info (GET)
+            # y /ws/<session>/<token>/websocket (Upgrade). Si el matcher HTTP
+            # captura /ws/**, el handshake WS nunca llega.
+            - id: websocket
+              uri: ${MONOLITH_URI:http://localhost:8080}
+              predicates:
+                - Path=/ws/**
+              filters:
+                - RewritePath=/ws/(?<segment>.*), /ws/${segment}
+              metadata:
+                connect-timeout: 5000
+                # -1 desactiva el límite: una conexión WebSocket dura lo que dure la sesión
+                # (0 significa un límite de 0 ms y el handshake de SockJS daba 504)
+                response-timeout: -1
+
+            # ── JWKS público del servicio Identidad (monolito hoy) ───────────────
+            - id: jwks
+              uri: ${MONOLITH_URI:http://localhost:8080}
+              predicates:
+                - Path=/.well-known/jwks.json
+
+            # ── Microservicio de Archivos/Storage (PRIMERA EXTRACCIÓN) ───────────
+            # Más específico: debe ir ANTES que monolith. Los frontends siguen
+            # llamando a /api/v1/storage/** exactamente igual.
+            # STORAGE_SERVICE_URI apunta al microservicio (comparte la BD y el bucket del monolito).
+            # Sin la variable, la ruta vuelve al monolito: es la vuelta atrás.
+            - id: storage-service
+              uri: ${STORAGE_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
+              predicates:
+                - Path=/api/v1/storage/**
+              filters:
+                - PreserveHostHeader
+              metadata:
+                connect-timeout: 5000
+                # Una subida pasa por la moderación de imágenes (NSFW en CPU + Sightengine): en frío
+                # tarda más de 30 s. Mismo margen que el proxy de nginx que la atendía antes.
+                response-timeout: 120000
+
+            # ── API REST principal ────────────────────────────────────────────────
+            # Captura todo /api/v1/** y lo reenvía al monolito sin modificar la ruta.
+            # En Fases 1-5 se irán añadiendo rutas específicas ANTES de esta.
+            - id: monolith
+              uri: ${MONOLITH_URI:http://localhost:8080}
+              predicates:
+                - Path=/api/v1/**
+              filters:
+                # Conserva el Host original. X-Forwarded-For se reenvía tal cual (sin trusted-proxies
+                # el gateway no añade entrada): ver RATE_LIMIT_TRUSTED_PROXIES en docker-compose.prod.yml
+                - PreserveHostHeader
+              metadata:
+                connect-timeout: 5000
+                # Mismo límite que tenía nginx (60 s por defecto) antes de existir el gateway: la
+                # subida de imágenes de eventos sigue aquí y también pasa por la moderación
+                response-timeout: 60000
+
+          # Configuración global de timeout y HTTP/2
+          httpclient:
             connect-timeout: 5000
-            response-timeout: 0
+            response-timeout: 60s
+            pool:
+              max-connections: 500
+              acquire-timeout: 45000
 
-        # ── JWKS público del servicio Identidad (monolito hoy) ───────────────
-        - id: jwks
-          uri: ${MONOLITH_URI:http://localhost:8080}
-          predicates:
-            - Path=/.well-known/jwks.json
+          # CORS global — los frontends apuntan al gateway
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origin-patterns: ${GATEWAY_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:19000}
+                allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+                allowed-headers: ['*']
+                exposed-headers: [Retry-After]
+                allow-credentials: true
+                max-age: 3600
 
-        # ── Microservicio de Archivos/Storage (PRIMERA EXTRACCIÓN) ───────────
-        # Más específico: debe ir ANTES que monolith. Los frontends siguen
-        # llamando a /api/v1/storage/** exactamente igual.
-        # Por defecto sigue yendo al monolito: el corte (STORAGE_SERVICE_URI=http://storage-service:8085)
-        # espera a que profile, event y organizer_petition dejen de tener FK a stored_file y a migrar
-        # los datos (plan, fase 1, pasos 2-4). Volver atrás = quitar la variable.
-        - id: storage-service
-          uri: ${STORAGE_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
-          predicates:
-            - Path=/api/v1/storage/**
-          filters:
-            - PreserveHostHeader
-          metadata:
-            connect-timeout: 5000
-            response-timeout: 30000
-
-        # ── API REST principal ────────────────────────────────────────────────
-        # Captura todo /api/v1/** y lo reenvía al monolito sin modificar la ruta.
-        # En Fases 1-5 se irán añadiendo rutas específicas ANTES de esta.
-        - id: monolith
-          uri: ${MONOLITH_URI:http://localhost:8080}
-          predicates:
-            - Path=/api/v1/**
-          filters:
-            # Añade X-Forwarded-* headers para que el monolito conozca la IP real
-            - PreserveHostHeader
-          metadata:
-            connect-timeout: 5000
-            response-timeout: 30000
-
-      # Configuración global de timeout y HTTP/2
-      httpclient:
-        connect-timeout: 5000
-        response-timeout: 30s
-        pool:
-          max-connections: 500
-          acquire-timeout: 45000
-
-      # CORS global — los frontends apuntan al gateway
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowed-origin-patterns: ${GATEWAY_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:19000}
-            allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
-            allowed-headers: ['*']
-            exposed-headers: [Retry-After]
-            allow-credentials: true
-            max-age: 3600
-
-      # Desactivar el default-filters global (se definen por ruta)
-      default-filters: []
+          # El monolito también añade cabeceras CORS: sin esto el navegador recibiría
+          # Access-Control-Allow-Origin dos veces y rechazaría la respuesta
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
 
 # ── Actuator ──────────────────────────────────────────────────────────────────
 management:

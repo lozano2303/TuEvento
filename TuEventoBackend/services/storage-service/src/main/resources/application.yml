@@ -4,43 +4,55 @@ server:
 spring:
   application:
     name: storage-service
+  # Misma base de datos que el monolito: las tablas stored_file, file_category,
+  # storage_provider y storage_operation_log las crea y migra el Liquibase del monolito.
+  # Este servicio solo las lee y escribe; por eso no tiene Liquibase propio.
   datasource:
-    url: ${STORAGE_DB_URL:jdbc:postgresql://localhost:5432/tuevento_storage}
-    username: ${STORAGE_DB_USER:postgres}
-    password: ${STORAGE_DB_PASSWORD:postgres}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/tuevento_db}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:postgres}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:postgres}}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      # Pocas conexiones: comparte el límite de la base con el monolito
+      maximum-pool-size: ${STORAGE_DB_POOL_SIZE:5}
   jpa:
     hibernate:
-      ddl-auto: none
+      # Falla al arrancar si las entidades no coinciden con las tablas del monolito
+      ddl-auto: validate
     open-in-view: false
   liquibase:
-    enabled: true
-    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: false
   servlet:
     multipart:
       max-file-size: 10MB
-      max-request-size: 10MB
+      max-request-size: 12MB
   security:
     oauth2:
       resourceserver:
         jwt:
           jwk-set-uri: ${JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
 
 app:
   storage:
-    # Strategy de almacenamiento: solo rustfs tiene configuración en este servicio
-    provider: ${APP_STORAGE_PROVIDER:rustfs}
+    # Mismo proveedor, bucket y credenciales que el monolito: los dos leen y escriben los mismos objetos
+    provider: ${STORAGE_PROVIDER:minio}
     bucket-default: ${STORAGE_BUCKET:tuevento}
+    # MinIO (provider=minio)
+    endpoint: ${APP_STORAGE_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ROOT_USER:minioadmin}
+    secret-key: ${MINIO_ROOT_PASSWORD:minioadmin}
+    region: ${AWS_REGION:us-east-1}
+    # RustFS (provider=rustfs)
     rustfs:
       endpoint: ${RUSTFS_ENDPOINT:http://localhost:9100}
-      public-url: ${RUSTFS_PUBLIC_URL:http://localhost:9100}
+      public-url: ${RUSTFS_PUBLIC_URL:${RUSTFS_ENDPOINT:http://localhost:9100}}
       access-key: ${RUSTFS_ACCESS_KEY:rustfsadmin}
       secret-key: ${RUSTFS_SECRET_KEY:rustfsadmin}
       region: ${AWS_REGION:us-east-1}
+
+# Host de MinIO alcanzable desde el navegador: firma las presigned URLs
+minio:
+  public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
 
 moderation:
   nsfw:

@@ -15,7 +15,6 @@ services:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-dbs.sh:ro
     networks:
       - tuevento-network
 
@@ -321,8 +320,8 @@ services:
     environment:
       - GATEWAY_PORT=8090
       - MONOLITH_URI=http://backend:8080
-      # Corte de /api/v1/storage al microservicio: descomentar tras la fase 1, pasos 2-4 (ver gateway application.yml)
-      # - STORAGE_SERVICE_URI=http://storage-service:8085
+      # /api/v1/storage va al microservicio; para volver al monolito, quitar esta variable
+      - STORAGE_SERVICE_URI=http://storage-service:8085
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - GATEWAY_CORS_ALLOWED_ORIGINS=${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000}
@@ -335,7 +334,10 @@ services:
       redis:
         condition: service_started
     networks:
-      - tuevento-network
+      tuevento-network:
+        # Nombre que usa el nginx del frontend (mismo que en producción)
+        aliases:
+          - api-gateway
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8090/actuator/health | grep -q UP"]
       interval: 10s
@@ -346,41 +348,51 @@ services:
   # ── Microservicio de Archivos (primera extracción) ─────────────────────────
   storage-service:
     build:
-      context: ./TuEventoBackend/services/storage-service
-      dockerfile: Dockerfile
+      # El contexto incluye tuevento-common, que se compila dentro de la imagen
+      context: ./TuEventoBackend/services
+      dockerfile: storage-service/Dockerfile
     container_name: tuevento-storage-service
     restart: unless-stopped
     ports:
       - "8085:8085"
     environment:
       - STORAGE_SERVICE_PORT=8085
-      - STORAGE_DB_URL=jdbc:postgresql://postgres:5432/tuevento_storage
-      - STORAGE_DB_USER=${POSTGRES_USER}
-      - STORAGE_DB_PASSWORD=${POSTGRES_PASSWORD}
+      # Misma base que el monolito (las tablas de storage las migra su Liquibase)
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - JWK_SET_URI=http://backend:8080/.well-known/jwks.json
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - APP_STORAGE_PROVIDER=rustfs
+      # Mismo proveedor y bucket que el backend: los dos leen y escriben los mismos objetos
+      - STORAGE_PROVIDER=${STORAGE_PROVIDER:-minio}
+      - APP_STORAGE_ENDPOINT=http://minio:9000
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-http://localhost:9000}
       - RUSTFS_ENDPOINT=http://rustfs:9000
-      # Mismas credenciales que el contenedor rustfs
       - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY:-rustfsadmin}
       - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin}
-      - STORAGE_BUCKET=${RUSTFS_BUCKET:-tuevento}
-      - AWS_REGION=${AWS_REGION:-us-east-1}
-      # URL pública embebida en las presigned URLs: el puerto que rustfs publica al host
       - RUSTFS_PUBLIC_URL=${RUSTFS_PUBLIC_URL:-http://localhost:9100}
       - NSFW_SERVICE_URL=http://nsfw-classifier:8000
+      - NSFW_THRESHOLD=0.4
+      - SIGHTENGINE_API_USER=${SIGHTENGINE_API_USER}
+      - SIGHTENGINE_API_SECRET=${SIGHTENGINE_API_SECRET}
     depends_on:
       postgres:
         condition: service_started
-      redis:
+      minio:
         condition: service_started
-      rustfs:
-        condition: service_started
+      # El backend migra las tablas y publica el JWKS
       backend:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     networks:
       - tuevento-network
+
   # ── CI / CD ─────────────────────────────────────────────────────────────────
   # Inactivos: el CI corre en GitHub Actions + SonarQube Cloud. Solo arrancan con
   # `docker compose --profile ci up -d jenkins sonarqube` y no se reinician solos.
@@ -426,7 +438,8 @@ services:
       context: ./TuEventoFrontend/web
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: http://localhost:8080/api
+        # La web entra por el gateway (API REST y /ws)
+        VITE_API_URL: http://localhost:8090/api/v1
     container_name: tuevento-frontend
     restart: unless-stopped
     ports:
@@ -434,7 +447,7 @@ services:
     networks:
       - tuevento-network
     depends_on:
-      - backend
+      - gateway
 
 # ── Redes ──────────────────────────────────────────────────────────────────────
 networks:

@@ -56,6 +56,35 @@ jobs:
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+  microservices:
+    name: Microservicios (storage-service + api-gateway)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      # Los servicios no traen mvnw propio: se usa el del monolito
+      - name: tuevento-common (librería compartida)
+        run: TuEventoBackend/tu-evento/mvnw -B -f TuEventoBackend/services/tuevento-common/pom.xml install
+
+      - name: storage-service (tests)
+        run: TuEventoBackend/tu-evento/mvnw -B -f TuEventoBackend/services/storage-service/pom.xml verify
+
+      - name: api-gateway (build)
+        run: TuEventoBackend/tu-evento/mvnw -B -f TuEventoBackend/gateway/pom.xml package
+
+      # Comprueba que las imágenes de producción se construyen desde cero
+      - name: Imagen de storage-service
+        run: docker build -f TuEventoBackend/services/storage-service/Dockerfile TuEventoBackend/services
+
+      - name: Imagen de api-gateway
+        run: docker build TuEventoBackend/gateway
+
   web:
     name: Web (build)
     runs-on: ubuntu-latest
