@@ -1,6 +1,8 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
 import com.capysoft.tuevento.modules.security.application.dto.OrganizerRoleRevokedMessage;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort.TokenRevocationUnavailableException;
 import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedEvent;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerRoleRevocationRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.RoleEntity;
@@ -56,6 +58,7 @@ class RevokeOrganizerRoleUseCaseTest {
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private OrganizerRoleRevocationRepository revocationRepository;
     @Mock private OutboxEventPublisher      outboxEventPublisher;
+    @Mock private TokenRevocationPort       tokenRevocationPort;
 
     private static final Instant NOW = Instant.parse("2026-10-27T15:00:00Z");
 
@@ -72,7 +75,7 @@ class RevokeOrganizerRoleUseCaseTest {
     @BeforeEach
     void setUp() {
         useCase = new RevokeOrganizerRoleUseCase(userJpaRepository, roleJpaRepository, eventPublisher,
-                revocationRepository, outboxEventPublisher, Clock.fixed(NOW, ZoneOffset.UTC));
+                revocationRepository, outboxEventPublisher, tokenRevocationPort, Clock.fixed(NOW, ZoneOffset.UTC));
         organizerRole = RoleEntity.builder().roleId(2).code("ORGANIZER").name("Organizer").build();
         userRole      = RoleEntity.builder().roleId(1).code("USER").name("User").build();
         organizerUser = UserEntity.builder()
@@ -143,6 +146,32 @@ class RevokeOrganizerRoleUseCaseTest {
             assertThat(eventId.getValue())
                     .isEqualTo(RevokeOrganizerRoleUseCase.eventIdOf(77L))
                     .isNotEqualTo(RevokeOrganizerRoleUseCase.eventIdOf(78L));
+        }
+
+        @Test
+        @DisplayName("revoke() invalida los access tokens del usuario emitidos hasta ahora")
+        void revoke_revokesUserTokens() {
+            when(userJpaRepository.findByIdEagerForUpdate(USER_ID)).thenReturn(Optional.of(organizerUser));
+            when(roleJpaRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
+            when(userJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            useCase.revoke(USER_ID, REASON, ADMIN_ID);
+
+            verify(tokenRevocationPort).revokeUser(USER_ID, NOW);
+        }
+
+        @Test
+        @DisplayName("revoke() falla entera si la lista de revocación no responde: no queda a medias")
+        void revoke_failsWhenRevocationStoreIsDown() {
+            when(userJpaRepository.findByIdEagerForUpdate(USER_ID)).thenReturn(Optional.of(organizerUser));
+            when(roleJpaRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
+            when(userJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            doThrow(new TokenRevocationUnavailableException("redis down", null))
+                    .when(tokenRevocationPort).revokeUser(USER_ID, NOW);
+
+            assertThatThrownBy(() -> useCase.revoke(USER_ID, REASON, ADMIN_ID))
+                    .isInstanceOf(TokenRevocationUnavailableException.class);
+            verifyNoInteractions(outboxEventPublisher, eventPublisher);
         }
 
         @Test
