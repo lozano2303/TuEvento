@@ -133,14 +133,9 @@ public class EventTranslationController {
             @Parameter(description = "Event ID") @PathVariable Integer eventId,
             @Parameter(description = "Language ID") @PathVariable Integer languageId) {
 
-        try {
-            return eventTranslationRepository.findByEventAndLanguage(eventId, languageId)
-                    .map(t -> ResponseEntity.ok(ApiResponse.ok("Translation retrieved", t)))
-                    .orElseGet(() -> ResponseEntity.notFound().build());
-        } catch (Exception e) {
-            log.error("Error getting translation for event {} in language {}", eventId, languageId, e);
-            return ResponseEntity.internalServerError().body(ApiResponse.error("Error: " + e.getMessage()));
-        }
+        return eventTranslationRepository.findByEventAndLanguage(eventId, languageId)
+                .map(t -> ResponseEntity.ok(ApiResponse.ok("Translation retrieved", t)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @Operation(summary = "Delete event translation",

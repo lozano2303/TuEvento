@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -123,7 +124,8 @@ class EventTranslationControllerTest {
 
         assertThat(controller.getTranslation(1, 2).getBody().getData()).isSameAs(existing);
         assertThat(controller.getTranslation(3, 2).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        assertThat(controller.getTranslation(5, 2).getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        // El fallo llega al GlobalExceptionHandler
+        assertThatThrownBy(() -> controller.getTranslation(5, 2)).isSameAs(DB_DOWN);
 
         assertThat(controller.deleteTranslation(1, 2).getStatusCode()).isEqualTo(HttpStatus.OK);
         verify(translations).delete(existing);
