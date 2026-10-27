@@ -22,7 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
-import com.capysoft.tuevento.modules.language.application.service.TranslationService;
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
 import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
 import com.capysoft.tuevento.modules.profile.domain.model.Profile;
@@ -142,16 +142,16 @@ class RemoteNotificationBridgeTest {
     @DisplayName("modo remote: peticiones de traducción")
     class Translation {
 
-        private final TranslationService translationService = mock(TranslationService.class);
+        private final TranslationRequests translationRequests = mock(TranslationRequests.class);
         private final NotificationTranslationRequestListener listener =
-                new NotificationTranslationRequestListener(translationService, objectMapper);
+                new NotificationTranslationRequestListener(translationRequests, objectMapper);
 
         @Test
         @DisplayName("encola la traducción de la notificación desde el español")
         void requestsTranslation() {
             listener.onTranslationRequested("{\"notificationId\":42}");
 
-            verify(translationService).requestTranslation("notification", 42L, "es");
+            verify(translationRequests).request("notification", 42L);
         }
 
         @Test
@@ -160,7 +160,7 @@ class RemoteNotificationBridgeTest {
             listener.onTranslationRequested("{}");
             listener.onTranslationRequested("no es json");
 
-            verifyNoInteractions(translationService);
+            verifyNoInteractions(translationRequests);
         }
     }
 }

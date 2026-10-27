@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.event.application.usecase;
 
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.category.application.dto.request.AssignCategoryRequest;
 import com.capysoft.tuevento.modules.category.application.dto.response.CategoryResponse;
 import com.capysoft.tuevento.modules.category.application.port.in.CategoryEventUseCase;
@@ -16,7 +17,6 @@ import com.capysoft.tuevento.modules.event.domain.repository.EventLogRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.SiteLookupPort;
 import com.capysoft.tuevento.modules.event.application.port.out.SiteSummary;
-import com.capysoft.tuevento.modules.language.application.service.TranslationService;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ public class UpdateEventService implements UpdateEventUseCase {
     private final CategoryUseCase      categoryUseCase;
     private final CategoryEventUseCase categoryEventUseCase;
     private final EventDateValidator   eventDateValidator;
-    private final TranslationService   translationService;
+    private final TranslationRequests translationRequests;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -146,7 +146,7 @@ public class UpdateEventService implements UpdateEventUseCase {
         
         if (contentChanged) {
             try {
-                translationService.requestTranslation("event", updated.getEventId(), "es");
+                translationRequests.request("event", updated.getEventId());
                 log.debug("Translation requested for updated event {}", updated.getEventId());
             } catch (Exception e) {
                 log.warn("Failed to request translation for event {}: {}", updated.getEventId(), e.getMessage());

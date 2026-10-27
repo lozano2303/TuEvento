@@ -1,8 +1,8 @@
 package com.capysoft.tuevento.modules.section.interfaces.rest;
 
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.modules.section.domain.model.SectionType;
 import com.capysoft.tuevento.modules.section.domain.model.SectionTypeTranslation;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeRepository;
@@ -40,7 +40,7 @@ public class SectionTypeTranslationController {
     private final SectionTypeTranslationRepository sectionTypeTranslationRepository;
     private final SectionTypeRepository sectionTypeRepository;
     private final LanguageRepository languageRepository;
-    private final TranslationJobRepository translationJobRepository;
+    private final TranslationRequests translationRequests;
 
     @Operation(summary = "Get all section types with translations for a language",
                description = "Lista todos los tipos de sección con sus traducciones para el idioma especificado")
@@ -173,8 +173,8 @@ public class SectionTypeTranslationController {
 
     /** Hay un trabajo de traducción automática pendiente o en curso para ese tipo e idioma. */
     private boolean isGenerating(Integer sectionTypeId, Integer languageId) {
-        return translationJobRepository.findByEntityAndTargetLanguage("section_type", sectionTypeId, languageId)
-                .map(job -> GENERATING.contains(job.getStatus()))
+        return translationRequests.jobStatus("section_type", sectionTypeId, languageId)
+                .map(GENERATING::contains)
                 .orElse(false);
     }
 

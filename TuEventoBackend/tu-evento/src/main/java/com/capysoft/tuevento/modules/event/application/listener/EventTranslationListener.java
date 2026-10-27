@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.event.application.listener;
 
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.event.domain.repository.EventTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.modules.event.domain.event.EventUpdatedEvent;
 import com.capysoft.tuevento.modules.event.domain.repository.EventLogRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ import java.time.LocalDateTime;
 public class EventTranslationListener {
 
     private final EventTranslationRepository eventTranslationRepository;
-    private final TranslationJobRepository translationJobRepository;
+    private final TranslationRequests translationRequests;
     private final EventLogRepository eventLogRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -50,7 +50,7 @@ public class EventTranslationListener {
                 eventTranslationRepository.deleteByEvent(event.getEventId().intValue());
                 
                 // Eliminar todos los jobs pendientes
-                int deletedJobs = translationJobRepository.deleteByEntity("event", event.getEventId().intValue());
+                int deletedJobs = translationRequests.discard("event", event.getEventId());
                 
                 log.info("[EventTranslationListener] Event {} content changed - deleted translations and {} pending jobs. New translations will be generated on-demand.",
                         event.getEventId(), deletedJobs);

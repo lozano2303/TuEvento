@@ -1,9 +1,8 @@
 package com.capysoft.tuevento.modules.section.interfaces.rest;
 
 import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.model.TranslationJob;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.section.domain.model.SectionType;
 import com.capysoft.tuevento.modules.section.domain.model.SectionTypeTranslation;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeRepository;
@@ -35,7 +34,7 @@ class SectionTypeTranslationControllerTest {
     private final SectionTypeTranslationRepository translations = mock(SectionTypeTranslationRepository.class);
     private final SectionTypeRepository sectionTypes = mock(SectionTypeRepository.class);
     private final LanguageRepository languages = mock(LanguageRepository.class);
-    private final TranslationJobRepository jobs = mock(TranslationJobRepository.class);
+    private final TranslationRequests jobs = mock(TranslationRequests.class);
     private final SectionTypeTranslationController controller =
             new SectionTypeTranslationController(translations, sectionTypes, languages, jobs);
 
@@ -65,8 +64,7 @@ class SectionTypeTranslationControllerTest {
         when(sectionTypes.findAll()).thenReturn(List.of(type(1, "Palco"), type(2, "General")));
         when(translations.findBySectionTypeAndLanguage(1L, 2)).thenReturn(Optional.of(translation(1, "Box")));
         when(translations.findBySectionTypeAndLanguage(2L, 2)).thenReturn(Optional.empty());
-        when(jobs.findByEntityAndTargetLanguage("section_type", 2, 2)).thenReturn(Optional.of(
-                TranslationJob.builder().status(TranslationJobStatus.PENDING).build()));
+        when(jobs.jobStatus("section_type", 2, 2)).thenReturn(Optional.of(TranslationJobStatus.PENDING));
 
         List<Map<String, Object>> rows = controller.getSectionTypesWithTranslations("en", "all").getBody().getData();
         assertThat(rows).hasSize(2);

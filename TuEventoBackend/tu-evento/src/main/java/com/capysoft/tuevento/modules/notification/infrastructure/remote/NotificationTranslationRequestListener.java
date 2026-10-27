@@ -1,10 +1,10 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.remote;
 
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import com.capysoft.tuevento.modules.language.application.service.TranslationService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -23,9 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 public class NotificationTranslationRequestListener {
 
     private static final String ENTITY_TYPE = "notification";
-    private static final String SOURCE_LANGUAGE = "es";
 
-    private final TranslationService translationService;
+    private final TranslationRequests translationRequests;
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = NotificationTopics.TRANSLATION, groupId = "monolito-translation")
@@ -36,7 +35,7 @@ public class NotificationTranslationRequestListener {
                 log.warn("Translation request discarded: no notificationId");
                 return;
             }
-            translationService.requestTranslation(ENTITY_TYPE, message.get("notificationId").asLong(), SOURCE_LANGUAGE);
+            translationRequests.request(ENTITY_TYPE, message.get("notificationId").asLong());
         } catch (Exception e) {
             // Sin traducción la bandeja muestra el texto en español, igual que hoy si falla
             log.error("Could not request notification translation", e);

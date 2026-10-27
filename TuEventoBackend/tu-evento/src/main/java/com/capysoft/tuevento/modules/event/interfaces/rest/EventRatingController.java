@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.event.interfaces.rest;
 
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.event.application.dto.request.AddEventRatingRequest;
 import com.capysoft.tuevento.modules.event.application.dto.request.EditEventRatingRequest;
 import com.capysoft.tuevento.modules.event.application.dto.response.EventRatingResponse;
@@ -10,9 +11,9 @@ import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventRating;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.language.domain.model.EventRatingTranslation;
+import com.capysoft.tuevento.modules.event.domain.model.EventRatingTranslation;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.EventRatingTranslationRepository;
+import com.capysoft.tuevento.modules.event.domain.repository.EventRatingTranslationRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
@@ -66,7 +67,7 @@ public class EventRatingController {
     private final ProfileJpaRepository               profileJpaRepository;
     private final EventRatingTranslationRepository   eventRatingTranslationRepository;
     private final LanguageRepository                 languageRepository;
-    private final com.capysoft.tuevento.modules.language.application.service.TranslationService translationService;
+    private final TranslationRequests translationRequests;
 
     @Operation(summary = "Add a comment/rating or reply to an event — any authenticated user")
     @PostMapping
@@ -154,7 +155,7 @@ public class EventRatingController {
             for (EventRating rating : ratings) {
                 if (!translationsByRatingId.containsKey(rating.getRatingId())) {
                     try {
-                        translationService.requestTranslation("event_rating", rating.getRatingId(), "es");
+                        translationRequests.request("event_rating", rating.getRatingId());
                     } catch (Exception e) {
                         // Non-blocking: si falla la solicitud de traducción, solo logueamos
                         // El frontend seguirá mostrando el indicador "translating"

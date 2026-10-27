@@ -1,6 +1,6 @@
 package com.capysoft.tuevento.modules.notification.application.usecase;
 
-import com.capysoft.tuevento.modules.language.application.service.TranslationService;
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
 import com.capysoft.tuevento.modules.notification.application.port.out.NotificationChannelPort;
 import com.capysoft.tuevento.modules.notification.application.service.NotificationMessageFactory;
@@ -31,7 +31,7 @@ public class SendNotificationUseCase {
     private final NotificationTypeRepository notificationTypeRepository;
     private final NotificationRepository notificationRepository;
     private final Map<String, NotificationChannelPort> channelsByName;
-    private final TranslationService translationService;
+    private final TranslationRequests translationRequests;
     private final boolean emailEnabled;
 
     public SendNotificationUseCase(
@@ -39,14 +39,14 @@ public class SendNotificationUseCase {
             NotificationTypeRepository notificationTypeRepository,
             NotificationRepository notificationRepository,
             List<NotificationChannelPort> channelPorts,
-            TranslationService translationService,
+            TranslationRequests translationRequests,
             @Value("${notification.email.enabled:true}") boolean emailEnabled) {
         this.channelRepository = channelRepository;
         this.notificationTypeRepository = notificationTypeRepository;
         this.notificationRepository = notificationRepository;
         this.channelsByName = channelPorts.stream()
                 .collect(Collectors.toMap(NotificationChannelPort::channelName, Function.identity()));
-        this.translationService = translationService;
+        this.translationRequests = translationRequests;
         this.emailEnabled = emailEnabled;
     }
 
@@ -149,7 +149,7 @@ public class SendNotificationUseCase {
                     public void afterCommit() {
                         // Request translation
                         try {
-                            translationService.requestTranslation("notification", notificationId, "es");
+                            translationRequests.request("notification", notificationId);
                             log.debug("Translation requested for notification {}", notificationId);
                         } catch (Exception e) {
                             log.warn("Failed to request translation for notification {}: {}", notificationId, e.getMessage());

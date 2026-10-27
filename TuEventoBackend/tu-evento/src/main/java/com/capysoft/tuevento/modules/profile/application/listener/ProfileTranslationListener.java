@@ -1,6 +1,6 @@
 package com.capysoft.tuevento.modules.profile.application.listener;
 
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.profile.domain.event.ProfileUpdatedEvent;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileLogRepository;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileTranslationRepository;
@@ -29,7 +29,7 @@ public class ProfileTranslationListener {
     private static final long BIO_LOG_WINDOW_SECONDS = 5;
 
     private final ProfileTranslationRepository profileTranslationRepository;
-    private final TranslationJobRepository translationJobRepository;
+    private final TranslationRequests translationRequests;
     private final ProfileLogRepository profileLogRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -43,7 +43,7 @@ public class ProfileTranslationListener {
                 return;
             }
             profileTranslationRepository.deleteByProfile(profileId);
-            int deletedJobs = translationJobRepository.deleteByEntity("profile", profileId.intValue());
+            int deletedJobs = translationRequests.discard("profile", profileId);
             log.info("[ProfileTranslationListener] Profile {} bio changed - deleted its translations and {} pending jobs",
                     profileId, deletedJobs);
         } catch (Exception e) {

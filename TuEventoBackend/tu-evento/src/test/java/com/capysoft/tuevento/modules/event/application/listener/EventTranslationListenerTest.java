@@ -3,7 +3,7 @@ package com.capysoft.tuevento.modules.event.application.listener;
 import com.capysoft.tuevento.modules.event.domain.event.EventUpdatedEvent;
 import com.capysoft.tuevento.modules.event.domain.repository.EventLogRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -31,7 +32,7 @@ class EventTranslationListenerTest {
     private static final LocalDateTime AT = LocalDateTime.of(2026, 10, 27, 12, 0);
 
     private final EventTranslationRepository translations = mock(EventTranslationRepository.class);
-    private final TranslationJobRepository jobs = mock(TranslationJobRepository.class);
+    private final TranslationRequests jobs = mock(TranslationRequests.class);
     private final EventLogRepository logs = mock(EventLogRepository.class);
     private final EventTranslationListener listener = new EventTranslationListener(translations, jobs, logs);
 
@@ -49,7 +50,7 @@ class EventTranslationListenerTest {
         listener.onEventUpdated(updated());
 
         verify(translations).deleteByEvent(7);
-        verify(jobs).deleteByEntity("event", 7);
+        verify(jobs).discard("event", 7);
     }
 
     @Test
@@ -60,7 +61,7 @@ class EventTranslationListenerTest {
         listener.onEventUpdated(updated());
 
         verify(translations, never()).deleteByEvent(anyInt());
-        verify(jobs, never()).deleteByEntity(anyString(), anyInt());
+        verify(jobs, never()).discard(anyString(), anyLong());
     }
 
     @Test
