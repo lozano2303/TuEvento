@@ -14,7 +14,7 @@
 #   LibreTranslate es opcional (≈2 GB de RAM):
 #     docker compose -f docker-compose.prod.yml --env-file .env.prod --profile translate up -d
 # - Límites de memoria pensados para 8 GB de RAM + 4 GB de swap:
-#   ≈7.6 GB sin LibreTranslate y ≈9.6 GB con él (topes, no reservas; el swap cubre el resto).
+#   ≈8.0 GB sin LibreTranslate y ≈10.0 GB con él (topes, no reservas; el swap cubre el resto).
 # ============================================================
 
 name: tuevento
@@ -355,7 +355,8 @@ services:
       - messaging
 
   # ── API gateway: punto de entrada de /api y /ws ────────────────────────────
-  # Envía /api/v1/storage/** y /api/v1/notifications/** a sus microservicios y el resto al monolito.
+  # Envía /api/v1/storage/**, /api/v1/notifications/** y /api/v1/geolocation/** a sus
+  # microservicios y el resto al monolito.
   api-gateway:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:api-gateway-${TUEVENTO_VERSION:?}
     container_name: tuevento-api-gateway
@@ -363,6 +364,7 @@ services:
     environment:
       MONOLITH_URI: http://backend:8080
       STORAGE_SERVICE_URI: http://storage-service:8085
+      GEOLOCATION_SERVICE_URI: http://geolocation-service:8087
       NOTIFICATION_SERVICE_URI: http://notification-service:8086
       GATEWAY_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
       JAVA_TOOL_OPTIONS: -Xmx256m
@@ -370,6 +372,8 @@ services:
       backend:
         condition: service_healthy
       storage-service:
+        condition: service_healthy
+      geolocation-service:
         condition: service_healthy
       notification-service:
         condition: service_healthy
@@ -506,6 +510,35 @@ services:
     networks:
       - internal
       - messaging
+
+  # ── Microservicio de geolocalización ───────────────────────────────────────
+  # Departamentos, ciudades y sedes; misma base de datos que el monolito.
+  geolocation-service:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:geolocation-${TUEVENTO_VERSION:?}
+    container_name: tuevento-geolocation-service
+    restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx256m
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
+      JWK_SET_URI: http://backend:8080/.well-known/jwks.json
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8087/actuator/health | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+    logging: *default-logging
+    networks:
+      - internal
 
   # ── Frontend (SPA + proxy de /api y /ws al api-gateway) ─────────────────────
   frontend:
