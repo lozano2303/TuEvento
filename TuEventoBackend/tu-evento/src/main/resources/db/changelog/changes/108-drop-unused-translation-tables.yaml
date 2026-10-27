@@ -1,0 +1,88 @@
+databaseChangeLog:
+  # Tablas de traducción creadas en 090 y 091 que nunca se usaron: ningún caso de uso inyecta sus
+  # repositorios, ningún handler de traducción las rellena y ninguna tabla las referencia. Se borran
+  # antes de extraer el servicio de localización para no repartir entre dominios tablas muertas.
+  # event_comment_reply_translation además quedó huérfana cuando 092 borró event_comment_reply.
+  - changeSet:
+      id: 108-drop-action-translation
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: action_translation
+      changes:
+        - dropTable:
+            tableName: action_translation
+            cascadeConstraints: true
+
+  - changeSet:
+      id: 108-drop-channel-translation
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: channel_translation
+      changes:
+        - dropTable:
+            tableName: channel_translation
+            cascadeConstraints: true
+
+  - changeSet:
+      id: 108-drop-event-comment-reply-translation
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: event_comment_reply_translation
+      changes:
+        - dropTable:
+            tableName: event_comment_reply_translation
+            cascadeConstraints: true
+
+  - changeSet:
+      id: 108-drop-module-translation
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: module_translation
+      changes:
+        - dropTable:
+            tableName: module_translation
+            cascadeConstraints: true
+
+  - changeSet:
+      id: 108-drop-notification-type-translation
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: notification_type_translation
+      changes:
+        - dropTable:
+            tableName: notification_type_translation
+            cascadeConstraints: true
+
+  - changeSet:
+      id: 108-drop-review-translation
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: review_translation
+      changes:
+        - dropTable:
+            tableName: review_translation
+            cascadeConstraints: true
+
+  - changeSet:
+      id: 108-drop-seat-block-translation
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: seat_block_translation
+      changes:
+        - dropTable:
+            tableName: seat_block_translation
+            cascadeConstraints: true
