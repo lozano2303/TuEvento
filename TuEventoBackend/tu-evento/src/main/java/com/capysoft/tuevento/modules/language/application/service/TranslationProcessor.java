@@ -1,18 +1,14 @@
 package com.capysoft.tuevento.modules.language.application.service;
 
-import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
 import com.capysoft.tuevento.modules.language.application.port.out.TranslationException;
 import com.capysoft.tuevento.modules.language.application.port.out.TranslationPort;
+import com.capysoft.tuevento.modules.language.application.port.out.TranslationResults;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
 import com.capysoft.tuevento.modules.language.domain.model.TranslationJob;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
-import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
-import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -34,22 +30,21 @@ public class TranslationProcessor {
     private final LanguageRepository languageRepository;
     private final TranslationPort translationPort;
     private final TextMaskingService maskingService;
-    
-    @Autowired
-    @Qualifier("translatableContentHandlerRegistry")
-    private Map<String, TranslatableContentHandler> handlerRegistry;
-    
+    private final TranslationResults translationResults;
+
     @Value("${translation.backoff.max-minutes:60}")
     private int maxBackoffMinutes;
 
     public TranslationProcessor(TranslationJobRepository translationJobRepository,
                               LanguageRepository languageRepository,
                               TranslationPort translationPort,
-                              TextMaskingService maskingService) {
+                              TextMaskingService maskingService,
+                              TranslationResults translationResults) {
         this.translationJobRepository = translationJobRepository;
         this.languageRepository = languageRepository;
         this.translationPort = translationPort;
         this.maskingService = maskingService;
+        this.translationResults = translationResults;
     }
 
     /**
@@ -65,17 +60,11 @@ public class TranslationProcessor {
                     .findByEntityAndStatus(entityType, entityId.intValue(), TranslationJobStatus.PENDING);
             
             log.info("Found {} pending jobs for {}/{}", pendingJobs.size(), entityType, entityId);
-                    
-            TranslatableContentHandler handler = handlerRegistry.get(entityType);
-            if (handler == null) {
-                log.error("No handler found for entity type: {}", entityType);
-                return CompletableFuture.completedFuture(null);
-            }
-            
+
             // Procesar jobs en paralelo para mejorar rendimiento
             pendingJobs.parallelStream().forEach(job -> {
                 try {
-                    processJob(job, handler);
+                    processJob(job);
                 } catch (Exception e) {
                     log.error("Error processing job {} in parallel: {}", job.getJobId(), e.getMessage(), e);
                 }
@@ -92,7 +81,7 @@ public class TranslationProcessor {
     // Sin @Transactional a propósito: se invoca desde la propia clase (sin proxy) y una
     // transacción abierta durante la llamada a LibreTranslate retendría conexiones. Cada
     // operación del repositorio (claimJob atómico, save) es transaccional por sí misma.
-    private void processJob(TranslationJob job, TranslatableContentHandler handler) {
+    private void processJob(TranslationJob job) {
         // 1. Reclamar job atómicamente
         boolean claimed = translationJobRepository.claimJob(job.getJobId());
         if (!claimed) {
@@ -111,27 +100,15 @@ public class TranslationProcessor {
                 return;
             }
 
-            // 3. Verificar si ya existe traducción REVIEWED
-            Optional<TranslationStatus> existingStatus = handler.findTranslationStatus(
-                    job.getEntityId().longValue(), targetLanguage.get().getCode());
-                    
-            if (existingStatus.isPresent() && existingStatus.get() == TranslationStatus.PUBLISHED) {
-                log.info("Skipping translation save - content is PUBLISHED: {}/{}/{}", 
-                    job.getEntityType(), job.getEntityId(), targetLanguage.get().getCode());
-                job.markCompleted();
-                translationJobRepository.save(job);
-                return;
-            }
-
-            // 4. Cargar textos fuente
-            Map<String, String> sourceTexts = handler.loadSourceTexts(job.getEntityId().longValue());
-            if (sourceTexts.isEmpty()) {
+            // 3. Textos fuente guardados al pedir la traducción
+            Map<String, String> sourceTexts = job.getSourceTexts();
+            if (sourceTexts == null || sourceTexts.isEmpty()) {
                 job.markCompleted(); // No hay nada que traducir
                 translationJobRepository.save(job);
                 return;
             }
 
-            // 5. Traducir cada campo
+            // 4. Traducir cada campo
             Map<String, String> translatedTexts = new HashMap<>();
             
             for (Map.Entry<String, String> entry : sourceTexts.entrySet()) {
@@ -155,11 +132,11 @@ public class TranslationProcessor {
                 }
             }
 
-            // 6. Guardar traducción como PUBLISHED (auto-aprobada)
-            handler.saveTranslation(job.getEntityId().longValue(), targetLanguage.get().getCode(), 
-                    translatedTexts, TranslationSource.MACHINE, TranslationStatus.PUBLISHED);
-            
-            // 7. Marcar job como completado
+            // 5. Entregar la traducción al dominio (la guarda publicada, sin pisar una ya publicada)
+            translationResults.deliver(job.getEntityType(), job.getEntityId().longValue(),
+                    targetLanguage.get().getCode(), translatedTexts);
+
+            // 6. Marcar job como completado
             job.markCompleted();
             translationJobRepository.save(job);
             

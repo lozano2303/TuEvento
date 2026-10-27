@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 import com.capysoft.tuevento.modules.identitybridge.client.IdentityServiceClient;
-import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
+import com.capysoft.tuevento.shared.application.translation.TranslatableContentHandler;
 import com.capysoft.tuevento.shared.domain.exception.ServiceUnavailableException;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;

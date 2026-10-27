@@ -21,6 +21,15 @@ spring:
     open-in-view: false
   liquibase:
     enabled: false
+  # Lista de revocación de access tokens que escribe Identidad (la misma instancia de Redis que el monolito)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      # Se consulta en cada petición y falla cerrada: responder 503 rápido en vez de esperar 60 s
+      timeout: ${REDIS_TIMEOUT:2s}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:2s}
   security:
     oauth2:
       resourceserver:

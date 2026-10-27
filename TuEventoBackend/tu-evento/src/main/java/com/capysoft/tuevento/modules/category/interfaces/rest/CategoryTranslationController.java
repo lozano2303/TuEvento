@@ -5,8 +5,8 @@ import com.capysoft.tuevento.modules.category.domain.model.Category;
 import com.capysoft.tuevento.modules.category.domain.model.CategoryTranslation;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryRepository;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
@@ -39,7 +39,7 @@ public class CategoryTranslationController {
 
     private final CategoryTranslationRepository categoryTranslationRepository;
     private final CategoryRepository categoryRepository;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
     private final TranslationRequests translationRequests;
 
     @Operation(summary = "Get all categories with translations for a language",
@@ -54,7 +54,7 @@ public class CategoryTranslationController {
             @RequestParam(defaultValue = TranslationAdminSupport.FILTER_ALL) String filter) {
 
         try {
-            Optional<Language> languageOpt = languageRepository.findByCode(languageCode.toLowerCase());
+            Optional<LanguageSummary> languageOpt = languageCatalog.findByCode(languageCode.toLowerCase());
             if (languageOpt.isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error("Language not found: " + languageCode));
@@ -102,7 +102,7 @@ public class CategoryTranslationController {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error("Category not found with ID: " + categoryId));
             }
-            Optional<Language> languageOpt = languageRepository.findById(languageId);
+            Optional<LanguageSummary> languageOpt = languageCatalog.findById(languageId);
             if (languageOpt.isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(ApiResponse.error("Language not found with ID: " + languageId));
