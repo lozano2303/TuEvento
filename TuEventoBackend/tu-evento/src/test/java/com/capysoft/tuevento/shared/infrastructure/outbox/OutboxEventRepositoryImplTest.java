@@ -43,7 +43,9 @@ class OutboxEventRepositoryImplTest {
     @Test
     @DisplayName("guarda pendiente y el lote sale en orden de creación, limitado al tamaño pedido")
     void savesPendingAndReturnsFifoBatch() {
-        OutboxEvent later = save("2", LocalDateTime.now());
+        // Fechas separadas: el evento sin fecha recibe now() al guardarse y, con la resolución del
+        // reloj de Windows, otro now() tomado justo antes puede salir idéntico y empatar en el orden
+        OutboxEvent later = save("2", LocalDateTime.now().minusMinutes(1));
         OutboxEvent first = save("1", LocalDateTime.now().minusMinutes(5));
         save("3", null);
 
