@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.profile.interfaces.rest;
 
-import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.profile.domain.model.Profile;
 import com.capysoft.tuevento.modules.profile.domain.model.ProfileTranslation;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
@@ -27,12 +27,12 @@ import static org.mockito.Mockito.when;
 @DisplayName("ProfileTranslationController")
 class ProfileTranslationControllerTest {
 
-    private static final Language EN = Language.builder().languageId(2).code("en").name("English").build();
-    private static final Language ES = Language.builder().languageId(1).code("es").name("Español").build();
+    private static final LanguageSummary EN = LanguageSummary.builder().languageId(2).code("en").build();
+    private static final LanguageSummary ES = LanguageSummary.builder().languageId(1).code("es").build();
 
     private final ProfileTranslationRepository translations = mock(ProfileTranslationRepository.class);
     private final ProfileRepository profiles = mock(ProfileRepository.class);
-    private final LanguageRepository languages = mock(LanguageRepository.class);
+    private final LanguageCatalog languages = mock(LanguageCatalog.class);
     private final ProfileTranslationController controller =
             new ProfileTranslationController(translations, profiles, languages);
 

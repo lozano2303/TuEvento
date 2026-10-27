@@ -44,6 +44,8 @@ spring:
               uri: ${MONOLITH_URI:http://localhost:8080}
               predicates:
                 - Path=/.well-known/jwks.json
+              filters:
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
 
             # ── Microservicio de Archivos/Storage (PRIMERA EXTRACCIÓN) ───────────
             # Más específico: debe ir ANTES que monolith. Los frontends siguen
@@ -56,6 +58,7 @@ spring:
                 - Path=/api/v1/storage/**
               filters:
                 - PreserveHostHeader
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
               metadata:
                 connect-timeout: 5000
                 # Una subida pasa por la moderación de imágenes (NSFW en CPU + Sightengine): en frío
@@ -72,6 +75,7 @@ spring:
                 - Path=/api/v1/notifications/**
               filters:
                 - PreserveHostHeader
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
               metadata:
                 connect-timeout: 5000
                 response-timeout: 30000
@@ -85,6 +89,7 @@ spring:
                 - Path=/api/v1/geolocation/**
               filters:
                 - PreserveHostHeader
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
               metadata:
                 connect-timeout: 5000
                 response-timeout: 30000
@@ -118,6 +123,7 @@ spring:
                 # Conserva el Host original. X-Forwarded-For se reenvía tal cual (sin trusted-proxies
                 # el gateway no añade entrada): ver RATE_LIMIT_TRUSTED_PROXIES en docker-compose.prod.yml
                 - PreserveHostHeader
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
               metadata:
                 connect-timeout: 5000
                 # Mismo límite que tenía nginx (60 s por defecto) antes de existir el gateway: la
@@ -143,10 +149,10 @@ spring:
                 allow-credentials: true
                 max-age: 3600
 
-          # El monolito también añade cabeceras CORS: sin esto el navegador recibiría
-          # Access-Control-Allow-Origin dos veces y rechazaría la respuesta
-          default-filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
+          # El monolito también añade cabeceras CORS: sin DedupeResponseHeader el navegador recibiría
+          # Access-Control-Allow-Origin dos veces y rechazaría la respuesta. Va en cada ruta HTTP y
+          # no en default-filters: en /ws las cabeceras ya están confirmadas tras el 101 (son de solo
+          # lectura), el filtro lanzaba UnsupportedOperationException y cortaba la conexión STOMP.
 
 # ── Actuator ──────────────────────────────────────────────────────────────────
 management:

@@ -3,7 +3,9 @@ package com.capysoft.tuevento.modules.section.application.usecase;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.modules.section.domain.model.SectionTypeTranslation;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeTranslationRepository;
 import com.capysoft.tuevento.modules.section.application.dto.request.CreateEventSectionRequest;
 import com.capysoft.tuevento.modules.section.application.dto.request.UpdateEventSectionRequest;
@@ -24,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,7 +54,7 @@ class EventSectionServiceOwnershipTest {
     @Mock EventSectionRepository eventSectionRepository;
     @Mock SectionTypeRepository sectionTypeRepository;
     @Mock SectionTypeTranslationRepository sectionTypeTranslationRepository;
-    @Mock LanguageRepository languageRepository;
+    @Mock LanguageCatalog languageCatalog;
     @Mock EventRepository eventRepository;
 
     @InjectMocks EventSectionService service;
@@ -216,6 +219,28 @@ class EventSectionServiceOwnershipTest {
             assertThatThrownBy(() -> service.deleteEventSection(SECTION_ID, OWNER_ID))
                     .isInstanceOf(NotFoundException.class);
             verify(eventSectionRepository, never()).deleteById(anyInt());
+        }
+    }
+
+    @Nested
+    @DisplayName("Listar")
+    class Listing {
+
+        @Test
+        @DisplayName("en otro idioma usa el nombre traducido del tipo de sección")
+        void translatedTypeName() {
+            sectionTypeExists();
+            when(eventSectionRepository.findAllByEventId(EVENT_ID)).thenReturn(List.of(EventSection.builder()
+                    .eventSectionId(SECTION_ID).eventId(EVENT_ID).sectionTypeId(SECTION_TYPE_ID).build()));
+            when(languageCatalog.findByCode("en"))
+                    .thenReturn(Optional.of(LanguageSummary.builder().languageId(3).code("en").build()));
+            SectionTypeTranslation translation = new SectionTypeTranslation();
+            translation.setTranslatedName("Box");
+            when(sectionTypeTranslationRepository.findBySectionTypeAndLanguage((long) SECTION_TYPE_ID, 3))
+                    .thenReturn(Optional.of(translation));
+
+            assertThat(service.getSectionsByEvent(EVENT_ID, "EN"))
+                    .extracting(EventSectionResponse::getSectionTypeName).containsExactly("Box");
         }
     }
 }
