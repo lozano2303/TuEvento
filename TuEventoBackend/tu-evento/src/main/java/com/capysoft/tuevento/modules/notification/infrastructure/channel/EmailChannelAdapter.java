@@ -1,9 +1,9 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.channel;
 
 import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.model.NotificationTranslation;
+import com.capysoft.tuevento.modules.notification.domain.model.NotificationTranslation;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.NotificationTranslationRepository;
+import com.capysoft.tuevento.modules.notification.domain.repository.NotificationTranslationRepository;
 import com.capysoft.tuevento.modules.notification.application.port.out.NotificationChannelPort;
 import com.capysoft.tuevento.modules.notification.domain.model.DeliveredStatus;
 import com.capysoft.tuevento.modules.notification.domain.model.Notification;
