@@ -352,6 +352,7 @@ services:
     logging: *default-logging
     networks:
       - internal
+      - messaging
 
   # ── API gateway: punto de entrada de /api y /ws ────────────────────────────
   # Envía /api/v1/storage/** y /api/v1/notifications/** a sus microservicios y el resto al monolito.
@@ -465,7 +466,8 @@ services:
           memory: 768m
     logging: *default-logging
     networks:
-      - internal
+      # Solo backend y notification-service llegan a Kafka (ver red messaging)
+      - messaging
 
   # ── Microservicio de notificaciones ────────────────────────────────────────
   # Misma base de datos que el monolito; valida los JWT con su JWKS. Envía el email y
@@ -503,6 +505,7 @@ services:
     logging: *default-logging
     networks:
       - internal
+      - messaging
 
   # ── Frontend (SPA + proxy de /api y /ws al api-gateway) ─────────────────────
   frontend:
@@ -531,6 +534,12 @@ networks:
   internal:
     name: tuevento-internal
     driver: bridge
+  # Kafka no tiene autenticación: solo los dos servicios que lo usan comparten esta red, así
+  # ningún otro contenedor puede publicar notificaciones (ni elegir a quién se envía un email)
+  messaging:
+    name: tuevento-messaging
+    driver: bridge
+    internal: true
   edge:
     name: tuevento-edge
     driver: bridge
