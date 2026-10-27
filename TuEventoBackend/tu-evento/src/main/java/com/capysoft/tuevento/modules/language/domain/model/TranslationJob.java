@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * Representa un job de traducción en el dominio.
@@ -23,6 +24,8 @@ public class TranslationJob {
     private Integer sourceLanguageId;
     private Integer targetLanguageId;
     private String sourceHash;
+    /** Texto original a traducir (campo → texto), tal como lo envió el dominio al pedir la traducción. */
+    private Map<String, String> sourceTexts;
     private TranslationJobStatus status;
     private String provider;
     private Integer attempts;

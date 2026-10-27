@@ -1,6 +1,6 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.translation;
 
-import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
+import com.capysoft.tuevento.shared.application.translation.TranslatableContentHandler;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTranslation;
 import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationTranslationRepository;
