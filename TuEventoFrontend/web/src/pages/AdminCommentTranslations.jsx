@@ -82,7 +82,7 @@ const AdminCommentTranslations = () => {
     try {
       setLoadingEvents(true);
       setError('');
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8090/api/v1';
       const response = await httpRequest(`${apiUrl}/admin/events`);
       if (!response.ok) {
         const errorText = await response.text();

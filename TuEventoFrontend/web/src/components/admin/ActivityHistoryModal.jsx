@@ -14,7 +14,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { httpRequest } from '../../services/httpClient';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8090/api/v1';
 
 // ── Traducciones de títulos que llegan en inglés desde el backend ─────────────
 const TITLE_TRANSLATIONS = {

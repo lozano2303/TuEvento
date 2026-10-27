@@ -27,7 +27,7 @@ const NotificationContext = createContext(null);
 
 const WS_BASE_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace('/api/v1', '')
-  : 'http://localhost:8080';
+  : 'http://localhost:8090';
 
 
 // Notificaciones que indican que el admin cambió el estado de un evento del organizador.

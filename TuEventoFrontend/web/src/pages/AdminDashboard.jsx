@@ -10,7 +10,7 @@ import { es } from 'date-fns/locale';
 import ActivityHistoryModal from '../components/admin/ActivityHistoryModal';
 import AdminSidebar from '../components/admin/AdminSidebar';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8090/api/v1';
 
 // ── Formateador COP ────────────────────────────────────────────────────────────
 const fmtCOP = (n) =>
