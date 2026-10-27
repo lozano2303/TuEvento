@@ -39,9 +39,9 @@ spring:
                 # (0 significa un límite de 0 ms y el handshake de SockJS daba 504)
                 response-timeout: -1
 
-            # ── JWKS público del servicio Identidad (monolito hoy) ───────────────
+            # ── JWKS público del servicio Identidad ──────────────────────────────
             - id: jwks
-              uri: ${MONOLITH_URI:http://localhost:8080}
+              uri: ${IDENTITY_SERVICE_URI:http://localhost:8088}
               predicates:
                 - Path=/.well-known/jwks.json
 
@@ -94,10 +94,9 @@ spring:
             # organizador y panel de admin (estadísticas, pendientes, solicitudes, revocación,
             # actividad y usuarios); temas y paletas; perfiles y sus traducciones. El resto de
             # /api/v1/admin/** (eventos, reembolsos, billetera, traducciones) y el JWKS siguen en el monolito.
-            # IDENTITY_SERVICE_URI apunta al microservicio; sin la variable vuelve al monolito, que
-            # aún conserva esos módulos mientras dura la migración.
+            # Solo los sirve el microservicio: el monolito ya no tiene los módulos de Identidad.
             - id: identity-service
-              uri: ${IDENTITY_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
+              uri: ${IDENTITY_SERVICE_URI:http://localhost:8088}
               predicates:
                 - Path=/api/v1/auth/**,/api/v1/users/change-password,/api/v1/users/oauth/link,/api/v1/users/me,/api/v1/users/organizer-request,/api/v1/users/organizer-petition,/api/v1/admin/stats,/api/v1/admin/pending-counts,/api/v1/admin/organizer-requests,/api/v1/admin/organizer-requests/**,/api/v1/admin/organizer-users/**,/api/v1/admin/activity,/api/v1/admin/users,/api/v1/themes,/api/v1/themes/**,/api/v1/profiles,/api/v1/profiles/**,/api/v1/admin/profile-translations/**
               filters:
