@@ -1,7 +1,7 @@
-package com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper;
+package com.capysoft.tuevento.modules.event.infrastructure.persistence.mapper;
 
-import com.capysoft.tuevento.modules.language.domain.model.EventRatingTranslation;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.EventRatingTranslationEntity;
+import com.capysoft.tuevento.modules.event.domain.model.EventRatingTranslation;
+import com.capysoft.tuevento.modules.event.infrastructure.persistence.entity.EventRatingTranslationEntity;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.LanguageEntity;
 import org.springframework.stereotype.Component;
 

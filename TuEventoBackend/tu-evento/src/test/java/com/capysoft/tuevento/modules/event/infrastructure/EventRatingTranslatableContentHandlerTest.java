@@ -2,9 +2,9 @@ package com.capysoft.tuevento.modules.event.infrastructure;
 
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.infrastructure.translation.EventRatingTranslatableContentHandler;
-import com.capysoft.tuevento.modules.language.domain.model.EventRatingTranslation;
+import com.capysoft.tuevento.modules.event.domain.model.EventRatingTranslation;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.EventRatingTranslationRepository;
+import com.capysoft.tuevento.modules.event.domain.repository.EventRatingTranslationRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;

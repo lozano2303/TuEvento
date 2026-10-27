@@ -1,4 +1,4 @@
-package com.capysoft.tuevento.modules.language.infrastructure.persistence.entity;
+package com.capysoft.tuevento.modules.event.infrastructure.persistence.entity;
 
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import jakarta.persistence.*;
