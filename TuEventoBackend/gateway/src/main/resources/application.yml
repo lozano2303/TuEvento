@@ -77,10 +77,10 @@ spring:
                 response-timeout: 30000
 
             # ── Microservicio de geolocalización ────────────────────────────────
-            # Departamentos, ciudades y sedes. GEOLOCATION_SERVICE_URI apunta al microservicio;
-            # sin la variable vuelve al monolito.
+            # Departamentos, ciudades y sedes. Solo los sirve el microservicio: el monolito ya no
+            # tiene módulo de geolocalización, así que no hay vuelta atrás al monolito.
             - id: geolocation-service
-              uri: ${GEOLOCATION_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
+              uri: ${GEOLOCATION_SERVICE_URI:http://localhost:8087}
               predicates:
                 - Path=/api/v1/geolocation/**
               filters:

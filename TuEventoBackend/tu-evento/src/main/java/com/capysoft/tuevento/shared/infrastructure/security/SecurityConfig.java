@@ -61,7 +61,6 @@ public class SecurityConfig {
     };
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {
-            "/api/v1/geolocation/**",    // GET departamentos, ciudades y sedes — público; crear/editar sedes no
             "/api/v1/themes",
             "/api/v1/languages",          // GET idiomas activos — público
             "/api/v1/languages/*",        // GET idioma por ID — público
@@ -122,10 +121,6 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 PUBLIC_GET_ENDPOINTS).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST,
-                                "/api/v1/geolocation/sites").hasAnyAuthority("ADMIN", "ORGANIZER")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT,
-                                "/api/v1/geolocation/sites/**").hasAnyAuthority("ADMIN", "ORGANIZER")
                         .requestMatchers(org.springframework.http.HttpMethod.POST,
                                 "/api/v1/categories/**").hasAuthority("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT,
