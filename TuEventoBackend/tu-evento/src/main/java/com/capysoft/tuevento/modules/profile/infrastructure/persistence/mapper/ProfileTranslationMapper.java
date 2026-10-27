@@ -1,8 +1,7 @@
-package com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper;
+package com.capysoft.tuevento.modules.profile.infrastructure.persistence.mapper;
 
-import com.capysoft.tuevento.modules.language.domain.model.ProfileTranslation;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.ProfileTranslationEntity;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.LanguageEntity;
+import com.capysoft.tuevento.modules.profile.domain.model.ProfileTranslation;
+import com.capysoft.tuevento.modules.profile.infrastructure.persistence.entity.ProfileTranslationEntity;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -12,7 +11,6 @@ public class ProfileTranslationMapper {
         if (entity == null) {
             return null;
         }
-
         ProfileTranslation domain = new ProfileTranslation();
         domain.setTranslationId(entity.getTranslationId());
         domain.setProfileId(entity.getProfileId());
@@ -20,7 +18,6 @@ public class ProfileTranslationMapper {
         domain.setTranslatedBio(entity.getTranslatedBio());
         domain.setSource(entity.getSource());
         domain.setStatus(entity.getStatus());
-
         return domain;
     }
 
@@ -28,16 +25,13 @@ public class ProfileTranslationMapper {
         if (domain == null) {
             return null;
         }
-
-        ProfileTranslationEntity entity = new ProfileTranslationEntity();
-        entity.setTranslationId(domain.getTranslationId());
-        entity.setProfileId(domain.getProfileId());
-        entity.setLanguageId(domain.getLanguageId());
-        
-        entity.setTranslatedBio(domain.getTranslatedBio());
-        entity.setSource(domain.getSource());
-        entity.setStatus(domain.getStatus());
-
-        return entity;
+        return ProfileTranslationEntity.builder()
+                .translationId(domain.getTranslationId())
+                .profileId(domain.getProfileId())
+                .languageId(domain.getLanguageId())
+                .translatedBio(domain.getTranslatedBio())
+                .source(domain.getSource())
+                .status(domain.getStatus())
+                .build();
     }
 }

@@ -1,9 +1,9 @@
 package com.capysoft.tuevento.modules.profile.application.usecase;
 
 import com.capysoft.tuevento.modules.language.application.service.TranslationService;
-import com.capysoft.tuevento.modules.language.domain.model.ProfileTranslation;
+import com.capysoft.tuevento.modules.profile.domain.model.ProfileTranslation;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.ProfileTranslationRepository;
+import com.capysoft.tuevento.modules.profile.domain.repository.ProfileTranslationRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.modules.profile.application.dto.response.ProfileResponse;
 import com.capysoft.tuevento.modules.profile.application.mapper.ProfileResponseAssembler;
