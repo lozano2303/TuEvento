@@ -7,8 +7,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventRating;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.entity.ProfileEntity;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +38,7 @@ class EditEventRatingServiceTest {
     @Mock private EventRatingRepository     ratingRepository;
     @Mock private EventRepository           eventRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
-    @Mock private ProfileJpaRepository      profileJpaRepository;
+    @Mock private UserDirectoryPort      userDirectoryPort;
     @Mock private Clock                     clock;
 
     @InjectMocks private EditEventRatingService service;
@@ -88,10 +87,8 @@ class EditEventRatingServiceTest {
     }
 
     private void stubProfile(Long userId, String name) {
-        ProfileEntity p = new ProfileEntity();
-        p.setFullName(name);
-        p.setUserId(userId.intValue());
-        when(profileJpaRepository.findByUserId(userId.intValue())).thenReturn(Optional.of(p));
+        when(userDirectoryPort.findUser(userId.intValue()))
+                .thenReturn(Optional.of(new UserDirectoryPort.UserRef(userId.intValue(), name, null, null)));
     }
 
     @Test @DisplayName("autor edita dentro de 2 h → OK con editedAt poblado")
@@ -107,7 +104,7 @@ class EditEventRatingServiceTest {
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(publishedEvent(ORGANIZER)));
         when(ratingRepository.save(any()))
                 .thenReturn(savedWith(USER_ID, "texto editado", createdAt, editedAt));
-        when(profileJpaRepository.findByUserId(USER_ID.intValue())).thenReturn(Optional.empty());
+        when(userDirectoryPort.findUser(USER_ID.intValue())).thenReturn(Optional.empty());
 
         EventRatingResponse res = service.execute(EVENT_ID, RATING_ID, USER_ID, "texto editado");
 
@@ -224,7 +221,7 @@ class EditEventRatingServiceTest {
                     .thenReturn(Optional.of(publishedEvent(ORGANIZER)));  // ORGANIZER != USER_ID
             when(ratingRepository.save(any()))
                     .thenReturn(savedWith(USER_ID, "editado normal", createdAt, editedAt));
-            when(profileJpaRepository.findByUserId(USER_ID.intValue())).thenReturn(Optional.empty());
+            when(userDirectoryPort.findUser(USER_ID.intValue())).thenReturn(Optional.empty());
 
             EventRatingResponse res =
                     service.execute(EVENT_ID, RATING_ID, USER_ID, "editado normal");
@@ -254,7 +251,7 @@ class EditEventRatingServiceTest {
                     .thenReturn(Optional.of(publishedEvent(ORGANIZER)));
             when(ratingRepository.save(any()))
                     .thenReturn(savedWith(USER_ID, "editado", createdAt, editedAt));
-            when(profileJpaRepository.findByUserId(USER_ID.intValue())).thenReturn(Optional.empty());
+            when(userDirectoryPort.findUser(USER_ID.intValue())).thenReturn(Optional.empty());
 
             service.execute(EVENT_ID, RATING_ID, USER_ID, "editado");
 
@@ -283,7 +280,7 @@ class EditEventRatingServiceTest {
                     .thenReturn(Optional.of(publishedEvent(ORGANIZER)));
             when(ratingRepository.save(any()))
                     .thenReturn(savedWith(USER_ID, "editado", createdAt, editedAt));
-            when(profileJpaRepository.findByUserId(USER_ID.intValue())).thenReturn(Optional.empty());
+            when(userDirectoryPort.findUser(USER_ID.intValue())).thenReturn(Optional.empty());
 
             service.execute(EVENT_ID, RATING_ID, USER_ID, "editado");
 
