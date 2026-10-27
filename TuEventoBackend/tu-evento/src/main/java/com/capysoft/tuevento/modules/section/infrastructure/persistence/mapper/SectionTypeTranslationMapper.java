@@ -4,7 +4,7 @@ import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import com.capysoft.tuevento.modules.section.domain.model.SectionTypeTranslation;
 import com.capysoft.tuevento.modules.section.infrastructure.persistence.entity.SectionTypeTranslationEntity;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.TranslationStatusEnum;
+import com.capysoft.tuevento.modules.section.infrastructure.persistence.entity.TranslationStatusEnum;
 import org.springframework.stereotype.Component;
 
 @Component
