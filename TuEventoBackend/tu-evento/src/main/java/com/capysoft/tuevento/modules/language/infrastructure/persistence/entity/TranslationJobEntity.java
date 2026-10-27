@@ -45,6 +45,10 @@ public class TranslationJobEntity extends JpaAuditingEntity {
     @Column(name = "source_hash", nullable = false, length = 64)
     private String sourceHash;
 
+    /** Texto original en JSON (campo → texto). */
+    @Column(name = "source_texts", columnDefinition = "text")
+    private String sourceTexts;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private TranslationJobStatus status;

@@ -2,7 +2,7 @@ package com.capysoft.tuevento.modules.event.infrastructure.translation;
 
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
+import com.capysoft.tuevento.shared.application.translation.TranslatableContentHandler;
 import com.capysoft.tuevento.modules.event.domain.model.EventTranslation;
 import com.capysoft.tuevento.modules.event.domain.repository.EventTranslationRepository;
 import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
