@@ -4,12 +4,10 @@ import com.capysoft.tuevento.modules.category.domain.model.CategoryTranslation;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryTranslationRepository;
 import com.capysoft.tuevento.modules.category.infrastructure.persistence.entity.CategoryTranslationEntity;
 import com.capysoft.tuevento.modules.category.infrastructure.persistence.mapper.CategoryTranslationMapper;
-import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -29,38 +27,6 @@ public class CategoryTranslationRepositoryImpl implements CategoryTranslationRep
     }
 
     @Override
-    public List<CategoryTranslation> findByCategory(Integer categoryId) {
-        return jpaRepository.findByCategoryId(categoryId)
-                .stream()
-                .map(mapper::toDomain)
-                .toList();
-    }
-
-    @Override
-    public List<CategoryTranslation> findByLanguage(Integer languageId) {
-        return jpaRepository.findByLanguageId(languageId)
-                .stream()
-                .map(mapper::toDomain)
-                .toList();
-    }
-
-    @Override
-    public List<CategoryTranslation> findByStatus(TranslationStatus status) {
-        return jpaRepository.findByStatus(status.name().toLowerCase())
-                .stream()
-                .map(mapper::toDomain)
-                .toList();
-    }
-
-    @Override
-    public List<CategoryTranslation> findByCategoryAndStatus(Integer categoryId, TranslationStatus status) {
-        return jpaRepository.findByCategoryIdAndStatus(categoryId, status.name().toLowerCase())
-                .stream()
-                .map(mapper::toDomain)
-                .toList();
-    }
-
-    @Override
     @Transactional
     public CategoryTranslation save(CategoryTranslation translation) {
         CategoryTranslationEntity entity;
@@ -73,17 +39,7 @@ public class CategoryTranslationRepositoryImpl implements CategoryTranslationRep
             // Crear nueva entidad
             entity = mapper.toEntity(translation);
         }
-
-        CategoryTranslationEntity savedEntity = jpaRepository.save(entity);
-        return mapper.toDomain(savedEntity);
-    }
-
-    @Override
-    @Transactional
-    public List<CategoryTranslation> saveAll(List<CategoryTranslation> translations) {
-        return translations.stream()
-                .map(this::save)
-                .toList();
+        return mapper.toDomain(jpaRepository.save(entity));
     }
 
     @Override
@@ -92,16 +48,5 @@ public class CategoryTranslationRepositoryImpl implements CategoryTranslationRep
         if (translation.getTranslationId() != null) {
             jpaRepository.deleteById(translation.getTranslationId());
         }
-    }
-
-    @Override
-    @Transactional
-    public void deleteByCategory(Integer categoryId) {
-        jpaRepository.deleteByCategoryId(categoryId);
-    }
-
-    @Override
-    public boolean existsByCategoryAndLanguage(Integer categoryId, Integer languageId) {
-        return jpaRepository.existsByCategoryIdAndLanguageId(categoryId, languageId);
     }
 }

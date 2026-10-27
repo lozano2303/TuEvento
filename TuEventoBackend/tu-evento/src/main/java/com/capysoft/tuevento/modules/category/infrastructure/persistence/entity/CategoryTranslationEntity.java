@@ -1,25 +1,23 @@
 package com.capysoft.tuevento.modules.category.infrastructure.persistence.entity;
 
-import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
-import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
+import com.capysoft.tuevento.shared.infrastructure.persistence.TranslationEntityBase;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 /**
- * Entidad JPA para category_translation.
+ * Entidad JPA para category_translation. {@code source} y {@code status} vienen de
+ * {@link TranslationEntityBase}.
  */
 @Entity
 @Table(name = "category_translation")
-@Data
-@Builder
+@Getter
+@Setter
+@SuperBuilder
 @NoArgsConstructor
-@AllArgsConstructor
-
-public class CategoryTranslationEntity  {
+public class CategoryTranslationEntity extends TranslationEntityBase {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,13 +35,4 @@ public class CategoryTranslationEntity  {
 
     @Column(name = "translated_description", nullable = false, length = 255)
     private String translatedDescription;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "source", nullable = false, length = 50)
-    private TranslationSource source;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    @Builder.Default
-    private TranslationStatus status = TranslationStatus.DRAFT;
 }
