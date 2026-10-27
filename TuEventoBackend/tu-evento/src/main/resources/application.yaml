@@ -28,7 +28,11 @@ outbox:
     enabled: ${OUTBOX_RELAY_ENABLED:true}
     batch-size: ${OUTBOX_RELAY_BATCH_SIZE:100}
     interval-ms: ${OUTBOX_RELAY_INTERVAL_MS:1000}
-    max-retries: ${OUTBOX_RELAY_MAX_RETRIES:5}
+    # Al llegar a este número de fallos el evento queda FAILED (antes 5 y se daba por procesado)
+    max-retries: ${OUTBOX_RELAY_MAX_RETRIES:10}
+    # Backoff exponencial entre reintentos: 1 s, 2 s, 4 s... con tope de 5 min (~17 min con 10 reintentos)
+    backoff-initial-ms: ${OUTBOX_RELAY_BACKOFF_INITIAL_MS:1000}
+    backoff-max-ms: ${OUTBOX_RELAY_BACKOFF_MAX_MS:300000}
 
 server:
   port: 8080

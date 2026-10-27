@@ -1,0 +1,123 @@
+databaseChangeLog:
+  # Endurece el outbox de la 106 sin borrar columnas, índices ni filas:
+  #
+  # - event_id: UUID estable por evento de negocio. Viaja en el header eventId de Kafka y no cambia
+  #   entre reintentos, así el consumidor puede descartar los duplicados del at-least-once.
+  # - status: PENDING, PUBLISHED o FAILED. Antes un evento que agotaba los reintentos se marcaba
+  #   processed = true y quedaba igual que uno publicado; ahora queda FAILED para investigarlo y
+  #   recuperarlo. La columna processed se conserva (true solo cuando se publicó).
+  # - next_attempt_at, last_attempt_at, failed_at: backoff entre reintentos y trazabilidad.
+  #
+  # Filas existentes: reciben un event_id nuevo. Las processed = true con retry_count < 5 se
+  # publicaron (el relay solo enviaba con retry_count < max-retries, que por defecto era 5) y
+  # pasan a PUBLISHED. Las processed = true con retry_count >= 5 son las que se apartaron sin
+  # publicar: pasan a FAILED con failed_at = processed_at y conservan processed, payload y error.
+  # Las processed = false siguen PENDING. Si en algún entorno se configuró OUTBOX_RELAY_MAX_RETRIES
+  # distinto de 5, revisar a mano las filas processed = true antes de recuperarlas.
+  #
+  # Convivencia de versiones: event_id y status tienen valor por defecto en la base, así una
+  # instancia anterior (sin estas columnas en su entidad) puede seguir insertando en el outbox
+  # durante un despliegue.
+  #
+  # Idempotente: la precondición marca el changeSet como ejecutado si event_id ya existe.
+  - changeSet:
+      id: 108-harden-outbox-event
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: postgresql
+        - not:
+            - columnExists:
+                tableName: outbox_event
+                columnName: event_id
+      changes:
+        - addColumn:
+            tableName: outbox_event
+            columns:
+              - column:
+                  name: event_id
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  remarks: "ID estable del evento de negocio; header eventId en Kafka"
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: PENDING
+                  constraints:
+                    nullable: false
+                  remarks: "PENDING, PUBLISHED o FAILED"
+              - column:
+                  name: next_attempt_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  remarks: "Antes de esta fecha el relay no reintenta el evento (backoff)"
+              - column:
+                  name: last_attempt_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  remarks: "Último intento de publicación, con éxito o no"
+              - column:
+                  name: failed_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  remarks: "Momento en que el evento agotó los reintentos"
+        - sql:
+            sql: >
+              UPDATE outbox_event SET event_id = gen_random_uuid() WHERE event_id IS NULL
+        - sql:
+            sql: >
+              UPDATE outbox_event SET status = 'PUBLISHED'
+              WHERE processed = true AND retry_count < 5
+        - sql:
+            sql: >
+              UPDATE outbox_event SET status = 'FAILED', failed_at = processed_at
+              WHERE processed = true AND retry_count >= 5
+        - addNotNullConstraint:
+            tableName: outbox_event
+            columnName: event_id
+            columnDataType: UUID
+        - addUniqueConstraint:
+            tableName: outbox_event
+            columnNames: event_id
+            constraintName: uq_outbox_event_event_id
+        - createIndex:
+            tableName: outbox_event
+            indexName: idx_outbox_event_due
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: next_attempt_at
+              - column:
+                  name: created_at
+        - createIndex:
+            tableName: outbox_event
+            indexName: idx_outbox_event_aggregate
+            columns:
+              - column:
+                  name: aggregate_type
+              - column:
+                  name: aggregate_id
+              - column:
+                  name: status
+      rollback:
+        - dropIndex:
+            tableName: outbox_event
+            indexName: idx_outbox_event_aggregate
+        - dropIndex:
+            tableName: outbox_event
+            indexName: idx_outbox_event_due
+        - dropUniqueConstraint:
+            tableName: outbox_event
+            constraintName: uq_outbox_event_event_id
+        - dropColumn:
+            tableName: outbox_event
+            columns:
+              - column:
+                  name: failed_at
+              - column:
+                  name: last_attempt_at
+              - column:
+                  name: next_attempt_at
+              - column:
+                  name: status
+              - column:
+                  name: event_id
