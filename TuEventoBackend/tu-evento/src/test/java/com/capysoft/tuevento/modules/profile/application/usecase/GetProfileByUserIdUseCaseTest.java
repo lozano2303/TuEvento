@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.profile.application.usecase;
 
-import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.profile.application.dto.response.ProfileResponse;
 import com.capysoft.tuevento.modules.profile.application.mapper.ProfileResponseAssembler;
 import com.capysoft.tuevento.modules.profile.application.port.out.CityLookupPort;
@@ -39,7 +39,7 @@ class GetProfileByUserIdUseCaseTest {
 
     private final ProfileRepository profiles = mock(ProfileRepository.class);
     private final CityLookupPort cities = mock(CityLookupPort.class);
-    private final LanguageRepository languages = mock(LanguageRepository.class);
+    private final LanguageCatalog languages = mock(LanguageCatalog.class);
     private final ProfileTranslationRepository translations = mock(ProfileTranslationRepository.class);
     private final TranslationRequests requests = mock(TranslationRequests.class);
     private final GetProfileByUserIdUseCase useCase = new GetProfileByUserIdUseCase(
@@ -62,7 +62,7 @@ class GetProfileByUserIdUseCaseTest {
     void data() {
         when(cities.findCity(any())).thenReturn(Optional.empty());
         when(profiles.findByUserId(70)).thenReturn(Optional.of(profile("Me gusta la música")));
-        when(languages.findByCode("en")).thenReturn(Optional.of(Language.builder().languageId(2).code("en").build()));
+        when(languages.findByCode("en")).thenReturn(Optional.of(LanguageSummary.builder().languageId(2).code("en").build()));
     }
 
     @Test

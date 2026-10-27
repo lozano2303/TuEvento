@@ -12,7 +12,7 @@ import com.capysoft.tuevento.modules.category.domain.model.Category;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryRepository;
 import com.capysoft.tuevento.modules.category.domain.model.CategoryTranslation;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
@@ -33,7 +33,7 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
     private final CategoryRepository         categoryRepository;
     private final CategoryMapper             categoryMapper;
     private final ApplicationEventPublisher  eventPublisher;
-    private final LanguageRepository         languageRepository;
+    private final LanguageCatalog            languageCatalog;
     private final CategoryTranslationRepository categoryTranslationRepository;
     private final TranslationRequests translationRequests;
 
@@ -250,7 +250,7 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
                     log.debug("Requested language is Spanish (source language) - no translation needed for category {}", 
                             category.getCategoryId());
                 } else {
-                    var language = languageRepository.findByCode(languageCode);
+                    var language = languageCatalog.findByCode(languageCode);
                     if (language.isPresent()) {
                         var translation = categoryTranslationRepository.findByCategoryAndLanguage(
                                 category.getCategoryId(), language.get().getLanguageId());

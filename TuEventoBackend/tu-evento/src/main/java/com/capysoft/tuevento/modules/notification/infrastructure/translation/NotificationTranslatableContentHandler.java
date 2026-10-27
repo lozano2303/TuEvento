@@ -1,8 +1,8 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.translation;
 
-import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
+import com.capysoft.tuevento.shared.application.translation.TranslatableContentHandler;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTranslation;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationTranslationRepository;
 import com.capysoft.tuevento.modules.notification.infrastructure.persistence.repository.JpaNotificationRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
@@ -24,14 +24,14 @@ public class NotificationTranslatableContentHandler implements TranslatableConte
 
     private final JpaNotificationRepository jpaRepository;
     private final NotificationTranslationRepository notificationTranslationRepository;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
 
-    @java.beans.ConstructorProperties({"jpaRepository", "notificationTranslationRepository", "languageRepository"})
+    @java.beans.ConstructorProperties({"jpaRepository", "notificationTranslationRepository", "languageCatalog"})
     @java.lang.SuppressWarnings("all")
-    public NotificationTranslatableContentHandler(final JpaNotificationRepository jpaRepository, final NotificationTranslationRepository notificationTranslationRepository, final LanguageRepository languageRepository) {
+    public NotificationTranslatableContentHandler(final JpaNotificationRepository jpaRepository, final NotificationTranslationRepository notificationTranslationRepository, final LanguageCatalog languageCatalog) {
         this.jpaRepository = jpaRepository;
         this.notificationTranslationRepository = notificationTranslationRepository;
-        this.languageRepository = languageRepository;
+        this.languageCatalog = languageCatalog;
     }
 
     @Override
@@ -73,7 +73,7 @@ public class NotificationTranslatableContentHandler implements TranslatableConte
         log.info("=== SAVETRANSLATION START === Notification: {}, Lang: {}, Texts: {}", entityId, languageCode, translatedTexts);
         
         // 1. Buscar el idioma por código
-        var language = languageRepository.findByCode(languageCode);
+        var language = languageCatalog.findByCode(languageCode);
         if (language.isEmpty()) {
             log.error("CRITICAL: Language {} not found for saving translation", languageCode);
             return;
@@ -147,7 +147,7 @@ public class NotificationTranslatableContentHandler implements TranslatableConte
     public Optional<TranslationStatus> findTranslationStatus(Long entityId, String languageCode) {
         log.debug("Finding translation status for notification {} in language {}", entityId, languageCode);
         
-        var language = languageRepository.findByCode(languageCode);
+        var language = languageCatalog.findByCode(languageCode);
         if (language.isEmpty()) {
             return Optional.empty();
         }

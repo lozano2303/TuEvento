@@ -4,8 +4,8 @@ import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventTranslation;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
@@ -34,7 +34,7 @@ public class EventTranslationController {
 
     private final EventTranslationRepository eventTranslationRepository;
     private final EventRepository eventRepository;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
 
     @Operation(summary = "Get all events with translations for a language",
                description = "Lista todos los eventos del sistema con sus traducciones (si existen) para el idioma especificado. " +
@@ -49,7 +49,7 @@ public class EventTranslationController {
             @RequestParam(defaultValue = TranslationAdminSupport.FILTER_ALL) String filter) {
 
         try {
-            Optional<Language> language = languageRepository.findByCode(languageCode.toLowerCase());
+            Optional<LanguageSummary> language = languageCatalog.findByCode(languageCode.toLowerCase());
             if (language.isEmpty()) {
                 return ResponseEntity.badRequest().body(ApiResponse.error("Language not found: " + languageCode));
             }
@@ -186,7 +186,7 @@ public class EventTranslationController {
         if (eventRepository.findById(eventId.longValue()).isEmpty()) {
             return "Event not found with ID: " + eventId;
         }
-        Optional<Language> language = languageRepository.findById(languageId);
+        Optional<LanguageSummary> language = languageCatalog.findById(languageId);
         if (language.isEmpty()) {
             return "Language not found with ID: " + languageId;
         }
