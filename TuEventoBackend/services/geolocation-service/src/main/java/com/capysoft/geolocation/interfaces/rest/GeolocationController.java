@@ -22,6 +22,7 @@ import com.capysoft.geolocation.application.dto.response.DepartmentResponse;
 import com.capysoft.geolocation.application.dto.response.SiteResponse;
 import com.capysoft.geolocation.application.port.in.CreateSitePort;
 import com.capysoft.geolocation.application.port.in.GetCitiesByDepartmentPort;
+import com.capysoft.geolocation.application.port.in.GetCityPort;
 import com.capysoft.geolocation.application.port.in.GetDepartmentsPort;
 import com.capysoft.geolocation.application.port.in.GetNearbySitesPort;
 import com.capysoft.geolocation.application.port.in.GetSitePort;
@@ -43,6 +44,7 @@ public class GeolocationController {
 
     private final GetDepartmentsPort      getDepartmentsPort;
     private final GetCitiesByDepartmentPort getCitiesByDepartmentPort;
+    private final GetCityPort             getCityPort;
     private final GetSitesByCityPort      getSitesByCityPort;
     private final GetSitesByDepartmentPort getSitesByDepartmentPort;
     private final GetNearbySitesPort      getNearbySitesPort;
@@ -63,6 +65,14 @@ public class GeolocationController {
             @PathVariable Integer departmentId) {
         return ResponseEntity.ok(ApiResponse.ok("Cities retrieved successfully",
                 getCitiesByDepartmentPort.getCitiesByDepartment(departmentId)));
+    }
+
+    @Operation(summary = "Get city by ID")
+    @GetMapping("/cities/{cityId}")
+    public ResponseEntity<ApiResponse<CityResponse>> getCity(
+            @PathVariable Integer cityId) {
+        return ResponseEntity.ok(ApiResponse.ok("City retrieved successfully",
+                getCityPort.getCity(cityId)));
     }
 
     @Operation(summary = "List sites by city")

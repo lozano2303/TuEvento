@@ -160,6 +160,18 @@ class GeolocationUseCasesTest {
         }
 
         @Test
+        @DisplayName("una ciudad por id, con su departamento; inexistente da CITY_NOT_FOUND")
+        void getCity() {
+            when(cities.findById(1)).thenReturn(Optional.of(MEDELLIN));
+            when(cities.findById(2)).thenReturn(Optional.empty());
+            GetCityUseCase useCase = new GetCityUseCase(cities);
+
+            assertThat(useCase.getCity(1).getDepartmentName()).isEqualTo("Antioquia");
+            assertThatThrownBy(() -> useCase.getCity(2))
+                    .isInstanceOf(NotFoundException.class).hasFieldOrPropertyWithValue("code", "CITY_NOT_FOUND");
+        }
+
+        @Test
         @DisplayName("sedes cercanas, por ciudad y por departamento")
         void siteLists() {
             when(sites.findNearby(new BigDecimal("6.2"), new BigDecimal("-75.5"), 10.0)).thenReturn(List.of(coliseo()));

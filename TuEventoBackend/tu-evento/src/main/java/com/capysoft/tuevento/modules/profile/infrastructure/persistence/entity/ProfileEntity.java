@@ -1,6 +1,5 @@
 package com.capysoft.tuevento.modules.profile.infrastructure.persistence.entity;
 
-import com.capysoft.tuevento.modules.geolocation.infrastructure.persistence.entity.CityEntity;
 import com.capysoft.tuevento.shared.infrastructure.persistence.JpaAuditingEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -22,9 +21,9 @@ public class ProfileEntity extends JpaAuditingEntity {
     @Column(name = "user_id", nullable = false, unique = true)
     private Integer userId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "city_id")
-    private CityEntity city;
+    /** Ciudad del servicio de localización, guardada como id plano (sin relación JPA). */
+    @Column(name = "city_id")
+    private Integer cityId;
 
     /** Decoupled from storage module — stored as plain FK integer. */
     @Column(name = "stored_file_id")

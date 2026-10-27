@@ -29,6 +29,8 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import com.capysoft.geolocation.application.dto.response.SiteResponse;
 import com.capysoft.geolocation.application.port.in.CreateSitePort;
 import com.capysoft.geolocation.application.port.in.GetCitiesByDepartmentPort;
+import com.capysoft.geolocation.application.port.in.GetCityPort;
+import com.capysoft.geolocation.application.dto.response.CityResponse;
 import com.capysoft.geolocation.application.port.in.GetDepartmentsPort;
 import com.capysoft.geolocation.application.port.in.GetNearbySitesPort;
 import com.capysoft.geolocation.application.port.in.GetSitePort;
@@ -69,6 +71,7 @@ class GeolocationControllerSecurityTest {
     @MockitoBean private JwtDecoder jwtDecoder;
     @MockitoBean private GetDepartmentsPort getDepartmentsPort;
     @MockitoBean private GetCitiesByDepartmentPort getCitiesByDepartmentPort;
+    @MockitoBean private GetCityPort getCityPort;
     @MockitoBean private GetSitesByCityPort getSitesByCityPort;
     @MockitoBean private GetSitesByDepartmentPort getSitesByDepartmentPort;
     @MockitoBean private GetNearbySitesPort getNearbySitesPort;
@@ -77,13 +80,15 @@ class GeolocationControllerSecurityTest {
     @MockitoBean private UpdateSitePort updateSitePort;
 
     @Test
-    @DisplayName("la lectura de departamentos y sedes sigue siendo pública")
+    @DisplayName("la lectura de departamentos, ciudades y sedes sigue siendo pública")
     void readsArePublic() throws Exception {
         when(getDepartmentsPort.getDepartments()).thenReturn(List.of());
         when(getSitePort.getSite(3)).thenReturn(SiteResponse.builder().siteId(3).build());
+        when(getCityPort.getCity(1)).thenReturn(CityResponse.builder().cityId(1).build());
 
         mockMvc.perform(get("/api/v1/geolocation/departments")).andExpect(status().isOk());
         mockMvc.perform(get("/api/v1/geolocation/sites/3")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/geolocation/cities/1")).andExpect(status().isOk());
     }
 
     @Test

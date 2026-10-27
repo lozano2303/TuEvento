@@ -1,10 +1,10 @@
 package com.capysoft.tuevento.modules.profile.application.usecase;
 
-import com.capysoft.tuevento.modules.geolocation.domain.model.City;
-import com.capysoft.tuevento.modules.geolocation.domain.repository.CityRepository;
 import com.capysoft.tuevento.modules.profile.application.dto.request.UpdateProfileRequest;
 import com.capysoft.tuevento.modules.profile.application.dto.response.ProfileResponse;
 import com.capysoft.tuevento.modules.profile.application.port.in.UpdateProfilePort;
+import com.capysoft.tuevento.modules.profile.application.port.out.CityLookupPort;
+import com.capysoft.tuevento.modules.profile.application.mapper.ProfileResponseAssembler;
 import com.capysoft.tuevento.modules.profile.domain.event.ProfileUpdatedEvent;
 import com.capysoft.tuevento.modules.profile.domain.model.Profile;
 import com.capysoft.tuevento.modules.profile.domain.model.ProfileLog;
@@ -31,7 +31,8 @@ public class UpdateProfileUseCase implements UpdateProfilePort {
 
     private final ProfileRepository          profileRepository;
     private final ProfileLogRepository       profileLogRepository;
-    private final CityRepository             cityRepository;
+    private final CityLookupPort             cityLookupPort;
+    private final ProfileResponseAssembler   responseAssembler;
     private final ApplicationEventPublisher  eventPublisher;
 
     @Override
@@ -66,13 +67,12 @@ public class UpdateProfileUseCase implements UpdateProfilePort {
             profile.setStoredFileId(request.getStoredFileId());
         }
         if (request.getCityId() != null) {
-            City city = cityRepository.findById(request.getCityId())
-                    .orElseThrow(() -> new NotFoundException("CITY_NOT_FOUND",
-                            "City not found with id: " + request.getCityId()));
+            // Valida que la ciudad exista (CITY_NOT_FOUND) o falla con 503 si geolocalización no responde
+            cityLookupPort.getCity(request.getCityId());
             log(profile.getProfileId(), "CITY_CHANGED",
-                    profile.getCity() != null ? profile.getCity().getCityId().toString() : null,
+                    profile.getCityId() != null ? profile.getCityId().toString() : null,
                     request.getCityId().toString());
-            profile.setCity(city);
+            profile.setCityId(request.getCityId());
         }
         Long changedLanguageId = null;
         if (request.getPreferredLanguageId() != null) {
@@ -119,16 +119,7 @@ public class UpdateProfileUseCase implements UpdateProfilePort {
     }
 
     private ProfileResponse toResponse(Profile p) {
-        return ProfileResponse.builder()
-                .profileId(p.getProfileId())
-                .userId(p.getUserId())
-                .cityId(p.getCity() != null ? p.getCity().getCityId() : null)
-                .cityName(p.getCity() != null ? p.getCity().getName() : null)
-                .departmentName(p.getCity() != null && p.getCity().getDepartment() != null
-                        ? p.getCity().getDepartment().getName() : null)
-                .storedFileId(p.getStoredFileId())
-                .fullName(p.getFullName())
-                .bio(p.getBio())
+        return responseAssembler.builder(p)
                 .preferredLanguageId(p.getPreferredLanguageId())
                 .nameChangedAt(p.getNameChangedAt())
                 .build();
