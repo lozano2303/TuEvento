@@ -25,6 +25,7 @@ import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.ForbiddenException;
 import com.capysoft.tuevento.shared.domain.exception.ImagePolicyViolationException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
+import com.capysoft.tuevento.shared.domain.exception.ServiceUnavailableException;
 import com.capysoft.tuevento.shared.domain.exception.UnauthorizedException;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 
@@ -120,6 +121,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ApiResponse<Void>> handleForbiddenException(ForbiddenException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleServiceUnavailableException(ServiceUnavailableException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
 

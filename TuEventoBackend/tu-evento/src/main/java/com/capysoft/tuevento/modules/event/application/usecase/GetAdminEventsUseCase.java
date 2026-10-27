@@ -8,7 +8,7 @@ import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort;
+import com.capysoft.tuevento.modules.event.application.port.out.SiteLookupPort;
 import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.LoginCredentialsJpaRepository;
 import com.capysoft.tuevento.modules.storage.domain.repository.StoredFileRepository;
@@ -32,7 +32,7 @@ public class GetAdminEventsUseCase implements GetAdminEventsPort {
     private final EventRepository       eventRepository;
     private final EventMediaRepository  eventMediaRepository;
     private final CategoryEventUseCase  categoryEventUseCase;
-    private final GetSitePort           getSitePort;
+    private final SiteLookupPort        siteLookupPort;
     private final ProfileJpaRepository  profileRepository;
     private final LoginCredentialsJpaRepository loginCredentialsRepository;
     private final StoredFileRepository  storedFileRepository;
@@ -54,7 +54,7 @@ public class GetAdminEventsUseCase implements GetAdminEventsPort {
         // ── Site name ─────────────────────────────────────────────────────────
         String siteName = null;
         try {
-            siteName = getSitePort.getSite(Math.toIntExact(e.getSiteId())).getName();
+            siteName = siteLookupPort.getSite(Math.toIntExact(e.getSiteId())).name();
         } catch (Exception ex) {
             log.warn("Admin events: could not resolve siteName for event {}: {}",
                     e.getEventId(), ex.getMessage());

@@ -14,8 +14,8 @@ import com.capysoft.tuevento.modules.event.domain.model.EventLog;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventLogRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.geolocation.application.dto.response.SiteResponse;
-import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort;
+import com.capysoft.tuevento.modules.event.application.port.out.SiteLookupPort;
+import com.capysoft.tuevento.modules.event.application.port.out.SiteSummary;
 import com.capysoft.tuevento.modules.language.application.service.TranslationService;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
@@ -36,7 +36,7 @@ public class UpdateEventService implements UpdateEventUseCase {
 
     private final EventRepository      eventRepository;
     private final EventLogRepository   eventLogRepository;
-    private final GetSitePort          getSitePort;
+    private final SiteLookupPort       siteLookupPort;
     private final CategoryUseCase      categoryUseCase;
     private final CategoryEventUseCase categoryEventUseCase;
     private final EventDateValidator   eventDateValidator;
@@ -78,16 +78,16 @@ public class UpdateEventService implements UpdateEventUseCase {
         }
 
         // Validate site exists and seats do not exceed capacity
-        SiteResponse site;
+        SiteSummary site;
         try {
-            site = getSitePort.getSite(Math.toIntExact(siteId));
+            site = siteLookupPort.getSite(Math.toIntExact(siteId));
         } catch (NotFoundException e) {
             throw new NotFoundException("SITE_NOT_FOUND",
                     "Site not found with id: " + siteId);
         }
-        if (availableSeats > site.getCapacity()) {
+        if (availableSeats > site.capacity()) {
             throw new BusinessException("SEATS_EXCEED_CAPACITY",
-                    "availableSeats cannot exceed site capacity of " + site.getCapacity());
+                    "availableSeats cannot exceed site capacity of " + site.capacity());
         }
 
         // FIX 1: Update category if provided
@@ -169,7 +169,7 @@ public class UpdateEventService implements UpdateEventUseCase {
                 .eventId(updated.getEventId())
                 .userId(updated.getUserId())
                 .siteId(updated.getSiteId())
-                .siteName(site.getName())
+                .siteName(site.name())
                 .eventName(updated.getEventName())
                 .description(updated.getDescription())
                 .startDate(updated.getStartDate())

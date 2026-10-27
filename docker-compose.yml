@@ -292,6 +292,8 @@ services:
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       # Las notificaciones las envía notification-service (local = dentro del backend)
       - NOTIFICATION_MODE=remote
+      # Los eventos leen nombre y capacidad de la sede en geolocation-service (sin ella, en el propio backend)
+      - GEOLOCATION_SERVICE_URL=http://geolocation-service:8087
     depends_on:
       postgres:
         condition: service_started

@@ -304,6 +304,9 @@ services:
       NOTIFICATION_MODE: ${NOTIFICATION_MODE:-remote}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
 
+      # Los eventos leen nombre y capacidad de la sede en geolocation-service (sin ella, en el propio backend)
+      GEOLOCATION_SERVICE_URL: http://geolocation-service:8087
+
       # Correo
       MAIL_USERNAME: ${MAIL_USERNAME:?}
       MAIL_PASSWORD: ${MAIL_PASSWORD:?}
