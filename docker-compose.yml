@@ -239,6 +239,7 @@ services:
     volumes:
       - ./TuEventoBackend/tu-evento/src/main/resources/keys:/run/secrets:ro
     environment:
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}

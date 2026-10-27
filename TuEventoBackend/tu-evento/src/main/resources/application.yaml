@@ -41,6 +41,11 @@ messaging:
     enabled: ${MESSAGING_CONSUMERS_ENABLED:true}
     max-retry-ms: ${MESSAGING_CONSUMERS_MAX_RETRY_MS:1800000}
 
+# Clave que los servicios envían en X-Internal-Api-Key para usar /internal/**. Vacía = /internal cerrado.
+app:
+  internal:
+    api-key: ${INTERNAL_API_KEY:}
+
 server:
   port: 8080
 

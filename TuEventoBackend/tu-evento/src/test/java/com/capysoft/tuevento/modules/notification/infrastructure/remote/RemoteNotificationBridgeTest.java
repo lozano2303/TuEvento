@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,9 +24,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
 import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
-import com.capysoft.tuevento.modules.profile.domain.model.Profile;
-import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
-import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
+import com.capysoft.tuevento.modules.notification.application.port.out.RecipientDirectoryPort;
+import com.capysoft.tuevento.modules.notification.application.port.out.RecipientDirectoryPort.Recipient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
@@ -63,20 +61,20 @@ class RemoteNotificationBridgeTest {
     class Publish {
 
         private final KafkaTemplate<String, String> kafka = mock(KafkaTemplate.class);
-        private final LoginCredentialsRepository credentials = mock(LoginCredentialsRepository.class);
-        private final ProfileRepository profiles = mock(ProfileRepository.class);
+        private final RecipientDirectoryPort directory = mock(RecipientDirectoryPort.class);
         private final KafkaNotificationSender sender =
-                new KafkaNotificationSender(kafka, objectMapper, credentials, profiles);
+                new KafkaNotificationSender(kafka, objectMapper, directory);
 
         @Test
         @DisplayName("publica el comando con el email y el idioma de cada destinatario, con clave = destinatario")
         void publishesCommandWithRecipients() throws Exception {
-            when(credentials.findEmailByUserId(7)).thenReturn(Optional.of("ana@test.com"));
-            when(profiles.findByUserId(7)).thenReturn(Optional.of(Profile.builder().preferredLanguageId(2L).build()));
-            when(credentials.findEmailByUserId(8)).thenReturn(Optional.empty());
-            when(profiles.findByUserId(8)).thenReturn(Optional.empty());
+            // 8 no existe en Identidad: viaja sin email ni idioma
+            when(directory.findRecipients(List.of(7, 8)))
+                    .thenReturn(Map.of(7, new Recipient(7, "ana", "Ana", "ana@test.com", 2L)));
 
             sender.send(command(List.of(7, 8)));
+
+            verify(directory).findRecipients(List.of(7, 8));
 
             ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
             verify(kafka).send(eq(NotificationTopics.COMMANDS), eq("7"), json.capture());
@@ -101,8 +99,8 @@ class RemoteNotificationBridgeTest {
         @Test
         @DisplayName("un fallo de Kafka no rompe el flujo que generó el aviso")
         void kafkaFailure_isSwallowed() {
-            when(credentials.findEmailByUserId(7)).thenReturn(Optional.of("ana@test.com"));
-            when(profiles.findByUserId(7)).thenReturn(Optional.empty());
+            when(directory.findRecipients(List.of(7)))
+                    .thenReturn(Map.of(7, new Recipient(7, "ana", null, "ana@test.com", null)));
             when(kafka.send(anyString(), anyString(), anyString())).thenThrow(new IllegalStateException("broker down"));
 
             sender.send(command(List.of(7)));
