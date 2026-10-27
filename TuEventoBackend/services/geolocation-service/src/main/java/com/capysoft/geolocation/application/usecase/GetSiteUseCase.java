@@ -1,6 +1,7 @@
 package com.capysoft.geolocation.application.usecase;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.capysoft.geolocation.application.dto.response.SiteResponse;
 import com.capysoft.geolocation.application.port.in.GetSitePort;
@@ -10,6 +11,8 @@ import com.capysoft.common.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
+// Lectura en una transacción: la ciudad y el departamento se cargan de forma perezosa (sin open-in-view)
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class GetSiteUseCase implements GetSitePort {
 
