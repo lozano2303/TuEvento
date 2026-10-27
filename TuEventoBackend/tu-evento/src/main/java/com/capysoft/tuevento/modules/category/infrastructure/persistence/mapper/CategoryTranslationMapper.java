@@ -1,8 +1,7 @@
-package com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper;
+package com.capysoft.tuevento.modules.category.infrastructure.persistence.mapper;
 
-import com.capysoft.tuevento.modules.language.domain.model.CategoryTranslation;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.CategoryTranslationEntity;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.LanguageEntity;
+import com.capysoft.tuevento.modules.category.domain.model.CategoryTranslation;
+import com.capysoft.tuevento.modules.category.infrastructure.persistence.entity.CategoryTranslationEntity;
 import org.springframework.stereotype.Component;
 
 /**
