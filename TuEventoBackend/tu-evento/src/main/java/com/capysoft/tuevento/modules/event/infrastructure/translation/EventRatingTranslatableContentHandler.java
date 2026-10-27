@@ -5,7 +5,7 @@ import com.capysoft.tuevento.modules.event.domain.repository.EventRatingReposito
 import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
 import com.capysoft.tuevento.modules.event.domain.model.EventRatingTranslation;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class EventRatingTranslatableContentHandler implements TranslatableConten
 
     private final EventRatingRepository eventRatingRepository;
     private final EventRatingTranslationRepository eventRatingTranslationRepository;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
 
     @Override
     public String entityType() {
@@ -64,7 +64,7 @@ public class EventRatingTranslatableContentHandler implements TranslatableConten
                 entityId, languageCode, translatedTexts);
         
         // 1. Buscar el idioma por código
-        var languageOpt = languageRepository.findByCode(languageCode);
+        var languageOpt = languageCatalog.findByCode(languageCode);
         if (languageOpt.isEmpty()) {
             log.warn("Language not found: {}", languageCode);
             return;
@@ -109,7 +109,7 @@ public class EventRatingTranslatableContentHandler implements TranslatableConten
 
     @Override
     public Optional<TranslationStatus> findTranslationStatus(Long entityId, String languageCode) {
-        var languageOpt = languageRepository.findByCode(languageCode);
+        var languageOpt = languageCatalog.findByCode(languageCode);
         if (languageOpt.isEmpty()) {
             return Optional.empty();
         }

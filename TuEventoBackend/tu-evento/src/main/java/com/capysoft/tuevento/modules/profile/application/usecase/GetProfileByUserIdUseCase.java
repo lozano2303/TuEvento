@@ -2,7 +2,7 @@ package com.capysoft.tuevento.modules.profile.application.usecase;
 
 import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.profile.domain.model.ProfileTranslation;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileTranslationRepository;
 import com.capysoft.tuevento.modules.profile.application.dto.response.ProfileResponse;
 import com.capysoft.tuevento.modules.profile.application.mapper.ProfileResponseAssembler;
@@ -22,7 +22,7 @@ public class GetProfileByUserIdUseCase implements GetProfileByUserIdPort {
 
     private final ProfileRepository profileRepository;
     private final ProfileResponseAssembler responseAssembler;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
     private final ProfileTranslationRepository profileTranslationRepository;
     private final TranslationRequests translationRequests;
 
@@ -54,7 +54,7 @@ public class GetProfileByUserIdUseCase implements GetProfileByUserIdPort {
                     log.debug("Requested language is Spanish (source language) - no translation needed for profile {}", 
                             p.getProfileId());
                 } else {
-                    var language = languageRepository.findByCode(languageCode);
+                    var language = languageCatalog.findByCode(languageCode);
                     if (language.isPresent()) {
                         var translation = profileTranslationRepository.findByProfileAndLanguage(
                                 p.getProfileId(), language.get().getLanguageId());

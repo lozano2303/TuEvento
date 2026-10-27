@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTranslation;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationTranslationRepository;
 import com.capysoft.tuevento.modules.notification.application.dto.InAppNotificationDetails;
 import com.capysoft.tuevento.modules.notification.application.dto.InAppNotificationPageResponse;
@@ -31,7 +31,7 @@ public class InAppNotificationQueryUseCase {
     private final NotificationUserRepository notificationUserRepository;
     private final NotificationUserRepositoryAdapter notificationUserRepositoryAdapter;
     private final NotificationTranslationRepository notificationTranslationRepository;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
 
     @Transactional(readOnly = true)
     public InAppNotificationPageResponse listMine(Integer userId, int page, int size, boolean unreadOnly) {
@@ -108,7 +108,7 @@ public class InAppNotificationQueryUseCase {
         return translations.stream()
                 .map(translation -> {
                     // Obtener código del idioma
-                    String languageCode = languageRepository.findById(translation.getLanguageId())
+                    String languageCode = languageCatalog.findById(translation.getLanguageId())
                             .map(lang -> lang.getCode())
                             .orElse(null);
 
