@@ -360,8 +360,8 @@ services:
 
   # ── API gateway: punto de entrada de /api y /ws ────────────────────────────
   # Envía /api/v1/storage/**, /api/v1/notifications/**, /api/v1/geolocation/** y
-  # /api/v1/themes/**, /api/v1/profiles/**, /api/v1/auth/** y la cuenta del usuario a sus
-  # microservicios y el resto al monolito.
+  # /api/v1/themes/**, /api/v1/profiles/**, /api/v1/auth/**, la cuenta del usuario y el panel de
+  # admin a sus microservicios y el resto al monolito.
   api-gateway:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:api-gateway-${TUEVENTO_VERSION:?}
     container_name: tuevento-api-gateway

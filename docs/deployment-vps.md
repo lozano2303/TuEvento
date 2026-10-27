@@ -40,7 +40,7 @@ también necesita su imagen porque la compra de tickets depende de ella.
 | api-gateway (entrada de `/api` y `/ws`) | `jhampier23/tu-evento:api-gateway-v1.0.0` |
 | storage-service (microservicio de archivos) | `jhampier23/tu-evento:storage-v1.0.0` |
 | geolocation-service (microservicio de geolocalización) | `jhampier23/tu-evento:geolocation-v1.0.0` |
-| identity-service (microservicio de Identidad: login, cuentas, temas y perfiles) | `jhampier23/tu-evento:identity-v1.0.0` |
+| identity-service (microservicio de Identidad: login, cuentas, panel de admin, temas y perfiles) | `jhampier23/tu-evento:identity-v1.0.0` |
 | notification-service (microservicio de notificaciones) | `jhampier23/tu-evento:notifications-v1.0.0` |
 
 Desde la raíz del repo, con `.env.prod` ya completo (solo se leen las `VITE_*`).

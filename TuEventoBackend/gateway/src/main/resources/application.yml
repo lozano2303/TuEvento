@@ -90,15 +90,16 @@ spring:
                 response-timeout: 30000
 
             # ── Microservicio de Identidad ──────────────────────────────────────
-            # Login, registro, sesiones, contraseñas, OAuth y la cuenta del usuario; temas y paletas;
-            # perfiles y sus traducciones (admin). La solicitud de organizador (/users/organizer-*),
-            # el panel de admin y el JWKS siguen en el monolito.
+            # Login, registro, sesiones, contraseñas, OAuth y la cuenta del usuario; solicitudes de
+            # organizador y panel de admin (estadísticas, pendientes, solicitudes, revocación,
+            # actividad y usuarios); temas y paletas; perfiles y sus traducciones. El resto de
+            # /api/v1/admin/** (eventos, reembolsos, billetera, traducciones) y el JWKS siguen en el monolito.
             # IDENTITY_SERVICE_URI apunta al microservicio; sin la variable vuelve al monolito, que
             # aún conserva esos módulos mientras dura la migración.
             - id: identity-service
               uri: ${IDENTITY_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
               predicates:
-                - Path=/api/v1/auth/**,/api/v1/users/change-password,/api/v1/users/oauth/link,/api/v1/users/me,/api/v1/themes,/api/v1/themes/**,/api/v1/profiles,/api/v1/profiles/**,/api/v1/admin/profile-translations/**
+                - Path=/api/v1/auth/**,/api/v1/users/change-password,/api/v1/users/oauth/link,/api/v1/users/me,/api/v1/users/organizer-request,/api/v1/users/organizer-petition,/api/v1/admin/stats,/api/v1/admin/pending-counts,/api/v1/admin/organizer-requests,/api/v1/admin/organizer-requests/**,/api/v1/admin/organizer-users/**,/api/v1/admin/activity,/api/v1/admin/users,/api/v1/themes,/api/v1/themes/**,/api/v1/profiles,/api/v1/profiles/**,/api/v1/admin/profile-translations/**
               filters:
                 - PreserveHostHeader
                 # Explícito en la ruta (no solo en default-filters): el dedupe no debe aplicarse a /ws
