@@ -3,12 +3,16 @@ package com.capysoft.tuevento.modules.language.application.service;
 import com.capysoft.tuevento.modules.language.domain.model.TranslationJob;
 import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
+import com.capysoft.tuevento.shared.infrastructure.translation.TranslatableContents;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -22,14 +26,17 @@ class LocalTranslationRequestsTest {
 
     private final TranslationService service = mock(TranslationService.class);
     private final TranslationJobRepository jobs = mock(TranslationJobRepository.class);
-    private final LocalTranslationRequests requests = new LocalTranslationRequests(service, jobs);
+    private final TranslatableContents contents = mock(TranslatableContents.class);
+    private final LocalTranslationRequests requests = new LocalTranslationRequests(service, jobs, contents);
 
     @Test
-    @DisplayName("pide la traducción desde el español")
+    @DisplayName("pide la traducción desde el español con el texto original del dominio")
     void requestsFromSpanish() {
+        when(contents.sourceTexts("event", 7L)).thenReturn(Map.of("event_name", "Concierto"));
+
         requests.request("event", 7L);
 
-        verify(service).requestTranslation("event", 7L, "es");
+        verify(service).requestTranslation("event", 7L, "es", Map.of("event_name", "Concierto"));
     }
 
     @Test
@@ -48,7 +55,7 @@ class LocalTranslationRequestsTest {
     void ensureRequested() {
         when(jobs.findByEntityAndTargetLanguage("event", 7, 2)).thenReturn(Optional.empty());
         assertThat(requests.ensureRequested("event", 7L, 2)).isTrue();
-        verify(service).requestTranslation("event", 7L, "es");
+        verify(service).requestTranslation(eq("event"), eq(7L), eq("es"), anyMap());
 
         for (TranslationJobStatus status : TranslationJobStatus.values()) {
             when(jobs.findByEntityAndTargetLanguage("event", 8, 2))
@@ -56,7 +63,7 @@ class LocalTranslationRequestsTest {
             boolean waiting = status == TranslationJobStatus.PENDING || status == TranslationJobStatus.PROCESSING;
             assertThat(requests.ensureRequested("event", 8L, 2)).as(status.name()).isEqualTo(waiting);
         }
-        verify(service, never()).requestTranslation("event", 8L, "es");
+        verify(service, never()).requestTranslation(eq("event"), eq(8L), eq("es"), anyMap());
     }
 
     @Test

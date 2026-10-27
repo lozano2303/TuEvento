@@ -1,8 +1,8 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.channel;
 
-import com.capysoft.tuevento.modules.language.domain.model.Language;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTranslation;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationTranslationRepository;
 import com.capysoft.tuevento.modules.notification.application.port.out.NotificationChannelPort;
 import com.capysoft.tuevento.modules.notification.domain.model.DeliveredStatus;
@@ -46,7 +46,7 @@ public class EmailChannelAdapter implements NotificationChannelPort {
     private final NotificationUserRepository notificationUserRepository;
     private final RecipientDirectoryPort recipientDirectoryPort;
     private final NotificationTranslationRepository notificationTranslationRepository;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
     private final JavaMailSender mailSender;
 
     @Override
@@ -209,13 +209,13 @@ public class EmailChannelAdapter implements NotificationChannelPort {
             }
             
             // Obtener información del idioma
-            Optional<Language> languageOpt = languageRepository.findById(preferredLanguageId.intValue());
+            Optional<LanguageSummary> languageOpt = languageCatalog.findById(preferredLanguageId.intValue());
             if (languageOpt.isEmpty()) {
                 log.warn("Language {} not found, using original Spanish content", preferredLanguageId);
                 return new TranslatedContent(notification.getSubject(), notification.getBody(), false, "es");
             }
 
-            Language language = languageOpt.get();
+            LanguageSummary language = languageOpt.get();
             
             // Si es español (idioma fuente), no traducir
             if ("es".equalsIgnoreCase(language.getCode())) {

@@ -4,8 +4,8 @@ import com.capysoft.tuevento.modules.category.domain.model.Category;
 import com.capysoft.tuevento.modules.category.domain.model.CategoryTranslation;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryRepository;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
@@ -31,12 +31,12 @@ import static org.mockito.Mockito.when;
 @DisplayName("CategoryTranslationController")
 class CategoryTranslationControllerTest {
 
-    private static final Language EN = Language.builder().languageId(2).code("en").name("English").build();
-    private static final Language ES = Language.builder().languageId(1).code("es").name("Español").build();
+    private static final LanguageSummary EN = LanguageSummary.builder().languageId(2).code("en").build();
+    private static final LanguageSummary ES = LanguageSummary.builder().languageId(1).code("es").build();
 
     private final CategoryTranslationRepository translations = mock(CategoryTranslationRepository.class);
     private final CategoryRepository categories = mock(CategoryRepository.class);
-    private final LanguageRepository languages = mock(LanguageRepository.class);
+    private final LanguageCatalog languages = mock(LanguageCatalog.class);
     private final TranslationRequests jobs = mock(TranslationRequests.class);
     private final CategoryTranslationController controller =
             new CategoryTranslationController(translations, categories, languages, jobs);

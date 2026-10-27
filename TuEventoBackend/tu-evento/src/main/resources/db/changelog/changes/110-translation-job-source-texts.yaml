@@ -1,0 +1,30 @@
+databaseChangeLog:
+  # El núcleo de traducción deja de leer el texto original de las tablas de cada dominio: el
+  # dominio lo envía al pedir la traducción y se guarda en el trabajo, para procesarlo y
+  # reintentarlo sin volver a pedirlo (paso previo a mover el núcleo al servicio de localización).
+  # Los trabajos sin terminar creados antes no tienen ese texto y no se podrían procesar: se
+  # borran, y la traducción bajo demanda los vuelve a crear la próxima vez que se lea la entidad.
+  - changeSet:
+      id: 110-add-translation-job-source-texts
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: translation_job
+                columnName: source_texts
+      changes:
+        - addColumn:
+            tableName: translation_job
+            columns:
+              - column:
+                  name: source_texts
+                  type: text
+
+  - changeSet:
+      id: 110-drop-unfinished-jobs-without-texts
+      author: capysoft
+      changes:
+        - delete:
+            tableName: translation_job
+            where: "status <> 'COMPLETED' AND source_texts IS NULL"

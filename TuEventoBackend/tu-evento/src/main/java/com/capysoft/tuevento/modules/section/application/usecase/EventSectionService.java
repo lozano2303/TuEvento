@@ -11,7 +11,7 @@ import com.capysoft.tuevento.modules.section.domain.model.EventSection;
 import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeRepository;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.ForbiddenException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
@@ -27,7 +27,7 @@ public class EventSectionService implements EventSectionUseCase {
     private final EventSectionRepository eventSectionRepository;
     private final SectionTypeRepository  sectionTypeRepository;
     private final SectionTypeTranslationRepository sectionTypeTranslationRepository;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
     private final EventRepository eventRepository;
 
     @Override
@@ -123,7 +123,7 @@ public class EventSectionService implements EventSectionUseCase {
         
         // Si se solicita traducción y no es español, intentar cargar traducción
         if (languageCode != null && !languageCode.isEmpty() && !"es".equalsIgnoreCase(languageCode)) {
-            var languageOpt = languageRepository.findByCode(languageCode.toLowerCase());
+            var languageOpt = languageCatalog.findByCode(languageCode.toLowerCase());
             if (languageOpt.isPresent()) {
                 Long sectionTypeIdLong = Long.valueOf(domain.getSectionTypeId());
                 Integer languageId = languageOpt.get().getLanguageId();
