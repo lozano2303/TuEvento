@@ -1,11 +1,6 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
-import com.capysoft.tuevento.modules.event.application.dto.request.ChangeEventStatusRequest;
-import com.capysoft.tuevento.modules.event.application.port.in.AdminChangeEventStatusPort;
-import com.capysoft.tuevento.modules.event.domain.event.EventStatusChangedEvent;
-import com.capysoft.tuevento.modules.event.domain.model.Event;
-import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.security.application.dto.OrganizerRoleRevokedMessage;
 import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedEvent;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerRoleRevocationRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.RoleEntity;
@@ -14,6 +9,7 @@ import com.capysoft.tuevento.modules.security.infrastructure.persistence.reposit
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
+import com.capysoft.tuevento.shared.infrastructure.outbox.OutboxEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,8 +21,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
-import java.util.List;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,7 +43,8 @@ import static org.mockito.Mockito.*;
  *   <li>User is not an ORGANIZER → BusinessException</li>
  *   <li>USER role not found in DB → NotFoundException</li>
  *   <li>Reason shorter than 10 chars → BusinessException, nothing changes</li>
- *   <li>Published events are cancelled and events in review rejected</li>
+ *   <li>OrganizerRoleRevoked goes to the outbox with one stable eventId per revocation</li>
+ *   <li>Catálogo's events are not touched here (CloseRevokedOrganizerEventsUseCase does it)</li>
  * </ul>
  */
 @ExtendWith(MockitoExtension.class)
@@ -55,10 +55,10 @@ class RevokeOrganizerRoleUseCaseTest {
     @Mock private RoleJpaRepository         roleJpaRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private OrganizerRoleRevocationRepository revocationRepository;
-    @Mock private EventRepository           eventRepository;
-    @Mock private AdminChangeEventStatusPort adminChangeEventStatusPort;
+    @Mock private OutboxEventPublisher      outboxEventPublisher;
 
-    @InjectMocks
+    private static final Instant NOW = Instant.parse("2026-10-27T15:00:00Z");
+
     private RevokeOrganizerRoleUseCase useCase;
 
     private static final Integer USER_ID  = 10;
@@ -71,6 +71,8 @@ class RevokeOrganizerRoleUseCaseTest {
 
     @BeforeEach
     void setUp() {
+        useCase = new RevokeOrganizerRoleUseCase(userJpaRepository, roleJpaRepository, eventPublisher,
+                revocationRepository, outboxEventPublisher, Clock.fixed(NOW, ZoneOffset.UTC));
         organizerRole = RoleEntity.builder().roleId(2).code("ORGANIZER").name("Organizer").build();
         userRole      = RoleEntity.builder().roleId(1).code("USER").name("User").build();
         organizerUser = UserEntity.builder()
@@ -90,7 +92,7 @@ class RevokeOrganizerRoleUseCaseTest {
         @Test
         @DisplayName("revoke() downgrades ORGANIZER to USER and saves the entity")
         void revoke_organizerUser_savesWithUserRole() {
-            when(userJpaRepository.findByIdEager(USER_ID)).thenReturn(Optional.of(organizerUser));
+            when(userJpaRepository.findByIdEagerForUpdate(USER_ID)).thenReturn(Optional.of(organizerUser));
             when(roleJpaRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
             when(userJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -103,7 +105,7 @@ class RevokeOrganizerRoleUseCaseTest {
         @Test
         @DisplayName("revoke() publishes OrganizerRoleRevokedEvent with correct userId and alias")
         void revoke_publishesOrganizerRoleRevokedEvent() {
-            when(userJpaRepository.findByIdEager(USER_ID)).thenReturn(Optional.of(organizerUser));
+            when(userJpaRepository.findByIdEagerForUpdate(USER_ID)).thenReturn(Optional.of(organizerUser));
             when(roleJpaRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
             when(userJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -123,26 +125,37 @@ class RevokeOrganizerRoleUseCaseTest {
         }
 
         @Test
-        @DisplayName("revoke() cancels PUBLISHED events and rejects PENDING_REVIEW ones")
-        void revoke_closesActiveEvents() {
-            when(userJpaRepository.findByIdEager(USER_ID)).thenReturn(Optional.of(organizerUser));
+        @DisplayName("revoke() deja OrganizerRoleRevoked en el outbox con un eventId estable por revocación")
+        void revoke_publishesToOutbox() {
+            when(userJpaRepository.findByIdEagerForUpdate(USER_ID)).thenReturn(Optional.of(organizerUser));
             when(roleJpaRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
             when(userJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-            when(eventRepository.findByUserId(USER_ID.longValue())).thenReturn(List.of(
-                    Event.builder().eventId(100L).status(EventStatus.PUBLISHED).build(),
-                    Event.builder().eventId(101L).status(EventStatus.PENDING_REVIEW).build(),
-                    Event.builder().eventId(102L).status(EventStatus.DRAFT).build()));
+            when(revocationRepository.record(USER_ID, ADMIN_ID, REASON)).thenReturn(77L);
 
             useCase.revoke(USER_ID, REASON, ADMIN_ID);
 
-            ArgumentCaptor<ChangeEventStatusRequest> request = ArgumentCaptor.forClass(ChangeEventStatusRequest.class);
-            verify(adminChangeEventStatusPort).execute(eq(100L), request.capture(),
-                    eq(ADMIN_ID.longValue()), eq(EventStatusChangedEvent.CAUSE_ORGANIZER_REVOKED));
-            assertThat(request.getValue().getNewStatus()).isEqualTo(EventStatus.CANCELLED);
-            verify(adminChangeEventStatusPort).execute(eq(101L), request.capture(),
-                    eq(ADMIN_ID.longValue()), eq(EventStatusChangedEvent.CAUSE_ORGANIZER_REVOKED));
-            assertThat(request.getValue().getNewStatus()).isEqualTo(EventStatus.REJECTED);
-            verify(adminChangeEventStatusPort, never()).execute(eq(102L), any(), any(), any());
+            ArgumentCaptor<Object> payload = ArgumentCaptor.forClass(Object.class);
+            ArgumentCaptor<UUID> eventId = ArgumentCaptor.forClass(UUID.class);
+            verify(outboxEventPublisher).publish(eq("user"), eq("10"), eq("OrganizerRoleRevoked"),
+                    payload.capture(), eventId.capture());
+            assertThat(payload.getValue()).isEqualTo(new OrganizerRoleRevokedMessage(
+                    77L, USER_ID, "john_organizer", ADMIN_ID, REASON, "2026-10-27T15:00:00Z"));
+            assertThat(eventId.getValue())
+                    .isEqualTo(RevokeOrganizerRoleUseCase.eventIdOf(77L))
+                    .isNotEqualTo(RevokeOrganizerRoleUseCase.eventIdOf(78L));
+        }
+
+        @Test
+        @DisplayName("revoke() lee al usuario con bloqueo de fila: dos revocaciones simultáneas no pasan ambas")
+        void revoke_locksTheUser() {
+            when(userJpaRepository.findByIdEagerForUpdate(USER_ID)).thenReturn(Optional.of(organizerUser));
+            when(roleJpaRepository.findByCode("USER")).thenReturn(Optional.of(userRole));
+            when(userJpaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            useCase.revoke(USER_ID, REASON, ADMIN_ID);
+
+            verify(userJpaRepository).findByIdEagerForUpdate(USER_ID);
+            verify(userJpaRepository, never()).findByIdEager(any());
         }
     }
 
@@ -155,13 +168,14 @@ class RevokeOrganizerRoleUseCaseTest {
         @Test
         @DisplayName("user not found → throws NotFoundException with USER_NOT_FOUND code")
         void revoke_userNotFound_throwsNotFoundException() {
-            when(userJpaRepository.findByIdEager(USER_ID)).thenReturn(Optional.empty());
+            when(userJpaRepository.findByIdEagerForUpdate(USER_ID)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> useCase.revoke(USER_ID, REASON, ADMIN_ID))
                     .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining("User not found");
 
             verify(eventPublisher, never()).publishEvent(any());
+            verifyNoInteractions(outboxEventPublisher);
         }
 
         @Test
@@ -174,7 +188,7 @@ class RevokeOrganizerRoleUseCaseTest {
                     .activated(true)
                     .build();
 
-            when(userJpaRepository.findByIdEager(USER_ID)).thenReturn(Optional.of(regularUser));
+            when(userJpaRepository.findByIdEagerForUpdate(USER_ID)).thenReturn(Optional.of(regularUser));
 
             assertThatThrownBy(() -> useCase.revoke(USER_ID, REASON, ADMIN_ID))
                     .isInstanceOf(BusinessException.class)
@@ -182,6 +196,7 @@ class RevokeOrganizerRoleUseCaseTest {
 
             verify(roleJpaRepository, never()).findByCode(any());
             verify(eventPublisher, never()).publishEvent(any());
+            verifyNoInteractions(outboxEventPublisher);
         }
 
         @Test
@@ -194,7 +209,7 @@ class RevokeOrganizerRoleUseCaseTest {
                     .activated(true)
                     .build();
 
-            when(userJpaRepository.findByIdEager(USER_ID)).thenReturn(Optional.of(noRoleUser));
+            when(userJpaRepository.findByIdEagerForUpdate(USER_ID)).thenReturn(Optional.of(noRoleUser));
 
             assertThatThrownBy(() -> useCase.revoke(USER_ID, REASON, ADMIN_ID))
                     .isInstanceOf(BusinessException.class)
@@ -202,12 +217,13 @@ class RevokeOrganizerRoleUseCaseTest {
 
             verify(roleJpaRepository, never()).findByCode(any());
             verify(eventPublisher, never()).publishEvent(any());
+            verifyNoInteractions(outboxEventPublisher);
         }
 
         @Test
         @DisplayName("USER role not found in DB → throws NotFoundException")
         void revoke_userRoleNotFound_throwsNotFoundException() {
-            when(userJpaRepository.findByIdEager(USER_ID)).thenReturn(Optional.of(organizerUser));
+            when(userJpaRepository.findByIdEagerForUpdate(USER_ID)).thenReturn(Optional.of(organizerUser));
             when(roleJpaRepository.findByCode("USER")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> useCase.revoke(USER_ID, REASON, ADMIN_ID))
@@ -216,6 +232,7 @@ class RevokeOrganizerRoleUseCaseTest {
 
             verify(userJpaRepository, never()).save(any());
             verify(eventPublisher, never()).publishEvent(any());
+            verifyNoInteractions(outboxEventPublisher);
         }
 
         @Test
@@ -225,7 +242,7 @@ class RevokeOrganizerRoleUseCaseTest {
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("reason");
 
-            verifyNoInteractions(userJpaRepository, revocationRepository, adminChangeEventStatusPort, eventPublisher);
+            verifyNoInteractions(userJpaRepository, revocationRepository, outboxEventPublisher, eventPublisher);
         }
     }
 }
