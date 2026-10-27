@@ -10,8 +10,8 @@ import com.capysoft.tuevento.modules.category.domain.event.CategoryDeactivatedEv
 import com.capysoft.tuevento.modules.category.domain.model.Category;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryRepository;
 import com.capysoft.tuevento.modules.language.application.service.TranslationService;
-import com.capysoft.tuevento.modules.language.domain.model.CategoryTranslation;
-import com.capysoft.tuevento.modules.language.domain.repository.CategoryTranslationRepository;
+import com.capysoft.tuevento.modules.category.domain.model.CategoryTranslation;
+import com.capysoft.tuevento.modules.category.domain.repository.CategoryTranslationRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
