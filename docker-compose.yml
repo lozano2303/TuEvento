@@ -325,6 +325,8 @@ services:
       - MONOLITH_URI=http://backend:8080
       # /api/v1/storage va al microservicio; para volver al monolito, quitar esta variable
       - STORAGE_SERVICE_URI=http://storage-service:8085
+      # /api/v1/geolocation va al microservicio; para volver al monolito, quitar esta variable
+      - GEOLOCATION_SERVICE_URI=http://geolocation-service:8087
       # /api/v1/notifications va al microservicio; para volver al monolito, quitar esta variable
       - NOTIFICATION_SERVICE_URI=http://notification-service:8086
       - REDIS_HOST=redis
@@ -335,6 +337,8 @@ services:
       backend:
         condition: service_started
       storage-service:
+        condition: service_started
+      geolocation-service:
         condition: service_started
       notification-service:
         condition: service_started
@@ -430,6 +434,36 @@ services:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - tuevento-network
+
+  # ── Microservicio de geolocalización ───────────────────────────────────────
+  # Departamentos, ciudades y sedes sobre la misma base que el backend.
+  geolocation-service:
+    build:
+      context: ./TuEventoBackend/services
+      dockerfile: geolocation-service/Dockerfile
+    container_name: tuevento-geolocation-service
+    restart: unless-stopped
+    ports:
+      - "8087:8087"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - JWK_SET_URI=http://backend:8080/.well-known/jwks.json
+    depends_on:
+      postgres:
+        condition: service_started
+      # El backend migra las tablas (y sus datos iniciales) y publica el JWKS
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8087/actuator/health | grep -q UP"]
       interval: 10s
       timeout: 5s
       retries: 5
