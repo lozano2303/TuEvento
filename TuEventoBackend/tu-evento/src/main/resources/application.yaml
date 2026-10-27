@@ -9,6 +9,12 @@ spring:
     show-sql: false
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
+  # La lista de revocación de tokens se consulta en cada petición y falla cerrada: sin un timeout corto,
+  # un Redis colgado retiene cada hilo HTTP 60 s (valor por defecto de Lettuce) antes del 503
+  data:
+    redis:
+      timeout: ${REDIS_TIMEOUT:2s}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:2s}
   # Local: el broker del docker-compose publica 9094 al host. Dentro de Docker/k8s: kafka:9092
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
