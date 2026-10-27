@@ -90,13 +90,13 @@ spring:
                 response-timeout: 30000
 
             # ── Microservicio de Identidad ──────────────────────────────────────
-            # Temas y paletas de usuario (catálogo, tema activo, personalización e historial).
+            # Temas y paletas de usuario, perfiles y sus traducciones (admin).
             # IDENTITY_SERVICE_URI apunta al microservicio; sin la variable vuelve al monolito, que
-            # aún conserva el módulo de temas mientras dura la migración.
+            # aún conserva esos módulos mientras dura la migración.
             - id: identity-service
               uri: ${IDENTITY_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
               predicates:
-                - Path=/api/v1/themes,/api/v1/themes/**
+                - Path=/api/v1/themes,/api/v1/themes/**,/api/v1/profiles,/api/v1/profiles/**,/api/v1/admin/profile-translations/**
               filters:
                 - PreserveHostHeader
                 # Explícito en la ruta (no solo en default-filters): el dedupe no debe aplicarse a /ws
