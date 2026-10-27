@@ -1,9 +1,9 @@
 package com.capysoft.tuevento.modules.theme.application.usecase;
 
 import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.model.ThemeTranslation;
+import com.capysoft.tuevento.modules.theme.domain.model.ThemeTranslation;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.ThemeTranslationRepository;
+import com.capysoft.tuevento.modules.theme.domain.repository.ThemeTranslationRepository;
 import com.capysoft.tuevento.modules.theme.application.dto.response.ThemeResponse;
 import com.capysoft.tuevento.modules.theme.application.mapper.ThemeAppMapper;
 import com.capysoft.tuevento.modules.theme.application.port.in.GetThemesPort;
