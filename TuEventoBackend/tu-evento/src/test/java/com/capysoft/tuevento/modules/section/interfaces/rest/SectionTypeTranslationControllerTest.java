@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.section.interfaces.rest;
 
-import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.section.domain.model.SectionType;
 import com.capysoft.tuevento.modules.section.domain.model.SectionTypeTranslation;
@@ -28,12 +28,12 @@ import static org.mockito.Mockito.when;
 @DisplayName("SectionTypeTranslationController")
 class SectionTypeTranslationControllerTest {
 
-    private static final Language EN = Language.builder().languageId(2).code("en").name("English").build();
-    private static final Language ES = Language.builder().languageId(1).code("es").name("Español").build();
+    private static final LanguageSummary EN = LanguageSummary.builder().languageId(2).code("en").build();
+    private static final LanguageSummary ES = LanguageSummary.builder().languageId(1).code("es").build();
 
     private final SectionTypeTranslationRepository translations = mock(SectionTypeTranslationRepository.class);
     private final SectionTypeRepository sectionTypes = mock(SectionTypeRepository.class);
-    private final LanguageRepository languages = mock(LanguageRepository.class);
+    private final LanguageCatalog languages = mock(LanguageCatalog.class);
     private final TranslationRequests jobs = mock(TranslationRequests.class);
     private final SectionTypeTranslationController controller =
             new SectionTypeTranslationController(translations, sectionTypes, languages, jobs);

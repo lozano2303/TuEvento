@@ -1,6 +1,5 @@
 package com.capysoft.tuevento.modules.language.application.service;
 
-import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
 import com.capysoft.tuevento.modules.language.domain.model.TranslationJob;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
@@ -33,8 +32,6 @@ class TranslationServiceTest {
     @Mock
     private TranslationProcessor translationProcessor;
     
-    @Mock
-    private TranslatableContentHandler mockHandler;
 
     private TranslationService translationService;
 
@@ -46,9 +43,6 @@ class TranslationServiceTest {
                 translationProcessor
         );
         
-        // Inject handler registry via reflection
-        Map<String, TranslatableContentHandler> handlerRegistry = Map.of("test_entity", mockHandler);
-        ReflectionTestUtils.setField(translationService, "handlerRegistry", handlerRegistry);
         
         ReflectionTestUtils.setField(translationService, "defaultProvider", "libretranslate");
     }
@@ -74,7 +68,6 @@ class TranslationServiceTest {
                 .name("English")
                 .build();
         
-        when(mockHandler.loadSourceTexts(entityId)).thenReturn(sourceTexts);
         when(languageRepository.findByCode(sourceLanguageCode)).thenReturn(Optional.of(sourceLanguage));
         when(languageRepository.findAllActive()).thenReturn(List.of(sourceLanguage, targetLanguage));
         when(translationJobRepository.findByEntityAndTargetLanguage(eq(entityType), eq(1), eq(2)))
@@ -82,7 +75,7 @@ class TranslationServiceTest {
         when(translationJobRepository.saveAll(anyList())).thenReturn(List.of());
 
         // Act
-        translationService.requestTranslation(entityType, entityId, sourceLanguageCode);
+        translationService.requestTranslation(entityType, entityId, sourceLanguageCode, sourceTexts);
 
         // Assert
         verify(translationJobRepository).saveAll(argThat(jobs -> {
@@ -90,7 +83,8 @@ class TranslationServiceTest {
             return jobList.size() == 1 && 
                    jobList.get(0).getEntityType().equals(entityType) &&
                    jobList.get(0).getEntityId().equals(entityId.intValue()) && // entityId del job es Integer
-                   jobList.get(0).getStatus() == TranslationJobStatus.PENDING;
+                   jobList.get(0).getStatus() == TranslationJobStatus.PENDING &&
+                   sourceTexts.equals(jobList.get(0).getSourceTexts());
         }));
     }
 
@@ -122,7 +116,6 @@ class TranslationServiceTest {
                 .status(TranslationJobStatus.COMPLETED)
                 .build();
         
-        when(mockHandler.loadSourceTexts(entityId)).thenReturn(sourceTexts);
         when(languageRepository.findByCode(sourceLanguageCode)).thenReturn(Optional.of(sourceLanguage));
         when(languageRepository.findAllActive()).thenReturn(List.of(sourceLanguage, targetLanguage));
         when(translationJobRepository.findByEntityAndTargetLanguage(eq(entityType), eq(1), eq(2)))
@@ -130,7 +123,7 @@ class TranslationServiceTest {
         when(translationJobRepository.saveAll(anyList())).thenReturn(List.of());
 
         // Act
-        translationService.requestTranslation(entityType, entityId, sourceLanguageCode);
+        translationService.requestTranslation(entityType, entityId, sourceLanguageCode, sourceTexts);
 
         // Assert
         verify(translationJobRepository).saveAll(argThat(jobs -> {
@@ -142,17 +135,14 @@ class TranslationServiceTest {
     }
 
     @Test
-    void testRequestTranslationNoHandler() {
+    void testRequestTranslationUnknownSourceLanguage() {
         // Arrange
-        String entityType = "unknown_entity";
-        Long entityId = 1L;
-        String sourceLanguageCode = "es";
+        when(languageRepository.findByCode("xx")).thenReturn(Optional.empty());
 
         // Act
-        translationService.requestTranslation(entityType, entityId, sourceLanguageCode);
+        translationService.requestTranslation("test_entity", 1L, "xx", Map.of("title", "Hola"));
 
         // Assert
-        verify(mockHandler, never()).loadSourceTexts(any());
         verify(translationJobRepository, never()).saveAll(any());
     }
 
@@ -162,11 +152,9 @@ class TranslationServiceTest {
         String entityType = "test_entity";
         Long entityId = 1L;
         String sourceLanguageCode = "es";
-        
-        when(mockHandler.loadSourceTexts(entityId)).thenReturn(Map.of());
 
         // Act
-        translationService.requestTranslation(entityType, entityId, sourceLanguageCode);
+        translationService.requestTranslation(entityType, entityId, sourceLanguageCode, Map.of());
 
         // Assert
         verify(translationJobRepository, never()).saveAll(any());
@@ -191,7 +179,6 @@ class TranslationServiceTest {
                 .code("en")
                 .build();
         
-        when(mockHandler.loadSourceTexts(entityId)).thenReturn(sourceTexts);
         when(languageRepository.findByCode(sourceLanguageCode)).thenReturn(Optional.of(sourceLanguage));
         when(languageRepository.findAllActive()).thenReturn(List.of(sourceLanguage, targetLanguage));
         when(translationJobRepository.findByEntityAndTargetLanguage(eq(entityType), eq(1), eq(2)))
@@ -203,7 +190,7 @@ class TranslationServiceTest {
                 .when(translationProcessor).processTranslationJobs(anyString(), anyLong());
 
         // Act & Assert - should not throw exception
-        translationService.requestTranslation(entityType, entityId, sourceLanguageCode);
+        translationService.requestTranslation(entityType, entityId, sourceLanguageCode, sourceTexts);
         
         verify(translationJobRepository).saveAll(any()); // Jobs should still be saved
     }
