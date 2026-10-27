@@ -246,6 +246,7 @@ services:
     container_name: tuevento-backend
     restart: unless-stopped
     environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       SPRING_PROFILES_ACTIVE: prod
       # nginx-proxy-manager + nginx del frontend: dos entradas en X-Forwarded-For. El api-gateway
       # (Spring Cloud Gateway 4.3, sin trusted-proxies) reenvía la cabecera sin añadir la suya;

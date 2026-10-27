@@ -118,6 +118,37 @@ public class SecurityConfig {
                 .build();
     }
 
+    /**
+     * API interna entre servicios ({@code /internal/**}): solo con la clave de
+     * {@link InternalApiKeyFilter}, nunca con el JWT de un usuario. El gateway no la enruta, pero el
+     * ingress de k8s sí llega al backend, así que la clave es la única barrera.
+     */
+    @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE + 1)
+    public SecurityFilterChain internalFilterChain(HttpSecurity http,
+            @Value("${app.internal.api-key:}") String internalApiKey) throws Exception {
+        return http
+                .securityMatcher("/internal/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(new InternalApiKeyFilter(internalApiKey), UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, e) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json; charset=UTF-8");
+                            response.getWriter().write("{\"success\":false,\"code\":\"INTERNAL_AUTH_REQUIRED\","
+                                    + "\"message\":\"Internal API key required\"}");
+                        })
+                        .accessDeniedHandler((request, response, e) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json; charset=UTF-8");
+                            response.getWriter().write("{\"success\":false,\"code\":\"FORBIDDEN\","
+                                    + "\"message\":\"Internal API only\"}");
+                        }))
+                .authorizeHttpRequests(auth -> auth.anyRequest().hasAuthority(InternalApiKeyFilter.AUTHORITY))
+                .build();
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
