@@ -17,7 +17,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 class IdentityPushRelayTest {
 
     private final SimpMessagingTemplate messaging = mock(SimpMessagingTemplate.class);
-    private final IdentityPushRelay relay = new IdentityPushRelay(messaging, new ObjectMapper());
+    private final org.springframework.context.ApplicationEventPublisher events =
+            mock(org.springframework.context.ApplicationEventPublisher.class);
+    private final IdentityPushRelay relay = new IdentityPushRelay(messaging, new ObjectMapper(), events);
 
     @Test
     @DisplayName("THEME_UPDATED al canal de sesión de un usuario → se reenvía con el payload de siempre")
@@ -35,6 +37,25 @@ class IdentityPushRelayTest {
 
         verify(messaging).convertAndSend("/topic/users/7/session", Map.of("type", "LANGUAGE_UPDATED", "languageId", 2L));
         org.mockito.Mockito.verifyNoMoreInteractions(messaging);
+    }
+
+    @Test
+    @DisplayName("ROLE_UPDATED solo con el rol ORGANIZER; cualquier otro rol se descarta")
+    void relaysOnlyOrganizerRole() {
+        relay.relay("{\"destination\":\"/topic/users/7/session\",\"body\":{\"type\":\"ROLE_UPDATED\",\"role\":\"ORGANIZER\"}}");
+        relay.relay("{\"destination\":\"/topic/users/7/session\",\"body\":{\"type\":\"ROLE_UPDATED\",\"role\":\"ADMIN\"}}");
+
+        verify(messaging).convertAndSend("/topic/users/7/session", Map.of("type", "ROLE_UPDATED", "role", "ORGANIZER"));
+        org.mockito.Mockito.verifyNoMoreInteractions(messaging);
+    }
+
+    @Test
+    @DisplayName("PENDING_COUNTS_CHANGED no reenvía el mensaje: pide al monolito recalcular los contadores")
+    void pendingCountsTriggerRecalculation() {
+        relay.relay("{\"destination\":\"/topic/admin/pending-counts\",\"body\":{\"type\":\"PENDING_COUNTS_CHANGED\",\"organizerRequests\":999}}");
+
+        verify(events).publishEvent(new AdminPendingCountsChangedEvent());
+        verifyNoInteractions(messaging);
     }
 
     @Test

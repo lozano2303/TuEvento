@@ -18,13 +18,14 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedEvent;
 import com.capysoft.tuevento.modules.security.domain.event.UserActivatedEvent;
 import com.capysoft.tuevento.shared.infrastructure.messaging.ProcessedEventStore;
 import com.capysoft.tuevento.shared.infrastructure.outbox.OutboxHeaders;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@DisplayName("UserActivatedKafkaListener (identity-service → listeners del monolito)")
-class UserActivatedKafkaListenerTest {
+@DisplayName("IdentityEventsKafkaListener (identity-service → listeners del monolito)")
+class IdentityEventsKafkaListenerTest {
 
     private final ProcessedEventStore processed = mock(ProcessedEventStore.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
@@ -34,8 +35,8 @@ class UserActivatedKafkaListenerTest {
             action.accept(null);
         }
     };
-    private final UserActivatedKafkaListener listener =
-            new UserActivatedKafkaListener(processed, events, tx, new ObjectMapper());
+    private final IdentityEventsKafkaListener listener =
+            new IdentityEventsKafkaListener(processed, events, tx, new ObjectMapper());
 
     private static ConsumerRecord<String, String> record(String type, UUID eventId, String payload) {
         ConsumerRecord<String, String> rec = new ConsumerRecord<>("tuevento.user", 0, 0L, "7", payload);
@@ -45,27 +46,42 @@ class UserActivatedKafkaListenerTest {
     }
 
     @Test
-    @DisplayName("UserActivated → evento de dominio con userId y alias, y queda marcado como procesado")
-    void republishes() {
+    @DisplayName("UserActivated de identity-service → evento de dominio, marcado como procesado")
+    void republishesUserActivated() {
         UUID id = UUID.randomUUID();
-        listener.onMessage(record("UserActivated", id, "{\"userId\":7,\"alias\":\"ana\",\"occurredAt\":\"2026-10-27T12:00:00\"}"));
+        listener.onMessage(record("UserActivated", id,
+                "{\"userId\":7,\"alias\":\"ana\",\"occurredAt\":\"2026-10-27T12:00:00\",\"origin\":\"identity-service\"}"));
 
         ArgumentCaptor<Object> event = ArgumentCaptor.forClass(Object.class);
         verify(events).publishEvent(event.capture());
-        UserActivatedEvent activated = (UserActivatedEvent) event.getValue();
-        assertThat(activated.getUserId()).isEqualTo(7);
-        assertThat(activated.getAlias()).isEqualTo("ana");
-        verify(processed).markProcessed(UserActivatedKafkaListener.CONSUMER, id);
+        assertThat(((UserActivatedEvent) event.getValue()).getAlias()).isEqualTo("ana");
+        verify(processed).markProcessed(IdentityEventsKafkaListener.CONSUMER, id);
     }
 
     @Test
-    @DisplayName("ya procesado, de otro tipo o sin userId → no publica nada")
-    void ignoresDuplicatesAndOthers() {
-        UUID id = UUID.randomUUID();
-        when(processed.isProcessed(UserActivatedKafkaListener.CONSUMER, id)).thenReturn(true);
-        listener.onMessage(record("UserActivated", id, "{\"userId\":7}"));
-        listener.onMessage(record("OrganizerRoleRevoked", UUID.randomUUID(), "{\"userId\":7}"));
-        listener.onMessage(record("UserActivated", UUID.randomUUID(), "{\"alias\":\"sin-id\"}"));
+    @DisplayName("OrganizerRoleRevoked de identity-service → evento con quién revocó y el motivo")
+    void republishesOrganizerRoleRevoked() {
+        listener.onMessage(record("OrganizerRoleRevoked", UUID.randomUUID(),
+                "{\"revocationId\":3,\"userId\":7,\"alias\":\"ana\",\"revokedBy\":1,\"reason\":\"Fraude reiterado\","
+                        + "\"occurredAt\":\"2026-10-27T17:00:00Z\",\"origin\":\"identity-service\"}"));
+
+        ArgumentCaptor<Object> event = ArgumentCaptor.forClass(Object.class);
+        verify(events).publishEvent(event.capture());
+        OrganizerRoleRevokedEvent revoked = (OrganizerRoleRevokedEvent) event.getValue();
+        assertThat(revoked.getUserId()).isEqualTo(7);
+        assertThat(revoked.getRevokedBy()).isEqualTo(1);
+        assertThat(revoked.getReason()).isEqualTo("Fraude reiterado");
+    }
+
+    @Test
+    @DisplayName("los del propio monolito (sin origin), duplicados, de otro tipo o sin userId no se reenvían")
+    void ignoresOthers() {
+        UUID duplicated = UUID.randomUUID();
+        when(processed.isProcessed(IdentityEventsKafkaListener.CONSUMER, duplicated)).thenReturn(true);
+        listener.onMessage(record("OrganizerRoleRevoked", UUID.randomUUID(), "{\"userId\":7,\"revokedBy\":1}"));
+        listener.onMessage(record("UserActivated", duplicated, "{\"userId\":7,\"origin\":\"identity-service\"}"));
+        listener.onMessage(record("SeatsHeld", UUID.randomUUID(), "{\"userId\":7,\"origin\":\"identity-service\"}"));
+        listener.onMessage(record("UserActivated", UUID.randomUUID(), "{\"alias\":\"x\",\"origin\":\"identity-service\"}"));
 
         verifyNoInteractions(events);
         verify(processed, never()).markProcessed(any(), any());
