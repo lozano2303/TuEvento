@@ -1,0 +1,30 @@
+databaseChangeLog:
+  # Sedes y ciudades pertenecen al servicio de localización (geolocation-service). Eventos y
+  # perfiles ya guardan site_id y city_id como ids planos y los resuelven por su API REST, así que
+  # se quitan las FKs que cruzan servicios. Las columnas y sus datos se conservan. El servicio no
+  # expone borrado de sedes ni de ciudades, así que no quedan referencias huérfanas por esa vía.
+  - changeSet:
+      id: 109-drop-fk-event-site
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: event
+            foreignKeyName: fk_event_site
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: event
+            constraintName: fk_event_site
+
+  - changeSet:
+      id: 109-drop-fk-profile-city
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: profile
+            foreignKeyName: fk_profile_city
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: profile
+            constraintName: fk_profile_city
