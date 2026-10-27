@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.messaging;
 
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
-import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
+import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
 import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedEvent;
 import org.junit.jupiter.api.DisplayName;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.*;
 @DisplayName("OrganizerRoleRevokedListener")
 class OrganizerRoleRevokedListenerTest {
 
-    @Mock private SendNotificationUseCase sendNotificationUseCase;
+    @Mock private NotificationSender notificationSender;
     @Mock private SimpMessagingTemplate   messagingTemplate;
 
     @InjectMocks
@@ -67,7 +67,7 @@ class OrganizerRoleRevokedListenerTest {
 
             ArgumentCaptor<SendNotificationCommand> captor =
                     ArgumentCaptor.forClass(SendNotificationCommand.class);
-            verify(sendNotificationUseCase).execute(captor.capture());
+            verify(notificationSender).send(captor.capture());
 
             SendNotificationCommand cmd = captor.getValue();
             assertThat(cmd.getTypeName()).isEqualTo(NotificationTypeNames.ORGANIZER_ROLE_REVOKED);
@@ -104,14 +104,14 @@ class OrganizerRoleRevokedListenerTest {
         @DisplayName("exception in sendNotification is swallowed — method returns normally without re-throwing")
         void exceptionInNotification_isSwallowed() {
             doThrow(new RuntimeException("notification failure"))
-                    .when(sendNotificationUseCase).execute(any());
+                    .when(notificationSender).send(any());
 
             // Must not throw — the entire handler is wrapped in a try/catch
             listener.onOrganizerRoleRevoked(buildEvent());
 
             // The whole body is inside the try block; once it throws, execution
             // jumps to the catch and the WS push is not reached. No re-throw.
-            verify(sendNotificationUseCase).execute(any());
+            verify(notificationSender).send(any());
         }
 
         @Test
@@ -123,7 +123,7 @@ class OrganizerRoleRevokedListenerTest {
             // Must not throw
             listener.onOrganizerRoleRevoked(buildEvent());
 
-            verify(sendNotificationUseCase).execute(any());
+            verify(notificationSender).send(any());
         }
     }
 }

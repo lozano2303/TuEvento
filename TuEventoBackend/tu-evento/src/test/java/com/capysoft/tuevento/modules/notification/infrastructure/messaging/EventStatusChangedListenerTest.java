@@ -2,7 +2,7 @@ package com.capysoft.tuevento.modules.notification.infrastructure.messaging;
 
 import com.capysoft.tuevento.modules.event.domain.event.EventStatusChangedEvent;
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
-import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
+import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.*;
 @DisplayName("EventStatusChangedListener")
 class EventStatusChangedListenerTest {
 
-    @Mock  private SendNotificationUseCase sendNotificationUseCase;
+    @Mock  private NotificationSender notificationSender;
     @InjectMocks private EventStatusChangedListener listener;
 
     private static final Long EVENT_ID     = 7L;
@@ -65,7 +65,7 @@ class EventStatusChangedListenerTest {
 
             ArgumentCaptor<SendNotificationCommand> captor =
                     ArgumentCaptor.forClass(SendNotificationCommand.class);
-            verify(sendNotificationUseCase).execute(captor.capture());
+            verify(notificationSender).send(captor.capture());
 
             SendNotificationCommand cmd = captor.getValue();
             assertThat(cmd.getTypeName()).isEqualTo(NotificationTypeNames.EVENT_PUBLISHED);
@@ -82,7 +82,7 @@ class EventStatusChangedListenerTest {
 
             ArgumentCaptor<SendNotificationCommand> captor =
                     ArgumentCaptor.forClass(SendNotificationCommand.class);
-            verify(sendNotificationUseCase).execute(captor.capture());
+            verify(notificationSender).send(captor.capture());
 
             SendNotificationCommand cmd = captor.getValue();
             assertThat(cmd.getTypeName()).isEqualTo(NotificationTypeNames.EVENT_REJECTED);
@@ -102,14 +102,14 @@ class EventStatusChangedListenerTest {
         @DisplayName("DRAFT → PENDING_REVIEW is silently ignored — no notification sent")
         void draft_to_pendingReview_ignored() {
             listener.onEventStatusChanged(event("DRAFT", "PENDING_REVIEW", null));
-            verifyNoInteractions(sendNotificationUseCase);
+            verifyNoInteractions(notificationSender);
         }
 
         @Test
         @DisplayName("PUBLISHED → COMPLETED is silently ignored — no notification sent")
         void published_to_completed_ignored() {
             listener.onEventStatusChanged(event("PUBLISHED", "COMPLETED", null));
-            verifyNoInteractions(sendNotificationUseCase);
+            verifyNoInteractions(notificationSender);
         }
     }
 }

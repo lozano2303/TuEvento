@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.messaging;
 
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
-import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
+import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationEntityTypes;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
 import com.capysoft.tuevento.modules.payment.domain.event.PaymentApprovedEvent;
@@ -26,10 +26,10 @@ import java.util.List;
 @Component
 public class PaymentEventListener {
 
-    private final SendNotificationUseCase sendNotificationUseCase;
+    private final NotificationSender notificationSender;
 
-    public PaymentEventListener(SendNotificationUseCase sendNotificationUseCase) {
-        this.sendNotificationUseCase = sendNotificationUseCase;
+    public PaymentEventListener(NotificationSender notificationSender) {
+        this.notificationSender = notificationSender;
     }
 
     @Async
@@ -51,7 +51,7 @@ public class PaymentEventListener {
                     .currency(event.getCurrency())
                     .build();
 
-            sendNotificationUseCase.execute(command);
+            notificationSender.send(command);
             
             log.info("PaymentApprovedEvent processed successfully: paymentId={}", event.getPaymentId());
         } catch (Exception e) {
@@ -78,7 +78,7 @@ public class PaymentEventListener {
                     .currency(event.getCurrency())
                     .build();
 
-            sendNotificationUseCase.execute(command);
+            notificationSender.send(command);
             
             log.info("PaymentRefundedEvent processed successfully: paymentId={}", event.getPaymentId());
         } catch (Exception e) {

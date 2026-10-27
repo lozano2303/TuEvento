@@ -4,7 +4,7 @@ import com.capysoft.tuevento.modules.event.domain.event.EventRatingAddedEvent;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
-import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
+import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationEntityTypes;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
 import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
@@ -42,14 +42,14 @@ import java.util.List;
 @Component
 public class EventRatingNotificationListener {
 
-    private final SendNotificationUseCase sendNotificationUseCase;
+    private final NotificationSender notificationSender;
     private final EventRepository         eventRepository;
     private final ProfileJpaRepository    profileJpaRepository;
 
-    public EventRatingNotificationListener(SendNotificationUseCase sendNotificationUseCase,
+    public EventRatingNotificationListener(NotificationSender notificationSender,
                                           EventRepository eventRepository,
                                           ProfileJpaRepository profileJpaRepository) {
-        this.sendNotificationUseCase = sendNotificationUseCase;
+        this.notificationSender = notificationSender;
         this.eventRepository = eventRepository;
         this.profileJpaRepository = profileJpaRepository;
     }
@@ -120,7 +120,7 @@ public class EventRatingNotificationListener {
                 .idempotencySuffix(idempotencyKey)
                 .build();
 
-        sendNotificationUseCase.execute(command);
+        notificationSender.send(command);
         log.info("[EventRatingNotificationListener] NEW_COMMENT sent to organizerUserId={} for ratingId={}",
                 organizerUserId, event.getRatingId());
     }
@@ -152,7 +152,7 @@ public class EventRatingNotificationListener {
                 .idempotencySuffix(idempotencyKey)
                 .build();
 
-        sendNotificationUseCase.execute(command);
+        notificationSender.send(command);
         log.info("[EventRatingNotificationListener] NEW_REPLY sent to userId={} for ratingId={}",
                 replyToUserId, event.getRatingId());
     }

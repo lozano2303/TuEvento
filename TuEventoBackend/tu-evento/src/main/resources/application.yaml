@@ -12,6 +12,15 @@ spring:
   # Local: el broker del docker-compose publica 9094 al host. Dentro de Docker/k8s: kafka:9092
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    consumer:
+      # Pushes y peticiones de traducción del microservicio de notificaciones (modo remote)
+      auto-offset-reset: earliest
+
+# Dónde se envían las notificaciones:
+#   local  → dentro del monolito (por defecto, comportamiento de siempre)
+#   remote → se publican en Kafka y las envía el microservicio notification-service
+notification:
+  mode: ${NOTIFICATION_MODE:local}
 
 # ── Outbox relay ──────────────────────────────────────────────────────────────
 outbox:
