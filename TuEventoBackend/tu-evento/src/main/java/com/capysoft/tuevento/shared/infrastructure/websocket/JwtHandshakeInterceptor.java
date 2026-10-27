@@ -77,6 +77,13 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             return false;
         }
 
+        // Solo access tokens: el refresh token (7 días) se firma igual pero no lleva rol
+        if (tokenGenerator.extractRole(token).filter(role -> !role.isBlank()).isEmpty()) {
+            log.warn("WebSocket handshake rejected: not an access token");
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            return false;
+        }
+
         // Extraer userId del token y almacenarlo en attributes (disponible en la sesión WS)
         tokenGenerator.extractUserId(token).ifPresentOrElse(
             userId -> {

@@ -14,7 +14,7 @@
 #   LibreTranslate es opcional (≈2 GB de RAM):
 #     docker compose -f docker-compose.prod.yml --env-file .env.prod --profile translate up -d
 # - Límites de memoria pensados para 8 GB de RAM + 4 GB de swap:
-#   ≈6.3 GB sin LibreTranslate y ≈8.3 GB con él (topes, no reservas; con él se usa swap).
+#   ≈7.6 GB sin LibreTranslate y ≈9.6 GB con él (topes, no reservas; el swap cubre el resto).
 # ============================================================
 
 name: tuevento
@@ -300,6 +300,10 @@ services:
       ADMIN_ALIAS: ${ADMIN_ALIAS:-AdminTuEvento}
       APP_PROFILE_DEFAULT_AVATAR_ID: ${APP_PROFILE_DEFAULT_AVATAR_ID:-1}
 
+      # Notificaciones: remote = las envía notification-service por Kafka (local = dentro del backend)
+      NOTIFICATION_MODE: ${NOTIFICATION_MODE:-remote}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
       # Correo
       MAIL_USERNAME: ${MAIL_USERNAME:?}
       MAIL_PASSWORD: ${MAIL_PASSWORD:?}
@@ -333,6 +337,8 @@ services:
         condition: service_healthy
       nsfw-classifier:
         condition: service_started
+      kafka:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 30s
@@ -346,9 +352,10 @@ services:
     logging: *default-logging
     networks:
       - internal
+      - messaging
 
   # ── API gateway: punto de entrada de /api y /ws ────────────────────────────
-  # Envía /api/v1/storage/** al microservicio de archivos y el resto al monolito.
+  # Envía /api/v1/storage/** y /api/v1/notifications/** a sus microservicios y el resto al monolito.
   api-gateway:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:api-gateway-${TUEVENTO_VERSION:?}
     container_name: tuevento-api-gateway
@@ -356,12 +363,15 @@ services:
     environment:
       MONOLITH_URI: http://backend:8080
       STORAGE_SERVICE_URI: http://storage-service:8085
+      NOTIFICATION_SERVICE_URI: http://notification-service:8086
       GATEWAY_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
       JAVA_TOOL_OPTIONS: -Xmx256m
     depends_on:
       backend:
         condition: service_healthy
       storage-service:
+        condition: service_healthy
+      notification-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8090/actuator/health | grep -q UP"]
@@ -421,6 +431,82 @@ services:
     networks:
       - internal
 
+  # ── Kafka (KRaft, un solo nodo) ─────────────────────────────────────────────
+  # Lleva las notificaciones del backend al microservicio y los pushes de vuelta al /ws.
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: tuevento-kafka
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      # Un solo nodo: sin réplicas
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_NUM_PARTITIONS: "3"
+      KAFKA_LOG_RETENTION_HOURS: "168"
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx384m
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    logging: *default-logging
+    networks:
+      # Solo backend y notification-service llegan a Kafka (ver red messaging)
+      - messaging
+
+  # ── Microservicio de notificaciones ────────────────────────────────────────
+  # Misma base de datos que el monolito; valida los JWT con su JWKS. Envía el email y
+  # devuelve los pushes al /ws del backend por Kafka.
+  notification-service:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:notifications-${TUEVENTO_VERSION:?}
+    container_name: tuevento-notification-service
+    restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx320m
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
+      JWK_SET_URI: http://backend:8080/.well-known/jwks.json
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MAIL_USERNAME: ${MAIL_USERNAME:?}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?}
+      NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-true}
+    depends_on:
+      # El backend migra las tablas de notificaciones y publica el JWKS
+      backend:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging: *default-logging
+    networks:
+      - internal
+      - messaging
+
   # ── Frontend (SPA + proxy de /api y /ws al api-gateway) ─────────────────────
   frontend:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:frontend-${TUEVENTO_VERSION:?}
@@ -448,11 +534,18 @@ networks:
   internal:
     name: tuevento-internal
     driver: bridge
+  # Kafka no tiene autenticación: solo los dos servicios que lo usan comparten esta red, así
+  # ningún otro contenedor puede publicar notificaciones (ni elegir a quién se envía un email)
+  messaging:
+    name: tuevento-messaging
+    driver: bridge
+    internal: true
   edge:
     name: tuevento-edge
     driver: bridge
 
 volumes:
+  kafka_data:
   postgres_data:
   postgres_gateway_data:
   rustfs_data:

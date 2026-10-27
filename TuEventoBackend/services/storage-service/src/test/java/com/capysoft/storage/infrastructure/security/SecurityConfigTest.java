@@ -1,12 +1,14 @@
 package com.capysoft.storage.infrastructure.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 
@@ -40,11 +42,13 @@ class SecurityConfigTest {
     }
 
     @Test
-    @DisplayName("un token sin rol queda autenticado pero sin autoridades")
-    void toAuthentication_withoutRole_hasNoAuthorities() {
-        AbstractAuthenticationToken auth = SecurityConfig.toAuthentication(jwt().claim("userId", 7).build());
-
-        assertThat(((SecurityUser) auth.getPrincipal()).getUserId()).isEqualTo(7);
-        assertThat(auth.getAuthorities()).isEmpty();
+    @DisplayName("un refresh token (userId sin rol) o un token sin userId no sirven como access token")
+    void toAuthentication_rejectsNonAccessTokens() {
+        assertThatThrownBy(() -> SecurityConfig.toAuthentication(jwt().claim("userId", 7).build()))
+                .isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> SecurityConfig.toAuthentication(jwt().claim("userId", 7).claim("role", " ").build()))
+                .isInstanceOf(BadCredentialsException.class);
+        assertThatThrownBy(() -> SecurityConfig.toAuthentication(jwt().claim("role", "ADMIN").build()))
+                .isInstanceOf(BadCredentialsException.class);
     }
 }

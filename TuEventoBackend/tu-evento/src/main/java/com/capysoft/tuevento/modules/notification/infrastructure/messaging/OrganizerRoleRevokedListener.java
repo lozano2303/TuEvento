@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.messaging;
 
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
-import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
+import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationEntityTypes;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
 import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedEvent;
@@ -38,7 +38,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OrganizerRoleRevokedListener {
 
-    private final SendNotificationUseCase sendNotificationUseCase;
+    private final NotificationSender notificationSender;
     private final SimpMessagingTemplate   messagingTemplate;
 
     @Async
@@ -64,7 +64,7 @@ public class OrganizerRoleRevokedListener {
                     .idempotencySuffix(suffix)
                     .build();
 
-            sendNotificationUseCase.execute(command);
+            notificationSender.send(command);
 
             log.info("[OrganizerRoleRevokedListener] Notification sent to userId={}", event.getUserId());
 

@@ -1,0 +1,69 @@
+package com.capysoft.tuevento.modules.notification.infrastructure.remote;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
+
+import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
+import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
+import com.capysoft.tuevento.modules.profile.domain.model.Profile;
+import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
+import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Modo {@code remote}: publica la notificación en {@link NotificationTopics#COMMANDS} para que
+ * la envíe el microservicio. Los listeners que llaman aquí corren tras el commit, así que solo
+ * se publica lo confirmado. Un fallo de Kafka se registra y no rompe el flujo que lo originó:
+ * se pierde ese aviso, igual que si fallara el envío local.
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+@ConditionalOnProperty(name = "notification.mode", havingValue = "remote")
+public class KafkaNotificationSender implements NotificationSender {
+
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper objectMapper;
+    private final LoginCredentialsRepository loginCredentialsRepository;
+    private final ProfileRepository profileRepository;
+
+    @Override
+    public void send(SendNotificationCommand command) {
+        if (command == null || command.getUserIds() == null || command.getUserIds().isEmpty()) {
+            log.warn("Notification not published: no recipients, type={}", command == null ? null : command.getTypeName());
+            return;
+        }
+        try {
+            NotificationCommandMessage message = new NotificationCommandMessage(
+                    UUID.randomUUID().toString(), Instant.now(), toMessage(command), recipients(command.getUserIds()));
+            // Clave = primer destinatario: sus avisos van a la misma partición y conservan el orden
+            kafkaTemplate.send(NotificationTopics.COMMANDS, String.valueOf(command.getUserIds().get(0)),
+                    objectMapper.writeValueAsString(message));
+        } catch (Exception e) {
+            log.error("Could not publish notification type={} entityId={}", command.getTypeName(), command.getEntityId(), e);
+        }
+    }
+
+    private List<NotificationCommandMessage.Recipient> recipients(List<Integer> userIds) {
+        return userIds.stream()
+                .map(userId -> new NotificationCommandMessage.Recipient(
+                        userId,
+                        loginCredentialsRepository.findEmailByUserId(userId).orElse(null),
+                        profileRepository.findByUserId(userId).map(Profile::getPreferredLanguageId).orElse(null)))
+                .toList();
+    }
+
+    private static NotificationCommandMessage.Command toMessage(SendNotificationCommand c) {
+        return new NotificationCommandMessage.Command(c.getTypeName(), c.getEntityType(), c.getEntityId(),
+                c.getUserIds(), c.getGatewayAmount(), c.getWalletAmount(), c.getCreditedAmount(), c.getCurrency(),
+                c.getReason(), c.getIdempotencySuffix(), c.getEventName(), c.getCommenterName());
+    }
+}

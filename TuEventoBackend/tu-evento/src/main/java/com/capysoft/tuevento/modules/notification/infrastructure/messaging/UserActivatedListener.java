@@ -11,7 +11,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
-import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
+import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
 import com.capysoft.tuevento.modules.profile.domain.model.Profile;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
@@ -29,7 +29,7 @@ public class UserActivatedListener {
 
     private static final Logger log = LoggerFactory.getLogger(UserActivatedListener.class);
 
-    private final SendNotificationUseCase sendNotificationUseCase;
+    private final NotificationSender notificationSender;
     private final ProfileRepository profileRepository;
 
     @Async
@@ -51,7 +51,7 @@ public class UserActivatedListener {
                     .reason(fullName) // Use reason field to pass the user's name
                     .build();
 
-            sendNotificationUseCase.execute(command);
+            notificationSender.send(command);
             log.info("Welcome notification sent to user: userId={}, name={}", event.getUserId(), fullName);
 
         } catch (Exception e) {
