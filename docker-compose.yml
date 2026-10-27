@@ -332,7 +332,8 @@ services:
       - GEOLOCATION_SERVICE_URI=http://geolocation-service:8087
       # /api/v1/notifications va al microservicio; para volver al monolito, quitar esta variable
       - NOTIFICATION_SERVICE_URI=http://notification-service:8086
-      # /api/v1/themes y /api/v1/profiles van al microservicio de Identidad; para volver al monolito, quitar esta variable
+      # /api/v1/auth, /api/v1/users (salvo la solicitud de organizador), /api/v1/themes y /api/v1/profiles
+      # van al microservicio de Identidad; para volver al monolito, quitar esta variable
       - IDENTITY_SERVICE_URI=http://identity-service:8088
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -489,7 +490,7 @@ services:
       - tuevento-network
 
   # ── Microservicio de Identidad ─────────────────────────────────────────────
-  # Temas y perfiles de usuario sobre la misma base que el backend.
+  # Login, sesiones, cuentas, temas y perfiles de usuario sobre la misma base que el backend.
   identity-service:
     build:
       context: ./TuEventoBackend/services
@@ -498,7 +499,19 @@ services:
     restart: unless-stopped
     ports:
       - "8088:8088"
+    volumes:
+      # La MISMA clave RS256 que el backend: los tokens que firma uno los valida el otro
+      - ./TuEventoBackend/tu-evento/src/main/resources/keys:/run/secrets:ro
     environment:
+      - APP_JWT_PRIVATE_KEY_PATH=file:/run/secrets/jwt-private.pem
+      - APP_JWT_ACCESS_TOKEN_EXPIRATION=900000
+      - APP_JWT_REFRESH_TOKEN_EXPIRATION=604800000
+      # En local la web va por http: la cookie del refresh token no puede ser Secure
+      - AUTH_COOKIE_SECURE=false
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}

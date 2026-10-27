@@ -360,7 +360,8 @@ services:
 
   # ── API gateway: punto de entrada de /api y /ws ────────────────────────────
   # Envía /api/v1/storage/**, /api/v1/notifications/**, /api/v1/geolocation/** y
-  # /api/v1/themes/** y /api/v1/profiles/** a sus microservicios y el resto al monolito.
+  # /api/v1/themes/**, /api/v1/profiles/**, /api/v1/auth/** y la cuenta del usuario a sus
+  # microservicios y el resto al monolito.
   api-gateway:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:api-gateway-${TUEVENTO_VERSION:?}
     container_name: tuevento-api-gateway
@@ -560,13 +561,26 @@ services:
       - internal
 
   # ── Microservicio de Identidad ─────────────────────────────────────────────
-  # Temas y perfiles de usuario; misma base de datos que el monolito.
+  # Login, sesiones, cuentas, temas y perfiles de usuario; misma base de datos que el monolito.
   identity-service:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:identity-${TUEVENTO_VERSION:?}
     container_name: tuevento-identity-service
     restart: unless-stopped
     environment:
       JAVA_TOOL_OPTIONS: -Xmx256m
+      # La MISMA clave RS256 que el backend: los tokens que firma uno los valida el otro
+      APP_JWT_PRIVATE_KEY: ${APP_JWT_PRIVATE_KEY:?}
+      JWT_SECRET: ${JWT_SECRET:-}
+      AUTH_COOKIE_SAME_SITE: ${AUTH_COOKIE_SAME_SITE:-Strict}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
+      APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS: ${APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS:?}
+      APP_OAUTH_GOOGLE_REDIRECT_URI: ${APP_OAUTH_GOOGLE_REDIRECT_URI:?}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MAIL_USERNAME: ${MAIL_USERNAME:?}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?}
+      # nginx-proxy-manager y el nginx del frontend añaden su entrada a X-Forwarded-For (igual que en el backend)
+      RATE_LIMIT_TRUSTED_PROXIES: "2"
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
