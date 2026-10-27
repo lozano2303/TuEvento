@@ -538,7 +538,13 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
       JWK_SET_URI: http://backend:8080/.well-known/jwks.json
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
     depends_on:
+      redis:
+        condition: service_healthy
       backend:
         condition: service_healthy
     healthcheck:
