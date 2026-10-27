@@ -27,7 +27,7 @@ solo llega al backend por `/api` y `/ws`.
 
 ## 2. Imágenes `v1.0.0` (build y push)
 
-Las 6 imágenes van al repositorio `jhampier23/tu-evento` de Docker Hub, diferenciadas
+Las 7 imágenes van al repositorio `jhampier23/tu-evento` de Docker Hub, diferenciadas
 por prefijo de tag. `docker-compose.prod.yml` no usa `build:`; la pasarela simulada
 también necesita su imagen porque la compra de tickets depende de ella.
 
@@ -39,6 +39,7 @@ también necesita su imagen porque la compra de tickets depende de ella.
 | fake-payment-gateway | `jhampier23/tu-evento:gateway-v1.0.0` |
 | api-gateway (entrada de `/api` y `/ws`) | `jhampier23/tu-evento:api-gateway-v1.0.0` |
 | storage-service (microservicio de archivos) | `jhampier23/tu-evento:storage-v1.0.0` |
+| notification-service (microservicio de notificaciones) | `jhampier23/tu-evento:notifications-v1.0.0` |
 
 Desde la raíz del repo, con `.env.prod` ya completo (solo se leen las `VITE_*`).
 Si se construye en una máquina ARM (p. ej. Mac M1+), añadir `--platform linux/amd64`
@@ -71,7 +72,10 @@ docker push jhampier23/tu-evento:frontend-v1.0.0
 docker push jhampier23/tu-evento:nsfw-v1.0.0
 docker push jhampier23/tu-evento:gateway-v1.0.0
 docker push jhampier23/tu-evento:api-gateway-v1.0.0
+docker build -t jhampier23/tu-evento:notifications-v1.0.0 -f TuEventoBackend/services/notification-service/Dockerfile TuEventoBackend/services
+
 docker push jhampier23/tu-evento:storage-v1.0.0
+docker push jhampier23/tu-evento:notifications-v1.0.0
 ```
 
 Build args de producción del frontend (Vite los incrusta en el bundle; cambiarlos
@@ -85,8 +89,8 @@ exige reconstruir la imagen):
 
 ### Publicar una versión: qué imágenes reconstruir y cuáles reetiquetar
 
-`docker-compose.prod.yml` usa un único `TUEVENTO_VERSION` para las 6 imágenes, así que
-**los 6 tags tienen que existir** con la versión nueva o el stack falla al hacer pull.
+`docker-compose.prod.yml` usa un único `TUEVENTO_VERSION` para las 7 imágenes, así que
+**los 7 tags tienen que existir** con la versión nueva o el stack falla al hacer pull.
 
 **Regla:** reconstruye las imágenes cuyo código cambió desde la versión anterior y
 **reetiqueta solo las que no cambiaron**. Reetiquetar copia el manifiesto de la versión
@@ -100,7 +104,8 @@ desde el commit de la versión (el tag `vX.Y.Z` en `main`, ver `docs/versioning.
 | gateway | `gateway-vX.Y.Z` | `fake-payment-gateway` |
 | nsfw | `nsfw-vX.Y.Z` | `nsfw-service` |
 | api-gateway | `api-gateway-vX.Y.Z` | `TuEventoBackend/gateway` |
-| storage | `storage-vX.Y.Z` | `TuEventoBackend/services` |
+| storage | `storage-vX.Y.Z` | `TuEventoBackend/services/storage-service` y `tuevento-common` |
+| notifications | `notifications-vX.Y.Z` | `TuEventoBackend/services/notification-service` y `tuevento-common` |
 
 Para cada carpeta, compara con el tag anterior; si no sale nada, esa imagen se reetiqueta:
 
@@ -367,8 +372,10 @@ La app móvil debe apuntar a `https://tuevento.example.com/api/v1`.
 | redis | 192 MB | `maxmemory 128mb`, sin persistencia |
 | storage-service | 512 MB | `-Xmx320m` |
 | api-gateway | 384 MB | `-Xmx256m` |
+| notification-service | 512 MB | `-Xmx320m` |
+| kafka | 768 MB | `-Xmx384m`, KRaft de un nodo |
 | frontend | 64 MB | |
 | libretranslate (opcional) | 2048 MB | perfil `translate` |
 
-Total ≈ 6.3 GB sin LibreTranslate y ≈ 8.3 GB con él (topes, no reservas; con
-LibreTranslate el swap absorbe la diferencia y los picos puntuales).
+Total ≈ 7.6 GB sin LibreTranslate y ≈ 9.6 GB con él (topes, no reservas: el uso real
+es menor; con LibreTranslate el swap absorbe la diferencia y los picos puntuales).

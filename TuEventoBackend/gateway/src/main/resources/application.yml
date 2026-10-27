@@ -62,6 +62,20 @@ spring:
                 # tarda más de 30 s. Mismo margen que el proxy de nginx que la atendía antes.
                 response-timeout: 120000
 
+            # ── Microservicio de notificaciones ─────────────────────────────────
+            # Bandeja in-app (GET /me, /me/unread-count, PATCH /{id}/read, /me/read-all).
+            # NOTIFICATION_SERVICE_URI apunta al microservicio; sin la variable vuelve al monolito.
+            # El envío lo decide NOTIFICATION_MODE del monolito (local | remote), no esta ruta.
+            - id: notification-service
+              uri: ${NOTIFICATION_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
+              predicates:
+                - Path=/api/v1/notifications/**
+              filters:
+                - PreserveHostHeader
+              metadata:
+                connect-timeout: 5000
+                response-timeout: 30000
+
             # ── API REST principal ────────────────────────────────────────────────
             # Captura todo /api/v1/** y lo reenvía al monolito sin modificar la ruta.
             # En Fases 1-5 se irán añadiendo rutas específicas ANTES de esta.
@@ -111,7 +125,8 @@ management:
         include: health,info,metrics
   endpoint:
     health:
-      show-details: always
+      # El estado (UP/DOWN) es público para los healthchecks; el detalle, solo autenticado
+      show-details: when-authorized
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging:

@@ -143,8 +143,9 @@ services:
     container_name: tuevento-kafka
     restart: unless-stopped
     ports:
-      # Puerto externo para herramientas de desarrollo (ej: kafka-ui, kafkacat)
-      - "9094:9094"
+      # Puerto externo para herramientas de desarrollo (ej: kafka-ui, kafkacat).
+      # Solo en localhost: quien escribe en los topics decide a quién se envían emails
+      - "127.0.0.1:9094:9094"
     environment:
       # Modo KRaft: broker + controller en un solo nodo (suficiente para dev)
       KAFKA_CFG_NODE_ID: "1"
@@ -289,6 +290,8 @@ services:
       - TRANSLATION_LIBRETRANSLATE_BASE_URL=http://libretranslate:5000
       - TRANSLATION_PROTECTED_TERMS=${TRANSLATION_PROTECTED_TERMS:-Tu Evento}
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      # Las notificaciones las envía notification-service (local = dentro del backend)
+      - NOTIFICATION_MODE=remote
     depends_on:
       postgres:
         condition: service_started
@@ -322,6 +325,8 @@ services:
       - MONOLITH_URI=http://backend:8080
       # /api/v1/storage va al microservicio; para volver al monolito, quitar esta variable
       - STORAGE_SERVICE_URI=http://storage-service:8085
+      # /api/v1/notifications va al microservicio; para volver al monolito, quitar esta variable
+      - NOTIFICATION_SERVICE_URI=http://notification-service:8086
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - GATEWAY_CORS_ALLOWED_ORIGINS=${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000}
@@ -330,6 +335,8 @@ services:
       backend:
         condition: service_started
       storage-service:
+        condition: service_started
+      notification-service:
         condition: service_started
       redis:
         condition: service_started
@@ -386,6 +393,43 @@ services:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - tuevento-network
+
+  # ── Microservicio de notificaciones ────────────────────────────────────────
+  # Recibe por Kafka las notificaciones que decide el backend (NOTIFICATION_MODE=remote),
+  # las guarda en la misma base, envía el email y devuelve los pushes al /ws del backend.
+  notification-service:
+    build:
+      context: ./TuEventoBackend/services
+      dockerfile: notification-service/Dockerfile
+    container_name: tuevento-notification-service
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - JWK_SET_URI=http://backend:8080/.well-known/jwks.json
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - NOTIFICATION_EMAIL_ENABLED=${NOTIFICATION_EMAIL_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+      # El backend migra las tablas y publica el JWKS
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health | grep -q UP"]
       interval: 10s
       timeout: 5s
       retries: 5
