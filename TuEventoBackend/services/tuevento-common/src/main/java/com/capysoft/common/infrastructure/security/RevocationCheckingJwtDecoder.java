@@ -56,8 +56,15 @@ public class RevocationCheckingJwtDecoder implements JwtDecoder {
         return jwt.getIssuedAt();
     }
 
-    /** La lista de revocación no respondió; la respuesta debe ser 503, no 401. */
-    public static class RevocationUnavailableException extends JwtException {
+    /**
+     * La lista de revocación no respondió; la respuesta debe ser 503, no 401.
+     *
+     * <p>Extiende {@link BadJwtException} a propósito: {@code JwtAuthenticationProvider} solo
+     * entrega al entry point (con esta excepción como causa) los {@code BadJwtException}; cualquier
+     * otro {@code JwtException} lo convierte en {@code AuthenticationServiceException}, que se
+     * relanza y acaba en un 401 genérico sin pasar por {@link RevocationAwareAuthenticationEntryPoint}.
+     */
+    public static class RevocationUnavailableException extends BadJwtException {
         public RevocationUnavailableException(Throwable cause) {
             super("Token revocation store unavailable", cause);
         }

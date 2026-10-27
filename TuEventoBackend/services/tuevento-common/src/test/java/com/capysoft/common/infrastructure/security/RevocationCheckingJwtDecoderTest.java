@@ -3,6 +3,7 @@ package com.capysoft.common.infrastructure.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -18,13 +19,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
+import org.springframework.security.web.authentication.AuthenticationEntryPointFailureHandler;
 
 @DisplayName("Revocación de tokens en los microservicios")
 class RevocationCheckingJwtDecoderTest {
@@ -112,18 +116,30 @@ class RevocationCheckingJwtDecoderTest {
     }
 
     @Test
-    @DisplayName("el entry point responde 503 si falló la lista de revocación y 401 en lo demás")
-    void entryPointDistinguishesUnavailable() throws Exception {
-        RevocationAwareAuthenticationEntryPoint entryPoint = new RevocationAwareAuthenticationEntryPoint();
-
-        MockHttpServletResponse unavailable = new MockHttpServletResponse();
-        entryPoint.commence(new MockHttpServletRequest(), unavailable, new AuthenticationServiceException("x",
-                new RevocationCheckingJwtDecoder.RevocationUnavailableException(new RuntimeException("down"))));
+    @DisplayName("por la cadena real de Spring: Redis caído → 503 AUTH_UNAVAILABLE; token revocado → 401")
+    void filterChainAnswers503WhenRevocationIsUnavailable() throws Exception {
+        jwt(15);
+        when(values.multiGet(anyList())).thenThrow(new RedisConnectionFailureException("down"));
+        MockHttpServletResponse unavailable = authenticate();
         assertThat(unavailable.getStatus()).isEqualTo(503);
         assertThat(unavailable.getContentAsString()).contains("AUTH_UNAVAILABLE");
 
-        MockHttpServletResponse revoked = new MockHttpServletResponse();
-        entryPoint.commence(new MockHttpServletRequest(), revoked, new InvalidBearerTokenException("revoked"));
+        doReturn(Arrays.asList(null, "1")).when(values).multiGet(anyList());
+        MockHttpServletResponse revoked = authenticate();
         assertThat(revoked.getStatus()).isEqualTo(401);
+        assertThat(revoked.getHeader("WWW-Authenticate")).contains("invalid_token");
+    }
+
+    /** Igual que lo monta oauth2ResourceServer().authenticationEntryPoint(...) en cada servicio. */
+    private MockHttpServletResponse authenticate() throws Exception {
+        BearerTokenAuthenticationFilter filter =
+                new BearerTokenAuthenticationFilter(new ProviderManager(new JwtAuthenticationProvider(decoder)));
+        filter.setAuthenticationFailureHandler(
+                new AuthenticationEntryPointFailureHandler(new RevocationAwareAuthenticationEntryPoint()));
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/files");
+        request.addHeader("Authorization", "Bearer tok");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        filter.doFilter(request, response, new MockFilterChain());
+        return response;
     }
 }
