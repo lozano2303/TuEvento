@@ -6,6 +6,7 @@ import com.capysoft.tuevento.modules.language.domain.repository.LanguageReposito
 import com.capysoft.tuevento.modules.language.domain.repository.ProfileTranslationRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.modules.profile.application.dto.response.ProfileResponse;
+import com.capysoft.tuevento.modules.profile.application.mapper.ProfileResponseAssembler;
 import com.capysoft.tuevento.modules.profile.application.port.in.GetProfileByUserIdPort;
 import com.capysoft.tuevento.modules.profile.domain.model.Profile;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 public class GetProfileByUserIdUseCase implements GetProfileByUserIdPort {
 
     private final ProfileRepository profileRepository;
+    private final ProfileResponseAssembler responseAssembler;
     private final LanguageRepository languageRepository;
     private final ProfileTranslationRepository profileTranslationRepository;
     private final TranslationJobRepository translationJobRepository;
@@ -111,16 +113,7 @@ public class GetProfileByUserIdUseCase implements GetProfileByUserIdPort {
             }
         }
 
-        return ProfileResponse.builder()
-                .profileId(p.getProfileId())
-                .userId(p.getUserId())
-                .cityId(p.getCity() != null ? p.getCity().getCityId() : null)
-                .cityName(p.getCity() != null ? p.getCity().getName() : null)
-                .departmentName(p.getCity() != null && p.getCity().getDepartment() != null
-                        ? p.getCity().getDepartment().getName() : null)
-                .storedFileId(p.getStoredFileId())
-                .fullName(p.getFullName())
-                .bio(p.getBio())
+        return responseAssembler.builder(p)
                 .preferredLanguageId(p.getPreferredLanguageId())
                 .nameChangedAt(p.getNameChangedAt())
                 // Translation fields

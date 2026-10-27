@@ -9,7 +9,7 @@ import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort;
+import com.capysoft.tuevento.modules.event.application.port.out.SiteLookupPort;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ public class GetEventService implements GetEventUseCase {
 
     private final EventRepository      eventRepository;
     private final CategoryEventUseCase categoryEventUseCase;
-    private final GetSitePort          getSitePort;
+    private final SiteLookupPort       siteLookupPort;
     private final EventMediaRepository eventMediaRepository;
     private final com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository ticketRepository;
 
@@ -142,7 +142,7 @@ public class GetEventService implements GetEventUseCase {
 
         String siteName = null;
         try {
-            siteName = getSitePort.getSite(Math.toIntExact(e.getSiteId())).getName();
+            siteName = siteLookupPort.getSite(Math.toIntExact(e.getSiteId())).name();
         } catch (Exception ex) {
             log.warn("Could not resolve siteName for event {}: {}", e.getEventId(), ex.getMessage());
         }
@@ -266,7 +266,7 @@ public class GetEventService implements GetEventUseCase {
     private EventSummaryResponse toSummary(Event e) {
         String siteName = null;
         try {
-            siteName = getSitePort.getSite(Math.toIntExact(e.getSiteId())).getName();
+            siteName = siteLookupPort.getSite(Math.toIntExact(e.getSiteId())).name();
         } catch (Exception ex) {
             log.warn("Could not resolve siteName for event {}: {}", e.getEventId(), ex.getMessage());
         }

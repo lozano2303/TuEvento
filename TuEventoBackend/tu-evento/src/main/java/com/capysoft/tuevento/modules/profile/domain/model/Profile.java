@@ -1,6 +1,5 @@
 package com.capysoft.tuevento.modules.profile.domain.model;
 
-import com.capysoft.tuevento.modules.geolocation.domain.model.City;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -14,7 +13,7 @@ public class Profile {
 
     private Long profileId;
     private Integer userId;
-    private City city;
+    private Integer cityId;
     private Integer storedFileId;
     private String fullName;
     private String bio;
