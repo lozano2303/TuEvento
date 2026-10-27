@@ -46,6 +46,8 @@ public class SecurityConfig {
                         // El perfil público de un usuario (nombre, foto, biografía) se lee sin sesión;
                         // crearlo y editarlo exige ser su dueño o ADMIN (en ProfileController)
                         .requestMatchers(HttpMethod.GET, "/api/v1/profiles/user/**").permitAll()
+                        // Panel de admin y traducciones de perfiles: solo ADMIN (además del @PreAuthorize)
+                        .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

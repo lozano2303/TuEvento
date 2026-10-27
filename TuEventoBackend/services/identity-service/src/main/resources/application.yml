@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: identity-service
+  # Documento de la solicitud de organizador: mismos límites que el monolito
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
   # Misma base de datos que el monolito: las tablas de usuarios y sesiones, de temas y de perfiles
   # las crea y migra su Liquibase (también los datos iniciales).
   datasource:

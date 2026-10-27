@@ -8,20 +8,23 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 @Tag(name = "Users", description = "Protected endpoints for authenticated users")
-// La solicitud de organizador (POST /organizer-request, GET /organizer-petition) sigue en el monolito
-// hasta el corte del panel de admin: sube el documento a Archivos y la revisan los admins
 public class UserController {
 
     private final ChangePasswordPort    changePasswordPort;
     private final LinkOauthAccountPort  linkOauthAccountPort;
+    private final RequestOrganizerPort  requestOrganizerPort;
+    private final GetPetitionStatusPort getPetitionStatusPort;
     private final DeactivateAccountPort deactivateAccountPort;
 
     @Operation(summary = "Change password for the authenticated user")
@@ -38,6 +41,29 @@ public class UserController {
             @Valid @RequestBody LinkOauthAccountRequest request) {
         LinkOauthAccountResponse response = linkOauthAccountPort.link(request);
         return ResponseEntity.ok(ApiResponse.ok("OAuth account linked successfully", response));
+    }
+
+    @Operation(summary = "Submit a request to become an organizer")
+    @PostMapping(value = "/organizer-request", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<RequestOrganizerResponse>> requestOrganizer(
+            @RequestParam("document") MultipartFile document,
+            @RequestParam(value = "documentType", required = false) String documentType) {
+        RequestOrganizerRequest request = RequestOrganizerRequest.builder()
+                .document(document)
+                .documentType(documentType)
+                .build();
+        RequestOrganizerResponse response = requestOrganizerPort.request(request);
+        return ResponseEntity.ok(ApiResponse.ok("Organizer request submitted successfully", response));
+    }
+
+    @Operation(summary = "Get the current user's organizer petition status")
+    @GetMapping("/organizer-petition")
+    public ResponseEntity<ApiResponse<RequestOrganizerResponse>> getPetitionStatus() {
+        RequestOrganizerResponse response = getPetitionStatusPort.getByUserId();
+        if (response == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(ApiResponse.ok("Petition status retrieved", response));
     }
 
     @Operation(summary = "Deactivate the authenticated user's account")

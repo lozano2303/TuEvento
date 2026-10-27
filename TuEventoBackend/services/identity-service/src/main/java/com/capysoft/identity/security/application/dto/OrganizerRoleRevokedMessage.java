@@ -14,8 +14,11 @@ public record OrganizerRoleRevokedMessage(
         String alias,
         Integer revokedBy,
         String reason,
-        String occurredAt) {
+        String occurredAt,
+        String origin) {
 
     public static final String AGGREGATE_TYPE = "user";
+    /** Quién publicó el evento: el monolito solo reenvía a sus listeners los de identity-service. */
+    public static final String ORIGIN = "identity-service";
     public static final String EVENT_TYPE = "OrganizerRoleRevoked";
 }

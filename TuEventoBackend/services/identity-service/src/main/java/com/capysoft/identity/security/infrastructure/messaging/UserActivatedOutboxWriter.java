@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.capysoft.identity.security.application.dto.OrganizerRoleRevokedMessage;
 import com.capysoft.identity.security.domain.event.UserActivatedEvent;
 import com.capysoft.identity.shared.infrastructure.outbox.OutboxEventPublisher;
 
@@ -25,14 +26,16 @@ public class UserActivatedOutboxWriter {
 
     private final OutboxEventPublisher outboxEventPublisher;
 
-    public record UserActivatedMessage(Integer userId, String alias, String occurredAt) {
+    /** {@code origin}: el monolito solo reenvía a sus listeners los eventos de identity-service. */
+    public record UserActivatedMessage(Integer userId, String alias, String occurredAt, String origin) {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onUserActivated(UserActivatedEvent event) {
         outboxEventPublisher.publish("user", String.valueOf(event.getUserId()), EVENT_TYPE,
                 new UserActivatedMessage(event.getUserId(), event.getAlias(),
-                        event.getOccurredAt() == null ? null : event.getOccurredAt().toString()),
+                        event.getOccurredAt() == null ? null : event.getOccurredAt().toString(),
+                        OrganizerRoleRevokedMessage.ORIGIN),
                 UUID.nameUUIDFromBytes((EVENT_TYPE + ":" + event.getUserId()).getBytes(StandardCharsets.UTF_8)));
     }
 }
