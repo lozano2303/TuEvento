@@ -1,0 +1,42 @@
+server:
+  port: ${GEOLOCATION_SERVICE_PORT:8087}
+
+spring:
+  application:
+    name: geolocation-service
+  # Misma base de datos que el monolito: department, city y site las crea y migra su
+  # Liquibase (también los datos iniciales). event y profile siguen leyéndolas desde el monolito.
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/tuevento_db}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:postgres}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:postgres}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # Pocas conexiones: comparte el límite de la base con el monolito
+      maximum-pool-size: ${GEOLOCATION_DB_POOL_SIZE:5}
+  jpa:
+    hibernate:
+      # Falla al arrancar si las entidades no coinciden con las tablas del monolito
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      # El estado (UP/DOWN) es público para los healthchecks; el detalle, solo autenticado
+      show-details: when-authorized
+
+logging:
+  level:
+    com.capysoft.geolocation: INFO
