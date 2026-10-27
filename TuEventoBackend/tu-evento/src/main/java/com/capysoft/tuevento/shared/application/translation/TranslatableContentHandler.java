@@ -1,4 +1,4 @@
-package com.capysoft.tuevento.modules.language.application.port.out;
+package com.capysoft.tuevento.shared.application.translation;
 
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Port para desacoplar el módulo language de otros módulos.
+ * Contenido traducible de un dominio: de aquí se lee el texto original y aquí se guarda su traducción.
  * Cada módulo dueño de contenido traducible implementa este port.
  */
 public interface TranslatableContentHandler {

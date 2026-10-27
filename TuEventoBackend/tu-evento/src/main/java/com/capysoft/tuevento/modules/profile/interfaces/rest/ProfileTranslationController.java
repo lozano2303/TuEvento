@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.profile.interfaces.rest;
 
-import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.profile.domain.model.Profile;
 import com.capysoft.tuevento.modules.profile.domain.model.ProfileTranslation;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
@@ -37,7 +37,7 @@ public class ProfileTranslationController {
 
     private final ProfileTranslationRepository profileTranslationRepository;
     private final ProfileRepository profileRepository;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
 
     @GetMapping("/{languageCode}")
     @Operation(summary = "Obtener todas las traducciones de perfiles para un idioma")
@@ -45,7 +45,7 @@ public class ProfileTranslationController {
             @PathVariable String languageCode,
             @RequestParam(defaultValue = TranslationAdminSupport.FILTER_ALL) String filter) {
 
-        Optional<Language> language = languageRepository.findByCode(languageCode.toLowerCase());
+        Optional<LanguageSummary> language = languageCatalog.findByCode(languageCode.toLowerCase());
         if (language.isEmpty()) {
             log.warn("Language not found: {}", languageCode);
             return ResponseEntity.badRequest().build();
@@ -82,7 +82,7 @@ public class ProfileTranslationController {
         if (profileRepository.findById(profileId).isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of(ERROR, "Profile not found with ID: " + profileId));
         }
-        Optional<Language> language = languageRepository.findById(languageId);
+        Optional<LanguageSummary> language = languageCatalog.findById(languageId);
         if (language.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of(ERROR, "Language not found with ID: " + languageId));
         }

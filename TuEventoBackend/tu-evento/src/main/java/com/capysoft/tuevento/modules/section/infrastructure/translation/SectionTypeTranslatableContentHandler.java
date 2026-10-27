@@ -2,10 +2,10 @@ package com.capysoft.tuevento.modules.section.infrastructure.translation;
 
 import com.capysoft.tuevento.modules.section.domain.model.SectionType;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeRepository;
-import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
+import com.capysoft.tuevento.shared.application.translation.TranslatableContentHandler;
 import com.capysoft.tuevento.modules.section.domain.model.SectionTypeTranslation;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class SectionTypeTranslatableContentHandler implements TranslatableConten
 
     private final SectionTypeRepository sectionTypeRepository;
     private final SectionTypeTranslationRepository sectionTypeTranslationRepository;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
 
     @Override
     public String entityType() {
@@ -64,7 +64,7 @@ public class SectionTypeTranslatableContentHandler implements TranslatableConten
         log.debug("Saving translation for section type {} in language {}: {}", entityId, languageCode, translatedTexts);
         
         // 1. Buscar el idioma por código
-        var language = languageRepository.findByCode(languageCode);
+        var language = languageCatalog.findByCode(languageCode);
         if (language.isEmpty()) {
             log.warn("Language {} not found for saving translation", languageCode);
             return;
@@ -120,7 +120,7 @@ public class SectionTypeTranslatableContentHandler implements TranslatableConten
     public Optional<TranslationStatus> findTranslationStatus(Long entityId, String languageCode) {
         log.debug("Finding translation status for section type {} in language {}", entityId, languageCode);
         
-        var language = languageRepository.findByCode(languageCode);
+        var language = languageCatalog.findByCode(languageCode);
         if (language.isEmpty()) {
             return Optional.empty();
         }

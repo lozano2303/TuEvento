@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.theme.application.usecase;
 
-import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.theme.application.dto.response.ThemeResponse;
 import com.capysoft.tuevento.modules.theme.application.mapper.ThemeAppMapper;
 import com.capysoft.tuevento.modules.theme.domain.model.Theme;
@@ -34,7 +34,7 @@ class GetThemesUseCaseTest {
 
     private final ThemeRepository themes = mock(ThemeRepository.class);
     private final ThemeAppMapper mapper = mock(ThemeAppMapper.class);
-    private final LanguageRepository languages = mock(LanguageRepository.class);
+    private final LanguageCatalog languages = mock(LanguageCatalog.class);
     private final ThemeTranslationRepository translations = mock(ThemeTranslationRepository.class);
     private final GetThemesUseCase useCase = new GetThemesUseCase(themes, mapper, languages, translations);
 
@@ -53,7 +53,7 @@ class GetThemesUseCaseTest {
             Theme theme = inv.getArgument(0);
             return ThemeResponse.builder().id(theme.getId()).name(theme.getName()).build();
         });
-        when(languages.findByCode("en")).thenReturn(Optional.of(Language.builder().languageId(2).code("en").build()));
+        when(languages.findByCode("en")).thenReturn(Optional.of(LanguageSummary.builder().languageId(2).code("en").build()));
     }
 
     @Test

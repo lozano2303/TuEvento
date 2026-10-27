@@ -7,8 +7,8 @@ import com.capysoft.tuevento.modules.event.domain.model.EventRatingTranslation;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingTranslationRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import com.capysoft.tuevento.shared.interfaces.translation.TranslationAdminSupport;
@@ -39,7 +39,7 @@ public class EventRatingTranslationController {
 
     private final EventRatingTranslationRepository eventRatingTranslationRepository;
     private final EventRatingRepository eventRatingRepository;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
     private final TranslationRequests translationRequests;
     private final EventRepository eventRepository;
 
@@ -50,7 +50,7 @@ public class EventRatingTranslationController {
             @RequestParam(required = false) Long eventId,
             @RequestParam(defaultValue = TranslationAdminSupport.FILTER_ALL) String filter) {
 
-        Optional<Language> language = languageRepository.findByCode(languageCode);
+        Optional<LanguageSummary> language = languageCatalog.findByCode(languageCode);
         if (language.isEmpty()) {
             log.warn("Language not found: {}", languageCode);
             return ResponseEntity.badRequest().build();

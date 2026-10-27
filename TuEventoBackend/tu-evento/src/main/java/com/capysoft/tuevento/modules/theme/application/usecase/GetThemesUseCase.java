@@ -1,8 +1,8 @@
 package com.capysoft.tuevento.modules.theme.application.usecase;
 
-import com.capysoft.tuevento.modules.language.domain.model.Language;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
 import com.capysoft.tuevento.modules.theme.domain.model.ThemeTranslation;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.theme.domain.repository.ThemeTranslationRepository;
 import com.capysoft.tuevento.modules.theme.application.dto.response.ThemeResponse;
 import com.capysoft.tuevento.modules.theme.application.mapper.ThemeAppMapper;
@@ -24,7 +24,7 @@ public class GetThemesUseCase implements GetThemesPort {
 
     private final ThemeRepository themeRepository;
     private final ThemeAppMapper mapper;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
     private final ThemeTranslationRepository themeTranslationRepository;
 
     @Override
@@ -44,7 +44,7 @@ public class GetThemesUseCase implements GetThemesPort {
         }
         
         // Find target language
-        Optional<Language> language = languageRepository.findByCode(languageCode.toLowerCase());
+        Optional<LanguageSummary> language = languageCatalog.findByCode(languageCode.toLowerCase());
         if (language.isEmpty()) {
             log.warn("Language not found: {}, returning themes without translations", languageCode);
             return themes.stream()

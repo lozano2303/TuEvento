@@ -4,8 +4,8 @@ import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventTranslation;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import org.junit.jupiter.api.DisplayName;
@@ -27,13 +27,13 @@ import static org.mockito.Mockito.when;
 @DisplayName("EventTranslationController")
 class EventTranslationControllerTest {
 
-    private static final Language EN = Language.builder().languageId(2).code("en").name("English").build();
-    private static final Language ES = Language.builder().languageId(1).code("es").name("Español").build();
+    private static final LanguageSummary EN = LanguageSummary.builder().languageId(2).code("en").build();
+    private static final LanguageSummary ES = LanguageSummary.builder().languageId(1).code("es").build();
     private static final IllegalStateException DB_DOWN = new IllegalStateException("bd caída");
 
     private final EventTranslationRepository translations = mock(EventTranslationRepository.class);
     private final EventRepository events = mock(EventRepository.class);
-    private final LanguageRepository languages = mock(LanguageRepository.class);
+    private final LanguageCatalog languages = mock(LanguageCatalog.class);
     private final EventTranslationController controller = new EventTranslationController(translations, events, languages);
 
     private static Event event(long id, String name, String description) {

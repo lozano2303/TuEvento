@@ -1,8 +1,8 @@
 package com.capysoft.tuevento.modules.profile.infrastructure.translation;
 
-import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
+import com.capysoft.tuevento.shared.application.translation.TranslatableContentHandler;
 import com.capysoft.tuevento.modules.profile.domain.model.ProfileTranslation;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileTranslationRepository;
 import com.capysoft.tuevento.modules.profile.domain.model.Profile;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
@@ -27,7 +27,7 @@ public class ProfileTranslatableContentHandler implements TranslatableContentHan
 
     private final ProfileRepository profileRepository;
     private final ProfileTranslationRepository profileTranslationRepository;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
 
     @Override
     public String entityType() {
@@ -63,7 +63,7 @@ public class ProfileTranslatableContentHandler implements TranslatableContentHan
         log.info("=== SAVE TRANSLATION START === Profile: {}, Lang: {}, Texts: {}", entityId, languageCode, translatedTexts);
         
         // 1. Buscar el idioma por código
-        var languageOpt = languageRepository.findByCode(languageCode);
+        var languageOpt = languageCatalog.findByCode(languageCode);
         if (languageOpt.isEmpty()) {
             log.warn("Language not found: {}", languageCode);
             return;
@@ -109,7 +109,7 @@ public class ProfileTranslatableContentHandler implements TranslatableContentHan
 
     @Override
     public Optional<TranslationStatus> findTranslationStatus(Long entityId, String languageCode) {
-        var languageOpt = languageRepository.findByCode(languageCode);
+        var languageOpt = languageCatalog.findByCode(languageCode);
         if (languageOpt.isEmpty()) {
             return Optional.empty();
         }
