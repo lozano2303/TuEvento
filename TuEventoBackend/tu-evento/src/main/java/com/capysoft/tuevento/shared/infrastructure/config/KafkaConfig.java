@@ -54,6 +54,13 @@ public class KafkaConfig {
         // Espera hasta 5 ms para agrupar mensajes en el mismo batch.
         props.put(ProducerConfig.LINGER_MS_CONFIG, 5);
 
+        // Tiempos acotados por debajo de outbox.relay.send-timeout-ms (10 s): send() no bloquea más
+        // de 5 s esperando metadatos y el productor deja de reintentar a los 9 s. Así, cuando el relay
+        // da un envío por fallido, el mensaje ya no puede llegar tarde al broker y duplicarse.
+        props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 5000);
+        props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 4000);
+        props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 9000);
+
         return new DefaultKafkaProducerFactory<>(props);
     }
 
