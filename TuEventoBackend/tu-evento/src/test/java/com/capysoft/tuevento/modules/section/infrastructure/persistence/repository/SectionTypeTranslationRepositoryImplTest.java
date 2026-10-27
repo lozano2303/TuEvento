@@ -1,6 +1,6 @@
 package com.capysoft.tuevento.modules.section.infrastructure.persistence.repository;
 
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.TranslationStatusEnum;
+import com.capysoft.tuevento.modules.section.infrastructure.persistence.entity.TranslationStatusEnum;
 import com.capysoft.tuevento.modules.section.domain.model.SectionTypeTranslation;
 import com.capysoft.tuevento.modules.section.infrastructure.persistence.entity.SectionTypeTranslationEntity;
 import com.capysoft.tuevento.modules.section.infrastructure.persistence.mapper.SectionTypeTranslationMapper;

@@ -1,4 +1,4 @@
-package com.capysoft.tuevento.modules.language.infrastructure.persistence.entity;
+package com.capysoft.tuevento.modules.section.infrastructure.persistence.entity;
 
 public enum TranslationStatusEnum {
     draft,
