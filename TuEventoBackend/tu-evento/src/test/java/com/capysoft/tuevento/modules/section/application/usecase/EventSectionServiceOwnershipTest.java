@@ -4,7 +4,7 @@ import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.SectionTypeTranslationRepository;
+import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeTranslationRepository;
 import com.capysoft.tuevento.modules.section.application.dto.request.CreateEventSectionRequest;
 import com.capysoft.tuevento.modules.section.application.dto.request.UpdateEventSectionRequest;
 import com.capysoft.tuevento.modules.section.application.dto.response.EventSectionResponse;

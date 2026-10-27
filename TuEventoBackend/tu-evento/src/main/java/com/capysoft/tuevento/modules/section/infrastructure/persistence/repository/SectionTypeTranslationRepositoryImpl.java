@@ -1,8 +1,8 @@
-package com.capysoft.tuevento.modules.language.infrastructure.persistence.repository;
+package com.capysoft.tuevento.modules.section.infrastructure.persistence.repository;
 
-import com.capysoft.tuevento.modules.language.domain.model.SectionTypeTranslation;
-import com.capysoft.tuevento.modules.language.domain.repository.SectionTypeTranslationRepository;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper.SectionTypeTranslationMapper;
+import com.capysoft.tuevento.modules.section.domain.model.SectionTypeTranslation;
+import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeTranslationRepository;
+import com.capysoft.tuevento.modules.section.infrastructure.persistence.mapper.SectionTypeTranslationMapper;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;

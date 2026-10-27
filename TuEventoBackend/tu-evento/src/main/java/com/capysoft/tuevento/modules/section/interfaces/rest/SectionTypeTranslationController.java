@@ -1,10 +1,10 @@
-package com.capysoft.tuevento.modules.sectiontype.interfaces.rest;
+package com.capysoft.tuevento.modules.section.interfaces.rest;
 
 import com.capysoft.tuevento.modules.section.domain.model.SectionType;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeRepository;
-import com.capysoft.tuevento.modules.language.domain.model.SectionTypeTranslation;
+import com.capysoft.tuevento.modules.section.domain.model.SectionTypeTranslation;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.SectionTypeTranslationRepository;
+import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeTranslationRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
