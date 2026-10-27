@@ -15,13 +15,12 @@ public interface OrganizerPetitionJpaRepository extends JpaRepository<OrganizerP
            "JOIN FETCH o.user u " +
            "JOIN FETCH u.role " +
            "JOIN FETCH u.userStatus " +
-           "LEFT JOIN FETCH o.storedFile " +
-           "WHERE o.organizerPetitionId = :id")
+                      "WHERE o.organizerPetitionId = :id")
     Optional<OrganizerPetitionEntity> findByIdEager(@Param("id") Integer id);
 
-    @Query("SELECT o FROM OrganizerPetitionEntity o LEFT JOIN FETCH o.storedFile WHERE o.user.userId = :userId AND o.status = 'PENDING'")
+    @Query("SELECT o FROM OrganizerPetitionEntity o WHERE o.user.userId = :userId AND o.status = 'PENDING'")
     Optional<OrganizerPetitionEntity> findPendingByUserId(@Param("userId") Integer userId);
 
-    @Query("SELECT o FROM OrganizerPetitionEntity o LEFT JOIN FETCH o.storedFile LEFT JOIN FETCH o.user WHERE o.status = :status")
+    @Query("SELECT o FROM OrganizerPetitionEntity o LEFT JOIN FETCH o.user WHERE o.status = :status")
     List<OrganizerPetitionEntity> findByStatus(@Param("status") String status);
 }
