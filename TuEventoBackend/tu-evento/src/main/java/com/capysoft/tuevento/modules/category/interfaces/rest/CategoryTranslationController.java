@@ -1,12 +1,12 @@
 package com.capysoft.tuevento.modules.category.interfaces.rest;
 
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.category.domain.model.Category;
 import com.capysoft.tuevento.modules.category.domain.model.CategoryTranslation;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryRepository;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryTranslationRepository;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
@@ -40,7 +40,7 @@ public class CategoryTranslationController {
     private final CategoryTranslationRepository categoryTranslationRepository;
     private final CategoryRepository categoryRepository;
     private final LanguageRepository languageRepository;
-    private final TranslationJobRepository translationJobRepository;
+    private final TranslationRequests translationRequests;
 
     @Operation(summary = "Get all categories with translations for a language",
                description = "Lista todas las categorías con sus traducciones para el idioma especificado")
@@ -165,8 +165,8 @@ public class CategoryTranslationController {
 
     /** Hay un trabajo de traducción automática pendiente o en curso para esa categoría e idioma. */
     private boolean isGenerating(Integer categoryId, Integer languageId) {
-        return translationJobRepository.findByEntityAndTargetLanguage("category", categoryId, languageId)
-                .map(job -> GENERATING.contains(job.getStatus()))
+        return translationRequests.jobStatus("category", categoryId, languageId)
+                .map(GENERATING::contains)
                 .orElse(false);
     }
 

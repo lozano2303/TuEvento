@@ -4,7 +4,7 @@ import com.capysoft.tuevento.modules.event.domain.event.EventRatingAddedEvent;
 import com.capysoft.tuevento.modules.event.domain.event.EventRatingDeletedEvent;
 import com.capysoft.tuevento.modules.event.domain.event.EventRatingUpdatedEvent;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +21,7 @@ import static org.mockito.Mockito.verify;
 class EventRatingTranslationListenerTest {
 
     private final EventRatingTranslationRepository translations = mock(EventRatingTranslationRepository.class);
-    private final TranslationJobRepository jobs = mock(TranslationJobRepository.class);
+    private final TranslationRequests jobs = mock(TranslationRequests.class);
     private final EventRatingTranslationListener listener = new EventRatingTranslationListener(translations, jobs);
 
     @Test
@@ -32,7 +32,7 @@ class EventRatingTranslationListenerTest {
         listener.onEventRatingDeleted(EventRatingDeletedEvent.builder().ratingId(4L).build());
 
         verify(translations, times(3)).deleteByRating(4);
-        verify(jobs, times(3)).deleteByEntity("event_rating", 4);
+        verify(jobs, times(3)).discard("event_rating", 4);
     }
 
     @Test

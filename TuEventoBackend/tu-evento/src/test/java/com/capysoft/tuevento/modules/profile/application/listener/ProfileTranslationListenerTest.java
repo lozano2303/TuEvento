@@ -1,6 +1,6 @@
 package com.capysoft.tuevento.modules.profile.application.listener;
 
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.profile.domain.event.ProfileUpdatedEvent;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileLogRepository;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileTranslationRepository;
@@ -29,7 +29,7 @@ class ProfileTranslationListenerTest {
     private static final LocalDateTime AT = LocalDateTime.of(2026, 10, 27, 12, 0);
 
     private final ProfileTranslationRepository translations = mock(ProfileTranslationRepository.class);
-    private final TranslationJobRepository jobs = mock(TranslationJobRepository.class);
+    private final TranslationRequests jobs = mock(TranslationRequests.class);
     private final ProfileLogRepository logs = mock(ProfileLogRepository.class);
     private final ProfileTranslationListener listener = new ProfileTranslationListener(translations, jobs, logs);
 
@@ -50,7 +50,7 @@ class ProfileTranslationListenerTest {
         listener.onProfileUpdated(updated());
 
         verify(translations).deleteByProfile(7L);
-        verify(jobs).deleteByEntity("profile", 7);
+        verify(jobs).discard("profile", 7);
     }
 
     @Test
@@ -61,7 +61,7 @@ class ProfileTranslationListenerTest {
         listener.onProfileUpdated(updated());
 
         verify(translations, never()).deleteByProfile(anyLong());
-        verify(jobs, never()).deleteByEntity(anyString(), any());
+        verify(jobs, never()).discard(anyString(), anyLong());
     }
 
     @Test

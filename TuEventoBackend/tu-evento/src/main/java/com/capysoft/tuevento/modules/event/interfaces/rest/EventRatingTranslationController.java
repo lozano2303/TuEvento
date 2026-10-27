@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.event.interfaces.rest;
 
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventRating;
 import com.capysoft.tuevento.modules.event.domain.model.EventRatingTranslation;
@@ -8,7 +9,6 @@ import com.capysoft.tuevento.modules.event.domain.repository.EventRatingTranslat
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import com.capysoft.tuevento.shared.interfaces.translation.TranslationAdminSupport;
@@ -40,7 +40,7 @@ public class EventRatingTranslationController {
     private final EventRatingTranslationRepository eventRatingTranslationRepository;
     private final EventRatingRepository eventRatingRepository;
     private final LanguageRepository languageRepository;
-    private final TranslationJobRepository translationJobRepository;
+    private final TranslationRequests translationRequests;
     private final EventRepository eventRepository;
 
     @GetMapping("/{languageCode}")
@@ -136,8 +136,8 @@ public class EventRatingTranslationController {
 
     /** Hay un trabajo de traducción automática pendiente para ese comentario e idioma. */
     private boolean isGenerating(Long ratingId, Integer languageId) {
-        return translationJobRepository.findByEntityAndTargetLanguage("event_rating", ratingId.intValue(), languageId)
-                .map(job -> job.getStatus() == TranslationJobStatus.PENDING)
+        return translationRequests.jobStatus("event_rating", ratingId, languageId)
+                .map(status -> status == TranslationJobStatus.PENDING)
                 .orElse(false);
     }
 

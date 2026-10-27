@@ -1,10 +1,9 @@
 package com.capysoft.tuevento.modules.profile.application.usecase;
 
-import com.capysoft.tuevento.modules.language.application.service.TranslationService;
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.profile.domain.model.ProfileTranslation;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.modules.profile.application.dto.response.ProfileResponse;
 import com.capysoft.tuevento.modules.profile.application.mapper.ProfileResponseAssembler;
 import com.capysoft.tuevento.modules.profile.application.port.in.GetProfileByUserIdPort;
@@ -25,8 +24,7 @@ public class GetProfileByUserIdUseCase implements GetProfileByUserIdPort {
     private final ProfileResponseAssembler responseAssembler;
     private final LanguageRepository languageRepository;
     private final ProfileTranslationRepository profileTranslationRepository;
-    private final TranslationJobRepository translationJobRepository;
-    private final TranslationService translationService;
+    private final TranslationRequests translationRequests;
 
     @Override
     public ProfileResponse getByUserId(Integer userId) {
@@ -69,38 +67,8 @@ public class GetProfileByUserIdUseCase implements GetProfileByUserIdPort {
                             boolean hasBio = p.getBio() != null && !p.getBio().trim().isEmpty();
                             
                             if (hasBio) {
-                                // Translation doesn't exist - check job status before creating
-                                log.info("Translation not found for profile {} language {} - checking job status",
-                                        p.getProfileId(), languageCode);
-                                
-                                // Check if job already exists
-                                var existingJob = translationJobRepository.findByEntityAndTargetLanguage(
-                                        "profile", p.getProfileId().intValue(), language.get().getLanguageId());
-                                
-                                if (existingJob.isEmpty()) {
-                                    // Create translation job
-                                    translationService.requestTranslation("profile", p.getProfileId(), "es");
-                                    translationGenerating = true;
-                                    log.info("Lazy loading translation job created for profile {} -> {}", 
-                                            p.getProfileId(), languageCode);
-                                } else {
-                                    // Job exists - check its status
-                                    var jobStatus = existingJob.get().getStatus();
-                                    if (jobStatus.name().equals("PENDING") || jobStatus.name().equals("PROCESSING")) {
-                                        translationGenerating = true;
-                                        log.info("Translation job in progress ({}) for profile {} -> {}", 
-                                                jobStatus, p.getProfileId(), languageCode);
-                                    } else if (jobStatus.name().equals("COMPLETED")) {
-                                        // Job completed but no PUBLISHED translation found - this shouldn't happen
-                                        // but let's handle it gracefully by not showing generating indicator
-                                        log.warn("Translation job COMPLETED but no PUBLISHED translation found for profile {} -> {}", 
-                                                p.getProfileId(), languageCode);
-                                    } else if (jobStatus.name().equals("FAILED")) {
-                                        // Job failed - could retry or show error, for now don't show generating
-                                        log.warn("Translation job FAILED for profile {} -> {}", 
-                                                p.getProfileId(), languageCode);
-                                    }
-                                }
+                                translationGenerating = translationRequests.ensureRequested(
+                                        "profile", p.getProfileId(), language.get().getLanguageId());
                             } else {
                                 log.debug("Profile {} has no bio - skipping translation", p.getProfileId());
                             }

@@ -1,10 +1,10 @@
 package com.capysoft.tuevento.modules.event.application.listener;
 
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.event.domain.event.EventRatingAddedEvent;
 import com.capysoft.tuevento.modules.event.domain.event.EventRatingDeletedEvent;
 import com.capysoft.tuevento.modules.event.domain.event.EventRatingUpdatedEvent;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,7 +24,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class EventRatingTranslationListener {
 
     private final EventRatingTranslationRepository eventRatingTranslationRepository;
-    private final TranslationJobRepository translationJobRepository;
+    private final TranslationRequests translationRequests;
 
     /** Un comentario nuevo puede reutilizar un ratingId: se limpian traducciones previas. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -48,7 +48,7 @@ public class EventRatingTranslationListener {
     private void invalidate(Long ratingId, String change) {
         try {
             eventRatingTranslationRepository.deleteByRating(ratingId.intValue());
-            int deletedJobs = translationJobRepository.deleteByEntity("event_rating", ratingId.intValue());
+            int deletedJobs = translationRequests.discard("event_rating", ratingId);
             log.info("[EventRatingTranslationListener] Rating {} {} - deleted its translations and {} pending jobs",
                     ratingId, change, deletedJobs);
         } catch (Exception e) {

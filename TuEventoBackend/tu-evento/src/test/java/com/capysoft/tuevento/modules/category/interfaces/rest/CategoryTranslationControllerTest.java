@@ -5,9 +5,8 @@ import com.capysoft.tuevento.modules.category.domain.model.CategoryTranslation;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryRepository;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryTranslationRepository;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.model.TranslationJob;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
@@ -38,7 +37,7 @@ class CategoryTranslationControllerTest {
     private final CategoryTranslationRepository translations = mock(CategoryTranslationRepository.class);
     private final CategoryRepository categories = mock(CategoryRepository.class);
     private final LanguageRepository languages = mock(LanguageRepository.class);
-    private final TranslationJobRepository jobs = mock(TranslationJobRepository.class);
+    private final TranslationRequests jobs = mock(TranslationRequests.class);
     private final CategoryTranslationController controller =
             new CategoryTranslationController(translations, categories, languages, jobs);
 
@@ -73,8 +72,7 @@ class CategoryTranslationControllerTest {
             when(categories.findAll()).thenReturn(List.of(category(1, "Música"), category(2, "Teatro")));
             when(translations.findByCategoryAndLanguage(1, 2)).thenReturn(Optional.of(translation(1, "Music")));
             when(translations.findByCategoryAndLanguage(2, 2)).thenReturn(Optional.empty());
-            when(jobs.findByEntityAndTargetLanguage("category", 2, 2)).thenReturn(Optional.of(
-                    TranslationJob.builder().status(TranslationJobStatus.PROCESSING).build()));
+            when(jobs.jobStatus("category", 2, 2)).thenReturn(Optional.of(TranslationJobStatus.PROCESSING));
 
             List<Map<String, Object>> rows = controller.getCategoriesWithTranslations("en", "all").getBody().getData();
 

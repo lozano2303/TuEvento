@@ -7,9 +7,8 @@ import com.capysoft.tuevento.modules.event.domain.repository.EventRatingReposito
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingTranslationRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.model.TranslationJob;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +36,7 @@ class EventRatingTranslationControllerTest {
     private final EventRatingTranslationRepository translations = mock(EventRatingTranslationRepository.class);
     private final EventRatingRepository ratings = mock(EventRatingRepository.class);
     private final LanguageRepository languages = mock(LanguageRepository.class);
-    private final TranslationJobRepository jobs = mock(TranslationJobRepository.class);
+    private final TranslationRequests jobs = mock(TranslationRequests.class);
     private final EventRepository events = mock(EventRepository.class);
     private final EventRatingTranslationController controller =
             new EventRatingTranslationController(translations, ratings, languages, jobs, events);
@@ -70,8 +69,8 @@ class EventRatingTranslationControllerTest {
         when(translations.findByRatingAndLanguage(3, 2)).thenReturn(Optional.empty());
         when(translations.findByRatingAndLanguage(4, 2))
                 .thenReturn(Optional.of(translation(4, " ok ", TranslationStatus.PUBLISHED)));
-        when(jobs.findByEntityAndTargetLanguage("event_rating", 2, 2))
-                .thenReturn(Optional.of(TranslationJob.builder().status(TranslationJobStatus.PENDING).build()));
+        when(jobs.jobStatus("event_rating", 2, 2))
+                .thenReturn(Optional.of(TranslationJobStatus.PENDING));
     }
 
     private List<Object> ids(String filter) {
