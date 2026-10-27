@@ -6,22 +6,19 @@ import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import com.capysoft.tuevento.shared.infrastructure.translation.TranslatableContents;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import java.util.EnumSet;
 import java.util.Optional;
-import java.util.Set;
 
 /**
- * {@link TranslationRequests} atendido por el núcleo de traducción dentro del monolito.
+ * Modo {@code local}: {@link TranslationRequests} atendido por el núcleo de traducción dentro del
+ * monolito.
  */
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "translation.mode", havingValue = "local", matchIfMissing = true)
 public class LocalTranslationRequests implements TranslationRequests {
-
-    static final String SOURCE_LANGUAGE = "es";
-    private static final Set<TranslationJobStatus> GENERATING =
-            EnumSet.of(TranslationJobStatus.PENDING, TranslationJobStatus.PROCESSING);
 
     private final TranslationService translationService;
     private final TranslationJobRepository translationJobRepository;
@@ -38,16 +35,6 @@ public class LocalTranslationRequests implements TranslationRequests {
         return translationJobRepository
                 .findByEntityAndTargetLanguage(entityType, Math.toIntExact(entityId), languageId)
                 .map(TranslationJob::getStatus);
-    }
-
-    @Override
-    public boolean ensureRequested(String entityType, long entityId, int languageId) {
-        Optional<TranslationJobStatus> status = jobStatus(entityType, entityId, languageId);
-        if (status.isEmpty()) {
-            request(entityType, entityId);
-            return true;
-        }
-        return GENERATING.contains(status.get());
     }
 
     @Override

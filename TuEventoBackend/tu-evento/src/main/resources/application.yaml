@@ -58,6 +58,12 @@ rate-limit:
 
 # Translation configuration
 translation:
+  # Dónde se hacen las traducciones automáticas:
+  #   local  → núcleo de traducción dentro del monolito (por defecto); usa el resto de este bloque
+  #   remote → las hace el servicio de localización: se le piden por Kafka y los resultados
+  #            vuelven por Kafka. Va junto con TRANSLATION_ENABLED=true en geolocation-service;
+  #            si ambos procesaran, competirían por los mismos trabajos de translation_job.
+  mode: ${TRANSLATION_MODE:local}
   provider: libretranslate
   protected-terms: ${TRANSLATION_PROTECTED_TERMS:Tu Evento}
   max-attempts: 3

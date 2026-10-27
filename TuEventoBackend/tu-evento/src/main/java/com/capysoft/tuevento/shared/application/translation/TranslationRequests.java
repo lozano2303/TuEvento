@@ -14,6 +14,9 @@ import java.util.Optional;
  */
 public interface TranslationRequests {
 
+    /** Idioma en el que se escribe el contenido original. */
+    String SOURCE_LANGUAGE = "es";
+
     /** Pide traducir la entidad a todos los idiomas activos. */
     void request(String entityType, long entityId);
 
@@ -27,12 +30,20 @@ public interface TranslationRequests {
      *
      * @return {@code true} si el cliente debe esperar la traducción
      */
-    boolean ensureRequested(String entityType, long entityId, int languageId);
+    default boolean ensureRequested(String entityType, long entityId, int languageId) {
+        Optional<TranslationJobStatus> status = jobStatus(entityType, entityId, languageId);
+        if (status.isEmpty()) {
+            request(entityType, entityId);
+            return true;
+        }
+        return status.get() == TranslationJobStatus.PENDING || status.get() == TranslationJobStatus.PROCESSING;
+    }
 
     /**
-     * Descarta los trabajos de traducción de la entidad (pendientes o no).
+     * Descarta los trabajos de traducción de la entidad (pendientes o no), p. ej. porque cambió
+     * su texto original.
      *
-     * @return cuántos trabajos se descartaron
+     * @return cuántos trabajos se descartaron, o 0 si el descarte se hace en otro servicio
      */
     int discard(String entityType, long entityId);
 }

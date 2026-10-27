@@ -307,6 +307,10 @@ services:
       # Eventos y perfiles leen sedes y ciudades de geolocation-service (el backend ya no tiene ese módulo)
       GEOLOCATION_SERVICE_URL: http://geolocation-service:8087
 
+      # Traducciones: remote = las hace geolocation-service por Kafka (local = dentro del backend).
+      # Va a la par que TRANSLATION_ENABLED de geolocation-service: cambiar los dos a la vez.
+      TRANSLATION_MODE: ${TRANSLATION_MODE:-remote}
+
       # Correo
       MAIL_USERNAME: ${MAIL_USERNAME:?}
       MAIL_PASSWORD: ${MAIL_PASSWORD:?}
@@ -328,9 +332,6 @@ services:
       FAKE_GATEWAY_API_KEY: ${FAKE_GATEWAY_API_KEY:?}
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:?}
 
-      # Traducción (solo responde si se levanta el perfil "translate")
-      TRANSLATION_LIBRETRANSLATE_BASE_URL: http://libretranslate:5000
-      TRANSLATION_PROTECTED_TERMS: ${TRANSLATION_PROTECTED_TERMS:-Tu Evento}
     depends_on:
       postgres:
         condition: service_healthy
@@ -473,7 +474,7 @@ services:
           memory: 768m
     logging: *default-logging
     networks:
-      # Solo backend y notification-service llegan a Kafka (ver red messaging)
+      # Solo backend, notification-service y geolocation-service llegan a Kafka (ver red messaging)
       - messaging
 
   # ── Microservicio de notificaciones ────────────────────────────────────────
@@ -526,6 +527,13 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
       JWK_SET_URI: http://backend:8080/.well-known/jwks.json
+      # Traducciones automáticas: true mientras el backend tenga TRANSLATION_MODE=remote.
+      # LibreTranslate solo responde si se levanta el perfil "translate"; si no, los trabajos
+      # fallan y se reintentan, y las páginas muestran el texto en español.
+      TRANSLATION_ENABLED: ${TRANSLATION_ENABLED:-true}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      TRANSLATION_LIBRETRANSLATE_BASE_URL: http://libretranslate:5000
+      TRANSLATION_PROTECTED_TERMS: ${TRANSLATION_PROTECTED_TERMS:-Tu Evento}
     depends_on:
       backend:
         condition: service_healthy
@@ -542,6 +550,8 @@ services:
     logging: *default-logging
     networks:
       - internal
+      # Recibe las peticiones de traducción y devuelve los resultados por Kafka
+      - messaging
 
   # ── Frontend (SPA + proxy de /api y /ws al api-gateway) ─────────────────────
   frontend:
@@ -570,7 +580,7 @@ networks:
   internal:
     name: tuevento-internal
     driver: bridge
-  # Kafka no tiene autenticación: solo los dos servicios que lo usan comparten esta red, así
+  # Kafka no tiene autenticación: solo los servicios que lo usan comparten esta red, así
   # ningún otro contenedor puede publicar notificaciones (ni elegir a quién se envía un email)
   messaging:
     name: tuevento-messaging

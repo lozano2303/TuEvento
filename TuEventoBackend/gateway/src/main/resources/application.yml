@@ -89,6 +89,18 @@ spring:
                 connect-timeout: 5000
                 response-timeout: 30000
 
+            # Catálogo de idiomas: también es del servicio de localización (misma tabla language
+            # que lee el monolito). El monolito aún tiene el controlador, pero ya no le llega tráfico.
+            - id: localization-languages
+              uri: ${GEOLOCATION_SERVICE_URI:http://localhost:8087}
+              predicates:
+                - Path=/api/v1/languages,/api/v1/languages/**,/api/v1/admin/languages,/api/v1/admin/languages/**
+              filters:
+                - PreserveHostHeader
+              metadata:
+                connect-timeout: 5000
+                response-timeout: 30000
+
             # ── API REST principal ────────────────────────────────────────────────
             # Captura todo /api/v1/** y lo reenvía al monolito sin modificar la ruta.
             # En Fases 1-5 se irán añadiendo rutas específicas ANTES de esta.
