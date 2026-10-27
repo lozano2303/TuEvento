@@ -8,8 +8,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventRating;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.entity.ProfileEntity;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +39,7 @@ class AddEventRatingServiceTest {
     @Mock private EventRepository           eventRepository;
     @Mock private EventRatingRepository     ratingRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
-    @Mock private ProfileJpaRepository      profileJpaRepository;
+    @Mock private UserDirectoryPort      userDirectoryPort;
     @Mock private Clock                     clock;
 
     @InjectMocks private AddEventRatingService service;
@@ -100,14 +99,12 @@ class AddEventRatingServiceTest {
     }
 
     private void stubNoProfile(Long userId) {
-        when(profileJpaRepository.findByUserId(userId.intValue())).thenReturn(Optional.empty());
+        when(userDirectoryPort.findUser(userId.intValue())).thenReturn(Optional.empty());
     }
 
     private void stubProfile(Long userId, String name) {
-        ProfileEntity p = new ProfileEntity();
-        p.setFullName(name);
-        p.setUserId(userId.intValue());
-        when(profileJpaRepository.findByUserId(userId.intValue())).thenReturn(Optional.of(p));
+        when(userDirectoryPort.findUser(userId.intValue()))
+                .thenReturn(Optional.of(new UserDirectoryPort.UserRef(userId.intValue(), name, null, null)));
     }
 
     private LocalDateTime now() { return FIXED_NOW_LDT; }
@@ -219,7 +216,7 @@ class AddEventRatingServiceTest {
             EventRatingResponse resA = service.execute(EVENT_ID, requestWith(5, "Excelente"), USER_A);
             assertThat(resA.getRating()).isEqualTo(5);
 
-            reset(ratingRepository, profileJpaRepository, eventPublisher);
+            reset(ratingRepository, userDirectoryPort, eventPublisher);
             givenClock();
             when(ratingRepository.findLastByEventIdAndUserId(EVENT_ID, USER_B)).thenReturn(Optional.empty());
             when(ratingRepository.existsRatedCommentByEventIdAndUserId(EVENT_ID, USER_B)).thenReturn(false);

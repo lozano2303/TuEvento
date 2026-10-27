@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.security.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.capysoft.tuevento.modules.security.application.dto.UserSummary;
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminUserResponse;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.UserEntity;
 
@@ -55,5 +57,24 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
             ORDER BY u.createdAt DESC
             """)
     List<AdminUserResponse> searchForAdmin(@Param("q") String q, @Param("role") String role, Pageable pageable);
+
+    /**
+     * Datos públicos de varios usuarios en una sola consulta: alias, email (login_credentials) y
+     * nombre, foto e idioma (profile). Un usuario sin perfil o sin credenciales sale igual, con
+     * esos campos en null.
+     */
+    @Query("""
+            SELECT new com.capysoft.tuevento.modules.security.application.dto.UserSummary(
+                       u.userId, u.alias, c.email, p.fullName, p.storedFileId, p.preferredLanguageId)
+            FROM UserEntity u
+            LEFT JOIN ProfileEntity p ON p.userId = u.userId
+            LEFT JOIN LoginCredentialsEntity c ON c.user = u
+            WHERE u.userId IN :userIds
+            """)
+    List<UserSummary> findSummariesByUserIds(@Param("userIds") Collection<Integer> userIds);
+
+    /** IDs mayores que {@code afterUserId} en orden ascendente (recorrido por cursor). */
+    @Query("SELECT u.userId FROM UserEntity u WHERE u.userId > :afterUserId ORDER BY u.userId ASC")
+    List<Integer> findUserIdsAfter(@Param("afterUserId") Integer afterUserId, Pageable pageable);
 
 }

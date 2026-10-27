@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.notification.infrastructure.remote;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -10,9 +11,7 @@ import org.springframework.stereotype.Component;
 
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
 import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
-import com.capysoft.tuevento.modules.profile.domain.model.Profile;
-import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
-import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
+import com.capysoft.tuevento.modules.notification.application.port.out.RecipientDirectoryPort;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -32,8 +31,7 @@ public class KafkaNotificationSender implements NotificationSender {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
-    private final LoginCredentialsRepository loginCredentialsRepository;
-    private final ProfileRepository profileRepository;
+    private final RecipientDirectoryPort recipientDirectoryPort;
 
     @Override
     public void send(SendNotificationCommand command) {
@@ -52,12 +50,16 @@ public class KafkaNotificationSender implements NotificationSender {
         }
     }
 
+    /** Email e idioma de cada destinatario, en una sola consulta; uno desconocido va sin ellos. */
     private List<NotificationCommandMessage.Recipient> recipients(List<Integer> userIds) {
+        Map<Integer, RecipientDirectoryPort.Recipient> found = recipientDirectoryPort.findRecipients(userIds);
         return userIds.stream()
-                .map(userId -> new NotificationCommandMessage.Recipient(
-                        userId,
-                        loginCredentialsRepository.findEmailByUserId(userId).orElse(null),
-                        profileRepository.findByUserId(userId).map(Profile::getPreferredLanguageId).orElse(null)))
+                .map(userId -> {
+                    RecipientDirectoryPort.Recipient r = found.get(userId);
+                    return new NotificationCommandMessage.Recipient(userId,
+                            r == null ? null : r.email(),
+                            r == null ? null : r.preferredLanguageId());
+                })
                 .toList();
     }
 
