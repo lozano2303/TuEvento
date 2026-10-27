@@ -4,7 +4,7 @@ import com.capysoft.tuevento.modules.category.infrastructure.translation.Categor
 import com.capysoft.tuevento.modules.event.infrastructure.translation.EventTranslatableContentHandler;
 import com.capysoft.tuevento.modules.event.infrastructure.translation.EventRatingTranslatableContentHandler;
 import com.capysoft.tuevento.modules.notification.infrastructure.translation.NotificationTranslatableContentHandler;
-import com.capysoft.tuevento.modules.profile.infrastructure.translation.ProfileTranslatableContentHandler;
+import com.capysoft.tuevento.modules.identitybridge.translation.ProfileTranslatableContentHandler;
 import com.capysoft.tuevento.modules.section.infrastructure.translation.SectionTypeTranslatableContentHandler;
 import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
 import lombok.RequiredArgsConstructor;

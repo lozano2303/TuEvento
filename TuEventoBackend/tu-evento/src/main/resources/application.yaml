@@ -49,6 +49,11 @@ messaging:
 
 # Clave que los servicios envían en X-Internal-Api-Key para usar /internal/**. Vacía = /internal cerrado.
 app:
+  # Identidad (usuarios, sesiones, perfiles y temas) vive en identity-service: aquí solo se verifican
+  # sus tokens con su JWK Set y se consulta su API interna (con app.internal.api-key)
+  identity:
+    base-url: ${IDENTITY_SERVICE_URL:http://localhost:8088}
+    jwk-set-uri: ${IDENTITY_JWK_SET_URI:http://localhost:8088/.well-known/jwks.json}
   internal:
     api-key: ${INTERNAL_API_KEY:}
 
@@ -56,10 +61,6 @@ server:
   port: 8080
 
 # Bloqueo de cuenta por intentos fallidos de login
-security:
-  lockout:
-    minutes: ${SECURITY_LOCKOUT_MINUTES:30}
-    cleanup-cron: "0 0/5 * * * *"
 
 # Conciliación de pagos PENDING sin webhook
 payment:
@@ -71,12 +72,6 @@ payment:
     cron: ${PAYMENT_RECONCILIATION_CRON:0 */5 * * * *}
 
 # Límite por IP en login, registro, recuperación y activación de cuenta
-rate-limit:
-  auth:
-    enabled: ${RATE_LIMIT_ENABLED:true}
-    requests-per-minute: ${RATE_LIMIT_REQUESTS_PER_MINUTE:10}
-    # Proxies propios delante del backend (cuántas entradas de X-Forwarded-For añaden)
-    trusted-proxies: ${RATE_LIMIT_TRUSTED_PROXIES:0}
 
 # Translation configuration
 translation:

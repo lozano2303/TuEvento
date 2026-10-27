@@ -2,8 +2,7 @@ package com.capysoft.tuevento.modules.section.interfaces.rest;
 
 import com.capysoft.tuevento.modules.section.application.dto.response.EventSectionResponse;
 import com.capysoft.tuevento.modules.section.application.port.in.EventSectionUseCase;
-import com.capysoft.tuevento.modules.security.application.port.out.CurrentRolePort;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenVerifier;
 import com.capysoft.tuevento.shared.domain.exception.ForbiddenException;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityConfig;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
@@ -50,8 +49,7 @@ class EventSectionControllerSecurityTest {
 
     @Autowired private MockMvc mockMvc;
 
-    @MockitoBean private TokenGeneratorPort tokenGenerator;
-    @MockitoBean private CurrentRolePort currentRolePort;
+    @MockitoBean private AccessTokenVerifier accessTokenVerifier;
     @MockitoBean private EventSectionUseCase eventSectionUseCase;
 
     @Test

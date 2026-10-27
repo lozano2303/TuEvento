@@ -4,28 +4,25 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import com.capysoft.tuevento.modules.security.application.port.in.ListUserIdsPort;
+import com.capysoft.tuevento.modules.identitybridge.client.IdentityServiceClient;
 import com.capysoft.tuevento.modules.wallet.application.port.out.PlatformUsersPort;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * Único punto del módulo wallet que conoce a Identidad. Hoy delega en el caso de uso del
- * monolito; al separar Identidad se sustituye por un cliente REST.
- */
+/** Usuarios de la plataforma para el crédito masivo de carteras, leídos de identity-service. */
 @Component
 @RequiredArgsConstructor
 class IdentityPlatformUsersAdapter implements PlatformUsersPort {
 
-    private final ListUserIdsPort listUserIdsPort;
+    private final IdentityServiceClient identityServiceClient;
 
     @Override
     public long countUsers() {
-        return listUserIdsPort.countUsers();
+        return identityServiceClient.countUsers();
     }
 
     @Override
     public List<Integer> findUserIdsAfter(int afterUserId, int limit) {
-        return listUserIdsPort.findUserIdsAfter(afterUserId, limit);
+        return identityServiceClient.findUserIdsAfter(afterUserId, limit);
     }
 }

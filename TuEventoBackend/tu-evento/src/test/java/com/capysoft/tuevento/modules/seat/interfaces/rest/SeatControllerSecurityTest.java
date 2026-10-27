@@ -3,8 +3,7 @@ package com.capysoft.tuevento.modules.seat.interfaces.rest;
 import com.capysoft.tuevento.modules.seat.application.dto.response.SeatResponse;
 import com.capysoft.tuevento.modules.seat.application.port.in.SeatUseCase;
 import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
-import com.capysoft.tuevento.modules.security.application.port.out.CurrentRolePort;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenVerifier;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityConfig;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import org.junit.jupiter.api.DisplayName;
@@ -47,8 +46,7 @@ class SeatControllerSecurityTest {
 
     @Autowired private MockMvc mockMvc;
 
-    @MockitoBean private TokenGeneratorPort tokenGenerator;
-    @MockitoBean private CurrentRolePort currentRolePort;
+    @MockitoBean private AccessTokenVerifier accessTokenVerifier;
     @MockitoBean private SeatUseCase seatUseCase;
 
     @Test

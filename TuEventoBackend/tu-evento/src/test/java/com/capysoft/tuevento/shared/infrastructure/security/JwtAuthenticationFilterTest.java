@@ -25,11 +25,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort.TokenMetadata;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort.TokenRevocationUnavailableException;
-import com.capysoft.tuevento.modules.security.infrastructure.external.InMemoryTokenRevocationStore;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenClaims;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenVerifier;
+import com.capysoft.tuevento.shared.infrastructure.security.token.TokenRevocationPort;
+import com.capysoft.tuevento.shared.infrastructure.security.token.TokenRevocationPort.TokenRevocationUnavailableException;
+import com.capysoft.tuevento.shared.infrastructure.security.token.InMemoryTokenRevocationStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.FilterChain;
@@ -42,7 +42,7 @@ class JwtAuthenticationFilterTest {
     private static final Instant NOW = Instant.parse("2026-10-27T15:00:00Z");
     private static final Instant ISSUED_AT = NOW.minusSeconds(60);
 
-    @Mock private TokenGeneratorPort tokenGenerator;
+    @Mock private AccessTokenVerifier tokenVerifier;
     @Mock private FilterChain filterChain;
 
     private final InMemoryTokenRevocationStore revocations =
@@ -54,7 +54,7 @@ class JwtAuthenticationFilterTest {
 
     @BeforeEach
     void setUp() {
-        filter = new JwtAuthenticationFilter(tokenGenerator, revocations, new ObjectMapper());
+        filter = new JwtAuthenticationFilter(tokenVerifier, revocations, new ObjectMapper());
         request = new MockHttpServletRequest("GET", "/api/v1/events");
         request.addHeader("Authorization", "Bearer " + TOKEN);
         SecurityContextHolder.clearContext();
@@ -66,12 +66,8 @@ class JwtAuthenticationFilterTest {
     }
 
     private void tokenWithRole(String role) {
-        when(tokenGenerator.isTokenValid(TOKEN)).thenReturn(true);
-        when(tokenGenerator.extractUserId(TOKEN)).thenReturn(Optional.of(15));
-        when(tokenGenerator.extractSubject(TOKEN)).thenReturn(Optional.of("bob"));
-        when(tokenGenerator.extractRole(TOKEN)).thenReturn(Optional.of(role));
-        when(tokenGenerator.extractMetadata(TOKEN))
-                .thenReturn(Optional.of(new TokenMetadata("jti-1", ISSUED_AT, NOW.plusSeconds(840))));
+        when(tokenVerifier.verify(TOKEN)).thenReturn(Optional.of(
+                new AccessTokenClaims(15, "bob", role, "jti-1", ISSUED_AT, NOW.plusSeconds(840))));
     }
 
     private String authenticatedRole() {
@@ -131,7 +127,7 @@ class JwtAuthenticationFilterTest {
         tokenWithRole("ORGANIZER");
         TokenRevocationPort down = mock(TokenRevocationPort.class);
         when(down.isRevoked(any())).thenThrow(new TokenRevocationUnavailableException("redis down", null));
-        filter = new JwtAuthenticationFilter(tokenGenerator, down, new ObjectMapper());
+        filter = new JwtAuthenticationFilter(tokenVerifier, down, new ObjectMapper());
 
         filter.doFilter(request, response, filterChain);
 
@@ -145,7 +141,7 @@ class JwtAuthenticationFilterTest {
     @DisplayName("sin token no consulta la lista de revocación: lo público sigue funcionando aunque Redis caiga")
     void noToken_skipsRevocationCheck() throws Exception {
         TokenRevocationPort down = mock(TokenRevocationPort.class);
-        filter = new JwtAuthenticationFilter(tokenGenerator, down, new ObjectMapper());
+        filter = new JwtAuthenticationFilter(tokenVerifier, down, new ObjectMapper());
         MockHttpServletRequest anonymous = new MockHttpServletRequest("GET", "/api/v1/events");
 
         filter.doFilter(anonymous, response, filterChain);
@@ -157,7 +153,7 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("token inválido → sigue la cadena sin autenticar")
     void invalidToken_doesNotAuthenticate() throws Exception {
-        when(tokenGenerator.isTokenValid(TOKEN)).thenReturn(false);
+        when(tokenVerifier.verify(TOKEN)).thenReturn(Optional.empty());
 
         filter.doFilter(request, response, filterChain);
 
@@ -168,9 +164,8 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("un refresh token (sin rol) no autentica la petición, que sigue como anónima")
     void tokenWithoutRole_isNotAnAccessToken() throws Exception {
-        when(tokenGenerator.isTokenValid(TOKEN)).thenReturn(true);
-        when(tokenGenerator.extractUserId(TOKEN)).thenReturn(Optional.of(15));
-        when(tokenGenerator.extractRole(TOKEN)).thenReturn(Optional.empty());
+        // El verificador descarta el refresh token (sin rol): no hay claims de access token
+        when(tokenVerifier.verify(TOKEN)).thenReturn(Optional.empty());
 
         filter.doFilter(request, response, filterChain);
 

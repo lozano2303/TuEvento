@@ -17,8 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.capysoft.tuevento.modules.event.domain.event.EventStatusChangedEvent;
 import com.capysoft.tuevento.modules.notification.infrastructure.messaging.UserActivatedListener;
-import com.capysoft.tuevento.modules.security.domain.event.UserActivatedEvent;
-import com.capysoft.tuevento.shared.infrastructure.config.DataInitializer;
+import com.capysoft.tuevento.shared.domain.event.identity.UserActivatedEvent;
 
 /**
  * Los listeners con efectos en otro servicio solo se ejecutan si la transacción que publica
@@ -30,8 +29,6 @@ import com.capysoft.tuevento.shared.infrastructure.config.DataInitializer;
 @DisplayName("Listeners AFTER_COMMIT — reembolsos por cancelación y bienvenida")
 class AfterCommitListenersTest {
 
-    // H2 arranca sin Liquibase: se omite la creación del admin
-    @MockitoBean DataInitializer dataInitializer;
     @MockitoSpyBean EventCancelledListener eventCancelledListener;
     @MockitoSpyBean UserActivatedListener userActivatedListener;
 

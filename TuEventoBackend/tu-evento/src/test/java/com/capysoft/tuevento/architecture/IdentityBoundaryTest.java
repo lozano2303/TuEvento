@@ -5,11 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -17,96 +14,69 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Frontera del servicio Identidad (security, profile, theme) en el monolito. Las reglas son las
- * de la guía de migración: entre servicios solo se habla por puertos, con el adaptador en
- * {@code infrastructure/client/}, o por eventos.
- *
- * <p>Las excepciones conocidas están listadas abajo con su motivo; quitar una cuando se resuelva.
- * Un import nuevo que cruce la frontera hace fallar este test.
+ * Identidad (usuarios, sesiones, perfiles y temas) vive en identity-service. En el monolito solo
+ * queda {@code modules/identitybridge}: lo que el monolito sigue haciendo para Identidad (motor de
+ * traducciones, Archivos, estadísticas del panel, /ws) y el cliente de su API interna.
  */
-@DisplayName("Frontera del servicio Identidad")
+@DisplayName("Identidad fuera del monolito")
 class IdentityBoundaryTest {
 
     private static final Path MODULES = Path.of("src/main/java/com/capysoft/tuevento/modules");
-    private static final Set<String> IDENTITY = Set.of("security", "profile", "theme");
-    private static final Pattern IMPORT = Pattern.compile("^import com\\.capysoft\\.tuevento\\.modules\\.([a-z]+)\\.(\\S+);",
-            Pattern.MULTILINE);
+    private static final Path SOURCES = Path.of("src/main/java/com/capysoft/tuevento");
+    private static final String BRIDGE_IMPORT = "import com.capysoft.tuevento.modules.identitybridge.";
 
-    /** Archivo (relativo a modules/) → motivo. Pendientes que dependen de otra fase. */
-    private static final Map<String, String> OUTGOING_EXCEPTIONS = Map.of(
-            "profile/infrastructure/translation/ProfileTranslatableContentHandler.java",
-            "Fase 3 (Localización): las *_translation pasan al dominio dueño",
-            "profile/application/usecase/GetProfileByUserIdUseCase.java",
-            "Fase 3 (Localización): profile_translation pasa a Identidad",
-            "theme/application/usecase/GetThemesUseCase.java",
-            "Fase 3 (Localización): theme_translation pasa a Identidad",
-            "security/infrastructure/websocket/AdminPendingCountsWebSocketListener.java",
-            "Escucha EventStatusChangedEvent (contrato de evento); pasará a Kafka al separar Catálogo",
-            "profile/interfaces/rest/ProfileTranslationController.java",
-            "Localización (PR #148) lo movió a profile; usa los idiomas hasta que pase a identity-service");
-
-    private static final Map<String, String> INCOMING_EXCEPTIONS = Map.of(
-            "language/", "Fase 3 (Localización, de otro equipo): traducciones de perfil y tema",
-            "notification/infrastructure/messaging/UserActivatedListener.java",
-            "Escucha UserActivatedEvent (contrato de evento); pasará a Kafka",
-            "notification/infrastructure/messaging/OrganizerRoleRevokedListener.java",
-            "Escucha OrganizerRoleRevokedEvent (contrato de evento); pasará a Kafka");
+    /** Quién más puede usar el puente: además de los adaptadores de infrastructure/client/. */
+    private static final Set<String> ALSO_ALLOWED = Set.of(
+            "modules/language/infrastructure/config/TranslationConfig.java",
+            "shared/infrastructure/config/ProfileDataInitializer.java");
 
     @Test
-    @DisplayName("Identidad solo importa otros servicios desde infrastructure/client/")
-    void identityReachesOthersOnlyThroughClients() throws IOException {
-        List<String> violations = new ArrayList<>();
-        for (Path file : javaFiles()) {
-            String relative = MODULES.relativize(file).toString().replace('\\', '/');
-            String module = relative.substring(0, relative.indexOf('/'));
-            if (!IDENTITY.contains(module) || relative.contains("/infrastructure/client/")
-                    || OUTGOING_EXCEPTIONS.containsKey(relative)) {
-                continue;
-            }
-            Matcher m = IMPORT.matcher(Files.readString(file));
-            while (m.find()) {
-                if (!IDENTITY.contains(m.group(1))) {
-                    violations.add(relative + " → " + m.group(1) + "." + m.group(2));
-                }
-            }
-        }
-        assertThat(violations).as("imports de Identidad hacia otros servicios fuera de infrastructure/client/")
-                .isEmpty();
+    @DisplayName("el monolito ya no tiene los módulos security, profile ni theme")
+    void identityModulesAreGone() {
+        assertThat(MODULES.resolve("security")).doesNotExist();
+        assertThat(MODULES.resolve("profile")).doesNotExist();
+        assertThat(MODULES.resolve("theme")).doesNotExist();
     }
 
     @Test
-    @DisplayName("los demás servicios usan Identidad por sus puertos o eventos, nunca sus repositorios ni entidades")
-    void othersNeverReadIdentityInternals() throws IOException {
-        List<String> violations = new ArrayList<>();
-        for (Path file : javaFiles()) {
-            String relative = MODULES.relativize(file).toString().replace('\\', '/');
-            String module = relative.substring(0, relative.indexOf('/'));
-            if (IDENTITY.contains(module) || relative.contains("/infrastructure/client/")
-                    || INCOMING_EXCEPTIONS.keySet().stream().anyMatch(relative::startsWith)) {
-                continue;
-            }
-            Matcher m = IMPORT.matcher(Files.readString(file));
-            while (m.find()) {
-                if (IDENTITY.contains(m.group(1))) {
-                    violations.add(relative + " → " + m.group(1) + "." + m.group(2));
-                }
-            }
+    @DisplayName("ninguna consulta ni clase del monolito usa entidades de Identidad (sus tablas son de identity-service)")
+    void noJpqlOverIdentityTables() throws IOException {
+        Pattern identityEntity = Pattern.compile("\\b(UserEntity|LoginCredentialsEntity|ProfileEntity|RoleEntity|"
+                + "UserStatusEntity|AuthSessionEntity|OrganizerPetitionEntity|ThemeEntity|UserThemeEntity)\\b");
+        List<String> violations;
+        try (Stream<Path> files = Files.walk(SOURCES)) {
+            violations = files.filter(p -> p.toString().endsWith(".java"))
+                    .filter(p -> {
+                        try {
+                            return identityEntity.matcher(Files.readString(p)).find();
+                        } catch (IOException e) {
+                            throw new IllegalStateException(e);
+                        }
+                    })
+                    .map(p -> SOURCES.relativize(p).toString())
+                    .toList();
         }
-        assertThat(violations).as("imports hacia Identidad fuera de infrastructure/client/").isEmpty();
+        assertThat(violations).as("referencias a entidades de Identidad").isEmpty();
     }
 
     @Test
-    @DisplayName("las excepciones listadas siguen existiendo (si ya se resolvió una, quitarla de la lista)")
-    void exceptionsAreStillNeeded() {
-        OUTGOING_EXCEPTIONS.keySet().forEach(f ->
-                assertThat(MODULES.resolve(f)).as("excepción obsoleta: " + f).exists());
-        INCOMING_EXCEPTIONS.keySet().stream().filter(f -> f.endsWith(".java")).forEach(f ->
-                assertThat(MODULES.resolve(f)).as("excepción obsoleta: " + f).exists());
-    }
-
-    private static List<Path> javaFiles() throws IOException {
-        try (Stream<Path> files = Files.walk(MODULES)) {
-            return files.filter(p -> p.toString().endsWith(".java")).toList();
+    @DisplayName("solo los adaptadores (infrastructure/client/) usan el puente hacia Identidad")
+    void onlyAdaptersUseTheBridge() throws IOException {
+        List<String> violations;
+        try (Stream<Path> files = Files.walk(SOURCES)) {
+            violations = files.filter(p -> p.toString().endsWith(".java"))
+                    .map(p -> SOURCES.relativize(p).toString().replace('\\', '/'))
+                    .filter(rel -> !rel.startsWith("modules/identitybridge/"))
+                    .filter(rel -> !rel.contains("/infrastructure/client/") && !ALSO_ALLOWED.contains(rel))
+                    .filter(rel -> {
+                        try {
+                            return Files.readString(SOURCES.resolve(rel)).contains(BRIDGE_IMPORT);
+                        } catch (IOException e) {
+                            throw new IllegalStateException(e);
+                        }
+                    })
+                    .toList();
         }
+        assertThat(violations).as("usos del puente fuera de los adaptadores").isEmpty();
     }
 }

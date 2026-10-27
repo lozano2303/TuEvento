@@ -4,7 +4,7 @@ import com.capysoft.tuevento.modules.notification.application.dto.SendNotificati
 import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationEntityTypes;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
-import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedEvent;
+import com.capysoft.tuevento.shared.domain.event.identity.OrganizerRoleRevokedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
