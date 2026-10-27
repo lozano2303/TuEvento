@@ -332,6 +332,8 @@ services:
       - GEOLOCATION_SERVICE_URI=http://geolocation-service:8087
       # /api/v1/notifications va al microservicio; para volver al monolito, quitar esta variable
       - NOTIFICATION_SERVICE_URI=http://notification-service:8086
+      # /api/v1/themes va al microservicio de Identidad; para volver al monolito, quitar esta variable
+      - IDENTITY_SERVICE_URI=http://identity-service:8088
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - GATEWAY_CORS_ALLOWED_ORIGINS=${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000}
@@ -344,6 +346,8 @@ services:
       geolocation-service:
         condition: service_started
       notification-service:
+        condition: service_started
+      identity-service:
         condition: service_started
       redis:
         condition: service_started
@@ -477,6 +481,47 @@ services:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8087/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - tuevento-network
+
+  # ── Microservicio de Identidad ─────────────────────────────────────────────
+  # Por ahora, temas y paletas de usuario sobre la misma base que el backend.
+  identity-service:
+    build:
+      context: ./TuEventoBackend/services
+      dockerfile: identity-service/Dockerfile
+    container_name: tuevento-identity-service
+    restart: unless-stopped
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - JWK_SET_URI=http://backend:8080/.well-known/jwks.json
+      # Idiomas activos (GET /api/v1/languages); hoy los sirve el backend
+      - LOCALIZATION_BASE_URL=http://backend:8080
+      # Avisos en vivo (THEME_UPDATED): el backend los reenvía al /ws
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+      # El backend migra las tablas (y sus datos iniciales) y publica el JWKS
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8088/actuator/health | grep -q UP"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -89,6 +89,22 @@ spring:
                 connect-timeout: 5000
                 response-timeout: 30000
 
+            # ── Microservicio de Identidad ──────────────────────────────────────
+            # Temas y paletas de usuario (catálogo, tema activo, personalización e historial).
+            # IDENTITY_SERVICE_URI apunta al microservicio; sin la variable vuelve al monolito, que
+            # aún conserva el módulo de temas mientras dura la migración.
+            - id: identity-service
+              uri: ${IDENTITY_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
+              predicates:
+                - Path=/api/v1/themes,/api/v1/themes/**
+              filters:
+                - PreserveHostHeader
+                # Explícito en la ruta (no solo en default-filters): el dedupe no debe aplicarse a /ws
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
+              metadata:
+                connect-timeout: 5000
+                response-timeout: 30000
+
             # ── API REST principal ────────────────────────────────────────────────
             # Captura todo /api/v1/** y lo reenvía al monolito sin modificar la ruta.
             # En Fases 1-5 se irán añadiendo rutas específicas ANTES de esta.
