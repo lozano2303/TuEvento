@@ -54,7 +54,9 @@ spring:
             - PreserveHostHeader
           metadata:
             connect-timeout: 5000
-            response-timeout: 30000
+            # Una subida pasa por la moderación de imágenes (NSFW en CPU + Sightengine): en frío
+            # tarda más de 30 s. Mismo margen que el proxy de nginx que la atendía antes.
+            response-timeout: 120000
 
         # ── API REST principal ────────────────────────────────────────────────
         # Captura todo /api/v1/** y lo reenvía al monolito sin modificar la ruta.
@@ -64,16 +66,19 @@ spring:
           predicates:
             - Path=/api/v1/**
           filters:
-            # Añade X-Forwarded-* headers para que el monolito conozca la IP real
+            # Conserva el Host original. X-Forwarded-For se reenvía tal cual (sin trusted-proxies
+            # el gateway no añade entrada): ver RATE_LIMIT_TRUSTED_PROXIES en docker-compose.prod.yml
             - PreserveHostHeader
           metadata:
             connect-timeout: 5000
-            response-timeout: 30000
+            # Mismo límite que tenía nginx (60 s por defecto) antes de existir el gateway: la
+            # subida de imágenes de eventos sigue aquí y también pasa por la moderación
+            response-timeout: 60000
 
       # Configuración global de timeout y HTTP/2
       httpclient:
         connect-timeout: 5000
-        response-timeout: 30s
+        response-timeout: 60s
         pool:
           max-connections: 500
           acquire-timeout: 45000
