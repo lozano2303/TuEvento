@@ -19,6 +19,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -35,6 +37,11 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // El catálogo de temas se lee sin sesión (como en el monolito); el tema activo,
                         // su personalización y su historial son del usuario autenticado
+                        // Login, registro, activación, renovación, recuperación y OAuth: sin sesión (como
+                        // en el monolito; el límite de intentos lo aplica AuthRateLimitFilter)
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        // Clave pública RSA para verificar los JWT que firma Identidad
+                        .requestMatchers(HttpMethod.GET, "/.well-known/jwks.json").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/themes").permitAll()
                         // El perfil público de un usuario (nombre, foto, biografía) se lee sin sesión;
                         // crearlo y editarlo exige ser su dueño o ADMIN (en ProfileController)
@@ -42,12 +49,30 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
+                        .bearerTokenResolver(bearerTokenResolver())
                         // 503 (no 401) si la lista de revocación no responde: fail-closed sin cerrar la sesión del cliente
                         .authenticationEntryPoint(new RevocationAwareAuthenticationEntryPoint())
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(SecurityConfig::toAuthentication))
                 );
         return http.build();
     }
+
+    /**
+     * En /api/v1/auth/** no se lee la cabecera Authorization: un access token vencido o revocado que
+     * el cliente aún adjunte no debe impedir iniciar sesión ni renovar (el monolito hacía lo mismo:
+     * ignoraba el token inválido y seguía sin sesión). La excepción es el logout, que necesita saber
+     * quién llama para comprobar que la sesión que cierra es suya.
+     */
+    static BearerTokenResolver bearerTokenResolver() {
+        DefaultBearerTokenResolver resolver = new DefaultBearerTokenResolver();
+        return request -> {
+            String path = request.getRequestURI();
+            boolean authFlow = path.startsWith("/api/v1/auth/") && !path.equals(LOGOUT_PATH);
+            return authFlow ? null : resolver.resolve(request);
+        };
+    }
+
+    static final String LOGOUT_PATH = "/api/v1/auth/logout";
 
     /**
      * Valida la firma con el JWKS que publica el monolito y después la lista de revocación de

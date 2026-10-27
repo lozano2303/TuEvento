@@ -23,6 +23,8 @@ import com.capysoft.common.domain.exception.NotFoundException;
 import com.capysoft.common.domain.exception.UnauthorizedException;
 import com.capysoft.common.interfaces.ApiResponse;
 import com.capysoft.identity.profile.domain.exception.ProfileAlreadyExistsException;
+import com.capysoft.identity.security.application.port.out.TokenRevocationPort.TokenRevocationUnavailableException;
+import jakarta.validation.ConstraintViolationException;
 import com.capysoft.identity.shared.domain.exception.ServiceUnavailableException;
 
 /**
@@ -58,6 +60,28 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ServiceUnavailableException.class)
     public ResponseEntity<ApiResponse<Void>> handleServiceUnavailable(ServiceUnavailableException ex) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.error(ex.getCode(), ex.getMessage()));
+    }
+
+    /** Mismo estado que el monolito: reglas de dominio violadas sin código propio. */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalState(IllegalStateException ex) {
+        log.warn("Illegal state — {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error("Data integrity violation"));
+    }
+
+    /**
+     * La lista de revocación no respondió al cerrar sesión, desactivar la cuenta o cambiar la
+     * contraseña: 503 (fail-closed), con el mismo código que el resto de servicios.
+     */
+    @ExceptionHandler(TokenRevocationUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRevocationUnavailable(TokenRevocationUnavailableException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.error("AUTH_UNAVAILABLE",
+                "No se pudo validar la sesión. Intenta de nuevo en unos segundos."));
     }
 
     @ExceptionHandler(NotFoundException.class)
