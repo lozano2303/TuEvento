@@ -10,7 +10,7 @@ import com.capysoft.tuevento.modules.section.application.port.in.EventSectionUse
 import com.capysoft.tuevento.modules.section.domain.model.EventSection;
 import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.SectionTypeTranslationRepository;
+import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeTranslationRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.ForbiddenException;

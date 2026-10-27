@@ -1,9 +1,9 @@
-package com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper;
+package com.capysoft.tuevento.modules.section.infrastructure.persistence.mapper;
 
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
-import com.capysoft.tuevento.modules.language.domain.model.SectionTypeTranslation;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.SectionTypeTranslationEntity;
+import com.capysoft.tuevento.modules.section.domain.model.SectionTypeTranslation;
+import com.capysoft.tuevento.modules.section.infrastructure.persistence.entity.SectionTypeTranslationEntity;
 import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.TranslationStatusEnum;
 import org.springframework.stereotype.Component;
 
