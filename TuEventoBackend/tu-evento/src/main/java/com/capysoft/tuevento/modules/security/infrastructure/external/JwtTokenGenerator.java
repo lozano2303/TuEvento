@@ -11,6 +11,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,6 +75,7 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
     public static final String KEY_ID = "tuevento-jwt-key-1";
 
     private static final String LEGACY_ALGORITHM = "HS256";
+    private static final String ISSUED_AT_MS_CLAIM = "iatMs";
 
     @Value("${app.jwt.private-key-path:classpath:keys/jwt-private.pem}")
     private Resource privateKeyResource;
@@ -145,14 +147,17 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
 
     @Override
     public String generateAccessToken(Integer userId, String alias, String role) {
+        Date now = new Date();
         return Jwts.builder()
                 .header().keyId(KEY_ID).and()
                 .id(UUID.randomUUID().toString())
                 .subject(alias)
                 .claim("userId", userId)
                 .claim("role", role)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
+                // iat va en segundos; iatMs permite comparar con una revocación del mismo segundo
+                .claim(ISSUED_AT_MS_CLAIM, now.getTime())
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + accessTokenExpiration))
                 .signWith(privateKey)        // RS256 con clave privada
                 .compact();
     }
@@ -207,6 +212,24 @@ public class JwtTokenGenerator implements TokenGeneratorPort {
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+
+    @Override
+    public Optional<TokenMetadata> extractMetadata(String token) {
+        try {
+            Claims claims = parseClaims(token);
+            Number issuedAtMs = claims.get(ISSUED_AT_MS_CLAIM, Number.class);
+            Instant issuedAt = issuedAtMs != null
+                    ? Instant.ofEpochMilli(issuedAtMs.longValue())
+                    : toInstant(claims.getIssuedAt());
+            return Optional.of(new TokenMetadata(claims.getId(), issuedAt, toInstant(claims.getExpiration())));
+        } catch (JwtException | IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
+
+    private static Instant toInstant(Date date) {
+        return date == null ? null : date.toInstant();
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────

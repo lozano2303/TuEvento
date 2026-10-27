@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.capysoft.tuevento.modules.security.application.dto.request.LogoutRequest;
 import com.capysoft.tuevento.modules.security.application.port.in.LogoutPort;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort;
 import com.capysoft.tuevento.modules.security.domain.model.AuthSession;
 import com.capysoft.tuevento.modules.security.domain.repository.AuthSessionRepository;
 import com.capysoft.tuevento.modules.security.domain.repository.RefreshTokenRepository;
@@ -23,6 +25,8 @@ public class LogoutUseCase implements LogoutPort {
 
     private final AuthSessionRepository  authSessionRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final TokenGeneratorPort     tokenGenerator;
+    private final TokenRevocationPort    tokenRevocationPort;
 
     @Override
     @Transactional
@@ -47,5 +51,10 @@ public class LogoutUseCase implements LogoutPort {
                     rt.setRevokedAt(LocalDateTime.now());
                     refreshTokenRepository.save(rt);
                 });
+
+        // El access token de esta sesión deja de valer ya, no cuando expire (las demás sesiones siguen).
+        // Si la lista de revocación no responde, el logout se deshace (fail-closed).
+        tokenGenerator.extractMetadata(request.getAccessToken())
+                .ifPresent(m -> tokenRevocationPort.revokeToken(m.tokenId(), m.expiresAt()));
     }
 }

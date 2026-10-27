@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.security.application.usecase;
 import com.capysoft.tuevento.modules.security.application.dto.request.DeactivateAccountRequest;
 import com.capysoft.tuevento.modules.security.application.port.in.DeactivateAccountPort;
 import com.capysoft.tuevento.modules.security.application.port.out.PasswordEncoderPort;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort;
 import com.capysoft.tuevento.modules.security.domain.model.AuthSession;
 import com.capysoft.tuevento.modules.security.domain.model.LoginCredentials;
 import com.capysoft.tuevento.modules.security.domain.model.RefreshToken;
@@ -23,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -40,6 +42,7 @@ public class DeactivateAccountUseCase implements DeactivateAccountPort {
     private final AuthSessionRepository      authSessionRepository;
     private final RefreshTokenRepository     refreshTokenRepository;
     private final PasswordEncoderPort        passwordEncoder;
+    private final TokenRevocationPort        tokenRevocationPort;
 
     @Override
     @Transactional
@@ -99,5 +102,9 @@ public class DeactivateAccountUseCase implements DeactivateAccountPort {
                         refreshTokenRepository.save(rt);
                     });
         }
+
+        // 8. Los access tokens ya emitidos (15 min) dejan de valer en todas las réplicas. Si la
+        //    lista de revocación no responde, la desactivación entera se deshace (fail-closed).
+        tokenRevocationPort.revokeUser(user.getUserId(), Instant.now());
     }
 }

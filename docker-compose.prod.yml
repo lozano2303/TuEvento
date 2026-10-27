@@ -406,6 +406,10 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
       JWK_SET_URI: http://backend:8080/.well-known/jwks.json
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
       STORAGE_PROVIDER: rustfs
       RUSTFS_ENDPOINT: http://rustfs:9000
       RUSTFS_PUBLIC_URL: ${RUSTFS_PUBLIC_URL:?}
@@ -419,6 +423,8 @@ services:
       SIGHTENGINE_THRESHOLD: ${SIGHTENGINE_THRESHOLD:-0.6}
       SIGHTENGINE_NUDITY_THRESHOLD: ${SIGHTENGINE_NUDITY_THRESHOLD:-0.15}
     depends_on:
+      redis:
+        condition: service_healthy
       # El backend migra las tablas de storage y publica el JWKS
       backend:
         condition: service_healthy
@@ -489,11 +495,17 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
       JWK_SET_URI: http://backend:8080/.well-known/jwks.json
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       MAIL_USERNAME: ${MAIL_USERNAME:?}
       MAIL_PASSWORD: ${MAIL_PASSWORD:?}
       NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-true}
     depends_on:
+      redis:
+        condition: service_healthy
       # El backend migra las tablas de notificaciones y publica el JWKS
       backend:
         condition: service_healthy

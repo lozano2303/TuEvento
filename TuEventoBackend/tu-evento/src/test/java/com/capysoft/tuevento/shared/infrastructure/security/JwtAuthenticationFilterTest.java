@@ -1,14 +1,22 @@
 package com.capysoft.tuevento.shared.infrastructure.security;
 
-import com.capysoft.tuevento.modules.security.application.port.out.CurrentRolePort;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
-import jakarta.servlet.FilterChain;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.Optional;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -17,27 +25,36 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.util.Optional;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort.TokenMetadata;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort.TokenRevocationUnavailableException;
+import com.capysoft.tuevento.modules.security.infrastructure.external.InMemoryTokenRevocationStore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import jakarta.servlet.FilterChain;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("JwtAuthenticationFilter")
 class JwtAuthenticationFilterTest {
 
     private static final String TOKEN = "jwt-token";
+    private static final Instant NOW = Instant.parse("2026-10-27T15:00:00Z");
+    private static final Instant ISSUED_AT = NOW.minusSeconds(60);
 
     @Mock private TokenGeneratorPort tokenGenerator;
-    @Mock private CurrentRolePort currentRolePort;
     @Mock private FilterChain filterChain;
-    @InjectMocks private JwtAuthenticationFilter filter;
+
+    private final InMemoryTokenRevocationStore revocations =
+            new InMemoryTokenRevocationStore(Clock.fixed(NOW, ZoneOffset.UTC));
+    private JwtAuthenticationFilter filter;
 
     private MockHttpServletRequest request;
     private final MockHttpServletResponse response = new MockHttpServletResponse();
 
     @BeforeEach
     void setUp() {
+        filter = new JwtAuthenticationFilter(tokenGenerator, revocations, new ObjectMapper());
         request = new MockHttpServletRequest("GET", "/api/v1/events");
         request.addHeader("Authorization", "Bearer " + TOKEN);
         SecurityContextHolder.clearContext();
@@ -53,6 +70,8 @@ class JwtAuthenticationFilterTest {
         when(tokenGenerator.extractUserId(TOKEN)).thenReturn(Optional.of(15));
         when(tokenGenerator.extractSubject(TOKEN)).thenReturn(Optional.of("bob"));
         when(tokenGenerator.extractRole(TOKEN)).thenReturn(Optional.of(role));
+        when(tokenGenerator.extractMetadata(TOKEN))
+                .thenReturn(Optional.of(new TokenMetadata("jti-1", ISSUED_AT, NOW.plusSeconds(840))));
     }
 
     private String authenticatedRole() {
@@ -62,10 +81,9 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    @DisplayName("token ORGANIZER con rol vigente en BD → mantiene ORGANIZER")
-    void organizerToken_stillOrganizer() throws Exception {
+    @DisplayName("token vigente → autentica con el rol del token, sin consultar la BD")
+    void validToken_authenticatesWithTokenRole() throws Exception {
         tokenWithRole("ORGANIZER");
-        when(currentRolePort.findRoleCode(15)).thenReturn(Optional.of("ORGANIZER"));
 
         filter.doFilter(request, response, filterChain);
 
@@ -74,36 +92,66 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    @DisplayName("token ORGANIZER con rol revocado en BD → usa el rol de la BD")
-    void organizerToken_revokedInDatabase_usesDatabaseRole() throws Exception {
+    @DisplayName("rol revocado después de emitir el token → la petición sigue como anónima (401 en lo protegido)")
+    void tokenIssuedBeforeUserRevocation_isIgnored() throws Exception {
         tokenWithRole("ORGANIZER");
-        when(currentRolePort.findRoleCode(15)).thenReturn(Optional.of("USER"));
+        revocations.revokeUser(15, ISSUED_AT.plusMillis(1));
 
         filter.doFilter(request, response, filterChain);
 
-        assertThat(authenticatedRole()).isEqualTo("USER");
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verify(filterChain).doFilter(request, response);
     }
 
     @Test
-    @DisplayName("fallo al consultar la BD → conserva el rol del token")
-    void organizerToken_databaseFailure_keepsTokenRole() throws Exception {
-        tokenWithRole("ORGANIZER");
-        when(currentRolePort.findRoleCode(15)).thenThrow(new RuntimeException("DB down"));
-
-        filter.doFilter(request, response, filterChain);
-
-        assertThat(authenticatedRole()).isEqualTo("ORGANIZER");
-    }
-
-    @Test
-    @DisplayName("token con otro rol → no consulta la BD")
-    void nonOrganizerToken_skipsDatabase() throws Exception {
+    @DisplayName("un token emitido después de la revocación (tras renovar) sí vale")
+    void tokenIssuedAfterUserRevocation_isAccepted() throws Exception {
         tokenWithRole("USER");
+        revocations.revokeUser(15, ISSUED_AT.minusMillis(1));
 
         filter.doFilter(request, response, filterChain);
 
         assertThat(authenticatedRole()).isEqualTo("USER");
-        verifyNoInteractions(currentRolePort);
+    }
+
+    @Test
+    @DisplayName("token cerrado con logout → no autentica")
+    void loggedOutToken_isIgnored() throws Exception {
+        tokenWithRole("USER");
+        revocations.revokeToken("jti-1", NOW.plusSeconds(840));
+
+        filter.doFilter(request, response, filterChain);
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    @DisplayName("lista de revocación caída → 503 y la petición no sigue (fail-closed)")
+    void revocationStoreDown_rejectsWith503() throws Exception {
+        tokenWithRole("ORGANIZER");
+        TokenRevocationPort down = mock(TokenRevocationPort.class);
+        when(down.isRevoked(any())).thenThrow(new TokenRevocationUnavailableException("redis down", null));
+        filter = new JwtAuthenticationFilter(tokenGenerator, down, new ObjectMapper());
+
+        filter.doFilter(request, response, filterChain);
+
+        assertThat(response.getStatus()).isEqualTo(503);
+        assertThat(response.getContentAsString()).contains("AUTH_UNAVAILABLE");
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verify(filterChain, never()).doFilter(any(), any());
+    }
+
+    @Test
+    @DisplayName("sin token no consulta la lista de revocación: lo público sigue funcionando aunque Redis caiga")
+    void noToken_skipsRevocationCheck() throws Exception {
+        TokenRevocationPort down = mock(TokenRevocationPort.class);
+        filter = new JwtAuthenticationFilter(tokenGenerator, down, new ObjectMapper());
+        MockHttpServletRequest anonymous = new MockHttpServletRequest("GET", "/api/v1/events");
+
+        filter.doFilter(anonymous, response, filterChain);
+
+        verify(down, never()).isRevoked(any());
+        verify(filterChain).doFilter(anonymous, response);
     }
 
     @Test

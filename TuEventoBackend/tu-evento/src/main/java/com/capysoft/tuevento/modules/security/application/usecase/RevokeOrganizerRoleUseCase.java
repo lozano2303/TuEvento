@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.security.application.usecase;
 
 import com.capysoft.tuevento.modules.security.application.dto.OrganizerRoleRevokedMessage;
 import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganizerRolePort;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort;
 import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedEvent;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerRoleRevocationRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.RoleJpaRepository;
@@ -45,6 +46,7 @@ public class RevokeOrganizerRoleUseCase implements RevokeOrganizerRolePort {
     private final ApplicationEventPublisher         eventPublisher;
     private final OrganizerRoleRevocationRepository revocationRepository;
     private final OutboxEventPublisher              outboxEventPublisher;
+    private final TokenRevocationPort               tokenRevocationPort;
     private final Clock                             clock;
 
     @Override
@@ -73,6 +75,9 @@ public class RevokeOrganizerRoleUseCase implements RevokeOrganizerRolePort {
         Long revocationId = revocationRepository.record(userId, adminUserId, trimmedReason);
 
         Instant now = clock.instant();
+        // Sus access tokens con rol ORGANIZER dejan de valer en el monolito y en los servicios; al
+        // renovar recibe uno con USER. Si la lista no responde, la revocación entera se deshace.
+        tokenRevocationPort.revokeUser(userId, now);
         outboxEventPublisher.publish(OrganizerRoleRevokedMessage.AGGREGATE_TYPE, String.valueOf(userId),
                 OrganizerRoleRevokedMessage.EVENT_TYPE,
                 new OrganizerRoleRevokedMessage(revocationId, userId, userEntity.getAlias(), adminUserId,
