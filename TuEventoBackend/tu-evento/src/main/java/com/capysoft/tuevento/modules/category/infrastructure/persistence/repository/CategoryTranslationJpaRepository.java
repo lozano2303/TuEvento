@@ -1,6 +1,6 @@
-package com.capysoft.tuevento.modules.language.infrastructure.persistence.repository;
+package com.capysoft.tuevento.modules.category.infrastructure.persistence.repository;
 
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.CategoryTranslationEntity;
+import com.capysoft.tuevento.modules.category.infrastructure.persistence.entity.CategoryTranslationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

@@ -1,6 +1,6 @@
-package com.capysoft.tuevento.modules.language.domain.repository;
+package com.capysoft.tuevento.modules.category.domain.repository;
 
-import com.capysoft.tuevento.modules.language.domain.model.CategoryTranslation;
+import com.capysoft.tuevento.modules.category.domain.model.CategoryTranslation;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 
 import java.util.List;

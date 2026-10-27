@@ -1,4 +1,4 @@
-package com.capysoft.tuevento.modules.language.domain.model;
+package com.capysoft.tuevento.modules.category.domain.model;
 
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;

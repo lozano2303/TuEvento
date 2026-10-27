@@ -1,10 +1,10 @@
-package com.capysoft.tuevento.modules.language.interfaces.rest;
+package com.capysoft.tuevento.modules.category.interfaces.rest;
 
 import com.capysoft.tuevento.modules.category.domain.model.Category;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryRepository;
-import com.capysoft.tuevento.modules.language.domain.model.CategoryTranslation;
+import com.capysoft.tuevento.modules.category.domain.model.CategoryTranslation;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.CategoryTranslationRepository;
+import com.capysoft.tuevento.modules.category.domain.repository.CategoryTranslationRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;

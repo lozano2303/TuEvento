@@ -1,12 +1,9 @@
-package com.capysoft.tuevento.modules.language.infrastructure.persistence.repository;
+package com.capysoft.tuevento.modules.category.infrastructure.persistence.repository;
 
-import com.capysoft.tuevento.modules.language.domain.model.CategoryTranslation;
-import com.capysoft.tuevento.modules.language.domain.repository.CategoryTranslationRepository;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.CategoryTranslationEntity;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.LanguageEntity;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.repository.CategoryTranslationJpaRepository;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.mapper.CategoryTranslationMapper;
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.repository.LanguageJpaRepository;
+import com.capysoft.tuevento.modules.category.domain.model.CategoryTranslation;
+import com.capysoft.tuevento.modules.category.domain.repository.CategoryTranslationRepository;
+import com.capysoft.tuevento.modules.category.infrastructure.persistence.entity.CategoryTranslationEntity;
+import com.capysoft.tuevento.modules.category.infrastructure.persistence.mapper.CategoryTranslationMapper;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -23,7 +20,6 @@ import java.util.Optional;
 public class CategoryTranslationRepositoryImpl implements CategoryTranslationRepository {
 
     private final CategoryTranslationJpaRepository jpaRepository;
-    private final LanguageJpaRepository languageJpaRepository;
     private final CategoryTranslationMapper mapper;
 
     @Override
