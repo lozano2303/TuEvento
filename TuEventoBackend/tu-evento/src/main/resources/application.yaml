@@ -34,6 +34,13 @@ outbox:
     backoff-initial-ms: ${OUTBOX_RELAY_BACKOFF_INITIAL_MS:1000}
     backoff-max-ms: ${OUTBOX_RELAY_BACKOFF_MAX_MS:300000}
 
+# ── Consumidores de eventos de dominio (Kafka) ────────────────────────────────
+# Si un mensaje falla se reintenta con backoff hasta max-retry-ms; ver DomainEventsConsumerConfig.
+messaging:
+  consumers:
+    enabled: ${MESSAGING_CONSUMERS_ENABLED:true}
+    max-retry-ms: ${MESSAGING_CONSUMERS_MAX_RETRY_MS:1800000}
+
 server:
   port: 8080
 

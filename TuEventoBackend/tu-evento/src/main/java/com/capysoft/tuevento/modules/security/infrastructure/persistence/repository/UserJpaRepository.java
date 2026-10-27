@@ -5,12 +5,15 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminUserResponse;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.UserEntity;
+
+import jakarta.persistence.LockModeType;
 
 public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
 
@@ -21,6 +24,14 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
     @Query("SELECT u FROM UserEntity u JOIN FETCH u.role JOIN FETCH u.userStatus WHERE u.userId = :userId")
     Optional<UserEntity> findByIdEager(@Param("userId") Integer userId);
     
+    /**
+     * Como {@link #findByIdEager} pero bloqueando la fila hasta el fin de la transacción: dos cambios
+     * de rol simultáneos sobre el mismo usuario se aplican uno detrás de otro.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM UserEntity u JOIN FETCH u.role JOIN FETCH u.userStatus WHERE u.userId = :userId")
+    Optional<UserEntity> findByIdEagerForUpdate(@Param("userId") Integer userId);
+
     @Query("SELECT COUNT(u) > 0 FROM UserEntity u WHERE u.alias = :alias")
     boolean existsByAlias(@Param("alias") String alias);
 
