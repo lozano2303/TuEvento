@@ -1,0 +1,64 @@
+server:
+  port: ${NOTIFICATION_SERVICE_PORT:8086}
+
+spring:
+  application:
+    name: notification-service
+  # Misma base de datos que el monolito: las tablas channel, notification_type, notification y
+  # notification_user las migra su Liquibase. notification_translation y language solo se leen.
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/tuevento_db}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:postgres}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:postgres}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # Pocas conexiones: comparte el límite de la base con el monolito
+      maximum-pool-size: ${NOTIFICATION_DB_POOL_SIZE:5}
+  jpa:
+    hibernate:
+      # Falla al arrancar si las entidades no coinciden con las tablas del monolito
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    enabled: false
+  kafka:
+    # Local: el broker del docker-compose publica 9094 al host. Dentro de Docker: kafka:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    consumer:
+      auto-offset-reset: earliest
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
+
+notification:
+  email:
+    enabled: ${NOTIFICATION_EMAIL_ENABLED:true}
+
+management:
+  health:
+    # Sin SMTP configurado el indicador de mail daría DOWN y el contenedor nunca estaría sano;
+    # un correo que falla queda como FAILED en notification_user, no tumba el servicio
+    mail:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.capysoft.notification: INFO
