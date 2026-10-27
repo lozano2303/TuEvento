@@ -10,9 +10,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.capysoft.tuevento.modules.language.domain.model.NotificationTranslation;
+import com.capysoft.tuevento.modules.notification.domain.model.NotificationTranslation;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.NotificationTranslationRepository;
+import com.capysoft.tuevento.modules.notification.domain.repository.NotificationTranslationRepository;
 import com.capysoft.tuevento.modules.notification.application.dto.InAppNotificationDetails;
 import com.capysoft.tuevento.modules.notification.application.dto.InAppNotificationPageResponse;
 import com.capysoft.tuevento.modules.notification.application.dto.InAppNotificationResponse;

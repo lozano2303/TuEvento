@@ -1,6 +1,5 @@
 package com.capysoft.tuevento.modules.section.infrastructure.persistence.entity;
 
-import com.capysoft.tuevento.modules.language.infrastructure.persistence.entity.TranslationStatusEnum;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,9 +1,9 @@
 package com.capysoft.tuevento.modules.profile.infrastructure;
 
 import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.model.ProfileTranslation;
+import com.capysoft.tuevento.modules.profile.domain.model.ProfileTranslation;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.ProfileTranslationRepository;
+import com.capysoft.tuevento.modules.profile.domain.repository.ProfileTranslationRepository;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
 import com.capysoft.tuevento.modules.profile.infrastructure.translation.ProfileTranslatableContentHandler;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
