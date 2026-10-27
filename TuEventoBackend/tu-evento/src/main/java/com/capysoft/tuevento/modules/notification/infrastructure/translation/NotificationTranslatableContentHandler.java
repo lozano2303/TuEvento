@@ -1,9 +1,9 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.translation;
 
 import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
-import com.capysoft.tuevento.modules.language.domain.model.NotificationTranslation;
+import com.capysoft.tuevento.modules.notification.domain.model.NotificationTranslation;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.NotificationTranslationRepository;
+import com.capysoft.tuevento.modules.notification.domain.repository.NotificationTranslationRepository;
 import com.capysoft.tuevento.modules.notification.infrastructure.persistence.repository.JpaNotificationRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
