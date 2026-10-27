@@ -36,6 +36,9 @@ public class SecurityConfig {
                         // El catálogo de temas se lee sin sesión (como en el monolito); el tema activo,
                         // su personalización y su historial son del usuario autenticado
                         .requestMatchers(HttpMethod.GET, "/api/v1/themes").permitAll()
+                        // El perfil público de un usuario (nombre, foto, biografía) se lee sin sesión;
+                        // crearlo y editarlo exige ser su dueño o ADMIN (en ProfileController)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/profiles/user/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

@@ -22,6 +22,8 @@ import com.capysoft.common.domain.exception.ForbiddenException;
 import com.capysoft.common.domain.exception.NotFoundException;
 import com.capysoft.common.domain.exception.UnauthorizedException;
 import com.capysoft.common.interfaces.ApiResponse;
+import com.capysoft.identity.profile.domain.exception.ProfileAlreadyExistsException;
+import com.capysoft.identity.shared.domain.exception.ServiceUnavailableException;
 
 /**
  * Errores de la API de Identidad con el mismo estado y el mismo cuerpo {@link ApiResponse} que
@@ -45,6 +47,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleMalformedJson(HttpMessageNotReadableException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("Malformed JSON request"));
+    }
+
+    @ExceptionHandler(ProfileAlreadyExistsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleProfileAlreadyExists(ProfileAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
+    }
+
+    /** Un servicio del que depende la operación no respondió: 503 para que el cliente reintente. */
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleServiceUnavailable(ServiceUnavailableException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
 
     @ExceptionHandler(NotFoundException.class)
