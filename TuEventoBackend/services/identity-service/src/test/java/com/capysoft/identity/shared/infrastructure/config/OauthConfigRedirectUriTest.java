@@ -62,7 +62,7 @@ class OauthConfigRedirectUriTest {
     }
 
     @Nested
-    @DisplayName("Property resolution (application-*.yml + environment)")
+    @DisplayName("Property resolution (application.yml + environment)")
     class PropertyResolution {
 
         /** Mirrors how Spring Boot resolves @Value: environment variables first, then the profile YAML. */
@@ -81,27 +81,27 @@ class OauthConfigRedirectUriTest {
         }
 
         @Test
-        @DisplayName("prod: Google redirect URI variable is used as-is, without appending the callback path")
+        @DisplayName("with the variable: Google redirect URI variable is used as-is, without appending the callback path")
         void prod_googleVariableIsTheFullUrl() throws IOException {
-            StandardEnvironment env = environment("application-prod.yml",
+            StandardEnvironment env = environment("application.yml",
                     Map.of("APP_OAUTH_GOOGLE_REDIRECT_URI", GOOGLE_CALLBACK));
 
             assertThat(env.getProperty("app.oauth.google.redirect-uri")).isEqualTo(GOOGLE_CALLBACK);
         }
 
         @Test
-        @DisplayName("dev: without the variable, the Google default is the full local callback URL")
+        @DisplayName("without the variable, the Google default is the full local callback URL")
         void dev_googleDefaultIsTheFullLocalUrl() throws IOException {
-            StandardEnvironment env = environment("application-dev.yml", Map.of());
+            StandardEnvironment env = environment("application.yml", Map.of());
 
             assertThat(env.getProperty("app.oauth.google.redirect-uri"))
                     .isEqualTo("http://localhost:8080/api/v1/auth/oauth/google/callback");
         }
 
         @Test
-        @DisplayName("dev: the Google variable overrides the default with the same full-URL meaning")
+        @DisplayName("the Google variable overrides the default with the same full-URL meaning")
         void dev_googleVariableIsTheFullUrl() throws IOException {
-            StandardEnvironment env = environment("application-dev.yml",
+            StandardEnvironment env = environment("application.yml",
                     Map.of("APP_OAUTH_GOOGLE_REDIRECT_URI", GOOGLE_CALLBACK));
 
             assertThat(env.getProperty("app.oauth.google.redirect-uri")).isEqualTo(GOOGLE_CALLBACK);
@@ -110,7 +110,7 @@ class OauthConfigRedirectUriTest {
         @Test
         @DisplayName("variable from a non-environment source (e.g. .env via spring-dotenv) is not concatenated")
         void variableResolvedOnlyThroughThePlaceholder_isNotConcatenated() throws IOException {
-            for (String profile : new String[]{"application-dev.yml", "application-prod.yml"}) {
+            for (String profile : new String[]{"application.yml"}) {
                 StandardEnvironment env = environment(profile, Map.of());
                 env.getPropertySources().addFirst(new org.springframework.core.env.MapPropertySource("dotenv",
                         Map.of("APP_OAUTH_GOOGLE_REDIRECT_URI", GOOGLE_CALLBACK)));
