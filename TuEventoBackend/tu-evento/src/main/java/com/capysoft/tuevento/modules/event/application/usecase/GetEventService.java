@@ -31,7 +31,7 @@ public class GetEventService implements GetEventUseCase {
     private final com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository ticketRepository;
 
     // Translation support
-    private final com.capysoft.tuevento.modules.language.domain.repository.EventTranslationRepository eventTranslationRepository;
+    private final com.capysoft.tuevento.modules.event.domain.repository.EventTranslationRepository eventTranslationRepository;
     private final com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository languageRepository;
     private final com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository translationJobRepository;
     private final com.capysoft.tuevento.modules.language.application.service.TranslationService translationService;

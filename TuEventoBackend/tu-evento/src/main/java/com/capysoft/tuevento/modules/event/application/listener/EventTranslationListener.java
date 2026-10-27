@@ -1,6 +1,6 @@
-package com.capysoft.tuevento.modules.language.application.listener;
+package com.capysoft.tuevento.modules.event.application.listener;
 
-import com.capysoft.tuevento.modules.language.domain.repository.EventTranslationRepository;
+import com.capysoft.tuevento.modules.event.domain.repository.EventTranslationRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.modules.event.domain.event.EventUpdatedEvent;
 import com.capysoft.tuevento.modules.event.domain.repository.EventLogRepository;
