@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import com.capysoft.tuevento.modules.geolocation.domain.exception.SiteAlreadyExistsException;
 import com.capysoft.tuevento.modules.payment.domain.model.InvalidPaymentStatusTransitionException;
 import com.capysoft.tuevento.modules.profile.domain.exception.ProfileAlreadyExistsException;
 import com.capysoft.tuevento.modules.ticket.domain.model.InvalidOrderStatusTransitionException;
@@ -86,12 +85,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(NoResourceFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error("Resource not found"));
-    }
-
-    @ExceptionHandler(SiteAlreadyExistsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleSiteAlreadyExistsException(SiteAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(ex.getMessage()));
     }
 
     @ExceptionHandler(ProfileAlreadyExistsException.class)

@@ -15,8 +15,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Lee las sedes por la API pública de geolocalización ({@code GET /api/v1/geolocation/sites/{id}})
- * en vez de importar el módulo: así el evento no depende del código de localización. La URL sale
- * de {@code GEOLOCATION_SERVICE_URL} (el microservicio); sin ella apunta al propio monolito.
+ * de geolocation-service: el monolito ya no tiene módulo de geolocalización. La URL sale de
+ * {@code GEOLOCATION_SERVICE_URL}; sin ella, {@code http://localhost:8087}.
  *
  * <p>Las sedes casi no cambian y los listados piden la misma sede por cada evento, así que se
  * guardan en memoria durante {@code app.geolocation.cache-ttl}.
@@ -31,7 +31,7 @@ public class GeolocationSiteClient implements SiteLookupPort {
 
     @Autowired
     public GeolocationSiteClient(RestClient.Builder builder,
-                                 @Value("${app.geolocation.base-url:${GEOLOCATION_SERVICE_URL:http://localhost:${server.port:8080}}}")
+                                 @Value("${app.geolocation.base-url:${GEOLOCATION_SERVICE_URL:http://localhost:8087}}")
                                  String baseUrl,
                                  @Value("${app.geolocation.cache-ttl:PT1M}") Duration cacheTtl) {
         this(RemoteResource.restClient(builder, baseUrl), cacheTtl);

@@ -292,7 +292,7 @@ services:
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       # Las notificaciones las envía notification-service (local = dentro del backend)
       - NOTIFICATION_MODE=remote
-      # Los eventos leen nombre y capacidad de la sede en geolocation-service (sin ella, en el propio backend)
+      # Eventos y perfiles leen sedes y ciudades de geolocation-service (el backend ya no tiene ese módulo)
       - GEOLOCATION_SERVICE_URL=http://geolocation-service:8087
     depends_on:
       postgres:
@@ -327,7 +327,7 @@ services:
       - MONOLITH_URI=http://backend:8080
       # /api/v1/storage va al microservicio; para volver al monolito, quitar esta variable
       - STORAGE_SERVICE_URI=http://storage-service:8085
-      # /api/v1/geolocation va al microservicio; para volver al monolito, quitar esta variable
+      # /api/v1/geolocation solo lo sirve el microservicio (el monolito ya no tiene ese módulo)
       - GEOLOCATION_SERVICE_URI=http://geolocation-service:8087
       # /api/v1/notifications va al microservicio; para volver al monolito, quitar esta variable
       - NOTIFICATION_SERVICE_URI=http://notification-service:8086

@@ -15,8 +15,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Lee las ciudades por la API pública de geolocalización ({@code GET /api/v1/geolocation/cities/{id}})
- * en vez de importar el módulo. Misma URL y TTL que las sedes de eventos:
- * {@code GEOLOCATION_SERVICE_URL} o, sin ella, el propio monolito.
+ * de geolocation-service. Misma URL y TTL que las sedes de eventos:
+ * {@code GEOLOCATION_SERVICE_URL} o, sin ella, {@code http://localhost:8087}.
  */
 @Component
 public class GeolocationCityClient implements CityLookupPort {
@@ -28,7 +28,7 @@ public class GeolocationCityClient implements CityLookupPort {
 
     @Autowired
     public GeolocationCityClient(RestClient.Builder builder,
-                                 @Value("${app.geolocation.base-url:${GEOLOCATION_SERVICE_URL:http://localhost:${server.port:8080}}}")
+                                 @Value("${app.geolocation.base-url:${GEOLOCATION_SERVICE_URL:http://localhost:8087}}")
                                  String baseUrl,
                                  @Value("${app.geolocation.cache-ttl:PT1M}") Duration cacheTtl) {
         this(RemoteResource.restClient(builder, baseUrl), cacheTtl);
