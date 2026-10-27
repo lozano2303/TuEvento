@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.event.application.usecase;
 
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.category.application.dto.response.CategoryResponse;
 import com.capysoft.tuevento.modules.category.application.port.in.CategoryEventUseCase;
@@ -33,7 +34,7 @@ public class GetEventService implements GetEventUseCase {
 
     // Translation support
     private final com.capysoft.tuevento.modules.event.domain.repository.EventTranslationRepository eventTranslationRepository;
-    private final com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
     private final TranslationRequests translationRequests;
 
     // ─── Authenticated queries ────────────────────────────────────────────────
@@ -173,7 +174,7 @@ public class GetEventService implements GetEventUseCase {
                     log.debug("Requested language is Spanish (source language) - no translation needed for event {}", 
                             e.getEventId());
                 } else {
-                    var language = languageRepository.findByCode(languageCode);
+                    var language = languageCatalog.findByCode(languageCode);
                     if (language.isPresent()) {
                         var translation = eventTranslationRepository.findByEventAndLanguage(
                                 Math.toIntExact(e.getEventId()), language.get().getLanguageId());

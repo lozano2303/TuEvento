@@ -6,8 +6,8 @@ import com.capysoft.tuevento.modules.event.domain.model.EventRatingTranslation;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingTranslationRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
@@ -31,11 +31,11 @@ import static org.mockito.Mockito.when;
 @DisplayName("EventRatingTranslationController")
 class EventRatingTranslationControllerTest {
 
-    private static final Language EN = Language.builder().languageId(2).code("en").name("English").build();
+    private static final LanguageSummary EN = LanguageSummary.builder().languageId(2).code("en").build();
 
     private final EventRatingTranslationRepository translations = mock(EventRatingTranslationRepository.class);
     private final EventRatingRepository ratings = mock(EventRatingRepository.class);
-    private final LanguageRepository languages = mock(LanguageRepository.class);
+    private final LanguageCatalog languages = mock(LanguageCatalog.class);
     private final TranslationRequests jobs = mock(TranslationRequests.class);
     private final EventRepository events = mock(EventRepository.class);
     private final EventRatingTranslationController controller =
