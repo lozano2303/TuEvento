@@ -1,8 +1,8 @@
 package com.capysoft.tuevento.modules.profile.infrastructure;
 
-import com.capysoft.tuevento.modules.language.domain.model.Language;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
 import com.capysoft.tuevento.modules.profile.domain.model.ProfileTranslation;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileTranslationRepository;
 import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
 import com.capysoft.tuevento.modules.profile.infrastructure.translation.ProfileTranslatableContentHandler;
@@ -29,7 +29,7 @@ class ProfileTranslatableContentHandlerTest {
 
     @Mock private ProfileRepository            profileRepository;
     @Mock private ProfileTranslationRepository profileTranslationRepository;
-    @Mock private LanguageRepository           languageRepository;
+    @Mock private LanguageCatalog              languageCatalog;
 
     @InjectMocks private ProfileTranslatableContentHandler handler;
 
@@ -39,7 +39,7 @@ class ProfileTranslatableContentHandlerTest {
         ProfileTranslation existing = new ProfileTranslation();
         existing.setProfileId(30);
         existing.setLanguageId(3);
-        when(languageRepository.findByCode("pt")).thenReturn(Optional.of(Language.builder().languageId(3).code("pt").build()));
+        when(languageCatalog.findByCode("pt")).thenReturn(Optional.of(LanguageSummary.builder().languageId(3).code("pt").build()));
         when(profileTranslationRepository.findByProfileAndLanguage(30L, 3)).thenReturn(Optional.of(existing));
 
         handler.saveTranslation(30L, "pt", Map.of("bio", "Amo eventos"),
@@ -52,5 +52,18 @@ class ProfileTranslatableContentHandlerTest {
         assertEquals("Amo eventos", saved.getTranslatedBio());
         assertEquals(TranslationSource.MANUAL, saved.getSource());
         assertEquals(TranslationStatus.PUBLISHED, saved.getStatus());
+    }
+
+    @Test
+    @DisplayName("Estado de la traducción: el guardado, o vacío si el idioma no existe")
+    void translation_status() {
+        ProfileTranslation existing = new ProfileTranslation();
+        existing.setStatus(TranslationStatus.DRAFT);
+        when(languageCatalog.findByCode("pt")).thenReturn(Optional.of(LanguageSummary.builder().languageId(3).code("pt").build()));
+        when(languageCatalog.findByCode("xx")).thenReturn(Optional.empty());
+        when(profileTranslationRepository.findByProfileAndLanguage(30L, 3)).thenReturn(Optional.of(existing));
+
+        assertEquals(Optional.of(TranslationStatus.DRAFT), handler.findTranslationStatus(30L, "pt"));
+        assertEquals(Optional.empty(), handler.findTranslationStatus(30L, "xx"));
     }
 }

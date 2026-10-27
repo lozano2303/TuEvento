@@ -1,15 +1,11 @@
 package com.capysoft.tuevento.modules.language.application.service;
 
-import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
 import com.capysoft.tuevento.modules.language.domain.model.TranslationJob;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.stereotype.Service;
@@ -38,11 +34,7 @@ public class TranslationService {
     private final TranslationJobRepository translationJobRepository;
     private final LanguageRepository languageRepository;
     private final TranslationProcessor translationProcessor;
-    
-    @Autowired
-    @Qualifier("translatableContentHandlerRegistry")
-    private Map<String, TranslatableContentHandler> handlerRegistry;
-    
+
     @Value("${translation.provider:libretranslate}")
     private String defaultProvider;
 
@@ -55,20 +47,16 @@ public class TranslationService {
     }
 
     /**
-     * Solicita la traducción de una entidad.
+     * Solicita la traducción de una entidad a todos los idiomas activos. Los textos se guardan en
+     * cada trabajo, así que procesarlo o reintentarlo no vuelve a pedírselos al dominio.
      * REQUIRES_NEW: Se ejecuta en una transacción independiente para asegurar el commit.
+     *
+     * @param sourceTexts campo → texto original
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void requestTranslation(String entityType, Long entityId, String sourceLanguageCode) {
-        // 1. Validar que existe un handler para la entidad
-        TranslatableContentHandler handler = handlerRegistry.get(entityType);
-        if (handler == null) {
-            log.warn("No handler found for entity type: {}", entityType);
-            return;
-        }
-
-        // 2. Cargar textos fuente y calcular hash
-        Map<String, String> sourceTexts = handler.loadSourceTexts(entityId);
+    public void requestTranslation(String entityType, Long entityId, String sourceLanguageCode,
+                                   Map<String, String> sourceTexts) {
+        // 1. Calcular el hash de los textos fuente
         if (sourceTexts.isEmpty()) {
             log.debug("No translatable texts found for {}/{}", entityType, entityId);
             return;
@@ -76,7 +64,7 @@ public class TranslationService {
         
         String sourceHash = calculateSourceHash(sourceTexts);
         
-        // 3. Obtener idiomas
+        // 2. Obtener idiomas
         Optional<Language> sourceLanguage = languageRepository.findByCode(sourceLanguageCode);
         if (sourceLanguage.isEmpty()) {
             log.warn("Source language not found: {}", sourceLanguageCode);
@@ -88,7 +76,7 @@ public class TranslationService {
                 .filter(lang -> !lang.getCode().equals(sourceLanguageCode))
                 .toList();
 
-        // 4. Crear/actualizar jobs PENDING
+        // 3. Crear/actualizar jobs PENDING
         List<TranslationJob> jobsToSave = new ArrayList<>();
         
         for (Language targetLanguage : targetLanguages) {
@@ -100,6 +88,7 @@ public class TranslationService {
                 // Solo actualizar si el hash cambió
                 if (!sourceHash.equals(job.getSourceHash())) {
                     job.setSourceHash(sourceHash);
+                    job.setSourceTexts(sourceTexts);
                     job.setStatus(TranslationJobStatus.PENDING);
                     job.setAttempts(0);
                     job.setLastError(null);
@@ -117,6 +106,7 @@ public class TranslationService {
                         .sourceLanguageId(sourceLanguage.get().getLanguageId())
                         .targetLanguageId(targetLanguage.getLanguageId())
                         .sourceHash(sourceHash)
+                        .sourceTexts(sourceTexts)
                         .status(TranslationJobStatus.PENDING)
                         .provider(defaultProvider)
                         .attempts(0)
@@ -133,7 +123,7 @@ public class TranslationService {
             translationJobRepository.saveAll(jobsToSave);
             log.info("Saved {} translation jobs for {}/{}", jobsToSave.size(), entityType, entityId);
             
-            // 5. Despachar procesamiento después del commit
+            // 4. Despachar procesamiento después del commit
             scheduleProcessingAfterCommit(entityType, entityId);
         }
     }

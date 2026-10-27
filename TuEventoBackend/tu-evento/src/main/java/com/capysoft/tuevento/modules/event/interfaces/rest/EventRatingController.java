@@ -12,10 +12,10 @@ import com.capysoft.tuevento.modules.event.domain.model.EventRating;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.domain.model.EventRatingTranslation;
-import com.capysoft.tuevento.modules.language.domain.model.Language;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
@@ -66,7 +66,7 @@ public class EventRatingController {
     private final EventRepository                    eventRepository;
     private final UserDirectoryPort                  userDirectoryPort;
     private final EventRatingTranslationRepository   eventRatingTranslationRepository;
-    private final LanguageRepository                 languageRepository;
+    private final LanguageCatalog                    languageCatalog;
     private final TranslationRequests translationRequests;
 
     @Operation(summary = "Add a comment/rating or reply to an event — any authenticated user")
@@ -131,8 +131,8 @@ public class EventRatingController {
         
         Integer targetLanguageId = null;
         if (needsTranslation) {
-            targetLanguageId = languageRepository.findByCode(languageCode.toLowerCase())
-                    .map(Language::getLanguageId)
+            targetLanguageId = languageCatalog.findByCode(languageCode.toLowerCase())
+                    .map(LanguageSummary::getLanguageId)
                     .orElse(null);
         }
 

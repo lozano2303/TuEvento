@@ -1,8 +1,8 @@
 package com.capysoft.tuevento.modules.section.interfaces.rest;
 
 import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
-import com.capysoft.tuevento.modules.language.domain.model.Language;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.modules.section.domain.model.SectionType;
 import com.capysoft.tuevento.modules.section.domain.model.SectionTypeTranslation;
 import com.capysoft.tuevento.modules.section.domain.repository.SectionTypeRepository;
@@ -39,7 +39,7 @@ public class SectionTypeTranslationController {
 
     private final SectionTypeTranslationRepository sectionTypeTranslationRepository;
     private final SectionTypeRepository sectionTypeRepository;
-    private final LanguageRepository languageRepository;
+    private final LanguageCatalog languageCatalog;
     private final TranslationRequests translationRequests;
 
     @Operation(summary = "Get all section types with translations for a language",
@@ -54,7 +54,7 @@ public class SectionTypeTranslationController {
             @RequestParam(defaultValue = TranslationAdminSupport.FILTER_ALL) String filter) {
 
         try {
-            Optional<Language> language = languageRepository.findByCode(languageCode.toLowerCase());
+            Optional<LanguageSummary> language = languageCatalog.findByCode(languageCode.toLowerCase());
             if (language.isEmpty()) {
                 return ResponseEntity.badRequest().body(ApiResponse.error("Language not found: " + languageCode));
             }
@@ -154,7 +154,7 @@ public class SectionTypeTranslationController {
         if (sectionTypeRepository.findById(sectionTypeId).isEmpty()) {
             return "Section type not found with ID: " + sectionTypeId;
         }
-        Optional<Language> language = languageRepository.findById(languageId);
+        Optional<LanguageSummary> language = languageCatalog.findById(languageId);
         if (language.isEmpty()) {
             return "Language not found with ID: " + languageId;
         }

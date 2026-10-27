@@ -129,7 +129,9 @@ public class SecurityConfig {
             @Value("${app.internal.api-key:}") String internalApiKey) throws Exception {
         return http
                 .securityMatcher("/internal/**")
-                .csrf(AbstractHttpConfigurer::disable)
+                // CSRF is safe to disable: this chain is stateless and authenticates only with the
+                // X-Internal-Api-Key header, never with cookies, so a browser cannot forge the request.
+                .csrf(AbstractHttpConfigurer::disable) // NOSONAR java:S4502 header-only service auth
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new InternalApiKeyFilter(internalApiKey), UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(ex -> ex

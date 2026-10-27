@@ -1,21 +1,18 @@
 package com.capysoft.tuevento.modules.language.application.service;
 
-import com.capysoft.tuevento.modules.language.application.port.out.TranslatableContentHandler;
 import com.capysoft.tuevento.modules.language.application.port.out.TranslationPort;
+import com.capysoft.tuevento.modules.language.application.port.out.TranslationResults;
 import com.capysoft.tuevento.modules.language.domain.model.Language;
 import com.capysoft.tuevento.modules.language.domain.model.TranslationJob;
 import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
 import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
-import com.capysoft.tuevento.shared.domain.valueobject.TranslationSource;
-import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,73 +24,102 @@ class TranslationProcessorTest {
 
     @Mock
     private TranslationJobRepository translationJobRepository;
-    
+
     @Mock
     private LanguageRepository languageRepository;
-    
+
     @Mock
     private TranslationPort translationPort;
-    
+
     @Mock
     private TextMaskingService maskingService;
-    
+
     @Mock
-    private TranslatableContentHandler contentHandler;
-    
+    private TranslationResults translationResults;
+
     private TranslationProcessor translationProcessor;
-    
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        
+
         translationProcessor = new TranslationProcessor(
                 translationJobRepository,
                 languageRepository,
                 translationPort,
-                maskingService
+                maskingService,
+                translationResults
         );
-        
-        // Inject handler registry via reflection
-        Map<String, TranslatableContentHandler> handlerRegistry = new HashMap<>();
-        handlerRegistry.put("event", contentHandler);
-        ReflectionTestUtils.setField(translationProcessor, "handlerRegistry", handlerRegistry);
-        
+
         // Set maxBackoffMinutes via reflection
         ReflectionTestUtils.setField(translationProcessor, "maxBackoffMinutes", 60);
     }
 
-    @Test
-    void testTranslationExistingInReviewedState() throws Exception {
-        // Given
+    /** Un trabajo pendiente del evento 100 al inglés, reclamado, con su texto original. */
+    private TranslationJob pendingJob(Map<String, String> sourceTexts) {
         TranslationJob job = createMockJob(1, "event", 100, 1, 2);
-        Language sourceLanguage = createMockLanguage(1, "es");
-        Language targetLanguage = createMockLanguage(2, "en");
-        
+        when(job.getSourceTexts()).thenReturn(sourceTexts);
         when(translationJobRepository.findByEntityAndStatus("event", 100, TranslationJobStatus.PENDING))
                 .thenReturn(List.of(job));
         when(translationJobRepository.claimJob(1)).thenReturn(true);
+        Language sourceLanguage = createMockLanguage(1, "es");
+        Language targetLanguage = createMockLanguage(2, "en");
         when(languageRepository.findById(1)).thenReturn(Optional.of(sourceLanguage));
         when(languageRepository.findById(2)).thenReturn(Optional.of(targetLanguage));
-        when(contentHandler.findTranslationStatus(100L, "en"))
-                .thenReturn(Optional.of(TranslationStatus.PUBLISHED));
+        return job;
+    }
+
+    @Test
+    void testTranslatesStoredTextsAndDeliversThem() throws Exception {
+        // Given
+        TranslationJob job = pendingJob(Map.of("title", "Hola"));
+        when(maskingService.maskText("Hola"))
+                .thenReturn(new TextMaskingService.MaskingResult("Hola", Map.of(), Map.of()));
+        when(translationPort.translate("Hola", "es", "en")).thenReturn("Hello");
+        when(maskingService.unmaskText("Hello", Map.of(), Map.of())).thenReturn("Hello");
 
         // When
         translationProcessor.processTranslationJobs("event", 100L);
 
         // Then
-        verify(translationJobRepository).claimJob(1);
-        verify(contentHandler).findTranslationStatus(100L, "en");
-        verify(contentHandler, never()).saveTranslation(anyLong(), anyString(), anyMap(), any(), any());
-        verify(translationPort, never()).translate(anyString(), anyString(), anyString());
+        verify(translationResults).deliver("event", 100L, "en", Map.of("title", "Hello"));
         verify(job).markCompleted();
         verify(translationJobRepository).save(job);
+    }
+
+    @Test
+    void testJobWithoutTextsCompletesWithoutTranslating() throws Exception {
+        // Given
+        TranslationJob job = pendingJob(null);
+
+        // When
+        translationProcessor.processTranslationJobs("event", 100L);
+
+        // Then
+        verify(translationPort, never()).translate(anyString(), anyString(), anyString());
+        verify(translationResults, never()).deliver(anyString(), anyLong(), anyString(), anyMap());
+        verify(job).markCompleted();
+    }
+
+    @Test
+    void testUnknownLanguageFailsTheJob() throws Exception {
+        // Given
+        TranslationJob job = pendingJob(Map.of("title", "Hola"));
+        when(languageRepository.findById(2)).thenReturn(Optional.empty());
+
+        // When
+        translationProcessor.processTranslationJobs("event", 100L);
+
+        // Then
+        verify(job).markFailed(contains("language not found"), eq(60));
+        verify(translationResults, never()).deliver(anyString(), anyLong(), anyString(), anyMap());
     }
 
     @Test
     void testAtomicClaimReturnsZeroRows() throws Exception {
         // Given
         TranslationJob job = createMockJob(1, "event", 100, 1, 2);
-        
+
         when(translationJobRepository.findByEntityAndStatus("event", 100, TranslationJobStatus.PENDING))
                 .thenReturn(List.of(job));
         when(translationJobRepository.claimJob(1)).thenReturn(false); // Claim failed
@@ -104,36 +130,22 @@ class TranslationProcessorTest {
         // Then
         verify(translationJobRepository).claimJob(1);
         verify(languageRepository, never()).findById(any());
-        verify(contentHandler, never()).loadSourceTexts(anyLong());
         verify(translationPort, never()).translate(anyString(), anyString(), anyString());
-        verify(contentHandler, never()).saveTranslation(anyLong(), anyString(), anyMap(), any(), any());
+        verify(translationResults, never()).deliver(anyString(), anyLong(), anyString(), anyMap());
         verify(translationJobRepository, never()).save(any(TranslationJob.class));
     }
 
     @Test
     void testMissingPlaceholderAfterTranslation() throws Exception {
         // Given
-        TranslationJob job = createMockJob(1, "event", 100, 1, 2);
-        Language sourceLanguage = createMockLanguage(1, "es");
-        Language targetLanguage = createMockLanguage(2, "en");
-        
-        Map<String, String> sourceTexts = new HashMap<>();
-        sourceTexts.put("title", "Welcome to Tu Evento, {name}!");
-        
+        TranslationJob job = pendingJob(Map.of("title", "Welcome to Tu Evento, {name}!"));
+
         TextMaskingService.MaskingResult maskingResult = new TextMaskingService.MaskingResult(
                 "Welcome to {{T_1}}, {{V_1}}!",
                 Map.of("{{T_1}}", "Tu Evento"),
                 Map.of("{{V_1}}", "{name}")
         );
 
-        when(translationJobRepository.findByEntityAndStatus("event", 100, TranslationJobStatus.PENDING))
-                .thenReturn(List.of(job));
-        when(translationJobRepository.claimJob(1)).thenReturn(true);
-        when(languageRepository.findById(1)).thenReturn(Optional.of(sourceLanguage));
-        when(languageRepository.findById(2)).thenReturn(Optional.of(targetLanguage));
-        when(contentHandler.findTranslationStatus(100L, "en"))
-                .thenReturn(Optional.empty());
-        when(contentHandler.loadSourceTexts(100L)).thenReturn(sourceTexts);
         when(maskingService.maskText("Welcome to Tu Evento, {name}!"))
                 .thenReturn(maskingResult);
         when(translationPort.translate("Welcome to {{T_1}}, {{V_1}}!", "es", "en"))
@@ -149,13 +161,12 @@ class TranslationProcessorTest {
 
         // Then
         verify(translationJobRepository).claimJob(1);
-        verify(contentHandler).loadSourceTexts(100L);
         verify(translationPort).translate("Welcome to {{T_1}}, {{V_1}}!", "es", "en");
         verify(translationPort).translate("Welcome to Tu Evento, {name}!", "es", "en");
-        verify(maskingService).unmaskText("Bienvenido", 
-                Map.of("{{T_1}}", "Tu Evento"), 
+        verify(maskingService).unmaskText("Bienvenido",
+                Map.of("{{T_1}}", "Tu Evento"),
                 Map.of("{{V_1}}", "{name}"));
-        verify(contentHandler, never()).saveTranslation(anyLong(), anyString(), anyMap(), any(), any());
+        verify(translationResults, never()).deliver(anyString(), anyLong(), anyString(), anyMap());
         verify(job).markFailed(contains("{{T_1}}"), eq(60));
         verify(translationJobRepository).save(job);
     }
@@ -163,12 +174,7 @@ class TranslationProcessorTest {
     @Test
     void testMissingPlaceholderFallsBackToUnmaskedTranslation() throws Exception {
         // Given
-        TranslationJob job = createMockJob(1, "event", 100, 1, 2);
-        Language sourceLanguage = createMockLanguage(1, "es");
-        Language targetLanguage = createMockLanguage(2, "en");
-
-        Map<String, String> sourceTexts = new HashMap<>();
-        sourceTexts.put("title", "Tu Evento aprobó a {name}");
+        TranslationJob job = pendingJob(Map.of("title", "Tu Evento aprobó a {name}"));
 
         TextMaskingService.MaskingResult maskingResult = new TextMaskingService.MaskingResult(
                 "{{T_1}} aprobó a {{V_1}}",
@@ -176,13 +182,6 @@ class TranslationProcessorTest {
                 Map.of("{{V_1}}", "{name}")
         );
 
-        when(translationJobRepository.findByEntityAndStatus("event", 100, TranslationJobStatus.PENDING))
-                .thenReturn(List.of(job));
-        when(translationJobRepository.claimJob(1)).thenReturn(true);
-        when(languageRepository.findById(1)).thenReturn(Optional.of(sourceLanguage));
-        when(languageRepository.findById(2)).thenReturn(Optional.of(targetLanguage));
-        when(contentHandler.findTranslationStatus(100L, "en")).thenReturn(Optional.empty());
-        when(contentHandler.loadSourceTexts(100L)).thenReturn(sourceTexts);
         when(maskingService.maskText("Tu Evento aprobó a {name}")).thenReturn(maskingResult);
         // El motor elimina el marcador del inicio de la frase
         when(translationPort.translate("{{T_1}} aprobó a {{V_1}}", "es", "en"))
@@ -197,8 +196,8 @@ class TranslationProcessorTest {
         translationProcessor.processTranslationJobs("event", 100L);
 
         // Then
-        verify(contentHandler).saveTranslation(eq(100L), eq("en"),
-                argThat(m -> "Tu Evento approved {name}".equals(m.get("title"))), any(), any());
+        verify(translationResults).deliver(eq("event"), eq(100L), eq("en"),
+                argThat(m -> "Tu Evento approved {name}".equals(m.get("title"))));
         verify(job, never()).markFailed(anyString(), anyInt());
     }
 
