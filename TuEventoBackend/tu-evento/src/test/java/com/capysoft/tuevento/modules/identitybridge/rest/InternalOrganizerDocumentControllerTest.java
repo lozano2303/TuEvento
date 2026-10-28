@@ -1,4 +1,4 @@
-package com.capysoft.tuevento.modules.security.interfaces.rest;
+package com.capysoft.tuevento.modules.identitybridge.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -11,9 +11,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
-import com.capysoft.tuevento.modules.security.application.port.out.OrganizerDocumentPort;
-import com.capysoft.tuevento.modules.security.application.port.out.OrganizerDocumentPort.DocumentUpload;
-import com.capysoft.tuevento.modules.security.application.port.out.OrganizerDocumentPort.DocumentUrl;
+import com.capysoft.tuevento.modules.identitybridge.port.OrganizerDocumentPort;
+import com.capysoft.tuevento.modules.identitybridge.port.OrganizerDocumentPort.DocumentUpload;
+import com.capysoft.tuevento.modules.identitybridge.port.OrganizerDocumentPort.DocumentUrl;
 
 @DisplayName("InternalOrganizerDocumentController")
 class InternalOrganizerDocumentControllerTest {

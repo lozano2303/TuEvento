@@ -1,6 +1,6 @@
-package com.capysoft.tuevento.modules.security.application.port.out;
+package com.capysoft.tuevento.modules.identitybridge.port;
 
-import com.capysoft.tuevento.modules.security.application.port.out.OrganizerDocumentPort.DocumentUpload;
+import com.capysoft.tuevento.modules.identitybridge.port.OrganizerDocumentPort.DocumentUpload;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -1,4 +1,4 @@
-package com.capysoft.tuevento.modules.security.interfaces.rest;
+package com.capysoft.tuevento.modules.identitybridge.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -10,7 +10,7 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.capysoft.tuevento.modules.security.application.port.out.AdminPanelSourcesPort;
+import com.capysoft.tuevento.modules.identitybridge.port.AdminPanelSourcesPort;
 
 @DisplayName("InternalAdminPanelController")
 class InternalAdminPanelControllerTest {

@@ -1,15 +1,15 @@
-package com.capysoft.tuevento.modules.security.application.usecase;
+package com.capysoft.identity.security.application.usecase;
 
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.entity.ProfileEntity;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
-import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerRequestResponse;
-import com.capysoft.tuevento.modules.security.application.port.out.OrganizerDocumentPort;
-import com.capysoft.tuevento.modules.security.application.port.out.OrganizerDocumentPort.DocumentUrl;
-import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
-import com.capysoft.tuevento.modules.security.domain.model.User;
-import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
-import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.LoginCredentialsEntity;
-import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.LoginCredentialsJpaRepository;
+import com.capysoft.identity.profile.infrastructure.persistence.entity.ProfileEntity;
+import com.capysoft.identity.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.identity.security.application.dto.response.OrganizerRequestResponse;
+import com.capysoft.identity.security.application.port.out.OrganizerDocumentPort;
+import com.capysoft.identity.security.application.port.out.OrganizerDocumentPort.DocumentUrl;
+import com.capysoft.identity.security.domain.model.OrganizerPetition;
+import com.capysoft.identity.security.domain.model.User;
+import com.capysoft.identity.security.domain.repository.OrganizerPetitionRepository;
+import com.capysoft.identity.security.infrastructure.persistence.entity.LoginCredentialsEntity;
+import com.capysoft.identity.security.infrastructure.persistence.repository.LoginCredentialsJpaRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
