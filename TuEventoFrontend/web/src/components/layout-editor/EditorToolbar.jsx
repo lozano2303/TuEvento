@@ -73,7 +73,7 @@ export default function EditorToolbar({
         {/* Contador de sillas vs. aforo del evento */}
         <span
           className={`text-xs font-mono px-2 py-1 rounded ${
-            isOverCapacity ? 'text-red-400 bg-red-500/10' : 'text-textMuted'
+            isOverCapacity ? 'text-error bg-red-500/10' : 'text-textMuted'
           }`}
           title={isOverCapacity ? 'Excede el aforo del evento' : 'Sillas en el layout'}
         >
@@ -82,7 +82,7 @@ export default function EditorToolbar({
         </span>
 
         {isOverCapacity && (
-          <span className="text-[10px] font-semibold text-red-400 border border-red-400/30 px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-semibold text-error border border-red-400/30 px-2 py-0.5 rounded-full">
             Excede aforo
           </span>
         )}

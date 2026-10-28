@@ -174,7 +174,7 @@ const AdminCommentTranslations = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+          <AlertCircle className="mx-auto h-12 w-12 text-error mb-4" />
           <h1 className="text-2xl font-bold text-textPrimary mb-2">Idioma no válido</h1>
           <button
             onClick={() => navigate('/admin-translations/en/comments')}
@@ -301,8 +301,8 @@ const AdminCommentTranslations = () => {
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">
               <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                <span className="text-red-500">{error}</span>
+                <AlertCircle className="h-5 w-5 text-error mr-2" />
+                <span className="text-error">{error}</span>
               </div>
             </div>
           )}
@@ -380,7 +380,7 @@ const AdminCommentTranslations = () => {
                           <div className="flex space-x-2">
                             <button
                               onClick={() => handleSave(comment.ratingId)}
-                              className="p-2 text-green-600 hover:bg-green-500/10 rounded-lg"
+                              className="p-2 text-success hover:bg-green-500/10 rounded-lg"
                               title="Guardar"
                             >
                               <Save className="h-5 w-5" />

@@ -52,7 +52,7 @@ function resolveStyle(item) {
   const { type, title = '' } = item;
 
   if (type === 'USER_REGISTERED') {
-    return { Icon: UserPlus, iconBg: 'bg-violet-500/20', iconColor: 'text-violet-400' };
+    return { Icon: UserPlus, iconBg: 'bg-violet-500/20', iconColor: 'text-accent' };
   }
   if (type === 'PAYMENT') {
     return { Icon: CreditCard, iconBg: 'bg-amber-500/20', iconColor: 'text-amber-400' };

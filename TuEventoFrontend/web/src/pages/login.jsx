@@ -823,7 +823,7 @@ export default function Login() {
 
               {/* Reenviar activación — solo registro */}
               {view !== 'login' && (
-                <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'rgba(196,181,253,0.65)' }}>
+                <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-textMuted)' }}>
                   {t('login.notActivated')}{' '}
                   <button
                     type="button"
@@ -872,7 +872,7 @@ export default function Login() {
 
               {/* ¿Tienes cuenta? */}
               <div style={{ textAlign: 'center', paddingTop: '0.25rem' }}>
-                <p style={{ fontSize: '0.8rem', color: 'rgba(196,181,253,0.70)', marginBottom: '0.4rem' }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-textSecondary)', marginBottom: '0.4rem' }}>
                   {view === 'login' ? t('login.noAccount') : t('login.hasAccount')}{' '}
                   <button
                     type="button"
@@ -883,7 +883,7 @@ export default function Login() {
                     {view === 'login' ? t('login.createAccount') : t('login.signInLink')}
                   </button>
                 </p>
-                <p style={{ fontSize: '0.68rem', color: 'rgba(196,181,253,0.40)' }}>
+                <p style={{ fontSize: '0.68rem', color: 'var(--color-textMuted)' }}>
                   {view === 'login' ? t('login.bySigningIn') : t('login.bySigningUp')}{' '}
                   <button
                     type="button"

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Footer from '../layouts/Footer';
 import BaseModal from '../components/common/BaseModal';
 import { getAllEvents } from '../services/EventService';
@@ -17,26 +18,50 @@ import organizeImage from '../assets/images/ladingpage1.png';
 import discoverImage from '../assets/images/ladingpage2.png';
 
 /* ── Pasos "Cómo funciona" ─────────────────────────────────────────────── */
+// Textos en landing.steps.<key>.title / .desc
 const STEPS = [
-  { Icon: ChevronRight, label: '01', title: 'Crea tu cuenta',    desc: 'Regístrate en segundos. Sin tarjeta de crédito, sin pasos innecesarios.' },
-  { Icon: Map,          label: '02', title: 'Diseña el espacio', desc: 'Usa el editor de planos para armar secciones, sillas y zonas personalizadas.' },
-  { Icon: Ticket,       label: '03', title: 'Vende entradas',    desc: 'Activa la venta de tickets y gestiona pagos de forma segura.' },
-  { Icon: Star,         label: '04', title: 'Vive el evento',    desc: 'Administra asistentes en tiempo real y recibe feedback de tu audiencia.' },
+  { Icon: ChevronRight, label: '01', key: 'step1' },
+  { Icon: Map,          label: '02', key: 'step2' },
+  { Icon: Ticket,       label: '03', key: 'step3' },
+  { Icon: Star,         label: '04', key: 'step4' },
 ];
 
 /* ── Features ──────────────────────────────────────────────────────────── */
+// Textos en landing.featuresList.<key>.title / .desc
 const FEATURES = [
-  { Icon: Map,         title: 'Editor de planos',       desc: 'Crea la distribución de tu evento con un editor visual drag & drop en tiempo real.' },
-  { Icon: Bell,        title: 'Notificaciones',          desc: 'Recordatorios, cambios y confirmaciones llegan automáticamente a tus asistentes.' },
-  { Icon: CreditCard,  title: 'Pagos integrados',        desc: 'Pasarela de pago segura. Cobra entradas y recibe tu dinero sin intermediarios.' },
-  { Icon: BarChart2,   title: 'Analíticas',              desc: 'Métricas de ventas y asistencia en un panel claro para tomar mejores decisiones.' },
-  { Icon: Navigation,  title: 'Geolocalización',         desc: 'Los asistentes descubren eventos cerca de ellos filtrando por ciudad y categoría.' },
-  { Icon: Tag,         title: 'Categorías',              desc: 'Clasifica tu evento entre música, cultura, deporte, gastronomía y mucho más.' },
+  { Icon: Map,        key: 'planEditor' },
+  { Icon: Bell,       key: 'notifications' },
+  { Icon: CreditCard, key: 'payments' },
+  { Icon: BarChart2,  key: 'analytics' },
+  { Icon: Navigation, key: 'geolocation' },
+  { Icon: Tag,        key: 'categories' },
 ];
 
 /* ═══════════════════════════════════════════════════════════════════════ */
+/** Encabezado de una sección de valor del landing: textos de `landing.value.<section>`. */
+function ValueSectionHeading({ section }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <p className="text-sm font-semibold tracking-widest uppercase" style={{ color: 'var(--color-accent)' }}>
+        {t(`landing.value.${section}.eyebrow`)}
+      </p>
+      <h2 className="text-3xl md:text-4xl font-bold text-textPrimary leading-tight">
+        {t(`landing.value.${section}.title`)}<br />
+        <span style={{ background: 'linear-gradient(90deg, var(--color-accent), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+          {t(`landing.value.${section}.titleAccent`)}
+        </span>
+      </h2>
+      <p className="text-textSecondary text-lg leading-relaxed">
+        {t(`landing.value.${section}.description`)}
+      </p>
+    </>
+  );
+}
+
 export default function LadingPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [userData,       setUserData]       = useState(null);
   const [topReviews,     setTopReviews]     = useState([]);
@@ -235,45 +260,45 @@ export default function LadingPage() {
               <div>
                 <span className="lp2-eyebrow">
                   <span className="lp2-eyebrow-dot" />
-                  {userData ? `Bienvenido de nuevo, ${firstName}` : 'Gestión de eventos · Simple · Potente'}
+                  {userData ? t('landing.hero.welcomeBack', { name: firstName }) : t('landing.hero.eyebrow')}
                 </span>
               </div>
               <h1 className="lp2-hero-title">
                 {userData ? (
-                  <>Tu próximo<br /><span className="lp2-hero-title-accent">evento</span><br />te espera.</>
+                  <>{t('landing.hero.titleAuth.line1')}<br /><span className="lp2-hero-title-accent">{t('landing.hero.titleAuth.accent')}</span><br />{t('landing.hero.titleAuth.line2')}</>
                 ) : (
-                  <>Diseña eventos<br /><span className="lp2-hero-title-accent">que la gente</span><br />recuerda.</>
+                  <>{t('landing.hero.titleGuest.line1')}<br /><span className="lp2-hero-title-accent">{t('landing.hero.titleGuest.accent')}</span><br />{t('landing.hero.titleGuest.line2')}</>
                 )}
               </h1>
               <p className="lp2-hero-subtitle">
                 {userData
-                  ? 'Explora los eventos de tu ciudad, organiza el tuyo propio o gestiona tus entradas. Todo en un solo lugar.'
-                  : 'Diseña, planifica y vive experiencias únicas que marquen la diferencia. Cada detalle cuenta y nuestro kit de asistencia lo hace realidad.'}
+                  ? t('landing.hero.subtitleAuth')
+                  : t('landing.hero.subtitleGuest')}
               </p>
 
               <div className="flex flex-wrap gap-4">
                 {userData ? (
                   <>
                     <button className="lp2-btn-primary lp2-btn-primary-glow" onClick={() => navigate('/events')}>
-                      Ver eventos <ArrowRight className="w-4 h-4" />
+                      {t('landing.hero.viewEvents')} <ArrowRight className="w-4 h-4" />
                     </button>
                     {userData.role === 'ORGANIZER' ? (
                       <button className="lp2-btn-secondary" onClick={() => navigate('/events/create')}>
-                        Crear evento <ChevronRight className="w-4 h-4" />
+                        {t('landing.hero.createEvent')} <ChevronRight className="w-4 h-4" />
                       </button>
                     ) : userData.role !== 'ADMIN' && (
                       <button className="lp2-btn-secondary" onClick={() => navigate('/organizer-petition-form')}>
-                        Ser organizador <ChevronRight className="w-4 h-4" />
+                        {t('landing.hero.becomeOrganizer')} <ChevronRight className="w-4 h-4" />
                       </button>
                     )}
                   </>
                 ) : (
                   <>
                     <button className="lp2-btn-primary lp2-btn-primary-glow" onClick={() => navigate('/login')}>
-                      Empezar gratis <ArrowRight className="w-4 h-4" />
+                      {t('landing.hero.startFree')} <ArrowRight className="w-4 h-4" />
                     </button>
                     <button className="lp2-btn-secondary" onClick={() => navigate('/events')}>
-                      Ver eventos <ChevronRight className="w-4 h-4" />
+                      {t('landing.hero.viewEvents')} <ChevronRight className="w-4 h-4" />
                     </button>
                   </>
                 )}
@@ -284,12 +309,12 @@ export default function LadingPage() {
                 <div className="space-y-4 pt-1">
                   <div className="flex flex-wrap items-center gap-5">
                     {[
-                      { Icon: Ticket,     label: 'Gratis para empezar' },
-                      { Icon: CreditCard, label: 'Sin tarjeta de crédito' },
-                      { Icon: Headphones, label: 'Soporte en español' },
+                      { Icon: Ticket,     label: t('landing.hero.trust.free') },
+                      { Icon: CreditCard, label: t('landing.hero.trust.noCard') },
+                      { Icon: Headphones, label: t('landing.hero.trust.support') },
                     ].map(({ Icon, label }) => (
-                      <span key={label} className="flex items-center gap-2 text-xs" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                        <Icon className="w-3.5 h-3.5" style={{ color: 'rgba(255,255,255,0.5)' }} />
+                      <span key={label} className="flex items-center gap-2 text-xs" style={{ color: 'color-mix(in srgb, var(--color-onPrimary) 80%, transparent)' }}>
+                        <Icon className="w-3.5 h-3.5" style={{ color: 'color-mix(in srgb, var(--color-onPrimary) 65%, transparent)' }} />
                         {label}
                       </span>
                     ))}
@@ -297,21 +322,21 @@ export default function LadingPage() {
                   {/* Mini stats strip */}
                   <div className="flex flex-wrap gap-3 pt-1">
                     {[
-                      { val: '2D',   label: 'Editor visual' },
-                      { val: '100%', label: 'Seguro' },
-                      { val: '24/7', label: 'Disponible' },
+                      { val: '2D',   label: t('landing.hero.stats.editor') },
+                      { val: '100%', label: t('landing.hero.stats.secure') },
+                      { val: '24/7', label: t('landing.hero.stats.available') },
                     ].map(({ val, label }) => (
                       <div
                         key={val}
                         className="flex items-center gap-2 px-4 py-2 rounded-xl"
                         style={{
-                          background: 'rgba(255,255,255,0.22)',
-                          border: '1px solid rgba(255,255,255,0.45)',
+                          background: 'color-mix(in srgb, var(--color-onPrimary) 22%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--color-onPrimary) 45%, transparent)',
                           backdropFilter: 'blur(12px)',
                         }}
                       >
-                        <span style={{ color: '#fff', fontWeight: 900, fontSize: '0.95rem', lineHeight: 1 }}>{val}</span>
-                        <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.78rem', fontWeight: 500 }}>{label}</span>
+                        <span style={{ color: 'var(--color-onPrimary)', fontWeight: 900, fontSize: '0.95rem', lineHeight: 1 }}>{val}</span>
+                        <span style={{ color: 'color-mix(in srgb, var(--color-onPrimary) 90%, transparent)', fontSize: '0.78rem', fontWeight: 500 }}>{label}</span>
                       </div>
                     ))}
                   </div>
@@ -332,8 +357,8 @@ export default function LadingPage() {
                         <Map className="w-5 h-5 text-white opacity-80" />
                       </div>
                       <div>
-                        <div className="lp2-stat-pill-val">Editor de planos</div>
-                        <div className="lp2-stat-pill-label">Diseña tu espacio en tiempo real</div>
+                        <div className="lp2-stat-pill-val">{t('landing.heroCard.editor.title')}</div>
+                        <div className="lp2-stat-pill-label">{t('landing.heroCard.editor.desc')}</div>
                       </div>
                     </div>
                     <div className="lp2-stat-pill">
@@ -341,8 +366,8 @@ export default function LadingPage() {
                         <Ticket className="w-5 h-5 text-white opacity-80" />
                       </div>
                       <div>
-                        <div className="lp2-stat-pill-val">Venta de entradas</div>
-                        <div className="lp2-stat-pill-label">Pagos seguros y sin complicaciones</div>
+                        <div className="lp2-stat-pill-val">{t('landing.heroCard.tickets.title')}</div>
+                        <div className="lp2-stat-pill-label">{t('landing.heroCard.tickets.desc')}</div>
                       </div>
                     </div>
                   </div>
@@ -352,18 +377,18 @@ export default function LadingPage() {
                 <div
                   className="absolute -bottom-4 -left-6 flex items-center gap-3 px-4 py-2.5 rounded-2xl shadow-xl"
                   style={{
-                    background: 'rgba(255,255,255,0.16)',
+                    background: 'color-mix(in srgb, var(--color-onPrimary) 16%, transparent)',
                     backdropFilter: 'blur(14px)',
-                    border: '1px solid rgba(255,255,255,0.25)',
+                    border: '1px solid color-mix(in srgb, var(--color-onPrimary) 25%, transparent)',
                     animation: 'lp2-float 5s 1s ease-in-out infinite',
                   }}
                 >
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(255,255,255,0.28)' }}>
-                    <Ticket className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: 'color-mix(in srgb, var(--color-onPrimary) 28%, transparent)' }}>
+                    <Ticket className="w-4 h-4" style={{ color: 'var(--color-onPrimary)' }} />
                   </div>
                   <div>
-                    <p style={{ color: '#fff', fontSize: '0.75rem', fontWeight: 700 }}>Entrada confirmada</p>
-                    <p style={{ color: 'rgba(255,255,255,0.60)', fontSize: '0.65rem' }}>VIP · Fila A</p>
+                    <p style={{ color: 'var(--color-onPrimary)', fontSize: '0.75rem', fontWeight: 700 }}>{t('landing.heroCard.badge.title')}</p>
+                    <p style={{ color: 'color-mix(in srgb, var(--color-onPrimary) 75%, transparent)', fontSize: '0.65rem' }}>{t('landing.heroCard.badge.sub')}</p>
                   </div>
                 </div>
               </div>
@@ -404,25 +429,12 @@ export default function LadingPage() {
           {/* Bloque 1 */}
           <div className="grid md:grid-cols-2 gap-14 items-center">
             <div className="space-y-6">
-              <p className="text-sm font-semibold tracking-widest uppercase" style={{ color: 'var(--color-accent)' }}>
-                Todo en una plataforma
-              </p>
-              <h2 className="text-3xl md:text-4xl font-bold text-textPrimary leading-tight">
-                Organiza, diseña y vive<br />
-                <span style={{ background: 'linear-gradient(90deg, var(--color-accent), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                  eventos sin límites.
-                </span>
-              </h2>
-              <p className="text-textSecondary text-lg leading-relaxed">
-                Construye eventos memorables con nuestro creador de planos interactivos en línea.
-                Diseña espacios personalizados, gestiona asistentes y visualiza cada detalle de tu
-                evento en tiempo real, todo en una sola plataforma.
-              </p>
+              <ValueSectionHeading section="section1" />
               <ul className="space-y-4">
                 {[
-                  { Icon: Map,       text: 'Editor de planos drag & drop en tiempo real' },
-                  { Icon: BarChart2, text: 'Panel de analíticas para cada evento' },
-                  { Icon: Bell,      text: 'Notificaciones automáticas a tus asistentes' },
+                  { Icon: Map,       text: t('landing.value.section1.items.editor') },
+                  { Icon: BarChart2, text: t('landing.value.section1.items.analytics') },
+                  { Icon: Bell,      text: t('landing.value.section1.items.notifications') },
                 ].map(({ Icon, text }) => (
                   <li key={text} className="flex items-center gap-3 text-sm text-textSecondary">
                     <span
@@ -441,10 +453,10 @@ export default function LadingPage() {
             </div>
             <div className="rounded-2xl shadow-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, var(--color-surface), var(--color-background))', padding: '1.25rem' }}>
               <div className="rounded-xl overflow-hidden" style={{ height: '280px' }}>
-                <img src={organizeImage} alt="Organiza tu evento" className="w-full h-full object-cover" />
+                <img src={organizeImage} alt={t('landing.value.section1.title')} className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-wrap gap-2 mt-4">
-                {['Plano interactivo', 'Venta de tickets', 'Analíticas'].map(tag => (
+                {[t('landing.value.section1.tags.plan'), t('landing.value.section1.tags.tickets'), t('landing.value.section1.tags.analytics')].map(tag => (
                   <span key={tag} className="text-xs px-3 py-1 rounded-full font-medium"
                     style={{ background: 'color-mix(in srgb, var(--color-primary) 12%, transparent)', color: 'var(--color-accent)', border: '1px solid color-mix(in srgb, var(--color-primary) 28%, transparent)' }}>
                     {tag}
@@ -467,10 +479,10 @@ export default function LadingPage() {
           <div className="grid md:grid-cols-2 gap-14 items-center">
             <div className="rounded-2xl shadow-xl overflow-hidden order-2 md:order-1" style={{ background: 'linear-gradient(135deg, var(--color-surface), var(--color-background))', padding: '1.25rem' }}>
               <div className="rounded-xl overflow-hidden aspect-video">
-                <img src={discoverImage} alt="Eventos disponibles" className="w-full h-full object-cover" />
+                <img src={discoverImage} alt={t('landing.value.section2.titleAccent')} className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-wrap gap-2 mt-4">
-                {['Búsqueda avanzada', 'Por ubicación', 'Por categoría'].map(tag => (
+                {[t('landing.value.section2.tags.search'), t('landing.value.section2.tags.location'), t('landing.value.section2.tags.category')].map(tag => (
                   <span key={tag} className="text-xs px-3 py-1 rounded-full font-medium"
                     style={{ background: 'color-mix(in srgb, var(--color-accent) 10%, transparent)', color: 'var(--color-accent)', border: '1px solid color-mix(in srgb, var(--color-accent) 28%, transparent)' }}>
                     {tag}
@@ -479,24 +491,12 @@ export default function LadingPage() {
               </div>
             </div>
             <div className="space-y-6 order-1 md:order-2">
-              <p className="text-sm font-semibold tracking-widest uppercase" style={{ color: 'var(--color-accent)' }}>
-                Descubre experiencias
-              </p>
-              <h2 className="text-3xl md:text-4xl font-bold text-textPrimary leading-tight">
-                Solicitud de<br />
-                <span style={{ background: 'linear-gradient(90deg, var(--color-accent), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                  Eventos excepcionales.
-                </span>
-              </h2>
-              <p className="text-textSecondary text-lg leading-relaxed">
-                Si buscas nuevas experiencias, revisa nuestra lista de eventos disponibles.
-                Explora todas las opciones y encuentra el plan perfecto para ti.
-              </p>
+              <ValueSectionHeading section="section2" />
               <ul className="space-y-4">
                 {[
-                  { Icon: Navigation, text: 'Filtra por ciudad, categoría y fecha' },
-                  { Icon: Ticket,     text: 'Compra entradas de forma rápida y segura' },
-                  { Icon: Bell,       text: 'Recibe alertas de eventos que te interesan' },
+                  { Icon: Navigation, text: t('landing.value.section2.items.filter') },
+                  { Icon: Ticket,     text: t('landing.value.section2.items.buy') },
+                  { Icon: Bell,       text: t('landing.value.section2.items.alerts') },
                 ].map(({ Icon, text }) => (
                   <li key={text} className="flex items-center gap-3 text-sm text-textSecondary">
                     <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -508,8 +508,8 @@ export default function LadingPage() {
                 ))}
               </ul>
               <button onClick={() => navigate('/events')} className="lp2-btn-primary"
-                style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-primary))', color: '#fff' }}>
-                Ver eventos disponibles <ArrowRight className="w-4 h-4" />
+                style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primaryDark))', color: 'var(--color-onPrimary)' }}>
+                {t('landing.value.section2.button')} <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -528,25 +528,25 @@ export default function LadingPage() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
             <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--color-accent)' }}>
-              Simple por diseño
+              {t('landing.steps.eyebrow')}
             </p>
             <h2 className="text-3xl md:text-4xl font-bold text-textPrimary">
-              Tu evento listo en<br />cuatro pasos
+              {t('landing.steps.title')}
             </h2>
             <p className="text-textSecondary mt-3 max-w-xl mx-auto">
-              De la idea al evento real, sin que necesites saber nada técnico.
+              {t('landing.steps.subtitle')}
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8">
-            {STEPS.map(({ Icon, label, title, desc }) => (
-              <div key={title} className="lp2-step-card">
+            {STEPS.map(({ Icon, label, key }) => (
+              <div key={key} className="lp2-step-card">
                 <div className="lp2-step-number">{label}</div>
                 <div className="lp2-step-icon">
                   <Icon className="w-7 h-7" style={{ color: 'var(--color-accent)' }} />
                 </div>
-                <h3 className="text-base font-bold text-textPrimary mb-2">{title}</h3>
-                <p className="text-sm text-textSecondary leading-relaxed">{desc}</p>
+                <h3 className="text-base font-bold text-textPrimary mb-2">{t(`landing.steps.${key}.title`)}</h3>
+                <p className="text-sm text-textSecondary leading-relaxed">{t(`landing.steps.${key}.desc`)}</p>
               </div>
             ))}
           </div>
@@ -558,22 +558,22 @@ export default function LadingPage() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-14">
             <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--color-accent)' }}>
-              Herramientas incluidas
+              {t('landing.featuresList.eyebrow')}
             </p>
             <h2 className="text-3xl md:text-4xl font-bold text-textPrimary">
-              Todo lo que necesitas,<br />
+              {t('landing.featuresList.title')}<br />
               <span style={{ background: 'linear-gradient(90deg, var(--color-accent), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                listo desde el primer día
+                {t('landing.featuresList.titleAccent')}
               </span>
             </h2>
             <p className="text-textSecondary mt-3 max-w-lg mx-auto">
-              Sin plugins extra, sin integraciones complicadas. Cada herramienta está pensada para que te concentres en tu evento, no en la tecnología.
+              {t('landing.featuresList.subtitle')}
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {FEATURES.map(({ Icon, title, desc }) => (
-              <div key={title} className="lp2-feature-card group">
+            {FEATURES.map(({ Icon, key }) => (
+              <div key={key} className="lp2-feature-card group">
                 <div
                   className="lp2-feature-icon"
                   style={{
@@ -583,8 +583,8 @@ export default function LadingPage() {
                 >
                   <Icon className="w-6 h-6" style={{ color: 'var(--color-accent)' }} />
                 </div>
-                <h3 className="font-bold text-textPrimary mb-2">{title}</h3>
-                <p className="text-sm text-textSecondary leading-relaxed">{desc}</p>
+                <h3 className="font-bold text-textPrimary mb-2">{t(`landing.featuresList.${key}.title`)}</h3>
+                <p className="text-sm text-textSecondary leading-relaxed">{t(`landing.featuresList.${key}.desc`)}</p>
               </div>
             ))}
           </div>
@@ -597,13 +597,13 @@ export default function LadingPage() {
           <div className="max-w-6xl mx-auto px-4">
             <div className="text-center mb-14">
               <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--color-accent)' }}>
-                Usuarios reales
+                {t('landing.reviews.eyebrow')}
               </p>
               <h2 className="text-3xl md:text-4xl font-bold text-textPrimary">
-                Lo que dicen sobre<br />los eventos en TuEvento
+                {t('landing.reviews.title')}
               </h2>
               <p className="text-textSecondary mt-2 text-sm">
-                Reseñas verificadas de asistentes en eventos publicados.
+                {t('landing.reviews.subtitle')}
               </p>
             </div>
 
@@ -625,11 +625,11 @@ export default function LadingPage() {
                   <div className="flex items-center gap-3">
                     <div className="lp2-avatar">{(review.authorName ?? 'U').charAt(0).toUpperCase()}</div>
                     <div>
-                      <p className="font-bold text-textPrimary text-sm">{review.authorName ?? 'Usuario'}</p>
+                      <p className="font-bold text-textPrimary text-sm">{review.authorName ?? t('landing.reviews.anonymous')}</p>
                       {review.isOrganizer && (
                         <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
                           style={{ background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)', color: 'var(--color-accent)' }}>
-                          Organizador
+                          {t('landing.reviews.organizer')}
                         </span>
                       )}
                     </div>
@@ -643,7 +643,7 @@ export default function LadingPage() {
                 className="inline-flex items-center gap-2 text-sm font-semibold"
                 style={{ color: 'var(--color-accent)' }}>
                 <MessageCircle className="w-4 h-4" />
-                Ver todos los eventos y sus reseñas
+                {t('landing.reviews.cta')}
               </button>
             </div>
           </div>
@@ -655,13 +655,13 @@ export default function LadingPage() {
         <div className="max-w-3xl mx-auto px-4">
           <div className="text-center mb-14">
             <p className="text-sm font-semibold tracking-widest uppercase mb-2" style={{ color: 'var(--color-accent)' }}>
-              Disponible en
+              {t('landing.platforms.eyebrow')}
             </p>
             <h2 className="text-3xl md:text-4xl font-bold text-textPrimary">
-              Donde estés,<br />TuEvento va contigo
+              {t('landing.platforms.title')}
             </h2>
             <p className="text-textSecondary mt-3">
-              Accede desde el navegador o descarga la app Android. La misma experiencia en cualquier dispositivo.
+              {t('landing.platforms.subtitle')}
             </p>
           </div>
 
@@ -670,32 +670,32 @@ export default function LadingPage() {
               <div className="lp2-platform-icon-wrap">
                 <Globe className="w-10 h-10" style={{ color: 'var(--color-accent)' }} />
               </div>
-              <h3 className="text-xl font-bold text-textPrimary mb-2">Versión Web</h3>
+              <h3 className="text-xl font-bold text-textPrimary mb-2">{t('landing.platforms.web.title')}</h3>
               <p className="text-textSecondary text-sm mb-5">
-                Funciona en cualquier navegador moderno. Sin instalar nada, solo abre la página y listo.
+                {t('landing.platforms.web.desc')}
               </p>
               <button onClick={() => navigate('/events')} className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all"
                 style={{ background: 'color-mix(in srgb, var(--color-primary) 12%, transparent)', color: 'var(--color-accent)', border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)' }}>
-                Abrir app web
+                {t('landing.platforms.web.button')}
               </button>
             </div>
 
             <div className="lp2-platform-card relative overflow-hidden">
               <div className="absolute top-4 right-4 text-xs font-bold px-2.5 py-0.5 rounded-full"
-                style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-primary))', color: '#fff' }}>
-                Popular
+                style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primaryDark))', color: 'var(--color-onPrimary)' }}>
+                {t('landing.platforms.popular')}
               </div>
               <div className="lp2-platform-icon-wrap">
                 <Smartphone className="w-10 h-10" style={{ color: 'var(--color-accent)' }} />
               </div>
-              <h3 className="text-xl font-bold text-textPrimary mb-2">Android App</h3>
+              <h3 className="text-xl font-bold text-textPrimary mb-2">{t('landing.platforms.android.title')}</h3>
               <p className="text-textSecondary text-sm mb-5">
-                Descarga la APK y accede a notificaciones push, scanner de tickets y funciones nativas.
+                {t('landing.platforms.android.desc')}
               </p>
               <button onClick={() => setShowApkModal(true)}
                 className="w-full py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-primary))', color: '#fff' }}>
-                <Download className="w-4 h-4" /> Descargar APK
+                style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primaryDark))', color: 'var(--color-onPrimary)' }}>
+                <Download className="w-4 h-4" /> {t('landing.platforms.android.button')}
               </button>
             </div>
           </div>
@@ -710,11 +710,11 @@ export default function LadingPage() {
         onClose={() => setShowApkModal(false)}
         variant="info"
         icon={<Download className="w-8 h-8" />}
-        title="Aplicación Móvil TuEvento"
-        subtitle="Disponible para dispositivos Android"
+        title={t('landing.apkModal.title')}
+        subtitle={t('landing.apkModal.subtitle')}
         actions={[
           {
-            label: 'Descargar APK',
+            label: t('landing.apkModal.download'),
             icon: <Download className="w-4 h-4" />,
             variant: 'primary',
             onClick: () => {
@@ -722,12 +722,11 @@ export default function LadingPage() {
               setShowApkModal(false);
             },
           },
-          { label: 'Cancelar', variant: 'secondary', onClick: () => setShowApkModal(false) },
+          { label: t('landing.apkModal.cancel'), variant: 'secondary', onClick: () => setShowApkModal(false) },
         ]}
       >
         <p className="bm-hint text-center text-sm leading-relaxed">
-          Descarga la aplicación móvil para acceder a todas las funciones de TuEvento
-          desde tu dispositivo Android. Notificaciones push, scanner de tickets y más.
+          {t('landing.apkModal.description')}
         </p>
       </BaseModal>
     </div>

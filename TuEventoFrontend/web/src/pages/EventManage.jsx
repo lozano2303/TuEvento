@@ -560,7 +560,7 @@ export default function EventManage() {
                 className="px-3 py-1 rounded-full text-xs font-semibold transition-colors border"
                 style={{
                   background:  isActive ? 'var(--color-primary)' : 'var(--color-surfaceAlt)',
-                  color:       isActive ? '#fff'                  : 'var(--color-textMuted)',
+                  color:       isActive ? 'var(--color-onPrimary)'  : 'var(--color-textSecondary)',
                   borderColor: isActive ? 'var(--color-primary)'  : 'transparent',
                 }}
               >
@@ -641,7 +641,7 @@ export default function EventManage() {
                         </p>
                       )}
                       {event.status === 'REJECTED' && (
-                        <p className="text-[10px] text-red-400 mt-0.5 flex items-center gap-1">
+                        <p className="text-[10px] text-error mt-0.5 flex items-center gap-1">
                           <XCircle className="w-2.5 h-2.5 flex-shrink-0" />
                           {t('myEvents.status.rejected')}
                         </p>
@@ -983,14 +983,14 @@ export default function EventManage() {
                 )}
                 {ev.status === 'REJECTED' && (
                   <div className="flex items-start gap-3 rounded-xl p-3.5 border border-red-500/30"
-                    style={{ background: 'color-mix(in srgb, var(--color-error, #ef4444) 8%, transparent)' }}>
-                    <XCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                    style={{ background: 'color-mix(in srgb, var(--color-error, var(--color-error)) 8%, transparent)' }}>
+                    <XCircle className="w-4 h-4 text-error flex-shrink-0 mt-0.5" />
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-red-400 mb-1">{t('myEvents.detailModal.banners.rejectedTitle')}</p>
+                      <p className="text-sm font-semibold text-error mb-1">{t('myEvents.detailModal.banners.rejectedTitle')}</p>
                       {(full?.rejectionReason) && (
-                        <p className="text-xs text-red-300 leading-snug">{full.rejectionReason}</p>
+                        <p className="text-xs text-error leading-snug">{full.rejectionReason}</p>
                       )}
-                      <p className="text-xs text-red-300/70 mt-1 leading-snug">
+                      <p className="text-xs text-error/70 mt-1 leading-snug">
                         {t('myEvents.detailModal.banners.rejectedAction')}
                       </p>
                     </div>

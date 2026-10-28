@@ -447,7 +447,7 @@ export default function EventLayoutEditor() {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4 bg-background text-textPrimary">
         <p className="text-textMuted text-sm">No se pudo cargar este evento.</p>
-        <p className="text-[11px] text-red-400 font-mono max-w-sm text-center">{loadError}</p>
+        <p className="text-[11px] text-error font-mono max-w-sm text-center">{loadError}</p>
         <button
           onClick={() => navigate('/events/manage')}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surfaceAlt text-textSecondary hover:text-textPrimary transition-colors text-sm"
