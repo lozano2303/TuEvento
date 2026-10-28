@@ -11,6 +11,7 @@ import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.SiteLookupPort;
 import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
 import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort.UserRef;
+import com.capysoft.tuevento.modules.seat.application.usecase.SeatAvailabilityService;
 import com.capysoft.tuevento.shared.application.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,7 @@ public class GetAdminEventsUseCase implements GetAdminEventsPort {
     private final SiteLookupPort        siteLookupPort;
     private final UserDirectoryPort     userDirectoryPort;
     private final FileStorage           fileStorage;
+    private final SeatAvailabilityService seatAvailabilityService;
 
     @Override
     @Transactional(readOnly = true)
@@ -142,7 +144,7 @@ public class GetAdminEventsUseCase implements GetAdminEventsPort {
                 .startDate(e.getStartDate())
                 .finishDate(e.getFinishDate())
                 .isPublic(e.getIsPublic())
-                .availableSeats(e.getAvailableSeats())
+                .availableSeats(seatAvailabilityService.availableInEvent(e.getEventId(), e.getAvailableSeats()))
                 .siteName(siteName)
                 .categoryId(categoryId)
                 .categoryName(categoryName)

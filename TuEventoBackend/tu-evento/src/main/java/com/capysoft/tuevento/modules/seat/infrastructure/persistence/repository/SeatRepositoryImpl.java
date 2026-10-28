@@ -14,7 +14,9 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -97,6 +99,15 @@ public class SeatRepositoryImpl implements SeatRepository {
     @Override
     public List<EventSeatSummary> summarizeSeatsByOrganizer(Long organizerId) {
         return jpaRepository.summarizeSeatsByOrganizer(organizerId, SeatStatus.COURTESY, EventStatus.CANCELLED);
+    }
+
+    @Override
+    public Map<Integer, Integer> countAvailableBySectionOfEvent(Integer eventId) {
+        Map<Integer, Integer> available = new HashMap<>();
+        for (Object[] row : jpaRepository.countAvailableBySectionOfEvent(eventId, SeatStatus.AVAILABLE)) {
+            available.put((Integer) row[0], ((Number) row[1]).intValue());
+        }
+        return available;
     }
 
     @Override

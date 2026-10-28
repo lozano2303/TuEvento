@@ -21,12 +21,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.capysoft.tuevento.modules.seat.application.usecase.SeatAvailabilityService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,6 +58,7 @@ class EventSectionServiceOwnershipTest {
     @Mock SectionTypeTranslationRepository sectionTypeTranslationRepository;
     @Mock LanguageCatalog languageCatalog;
     @Mock EventRepository eventRepository;
+    @Mock SeatAvailabilityService seatAvailabilityService;
 
     @InjectMocks EventSectionService service;
 
@@ -241,6 +244,22 @@ class EventSectionServiceOwnershipTest {
 
             assertThat(service.getSectionsByEvent(EVENT_ID, "EN"))
                     .extracting(EventSectionResponse::getSectionTypeName).containsExactly("Box");
+        }
+
+        @Test
+        @DisplayName("las disponibles salen del conteo en vivo; sin sillas generadas, del valor guardado")
+        void liveAvailableSeats() {
+            sectionTypeExists();
+            when(eventSectionRepository.findAllByEventId(EVENT_ID)).thenReturn(List.of(
+                    EventSection.builder().eventSectionId(SECTION_ID).eventId(EVENT_ID)
+                            .sectionTypeId(SECTION_TYPE_ID).capacity(100).availableSeats(100).build(),
+                    EventSection.builder().eventSectionId(SECTION_ID + 1).eventId(EVENT_ID)
+                            .sectionTypeId(SECTION_TYPE_ID).capacity(40).availableSeats(40).build()));
+            // La primera ya vendió 3; la segunda aún no tiene sillas
+            when(seatAvailabilityService.availableBySection(EVENT_ID)).thenReturn(Map.of(SECTION_ID, 97));
+
+            assertThat(service.getSectionsByEvent(EVENT_ID, null))
+                    .extracting(EventSectionResponse::getAvailableSeats).containsExactly(97, 40);
         }
     }
 }

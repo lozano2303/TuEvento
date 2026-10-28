@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.section.application.usecase;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.seat.application.usecase.SeatAvailabilityService;
 import com.capysoft.tuevento.modules.section.application.dto.request.CreateEventSectionRequest;
 import com.capysoft.tuevento.modules.section.application.dto.request.UpdateEventSectionRequest;
 import com.capysoft.tuevento.modules.section.application.dto.response.EventSectionResponse;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -29,11 +31,15 @@ public class EventSectionService implements EventSectionUseCase {
     private final SectionTypeTranslationRepository sectionTypeTranslationRepository;
     private final LanguageCatalog languageCatalog;
     private final EventRepository eventRepository;
+    private final SeatAvailabilityService seatAvailabilityService;
 
     @Override
     public List<EventSectionResponse> getSectionsByEvent(Integer eventId, String languageCode) {
+        // Disponibles en vivo: el valor guardado no baja con las compras
+        Map<Integer, Integer> available = seatAvailabilityService.availableBySection(eventId);
         return eventSectionRepository.findAllByEventId(eventId).stream()
-                .map(section -> toResponse(section, languageCode))
+                .map(section -> toResponse(section, languageCode,
+                        available.getOrDefault(section.getEventSectionId(), section.getAvailableSeats())))
                 .toList();
     }
 
@@ -117,6 +123,10 @@ public class EventSectionService implements EventSectionUseCase {
     }
 
     private EventSectionResponse toResponse(EventSection domain, String languageCode) {
+        return toResponse(domain, languageCode, domain.getAvailableSeats());
+    }
+
+    private EventSectionResponse toResponse(EventSection domain, String languageCode, Integer availableSeats) {
         String typeName = sectionTypeRepository.findById(domain.getSectionTypeId())
                 .map(sectionType -> sectionType.getName())
                 .orElse("Desconocido");
@@ -141,7 +151,7 @@ public class EventSectionService implements EventSectionUseCase {
                 .eventId(domain.getEventId())
                 .sectionTypeName(typeName)
                 .capacity(domain.getCapacity())
-                .availableSeats(domain.getAvailableSeats())
+                .availableSeats(availableSeats)
                 .price(domain.getPrice())
                 .isActive(domain.getIsActive())
                 .build();
