@@ -1,48 +1,20 @@
-import { Calendar, Users, Gift, Smartphone, Globe, CheckCircle, Heart, Target, Award, Sparkles, Zap, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Calendar, Users, Gift, Smartphone, Globe, CheckCircle, Heart, Target, Award, Sparkles, Zap, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Footer from '../layouts/Footer';
 
 
+const initials = (name) =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w.charAt(0).toUpperCase()).join('');
+
 export default function AboutUs() {
   const { t } = useTranslation();
-  const [currentMember, setCurrentMember] = useState(0);
-
-  const teamMembers = [
-    {
-      id: 1,
-      name: t('about.team.members.cristofer.name'),
-      email: "cristoferlozano233@gmail.com",
-      phone: "+57 313 460  5214",
-      initials: "CG",
-      role: t('about.team.members.cristofer.role'),
-      description: t('about.team.members.cristofer.description'),
-      gradient: "from-green-500 to-emerald-500"
-    },
-    {
-      id: 2,
-      name: t('about.team.members.jhampier.name'),
-      email: "ortizjhampier@gmail.com",
-      phone: "+57 302 770 0760",
-      initials: "DP",
-      role: t('about.team.members.jhampier.role'),
-      description: t('about.team.members.jhampier.description'),
-      gradient: "from-pink-500 to-rose-500"
-    }
-  ];
-
-  // Auto-play del carrusel
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentMember((prev) => (prev + 1) % teamMembers.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [teamMembers.length]);
-
-  const nextMember = () => setCurrentMember((prev) => (prev + 1) % teamMembers.length);
-  const prevMember = () => setCurrentMember((prev) => (prev - 1 + teamMembers.length) % teamMembers.length);
-
-  const member = teamMembers[currentMember];
+  // Sin teléfonos ni correos personales: la página es pública
+  const teamMembers = ['cristofer', 'jhampier'].map((key) => ({
+    key,
+    name: t(`about.team.members.${key}.name`),
+    role: t(`about.team.members.${key}.role`),
+    description: t(`about.team.members.${key}.description`),
+  }));
 
   return (
     <div className="min-h-screen bg-background text-textPrimary">
@@ -562,99 +534,30 @@ export default function AboutUs() {
             </p>
           </div>
 
-          {/* Carrusel del equipo */}
-          <div
-            className="relative rounded-3xl p-8 md:p-12"
-            style={{ background: 'color-mix(in srgb, var(--color-surface) 40%, transparent)', backdropFilter: 'blur(8px)', border: '1px solid color-mix(in srgb, var(--color-surfaceAlt) 30%, transparent)' }}
-          >
-            <div className="grid md:grid-cols-2 gap-12 items-center min-h-[400px]">
-              {/* Foto del miembro */}
-              <div className="relative">
-                <div className="relative group">
-                  <div className={`w-80 h-80 mx-auto bg-gradient-to-r ${member.gradient} rounded-3xl overflow-hidden shadow-2xl group-hover:scale-105 transition-all duration-500`}>
-                    {/* The team photos (francisco.jpg, keiner.png) were never committed: initials for
-                        everyone until they are added under src/assets/images and imported */}
-                    <div className="w-full h-full flex items-center justify-center text-textPrimary font-bold text-6xl">
-                      {member.initials}
-                    </div>
-                  </div>
-                  <div className="absolute -top-4 -left-4 w-8 h-8 bg-accent rounded-full animate-pulse" />
-                  <div className="absolute -bottom-4 -right-4 w-6 h-6 bg-primary rounded-full animate-bounce" />
-                  <div className="absolute top-8 -right-2 w-4 h-4 bg-success rounded-full animate-ping" />
-                </div>
-              </div>
-
-              {/* Información del miembro */}
-              <div className="space-y-6 text-center md:text-left">
-                <div>
-                  <h3 className="text-3xl md:text-4xl font-bold text-textPrimary mb-2">
-                    {member.name}
-                  </h3>
-                  <p className="text-xl text-accent font-semibold mb-4">
-                    {member.role}
-                  </p>
-                  <p className="text-textSecondary text-lg leading-relaxed">
-                    {member.description}
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  {[
-                    { color: 'bg-accent', value: member.email },
-                    { color: 'bg-success', value: member.phone },
-                  ].map(({ color, value }) => (
-                    <div
-                      key={value}
-                      className="flex items-center justify-center md:justify-start space-x-3 p-3 rounded-lg border"
-                      style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' }}
-                    >
-                      <div className={`w-3 h-3 ${color} rounded-full`} />
-                      <span className="text-textSecondary">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Controles de navegación */}
-            <div className="flex items-center justify-between mt-8">
-              <button
-                onClick={prevMember}
-                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
-                style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}
+          {/* Tarjetas del equipo */}
+          <ul className="grid gap-6 sm:grid-cols-2 max-w-4xl mx-auto">
+            {teamMembers.map((m) => (
+              <li
+                key={m.key}
+                className="rounded-2xl px-6 py-8 text-center shadow-xl transition-transform duration-300 hover:-translate-y-1"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-surface) 70%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-surfaceAlt) 40%, transparent)',
+                }}
               >
-                <ChevronLeft className="w-6 h-6 text-textPrimary" />
-              </button>
-
-              <div className="flex space-x-3">
-                {teamMembers.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentMember(index)}
-                    className="w-3 h-3 rounded-full transition-all duration-300"
-                    style={{
-                      background: index === currentMember ? 'var(--color-accent)' : 'rgba(255,255,255,0.3)',
-                      transform: index === currentMember ? 'scale(1.25)' : 'scale(1)',
-                    }}
-                  />
-                ))}
-              </div>
-
-              <button
-                onClick={nextMember}
-                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
-                style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}
-              >
-                <ChevronRight className="w-6 h-6 text-textPrimary" />
-              </button>
-            </div>
-
-            <div className="text-center mt-6">
-              <span className="text-textMuted text-sm">
-                {t('about.team.counter', { current: currentMember + 1, total: teamMembers.length })}
-              </span>
-            </div>
-          </div>
+                <div
+                  aria-hidden="true"
+                  className="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center text-white font-bold text-lg"
+                  style={{ background: 'var(--color-primary)' }}
+                >
+                  {initials(m.name)}
+                </div>
+                <h3 className="text-lg font-bold text-textPrimary">{m.name}</h3>
+                <p className="mt-1 text-sm font-medium text-accent">{m.role}</p>
+                <p className="mt-3 text-sm leading-relaxed text-textSecondary">{m.description}</p>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 

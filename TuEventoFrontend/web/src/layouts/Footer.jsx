@@ -19,6 +19,7 @@ export default function Footer() {
   const legal = [
     { label: t('footer.termsOfService'), to: '/terminos-de-uso' },
     { label: t('footer.privacy'),      to: '/privacidad' },
+    { label: t('footer.dataDeletion'), to: '/eliminacion-datos' },
   ];
 
   return (

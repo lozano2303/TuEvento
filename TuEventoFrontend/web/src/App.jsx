@@ -38,6 +38,7 @@ import PaymentConfirmation from './pages/PaymentConfirmation';
 import OrganizerEarnings from './pages/OrganizerEarnings';
 import TerminosDeUso from './pages/TerminosDeUso';
 import Privacidad from './pages/Privacidad';
+import EliminacionDatos from './pages/EliminacionDatos';
 import Notifications from './pages/Notifications';
 import SpanishOnlyRoute from './components/common/SpanishOnlyRoute';
 import OrganizerWelcomeModal from './components/common/OrganizerWelcomeModal';
@@ -232,6 +233,7 @@ function AppContent() {
           } />
           <Route path="/terminos-de-uso" element={<TerminosDeUso />} />
           <Route path="/privacidad" element={<Privacidad />} />
+          <Route path="/eliminacion-datos" element={<EliminacionDatos />} />
           {/* Rol, propiedad del evento e idioma los valida el editor, en ese orden, con sus modales */}
           <Route path="/events/:eventId/layout" element={
             <ProtectedRoute>

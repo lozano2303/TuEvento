@@ -111,7 +111,7 @@ export default function LadingPage() {
     <div className="min-h-screen bg-background text-textPrimary">
 
       {/* ══ HERO ══════════════════════════════════════════════════════════ */}
-      <section className="lp2-hero pt-16">
+      <section className="lp2-hero">
         <div className="lp2-orb lp2-orb-3" />
 
         {/* ── Formas decorativas del hero ───────────────────────────────── */}
@@ -226,7 +226,7 @@ export default function LadingPage() {
           <rect width="100%" height="100%" fill="url(#lp-grid)"/>
         </svg>
 
-        <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-28">
+        <div className="relative max-w-6xl mx-auto px-4 py-10 md:py-14">
           <div className="grid md:grid-cols-2 gap-14 items-center">
 
             {/* Texto */}

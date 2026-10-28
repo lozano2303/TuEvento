@@ -271,7 +271,6 @@
       "badge": "Conoce al equipo",
       "title": "Nuestro Equipo",
       "description": "Un equipo apasionado de 2 profesionales dedicados a hacer que cada evento sea memorable.",
-      "counter": "{{current}} de {{total}}",
       "members": {
         "cristofer": {
           "name": "Cristofer David Lozano Contreras",
@@ -710,7 +709,8 @@
     "termsOfService": "Términos de uso",
     "privacy": "Privacidad",
     "copyright": "© {{year}} Tu Evento · Todos los derechos reservados",
-    "madeWith": "Hecho con ♥ por CapySoft"
+    "madeWith": "Hecho con ♥ por CapySoft",
+    "dataDeletion": "Eliminación de datos"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -988,100 +988,80 @@
     }
   },
   "privacy": {
-    "title": "Política de Privacidad",
-    "subtitle": "Tu Evento",
-    "lastUpdate": "Última actualización: 24 de septiembre de 2026",
-    "backToHome": "Volver al inicio",
-    "disclaimer": "Este documento es un borrador preliminar elaborado para fines del proyecto académico \"Tu Evento\" (SENA). No constituye asesoría legal certificada. Se recomienda revisión por un profesional del derecho antes de un despliegue en producción con usuarios reales.",
-    "intro": "En Tu Evento, desarrollado por el equipo CapySoft, nos comprometemos a proteger tu información personal conforme a la Ley 1581 de 2012 y el Decreto 1377 de 2013 de Colombia sobre protección de datos personales.",
-    "section1": {
-      "title": "1. Responsable del tratamiento de datos",
-      "p1": "Tu Evento (equipo CapySoft) es responsable del tratamiento de los datos personales que recolecta a través de su plataforma web y móvil.",
-      "p2": "Correo de contacto para temas de privacidad:",
-      "email": "soporte.capysoft@gmail.com"
-    },
-    "section2": {
-      "title": "2. Datos que recopilamos",
-      "intro": "Recopilamos los siguientes datos según cómo uses la Plataforma:",
-      "register": {
-        "title": "Al registrarte:",
-        "item1": "Correo electrónico y contraseña (almacenada de forma cifrada), o",
-        "item2": "Datos básicos de tu cuenta de Google o Facebook si te registras mediante ellas (nombre y correo asociado a esa cuenta)."
+    "title": "Política de privacidad de TuEvento",
+    "lastUpdate": "Última actualización: 25 de octubre de 2026",
+    "sections": [
+      {
+        "title": "1. Responsable del tratamiento",
+        "paragraphs": [
+          "TuEvento es una plataforma destinada a facilitar la consulta, publicación y gestión de eventos.",
+          "Para consultas relacionadas con la privacidad y los datos personales, puedes contactar con nosotros en: [[email]]."
+        ]
       },
-      "profile": {
-        "title": "En tu perfil (opcionales, los ingresas tú):",
-        "item1": "Nombre.",
-        "item2": "Descripción/biografía.",
-        "item3": "Foto de perfil."
+      {
+        "title": "2. Información que podemos recopilar",
+        "paragraphs": [
+          "Dependiendo de las funciones que utilices, TuEvento puede tratar información como:"
+        ],
+        "items": [
+          "Datos de cuenta, como nombre y correo electrónico.",
+          "Información básica de perfil proporcionada al iniciar sesión mediante Google o Facebook.",
+          "Información relacionada con eventos que publiques, organices o consultes.",
+          "Datos técnicos necesarios para mantener la seguridad y el funcionamiento del servicio."
+        ]
       },
-      "purchase": {
-        "title": "Al comprar boletas:",
-        "item1": "Historial de compras y boletas adquiridas dentro de la Plataforma.",
-        "item2": "Datos de pago: procesados directamente por nuestra pasarela de pagos Wompi; Tu Evento no almacena los datos completos de tu tarjeta."
+      {
+        "title": "3. Para qué utilizamos los datos",
+        "paragraphs": [
+          "Utilizamos los datos personales para:"
+        ],
+        "items": [
+          "Crear y gestionar las cuentas de usuario.",
+          "Permitir el inicio de sesión mediante proveedores externos, como Google y Facebook.",
+          "Facilitar las funciones de publicación, organización y consulta de eventos.",
+          "Proteger la plataforma frente a usos indebidos.",
+          "Atender solicitudes de soporte y privacidad."
+        ]
       },
-      "event": {
-        "title": "Al publicar un evento (organizadores):",
-        "item1": "Información del evento (fecha, lugar, precio, imágenes) y datos de contacto asociados al evento."
+      {
+        "title": "4. Inicio de sesión con terceros",
+        "paragraphs": [
+          "Si eliges iniciar sesión con Google o Facebook, el proveedor correspondiente puede compartir con TuEvento los datos autorizados durante el proceso de autenticación. El tratamiento que realiza cada proveedor también está sujeto a sus propias políticas de privacidad.",
+          "TuEvento no debe solicitar ni almacenar contraseñas de Google o Facebook."
+        ]
       },
-      "technical": {
-        "title": "Datos técnicos:",
-        "item1": "Preferencias de idioma y tema visual dentro de la Plataforma.",
-        "item2": "Información de sesión necesaria para mantener tu inicio de sesión activo (tokens de autenticación)."
+      {
+        "title": "5. Conservación y seguridad",
+        "paragraphs": [
+          "Conservamos los datos durante el tiempo necesario para prestar el servicio, cumplir las obligaciones aplicables y atender las solicitudes correspondientes.",
+          "Aplicamos medidas de seguridad razonables para proteger la información. Ningún sistema puede garantizar una seguridad absoluta."
+        ]
+      },
+      {
+        "title": "6. Compartición de datos",
+        "paragraphs": [
+          "No vendemos datos personales. La información puede tratarse mediante proveedores tecnológicos necesarios para operar la plataforma, o comunicarse cuando exista una obligación legal o sea necesario para proteger el servicio."
+        ]
+      },
+      {
+        "title": "7. Derechos de los usuarios",
+        "paragraphs": [
+          "Puedes solicitar acceso, corrección o eliminación de tus datos personales, según la legislación aplicable, escribiendo a [[email]]."
+        ]
+      },
+      {
+        "title": "8. Eliminación de datos",
+        "paragraphs": [
+          "Para solicitar la eliminación de tus datos, consulta nuestra página de [[link:/eliminacion-datos|eliminación de datos de usuario]]."
+        ]
+      },
+      {
+        "title": "9. Cambios en esta política",
+        "paragraphs": [
+          "Podemos actualizar esta política cuando cambien las funciones o las prácticas de tratamiento de datos de TuEvento. Publicaremos la versión vigente en esta página."
+        ]
       }
-    },
-    "section3": {
-      "title": "3. Finalidad del tratamiento",
-      "intro": "Usamos tus datos para:",
-      "item1": "Crear y administrar tu cuenta.",
-      "item2": "Permitirte comprar o vender boletas de eventos.",
-      "item3": "Generar y validar tus tickets con código QR.",
-      "item4": "Enviarte notificaciones relacionadas con tus compras o eventos.",
-      "item5": "Moderar el contenido publicado (fotos de perfil y de eventos) para evitar contenido inapropiado.",
-      "item6": "Mejorar la seguridad y el funcionamiento de la Plataforma.",
-      "p1": "No usamos tus datos para fines distintos a los aquí descritos sin tu consentimiento."
-    },
-    "section4": {
-      "title": "4. Almacenamiento y conservación",
-      "item1": "Las imágenes que subes (foto de perfil, imágenes de eventos) se almacenan en nuestra infraestructura de almacenamiento de archivos mientras tu cuenta o el evento correspondiente permanezcan activos.",
-      "item2": "Si eliminas tu cuenta o un evento, procederemos a eliminar o anonimizar los datos asociados, salvo aquellos que debamos conservar por obligación legal (por ejemplo, registros de transacciones de pago)."
-    },
-    "section5": {
-      "title": "5. Con quién compartimos tus datos",
-      "item1": "Wompi: para el procesamiento de pagos, bajo sus propias políticas de privacidad y seguridad.",
-      "item2": "Proveedores de autenticación (Google, Facebook): únicamente para validar tu identidad al iniciar sesión con esas cuentas, si eliges usarlas.",
-      "item3": "No vendemos ni compartimos tus datos personales con terceros para fines publicitarios."
-    },
-    "section6": {
-      "title": "6. Tus derechos",
-      "intro": "Como titular de tus datos, en cualquier momento puedes:",
-      "item1": "Solicitar acceso a los datos que tenemos sobre ti.",
-      "item2": "Solicitar la corrección de datos inexactos.",
-      "item3": "Solicitar la eliminación de tu cuenta y tus datos personales.",
-      "item4": "Revocar tu autorización para el tratamiento de tus datos, salvo que exista una obligación legal de conservarlos.",
-      "p1": "Puedes ejercer estos derechos desde tu perfil en la Plataforma o escribiendo a",
-      "email": "soporte.capysoft@gmail.com"
-    },
-    "section7": {
-      "title": "7. Seguridad de la información",
-      "intro": "Implementamos medidas técnicas para proteger tu información, incluyendo:",
-      "item1": "Contraseñas almacenadas de forma cifrada (nunca en texto plano).",
-      "item2": "Autenticación mediante tokens (JWT) con expiración y renovación segura.",
-      "item3": "Moderación automática de contenido para prevenir la publicación de imágenes inapropiadas.",
-      "p1": "Ningún sistema es 100% infalible; en caso de un incidente de seguridad que afecte tus datos, te notificaremos conforme a lo que exige la normativa aplicable."
-    },
-    "section8": {
-      "title": "8. Menores de edad",
-      "p1": "La Plataforma no está dirigida a menores de 18 años. Si tienes conocimiento de que un menor ha creado una cuenta sin autorización de sus padres o tutores, contáctanos para proceder a su eliminación."
-    },
-    "section9": {
-      "title": "9. Cambios a esta política",
-      "p1": "Podemos actualizar esta Política de Privacidad. Cualquier cambio relevante será notificado dentro de la Plataforma antes de que entre en vigencia."
-    },
-    "section10": {
-      "title": "10. Contacto",
-      "p1": "Para ejercer tus derechos o resolver dudas sobre el tratamiento de tus datos:",
-      "email": "soporte.capysoft@gmail.com"
-    }
+    ]
   },
   "wallet": {
     "noCredit": "Aún no tenés crédito acumulado",
@@ -1528,5 +1508,50 @@
     "loadError": "Error al cargar los datos",
     "backToEvents": "Volver a eventos",
     "remainingBalance": "Tu saldo restante"
+  },
+  "dataDeletion": {
+    "title": "Eliminación de datos de usuario de TuEvento",
+    "lastUpdate": "Última actualización: 25 de octubre de 2026",
+    "intro": [
+      "En TuEvento respetamos tu derecho a solicitar la eliminación de tus datos personales."
+    ],
+    "sections": [
+      {
+        "title": "Cómo solicitar la eliminación",
+        "paragraphs": [
+          "Para solicitar la eliminación de tus datos, envía un correo a [[email]] con el asunto:",
+          "**Solicitud de eliminación de datos — TuEvento**",
+          "Indica el correo electrónico asociado a tu cuenta y, si utilizaste el inicio de sesión con Google o Facebook, menciona cuál de esos métodos utilizaste.",
+          "Por seguridad, podemos solicitar información razonable para verificar que eres el titular de la cuenta. No envíes contraseñas ni claves secretas."
+        ]
+      },
+      {
+        "title": "¿Qué ocurre después?",
+        "steps": [
+          "Revisaremos la solicitud y verificaremos tu identidad cuando sea necesario.",
+          "Te informaremos si necesitamos algún dato adicional.",
+          "Eliminaremos los datos personales que corresponda eliminar, de acuerdo con la legislación aplicable.",
+          "Si alguna información debe conservarse por una obligación legal o por motivos legítimos de seguridad, te explicaremos el motivo cuando corresponda."
+        ],
+        "after": [
+          "La eliminación puede incluir los datos asociados a tu cuenta y perfil. La información de eventos, transacciones u otros registros puede estar sujeta a condiciones específicas según su naturaleza y las obligaciones aplicables."
+        ]
+      },
+      {
+        "title": "¿Eliminar Facebook o Google elimina tu cuenta de TuEvento?",
+        "paragraphs": [
+          "No necesariamente. Retirar el acceso de una aplicación desde Google o Facebook no equivale por sí solo a eliminar los datos almacenados en TuEvento. Para solicitar esa eliminación, utiliza el procedimiento indicado en esta página."
+        ]
+      },
+      {
+        "title": "Contacto",
+        "paragraphs": [
+          "Para preguntas sobre solicitudes de eliminación, escribe a [[email]]."
+        ]
+      }
+    ]
+  },
+  "legal": {
+    "backToHome": "Volver al inicio"
   }
 }

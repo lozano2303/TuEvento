@@ -271,7 +271,6 @@
       "badge": "Meet the team",
       "title": "Our Team",
       "description": "A passionate team of 2 professionals dedicated to making every event memorable.",
-      "counter": "{{current}} of {{total}}",
       "members": {
         "cristofer": {
           "name": "Cristofer David Lozano Contreras",
@@ -710,7 +709,8 @@
     "termsOfService": "Terms of Service",
     "privacy": "Privacy",
     "copyright": "© {{year}} Tu Evento · All rights reserved",
-    "madeWith": "Made with ♥ by CapySoft"
+    "madeWith": "Made with ♥ by CapySoft",
+    "dataDeletion": "Data deletion"
   },
   "notifications": {
     "title": "Notifications",
@@ -1024,100 +1024,80 @@
     }
   },
   "privacy": {
-    "title": "Privacy Policy",
-    "subtitle": "Tu Evento",
-    "lastUpdate": "Last update: September 24, 2026",
-    "backToHome": "Back to home",
-    "disclaimer": "This document is a preliminary draft prepared for the academic project \"Tu Evento\" (SENA). It does not constitute certified legal advice. Review by a legal professional is recommended before deployment to production with real users.",
-    "intro": "At Tu Evento, developed by the CapySoft team, we are committed to protecting your personal information in accordance with Law 1581 of 2012 and Decree 1377 of 2013 of Colombia on personal data protection.",
-    "section1": {
-      "title": "1. Data controller",
-      "p1": "Tu Evento (CapySoft team) is responsible for the processing of personal data collected through its web and mobile platform.",
-      "p2": "Contact email for privacy issues:",
-      "email": "soporte.capysoft@gmail.com"
-    },
-    "section2": {
-      "title": "2. Data we collect",
-      "intro": "We collect the following data depending on how you use the Platform:",
-      "register": {
-        "title": "When registering:",
-        "item1": "Email and password (stored encrypted), or",
-        "item2": "Basic data from your Google or Facebook account if you register through them (name and email associated with that account)."
+    "title": "TuEvento Privacy Policy",
+    "lastUpdate": "Last updated: October 25, 2026",
+    "sections": [
+      {
+        "title": "1. Data controller",
+        "paragraphs": [
+          "TuEvento is a platform designed to make it easy to browse, publish and manage events.",
+          "For questions about privacy and personal data, you can contact us at: [[email]]."
+        ]
       },
-      "profile": {
-        "title": "In your profile (optional, you enter them):",
-        "item1": "Name.",
-        "item2": "Description/biography.",
-        "item3": "Profile photo."
+      {
+        "title": "2. Information we may collect",
+        "paragraphs": [
+          "Depending on the features you use, TuEvento may process information such as:"
+        ],
+        "items": [
+          "Account data, such as name and email address.",
+          "Basic profile information provided when signing in with Google or Facebook.",
+          "Information about events you publish, organize or browse.",
+          "Technical data needed to keep the service secure and running."
+        ]
       },
-      "purchase": {
-        "title": "When buying tickets:",
-        "item1": "Purchase history and tickets acquired within the Platform.",
-        "item2": "Payment data: processed directly by our Wompi payment gateway; Tu Evento does not store your complete card data."
+      {
+        "title": "3. How we use the data",
+        "paragraphs": [
+          "We use personal data to:"
+        ],
+        "items": [
+          "Create and manage user accounts.",
+          "Allow sign-in through external providers such as Google and Facebook.",
+          "Support publishing, organizing and browsing events.",
+          "Protect the platform against misuse.",
+          "Handle support and privacy requests."
+        ]
       },
-      "event": {
-        "title": "When publishing an event (organizers):",
-        "item1": "Event information (date, place, price, images) and contact data associated with the event."
+      {
+        "title": "4. Third-party sign-in",
+        "paragraphs": [
+          "If you choose to sign in with Google or Facebook, that provider may share with TuEvento the data you authorize during authentication. Each provider's processing is also subject to its own privacy policy.",
+          "TuEvento must not request or store your Google or Facebook passwords."
+        ]
       },
-      "technical": {
-        "title": "Technical data:",
-        "item1": "Language and visual theme preferences within the Platform.",
-        "item2": "Session information necessary to maintain your active login (authentication tokens)."
+      {
+        "title": "5. Retention and security",
+        "paragraphs": [
+          "We keep data for as long as needed to provide the service, meet applicable obligations and handle the related requests.",
+          "We apply reasonable security measures to protect information. No system can guarantee absolute security."
+        ]
+      },
+      {
+        "title": "6. Data sharing",
+        "paragraphs": [
+          "We do not sell personal data. Information may be processed by technology providers needed to operate the platform, or disclosed when there is a legal obligation or when necessary to protect the service."
+        ]
+      },
+      {
+        "title": "7. User rights",
+        "paragraphs": [
+          "You can request access to, correction of or deletion of your personal data, as permitted by applicable law, by writing to [[email]]."
+        ]
+      },
+      {
+        "title": "8. Data deletion",
+        "paragraphs": [
+          "To request deletion of your data, see our [[link:/eliminacion-datos|user data deletion]] page."
+        ]
+      },
+      {
+        "title": "9. Changes to this policy",
+        "paragraphs": [
+          "We may update this policy when TuEvento's features or data processing practices change. We will publish the current version on this page."
+        ]
       }
-    },
-    "section3": {
-      "title": "3. Purpose of processing",
-      "intro": "We use your data to:",
-      "item1": "Create and manage your account.",
-      "item2": "Allow you to buy or sell event tickets.",
-      "item3": "Generate and validate your tickets with QR code.",
-      "item4": "Send you notifications related to your purchases or events.",
-      "item5": "Moderate published content (profile and event photos) to avoid inappropriate content.",
-      "item6": "Improve the security and functioning of the Platform.",
-      "p1": "We do not use your data for purposes other than those described here without your consent."
-    },
-    "section4": {
-      "title": "4. Storage and retention",
-      "item1": "The images you upload (profile photo, event images) are stored in our file storage infrastructure while your account or the corresponding event remain active.",
-      "item2": "If you delete your account or an event, we will proceed to delete or anonymize the associated data, except those we must keep by legal obligation (for example, payment transaction records)."
-    },
-    "section5": {
-      "title": "5. With whom we share your data",
-      "item1": "Wompi: for payment processing, under its own privacy and security policies.",
-      "item2": "Authentication providers (Google, Facebook): only to validate your identity when logging in with those accounts, if you choose to use them.",
-      "item3": "We do not sell or share your personal data with third parties for advertising purposes."
-    },
-    "section6": {
-      "title": "6. Your rights",
-      "intro": "As the owner of your data, at any time you can:",
-      "item1": "Request access to the data we have about you.",
-      "item2": "Request correction of inaccurate data.",
-      "item3": "Request deletion of your account and personal data.",
-      "item4": "Revoke your authorization for the processing of your data, unless there is a legal obligation to keep them.",
-      "p1": "You can exercise these rights from your profile on the Platform or by writing to",
-      "email": "soporte.capysoft@gmail.com"
-    },
-    "section7": {
-      "title": "7. Information security",
-      "intro": "We implement technical measures to protect your information, including:",
-      "item1": "Passwords stored in encrypted form (never in plain text).",
-      "item2": "Authentication through tokens (JWT) with secure expiration and renewal.",
-      "item3": "Automatic content moderation to prevent publication of inappropriate images.",
-      "p1": "No system is 100% infallible; in case of a security incident affecting your data, we will notify you as required by applicable regulations."
-    },
-    "section8": {
-      "title": "8. Minors",
-      "p1": "The Platform is not directed at minors under 18 years of age. If you are aware that a minor has created an account without authorization from their parents or guardians, contact us to proceed with its deletion."
-    },
-    "section9": {
-      "title": "9. Changes to this policy",
-      "p1": "We may update this Privacy Policy. Any relevant change will be notified within the Platform before it takes effect."
-    },
-    "section10": {
-      "title": "10. Contact",
-      "p1": "To exercise your rights or resolve questions about the processing of your data:",
-      "email": "soporte.capysoft@gmail.com"
-    }
+    ]
   },
   "login": {
     "welcomeBack": "WELCOME BACK",
@@ -1528,5 +1508,50 @@
     "loadError": "Error loading the data",
     "backToEvents": "Back to events",
     "remainingBalance": "Your remaining balance"
+  },
+  "dataDeletion": {
+    "title": "TuEvento User Data Deletion",
+    "lastUpdate": "Last updated: October 25, 2026",
+    "intro": [
+      "At TuEvento we respect your right to request the deletion of your personal data."
+    ],
+    "sections": [
+      {
+        "title": "How to request deletion",
+        "paragraphs": [
+          "To request deletion of your data, send an email to [[email]] with the subject:",
+          "**Solicitud de eliminación de datos — TuEvento**",
+          "Include the email address associated with your account and, if you signed in with Google or Facebook, say which of those methods you used.",
+          "For security reasons, we may ask for reasonable information to verify that you own the account. Do not send passwords or secret keys."
+        ]
+      },
+      {
+        "title": "What happens next?",
+        "steps": [
+          "We will review the request and verify your identity when necessary.",
+          "We will let you know if we need any additional information.",
+          "We will delete the personal data that should be deleted, in accordance with applicable law.",
+          "If some information must be kept due to a legal obligation or for legitimate security reasons, we will explain why when appropriate."
+        ],
+        "after": [
+          "Deletion may include the data associated with your account and profile. Information about events, transactions or other records may be subject to specific conditions depending on its nature and applicable obligations."
+        ]
+      },
+      {
+        "title": "Does removing Facebook or Google delete your TuEvento account?",
+        "paragraphs": [
+          "Not necessarily. Removing an app's access from Google or Facebook does not by itself delete the data stored in TuEvento. To request that deletion, use the procedure described on this page."
+        ]
+      },
+      {
+        "title": "Contact",
+        "paragraphs": [
+          "For questions about deletion requests, write to [[email]]."
+        ]
+      }
+    ]
+  },
+  "legal": {
+    "backToHome": "Back to home"
   }
 }
