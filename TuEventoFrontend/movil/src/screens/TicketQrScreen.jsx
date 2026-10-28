@@ -8,14 +8,21 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
-import { generateTicketQr, generateOrderQr } from "../services/ticketService";
+import { generateTicketQr, generateOrderQr, getMyTickets, getOrderTickets } from "../services/ticketService";
+import { connectUserTicketsSocket, disconnectSeatSocket } from "../services/websocketService";
+import { useAuth } from "../context/AuthContext";
+import { isTargetValidated, isValidationFor } from "../utils/qrValidation";
 import { mapErrorMessage } from "../utils/errorMessages";
 
 /**
  * Pantalla que muestra el QR de un ticket o de una orden.
  * El QR vive 60s (expiresInSeconds); al expirar se difumina y ofrece regenerar.
  * Regenerar invalida el QR anterior en el backend (anti-reventa).
+ * Cuando el organizador lo valida (aviso por WebSocket o, si no llega, consultando los
+ * tickets cada pocos segundos) el QR desaparece y no se puede volver a generar.
  */
+
+const VALIDATION_POLL_MS = 4000;
 export default function TicketQrScreen() {
   const { colors } = useTheme();
   const navigation = useNavigation();
@@ -24,21 +31,38 @@ export default function TicketQrScreen() {
   const { t } = useTranslation();
 
   const { mode, id, title, subtitle } = route.params ?? {};
+  const { user } = useAuth();
+  const userId = user?.userId ?? null;
 
   const [qr, setQr]           = useState(null);   // { qrToken, expiresInSeconds, ... }
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const [remaining, setRemaining] = useState(0);  // segundos restantes
+  const [validated, setValidated] = useState(false);
 
   const timerRef = useRef(null);
+  const validatedRef = useRef(false);
+
+  // El QR ya no sirve: se descarta el token para que no se pueda volver a mostrar
+  const markValidated = useCallback(() => {
+    if (validatedRef.current) return;
+    validatedRef.current = true;
+    clearInterval(timerRef.current);
+    setQr(null);
+    setError(null);
+    setLoading(false);
+    setValidated(true);
+  }, []);
 
   const generate = useCallback(async () => {
+    if (validatedRef.current) return;
     setLoading(true);
     setError(null);
     try {
       const data = mode === "order"
         ? await generateOrderQr(id)
         : await generateTicketQr(id);
+      if (validatedRef.current) return;
       setQr(data);
       setRemaining(data.expiresInSeconds ?? 60);
     } catch (e) {
@@ -50,6 +74,40 @@ export default function TicketQrScreen() {
   }, [mode, id, t]);
 
   useEffect(() => { generate(); }, [generate]);
+
+  // Aviso inmediato por el canal personal del usuario
+  useEffect(() => {
+    let client = null;
+    let cancelled = false;
+    connectUserTicketsSocket(userId, (message) => {
+      if (isValidationFor(mode, id, message)) markValidated();
+    }).then((c) => {
+      if (cancelled) disconnectSeatSocket(c);
+      else client = c;
+    }).catch(() => { /* sin WebSocket queda la consulta periódica */ });
+    return () => {
+      cancelled = true;
+      disconnectSeatSocket(client);
+    };
+  }, [userId, mode, id, markValidated]);
+
+  // Respaldo: consultar el estado de los tickets mientras se muestra el QR
+  useEffect(() => {
+    if (validated) return undefined;
+    let stopped = false;
+    const check = async () => {
+      try {
+        const tickets = mode === "order" ? await getOrderTickets(id) : await getMyTickets();
+        if (!stopped && isTargetValidated(mode, id, tickets)) markValidated();
+      } catch { /* se reintenta en la siguiente vuelta */ }
+    };
+    check();
+    const poll = setInterval(check, VALIDATION_POLL_MS);
+    return () => {
+      stopped = true;
+      clearInterval(poll);
+    };
+  }, [validated, mode, id, markValidated]);
 
   // Cuenta regresiva
   useEffect(() => {
@@ -105,7 +163,17 @@ export default function TicketQrScreen() {
           width: 280, height: 280,
           borderWidth: 1, borderColor: colors.primary + "30",
         }}>
-          {loading ? (
+          {validated ? (
+            <View style={{ alignItems: "center", gap: 12, paddingHorizontal: 12 }} accessibilityLiveRegion="assertive">
+              <Ionicons name="checkmark-circle" size={72} color="#059669" />
+              <Text style={{ color: "#0f172a", fontSize: 18, fontWeight: "800", textAlign: "center" }}>
+                {t("mobileQr.validatedTitle")}
+              </Text>
+              <Text style={{ color: "#334155", fontSize: 13, textAlign: "center", lineHeight: 18 }}>
+                {mode === "order" ? t("mobileQr.validatedOrder") : t("mobileQr.validatedTicket")}
+              </Text>
+            </View>
+          ) : loading ? (
             <ActivityIndicator size="large" color={colors.primary} />
           ) : error ? (
             <View style={{ alignItems: "center", gap: 10, paddingHorizontal: 16 }}>
@@ -139,8 +207,23 @@ export default function TicketQrScreen() {
           </View>
         )}
 
+        {/* Validado: solo volver */}
+        {validated && (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.85}
+            style={{
+              flexDirection: "row", alignItems: "center", gap: 8,
+              backgroundColor: colors.primary, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 13,
+            }}
+          >
+            <Ionicons name="arrow-back" size={16} color={colors.textPrimary} />
+            <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: "700" }}>{t("mobileQr.back")}</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Botón regenerar */}
-        {qr && (
+        {qr && !validated && (
           <TouchableOpacity
             onPress={generate}
             disabled={loading}
@@ -160,12 +243,12 @@ export default function TicketQrScreen() {
         )}
 
         {/* Nota de seguridad */}
-        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, paddingHorizontal: 8 }}>
+        {!validated && <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, paddingHorizontal: 8 }}>
           <Ionicons name="shield-checkmark-outline" size={14} color={colors.textMuted} style={{ marginTop: 2 }} />
           <Text style={{ color: colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16 }}>
             {t("mobileQr.securityNote")}
           </Text>
-        </View>
+        </View>}
       </View>
     </View>
   );
