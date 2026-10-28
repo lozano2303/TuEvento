@@ -78,7 +78,6 @@ function CommentAvatar({ comment, styles, accent }) {
   );
 }
 
-export default function EventComments({ eventId, organizerUserId }) {
 /**
  * @param {Function} [props.onInputFocus] recibe el campo de texto que obtuvo el foco, para que la
  *   pantalla lo deje a la vista por encima del teclado
