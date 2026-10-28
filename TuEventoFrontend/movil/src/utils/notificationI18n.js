@@ -8,6 +8,8 @@
  * (LibreTranslate, un job cada ~15 s); la API devuelve las traducciones junto a
  * cada notificación con el código base del idioma ("en", "pt", "fr").
  */
+import { parsePastServerDate } from "./serverDate";
+
 export const SOURCE_LANGUAGE = "es";
 
 /** Ventana durante la cual una notificación reciente sin traducción se sigue consultando. */
@@ -42,7 +44,9 @@ export function isAwaitingTranslation(notification, language, now = Date.now()) 
   if (!notification || language === SOURCE_LANGUAGE || findTranslation(notification, language)) {
     return false;
   }
-  const sentAt = new Date(notification.sentAt).getTime();
+  // sentAt llega sin zona horaria: leído como hora local, un servidor en UTC lo dejaría 5 h en
+  // el futuro y la notificación esperaría traducción (y se consultaría) todo ese tiempo
+  const sentAt = parsePastServerDate(notification.sentAt, now);
   return Number.isFinite(sentAt) && now - sentAt < TRANSLATION_WAIT_MS;
 }
 

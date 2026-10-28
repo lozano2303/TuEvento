@@ -731,7 +731,10 @@
       "WALLET_CREDITED": "Cartera acreditada",
       "WELCOME": "Bienvenida",
       "EVENT_PUBLISHED": "Evento publicado",
-      "EVENT_REJECTED": "Evento rechazado"
+      "EVENT_REJECTED": "Evento rechazado",
+      "NEW_COMMENT": "Nuevo comentario",
+      "NEW_REPLY": "Nueva respuesta",
+      "ORGANIZER_ROLE_REVOKED": "Rol de organizador revocado"
     },
     "translating": "Traduciendo...",
     "details": {

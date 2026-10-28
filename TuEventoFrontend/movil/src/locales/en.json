@@ -731,7 +731,10 @@
       "WALLET_CREDITED": "Wallet credited",
       "WELCOME": "Welcome",
       "EVENT_PUBLISHED": "Event published",
-      "EVENT_REJECTED": "Event rejected"
+      "EVENT_REJECTED": "Event rejected",
+      "NEW_COMMENT": "New comment",
+      "NEW_REPLY": "New reply",
+      "ORGANIZER_ROLE_REVOKED": "Organizer role revoked"
     },
     "translating": "Translating...",
     "details": {

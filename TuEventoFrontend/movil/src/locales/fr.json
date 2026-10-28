@@ -731,7 +731,10 @@
       "WALLET_CREDITED": "Portefeuille crédité",
       "WELCOME": "Bienvenue",
       "EVENT_PUBLISHED": "Événement publié",
-      "EVENT_REJECTED": "Événement rejeté"
+      "EVENT_REJECTED": "Événement rejeté",
+      "NEW_COMMENT": "Nouveau commentaire",
+      "NEW_REPLY": "Nouvelle réponse",
+      "ORGANIZER_ROLE_REVOKED": "Rôle d'organisateur révoqué"
     },
     "translating": "Traduction...",
     "details": {
