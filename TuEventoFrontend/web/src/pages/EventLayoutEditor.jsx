@@ -528,8 +528,8 @@ export default function EventLayoutEditor() {
 
       <div className="flex flex-1 min-h-0">
         {/* Panel izquierdo */}
-        <div className="relative flex-shrink-0">
-          <div className={`overflow-hidden transition-[max-width] duration-200 ease-in-out h-full ${isLeftPanelOpen ? 'max-w-[220px]' : 'max-w-0'}`}>
+        <div className="relative flex-shrink-0 h-full min-h-0">
+          <div className={`overflow-x-hidden overflow-y-auto transition-[max-width] duration-200 ease-in-out h-full ${isLeftPanelOpen ? 'max-w-[220px]' : 'max-w-0'}`}>
             <ElementPalette onAddElement={handleAddElement} occupiedSectionCounts={occupiedSectionCounts}
               sectionTypes={sectionTypes} disabled={isReadOnly} />
           </div>
@@ -550,7 +550,8 @@ export default function EventLayoutEditor() {
 
         {/* Panel derecho */}
         <div className="relative flex-shrink-0 h-full">
-          <div className={`flex flex-col h-full overflow-hidden transition-[max-width] duration-200 ease-in-out ${isRightPanelOpen ? 'max-w-[240px]' : 'max-w-0'}`}>
+          {/* Propiedades y lista de secciones se desplazan juntas cuando no caben en la altura */}
+          <div className={`flex flex-col h-full overflow-x-hidden overflow-y-auto transition-[max-width] duration-200 ease-in-out ${isRightPanelOpen ? 'max-w-[240px]' : 'max-w-0'}`}>
             <PropertiesPanel
               element={selectedElement} elements={elements} onChange={handleChange} onDelete={handleDelete}
               isEditingVertices={isEditingVertices}
@@ -558,7 +559,7 @@ export default function EventLayoutEditor() {
               onEndVertexEdit={handleEndVertexEdit} canvasSize={canvasSize}
               onCanvasSizeChange={handleCanvasSizeChange} onApplyPreset={handleApplyPreset}
             />
-            <div className="flex-1 overflow-y-auto border-t border-surfaceAlt min-h-0 w-[240px] bg-surface">
+            <div className="flex-1 flex-shrink-0 border-t border-surfaceAlt w-[240px] bg-surface">
               <SectionsList elements={elements} selectedIds={selectedIds} onSelect={(id) => setSelectedIds([id])} />
             </div>
           </div>
