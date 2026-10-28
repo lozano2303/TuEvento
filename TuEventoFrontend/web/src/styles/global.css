@@ -1665,10 +1665,10 @@ input[type="password"]::-ms-reveal { display: none; }
   box-shadow: none;
 }
 
-/* ── Botones sociales (grid 2 columnas) ──────────────────────────────────── */
+/* ── Botones sociales: Google ocupa todo el ancho, como el botón principal ─── */
 .login-social-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 0.875rem;
 }
 

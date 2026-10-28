@@ -36,6 +36,8 @@ const OAUTH_ERROR_MESSAGES = {
  * to /login without a full page reload (e.g. after signing out from the profile view).
  */
 function GoogleButton({ onSuccess, onError }) {
+  const { t } = useTranslation();
+  const label = `${t('login.signInWith')} ${t('login.google')}`;
   const containerRef = useRef(null);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
@@ -65,7 +67,7 @@ function GoogleButton({ onSuccess, onError }) {
   }, []);
 
   return (
-    <div className="login-google-wrapper" role="button" tabIndex={0} aria-label="Iniciar sesión con Google">
+    <div className="login-google-wrapper" role="button" tabIndex={0} aria-label={label}>
       {/* ── Capa visual ── */}
       <div className="login-google-visual">
         <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -75,7 +77,7 @@ function GoogleButton({ onSuccess, onError }) {
           <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
           <path fill="none" d="M0 0h48v48H0z"/>
         </svg>
-        <span style={{ fontSize: '0.8125rem', fontWeight: 500 }}>Google</span>
+        <span style={{ fontSize: '0.9375rem', fontWeight: 600 }}>{label}</span>
       </div>
 
       {/* ── Overlay invisible full-width — dispara el flujo OAuth real ── */}
