@@ -9,6 +9,7 @@ import com.capysoft.tuevento.modules.language.domain.repository.LanguageReposito
 import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "translation.mode", havingValue = "local", matchIfMissing = true)
 public class TranslationProcessor {
 
     private final TranslationJobRepository translationJobRepository;

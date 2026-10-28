@@ -5,6 +5,7 @@ import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRe
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +20,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "translation.mode", havingValue = "local", matchIfMissing = true)
 public class TranslationRetryScheduler {
 
     private final TranslationJobRepository translationJobRepository;

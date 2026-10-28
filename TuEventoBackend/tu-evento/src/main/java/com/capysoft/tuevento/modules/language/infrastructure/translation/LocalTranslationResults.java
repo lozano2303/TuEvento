@@ -3,6 +3,7 @@ package com.capysoft.tuevento.modules.language.infrastructure.translation;
 import com.capysoft.tuevento.modules.language.application.port.out.TranslationResults;
 import com.capysoft.tuevento.shared.infrastructure.translation.TranslatableContents;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -13,6 +14,7 @@ import java.util.Map;
  */
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "translation.mode", havingValue = "local", matchIfMissing = true)
 public class LocalTranslationResults implements TranslationResults {
 
     private final TranslatableContents contents;

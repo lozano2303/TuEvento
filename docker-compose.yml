@@ -274,9 +274,8 @@ services:
 
       - APP_CORS_ALLOWED_ORIGINS=http://localhost:3000
 
-      # Translation service configuration
-      - TRANSLATION_LIBRETRANSLATE_BASE_URL=http://libretranslate:5000
-      - TRANSLATION_PROTECTED_TERMS=${TRANSLATION_PROTECTED_TERMS:-Tu Evento}
+      # Traducciones: las hace geolocation-service (TRANSLATION_ENABLED=true); local = dentro del backend
+      - TRANSLATION_MODE=remote
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       # Las notificaciones las envía notification-service (local = dentro del backend)
       - NOTIFICATION_MODE=remote
@@ -461,6 +460,11 @@ services:
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - JWK_SET_URI=http://identity-service:8088/.well-known/jwks.json
+      # Traducciones automáticas: va a la par que TRANSLATION_MODE=remote del backend
+      - TRANSLATION_ENABLED=true
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - TRANSLATION_LIBRETRANSLATE_BASE_URL=http://libretranslate:5000
+      - TRANSLATION_PROTECTED_TERMS=${TRANSLATION_PROTECTED_TERMS:-Tu Evento}
       # Lista de revocación de JWT (fail-closed): misma instancia que el backend
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -469,6 +473,8 @@ services:
         condition: service_started
       postgres:
         condition: service_started
+      kafka:
+        condition: service_healthy
       # El backend migra las tablas (y sus datos iniciales) y publica el JWKS
       backend:
         condition: service_started
