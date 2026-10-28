@@ -610,7 +610,7 @@ export default function LadingPage() {
             <div className={`grid gap-6 ${topReviews.length === 1 ? 'md:grid-cols-1 max-w-md mx-auto' : topReviews.length === 2 ? 'md:grid-cols-2 max-w-2xl mx-auto' : 'md:grid-cols-3'}`}>
               {topReviews.map(review => (
                 <div key={review.ratingId} className="lp2-testimonial-card">
-                  <div className="lp2-testimonial-quote">"</div>
+                  <div className="lp2-testimonial-quote">&ldquo;</div>
                   <div className="lp2-stars mb-3">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star key={i} className={`w-4 h-4 ${i < (review.rating ?? 0) ? 'fill-yellow-400 text-yellow-400' : 'text-surfaceAlt'}`} />

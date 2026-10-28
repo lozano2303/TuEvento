@@ -267,8 +267,9 @@ function LogEntry({ entry }) {
 // ╚══════════════════════════════════════════════════════════════════════════╝
 export default function ThemeCustomizePanel({ themeName, onClose }) {
   const { t } = useTranslation();
-  const { palette, applyPalette, refreshPalette } = useTheme();
 
+  // El tema oficial no se personaliza. El editor va en su propio componente para que sus
+  // hooks se llamen siempre en el mismo orden (no después de este return)
   if (themeName === 'PRINCIPAL') {
     return (
       <PanelShell onClose={onClose} t={t}>
@@ -282,6 +283,13 @@ export default function ThemeCustomizePanel({ themeName, onClose }) {
       </PanelShell>
     );
   }
+
+  return <ThemeCustomizeEditor themeName={themeName} onClose={onClose} />;
+}
+
+function ThemeCustomizeEditor({ themeName, onClose }) {
+  const { t } = useTranslation();
+  const { palette, applyPalette, refreshPalette } = useTheme();
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [customizedProps, setCustomizedProps] = useState(new Set());

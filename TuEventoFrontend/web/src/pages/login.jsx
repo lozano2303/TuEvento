@@ -436,7 +436,7 @@ export default function Login() {
           const msg = result.message || "";
           if (['no activada', 'not activated', 'activar', 'revisa tu correo'].some(s => msg.toLowerCase().includes(s))) {
             // Redirigir automáticamente a verificación y reenviar el código
-            try { await resendActivationCode(formData.email); } catch (_) {}
+            try { await resendActivationCode(formData.email); } catch { /* la pantalla de verificación permite reenviarlo */ }
             setView('verification');
           } else setError(msg || t('login.errors.loginError'));
         }

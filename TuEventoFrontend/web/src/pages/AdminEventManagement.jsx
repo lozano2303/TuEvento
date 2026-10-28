@@ -1177,7 +1177,7 @@ export default function AdminEventManagement() {
               {pendingConfirm?.label?.toLowerCase() ?? ''}
             </span>{' '}
             el evento{' '}
-            <span className="text-white font-semibold">"{pendingConfirm?.eventName}"</span>.
+            <span className="text-white font-semibold">&ldquo;{pendingConfirm?.eventName}&rdquo;</span>.
             {pendingConfirm?.newStatus === 'PUBLISHED' &&
               ' Una vez publicado será visible para todos los usuarios.'}
           </>
@@ -1208,7 +1208,7 @@ export default function AdminEventManagement() {
               <h3 className="text-base font-black text-textPrimary mb-1">¿Cancelar este evento?</h3>
               <p className="text-sm text-textSecondary leading-relaxed">
                 Estás por cancelar{' '}
-                <span className="text-white font-semibold">"{pendingCancel.eventName}"</span>.
+                <span className="text-white font-semibold">&ldquo;{pendingCancel.eventName}&rdquo;</span>.
                 Esta acción no se puede deshacer y dejará de ser visible para los asistentes.
               </p>
             </div>
@@ -1257,7 +1257,7 @@ export default function AdminEventManagement() {
                   Rechazar evento
                 </h3>
                 <p className="text-xs text-textMuted leading-snug">
-                  <span className="text-textSecondary font-medium">"{pendingReject.eventName}"</span>
+                  <span className="text-textSecondary font-medium">&ldquo;{pendingReject.eventName}&rdquo;</span>
                   {' '}— indica el motivo para que el organizador pueda corregirlo.
                 </p>
               </div>
