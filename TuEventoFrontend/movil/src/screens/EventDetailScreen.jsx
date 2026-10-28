@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from "react";
+﻿import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -76,6 +76,11 @@ export default function EventDetailScreen() {
   
   // 🚀 DOD: Usar SeatDataStore para 100k+ sillas
   const { store: seatStore, version: seatsVersion, cart, upsertSeats, updateSeat, getSeat } = useSeatStore(currentUserId);
+
+  // Disponibles en vivo de las secciones con sillas cargadas (las demás usan el valor del backend).
+  // seatsVersion: el store es mutable, la versión indica que cambió su contenido
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const availableBySection = useMemo(() => seatStore.countAvailableBySection(), [seatStore, seatsVersion]);
 
   // Sillas por sección: cada sección se descarga una sola vez (promesa compartida)
   const sectionLoadsRef = useRef(new Map());
@@ -819,6 +824,14 @@ export default function EventDetailScreen() {
                           ]}>
                             ${section.price.toLocaleString()}
                           </Text>
+                          <Text style={[
+                            styles.sectionChipAvailable,
+                            isActive && styles.sectionChipPriceActive,
+                          ]}>
+                            {t("seats.availableCount", {
+                              count: availableBySection.get(section.eventSectionId) ?? section.availableSeats ?? 0,
+                            })}
+                          </Text>
                         </TouchableOpacity>
                       );
                     })}
@@ -1319,6 +1332,12 @@ function createStyles(colors) {
     },
     sectionChipPriceActive: {
       color: colors.background + "CC",
+    },
+    sectionChipAvailable: {
+      fontSize: 10,
+      fontWeight: "500",
+      color: colors.textMuted,
+      marginTop: 2,
     },
     seatMapContainer: {
       width: "100%",

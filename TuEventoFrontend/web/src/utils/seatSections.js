@@ -39,3 +39,18 @@ export async function runWithConcurrency(items, limit, task, onError = () => {})
   };
   await Promise.all(Array.from({ length: Math.min(limit, queue.length) }, worker));
 }
+
+/**
+ * Sillas AVAILABLE de cada sección que tiene sillas cargadas (una agotada queda en 0). Las
+ * sillas se actualizan por WebSocket, así que el conteo baja con cada compra o reserva.
+ *
+ * @param {Object<string, {eventSectionId, status}>} seats - { seatId: SeatResponse }
+ * @returns {Object<string, number>} { eventSectionId: disponibles }
+ */
+export function countAvailableBySection(seats) {
+  const available = {};
+  for (const seat of Object.values(seats)) {
+    available[seat.eventSectionId] = (available[seat.eventSectionId] ?? 0) + (seat.status === 'AVAILABLE' ? 1 : 0);
+  }
+  return available;
+}

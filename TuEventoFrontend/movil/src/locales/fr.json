@@ -39,6 +39,7 @@
   "seats": {
     "selectSeats": "Sélectionnez vos Places",
     "availableSeats": "Places disponibles",
+    "availableCount": "{{count}} disponibles",
     "reservedSeats": "Places réservées",
     "soldSeats": "Places vendues",
     "myReservations": "Mes réservations",
