@@ -17,13 +17,20 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "../context/ThemeContext";
 import { useNotifications } from "../context/NotificationContext";
 import { baseLanguage, isAwaitingTranslation, localizeNotification } from "../utils/notificationI18n";
+import { parsePastServerDate } from "../utils/serverDate";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Formato de fecha según el idioma de la app
+const DATE_LOCALES = { es: "es-CO", en: "en-US", fr: "fr-FR", pt: "pt-BR" };
+const dateLocale = (language) => DATE_LOCALES[language] ?? DATE_LOCALES.es;
+
 // Tiempo relativo traducido. Recibe la función t para resolver las etiquetas.
-function formatRelativeTime(isoStr, t) {
+function formatRelativeTime(isoStr, t, language) {
   if (!isoStr) return "";
-  const diff = Date.now() - new Date(isoStr).getTime();
+  const sentAt = parsePastServerDate(isoStr);
+  if (Number.isNaN(sentAt)) return "";
+  const diff = Date.now() - sentAt;
   const mins = Math.floor(diff / 60000);
   if (mins < 1)  return t("mobileNotifications.time.now");
   if (mins < 60) return t("mobileNotifications.time.min", { count: mins });
@@ -31,14 +38,15 @@ function formatRelativeTime(isoStr, t) {
   if (hrs < 24)  return t("mobileNotifications.time.hour", { count: hrs });
   const days = Math.floor(hrs / 24);
   if (days < 7)  return t("mobileNotifications.time.day", { count: days });
-  return new Date(isoStr).toLocaleDateString("es-CO", {
+  return new Date(sentAt).toLocaleDateString(dateLocale(language), {
     day: "2-digit", month: "short", year: "numeric",
   });
 }
 
-function formatFullDate(isoStr) {
-  if (!isoStr) return "";
-  return new Date(isoStr).toLocaleString("es-CO", {
+function formatFullDate(isoStr, language) {
+  const ms = parsePastServerDate(isoStr);
+  if (Number.isNaN(ms)) return "";
+  return new Date(ms).toLocaleString(dateLocale(language), {
     day: "2-digit", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
@@ -58,6 +66,9 @@ const TYPE_CONFIG = {
   WELCOME:          { icon: "gift",              color: "#a78bfa" }, // accent
   EVENT_PUBLISHED:  { icon: "rocket",            color: "#34d399" },
   EVENT_REJECTED:   { icon: "ban",               color: "#f87171" },
+  NEW_COMMENT:      { icon: "chatbubble",        color: "#60a5fa" },
+  NEW_REPLY:        { icon: "chatbubbles",       color: "#60a5fa" },
+  ORGANIZER_ROLE_REVOKED: { icon: "remove-circle", color: "#f87171" },
   DEFAULT:          { icon: "information-circle",color: "#a78bfa" },
 };
 
@@ -71,7 +82,8 @@ function NotificationDetailModal({ notification, onClose, colors }) {
   const { t, i18n } = useTranslation();
   const { icon, color } = getTypeConfig(notification.type);
   // Traducción al idioma de la UI si ya llegó; si no, el original
-  const { subject, body: rawBody } = localizeNotification(notification, baseLanguage(i18n));
+  const language = baseLanguage(i18n);
+  const { subject, body: rawBody } = localizeNotification(notification, language);
   const body = stripHtml(rawBody);
   const isUnread = !notification.readAt;
 
@@ -117,7 +129,7 @@ function NotificationDetailModal({ notification, onClose, colors }) {
                 )}
               </View>
               <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 4 }}>
-                {formatFullDate(notification.sentAt)}
+                {formatFullDate(notification.sentAt, language)}
               </Text>
             </View>
             <TouchableOpacity
@@ -167,7 +179,7 @@ function NotificationDetailModal({ notification, onClose, colors }) {
               </Text>
               {notification.readAt && (
                 <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-                  {t("mobileNotifications.read")}: {formatFullDate(notification.readAt)}
+                  {t("mobileNotifications.read")}: {formatFullDate(notification.readAt, language)}
                 </Text>
               )}
             </View>
@@ -271,11 +283,13 @@ function NotificationCard({ notification, onMarkAsRead, colors }) {
 
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 }}>
             <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-              {formatRelativeTime(notification.sentAt, t)}
+              {formatRelativeTime(notification.sentAt, t, language)}
             </Text>
             <Text style={{ color: colors.textMuted, fontSize: 11 }}>•</Text>
-            <Text style={{ color: colors.textMuted, fontSize: 11, textTransform: "capitalize" }}>
-              {notification.type?.replace(/_/g, " ").toLowerCase()}
+            <Text style={{ color: colors.textMuted, fontSize: 11 }}>
+              {t(`notifications.types.${notification.type}`, {
+                defaultValue: notification.type?.replace(/_/g, " ").toLowerCase() ?? "",
+              })}
             </Text>
           </View>
         </View>
