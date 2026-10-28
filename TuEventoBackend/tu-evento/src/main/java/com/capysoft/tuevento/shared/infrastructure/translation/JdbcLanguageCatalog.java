@@ -11,7 +11,7 @@ import java.util.Optional;
 
 /**
  * {@link LanguageCatalog} leído de la tabla language. El catálogo lo administra el servicio de
- * localización; el monolito solo lo lee, en la misma base de datos, en cualquier modo de traducción.
+ * localización; el monolito solo lo lee, en la misma base de datos.
  */
 @Component
 @RequiredArgsConstructor

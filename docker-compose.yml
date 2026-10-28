@@ -274,8 +274,7 @@ services:
 
       - APP_CORS_ALLOWED_ORIGINS=http://localhost:3000
 
-      # Traducciones: las hace geolocation-service (TRANSLATION_ENABLED=true); local = dentro del backend
-      - TRANSLATION_MODE=remote
+      # Traducciones (las hace geolocation-service) y notificaciones van por Kafka
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       # Las notificaciones las envía notification-service (local = dentro del backend)
       - NOTIFICATION_MODE=remote
@@ -290,8 +289,6 @@ services:
         condition: service_started
       nsfw-classifier:
         condition: service_started
-      libretranslate:
-        condition: service_healthy
       kafka:
         condition: service_healthy
     networks:
@@ -460,8 +457,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - JWK_SET_URI=http://identity-service:8088/.well-known/jwks.json
-      # Traducciones automáticas: va a la par que TRANSLATION_MODE=remote del backend
-      - TRANSLATION_ENABLED=true
+      # Traducciones automáticas: el backend las pide por Kafka y este servicio las hace con LibreTranslate
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - TRANSLATION_LIBRETRANSLATE_BASE_URL=http://libretranslate:5000
       - TRANSLATION_PROTECTED_TERMS=${TRANSLATION_PROTECTED_TERMS:-Tu Evento}
@@ -474,6 +470,8 @@ services:
       postgres:
         condition: service_started
       kafka:
+        condition: service_healthy
+      libretranslate:
         condition: service_healthy
       # El backend migra las tablas (y sus datos iniciales) y publica el JWKS
       backend:
@@ -518,8 +516,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - JWK_SET_URI=http://localhost:8088/.well-known/jwks.json
-      # Idiomas activos (GET /api/v1/languages); hoy los sirve el backend
-      - LOCALIZATION_BASE_URL=http://backend:8080
+      # Idiomas activos (GET /api/v1/languages); los sirve geolocation-service (el backend ya no)
+      - LOCALIZATION_BASE_URL=http://geolocation-service:8087
       # Estado de las traducciones de la biografía (API interna del backend, con la clave entre servicios)
       - MONOLITH_BASE_URL=http://backend:8080
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}

@@ -15,7 +15,8 @@ Internet ──► NPM :80/:443 (TLS Let's Encrypt)          red "edge"
               └─ pay.tuevento.example.com ─► fake-payment-gateway:4001 (popup de pago)
 
 red "internal" (sin puertos publicados):
-  backend ─► postgres, redis, rustfs, nsfw-classifier, fake-payment-gateway, libretranslate*
+  backend ─► postgres, redis, rustfs, nsfw-classifier, fake-payment-gateway
+  geolocation-service ─► postgres, redis, kafka (traducciones), libretranslate*
   fake-payment-gateway ─► postgres-gateway, backend (webhook)
 ```
 
