@@ -1,11 +1,9 @@
 package com.capysoft.tuevento.modules.security.infrastructure.messaging;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.common.header.Header;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -15,7 +13,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.capysoft.tuevento.modules.security.domain.event.UserActivatedEvent;
 import com.capysoft.tuevento.shared.infrastructure.config.DomainEventsConsumerConfig;
 import com.capysoft.tuevento.shared.infrastructure.messaging.ProcessedEventStore;
-import com.capysoft.tuevento.shared.infrastructure.outbox.OutboxHeaders;
+import com.capysoft.tuevento.shared.infrastructure.messaging.InboundEventRecords;
+import com.capysoft.tuevento.shared.infrastructure.messaging.InboundEventRecords.Inbound;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -50,22 +49,14 @@ public class UserActivatedKafkaListener {
     @KafkaListener(topics = TOPIC, groupId = "identidad-user-activated",
             containerFactory = DomainEventsConsumerConfig.CONTAINER_FACTORY)
     public void onMessage(ConsumerRecord<String, String> rec) {
-        if (!EVENT_TYPE.equals(header(rec, OutboxHeaders.EVENT_TYPE))) {
+        Inbound<Message> inbound = InboundEventRecords
+                .readNew(rec, EVENT_TYPE, CONSUMER, processedEventStore, objectMapper, Message.class)
+                .orElse(null);
+        if (inbound == null) {
             return;
         }
-        UUID eventId = parseEventId(header(rec, OutboxHeaders.EVENT_ID));
-        if (eventId != null && processedEventStore.isProcessed(CONSUMER, eventId)) {
-            log.debug("UserActivated {} already processed, skipping", eventId);
-            return;
-        }
-        Message message;
-        try {
-            message = objectMapper.readValue(rec.value(), Message.class);
-        } catch (Exception e) {
-            log.error("Discarding unreadable UserActivated: offset={}, eventId={}: {}", rec.offset(), eventId,
-                    e.getMessage());
-            return;
-        }
+        UUID eventId = inbound.eventId();
+        Message message = inbound.payload();
         if (message.userId() == null) {
             log.error("Discarding UserActivated without userId: offset={}, eventId={}", rec.offset(), eventId);
             return;
@@ -88,22 +79,6 @@ public class UserActivatedKafkaListener {
             return value == null ? LocalDateTime.now() : LocalDateTime.parse(value);
         } catch (Exception e) {
             return LocalDateTime.now();
-        }
-    }
-
-    private static String header(ConsumerRecord<String, String> rec, String name) {
-        Header header = rec.headers().lastHeader(name);
-        return header == null || header.value() == null ? null : new String(header.value(), StandardCharsets.UTF_8);
-    }
-
-    private static UUID parseEventId(String value) {
-        if (value == null) {
-            return null;
-        }
-        try {
-            return UUID.fromString(value);
-        } catch (IllegalArgumentException e) {
-            return null;
         }
     }
 }

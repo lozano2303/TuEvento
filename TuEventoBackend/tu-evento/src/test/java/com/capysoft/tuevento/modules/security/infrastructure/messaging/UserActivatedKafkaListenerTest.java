@@ -70,4 +70,28 @@ class UserActivatedKafkaListenerTest {
         verifyNoInteractions(events);
         verify(processed, never()).markProcessed(any(), any());
     }
+
+    @Test
+    @DisplayName("without an eventId it still publishes, and a missing or invalid occurredAt falls back to now")
+    void withoutEventIdAndWithBadTime() {
+        ConsumerRecord<String, String> noId = new ConsumerRecord<>("tuevento.user", 0, 0L, "7",
+                "{\"userId\":7,\"occurredAt\":\"yesterday\"}");
+        noId.headers().add(OutboxHeaders.EVENT_TYPE, "UserActivated".getBytes(StandardCharsets.UTF_8));
+        listener.onMessage(noId);
+        listener.onMessage(record("UserActivated", UUID.randomUUID(), "{\"userId\":8}"));
+
+        ArgumentCaptor<Object> event = ArgumentCaptor.forClass(Object.class);
+        verify(events, org.mockito.Mockito.times(2)).publishEvent(event.capture());
+        assertThat(event.getAllValues()).allSatisfy(published ->
+                assertThat(((UserActivatedEvent) published).getOccurredAt()).isNotNull());
+        verify(processed, org.mockito.Mockito.times(1)).markProcessed(any(), any());
+    }
+
+    @Test
+    @DisplayName("an unreadable payload is discarded without publishing")
+    void discardsUnreadable() {
+        listener.onMessage(record("UserActivated", UUID.randomUUID(), "{not json"));
+
+        verifyNoInteractions(events);
+    }
 }
