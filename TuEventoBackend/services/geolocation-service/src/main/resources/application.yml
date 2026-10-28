@@ -46,11 +46,10 @@ spring:
         jwt:
           jwk-set-uri: ${JWK_SET_URI:http://localhost:8088/.well-known/jwks.json}
 
-# Núcleo de traducción automática (LibreTranslate). Apagado por defecto: mientras el monolito
-# traduzca en local (TRANSLATION_MODE=local) sus planificadores procesan los mismos trabajos de
-# translation_job, así que solo se enciende a la vez que el monolito pasa a remote.
+# Núcleo de traducción automática (LibreTranslate). Es el único que traduce: el monolito le pide
+# las traducciones por Kafka. TRANSLATION_ENABLED=false lo apaga (sedes e idiomas siguen sirviéndose).
 translation:
-  enabled: ${TRANSLATION_ENABLED:false}
+  enabled: ${TRANSLATION_ENABLED:true}
   provider: libretranslate
   protected-terms: ${TRANSLATION_PROTECTED_TERMS:Tu Evento}
   max-attempts: 3

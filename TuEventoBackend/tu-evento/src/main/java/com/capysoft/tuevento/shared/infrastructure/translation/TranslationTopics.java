@@ -1,9 +1,9 @@
 package com.capysoft.tuevento.shared.infrastructure.translation;
 
 /**
- * Topics entre el monolito y el núcleo de traducción del servicio de localización (modo
- * {@code remote}). La clave de cada mensaje es {@code entityType:entityId}: las órdenes de una
- * misma entidad se procesan en el orden en que se publicaron.
+ * Topics entre el monolito y el núcleo de traducción del servicio de localización. La clave de
+ * cada mensaje es {@code entityType:entityId}: las órdenes de una misma entidad se procesan en el
+ * orden en que se publicaron.
  */
 public final class TranslationTopics {
 

@@ -287,10 +287,6 @@ services:
       # Eventos y perfiles leen sedes y ciudades de geolocation-service (el backend ya no tiene ese módulo)
       GEOLOCATION_SERVICE_URL: http://geolocation-service:8087
 
-      # Traducciones: remote = las hace geolocation-service por Kafka (local = dentro del backend).
-      # Va a la par que TRANSLATION_ENABLED de geolocation-service: cambiar los dos a la vez.
-      TRANSLATION_MODE: ${TRANSLATION_MODE:-remote}
-
       # Correo
       MAIL_USERNAME: ${MAIL_USERNAME:?}
       MAIL_PASSWORD: ${MAIL_PASSWORD:?}
@@ -523,7 +519,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
       JWK_SET_URI: http://identity-service:8088/.well-known/jwks.json
-      # Traducciones automáticas: true mientras el backend tenga TRANSLATION_MODE=remote.
+      # Traducciones automáticas: el backend las pide por Kafka y este servicio las hace.
       # LibreTranslate solo responde si se levanta el perfil "translate"; si no, los trabajos
       # fallan y se reintentan, y las páginas muestran el texto en español.
       TRANSLATION_ENABLED: ${TRANSLATION_ENABLED:-true}
@@ -587,8 +583,8 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
       JWK_SET_URI: http://localhost:8088/.well-known/jwks.json
-      # Idiomas activos (GET /api/v1/languages); hoy los sirve el backend
-      LOCALIZATION_BASE_URL: http://backend:8080
+      # Idiomas activos (GET /api/v1/languages); los sirve geolocation-service (el backend ya no)
+      LOCALIZATION_BASE_URL: http://geolocation-service:8087
       # Estado de las traducciones de la biografía (API interna del backend, con la clave entre servicios)
       MONOLITH_BASE_URL: http://backend:8080
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}

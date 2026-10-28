@@ -3,7 +3,6 @@ package com.capysoft.tuevento.shared.infrastructure.translation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -11,9 +10,9 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * Modo {@code remote}: guarda en cada dominio las traducciones que termina el servicio de
- * localización. Recibir dos veces la misma traducción es inocuo (la segunda ve la primera ya
- * publicada y no la toca). Un mensaje que no se puede leer se registra y se descarta.
+ * Guarda en cada dominio las traducciones que termina el servicio de localización. Recibir dos
+ * veces la misma traducción es inocuo (la segunda ve la primera ya publicada y no la toca). Un
+ * mensaje que no se puede leer se registra y se descarta.
  *
  * <p>Kafka no autentica a quien publica: solo se acepta un resultado si existe un trabajo de
  * traducción en curso o terminado para esa entidad e idioma, así un mensaje inventado no puede
@@ -22,7 +21,6 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "translation.mode", havingValue = "remote")
 public class TranslationResultListener {
 
     private static final String JOB_EXISTS = """

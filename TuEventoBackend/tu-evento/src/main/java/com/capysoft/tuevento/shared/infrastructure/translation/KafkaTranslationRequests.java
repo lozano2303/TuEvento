@@ -5,7 +5,6 @@ import com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -15,9 +14,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Modo {@code remote}: las traducciones las hace el servicio de localización. Las peticiones (con
- * el texto original) y los descartes se le envían por {@link TranslationTopics#COMMANDS}; el
- * estado de los trabajos se lee de translation_job, en la misma base de datos.
+ * Las traducciones las hace el servicio de localización. Las peticiones (con el texto original) y
+ * los descartes se le envían por {@link TranslationTopics#COMMANDS}; el estado de los trabajos se
+ * lee de translation_job, en la misma base de datos.
  *
  * <p>Un fallo al publicar se registra y no rompe el flujo que lo originó: una petición perdida se
  * vuelve a hacer la próxima vez que se lea la entidad en otro idioma.
@@ -25,7 +24,6 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "translation.mode", havingValue = "remote")
 public class KafkaTranslationRequests implements TranslationRequests {
 
     private static final String JOB_STATUS = """
