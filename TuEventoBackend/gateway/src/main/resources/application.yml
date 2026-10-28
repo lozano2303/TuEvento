@@ -67,10 +67,9 @@ spring:
 
             # ── Microservicio de notificaciones ─────────────────────────────────
             # Bandeja in-app (GET /me, /me/unread-count, PATCH /{id}/read, /me/read-all).
-            # NOTIFICATION_SERVICE_URI apunta al microservicio; sin la variable vuelve al monolito.
-            # El envío lo decide NOTIFICATION_MODE del monolito (local | remote), no esta ruta.
+            # Solo los sirve el microservicio: el monolito ya no tiene el módulo de notificaciones.
             - id: notification-service
-              uri: ${NOTIFICATION_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
+              uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8086}
               predicates:
                 - Path=/api/v1/notifications/**
               filters:

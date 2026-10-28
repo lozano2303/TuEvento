@@ -73,22 +73,6 @@ spring:
     store-type: redis
     timeout: 86400s   # 24 horas
 
-  # ── Mail SMTP ─────────────────────────────────────────────
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-        transport:
-          protocol: smtp
-
   # ── Kafka (deshabilitado en Fase 1 — habilitar en Fase 3) ─
   # Si el arranque falla por Kafka, descomentar:
   # autoconfigure:
@@ -128,10 +112,6 @@ management:
     health:
       show-details: never
       show-components: never
-  health:
-    # SMTP availability must not mark the app as down
-    mail:
-      enabled: false
 
 # ── MinIO / AWS S3 ─────────────────────────────────────────
 minio:
@@ -192,8 +172,3 @@ payment:
     api-key: ${FAKE_GATEWAY_API_KEY}
   webhook:
     secret: ${WEBHOOK_SECRET}
-
-# ── Notificaciones ────────────────────────────────────────
-notification:
-  email:
-    enabled: ${NOTIFICATION_EMAIL_ENABLED:true}

@@ -257,9 +257,6 @@ services:
       # URL pública embebida en presigned URLs — debe ser alcanzable desde el browser
       - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-http://localhost:9000}
 
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-
       - NSFW_SERVICE_URL=http://nsfw-classifier:8000
       - NSFW_THRESHOLD=0.4
 
@@ -274,10 +271,8 @@ services:
 
       - APP_CORS_ALLOWED_ORIGINS=http://localhost:3000
 
-      # Traducciones (las hace geolocation-service) y notificaciones van por Kafka
+      # Traducciones (las hace geolocation-service) y notificaciones (las envía notification-service) van por Kafka
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      # Las notificaciones las envía notification-service (local = dentro del backend)
-      - NOTIFICATION_MODE=remote
       # Eventos y perfiles leen sedes y ciudades de geolocation-service (el backend ya no tiene ese módulo)
       - GEOLOCATION_SERVICE_URL=http://geolocation-service:8087
     depends_on:
@@ -401,8 +396,8 @@ services:
       - tuevento-network
 
   # ── Microservicio de notificaciones ────────────────────────────────────────
-  # Recibe por Kafka las notificaciones que decide el backend (NOTIFICATION_MODE=remote),
-  # las guarda en la misma base, envía el email y devuelve los pushes al /ws del backend.
+  # Recibe por Kafka las notificaciones que deciden los listeners del backend, las guarda en la
+  # misma base, envía el email y devuelve los pushes al /ws del backend.
   notification-service:
     build:
       context: ./TuEventoBackend/services
