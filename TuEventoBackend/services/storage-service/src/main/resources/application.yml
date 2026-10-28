@@ -58,6 +58,9 @@ app:
       access-key: ${RUSTFS_ACCESS_KEY:rustfsadmin}
       secret-key: ${RUSTFS_SECRET_KEY:rustfsadmin}
       region: ${AWS_REGION:us-east-1}
+  # Clave entre servicios para /internal/** (el monolito sube y consulta archivos con ella)
+  internal:
+    api-key: ${INTERNAL_API_KEY:}
 
 # Host de MinIO alcanzable desde el navegador: firma las presigned URLs
 minio:

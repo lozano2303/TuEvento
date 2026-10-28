@@ -16,7 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.capysoft.tuevento.modules.event.domain.event.EventStatusChangedEvent;
-import com.capysoft.tuevento.modules.notification.infrastructure.messaging.UserActivatedListener;
+import com.capysoft.tuevento.modules.identitybridge.notification.UserActivatedListener;
 import com.capysoft.tuevento.shared.domain.event.identity.UserActivatedEvent;
 
 /**

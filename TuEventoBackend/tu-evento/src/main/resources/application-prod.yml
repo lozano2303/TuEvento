@@ -73,22 +73,6 @@ spring:
     store-type: redis
     timeout: 86400s   # 24 horas
 
-  # ── Mail SMTP ─────────────────────────────────────────────
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-        transport:
-          protocol: smtp
-
   # ── Kafka (deshabilitado en Fase 1 — habilitar en Fase 3) ─
   # Si el arranque falla por Kafka, descomentar:
   # autoconfigure:
@@ -128,14 +112,6 @@ management:
     health:
       show-details: never
       show-components: never
-  health:
-    # SMTP availability must not mark the app as down
-    mail:
-      enabled: false
-
-# ── MinIO / AWS S3 ─────────────────────────────────────────
-minio:
-  public-url: ${MINIO_PUBLIC_URL}
 
 app:
 
@@ -144,45 +120,10 @@ app:
     secret: ${QR_SECRET:${JWT_SECRET}}
     expiration: ${QR_EXPIRATION:60000}    # 60 segundos
 
-  # ── Almacenamiento S3 ─────────────────────────────────────
-  storage:
-    enabled: true
-    endpoint: ${APP_STORAGE_ENDPOINT}
-    access-key: ${MINIO_ROOT_USER}
-    secret-key: ${MINIO_ROOT_PASSWORD}
-    region: us-east-1
-    bucket-default: tuevento
-    # Strategy de almacenamiento: minio (por defecto) | rustfs
-    provider: ${STORAGE_PROVIDER:minio}
-    rustfs:
-      endpoint: ${RUSTFS_ENDPOINT:http://rustfs:9000}
-      # Host público que firma las presigned URLs — debe ser alcanzable desde el navegador
-      public-url: ${RUSTFS_PUBLIC_URL:${RUSTFS_ENDPOINT:http://rustfs:9000}}
-      access-key: ${RUSTFS_ACCESS_KEY}
-      secret-key: ${RUSTFS_SECRET_KEY}
-      region: us-east-1
-
-
-
-
   # ── CORS ──────────────────────────────────────────────────
   # En producción solo se permite el dominio del frontend
   cors:
     allowed-origins: "${APP_CORS_ALLOWED_ORIGINS}"
-
-
-
-# ── Moderación de imágenes ────────────────────────────────
-moderation:
-  nsfw:
-    url: ${NSFW_SERVICE_URL:http://localhost:8001}
-    threshold: ${NSFW_THRESHOLD:0.6}
-  sightengine:
-    api-user: ${SIGHTENGINE_API_USER}
-    api-secret: ${SIGHTENGINE_API_SECRET}
-    models: ${SIGHTENGINE_MODELS:gore,nudity,weapon}
-    threshold: ${SIGHTENGINE_THRESHOLD:0.6}
-    nudity-threshold: ${SIGHTENGINE_NUDITY_THRESHOLD:0.15}
 
 # ── Pasarela de pagos ─────────────────────────────────────
 payment:
@@ -192,8 +133,3 @@ payment:
     api-key: ${FAKE_GATEWAY_API_KEY}
   webhook:
     secret: ${WEBHOOK_SECRET}
-
-# ── Notificaciones ────────────────────────────────────────
-notification:
-  email:
-    enabled: ${NOTIFICATION_EMAIL_ENABLED:true}

@@ -11,12 +11,13 @@ import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.SiteLookupPort;
 import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
 import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort.UserRef;
-import com.capysoft.tuevento.modules.storage.domain.repository.StoredFileRepository;
+import com.capysoft.tuevento.shared.application.storage.FileStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,7 +37,7 @@ public class GetAdminEventsUseCase implements GetAdminEventsPort {
     private final CategoryEventUseCase  categoryEventUseCase;
     private final SiteLookupPort        siteLookupPort;
     private final UserDirectoryPort     userDirectoryPort;
-    private final StoredFileRepository  storedFileRepository;
+    private final FileStorage           fileStorage;
 
     @Override
     @Transactional(readOnly = true)
@@ -46,9 +47,30 @@ public class GetAdminEventsUseCase implements GetAdminEventsPort {
                 : eventRepository.findByStatus(status);
 
         Map<Integer, UserRef> organizers = findOrganizers(events);
+        Map<Integer, String> avatars = findAvatarUrls(organizers);
         return events.stream()
-                .map(e -> toAdminSummary(e, organizers))
+                .map(e -> toAdminSummary(e, organizers, avatars))
                 .toList();
+    }
+
+    /**
+     * URL de la foto de cada organizador, una petición al servicio de archivos por foto distinta
+     * (no por evento). Una foto que no se puede resolver queda sin URL; la lista se sirve igual.
+     */
+    private Map<Integer, String> findAvatarUrls(Map<Integer, UserRef> organizers) {
+        Map<Integer, String> urls = new HashMap<>();
+        organizers.values().stream()
+                .map(UserRef::avatarFileId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .forEach(fileId -> {
+                    try {
+                        fileStorage.findPublicUrl(fileId).ifPresent(url -> urls.put(fileId, url));
+                    } catch (Exception ex) {
+                        log.warn("Admin events: could not resolve profile picture {}: {}", fileId, ex.getMessage());
+                    }
+                });
+        return urls;
     }
 
     /** Todos los organizadores de la lista en una sola consulta, en vez de tres por evento. */
@@ -67,7 +89,8 @@ public class GetAdminEventsUseCase implements GetAdminEventsPort {
         }
     }
 
-    private AdminEventSummaryResponse toAdminSummary(Event e, Map<Integer, UserRef> organizers) {
+    private AdminEventSummaryResponse toAdminSummary(Event e, Map<Integer, UserRef> organizers,
+                                                     Map<Integer, String> avatars) {
 
         // ── Site name ─────────────────────────────────────────────────────────
         String siteName = null;
@@ -109,20 +132,8 @@ public class GetAdminEventsUseCase implements GetAdminEventsPort {
         String organizerName  = organizer == null ? null : organizer.fullName();
         String organizerEmail = organizer == null ? null : organizer.email();
 
-        // ── Organizer profile picture — lee publicUrl directamente desde stored_file,
-        //    sin generar URL presignada (evita escritura de log dentro de readOnly tx) ──
-        String organizerProfilePicture = null;
-        if (organizer != null && organizer.avatarFileId() != null) {
-            try {
-                organizerProfilePicture = storedFileRepository.findById(organizer.avatarFileId())
-                        .filter(f -> !Boolean.TRUE.equals(f.getDeleted()))
-                        .map(f -> f.getPublicUrl())
-                        .orElse(null);
-            } catch (Exception ex) {
-                log.warn("Admin events: could not resolve organizerProfilePicture for event {}, userId {}: {}",
-                        e.getEventId(), e.getUserId(), ex.getMessage());
-            }
-        }
+        String organizerProfilePicture = organizer == null || organizer.avatarFileId() == null
+                ? null : avatars.get(organizer.avatarFileId());
 
         return AdminEventSummaryResponse.builder()
                 .eventId(e.getEventId())

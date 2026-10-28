@@ -3,8 +3,8 @@ package com.capysoft.tuevento.modules.event.application.usecase;
 import com.capysoft.tuevento.modules.event.application.dto.request.ChangeEventStatusRequest;
 import com.capysoft.tuevento.modules.event.application.port.in.AdminChangeEventStatusPort;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
-import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
-import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
+import com.capysoft.tuevento.shared.application.notification.NotificationSender;
+import com.capysoft.tuevento.shared.application.notification.SendNotificationCommand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verify;
 @DisplayName("AdminChangeEventStatusUseCase — notificación al organizador")
 class AdminChangeEventStatusNotificationTest {
 
-    @MockitoBean SendNotificationUseCase sendNotificationUseCase;
+    @MockitoBean NotificationSender notificationSender;
 
     @Autowired AdminChangeEventStatusPort adminChangeEventStatusPort;
     @Autowired JdbcTemplate jdbcTemplate;
@@ -46,7 +46,7 @@ class AdminChangeEventStatusNotificationTest {
                 .newStatus(EventStatus.REJECTED).reason("Faltan imágenes").build(), 1L);
 
         ArgumentCaptor<SendNotificationCommand> command = ArgumentCaptor.forClass(SendNotificationCommand.class);
-        verify(sendNotificationUseCase, timeout(5000)).execute(command.capture());
+        verify(notificationSender, timeout(5000)).send(command.capture());
         assertThat(command.getValue().getTypeName()).isEqualTo("EVENT_REJECTED");
         assertThat(command.getValue().getUserIds()).containsExactly(11);
         assertThat(command.getValue().getEntityId()).isEqualTo(901L);
