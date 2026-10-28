@@ -276,17 +276,11 @@ services:
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
 
-      # Notificaciones: remote = las envía notification-service por Kafka (local = dentro del backend)
-      NOTIFICATION_MODE: ${NOTIFICATION_MODE:-remote}
+      # Notificaciones: las deciden los listeners del backend y las envía notification-service por Kafka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
 
       # Eventos y perfiles leen sedes y ciudades de geolocation-service (el backend ya no tiene ese módulo)
       GEOLOCATION_SERVICE_URL: http://geolocation-service:8087
-
-      # Correo
-      MAIL_USERNAME: ${MAIL_USERNAME:?}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:?}
-      NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-true}
 
       # Pagos
       PAYMENT_GATEWAY: fake

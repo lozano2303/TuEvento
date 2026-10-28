@@ -21,17 +21,6 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
 
 logging:
   level:
@@ -65,8 +54,4 @@ payment:
     api-key: ${FAKE_GATEWAY_API_KEY:dev-admin-key-change-in-production}
   webhook:
     secret: ${WEBHOOK_SECRET:default-secret-change-in-production}
-
-notification:
-  email:
-    enabled: ${NOTIFICATION_EMAIL_ENABLED:true}
 

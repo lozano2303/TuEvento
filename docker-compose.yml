@@ -250,18 +250,13 @@ services:
       # Archivos (subidas, URLs y moderación): storage-service por su API interna (el backend ya no tiene ese módulo)
       - STORAGE_SERVICE_URL=http://storage-service:8085
 
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-
       - REDIS_HOST=redis
       - REDIS_PORT=6379
 
       - APP_CORS_ALLOWED_ORIGINS=http://localhost:3000
 
-      # Traducciones (las hace geolocation-service) y notificaciones van por Kafka
+      # Traducciones (las hace geolocation-service) y notificaciones (las envía notification-service) van por Kafka
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      # Las notificaciones las envía notification-service (local = dentro del backend)
-      - NOTIFICATION_MODE=remote
       # Eventos y perfiles leen sedes y ciudades de geolocation-service (el backend ya no tiene ese módulo)
       - GEOLOCATION_SERVICE_URL=http://geolocation-service:8087
     depends_on:
@@ -388,8 +383,8 @@ services:
       - tuevento-network
 
   # ── Microservicio de notificaciones ────────────────────────────────────────
-  # Recibe por Kafka las notificaciones que decide el backend (NOTIFICATION_MODE=remote),
-  # las guarda en la misma base, envía el email y devuelve los pushes al /ws del backend.
+  # Recibe por Kafka las notificaciones que deciden los listeners del backend, las guarda en la
+  # misma base, envía el email y devuelve los pushes al /ws del backend.
   notification-service:
     build:
       context: ./TuEventoBackend/services
