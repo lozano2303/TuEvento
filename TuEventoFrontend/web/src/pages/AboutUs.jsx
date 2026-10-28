@@ -114,9 +114,9 @@ export default function AboutUs() {
           </svg>
 
           {/* Puntos de luz */}
-          <div className="absolute top-16 right-20 pointer-events-none" style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(221,214,254,0.85)', boxShadow: '0 0 26px 10px rgba(167,139,250,0.32)', animation: 'lp2-pulse-ring 2.6s ease-out infinite' }}/>
-          <div className="absolute top-1/2 left-16 pointer-events-none" style={{ width: 9, height: 9, borderRadius: '50%', background: 'rgba(196,181,253,0.7)', boxShadow: '0 0 16px 6px rgba(167,139,250,0.25)', animation: 'lp2-pulse-ring 3.2s 1.1s ease-out infinite' }}/>
-          <div className="absolute bottom-20 right-1/3 pointer-events-none" style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(196,181,253,0.6)', boxShadow: '0 0 12px 4px rgba(167,139,250,0.2)', animation: 'lp2-pulse-ring 4s 0.7s ease-out infinite' }}/>
+          <div className="absolute top-16 right-20 pointer-events-none" style={{ width: 14, height: 14, borderRadius: '50%', background: 'rgba(221,214,254,0.85)', boxShadow: '0 0 26px 10px color-mix(in srgb, var(--color-accent) 32%, transparent)', animation: 'lp2-pulse-ring 2.6s ease-out infinite' }}/>
+          <div className="absolute top-1/2 left-16 pointer-events-none" style={{ width: 9, height: 9, borderRadius: '50%', background: 'color-mix(in srgb, var(--color-accent) 70%, transparent)', boxShadow: '0 0 16px 6px color-mix(in srgb, var(--color-accent) 25%, transparent)', animation: 'lp2-pulse-ring 3.2s 1.1s ease-out infinite' }}/>
+          <div className="absolute bottom-20 right-1/3 pointer-events-none" style={{ width: 6, height: 6, borderRadius: '50%', background: 'color-mix(in srgb, var(--color-accent) 60%, transparent)', boxShadow: '0 0 12px 4px color-mix(in srgb, var(--color-accent) 20%, transparent)', animation: 'lp2-pulse-ring 4s 0.7s ease-out infinite' }}/>
 
           {/* Estrellas / destellos */}
           {[
@@ -146,7 +146,7 @@ export default function AboutUs() {
             style={{
               width: 320, height: 320,
               bottom: '-80px', right: '-80px',
-              background: 'radial-gradient(circle, rgba(167,139,250,0.20), rgba(124,58,237,0.05) 70%)',
+              background: 'radial-gradient(circle, color-mix(in srgb, var(--color-accent) 20%, transparent), color-mix(in srgb, var(--color-primary) 5%, transparent) 70%)',
             }}
           />
 
@@ -172,14 +172,14 @@ export default function AboutUs() {
             <div
               className="inline-flex items-center px-5 py-2 rounded-full border mb-2"
               style={{
-                background: 'rgba(255,255,255,0.13)',
+                background: 'color-mix(in srgb, var(--color-onPrimary) 13%, transparent)',
                 backdropFilter: 'blur(10px)',
-                borderColor: 'rgba(255,255,255,0.25)',
+                borderColor: 'color-mix(in srgb, var(--color-onPrimary) 25%, transparent)',
                 animation: 'lp2-slide-up 0.5s ease both',
               }}
             >
-              <Sparkles className="w-4 h-4 mr-2" style={{ color: '#c4b5fd' }} />
-              <span className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.92)' }}>{t('about.hero.badge')}</span>
+              <Sparkles className="w-4 h-4 mr-2" style={{ color: 'var(--color-accent)' }} />
+              <span className="text-sm font-semibold" style={{ color: 'color-mix(in srgb, var(--color-onPrimary) 92%, transparent)' }}>{t('about.hero.badge')}</span>
               <span
                 className="ml-2 w-2 h-2 rounded-full inline-block"
                 style={{ background: '#4ade80', boxShadow: '0 0 6px #4ade80', animation: 'lp2-pulse-ring 1.4s ease-out infinite' }}
@@ -187,12 +187,12 @@ export default function AboutUs() {
             </div>
 
             <h1
-              className="text-5xl md:text-7xl font-extrabold leading-tight text-white"
+              className="text-5xl md:text-7xl font-extrabold leading-tight text-(--color-onPrimary)"
               style={{ animation: 'lp2-slide-up 0.7s 0.1s ease both', letterSpacing: '-0.02em' }}
             >
               {t('about.hero.title')}{' '}
               <span style={{
-                background: 'linear-gradient(90deg, #e9d5ff, #a78bfa, #c4b5fd)',
+                background: 'linear-gradient(90deg, #e9d5ff, var(--color-accent), var(--color-accent))',
                 backgroundSize: '200% auto',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -205,7 +205,7 @@ export default function AboutUs() {
 
             <p
               className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed"
-              style={{ color: 'rgba(255,255,255,0.78)', animation: 'lp2-slide-up 0.7s 0.2s ease both' }}
+              style={{ color: 'color-mix(in srgb, var(--color-onPrimary) 78%, transparent)', animation: 'lp2-slide-up 0.7s 0.2s ease both' }}
             >
               {t('about.hero.description')}
             </p>
@@ -223,23 +223,23 @@ export default function AboutUs() {
                   key={textKey}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-2xl transition-all duration-300 cursor-default"
                   style={{
-                    background: 'rgba(255,255,255,0.12)',
+                    background: 'color-mix(in srgb, var(--color-onPrimary) 12%, transparent)',
                     backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255,255,255,0.22)',
+                    border: '1px solid color-mix(in srgb, var(--color-onPrimary) 22%, transparent)',
                   }}
                   onMouseEnter={e => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.22)';
+                    e.currentTarget.style.background = 'color-mix(in srgb, var(--color-onPrimary) 22%, transparent)';
                     e.currentTarget.style.transform = 'translateY(-3px) scale(1.04)';
                     e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.18)';
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                    e.currentTarget.style.background = 'color-mix(in srgb, var(--color-onPrimary) 12%, transparent)';
                     e.currentTarget.style.transform = '';
                     e.currentTarget.style.boxShadow = '';
                   }}
                 >
-                  <Icon className="w-4 h-4" style={{ color: '#c4b5fd' }} />
-                  <span className="text-sm font-semibold text-white">{t(textKey)}</span>
+                  <Icon className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+                  <span className="text-sm font-semibold text-(--color-onPrimary)">{t(textKey)}</span>
                 </div>
               ))}
             </div>
@@ -259,13 +259,13 @@ export default function AboutUs() {
                   key={val}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl"
                   style={{
-                    background: 'rgba(255,255,255,0.22)',
-                    border: '1px solid rgba(255,255,255,0.45)',
+                    background: 'color-mix(in srgb, var(--color-onPrimary) 22%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-onPrimary) 45%, transparent)',
                     backdropFilter: 'blur(12px)',
                   }}
                 >
-                  <span style={{ color: '#fff', fontWeight: 900, fontSize: '0.95rem', lineHeight: 1 }}>{val}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.78rem', fontWeight: 500 }}>{t(labelKey)}</span>
+                  <span style={{ color: 'var(--color-onPrimary)', fontWeight: 900, fontSize: '0.95rem', lineHeight: 1 }}>{val}</span>
+                  <span style={{ color: 'color-mix(in srgb, var(--color-onPrimary) 90%, transparent)', fontSize: '0.78rem', fontWeight: 500 }}>{t(labelKey)}</span>
                 </div>
               ))}
             </div>
@@ -412,7 +412,7 @@ export default function AboutUs() {
                 style={{
                   background: 'color-mix(in srgb, var(--color-primary) 22%, transparent)',
                   backdropFilter: 'blur(12px)',
-                  border: '1px solid rgba(255,255,255,0.18)',
+                  border: '1px solid color-mix(in srgb, var(--color-onPrimary) 18%, transparent)',
                 }}
               >
                 {/* Header del mockup */}
@@ -424,7 +424,7 @@ export default function AboutUs() {
                   </div>
                   <div
                     className="text-xs font-semibold px-3 py-1 rounded-full"
-                    style={{ background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.85)' }}
+                    style={{ background: 'color-mix(in srgb, var(--color-onPrimary) 15%, transparent)', color: 'color-mix(in srgb, var(--color-onPrimary) 85%, transparent)' }}
                   >
                     {t('about.mockup.editorTitle')}
                   </div>
@@ -443,9 +443,9 @@ export default function AboutUs() {
                     <div
                       key={key}
                       className={`${w} ${h} rounded-xl flex items-center justify-center`}
-                      style={{ background: `rgba(255,255,255,${opacity})`, border: '1px solid rgba(255,255,255,0.2)' }}
+                      style={{ background: `color-mix(in srgb, var(--color-onPrimary) calc(${opacity} * 100%), transparent)`, border: '1px solid color-mix(in srgb, var(--color-onPrimary) 20%, transparent)' }}
                     >
-                      <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>{t(labelKey)}</span>
+                      <span className="text-xs font-medium" style={{ color: 'color-mix(in srgb, var(--color-onPrimary) 80%, transparent)' }}>{t(labelKey)}</span>
                     </div>
                   ))}
                 </div>
@@ -453,20 +453,20 @@ export default function AboutUs() {
                 {/* Barra de herramientas simulada */}
                 <div
                   className="flex items-center justify-between px-3 py-2.5 rounded-xl"
-                  style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)' }}
+                  style={{ background: 'color-mix(in srgb, var(--color-onPrimary) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--color-onPrimary) 15%, transparent)' }}
                 >
                   {[Calendar, Users, Zap, CheckCircle].map((Icon, i) => (
                     <div
                       key={i}
                       className="w-8 h-8 rounded-lg flex items-center justify-center"
-                      style={{ background: i === 0 ? 'rgba(255,255,255,0.25)' : 'transparent' }}
+                      style={{ background: i === 0 ? 'color-mix(in srgb, var(--color-onPrimary) 25%, transparent)' : 'transparent' }}
                     >
-                      <Icon className="w-4 h-4" style={{ color: i === 0 ? '#fff' : 'rgba(255,255,255,0.5)' }} />
+                      <Icon className="w-4 h-4" style={{ color: i === 0 ? 'var(--color-onPrimary)' : 'color-mix(in srgb, var(--color-onPrimary) 50%, transparent)' }} />
                     </div>
                   ))}
                   <div
                     className="text-xs font-semibold px-3 py-1 rounded-lg"
-                    style={{ background: 'var(--color-accent)', color: '#fff' }}
+                    style={{ background: 'var(--color-primary)', color: 'var(--color-onPrimary)' }}
                   >
                     {t('about.mockup.save')}
                   </div>

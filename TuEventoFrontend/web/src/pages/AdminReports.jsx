@@ -114,7 +114,7 @@ export default function AdminReports() {
       sub:   `${fmtNum(stats?.approvedPayments)} pagos aprobados`,
     },
     {
-      icon: UsersRound, iconBg: 'bg-violet-500/15', iconColor: 'text-violet-400',
+      icon: UsersRound, iconBg: 'bg-violet-500/15', iconColor: 'text-accent',
       label: 'Usuarios registrados',
       value: fmtNum(stats?.totalUsers),
       sub:   `${fmtNum(stats?.approvedOrganizerRequests)} organizadores`,
@@ -140,7 +140,7 @@ export default function AdminReports() {
     { icon: Eye,          iconBg: 'bg-yellow-500/15',  iconColor: 'text-yellow-400',   label: 'En revisión',   count: stats?.pendingReviewEvents  },
     { icon: XCircle,      iconBg: 'bg-rose-500/15',    iconColor: 'text-rose-400',     label: 'Rechazados',    count: stats?.rejectedEvents      },
     { icon: AlertCircle,  iconBg: 'bg-orange-500/15',  iconColor: 'text-orange-400',   label: 'Cancelados',    count: stats?.cancelledEvents     },
-    { icon: Calendar,     iconBg: 'bg-slate-500/15',   iconColor: 'text-slate-400',    label: 'Borradores',    count: stats?.draftEvents         },
+    { icon: Calendar,     iconBg: 'bg-slate-500/15',   iconColor: 'text-textSecondary',    label: 'Borradores',    count: stats?.draftEvents         },
   ];
 
   return (

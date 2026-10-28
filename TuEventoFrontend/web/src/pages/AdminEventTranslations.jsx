@@ -389,7 +389,7 @@ export default function AdminEventTranslations() {
 
           {/* Info footer - más conciso */}
           <div className="mt-4 px-4 py-3 rounded-xl bg-blue-500/5 border border-blue-500/20">
-            <p className="text-xs text-blue-300/80">
+            <p className="text-xs text-accent/80">
               <strong>ℹ️ Info:</strong> Los eventos sin traducción mostrarán su contenido original en español a los usuarios.
             </p>
           </div>

@@ -98,7 +98,7 @@ export default function SiteMapPicker({ value, onChange, defaultCenter, cityBbox
         </button>
       </div>
 
-      {searchError && <p className="text-xs text-red-400">{searchError}</p>}
+      {searchError && <p className="text-xs text-error">{searchError}</p>}
 
       {/* Mapa */}
       <div className="rounded-lg overflow-hidden border border-surfaceAlt" style={{ height: '256px' }}>

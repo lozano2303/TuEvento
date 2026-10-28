@@ -37,7 +37,7 @@ export default function EventImagePlaceholder({
     : 'bg-gradient-to-br from-[#2a1040] to-[#1a0d28]';
 
   const iconColor = themed ? 'text-primary opacity-50' : 'text-[#7f13ec] opacity-60';
-  const textColor = themed ? 'text-textMuted opacity-50' : 'text-slate-500';
+  const textColor = themed ? 'text-textMuted opacity-50' : 'text-textMuted';
 
   return (
     <div

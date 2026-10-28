@@ -886,16 +886,16 @@ export default function EventDetail() {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}>
-        <p className="text-sm" style={{ color: 'rgba(196,181,253,0.6)' }}>{t('eventDetail.loadingEvent')}</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface) 50%, var(--color-background) 100%)' }}>
+        <p className="text-sm" style={{ color: 'var(--color-textMuted)' }}>{t('eventDetail.loadingEvent')}</p>
       </div>
     );
   }
 
   if (error || !event) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}>
-        <p className="text-sm text-red-400">{error ?? t('eventDetail.eventNotFound')}</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: 'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface) 50%, var(--color-background) 100%)' }}>
+        <p className="text-sm text-error">{error ?? t('eventDetail.eventNotFound')}</p>
         <BackButton fallback="/events" label={t('eventDetail.backToEvents')} />
       </div>
     );
@@ -903,8 +903,8 @@ export default function EventDetail() {
 
   return (
     <div
-      className="min-h-screen text-white"
-      style={{ background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0f2e 50%, #120820 100%)' }}
+      className="min-h-screen text-textPrimary"
+      style={{ background: 'linear-gradient(160deg, var(--color-background) 0%, var(--color-surface) 50%, var(--color-background) 100%)' }}
     >
       <div className="max-w-6xl mx-auto px-4 py-8">
 
@@ -921,7 +921,7 @@ export default function EventDetail() {
             {/* Imagen principal */}
             <div
               className="relative rounded-2xl overflow-hidden"
-              style={{ border: '0.5px solid rgba(167,139,250,0.2)', aspectRatio: '16/9', background: 'var(--color-surface)' }}
+              style={{ border: '0.5px solid color-mix(in srgb, var(--color-accent) 20%, transparent)', aspectRatio: '16/9', background: 'var(--color-surface)' }}
             >
               {media.length > 0 ? (
                 <>
@@ -955,9 +955,9 @@ export default function EventDetail() {
                   )}
                 </>
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-2" style={{ background: 'rgba(109,40,217,0.15)' }}>
-                  <ImageOff className="w-8 h-8" style={{ color: 'rgba(196,181,253,0.3)' }} />
-                  <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>
+                <div className="w-full h-full flex flex-col items-center justify-center gap-2" style={{ background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)' }}>
+                  <ImageOff className="w-8 h-8" style={{ color: 'var(--color-textMuted)' }} />
+                  <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
                     {t('eventDetail.noImages')}
                   </span>
                 </div>
@@ -974,7 +974,7 @@ export default function EventDetail() {
                     className="shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all"
                     style={{
                       border: i === activeImage
-                        ? '2px solid rgba(167,139,250,0.8)'
+                        ? '2px solid color-mix(in srgb, var(--color-accent) 80%, transparent)'
                         : '2px solid transparent',
                       opacity: i === activeImage ? 1 : 0.6,
                     }}
@@ -989,12 +989,12 @@ export default function EventDetail() {
           {/* ── Info del evento ────────────────────────────────────────────── */}
           <div className="flex flex-col gap-5">
             <div>
-              <h1 className="text-2xl font-bold" style={{ color: '#e9d5ff' }}>
+              <h1 className="text-2xl font-bold" style={{ color: 'var(--color-textPrimary)' }}>
                 {/* FIX: Usar traducción si está disponible */}
                 {(i18next.language !== 'es' && event.translatedName) ? event.translatedName : event.eventName}
               </h1>
               {(event.description || event.translatedDescription) && (
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: 'rgba(196,181,253,0.75)' }}>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--color-textSecondary)' }}>
                   {/* FIX: Usar traducción si está disponible */}
                   {(i18next.language !== 'es' && event.translatedDescription) ? event.translatedDescription : event.description}
                 </p>
@@ -1004,8 +1004,8 @@ export default function EventDetail() {
             <div className="space-y-3">
               {/* Fechas */}
               {event.startDate && (
-                <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(233,213,255,0.8)' }}>
-                  <Calendar className="w-4 h-4 shrink-0" style={{ color: 'rgba(167,139,250,0.7)' }} />
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-textPrimary)' }}>
+                  <Calendar className="w-4 h-4 shrink-0" style={{ color: 'var(--color-accent)' }} />
                   <span>
                     {event.startDate}
                     {event.finishDate && event.finishDate !== event.startDate && ` → ${event.finishDate}`}
@@ -1015,16 +1015,16 @@ export default function EventDetail() {
 
               {/* Sede */}
               {event.siteName && (
-                <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(233,213,255,0.8)' }}>
-                  <MapPin className="w-4 h-4 shrink-0" style={{ color: 'rgba(167,139,250,0.7)' }} />
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-textPrimary)' }}>
+                  <MapPin className="w-4 h-4 shrink-0" style={{ color: 'var(--color-accent)' }} />
                   <span>{event.siteName}</span>
                 </div>
               )}
 
               {/* Sillas */}
               {event.availableSeats > 0 && (
-                <div className="flex items-center gap-2 text-sm" style={{ color: 'rgba(233,213,255,0.8)' }}>
-                  <Users className="w-4 h-4 shrink-0" style={{ color: 'rgba(167,139,250,0.7)' }} />
+                <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-textPrimary)' }}>
+                  <Users className="w-4 h-4 shrink-0" style={{ color: 'var(--color-accent)' }} />
                   <span>{t('eventDetail.availableSeats', { count: event.availableSeats.toLocaleString() })}</span>
                 </div>
               )}
@@ -1035,9 +1035,9 @@ export default function EventDetail() {
               <span
                 className="inline-block text-xs font-semibold px-3 py-1 rounded-full"
                 style={{
-                  background: event.status === 'PUBLISHED' ? 'rgba(22,163,74,0.2)' : 'rgba(107,114,128,0.2)',
-                  color:      event.status === 'PUBLISHED' ? '#4ade80' : 'rgba(196,181,253,0.5)',
-                  border:     `1px solid ${event.status === 'PUBLISHED' ? 'rgba(74,222,128,0.3)' : 'rgba(107,114,128,0.3)'}`,
+                  background: event.status === 'PUBLISHED' ? 'color-mix(in srgb, var(--color-success) 20%, transparent)' : 'color-mix(in srgb, var(--color-textMuted) 20%, transparent)',
+                  color:      event.status === 'PUBLISHED' ? 'var(--color-success)' : 'var(--color-textMuted)',
+                  border:     `1px solid ${event.status === 'PUBLISHED' ? 'color-mix(in srgb, var(--color-success) 30%, transparent)' : 'color-mix(in srgb, var(--color-textMuted) 30%, transparent)'}`,
                 }}
               >
                 {event.status === 'PUBLISHED' ? t('eventDetail.published') : event.status}
@@ -1077,11 +1077,11 @@ export default function EventDetail() {
         <section
           aria-label="Comentarios del evento"
           className="mt-12"
-          style={{ borderTop: '1px solid rgba(167,139,250,0.15)', paddingTop: '2rem' }}
+          style={{ borderTop: '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)', paddingTop: '2rem' }}
         >
-          <h2 className="text-lg font-semibold mb-6" style={{ color: '#e9d5ff' }}>
+          <h2 className="text-lg font-semibold mb-6" style={{ color: 'var(--color-textPrimary)' }}>
             {t('eventDetail.commentsCount')} {comments.length > 0 && (
-              <span className="text-sm font-normal ml-2" style={{ color: 'rgba(196,181,253,0.5)' }}>
+              <span className="text-sm font-normal ml-2" style={{ color: 'var(--color-textMuted)' }}>
                 ({comments.length})
               </span>
             )}
@@ -1094,7 +1094,7 @@ export default function EventDetail() {
                 id="comment-form"
                 onSubmit={handleCommentSubmit}
                 className="mb-8 p-4 rounded-xl"
-                style={{ background: 'rgba(109,40,217,0.1)', border: '1px solid rgba(167,139,250,0.15)' }}
+                style={{ background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)' }}
               >
                 {/* Selector de estrellas — solo en comentarios principales (no en respuestas) */}
                 {needsRatingSelector && (
@@ -1117,21 +1117,21 @@ export default function EventDetail() {
                     maxLength={500}
                     rows={3}
                     className="flex-1 resize-none rounded-lg px-3 py-2 text-sm outline-none"
-                    style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.2)', color: '#e9d5ff' }}
+                    style={{ background: 'color-mix(in srgb, var(--color-background) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--color-accent) 20%, transparent)', color: 'var(--color-textPrimary)' }}
                   />
                   <button
                     type="submit"
                     disabled={commentSubmitting || !commentText.trim() || (needsRatingSelector && commentRating === 0)}
                     aria-label={commentSubmitting ? t('eventDetail.publishingComment') : t('eventDetail.publishComment')}
                     className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-opacity disabled:opacity-40"
-                    style={{ background: 'rgba(109,40,217,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
+                    style={{ background: 'var(--color-primary)', border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)' }}
                   >
-                    {commentSubmitting ? <span className="text-xs" style={{ color: '#e9d5ff' }}>…</span> : <Send className="w-4 h-4 pointer-events-none" style={{ color: '#e9d5ff' }} />}
+                    {commentSubmitting ? <span className="text-xs" style={{ color: 'var(--color-onPrimary)' }}>…</span> : <Send className="w-4 h-4 pointer-events-none" style={{ color: 'var(--color-onPrimary)' }} />}
                   </button>
                 </div>
                 <div className="flex items-center justify-between mt-1">
-                  <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{commentText.length}/500</span>
-                  {commentError && <span role="alert" className="text-xs text-red-400">{commentError}</span>}
+                  <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{commentText.length}/500</span>
+                  {commentError && <span role="alert" className="text-xs text-error">{commentError}</span>}
                 </div>
               </form>
             ) : (
@@ -1150,16 +1150,16 @@ export default function EventDetail() {
               </div>
             )
           ) : (
-            <p className="text-sm mb-6 text-center" style={{ color: 'rgba(196,181,253,0.5)' }}>
-              <a href="/login" style={{ color: '#a78bfa', textDecoration: 'underline' }}>{t('auth.login')}</a>{' '}{t('eventDetail.loginToComment')}
+            <p className="text-sm mb-6 text-center" style={{ color: 'var(--color-textMuted)' }}>
+              <a href="/login" style={{ color: 'var(--color-accent)', textDecoration: 'underline' }}>{t('auth.login')}</a>{' '}{t('eventDetail.loginToComment')}
             </p>
           )}
 
           {/* Lista de comentarios agrupados */}
           {commentsLoading ? (
-            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>{t('eventDetail.loadingComments')}</p>
+            <p className="text-sm text-center py-8" style={{ color: 'var(--color-textMuted)' }}>{t('eventDetail.loadingComments')}</p>
           ) : comments.filter((c) => c.parentRatingId == null).length === 0 ? (
-            <p className="text-sm text-center py-8" style={{ color: 'rgba(196,181,253,0.4)' }}>{t('eventDetail.noCommentsYet')}</p>
+            <p className="text-sm text-center py-8" style={{ color: 'var(--color-textMuted)' }}>{t('eventDetail.noCommentsYet')}</p>
           ) : (
             <ul className="space-y-4" aria-label="Lista de comentarios">
               {comments
@@ -1172,19 +1172,19 @@ export default function EventDetail() {
                   const isEditingThis = editingId === c.ratingId;
 
                   return (
-                    <li key={c.ratingId} className="rounded-xl" style={{ background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(167,139,250,0.12)' }}>
+                    <li key={c.ratingId} className="rounded-xl" style={{ background: 'color-mix(in srgb, var(--color-primary) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--color-accent) 12%, transparent)' }}>
                       {/* ── Comentario principal ── */}
                       <div className="p-4">
                         {/* Cabecera */}
                         <div className="flex items-start justify-between mb-1 gap-2">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium" style={{ color: '#c4b5fd' }}>{c.authorName || 'Usuario'}</span>
-                            {isOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>{t('eventDetail.you')}</span>}
+                            <span className="text-sm font-medium" style={{ color: 'var(--color-accent)' }}>{c.authorName || 'Usuario'}</span>
+                            {isOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)', color: 'var(--color-accent)', border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)' }}>{t('eventDetail.you')}</span>}
                             {c.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>{t('eventDetail.organizer')}</span>}
                             {c.rating != null && (
                               <div className="flex items-center gap-0.5" aria-label={`${c.rating} de 5 estrellas`}>
                                 {[1,2,3,4,5].map((star) => (
-                                  <Star key={star} className="w-3.5 h-3.5" style={{ color: star <= c.rating ? '#f59e0b' : 'rgba(196,181,253,0.2)' }} fill={star <= c.rating ? '#f59e0b' : 'none'} />
+                                  <Star key={star} className="w-3.5 h-3.5" style={{ color: star <= c.rating ? '#f59e0b' : 'color-mix(in srgb, var(--color-textMuted) 45%, transparent)' }} fill={star <= c.rating ? '#f59e0b' : 'none'} />
                                 ))}
                               </div>
                             )}
@@ -1198,7 +1198,7 @@ export default function EventDetail() {
                                   onClick={() => { setEditingId(c.ratingId); setEditText(c.comment); setEditError(null); }}
                                   aria-label="Editar mi comentario"
                                   className="transition-opacity cursor-pointer"
-                                  style={{ color: 'rgba(167,139,250,0.7)' }}
+                                  style={{ color: 'var(--color-accent)' }}
                                 >
                                   <Pencil className="w-3.5 h-3.5 pointer-events-none" />
                                 </button>
@@ -1209,7 +1209,7 @@ export default function EventDetail() {
                                 disabled={deletingCommentId === c.ratingId}
                                 aria-label="Eliminar mi comentario"
                                 className="transition-opacity disabled:opacity-40 cursor-pointer"
-                                style={{ color: 'rgba(248,113,113,0.7)' }}
+                                style={{ color: 'var(--color-error)' }}
                               >
                                 <X className="w-3.5 h-3.5 pointer-events-none" />
                               </button>
@@ -1228,43 +1228,43 @@ export default function EventDetail() {
                               maxLength={500}
                               rows={3}
                               className="w-full resize-none rounded-lg px-3 py-2 text-sm outline-none"
-                              style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.3)', color: '#e9d5ff' }}
+                              style={{ background: 'color-mix(in srgb, var(--color-background) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)', color: 'var(--color-textPrimary)' }}
                             />
                             <div className="flex items-center justify-between mt-1">
-                              <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{editText.length}/500</span>
+                              <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{editText.length}/500</span>
                               <div className="flex gap-2">
-                                <button type="button" onClick={() => { setEditingId(null); setEditError(null); }} className="text-xs px-2 py-1 rounded" style={{ color: 'rgba(196,181,253,0.6)' }}>Cancelar</button>
+                                <button type="button" onClick={() => { setEditingId(null); setEditError(null); }} className="text-xs px-2 py-1 rounded" style={{ color: 'var(--color-textMuted)' }}>Cancelar</button>
                                 <button
                                   type="submit"
                                   disabled={editSubmitting || !editText.trim()}
                                   aria-label={editSubmitting ? 'Guardando…' : 'Guardar edición'}
                                   className="text-xs px-3 py-1 rounded transition-opacity disabled:opacity-40"
-                                  style={{ background: 'rgba(109,40,217,0.6)', color: '#e9d5ff' }}
+                                  style={{ background: 'var(--color-primary)', color: 'var(--color-onPrimary)' }}
                                 >
                                   {editSubmitting ? 'Guardando…' : 'Guardar'}
                                 </button>
                               </div>
                             </div>
-                            {editError && <p role="alert" className="text-xs text-red-400 mt-1">{editError}</p>}
+                            {editError && <p role="alert" className="text-xs text-error mt-1">{editError}</p>}
                           </form>
                         ) : (
                           <>
-                            <p className="text-sm leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>
+                            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-textPrimary)' }}>
                               {getCommentText(c)}
                             </p>
                             {/* Badge de traducción o indicador de carga */}
                             {showTranslationBadge(c) && (
                               <div className="flex items-center gap-1 mt-1">
-                                <Globe className="w-3 h-3" style={{ color: 'rgba(167,139,250,0.5)' }} />
-                                <span className="text-xs" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                                <Globe className="w-3 h-3" style={{ color: 'var(--color-textMuted)' }} />
+                                <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
                                   {t('comments.translated')}
                                 </span>
                               </div>
                             )}
                             {showTranslatingIndicator(c) && (
                               <div className="flex items-center gap-1 mt-1">
-                                <div className="w-3 h-3 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'rgba(167,139,250,0.5)' }} />
-                                <span className="text-xs" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                                <div className="w-3 h-3 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 50%, transparent)' }} />
+                                <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
                                   {t('comments.translating')}
                                 </span>
                               </div>
@@ -1275,11 +1275,11 @@ export default function EventDetail() {
                         {/* Tiempo + (editado) */}
                         <div className="flex items-center gap-2 mt-1">
                           {c.createdAt && (
-                            <time dateTime={c.createdAt} className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>
+                            <time dateTime={c.createdAt} className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
                               {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true, locale: getDateFnsLocale() })}
                             </time>
                           )}
-                          {c.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>({t('eventDetail.edited')})</span>}
+                          {c.editedAt && <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>({t('eventDetail.edited')})</span>}
                         </div>
 
                         {/* Botón Responder — solo en principales, solo con sesión */}
@@ -1296,7 +1296,7 @@ export default function EventDetail() {
                             }}
                             aria-label={`${t('eventDetail.reply')} ${c.authorName || 'Usuario'}`}
                             className="mt-2 flex items-center gap-1 text-xs cursor-pointer transition-opacity"
-                            style={{ color: 'rgba(167,139,250,0.6)' }}
+                            style={{ color: 'var(--color-accent)' }}
                           >
                             <CornerDownLeft className="w-3 h-3 pointer-events-none" />
                             {t('eventDetail.reply')}
@@ -1309,9 +1309,9 @@ export default function EventDetail() {
                         {replyParentId === c.ratingId && replyingToId !== null && (
                           <form onSubmit={handleReplySubmit} className="mt-3">
                             {/* ── Encabezado: a quién se responde ── */}
-                            <p className="text-xs mb-2" style={{ color: 'rgba(196,181,253,0.55)' }}>
+                            <p className="text-xs mb-2" style={{ color: 'var(--color-textMuted)' }}>
                               {replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId)
-                                ? <>Respondiendo a <span style={{ color: '#a78bfa', fontWeight: 500 }}>@{replyToUserName}</span></>
+                                ? <>Respondiendo a <span style={{ color: 'var(--color-accent)', fontWeight: 500 }}>@{replyToUserName}</span></>
                                 : 'Escribe tu respuesta'}
                             </p>
                             {/* ── Área de input: mención fija + textarea ── */}
@@ -1324,14 +1324,14 @@ export default function EventDetail() {
                               {/* Contenedor del campo de texto con mención prefijada */}
                               <div
                                 className="flex-1 flex items-start rounded-lg text-sm overflow-hidden"
-                                style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.2)' }}
+                                style={{ background: 'color-mix(in srgb, var(--color-background) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--color-accent) 20%, transparent)' }}
                               >
                                 {/* Mención fija — solo visible cuando aplica */}
                                 {replyToUserName && replyToUserId && Number(replyToUserId) !== Number(currentUserId) && (
                                   <span
                                     aria-hidden="true"
                                     className="shrink-0 pl-3 pt-2 pb-2 text-sm font-medium select-none"
-                                    style={{ color: '#a78bfa', lineHeight: '1.5rem' }}
+                                    style={{ color: 'var(--color-accent)', lineHeight: '1.5rem' }}
                                   >
                                     @{replyToUserName}
                                   </span>
@@ -1352,7 +1352,7 @@ export default function EventDetail() {
                                   rows={2}
                                   autoFocus
                                   className="flex-1 resize-none bg-transparent px-2 py-2 outline-none"
-                                  style={{ color: '#e9d5ff', minWidth: 0 }}
+                                  style={{ color: 'var(--color-textPrimary)', minWidth: 0 }}
                                 />
                               </div>
                               <div className="flex flex-col gap-1">
@@ -1361,9 +1361,9 @@ export default function EventDetail() {
                                   disabled={replySubmitting || !replyText.trim()}
                                   aria-label={replySubmitting ? 'Enviando respuesta…' : 'Enviar respuesta'}
                                   className="w-8 h-8 rounded flex items-center justify-center transition-opacity disabled:opacity-40"
-                                  style={{ background: 'rgba(109,40,217,0.6)' }}
+                                  style={{ background: 'var(--color-primary)' }}
                                 >
-                                  {replySubmitting ? <span className="text-xs" style={{ color: '#e9d5ff' }}>…</span> : <Send className="w-3.5 h-3.5 pointer-events-none" style={{ color: '#e9d5ff' }} />}
+                                  {replySubmitting ? <span className="text-xs" style={{ color: 'var(--color-onPrimary)' }}>…</span> : <Send className="w-3.5 h-3.5 pointer-events-none" style={{ color: 'var(--color-onPrimary)' }} />}
                                 </button>
                                 <button
                                   type="button"
@@ -1377,7 +1377,7 @@ export default function EventDetail() {
                                   }}
                                   aria-label="Cancelar respuesta"
                                   className="w-8 h-8 rounded flex items-center justify-center"
-                                  style={{ color: 'rgba(196,181,253,0.5)' }}
+                                  style={{ color: 'var(--color-textMuted)' }}
                                 >
                                   <X className="w-3.5 h-3.5 pointer-events-none" />
                                 </button>
@@ -1385,10 +1385,10 @@ export default function EventDetail() {
                             </div>
                             {/* Contador: solo el texto que escribe el usuario (500 caracteres máx) */}
                             <div className="flex items-center justify-between mt-1">
-                              <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>
+                              <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
                                 {replyText.length}/500
                               </span>
-                              {replyError && <span role="alert" className="text-xs text-red-400">{replyError}</span>}
+                              {replyError && <span role="alert" className="text-xs text-error">{replyError}</span>}
                             </div>
                           </form>
                         )}
@@ -1396,16 +1396,16 @@ export default function EventDetail() {
 
                       {/* ── Respuestas ── */}
                       {replies.length > 0 && (
-                        <ul className="border-t px-4 pb-3 pt-2 space-y-3" style={{ borderColor: 'rgba(167,139,250,0.08)' }} aria-label={`Respuestas al comentario de ${c.authorName || 'Usuario'}`}>
+                        <ul className="border-t px-4 pb-3 pt-2 space-y-3" style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 8%, transparent)' }} aria-label={`Respuestas al comentario de ${c.authorName || 'Usuario'}`}>
                           {replies.map((r) => {
                             const replyIsOwn = currentUserId != null && Number(r.userId) === Number(currentUserId);
                             const isEditingReply = editingId === r.ratingId;
                             return (
-                              <li key={r.ratingId} className="pl-4" style={{ borderLeft: '2px solid rgba(167,139,250,0.15)' }}>
+                              <li key={r.ratingId} className="pl-4" style={{ borderLeft: '2px solid color-mix(in srgb, var(--color-accent) 15%, transparent)' }}>
                                 <div className="flex items-start justify-between gap-2 mb-0.5">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-xs font-medium" style={{ color: '#c4b5fd' }}>{r.authorName || 'Usuario'}</span>
-                                    {replyIsOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>Tú</span>}
+                                    <span className="text-xs font-medium" style={{ color: 'var(--color-accent)' }}>{r.authorName || 'Usuario'}</span>
+                                    {replyIsOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)', color: 'var(--color-accent)', border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)' }}>Tú</span>}
                                     {r.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>Organizador</span>}
                                   </div>
                                   {replyIsOwn && getAccessToken() && (
@@ -1428,7 +1428,7 @@ export default function EventDetail() {
                                           }}
                                           aria-label="Editar mi respuesta"
                                           className="transition-opacity cursor-pointer"
-                                          style={{ color: 'rgba(167,139,250,0.7)' }}
+                                          style={{ color: 'var(--color-accent)' }}
                                         >
                                           <Pencil className="w-3 h-3 pointer-events-none" />
                                         </button>
@@ -1439,7 +1439,7 @@ export default function EventDetail() {
                                         disabled={deletingCommentId === r.ratingId}
                                         aria-label="Eliminar mi respuesta"
                                         className="transition-opacity disabled:opacity-40 cursor-pointer"
-                                        style={{ color: 'rgba(248,113,113,0.7)' }}
+                                        style={{ color: 'var(--color-error)' }}
                                       >
                                         <X className="w-3 h-3 pointer-events-none" />
                                       </button>
@@ -1463,14 +1463,14 @@ export default function EventDetail() {
                                         </label>
                                         <div
                                           className="flex items-start rounded-lg text-xs overflow-hidden"
-                                          style={{ background: 'rgba(15,10,30,0.6)', border: '1px solid rgba(167,139,250,0.3)' }}
+                                          style={{ background: 'color-mix(in srgb, var(--color-background) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)' }}
                                         >
                                           {/* Mención fija — no editable */}
                                           {hasMention && (
                                             <span
                                               aria-hidden="true"
                                               className="shrink-0 pl-3 pt-2 pb-2 text-xs font-medium select-none"
-                                              style={{ color: '#a78bfa', lineHeight: '1.5rem' }}
+                                              style={{ color: 'var(--color-accent)', lineHeight: '1.5rem' }}
                                             >
                                               @{r.replyToUserName}
                                             </span>
@@ -1484,19 +1484,19 @@ export default function EventDetail() {
                                             rows={2}
                                             autoFocus
                                             className="flex-1 resize-none bg-transparent px-2 py-2 outline-none"
-                                            style={{ color: '#e9d5ff', minWidth: 0 }}
+                                            style={{ color: 'var(--color-textPrimary)', minWidth: 0 }}
                                           />
                                         </div>
                                         <div className="flex items-center justify-between mt-1">
-                                          <span className="text-xs" style={{ color: 'rgba(196,181,253,0.4)' }}>{editText.length}/500</span>
+                                          <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>{editText.length}/500</span>
                                           <div className="flex gap-2">
-                                            <button type="button" onClick={() => { setEditingId(null); setEditError(null); }} className="text-xs px-2 py-0.5 rounded" style={{ color: 'rgba(196,181,253,0.6)' }}>Cancelar</button>
-                                            <button type="submit" disabled={editSubmitting || !editText.trim()} aria-label={editSubmitting ? 'Guardando…' : 'Guardar'} className="text-xs px-3 py-0.5 rounded disabled:opacity-40" style={{ background: 'rgba(109,40,217,0.6)', color: '#e9d5ff' }}>
+                                            <button type="button" onClick={() => { setEditingId(null); setEditError(null); }} className="text-xs px-2 py-0.5 rounded" style={{ color: 'var(--color-textMuted)' }}>Cancelar</button>
+                                            <button type="submit" disabled={editSubmitting || !editText.trim()} aria-label={editSubmitting ? 'Guardando…' : 'Guardar'} className="text-xs px-3 py-0.5 rounded disabled:opacity-40" style={{ background: 'var(--color-primary)', color: 'var(--color-onPrimary)' }}>
                                               {editSubmitting ? 'Guardando…' : 'Guardar'}
                                             </button>
                                           </div>
                                         </div>
-                                        {editError && editingId === r.ratingId && <p role="alert" className="text-xs text-red-400 mt-1">{editError}</p>}
+                                        {editError && editingId === r.ratingId && <p role="alert" className="text-xs text-error mt-1">{editError}</p>}
                                       </form>
                                     );
                                   })()
@@ -1515,25 +1515,25 @@ export default function EventDetail() {
                                       : commentToShow;
                                     return (
                                       <>
-                                        <p className="text-xs leading-relaxed" style={{ color: 'rgba(233,213,255,0.8)' }}>
+                                        <p className="text-xs leading-relaxed" style={{ color: 'var(--color-textPrimary)' }}>
                                           {hasMention && (
-                                            <span style={{ color: '#a78bfa', fontWeight: '500' }}>@{r.replyToUserName}{' '}</span>
+                                            <span style={{ color: 'var(--color-accent)', fontWeight: '500' }}>@{r.replyToUserName}{' '}</span>
                                           )}
                                           {bodyText}
                                         </p>
                                         {/* Badge de traducción o indicador de carga */}
                                         {showTranslationBadge(r) && (
                                           <div className="flex items-center gap-1 mt-1">
-                                            <Globe className="w-2.5 h-2.5" style={{ color: 'rgba(167,139,250,0.5)' }} />
-                                            <span className="text-xs" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                                            <Globe className="w-2.5 h-2.5" style={{ color: 'var(--color-textMuted)' }} />
+                                            <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
                                               {t('comments.translated')}
                                             </span>
                                           </div>
                                         )}
                                         {showTranslatingIndicator(r) && (
                                           <div className="flex items-center gap-1 mt-1">
-                                            <div className="w-2.5 h-2.5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'rgba(167,139,250,0.5)' }} />
-                                            <span className="text-xs" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                                            <div className="w-2.5 h-2.5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 50%, transparent)' }} />
+                                            <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
                                               {t('comments.translating')}
                                             </span>
                                           </div>
@@ -1545,11 +1545,11 @@ export default function EventDetail() {
 
                                 <div className="flex items-center gap-2 mt-0.5">
                                   {r.createdAt && (
-                                    <time dateTime={r.createdAt} className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>
+                                    <time dateTime={r.createdAt} className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
                                       {formatDistanceToNow(new Date(r.createdAt), { addSuffix: true, locale: getDateFnsLocale() })}
                                     </time>
                                   )}
-                                  {r.editedAt && <span className="text-xs" style={{ color: 'rgba(196,181,253,0.35)' }}>({t('eventDetail.edited')})</span>}
+                                  {r.editedAt && <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>({t('eventDetail.edited')})</span>}
                                 </div>
 
                                 {/* Botón Responder en respuestas */}
@@ -1566,7 +1566,7 @@ export default function EventDetail() {
                                     }}
                                     aria-label={`${t('eventDetail.reply')} ${r.authorName || 'Usuario'}`}
                                     className="mt-1 flex items-center gap-1 text-xs cursor-pointer transition-opacity"
-                                    style={{ color: 'rgba(167,139,250,0.6)' }}
+                                    style={{ color: 'var(--color-accent)' }}
                                   >
                                     <CornerDownLeft className="w-3 h-3 pointer-events-none" />
                                     {t('eventDetail.reply')}
@@ -1584,7 +1584,7 @@ export default function EventDetail() {
           )}
 
           {deleteCommentError && (
-            <p role="alert" className="text-xs text-red-400 mt-3 text-center">{deleteCommentError}</p>
+            <p role="alert" className="text-xs text-error mt-3 text-center">{deleteCommentError}</p>
           )}
         </section>
 
@@ -1623,8 +1623,8 @@ export default function EventDetail() {
             </p>
             <button
               onClick={() => navigate('/', { replace: true })}
-              className="w-full py-2.5 rounded-full text-sm font-bold text-white hover:brightness-110 transition-all"
-              style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primaryDark))' }}
+              className="w-full py-2.5 rounded-full text-sm font-bold hover:brightness-110 transition-all"
+              style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primaryDark))', color: 'var(--color-onPrimary)' }}
             >
               {t('eventDetail.cancelledLiveButton')}
             </button>
@@ -2166,17 +2166,17 @@ function SeatSelectorSection({
     <div
       className="mt-12 rounded-2xl p-6"
       style={{
-        border: '0.5px solid rgba(167,139,250,0.2)',
-        background: 'rgba(109,40,217,0.05)',
+        border: '0.5px solid color-mix(in srgb, var(--color-accent) 20%, transparent)',
+        background: 'color-mix(in srgb, var(--color-primary) 5%, transparent)',
       }}
     >
-      <h2 className="text-xl font-bold mb-6" style={{ color: '#e9d5ff' }}>
+      <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--color-textPrimary)' }}>
         {t('seats.selectSeats')}
       </h2>
 
       {/* Selector de cantidad estilo cine */}
       <div className="flex items-center gap-6 mb-6">
-        <span className="text-sm" style={{ color: 'rgba(196,181,253,0.75)' }}>
+        <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
           {t('seats.howMany')}
         </span>
         <div className="flex items-center gap-3">
@@ -2185,8 +2185,8 @@ function SeatSelectorSection({
             disabled={selectedQuantity <= 1 || selectedQuantity <= cart.length}
             className="w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
-              background: 'rgba(167,139,250,0.15)',
-              border: '1px solid rgba(167,139,250,0.3)',
+              background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)',
             }}
             aria-label="Disminuir cantidad"
             title={
@@ -2195,11 +2195,11 @@ function SeatSelectorSection({
                 : undefined
             }
           >
-            <Minus className="w-4 h-4" style={{ color: '#c4b5fd' }} />
+            <Minus className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
           </button>
           <span
             className="text-lg font-bold w-12 text-center"
-            style={{ color: '#e9d5ff' }}
+            style={{ color: 'var(--color-textPrimary)' }}
           >
             {selectedQuantity}
           </span>
@@ -2208,15 +2208,15 @@ function SeatSelectorSection({
             disabled={selectedQuantity >= maxQuantity}
             className="w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
-              background: 'rgba(167,139,250,0.15)',
-              border: '1px solid rgba(167,139,250,0.3)',
+              background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)',
             }}
             aria-label="Aumentar cantidad"
           >
-            <Plus className="w-4 h-4" style={{ color: '#c4b5fd' }} />
+            <Plus className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
           </button>
         </div>
-        <span className="text-xs ml-auto" style={{ color: 'rgba(196,181,253,0.5)' }}>
+        <span className="text-xs ml-auto" style={{ color: 'var(--color-textMuted)' }}>
           {t('seats.selected', { count: cart.length, total: selectedQuantity })}
         </span>
       </div>
@@ -2235,8 +2235,8 @@ function SeatSelectorSection({
 
         {/* Canvas con mapa de sillas - columna central (flexible, dominante) */}
         <div className="flex-1 rounded-xl overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)', minWidth: 0 }}>
-          <div className="flex items-center justify-between p-2 border-b" style={{ borderColor: 'rgba(167,139,250,0.15)' }}>
-            <span className="text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
+          <div className="flex items-center justify-between p-2 border-b" style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 15%, transparent)' }}>
+            <span className="text-xs" style={{ color: 'var(--color-textMuted)' }}>
               {t('seats.seatMap')}
             </span>
             {/* Controles de navegación entre sub-secciones */}
@@ -2247,14 +2247,14 @@ function SeatSelectorSection({
                   disabled={currentSubSectionIndex === 0}
                   className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
-                    background: 'rgba(167,139,250,0.2)',
-                    border: '1px solid rgba(167,139,250,0.3)',
+                    background: 'color-mix(in srgb, var(--color-accent) 20%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)',
                   }}
                   aria-label="Sub-sección anterior"
                 >
-                  <ChevronLeft className="w-4 h-4" style={{ color: '#c4b5fd' }} />
+                  <ChevronLeft className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                 </button>
-                <span className="text-xs font-semibold px-2" style={{ color: '#e9d5ff' }}>
+                <span className="text-xs font-semibold px-2" style={{ color: 'var(--color-textPrimary)' }}>
                   {currentSubSectionIndex + 1}/{currentSubSections.length}
                 </span>
                 <button
@@ -2262,12 +2262,12 @@ function SeatSelectorSection({
                   disabled={currentSubSectionIndex === currentSubSections.length - 1}
                   className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
-                    background: 'rgba(167,139,250,0.2)',
-                    border: '1px solid rgba(167,139,250,0.3)',
+                    background: 'color-mix(in srgb, var(--color-accent) 20%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)',
                   }}
                   aria-label="Sub-sección siguiente"
                 >
-                  <ChevronRight className="w-4 h-4" style={{ color: '#c4b5fd' }} />
+                  <ChevronRight className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                 </button>
               </div>
             )}
@@ -2280,14 +2280,14 @@ function SeatSelectorSection({
                   disabled={currentColPage === 0}
                   className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
-                    background: 'rgba(59,130,246,0.2)',
-                    border: '1px solid rgba(59,130,246,0.3)',
+                    background: 'color-mix(in srgb, var(--color-accent) 20%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)',
                   }}
                   aria-label="Columnas anteriores"
                 >
-                  <ChevronLeft className="w-4 h-4" style={{ color: '#93c5fd' }} />
+                  <ChevronLeft className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                 </button>
-                <span className="text-xs font-semibold px-2" style={{ color: '#dbeafe' }}>
+                <span className="text-xs font-semibold px-2" style={{ color: 'var(--color-textPrimary)' }}>
                   Col {currentColPage + 1}/{dynamicColPages}
                 </span>
                 <button
@@ -2295,12 +2295,12 @@ function SeatSelectorSection({
                   disabled={currentColPage === dynamicColPages - 1}
                   className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
-                    background: 'rgba(59,130,246,0.2)',
-                    border: '1px solid rgba(59,130,246,0.3)',
+                    background: 'color-mix(in srgb, var(--color-accent) 20%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)',
                   }}
                   aria-label="Columnas siguientes"
                 >
-                  <ChevronRight className="w-4 h-4" style={{ color: '#93c5fd' }} />
+                  <ChevronRight className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
                 </button>
               </div>
             )}
@@ -2313,14 +2313,14 @@ function SeatSelectorSection({
                   disabled={currentRowPage === 0}
                   className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
-                    background: 'rgba(75,85,99,0.2)',
-                    border: '1px solid rgba(75,85,99,0.3)',
+                    background: 'color-mix(in srgb, var(--color-textMuted) 20%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-textMuted) 30%, transparent)',
                   }}
                   aria-label="Filas anteriores"
                 >
-                  <ChevronUp className="w-4 h-4" style={{ color: '#9ca3af' }} />
+                  <ChevronUp className="w-4 h-4" style={{ color: 'var(--color-textSecondary)' }} />
                 </button>
-                <span className="text-xs font-semibold px-2" style={{ color: '#d1d5db' }}>
+                <span className="text-xs font-semibold px-2" style={{ color: 'var(--color-textPrimary)' }}>
                   Filas {currentRowPage + 1}/{dynamicRowPages}
                 </span>
                 <button
@@ -2328,12 +2328,12 @@ function SeatSelectorSection({
                   disabled={currentRowPage === dynamicRowPages - 1}
                   className="w-7 h-7 rounded flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
-                    background: 'rgba(75,85,99,0.2)',
-                    border: '1px solid rgba(75,85,99,0.3)',
+                    background: 'color-mix(in srgb, var(--color-textMuted) 20%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-textMuted) 30%, transparent)',
                   }}
                   aria-label="Filas siguientes"
                 >
-                  <ChevronDown className="w-4 h-4" style={{ color: '#9ca3af' }} />
+                  <ChevronDown className="w-4 h-4" style={{ color: 'var(--color-textSecondary)' }} />
                 </button>
               </div>
             )}
@@ -2342,7 +2342,7 @@ function SeatSelectorSection({
             {sectionSeatsLoading && (
               <div
                 className="absolute left-1/2 top-3 z-10 -translate-x-1/2 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs pointer-events-none"
-                style={{ background: 'rgba(0,0,0,0.6)', color: '#e9d5ff' }}
+                style={{ background: 'rgba(0,0,0,0.6)', color: 'var(--color-textPrimary)' }}
                 role="status"
               >
                 <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -2417,11 +2417,11 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
       className="w-56 shrink-0 rounded-xl p-4 space-y-2"
       style={{
         background: 'rgba(0,0,0,0.2)',
-        border: '1px solid rgba(167,139,250,0.15)',
+        border: '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)',
       }}
     >
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--color-textPrimary)' }}>
           {t('seats.sections')}
         </h3>
         {selectedSectionFilter && (
@@ -2429,8 +2429,8 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
             onClick={() => setSelectedSectionFilter(null)}
             className="text-xs px-2 py-1 rounded transition-all"
             style={{
-              background: 'rgba(167,139,250,0.2)',
-              color: '#c4b5fd',
+              background: 'color-mix(in srgb, var(--color-accent) 20%, transparent)',
+              color: 'var(--color-accent)',
             }}
           >
             {t('seats.viewAll')}
@@ -2459,23 +2459,23 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
             className="w-full text-left p-3 rounded-lg transition-all"
             style={{
               background: isActive
-                ? 'rgba(167,139,250,0.25)'
-                : 'rgba(167,139,250,0.08)',
+                ? 'color-mix(in srgb, var(--color-accent) 25%, transparent)'
+                : 'color-mix(in srgb, var(--color-accent) 8%, transparent)',
               border: `1px solid ${
-                isActive ? 'rgba(167,139,250,0.5)' : 'rgba(167,139,250,0.15)'
+                isActive ? 'color-mix(in srgb, var(--color-accent) 50%, transparent)' : 'color-mix(in srgb, var(--color-accent) 15%, transparent)'
               }`,
             }}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold truncate" style={{ color: '#e9d5ff' }}>
+                <div className="text-sm font-semibold truncate" style={{ color: 'var(--color-textPrimary)' }}>
                   {sec.sectionTypeName}
                 </div>
-                <div className="text-xs mt-1" style={{ color: 'rgba(196,181,253,0.6)' }}>
+                <div className="text-xs mt-1" style={{ color: 'var(--color-textMuted)' }}>
                   {sec.availableSeats}/{sec.capacity}
                 </div>
               </div>
-              <div className="text-sm font-bold shrink-0" style={{ color: '#a78bfa' }}>
+              <div className="text-sm font-bold shrink-0" style={{ color: 'var(--color-accent)' }}>
                 ${sec.price?.toFixed(2) ?? '0.00'}
               </div>
             </div>
@@ -2855,16 +2855,16 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
         className="w-60 shrink-0 rounded-xl p-3"
         style={{
           background: 'rgba(0,0,0,0.2)',
-          border: '1px solid rgba(167,139,250,0.15)',
+          border: '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)',
         }}
       >
         <div className="flex items-center gap-2 mb-3">
-          <ShoppingCart className="w-4 h-4" style={{ color: '#a78bfa' }} />
-          <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
+          <ShoppingCart className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+          <h3 className="text-sm font-semibold" style={{ color: 'var(--color-textPrimary)' }}>
             {t('seats.myCart')}
           </h3>
         </div>
-        <p className="text-xs text-center py-6" style={{ color: 'rgba(196,181,253,0.5)' }}>
+        <p className="text-xs text-center py-6" style={{ color: 'var(--color-textMuted)' }}>
           {t('seats.noSeatsSelected')}
         </p>
       </div>
@@ -2876,15 +2876,15 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
       className="w-60 shrink-0 rounded-xl p-3 flex flex-col"
       style={{
         background: 'rgba(0,0,0,0.2)',
-        border: '1px solid rgba(167,139,250,0.15)',
+        border: '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)',
       }}
     >
       <div className="flex items-center gap-2 mb-3">
-        <ShoppingCart className="w-4 h-4" style={{ color: '#a78bfa' }} />
-        <h3 className="text-sm font-semibold" style={{ color: '#e9d5ff' }}>
+        <ShoppingCart className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--color-textPrimary)' }}>
           {t('seats.myCart')}
         </h3>
-        <span className="ml-auto text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
+        <span className="ml-auto text-xs" style={{ color: 'var(--color-textMuted)' }}>
           ({cart.length})
         </span>
       </div>
@@ -2905,10 +2905,10 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
         })}
       </div>
 
-      <div className="mt-3 pt-3 space-y-2" style={{ borderTop: '1px solid rgba(167,139,250,0.15)' }}>
+      <div className="mt-3 pt-3 space-y-2" style={{ borderTop: '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)' }}>
         <div className="flex items-center justify-between text-sm">
-          <span style={{ color: 'rgba(196,181,253,0.75)' }}>{t('seats.total')}</span>
-          <span className="font-bold text-base" style={{ color: '#a78bfa' }}>
+          <span style={{ color: 'var(--color-textSecondary)' }}>{t('seats.total')}</span>
+          <span className="font-bold text-base" style={{ color: 'var(--color-accent)' }}>
             ${totalPrice.toFixed(2)}
           </span>
         </div>
@@ -2916,8 +2916,8 @@ function CartPanel({ cart, sections, onReleaseSeat, onSeatExpire, reserving, eve
           onClick={handleCheckout}
           className="w-full py-2 rounded-lg font-semibold transition-all text-sm"
           style={{
-            background: 'linear-gradient(135deg, #6d28d9 0%, #a78bfa 100%)',
-            color: '#ffffff',
+            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primaryDark) 100%)',
+            color: 'var(--color-onPrimary)',
             opacity: cart.length === 0 ? 0.5 : 1,
             cursor: cart.length === 0 ? 'not-allowed' : 'pointer',
           }}
@@ -2970,23 +2970,23 @@ function CartItem({ seat, section, onRelease, onExpire, isReleasing }) {
     <div
       className="rounded-lg p-2 flex items-center gap-2"
       style={{
-        background: 'rgba(167,139,250,0.1)',
-        border: '1px solid rgba(167,139,250,0.2)',
+        background: 'color-mix(in srgb, var(--color-accent) 10%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--color-accent) 20%, transparent)',
       }}
     >
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-xs truncate" style={{ color: '#e9d5ff' }}>
+        <p className="font-semibold text-xs truncate" style={{ color: 'var(--color-textPrimary)' }}>
           {seat.code}
         </p>
-        <p className="text-xs truncate" style={{ color: 'rgba(196,181,253,0.6)' }}>
+        <p className="text-xs truncate" style={{ color: 'var(--color-textMuted)' }}>
           {section?.sectionTypeName ?? 'Sección'}
         </p>
         <div className="flex items-center justify-between mt-1">
-          <div className="flex items-center gap-1 text-xs" style={{ color: 'rgba(196,181,253,0.5)' }}>
+          <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--color-textMuted)' }}>
             <Clock className="w-3 h-3" />
             <span>{timeLeft}</span>
           </div>
-          <span className="text-xs font-semibold" style={{ color: '#a78bfa' }}>
+          <span className="text-xs font-semibold" style={{ color: 'var(--color-accent)' }}>
             ${section?.price?.toFixed(2) ?? '0.00'}
           </span>
         </div>
@@ -2996,11 +2996,11 @@ function CartItem({ seat, section, onRelease, onExpire, isReleasing }) {
         disabled={isReleasing}
         className="p-1 rounded transition-all disabled:opacity-50 shrink-0"
         style={{
-          background: 'rgba(239,68,68,0.15)',
+          background: 'color-mix(in srgb, var(--color-error) 15%, transparent)',
         }}
         title="Liberar silla"
       >
-        <X className="w-3 h-3" style={{ color: '#ef4444' }} />
+        <X className="w-3 h-3" style={{ color: 'var(--color-error)' }} />
       </button>
     </div>
   );

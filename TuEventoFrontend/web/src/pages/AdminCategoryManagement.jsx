@@ -346,7 +346,7 @@ export default function AdminCategoryManagement() {
                         disabled={actionLoading}
                         className={`p-2 rounded-lg transition-colors ${
                           category.active 
-                            ? 'hover:bg-red-500/20 text-red-400' 
+                            ? 'hover:bg-red-500/20 text-error' 
                             : 'hover:bg-emerald-500/20 text-emerald-400'
                         }`}
                         title={category.active ? 'Desactivar' : 'Activar'}

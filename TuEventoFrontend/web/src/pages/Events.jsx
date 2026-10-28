@@ -355,7 +355,7 @@ const TuEvento = () => {
               )}
 
               {error && (
-                <p className="text-center text-sm text-red-400">{error}</p>
+                <p className="text-center text-sm text-error">{error}</p>
               )}
 
               {!loading && !error && (

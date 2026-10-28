@@ -158,13 +158,13 @@ export default function StepSiteSelection({
     'w-full bg-background border border-surfaceAlt rounded-lg px-3 py-2 text-sm text-textPrimary ' +
     'focus:outline-none focus:border-accent transition-colors placeholder:text-textMuted';
   const labelClass  = 'block text-xs font-semibold text-textMuted uppercase tracking-wider mb-1';
-  const errorClass  = 'text-xs text-red-400 mt-1';
+  const errorClass  = 'text-xs text-error mt-1';
 
   return (
     <div className="space-y-5">
 
       {loading  && <p className="text-sm text-textMuted text-center py-4">Cargando sedes...</p>}
-      {loadError && <p className="text-sm text-red-400 text-center">{loadError}</p>}
+      {loadError && <p className="text-sm text-error text-center">{loadError}</p>}
 
       {/* ── Vista normal: seleccionar sede ─────────────────────────────── */}
       {!loading && !loadError && !isCreatingSite && (
@@ -313,7 +313,7 @@ export default function StepSiteSelection({
 
           {siteError && (
             <div className="rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2.5">
-              <p className="text-xs text-red-400">{siteError}</p>
+              <p className="text-xs text-error">{siteError}</p>
             </div>
           )}
 
@@ -331,7 +331,7 @@ export default function StepSiteSelection({
 
       {submitError && !isCreatingSite && (
         <div className="rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-3">
-          <p className="text-sm text-red-400">{submitError}</p>
+          <p className="text-sm text-error">{submitError}</p>
         </div>
       )}
 
