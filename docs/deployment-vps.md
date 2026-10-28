@@ -27,7 +27,7 @@ solo llega al backend por `/api` y `/ws`.
 
 ## 2. Imágenes `v1.0.0` (build y push)
 
-Las 8 imágenes van al repositorio `jhampier23/tu-evento` de Docker Hub, diferenciadas
+Las 9 imágenes van al repositorio `jhampier23/tu-evento` de Docker Hub, diferenciadas
 por prefijo de tag. `docker-compose.prod.yml` no usa `build:`; la pasarela simulada
 también necesita su imagen porque la compra de tickets depende de ella.
 
@@ -40,6 +40,7 @@ también necesita su imagen porque la compra de tickets depende de ella.
 | api-gateway (entrada de `/api` y `/ws`) | `jhampier23/tu-evento:api-gateway-v1.0.0` |
 | storage-service (microservicio de archivos) | `jhampier23/tu-evento:storage-v1.0.0` |
 | geolocation-service (microservicio de geolocalización) | `jhampier23/tu-evento:geolocation-v1.0.0` |
+| identity-service (microservicio de Identidad: login, cuentas, panel de admin, temas y perfiles) | `jhampier23/tu-evento:identity-v1.0.0` |
 | notification-service (microservicio de notificaciones) | `jhampier23/tu-evento:notifications-v1.0.0` |
 
 Desde la raíz del repo, con `.env.prod` ya completo (solo se leen las `VITE_*`).
@@ -68,6 +69,7 @@ docker build -t jhampier23/tu-evento:api-gateway-v1.0.0 TuEventoBackend/gateway
 # El contexto es services/ porque la imagen compila también tuevento-common
 docker build -t jhampier23/tu-evento:storage-v1.0.0       -f TuEventoBackend/services/storage-service/Dockerfile TuEventoBackend/services
 docker build -t jhampier23/tu-evento:geolocation-v1.0.0   -f TuEventoBackend/services/geolocation-service/Dockerfile TuEventoBackend/services
+docker build -t jhampier23/tu-evento:identity-v1.0.0      -f TuEventoBackend/services/identity-service/Dockerfile TuEventoBackend/services
 docker build -t jhampier23/tu-evento:notifications-v1.0.0 -f TuEventoBackend/services/notification-service/Dockerfile TuEventoBackend/services
 
 docker push jhampier23/tu-evento:v1.0.0
@@ -77,6 +79,7 @@ docker push jhampier23/tu-evento:gateway-v1.0.0
 docker push jhampier23/tu-evento:api-gateway-v1.0.0
 docker push jhampier23/tu-evento:storage-v1.0.0
 docker push jhampier23/tu-evento:geolocation-v1.0.0
+docker push jhampier23/tu-evento:identity-v1.0.0
 docker push jhampier23/tu-evento:notifications-v1.0.0
 ```
 
@@ -91,8 +94,8 @@ exige reconstruir la imagen):
 
 ### Publicar una versión: qué imágenes reconstruir y cuáles reetiquetar
 
-`docker-compose.prod.yml` usa un único `TUEVENTO_VERSION` para las 8 imágenes, así que
-**los 8 tags tienen que existir** con la versión nueva o el stack falla al hacer pull.
+`docker-compose.prod.yml` usa un único `TUEVENTO_VERSION` para las 9 imágenes, así que
+**los 9 tags tienen que existir** con la versión nueva o el stack falla al hacer pull.
 
 **Regla:** reconstruye las imágenes cuyo código cambió desde la versión anterior y
 **reetiqueta solo las que no cambiaron**. Reetiquetar copia el manifiesto de la versión
@@ -108,6 +111,7 @@ desde el commit de la versión (el tag `vX.Y.Z` en `main`, ver `docs/versioning.
 | api-gateway | `api-gateway-vX.Y.Z` | `TuEventoBackend/gateway` |
 | storage | `storage-vX.Y.Z` | `TuEventoBackend/services/storage-service` y `tuevento-common` |
 | geolocation | `geolocation-vX.Y.Z` | `TuEventoBackend/services/geolocation-service` y `tuevento-common` |
+| identity | `identity-vX.Y.Z` | `TuEventoBackend/services/identity-service` y `tuevento-common` |
 | notifications | `notifications-vX.Y.Z` | `TuEventoBackend/services/notification-service` y `tuevento-common` |
 
 Para cada carpeta, compara con el tag anterior; si no sale nada, esa imagen se reetiqueta:
@@ -376,10 +380,11 @@ La app móvil debe apuntar a `https://tuevento.example.com/api/v1`.
 | storage-service | 512 MB | `-Xmx320m` |
 | api-gateway | 384 MB | `-Xmx256m` |
 | geolocation-service | 384 MB | `-Xmx256m` |
+| identity-service | 384 MB | `-Xmx256m` |
 | notification-service | 512 MB | `-Xmx320m` |
 | kafka | 768 MB | `-Xmx384m`, KRaft de un nodo |
 | frontend | 64 MB | |
 | libretranslate (opcional) | 2048 MB | perfil `translate` |
 
-Total ≈ 8.0 GB sin LibreTranslate y ≈ 10.0 GB con él (topes, no reservas: el uso real
+Total ≈ 8.4 GB sin LibreTranslate y ≈ 10.4 GB con él (topes, no reservas: el uso real
 es menor; con LibreTranslate el swap absorbe la diferencia y los picos puntuales).

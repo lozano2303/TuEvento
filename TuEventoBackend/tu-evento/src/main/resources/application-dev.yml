@@ -55,19 +55,6 @@ minio:
   public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
 
 app:
-  # Refresh token de la web en cookie httpOnly; en local va por http, así que sin Secure
-  auth:
-    refresh-cookie:
-      secure: false
-  jwt:
-    # RS256. Sin clave privada en la ruta, se usa un par en memoria (solo dev).
-    # Generar una fija: ver .env.example (APP_JWT_PRIVATE_KEY_PATH)
-    private-key-path: ${APP_JWT_PRIVATE_KEY_PATH:classpath:keys/jwt-private.pem}
-    ephemeral-keys-allowed: true
-    # Secreto HS256 anterior: solo valida tokens emitidos antes del cambio a RS256
-    secret: ${JWT_SECRET:}
-    access-token-expiration: 900000
-    refresh-token-expiration: 604800000
   qr:
     # Secreto propio para firmar los QR de tickets (separado del JWT de sesión).
     secret: ${QR_SECRET:${JWT_SECRET}}
@@ -88,40 +75,8 @@ app:
       access-key: ${RUSTFS_ACCESS_KEY:rustfsadmin}
       secret-key: ${RUSTFS_SECRET_KEY:rustfsadmin}
       region: us-east-1
-  oauth:
-    # Comma-separated — @Value with List<String> requires this format (not YAML sequence)
-    allowed-frontend-redirect-uris: "http://localhost:5173/login,http://localhost:3000/login"
-    google:
-      client-id: ${GOOGLE_CLIENT_ID}
-      client-secret: ${GOOGLE_CLIENT_SECRET}
-      # Full callback URL, used as-is by the authorization request and the code exchange.
-      redirect-uri: ${APP_OAUTH_GOOGLE_REDIRECT_URI:http://localhost:8080/api/v1/auth/oauth/google/callback}
-      token-uri: https://oauth2.googleapis.com/token
-      userinfo-uri: https://www.googleapis.com/oauth2/v3/userinfo
-      authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
-    facebook:
-      client-id: ${FACEBOOK_CLIENT_ID}
-      client-secret: ${FACEBOOK_CLIENT_SECRET}
-      # Full callback URL, used as-is by the Facebook dialog and the code exchange.
-      redirect-uri: ${APP_OAUTH_FACEBOOK_REDIRECT_URI:http://localhost:8080/api/v1/auth/oauth/facebook/callback}
-      auth-uri: https://www.facebook.com/v18.0/dialog/oauth
-      token-uri: https://graph.facebook.com/v18.0/oauth/access_token
-      profile-uri: https://graph.facebook.com/me
-  admin:
-    email: ${ADMIN_EMAIL}
-    password: ${ADMIN_PASSWORD}
-    alias: ${ADMIN_ALIAS}
-  mail:
-    from: ${MAIL_USERNAME}
   cors:
     allowed-origins: "${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}"
-  google:
-    client-id: ${GOOGLE_CLIENT_ID}
-  profile:
-    # storedFileId of the system default avatar (assigned to every new profile).
-    # Must match the value that ProfileDataInitializer uploads on first run.
-    # Set to the actual ID via environment variable in each deployment environment.
-    default-avatar-stored-file-id: ${APP_PROFILE_DEFAULT_AVATAR_ID:1}
 
 moderation:
   nsfw:
@@ -146,7 +101,3 @@ notification:
   email:
     enabled: ${NOTIFICATION_EMAIL_ENABLED:true}
 
-# En dev el bloqueo dura poco para poder probarlo
-security:
-  lockout:
-    minutes: ${SECURITY_LOCKOUT_MINUTES:1}

@@ -3,7 +3,7 @@ package com.capysoft.tuevento.modules.notification.infrastructure.messaging;
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
 import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
-import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedEvent;
+import com.capysoft.tuevento.shared.domain.event.identity.OrganizerRoleRevokedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

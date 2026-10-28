@@ -13,7 +13,7 @@ import com.capysoft.tuevento.modules.notification.application.dto.SendNotificati
 import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
 import com.capysoft.tuevento.modules.notification.application.port.out.RecipientDirectoryPort;
-import com.capysoft.tuevento.modules.security.domain.event.UserActivatedEvent;
+import com.capysoft.tuevento.shared.domain.event.identity.UserActivatedEvent;
 
 import lombok.RequiredArgsConstructor;
 

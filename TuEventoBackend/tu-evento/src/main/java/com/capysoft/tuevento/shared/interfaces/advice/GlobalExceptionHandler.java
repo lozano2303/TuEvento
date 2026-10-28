@@ -17,7 +17,6 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.capysoft.tuevento.modules.payment.domain.model.InvalidPaymentStatusTransitionException;
-import com.capysoft.tuevento.modules.profile.domain.exception.ProfileAlreadyExistsException;
 import com.capysoft.tuevento.modules.ticket.domain.model.InvalidOrderStatusTransitionException;
 import com.capysoft.tuevento.modules.wallet.domain.model.InsufficientWalletBalanceException;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
@@ -87,11 +86,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Resource not found"));
     }
 
-    @ExceptionHandler(ProfileAlreadyExistsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleProfileAlreadyExistsException(ProfileAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFoundException(NotFoundException ex) {

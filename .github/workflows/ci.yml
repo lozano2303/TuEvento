@@ -81,6 +81,9 @@ jobs:
       - name: geolocation-service (tests)
         run: TuEventoBackend/tu-evento/mvnw -B -f TuEventoBackend/services/geolocation-service/pom.xml verify
 
+      - name: identity-service (tests)
+        run: TuEventoBackend/tu-evento/mvnw -B -f TuEventoBackend/services/identity-service/pom.xml verify
+
       - name: api-gateway (build)
         run: TuEventoBackend/tu-evento/mvnw -B -f TuEventoBackend/gateway/pom.xml package
 
@@ -93,6 +96,9 @@ jobs:
 
       - name: Imagen de geolocation-service
         run: docker build -f TuEventoBackend/services/geolocation-service/Dockerfile TuEventoBackend/services
+
+      - name: Imagen de identity-service
+        run: docker build -f TuEventoBackend/services/identity-service/Dockerfile TuEventoBackend/services
 
       - name: Imagen de api-gateway
         run: docker build TuEventoBackend/gateway

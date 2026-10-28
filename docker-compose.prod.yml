@@ -14,7 +14,7 @@
 #   LibreTranslate es opcional (≈2 GB de RAM):
 #     docker compose -f docker-compose.prod.yml --env-file .env.prod --profile translate up -d
 # - Límites de memoria pensados para 8 GB de RAM + 4 GB de swap:
-#   ≈8.0 GB sin LibreTranslate y ≈10.0 GB con él (topes, no reservas; el swap cubre el resto).
+#   ≈8.4 GB sin LibreTranslate y ≈10.4 GB con él (topes, no reservas; el swap cubre el resto).
 # ============================================================
 
 name: tuevento
@@ -248,10 +248,9 @@ services:
     environment:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       SPRING_PROFILES_ACTIVE: prod
-      # nginx-proxy-manager + nginx del frontend: dos entradas en X-Forwarded-For. El api-gateway
-      # (Spring Cloud Gateway 4.3, sin trusted-proxies) reenvía la cabecera sin añadir la suya;
-      # subir este número dejaría elegir como IP del cliente una entrada que el cliente inventa.
-      RATE_LIMIT_TRUSTED_PROXIES: "2"
+      # Identidad: verifica los tokens con el JWK Set de identity-service y usa su API interna
+      IDENTITY_SERVICE_URL: http://identity-service:8088
+      IDENTITY_JWK_SET_URI: http://identity-service:8088/.well-known/jwks.json
       JAVA_OPTS: ${BACKEND_JAVA_OPTS:--Xms256m -Xmx768m -XX:MaxMetaspaceSize=256m}
 
       # Base de datos
@@ -273,33 +272,13 @@ services:
       RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}
       RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?}
 
-      # Seguridad
-      # Clave privada RS256 (PKCS#8 en PEM; los saltos de línea pueden ir como \n). Ver .env.prod.example
-      APP_JWT_PRIVATE_KEY: ${APP_JWT_PRIVATE_KEY:?}
-      # HS256 anterior: solo valida tokens emitidos antes del cambio a RS256
+      # Seguridad (los tokens los firma identity-service; aquí solo se verifican)
+      # Respaldo del secreto de los QR de tickets cuando QR_SECRET no está definido
       JWT_SECRET: ${JWT_SECRET:-}
       QR_SECRET: ${QR_SECRET:?}
       QR_EXPIRATION: ${QR_EXPIRATION:-60000}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
-      # Cookie httpOnly del refresh token de la web (ver .env.prod.example)
-      AUTH_COOKIE_SAME_SITE: ${AUTH_COOKIE_SAME_SITE:-Strict}
-      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
-
-      # OAuth
-      APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS: ${APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS:?}
-      APP_OAUTH_GOOGLE_REDIRECT_URI: ${APP_OAUTH_GOOGLE_REDIRECT_URI:?}
-      APP_OAUTH_FACEBOOK_REDIRECT_URI: ${APP_OAUTH_FACEBOOK_REDIRECT_URI:?}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
-      FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
-
-      # Cuenta admin inicial y avatar por defecto
-      ADMIN_EMAIL: ${ADMIN_EMAIL:?}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
-      ADMIN_ALIAS: ${ADMIN_ALIAS:-AdminTuEvento}
-      APP_PROFILE_DEFAULT_AVATAR_ID: ${APP_PROFILE_DEFAULT_AVATAR_ID:-1}
 
       # Notificaciones: remote = las envía notification-service por Kafka (local = dentro del backend)
       NOTIFICATION_MODE: ${NOTIFICATION_MODE:-remote}
@@ -360,8 +339,9 @@ services:
       - messaging
 
   # ── API gateway: punto de entrada de /api y /ws ────────────────────────────
-  # Envía /api/v1/storage/**, /api/v1/notifications/** y /api/v1/geolocation/** a sus
-  # microservicios y el resto al monolito.
+  # Envía /api/v1/storage/**, /api/v1/notifications/**, /api/v1/geolocation/** y
+  # /api/v1/themes/**, /api/v1/profiles/**, /api/v1/auth/**, la cuenta del usuario y el panel de
+  # admin a sus microservicios y el resto al monolito.
   api-gateway:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:api-gateway-${TUEVENTO_VERSION:?}
     container_name: tuevento-api-gateway
@@ -371,6 +351,7 @@ services:
       STORAGE_SERVICE_URI: http://storage-service:8085
       GEOLOCATION_SERVICE_URI: http://geolocation-service:8087
       NOTIFICATION_SERVICE_URI: http://notification-service:8086
+      IDENTITY_SERVICE_URI: http://identity-service:8088
       GATEWAY_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
       JAVA_TOOL_OPTIONS: -Xmx256m
     depends_on:
@@ -381,6 +362,8 @@ services:
       geolocation-service:
         condition: service_healthy
       notification-service:
+        condition: service_healthy
+      identity-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8090/actuator/health | grep -q UP"]
@@ -407,7 +390,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
-      JWK_SET_URI: http://backend:8080/.well-known/jwks.json
+      JWK_SET_URI: http://identity-service:8088/.well-known/jwks.json
       # Lista de revocación de JWT (fail-closed): misma instancia que el backend
       REDIS_HOST: redis
       REDIS_PORT: "6379"
@@ -496,7 +479,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
-      JWK_SET_URI: http://backend:8080/.well-known/jwks.json
+      JWK_SET_URI: http://identity-service:8088/.well-known/jwks.json
       # Lista de revocación de JWT (fail-closed): misma instancia que el backend
       REDIS_HOST: redis
       REDIS_PORT: "6379"
@@ -539,7 +522,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
-      JWK_SET_URI: http://backend:8080/.well-known/jwks.json
+      JWK_SET_URI: http://identity-service:8088/.well-known/jwks.json
       # Traducciones automáticas: true mientras el backend tenga TRANSLATION_MODE=remote.
       # LibreTranslate solo responde si se levanta el perfil "translate"; si no, los trabajos
       # fallan y se reintentan, y las páginas muestran el texto en español.
@@ -572,6 +555,75 @@ services:
       # Recibe las peticiones de traducción y devuelve los resultados por Kafka
       - messaging
 
+  # ── Microservicio de Identidad ─────────────────────────────────────────────
+  # Login, sesiones, cuentas, temas y perfiles de usuario; misma base de datos que el monolito.
+  identity-service:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:identity-${TUEVENTO_VERSION:?}
+    container_name: tuevento-identity-service
+    restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx256m
+      # La MISMA clave RS256 que el backend: los tokens que firma uno los valida el otro
+      APP_JWT_PRIVATE_KEY: ${APP_JWT_PRIVATE_KEY:?}
+      JWT_SECRET: ${JWT_SECRET:-}
+      AUTH_COOKIE_SAME_SITE: ${AUTH_COOKIE_SAME_SITE:-Strict}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
+      APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS: ${APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS:?}
+      APP_OAUTH_GOOGLE_REDIRECT_URI: ${APP_OAUTH_GOOGLE_REDIRECT_URI:?}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MAIL_USERNAME: ${MAIL_USERNAME:?}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?}
+      # Cuenta de administrador inicial y avatar de los perfiles nuevos
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
+      ADMIN_ALIAS: ${ADMIN_ALIAS:-AdminTuEvento}
+      APP_PROFILE_DEFAULT_AVATAR_ID: ${APP_PROFILE_DEFAULT_AVATAR_ID:-1}
+      # nginx-proxy-manager + nginx del frontend: dos entradas en X-Forwarded-For. El api-gateway
+      # (Spring Cloud Gateway 4.3, sin trusted-proxies) reenvía la cabecera sin añadir la suya;
+      # subir este número dejaría elegir como IP del cliente una entrada que el cliente inventa.
+      RATE_LIMIT_TRUSTED_PROXIES: "2"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
+      JWK_SET_URI: http://localhost:8088/.well-known/jwks.json
+      # Idiomas activos (GET /api/v1/languages); hoy los sirve el backend
+      LOCALIZATION_BASE_URL: http://backend:8080
+      # Estado de las traducciones de la biografía (API interna del backend, con la clave entre servicios)
+      MONOLITH_BASE_URL: http://backend:8080
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      # Ciudad del perfil
+      GEOLOCATION_SERVICE_URL: http://geolocation-service:8087
+      # Avisos en vivo (THEME_UPDATED, LANGUAGE_UPDATED) y traducciones: el backend los atiende desde Kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      geolocation-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8088/actuator/health | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+    logging: *default-logging
+    networks:
+      - internal
+      - messaging
+
   # ── Frontend (SPA + proxy de /api y /ws al api-gateway) ─────────────────────
   frontend:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:frontend-${TUEVENTO_VERSION:?}
@@ -599,8 +651,9 @@ networks:
   internal:
     name: tuevento-internal
     driver: bridge
-  # Kafka no tiene autenticación: solo los servicios que lo usan comparten esta red, así
-  # ningún otro contenedor puede publicar notificaciones (ni elegir a quién se envía un email)
+  # Kafka no tiene autenticación: solo los servicios que lo usan (backend, notification-service,
+  # identity-service y geolocation-service) comparten esta red, así ningún otro contenedor puede
+  # publicar notificaciones o traducciones (ni elegir a quién se envía un email)
   messaging:
     name: tuevento-messaging
     driver: bridge

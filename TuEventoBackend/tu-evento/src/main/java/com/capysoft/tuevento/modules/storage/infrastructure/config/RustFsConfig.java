@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.Ordered;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -76,6 +77,7 @@ public class RustFsConfig {
      * which upload files and need the bucket to exist.
      */
     @Bean
+    @Order(0) // antes que cualquier otro runner que suba archivos (p. ej. el avatar por defecto)
     public ApplicationRunner rustFsBucketInitializer(S3Client rustFsS3Client) {
         return new BucketInitializer(rustFsS3Client);
     }

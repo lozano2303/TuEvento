@@ -1,6 +1,8 @@
 package com.capysoft.tuevento.modules.payment.application.usecase;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -11,12 +13,16 @@ import com.capysoft.tuevento.modules.payment.application.port.in.GetCommerceAdmi
 import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
 import com.capysoft.tuevento.modules.payment.domain.model.RefundStatus;
 import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.PaymentJpaRepository;
+import com.capysoft.tuevento.modules.payment.application.port.out.BuyerDirectoryPort;
+import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.AdminRefundRow;
 import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.RefundJpaRepository;
 import com.capysoft.tuevento.modules.ticket.infrastructure.persistence.repository.TicketJpaRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /** ticket, payment y wallet son el mismo servicio (Comercio): aquí sí se leen sus repositorios. */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GetCommerceAdminStatsUseCase implements GetCommerceAdminStatsPort {
@@ -24,6 +30,7 @@ public class GetCommerceAdminStatsUseCase implements GetCommerceAdminStatsPort {
     private final TicketJpaRepository  ticketJpaRepository;
     private final PaymentJpaRepository paymentJpaRepository;
     private final RefundJpaRepository  refundJpaRepository;
+    private final BuyerDirectoryPort   buyerDirectoryPort;
 
     @Override
     @Transactional(readOnly = true)
@@ -52,6 +59,30 @@ public class GetCommerceAdminStatsUseCase implements GetCommerceAdminStatsPort {
     @Override
     @Transactional(readOnly = true)
     public List<AdminRefundResponse> findRecentRefunds(int limit) {
-        return refundJpaRepository.findRecentForAdmin(PageRequest.of(0, limit));
+        List<AdminRefundRow> rows = refundJpaRepository.findRecentForAdmin(PageRequest.of(0, limit));
+        Map<Integer, BuyerDirectoryPort.Buyer> buyers = findBuyers(rows);
+        return rows.stream().map(r -> {
+            BuyerDirectoryPort.Buyer buyer = r.getUserId() == null ? null : buyers.get(r.getUserId().intValue());
+            return new AdminRefundResponse(r.getRefundId(), r.getPaymentId(), r.getOrderId(), r.getUserId(),
+                    buyer == null ? null : buyer.alias(), buyer == null ? null : buyer.fullName(),
+                    buyer == null ? null : buyer.email(), r.getEventId(), r.getEventName(), r.getGatewayAmount(),
+                    r.getWalletAmount(), r.getCurrency(), r.getStatus(), r.getReason(), r.getRequestedAt(),
+                    r.getProcessedAt());
+        }).toList();
+    }
+
+    /** Todos los compradores de la página en una sola consulta; sin Identidad, la lista sale sin ellos. */
+    private Map<Integer, BuyerDirectoryPort.Buyer> findBuyers(List<AdminRefundRow> rows) {
+        List<Integer> userIds = rows.stream().map(AdminRefundRow::getUserId).filter(Objects::nonNull)
+                .map(Long::intValue).distinct().toList();
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            return buyerDirectoryPort.findBuyers(userIds);
+        } catch (Exception e) {
+            log.warn("Admin refunds: buyers not resolved: {}", e.getMessage());
+            return Map.of();
+        }
     }
 }
