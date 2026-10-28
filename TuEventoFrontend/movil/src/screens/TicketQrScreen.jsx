@@ -101,7 +101,7 @@ export default function TicketQrScreen() {
         if (!stopped && isTargetValidated(mode, id, tickets)) markValidated();
       } catch { /* se reintenta en la siguiente vuelta */ }
     };
-    check();
+    void check();
     const poll = setInterval(check, VALIDATION_POLL_MS);
     return () => {
       stopped = true;
