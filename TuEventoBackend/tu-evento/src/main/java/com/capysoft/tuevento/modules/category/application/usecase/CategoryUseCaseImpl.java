@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.category.application.usecase;
 
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.category.application.dto.request.CreateCategoryRequest;
 import com.capysoft.tuevento.modules.category.application.dto.request.UpdateCategoryRequest;
 import com.capysoft.tuevento.modules.category.application.dto.response.CategoryResponse;
@@ -9,11 +10,9 @@ import com.capysoft.tuevento.modules.category.domain.event.CategoryCreatedEvent;
 import com.capysoft.tuevento.modules.category.domain.event.CategoryDeactivatedEvent;
 import com.capysoft.tuevento.modules.category.domain.model.Category;
 import com.capysoft.tuevento.modules.category.domain.repository.CategoryRepository;
-import com.capysoft.tuevento.modules.language.application.service.TranslationService;
-import com.capysoft.tuevento.modules.language.domain.model.CategoryTranslation;
-import com.capysoft.tuevento.modules.language.domain.repository.CategoryTranslationRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository;
-import com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository;
+import com.capysoft.tuevento.modules.category.domain.model.CategoryTranslation;
+import com.capysoft.tuevento.modules.category.domain.repository.CategoryTranslationRepository;
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
@@ -34,10 +33,9 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
     private final CategoryRepository         categoryRepository;
     private final CategoryMapper             categoryMapper;
     private final ApplicationEventPublisher  eventPublisher;
-    private final LanguageRepository         languageRepository;
+    private final LanguageCatalog            languageCatalog;
     private final CategoryTranslationRepository categoryTranslationRepository;
-    private final TranslationJobRepository   translationJobRepository;
-    private final TranslationService         translationService;
+    private final TranslationRequests translationRequests;
 
     @Override
     @Transactional
@@ -100,7 +98,7 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
         // Request automatic translations if content changed
         if (nameChanged || (existing.getDescription() != null && !existing.getDescription().equals(request.getDescription()))) {
             try {
-                translationService.requestTranslation("category", updated.getCategoryId().longValue(), "es");
+                translationRequests.request("category", updated.getCategoryId().longValue());
                 log.debug("Translation jobs requested for updated category: id={}", updated.getCategoryId());
             } catch (Exception e) {
                 log.warn("Failed to request translations for updated category {}: {}", updated.getCategoryId(), e.getMessage());
@@ -252,7 +250,7 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
                     log.debug("Requested language is Spanish (source language) - no translation needed for category {}", 
                             category.getCategoryId());
                 } else {
-                    var language = languageRepository.findByCode(languageCode);
+                    var language = languageCatalog.findByCode(languageCode);
                     if (language.isPresent()) {
                         var translation = categoryTranslationRepository.findByCategoryAndLanguage(
                                 category.getCategoryId(), language.get().getLanguageId());
@@ -262,38 +260,8 @@ public class CategoryUseCaseImpl implements CategoryUseCase {
                             translatedDescription = translation.get().getTranslatedDescription();
                             actualLanguageCode = languageCode;
                         } else {
-                            // Translation doesn't exist - check job status before creating
-                            log.info("Translation not found for category {} language {} - checking job status",
-                                    category.getCategoryId(), languageCode);
-                            
-                            // Check if job already exists
-                            var existingJob = translationJobRepository.findByEntityAndTargetLanguage(
+                            translationGenerating = translationRequests.ensureRequested(
                                     "category", category.getCategoryId(), language.get().getLanguageId());
-                            
-                            if (existingJob.isEmpty()) {
-                                // Create translation job
-                                translationService.requestTranslation("category", category.getCategoryId().longValue(), "es");
-                                translationGenerating = true;
-                                log.info("Lazy loading translation job created for category {} -> {}", 
-                                        category.getCategoryId(), languageCode);
-                            } else {
-                                // Job exists - check its status
-                                var jobStatus = existingJob.get().getStatus();
-                                if (jobStatus.name().equals("PENDING") || jobStatus.name().equals("PROCESSING")) {
-                                    translationGenerating = true;
-                                    log.info("Translation job in progress ({}) for category {} -> {}", 
-                                            jobStatus, category.getCategoryId(), languageCode);
-                                } else if (jobStatus.name().equals("COMPLETED")) {
-                                    // Job completed but no PUBLISHED translation found - this shouldn't happen
-                                    // but let's handle it gracefully by not showing generating indicator
-                                    log.warn("Translation job COMPLETED but no PUBLISHED translation found for category {} -> {}", 
-                                            category.getCategoryId(), languageCode);
-                                } else if (jobStatus.name().equals("FAILED")) {
-                                    // Job failed - could retry or show error, for now don't show generating
-                                    log.warn("Translation job FAILED for category {} -> {}", 
-                                            category.getCategoryId(), languageCode);
-                                }
-                            }
                         }
                     }
                 }

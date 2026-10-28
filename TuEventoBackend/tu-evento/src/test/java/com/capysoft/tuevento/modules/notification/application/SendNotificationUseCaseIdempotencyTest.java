@@ -11,7 +11,7 @@ import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeN
 import com.capysoft.tuevento.modules.notification.domain.repository.ChannelRepository;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationRepository;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationTypeRepository;
-import com.capysoft.tuevento.modules.language.application.service.TranslationService;
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,12 +19,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -47,7 +49,7 @@ class SendNotificationUseCaseIdempotencyTest {
     @Mock private NotificationTypeRepository notificationTypeRepository;
     @Mock private NotificationRepository     notificationRepository;
     @Mock private NotificationChannelPort    inAppPort;
-    @Mock private TranslationService         translationService;
+    @Mock private TranslationRequests        translationRequests;
 
     private SendNotificationUseCase useCase;
 
@@ -65,7 +67,7 @@ class SendNotificationUseCaseIdempotencyTest {
                 notificationTypeRepository,
                 notificationRepository,
                 List.of(inAppPort),
-                translationService,
+                translationRequests,
                 false  // email disabled for these tests
         );
 
@@ -145,6 +147,18 @@ class SendNotificationUseCaseIdempotencyTest {
 
         // Adapter called only once — second was deduplicated
         verify(inAppPort, times(1)).deliver(any(), any());
+    }
+
+    @Test
+    @DisplayName("After commit the notification's translation is requested")
+    void translation_requested_after_commit() {
+        when(notificationRepository.existsByIdempotencyKey(any())).thenReturn(false);
+        useCase.execute(rejectedCmd("Not enough images", "2026-10-01T10:00"));
+        verify(translationRequests, never()).request(any(), anyLong());
+
+        TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
+
+        verify(translationRequests).request("notification", 99L);
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────

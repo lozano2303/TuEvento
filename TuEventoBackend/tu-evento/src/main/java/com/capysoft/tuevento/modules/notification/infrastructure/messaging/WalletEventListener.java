@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.messaging;
 
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
-import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
+import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationEntityTypes;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
 import com.capysoft.tuevento.modules.wallet.domain.event.WalletCreditedEvent;
@@ -27,7 +27,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WalletEventListener {
 
-    private final SendNotificationUseCase sendNotificationUseCase;
+    private final NotificationSender notificationSender;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -47,7 +47,7 @@ public class WalletEventListener {
                     .reason(event.getReason())
                     .build();
 
-            sendNotificationUseCase.execute(command);
+            notificationSender.send(command);
             
             log.info("WalletCreditedEvent processed successfully: walletTransactionId={}", 
                     event.getWalletTransactionId());

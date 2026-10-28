@@ -14,7 +14,7 @@
 #   LibreTranslate es opcional (≈2 GB de RAM):
 #     docker compose -f docker-compose.prod.yml --env-file .env.prod --profile translate up -d
 # - Límites de memoria pensados para 8 GB de RAM + 4 GB de swap:
-#   ≈5.4 GB sin LibreTranslate y ≈7.4 GB con él (topes, no reservas).
+#   ≈8.4 GB sin LibreTranslate y ≈10.4 GB con él (topes, no reservas; el swap cubre el resto).
 # ============================================================
 
 name: tuevento
@@ -246,9 +246,11 @@ services:
     container_name: tuevento-backend
     restart: unless-stopped
     environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       SPRING_PROFILES_ACTIVE: prod
-      # nginx-proxy-manager + nginx del frontend: dos entradas en X-Forwarded-For
-      RATE_LIMIT_TRUSTED_PROXIES: "2"
+      # Identidad: verifica los tokens con el JWK Set de identity-service y usa su API interna
+      IDENTITY_SERVICE_URL: http://identity-service:8088
+      IDENTITY_JWK_SET_URI: http://identity-service:8088/.well-known/jwks.json
       JAVA_OPTS: ${BACKEND_JAVA_OPTS:--Xms256m -Xmx768m -XX:MaxMetaspaceSize=256m}
 
       # Base de datos
@@ -270,30 +272,20 @@ services:
       RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}
       RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?}
 
-      # Seguridad
-      JWT_SECRET: ${JWT_SECRET:?}
+      # Seguridad (los tokens los firma identity-service; aquí solo se verifican)
+      # Respaldo del secreto de los QR de tickets cuando QR_SECRET no está definido
+      JWT_SECRET: ${JWT_SECRET:-}
       QR_SECRET: ${QR_SECRET:?}
       QR_EXPIRATION: ${QR_EXPIRATION:-60000}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
-      # Cookie httpOnly del refresh token de la web (ver .env.prod.example)
-      AUTH_COOKIE_SAME_SITE: ${AUTH_COOKIE_SAME_SITE:-Strict}
-      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
 
-      # OAuth
-      APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS: ${APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS:?}
-      APP_OAUTH_GOOGLE_REDIRECT_URI: ${APP_OAUTH_GOOGLE_REDIRECT_URI:?}
-      APP_OAUTH_FACEBOOK_REDIRECT_URI: ${APP_OAUTH_FACEBOOK_REDIRECT_URI:?}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
-      FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
+      # Notificaciones: remote = las envía notification-service por Kafka (local = dentro del backend)
+      NOTIFICATION_MODE: ${NOTIFICATION_MODE:-remote}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
 
-      # Cuenta admin inicial y avatar por defecto
-      ADMIN_EMAIL: ${ADMIN_EMAIL:?}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
-      ADMIN_ALIAS: ${ADMIN_ALIAS:-AdminTuEvento}
-      APP_PROFILE_DEFAULT_AVATAR_ID: ${APP_PROFILE_DEFAULT_AVATAR_ID:-1}
+      # Eventos y perfiles leen sedes y ciudades de geolocation-service (el backend ya no tiene ese módulo)
+      GEOLOCATION_SERVICE_URL: http://geolocation-service:8087
 
       # Correo
       MAIL_USERNAME: ${MAIL_USERNAME:?}
@@ -316,9 +308,6 @@ services:
       FAKE_GATEWAY_API_KEY: ${FAKE_GATEWAY_API_KEY:?}
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:?}
 
-      # Traducción (solo responde si se levanta el perfil "translate")
-      TRANSLATION_LIBRETRANSLATE_BASE_URL: http://libretranslate:5000
-      TRANSLATION_PROTECTED_TERMS: ${TRANSLATION_PROTECTED_TERMS:-Tu Evento}
     depends_on:
       postgres:
         condition: service_healthy
@@ -328,6 +317,8 @@ services:
         condition: service_healthy
       nsfw-classifier:
         condition: service_started
+      kafka:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 30s
@@ -341,14 +332,301 @@ services:
     logging: *default-logging
     networks:
       - internal
+      - messaging
 
-  # ── Frontend (SPA + proxy de /api y /ws al backend) ────────────────────────
+  # ── API gateway: punto de entrada de /api y /ws ────────────────────────────
+  # Envía /api/v1/storage/**, /api/v1/notifications/**, /api/v1/geolocation/** y
+  # /api/v1/themes/**, /api/v1/profiles/**, /api/v1/auth/**, la cuenta del usuario y el panel de
+  # admin a sus microservicios y el resto al monolito.
+  api-gateway:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:api-gateway-${TUEVENTO_VERSION:?}
+    container_name: tuevento-api-gateway
+    restart: unless-stopped
+    environment:
+      MONOLITH_URI: http://backend:8080
+      STORAGE_SERVICE_URI: http://storage-service:8085
+      GEOLOCATION_SERVICE_URI: http://geolocation-service:8087
+      NOTIFICATION_SERVICE_URI: http://notification-service:8086
+      IDENTITY_SERVICE_URI: http://identity-service:8088
+      GATEWAY_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
+      JAVA_TOOL_OPTIONS: -Xmx256m
+    depends_on:
+      backend:
+        condition: service_healthy
+      storage-service:
+        condition: service_healthy
+      geolocation-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      identity-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8090/actuator/health | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+    logging: *default-logging
+    networks:
+      - internal
+
+  # ── Microservicio de archivos ──────────────────────────────────────────────
+  # Misma base de datos y mismo bucket que el monolito; valida los JWT con su JWKS.
+  storage-service:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:storage-${TUEVENTO_VERSION:?}
+    container_name: tuevento-storage-service
+    restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx320m
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
+      JWK_SET_URI: http://identity-service:8088/.well-known/jwks.json
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+      STORAGE_PROVIDER: rustfs
+      RUSTFS_ENDPOINT: http://rustfs:9000
+      RUSTFS_PUBLIC_URL: ${RUSTFS_PUBLIC_URL:?}
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?}
+      NSFW_SERVICE_URL: http://nsfw-classifier:8000
+      NSFW_THRESHOLD: ${NSFW_THRESHOLD:-0.6}
+      SIGHTENGINE_API_USER: ${SIGHTENGINE_API_USER:-}
+      SIGHTENGINE_API_SECRET: ${SIGHTENGINE_API_SECRET:-}
+      SIGHTENGINE_MODELS: ${SIGHTENGINE_MODELS:-gore,nudity,weapon}
+      SIGHTENGINE_THRESHOLD: ${SIGHTENGINE_THRESHOLD:-0.6}
+      SIGHTENGINE_NUDITY_THRESHOLD: ${SIGHTENGINE_NUDITY_THRESHOLD:-0.15}
+    depends_on:
+      redis:
+        condition: service_healthy
+      # El backend migra las tablas de storage y publica el JWKS
+      backend:
+        condition: service_healthy
+      rustfs:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging: *default-logging
+    networks:
+      - internal
+
+  # ── Kafka (KRaft, un solo nodo) ─────────────────────────────────────────────
+  # Lleva las notificaciones del backend al microservicio y los pushes de vuelta al /ws.
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: tuevento-kafka
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      # Un solo nodo: sin réplicas
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_NUM_PARTITIONS: "3"
+      KAFKA_LOG_RETENTION_HOURS: "168"
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx384m
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 768m
+    logging: *default-logging
+    networks:
+      # Solo backend, notification-service y geolocation-service llegan a Kafka (ver red messaging)
+      - messaging
+
+  # ── Microservicio de notificaciones ────────────────────────────────────────
+  # Misma base de datos que el monolito; valida los JWT con su JWKS. Envía el email y
+  # devuelve los pushes al /ws del backend por Kafka.
+  notification-service:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:notifications-${TUEVENTO_VERSION:?}
+    container_name: tuevento-notification-service
+    restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx320m
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
+      JWK_SET_URI: http://identity-service:8088/.well-known/jwks.json
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MAIL_USERNAME: ${MAIL_USERNAME:?}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?}
+      NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-true}
+    depends_on:
+      redis:
+        condition: service_healthy
+      # El backend migra las tablas de notificaciones y publica el JWKS
+      backend:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging: *default-logging
+    networks:
+      - internal
+      - messaging
+
+  # ── Microservicio de geolocalización ───────────────────────────────────────
+  # Departamentos, ciudades y sedes; misma base de datos que el monolito.
+  geolocation-service:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:geolocation-${TUEVENTO_VERSION:?}
+    container_name: tuevento-geolocation-service
+    restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx256m
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
+      JWK_SET_URI: http://identity-service:8088/.well-known/jwks.json
+      # Traducciones automáticas: el backend las pide por Kafka y este servicio las hace.
+      # LibreTranslate solo responde si se levanta el perfil "translate"; si no, los trabajos
+      # fallan y se reintentan, y las páginas muestran el texto en español.
+      TRANSLATION_ENABLED: ${TRANSLATION_ENABLED:-true}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      TRANSLATION_LIBRETRANSLATE_BASE_URL: http://libretranslate:5000
+      TRANSLATION_PROTECTED_TERMS: ${TRANSLATION_PROTECTED_TERMS:-Tu Evento}
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8087/actuator/health | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+    logging: *default-logging
+    networks:
+      - internal
+      # Recibe las peticiones de traducción y devuelve los resultados por Kafka
+      - messaging
+
+  # ── Microservicio de Identidad ─────────────────────────────────────────────
+  # Login, sesiones, cuentas, temas y perfiles de usuario; misma base de datos que el monolito.
+  identity-service:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:identity-${TUEVENTO_VERSION:?}
+    container_name: tuevento-identity-service
+    restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx256m
+      # La MISMA clave RS256 que el backend: los tokens que firma uno los valida el otro
+      APP_JWT_PRIVATE_KEY: ${APP_JWT_PRIVATE_KEY:?}
+      JWT_SECRET: ${JWT_SECRET:-}
+      AUTH_COOKIE_SAME_SITE: ${AUTH_COOKIE_SAME_SITE:-Strict}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
+      APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS: ${APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS:?}
+      APP_OAUTH_GOOGLE_REDIRECT_URI: ${APP_OAUTH_GOOGLE_REDIRECT_URI:?}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MAIL_USERNAME: ${MAIL_USERNAME:?}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?}
+      # Cuenta de administrador inicial y avatar de los perfiles nuevos
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?}
+      ADMIN_ALIAS: ${ADMIN_ALIAS:-AdminTuEvento}
+      APP_PROFILE_DEFAULT_AVATAR_ID: ${APP_PROFILE_DEFAULT_AVATAR_ID:-1}
+      # nginx-proxy-manager + nginx del frontend: dos entradas en X-Forwarded-For. El api-gateway
+      # (Spring Cloud Gateway 4.3, sin trusted-proxies) reenvía la cabecera sin añadir la suya;
+      # subir este número dejaría elegir como IP del cliente una entrada que el cliente inventa.
+      RATE_LIMIT_TRUSTED_PROXIES: "2"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
+      JWK_SET_URI: http://localhost:8088/.well-known/jwks.json
+      # Idiomas activos (GET /api/v1/languages); los sirve geolocation-service (el backend ya no)
+      LOCALIZATION_BASE_URL: http://geolocation-service:8087
+      # Estado de las traducciones de la biografía (API interna del backend, con la clave entre servicios)
+      MONOLITH_BASE_URL: http://backend:8080
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      # Ciudad del perfil
+      GEOLOCATION_SERVICE_URL: http://geolocation-service:8087
+      # Avisos en vivo (THEME_UPDATED, LANGUAGE_UPDATED) y traducciones: el backend los atiende desde Kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      geolocation-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8088/actuator/health | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+    logging: *default-logging
+    networks:
+      - internal
+      - messaging
+
+  # ── Frontend (SPA + proxy de /api y /ws al api-gateway) ─────────────────────
   frontend:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:frontend-${TUEVENTO_VERSION:?}
     container_name: tuevento-frontend
     restart: unless-stopped
     depends_on:
-      backend:
+      api-gateway:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
@@ -369,11 +647,19 @@ networks:
   internal:
     name: tuevento-internal
     driver: bridge
+  # Kafka no tiene autenticación: solo los servicios que lo usan (backend, notification-service,
+  # identity-service y geolocation-service) comparten esta red, así ningún otro contenedor puede
+  # publicar notificaciones o traducciones (ni elegir a quién se envía un email)
+  messaging:
+    name: tuevento-messaging
+    driver: bridge
+    internal: true
   edge:
     name: tuevento-edge
     driver: bridge
 
 volumes:
+  kafka_data:
   postgres_data:
   postgres_gateway_data:
   rustfs_data:

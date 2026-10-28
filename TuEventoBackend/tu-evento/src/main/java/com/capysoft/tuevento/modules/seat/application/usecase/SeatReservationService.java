@@ -34,7 +34,11 @@ public class SeatReservationService {
 
     /**
      * Reserva una silla para el usuario autenticado.
-     * 
+     *
+     * <p>Adquiere un lock pesimista de escritura (SELECT … FOR UPDATE) antes de
+     * leer el estado de la silla, garantizando que dos peticiones concurrentes no
+     * puedan reservar el mismo asiento. La transacción libera el lock al hacer commit.
+     *
      * @param seatId ID de la silla a reservar
      * @param userId ID del usuario que realiza la reserva
      * @return La silla reservada
@@ -43,7 +47,8 @@ public class SeatReservationService {
      */
     @Transactional
     public SeatResponse reserveSeat(Integer seatId, Integer userId) {
-        Seat seat = seatRepository.findById(seatId)
+        // Lock pesimista: serializa peticiones concurrentes sobre la misma silla
+        Seat seat = seatRepository.findByIdForUpdate(seatId)
                 .orElseThrow(() -> new NotFoundException("SEAT_NOT_FOUND", "La silla no existe"));
 
         if (seat.getStatus() != SeatStatus.AVAILABLE) {
@@ -81,18 +86,23 @@ public class SeatReservationService {
 
     /**
      * Libera una reserva de silla antes de su expiración.
-     * 
+     *
+     * <p>Adquiere lock pesimista para evitar condiciones de carrera con el scheduler
+     * o con confirmaciones de pago concurrentes.
+     *
      * Solo el usuario que realizó la reserva puede liberarla (excepto ADMIN).
-     * 
-     * @param seatId ID de la silla a liberar
-     * @param userId ID del usuario que solicita la liberación
+     *
+     * @param seatId  ID de la silla a liberar
+     * @param userId  ID del usuario que solicita la liberación
+     * @param isAdmin true si el solicitante tiene rol ADMIN
      * @return La silla liberada
      * @throws NotFoundException si la silla no existe
-     * @throws BusinessException si la silla no está reservada o si el usuario no es el dueño
+     * @throws BusinessException si la silla no está reservada o el usuario no es el dueño
      */
     @Transactional
     public SeatResponse releaseSeat(Integer seatId, Integer userId, boolean isAdmin) {
-        Seat seat = seatRepository.findById(seatId)
+        // Lock pesimista: evita carrera con el scheduler de expiración
+        Seat seat = seatRepository.findByIdForUpdate(seatId)
                 .orElseThrow(() -> new NotFoundException("SEAT_NOT_FOUND", "La silla no existe"));
 
         if (seat.getStatus() != SeatStatus.RESERVED) {

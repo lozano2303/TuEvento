@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.seat.infrastructure.scheduler;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -12,6 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.capysoft.tuevento.modules.seat.application.port.out.PendingPaymentSeatsPort;
 import com.capysoft.tuevento.modules.seat.domain.event.SeatStatusChangedEvent;
 import com.capysoft.tuevento.modules.seat.domain.model.Seat;
 import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
@@ -45,6 +47,7 @@ public class SeatReservationExpirationScheduler {
 
     private final SeatRepository seatRepository;
     private final EventSectionRepository eventSectionRepository;
+    private final PendingPaymentSeatsPort pendingPaymentSeatsPort;
     private final ApplicationEventPublisher eventPublisher;
 
     // Self-injection vía @Lazy para que @Transactional aplique correctamente
@@ -73,19 +76,34 @@ public class SeatReservationExpirationScheduler {
 
     /**
      * Cron cada 10 segundos — optimizado para liberación casi instantánea.
-     * 
-     * Frecuencia aumentada de 60s a 10s para que el TTL se sienta instantáneo en el cliente.
-     * La query está optimizada con un índice compuesto en (status, reserved_until) para
-     * mantener el rendimiento a alta frecuencia.
-     * 
+     *
+     * <p>Solo libera sillas RESERVED cuyo TTL expiró y que NO tienen una orden en
+     * PAYMENT_PENDING. Esto previene la venta duplicada: si el webhook de confirmación
+     * llega justo después de que el scheduler liberó la silla, el asiento ya podría
+     * estar reservado por otro usuario.
+     *
+     * <p>Cada silla se vuelve a leer con lock pesimista antes de liberarla: si entre la
+     * consulta y el lock otra transacción la vendió o renovó la reserva, se omite.
+     *
      * @Transactional aplica igual tanto al ser disparado por el cron como
      * desde onStartup(), ya que el proxy de Spring está activo en ambos casos.
      */
     @Scheduled(cron = "*/10 * * * * *") // cada 10 segundos
     @Transactional
     public void releaseExpiredReservations() {
-        List<Seat> expired = seatRepository.findAllByStatusAndReservedUntilBefore(
-                SeatStatus.RESERVED, LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        List<Seat> candidates = seatRepository.findAllByStatusAndReservedUntilBefore(SeatStatus.RESERVED, now);
+
+        // Excluye sillas con órdenes en PAYMENT_PENDING para evitar venta duplicada
+        Set<Integer> pendingPayment = candidates.isEmpty() ? Set.of()
+                : pendingPaymentSeatsPort.findSeatIdsWithPendingPayment(
+                        candidates.stream().map(Seat::getSeatId).toList());
+        List<Seat> expired = candidates.stream()
+                .filter(seat -> !pendingPayment.contains(seat.getSeatId()))
+                .toList();
+        if (!pendingPayment.isEmpty()) {
+            log.info("[Scheduler] Keeping {} expired reservation(s) with a pending payment.", pendingPayment.size());
+        }
 
         if (expired.isEmpty()) {
             // INFO (no debug) para que sea visible tanto en cron como en catch-up
@@ -95,8 +113,15 @@ public class SeatReservationExpirationScheduler {
 
         log.info("[Scheduler] Auto-releasing {} expired seat reservation(s).", expired.size());
 
-        for (Seat seat : expired) {
+        int releasedCount = 0;
+        for (Seat candidate : expired) {
+            Seat seat = seatRepository.findByIdForUpdate(candidate.getSeatId()).orElse(null);
+            if (seat == null || seat.getStatus() != SeatStatus.RESERVED
+                    || seat.getReservedUntil() == null || !seat.getReservedUntil().isBefore(now)) {
+                continue;
+            }
             SeatStatus oldStatus = seat.getStatus();
+            releasedCount++;
 
             // Construir la silla liberada (Seat es inmutable via Builder)
             Seat released = Seat.builder()
@@ -137,6 +162,6 @@ public class SeatReservationExpirationScheduler {
             }
         }
 
-        log.info("[Scheduler] Finished releasing {} seat reservation(s).", expired.size());
+        log.info("[Scheduler] Finished releasing {} seat reservation(s).", releasedCount);
     }
 }

@@ -1,0 +1,292 @@
+databaseChangeLog:
+  # Fase 4 (Identidad): quita las FKs que cruzan la frontera de Identidad. Cada servicio guarda
+  # los IDs de los demás como valores planos y los valida por puerto (ver infrastructure/client/),
+  # así cada uno podrá vivir en su propio esquema o base. No borra columnas ni datos: solo
+  # restricciones. Los usuarios nunca se borran físicamente (las bajas son lógicas), así que no se
+  # pierde ningún ON DELETE en uso (el único distinto de NO ACTION era fk_seat_reserved_by, SET NULL).
+  #
+  # Un changeSet por FK, idempotente: si la restricción ya no existe se marca como ejecutado.
+  # El rollback la vuelve a crear con el mismo nombre y la misma regla.
+  # fk_profile_city no está aquí: la quita Localización (109-drop-geolocation-cross-fks) junto con
+  # el cliente de ciudades de profile.
+  - changeSet:
+      id: 110-drop-fk-stored-file-uploaded-by
+      author: capysoft
+      comment: "Archivos: stored_file.uploaded_by → app_user.user_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: stored_file
+            foreignKeyName: fk_stored_file_uploaded_by
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: stored_file
+            constraintName: fk_stored_file_uploaded_by
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: stored_file
+            baseColumnNames: uploaded_by
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_stored_file_uploaded_by
+  - changeSet:
+      id: 110-drop-fk-storage-operation-log-performed-by
+      author: capysoft
+      comment: "Archivos: storage_operation_log.performed_by → app_user.user_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: storage_operation_log
+            foreignKeyName: fk_storage_operation_log_performed_by
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: storage_operation_log
+            constraintName: fk_storage_operation_log_performed_by
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: storage_operation_log
+            baseColumnNames: performed_by
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_storage_operation_log_performed_by
+  - changeSet:
+      id: 110-drop-fk-event-user
+      author: capysoft
+      comment: "Catálogo: event.user_id → app_user.user_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: event
+            foreignKeyName: fk_event_user
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: event
+            constraintName: fk_event_user
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: event
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_event_user
+  - changeSet:
+      id: 110-drop-fk-event-status-log-user
+      author: capysoft
+      comment: "Catálogo: event_status_log.changed_by → app_user.user_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: event_status_log
+            foreignKeyName: fk_event_status_log_user
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: event_status_log
+            constraintName: fk_event_status_log_user
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: event_status_log
+            baseColumnNames: changed_by
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_event_status_log_user
+  - changeSet:
+      id: 110-drop-fk-event-rating-user
+      author: capysoft
+      comment: "Catálogo: event_rating.user_id → app_user.user_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: event_rating
+            foreignKeyName: fk_event_rating_user
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: event_rating
+            constraintName: fk_event_rating_user
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: event_rating
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_event_rating_user
+  - changeSet:
+      id: 110-drop-fk-seat-reserved-by
+      author: capysoft
+      comment: "Catálogo: seat.reserved_by → app_user.user_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: seat
+            foreignKeyName: fk_seat_reserved_by
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: seat
+            constraintName: fk_seat_reserved_by
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: seat
+            baseColumnNames: reserved_by
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_seat_reserved_by
+            onDelete: SET NULL
+  - changeSet:
+      id: 110-drop-fk-seat-log-user
+      author: capysoft
+      comment: "Catálogo: seat_log.changed_by → app_user.user_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: seat_log
+            foreignKeyName: fk_seat_log_user
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: seat_log
+            constraintName: fk_seat_log_user
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: seat_log
+            baseColumnNames: changed_by
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_seat_log_user
+  - changeSet:
+      id: 110-drop-fk-order-user
+      author: capysoft
+      comment: "Comercio: order.user_id → app_user.user_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: order
+            foreignKeyName: fk_order_user
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: order
+            constraintName: fk_order_user
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: order
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_order_user
+  - changeSet:
+      id: 110-drop-fk-ticket-user
+      author: capysoft
+      comment: "Comercio: ticket.user_id → app_user.user_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: ticket
+            foreignKeyName: fk_ticket_user
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: ticket
+            constraintName: fk_ticket_user
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: ticket
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_ticket_user
+  - changeSet:
+      id: 110-drop-fk-ticket-checkin-validator
+      author: capysoft
+      comment: "Comercio: ticket_checkin.validated_by → app_user.user_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: ticket_checkin
+            foreignKeyName: fk_ticket_checkin_validator
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: ticket_checkin
+            constraintName: fk_ticket_checkin_validator
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: ticket_checkin
+            baseColumnNames: validated_by
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_ticket_checkin_validator
+  - changeSet:
+      id: 110-drop-fk-notification-user-user
+      author: capysoft
+      comment: "Notificaciones: notification_user.user_id → app_user.user_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: notification_user
+            foreignKeyName: fk_notification_user_user
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: notification_user
+            constraintName: fk_notification_user_user
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: notification_user
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: user_id
+            constraintName: fk_notification_user_user
+  - changeSet:
+      id: 110-drop-fk-organizer-petition-stored-file
+      author: capysoft
+      comment: "Identidad → Archivos: organizer_petition.stored_file_id → stored_file.stored_file_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: organizer_petition
+            foreignKeyName: fk_organizer_petition_stored_file
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: organizer_petition
+            constraintName: fk_organizer_petition_stored_file
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: organizer_petition
+            baseColumnNames: stored_file_id
+            referencedTableName: stored_file
+            referencedColumnNames: stored_file_id
+            constraintName: fk_organizer_petition_stored_file
+  - changeSet:
+      id: 110-drop-fk-profile-stored-file
+      author: capysoft
+      comment: "Identidad → Archivos: profile.stored_file_id → stored_file.stored_file_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: profile
+            foreignKeyName: fk_profile_stored_file
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: profile
+            constraintName: fk_profile_stored_file
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: profile
+            baseColumnNames: stored_file_id
+            referencedTableName: stored_file
+            referencedColumnNames: stored_file_id
+            constraintName: fk_profile_stored_file
+  - changeSet:
+      id: 110-drop-fk-profile-preferred-language
+      author: capysoft
+      comment: "Identidad → Localización: profile.preferred_language_id → language.language_id"
+      preConditions:
+        - onFail: MARK_RAN
+        - foreignKeyConstraintExists:
+            foreignKeyTableName: profile
+            foreignKeyName: fk_profile_preferred_language
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: profile
+            constraintName: fk_profile_preferred_language
+      rollback:
+        - addForeignKeyConstraint:
+            baseTableName: profile
+            baseColumnNames: preferred_language_id
+            referencedTableName: language
+            referencedColumnNames: language_id
+            constraintName: fk_profile_preferred_language

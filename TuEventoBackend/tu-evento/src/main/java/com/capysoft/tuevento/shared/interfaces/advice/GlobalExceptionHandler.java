@@ -16,15 +16,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import com.capysoft.tuevento.modules.geolocation.domain.exception.SiteAlreadyExistsException;
 import com.capysoft.tuevento.modules.payment.domain.model.InvalidPaymentStatusTransitionException;
-import com.capysoft.tuevento.modules.profile.domain.exception.ProfileAlreadyExistsException;
 import com.capysoft.tuevento.modules.ticket.domain.model.InvalidOrderStatusTransitionException;
 import com.capysoft.tuevento.modules.wallet.domain.model.InsufficientWalletBalanceException;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.ForbiddenException;
 import com.capysoft.tuevento.shared.domain.exception.ImagePolicyViolationException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
+import com.capysoft.tuevento.shared.domain.exception.ServiceUnavailableException;
 import com.capysoft.tuevento.shared.domain.exception.UnauthorizedException;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 
@@ -87,17 +86,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Resource not found"));
     }
 
-    @ExceptionHandler(SiteAlreadyExistsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleSiteAlreadyExistsException(SiteAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(ProfileAlreadyExistsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleProfileAlreadyExistsException(ProfileAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFoundException(NotFoundException ex) {
@@ -120,6 +108,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ApiResponse<Void>> handleForbiddenException(ForbiddenException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleServiceUnavailableException(ServiceUnavailableException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(ApiResponse.error(ex.getCode(), ex.getMessage()));
     }
 

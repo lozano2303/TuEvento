@@ -1,6 +1,8 @@
 package com.capysoft.tuevento.shared.infrastructure.websocket;
 
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenClaims;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenVerifier;
+import com.capysoft.tuevento.shared.infrastructure.security.token.TokenRevocationPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -20,7 +22,7 @@ import java.util.Map;
  * Flujo:
  * 1. Cliente intenta conectar a ws://host/ws?token=<JWT>
  * 2. beforeHandshake extrae el token del query param
- * 3. Valida el token usando TokenGeneratorPort (mismo bean que JwtAuthenticationFilter)
+ * 3. Valida el token con AccessTokenVerifier (JWKS de identity-service, mismo bean que JwtAuthenticationFilter)
  * 4. Si válido: extrae userId y lo almacena en attributes (disponible en la sesión WS)
  * 5. Si inválido/ausente: rechaza con 401 Unauthorized
  * 
@@ -38,7 +40,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
-    private final TokenGeneratorPort tokenGenerator;
+    private final AccessTokenVerifier accessTokenVerifier;
+    private final TokenRevocationPort tokenRevocationPort;
 
     private static final String TOKEN_PARAM = "token";
     private static final String USER_ID_ATTRIBUTE = "userId";
@@ -71,28 +74,43 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
         log.debug("Token extracted, length: {}", token.length());
 
-        if (!tokenGenerator.isTokenValid(token)) {
-            log.warn("WebSocket handshake rejected: invalid or expired token");
+        // Firma, expiración y que sea un access token (el refresh token se firma igual pero no lleva rol)
+        AccessTokenClaims claims = accessTokenVerifier.verify(token).orElse(null);
+        if (claims == null) {
+            log.warn("WebSocket handshake rejected: invalid, expired or not an access token");
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
 
-        // Extraer userId del token y almacenarlo en attributes (disponible en la sesión WS)
-        tokenGenerator.extractUserId(token).ifPresentOrElse(
-            userId -> {
-                attributes.put(USER_ID_ATTRIBUTE, userId);
-                log.info("WebSocket handshake accepted for userId={}", userId);
-            },
-            () -> {
-                log.warn("WebSocket handshake rejected: token valid but no userId claim found");
-                response.setStatusCode(HttpStatus.UNAUTHORIZED);
-            }
-        );
+        // Un token revocado (rol quitado, logout, cuenta desactivada) no abre el /ws; si no se puede
+        // comprobar, tampoco (fail-closed)
+        if (isRevoked(claims)) {
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            return false;
+        }
+
+        // userId disponible en la sesión WS
+        attributes.put(USER_ID_ATTRIBUTE, claims.userId());
+        log.info("WebSocket handshake accepted for userId={}", claims.userId());
 
         // Solo aceptar si userId fue extraído correctamente
         boolean accepted = attributes.containsKey(USER_ID_ATTRIBUTE);
         log.info("Handshake result: {}", accepted ? "ACCEPTED" : "REJECTED");
         return accepted;
+    }
+
+    private boolean isRevoked(AccessTokenClaims claims) {
+        Integer userId = claims.userId();
+        try {
+            if (tokenRevocationPort.isRevoked(claims)) {
+                log.warn("WebSocket handshake rejected: revoked token for userId={}", userId);
+                return true;
+            }
+            return false;
+        } catch (TokenRevocationPort.TokenRevocationUnavailableException e) {
+            log.error("WebSocket handshake rejected: token revocation store unavailable: {}", e.getMessage());
+            return true;
+        }
     }
 
     /**

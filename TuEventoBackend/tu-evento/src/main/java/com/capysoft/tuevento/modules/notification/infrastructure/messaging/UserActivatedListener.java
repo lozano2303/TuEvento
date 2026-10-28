@@ -1,24 +1,25 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.messaging;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
-import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
+import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
-import com.capysoft.tuevento.modules.profile.domain.model.Profile;
-import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
-import com.capysoft.tuevento.modules.security.domain.event.UserActivatedEvent;
+import com.capysoft.tuevento.modules.notification.application.port.out.RecipientDirectoryPort;
+import com.capysoft.tuevento.shared.domain.event.identity.UserActivatedEvent;
 
 import lombok.RequiredArgsConstructor;
 
 /**
  * Listens to UserActivatedEvent and sends a welcome notification after account activation.
+ * Solo tras el commit de la activación: si la activación hace rollback no hay bienvenida.
  */
 @Component
 @RequiredArgsConstructor
@@ -26,17 +27,19 @@ public class UserActivatedListener {
 
     private static final Logger log = LoggerFactory.getLogger(UserActivatedListener.class);
 
-    private final SendNotificationUseCase sendNotificationUseCase;
-    private final ProfileRepository profileRepository;
+    private final NotificationSender notificationSender;
+    private final RecipientDirectoryPort recipientDirectoryPort;
 
-    @EventListener
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onUserActivated(UserActivatedEvent event) {
         log.info("User activated event detected: userId={}, alias={}", event.getUserId(), event.getAlias());
 
         try {
             // Get user's full name from profile
-            Optional<Profile> profileOpt = profileRepository.findByUserId(event.getUserId());
-            String fullName = profileOpt.map(Profile::getFullName).orElse(event.getAlias());
+            String fullName = recipientDirectoryPort.findRecipient(event.getUserId())
+                    .map(RecipientDirectoryPort.Recipient::fullName)
+                    .orElse(event.getAlias());
 
             // Send welcome notification via IN_APP and EMAIL
             SendNotificationCommand command = SendNotificationCommand.builder()
@@ -47,7 +50,7 @@ public class UserActivatedListener {
                     .reason(fullName) // Use reason field to pass the user's name
                     .build();
 
-            sendNotificationUseCase.execute(command);
+            notificationSender.send(command);
             log.info("Welcome notification sent to user: userId={}, name={}", event.getUserId(), fullName);
 
         } catch (Exception e) {

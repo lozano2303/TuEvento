@@ -51,6 +51,11 @@ public class SeatRepositoryImpl implements SeatRepository {
     }
 
     @Override
+    public Optional<Seat> findByIdForUpdate(Integer seatId) {
+        return jpaRepository.findByIdForUpdate(seatId).map(this::toDomain);
+    }
+
+    @Override
     public boolean existsByEventSectionIdAndCode(Integer eventSectionId, String code) {
         return jpaRepository.existsByEventSectionIdAndCode(eventSectionId, code);
     }
@@ -92,6 +97,11 @@ public class SeatRepositoryImpl implements SeatRepository {
     @Override
     public List<EventSeatSummary> summarizeSeatsByOrganizer(Long organizerId) {
         return jpaRepository.summarizeSeatsByOrganizer(organizerId, SeatStatus.COURTESY, EventStatus.CANCELLED);
+    }
+
+    @Override
+    public long countByEventSectionId(Integer eventSectionId) {
+        return jpaRepository.countByEventSectionId(eventSectionId);
     }
 
     @Override

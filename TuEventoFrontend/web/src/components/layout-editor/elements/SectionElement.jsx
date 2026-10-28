@@ -9,9 +9,62 @@ import {
   migratePolygonPoints,
   getElementAABB,
   CANVAS_MARGIN,
+  TRANSFORMER_ANCHOR_SIZE,
 } from '../layoutEditorUtils';
 
 const VERTEX_RADIUS = 7; // eslint-disable-line no-unused-vars -- reservado por si se necesita
+const LABEL_FONT_PX   = 12; // tamaño de la etiqueta en píxeles de pantalla
+const LABEL_OFFSET_PX = 18; // separación de la etiqueta sobre la sección, en píxeles de pantalla
+
+// Por debajo de este diámetro en pantalla las sillas no se distinguen: no se dibujan
+const MIN_VISIBLE_SEAT_PX = 1.2;
+// Por debajo de este diámetro se dibujan como cuadrados: mucho más baratos que arcos
+const MIN_ROUND_SEAT_PX = 5;
+
+/**
+ * Dibuja las sillas de una sección en un solo path, con dos optimizaciones para
+ * secciones de decenas de miles de sillas:
+ *  - Solo las que caen dentro de la pantalla (el resto se descarta antes de dibujar).
+ *  - Nivel de detalle según su tamaño en pantalla: nada, cuadrados o círculos.
+ */
+function drawSeats(ctx, shape, seatPositions) {
+  const stage = shape.getStage();
+  if (!stage || seatPositions.length === 0) return;
+  const diameterPx = 2 * seatPositions[0].r * shape.getAbsoluteScale().x;
+  if (diameterPx < MIN_VISIBLE_SEAT_PX) return;
+
+  // Pantalla en coordenadas locales de la sección (incluye zoom, pan y rotación)
+  const inv = shape.getAbsoluteTransform().copy().invert();
+  const corners = [
+    inv.point({ x: 0, y: 0 }), inv.point({ x: stage.width(), y: 0 }),
+    inv.point({ x: 0, y: stage.height() }), inv.point({ x: stage.width(), y: stage.height() }),
+  ];
+  const minX = Math.min(...corners.map((c) => c.x));
+  const maxX = Math.max(...corners.map((c) => c.x));
+  const minY = Math.min(...corners.map((c) => c.y));
+  const maxY = Math.max(...corners.map((c) => c.y));
+
+  const round = diameterPx >= MIN_ROUND_SEAT_PX;
+  ctx.beginPath();
+  for (const pos of seatPositions) {
+    if (pos.x + pos.r < minX || pos.x - pos.r > maxX || pos.y + pos.r < minY || pos.y - pos.r > maxY) continue;
+    if (round) {
+      // moveTo obliga a que cada arco sea un subpath independiente,
+      // evitando que stroke() dibuje líneas entre sillas consecutivas.
+      ctx.moveTo(pos.x + pos.r, pos.y);
+      ctx.arc(pos.x, pos.y, pos.r, 0, Math.PI * 2);
+    } else {
+      ctx.rect(pos.x - pos.r, pos.y - pos.r, pos.r * 2, pos.r * 2);
+    }
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.fill();
+  if (round) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+}
 
 /**
  * Construye el path del polígono en el contexto 2D de Konva.
@@ -114,6 +167,7 @@ export default function SectionElement({
   onGroupDragEnd,
   onEnterVertexEdit,
   canvasSizeRef,
+  zoom = 1,
 }) {
   const groupRef = useRef();
   const trRef    = useRef();
@@ -178,14 +232,17 @@ export default function SectionElement({
   // ── Label flotante — posición en canvas-space (fuera del Group rotado) ────
   // Calculamos el AABB del grupo en coordenadas del Layer usando getClientRect.
   // Usamos estado para actualizarlo en tiempo real durante el drag.
-  const [labelPos, setLabelPos] = useState({ x: element.x + element.width / 2, y: element.y - 18 });
+  const [labelPos, setLabelPos] = useState({ x: element.x + element.width / 2, y: element.y - LABEL_OFFSET_PX });
+  // La etiqueta mide lo mismo en pantalla a cualquier zoom (se lee con el mapa alejado)
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
 
   const updateLabelPos = useCallback(() => {
     const node = groupRef.current;
     if (!node) return;
     const r = node.getClientRect({ relativeTo: node.getLayer() });
     // Clamp: el label nunca queda por encima del margen mínimo del canvas
-    const clampedY = Math.max(CANVAS_MARGIN / 2, r.y - 18);
+    const clampedY = Math.max(CANVAS_MARGIN / 2, r.y - LABEL_OFFSET_PX / zoomRef.current);
     setLabelPos({ x: r.x + r.width / 2, y: clampedY });
   }, []);
 
@@ -193,7 +250,7 @@ export default function SectionElement({
   // (sin deps correría tras setLabelPos → loop infinito de renders)
   useEffect(() => {
     updateLabelPos();
-  }, [updateLabelPos, element.x, element.y, element.width, element.height, element.rotation, workPoints]);
+  }, [updateLabelPos, element.x, element.y, element.width, element.height, element.rotation, workPoints, zoom]);
 
   const handleDragStart = (e) => {
     // Durante edición de vértices el Group no debería ser draggable,
@@ -378,20 +435,7 @@ export default function SectionElement({
              independientemente de cuántas haya. Sin nodos Konva individuales. */}
         {!isEditingVertices && seatPositions.length > 0 && (
           <Shape
-            sceneFunc={(ctx) => {
-              ctx.beginPath();
-              for (const pos of seatPositions) {
-                // moveTo obliga a que cada arco sea un subpath independiente,
-                // evitando que stroke() dibuje líneas entre sillas consecutivas.
-                ctx.moveTo(pos.x + pos.r, pos.y);
-                ctx.arc(pos.x, pos.y, pos.r, 0, Math.PI * 2);
-              }
-              ctx.fillStyle = 'rgba(255,255,255,0.75)';
-              ctx.fill();
-              ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-              ctx.lineWidth = 0.5;
-              ctx.stroke();
-            }}
+            sceneFunc={(ctx, shape) => drawSeats(ctx, shape, seatPositions)}
             listening={false}
             perfectDrawEnabled={false}
           />
@@ -403,7 +447,7 @@ export default function SectionElement({
         x={labelPos.x}
         y={labelPos.y}
         text={element.label}
-        fontSize={12}
+        fontSize={LABEL_FONT_PX / Math.max(zoom, 0.01)}
         fontStyle="bold"
         fill="#ffffff"
         align="center"
@@ -424,6 +468,10 @@ export default function SectionElement({
           rotationSnapTolerance={10}
           rotateAnchorOffset={28}
           rotateAnchorCursor="grab"
+          anchorSize={TRANSFORMER_ANCHOR_SIZE}
+          anchorCornerRadius={3}
+          anchorStrokeWidth={1.5}
+          borderStrokeWidth={1.5}
           enabledAnchors={[
             'top-left', 'top-right', 'bottom-left', 'bottom-right',
             'middle-left', 'middle-right', 'top-center', 'bottom-center',

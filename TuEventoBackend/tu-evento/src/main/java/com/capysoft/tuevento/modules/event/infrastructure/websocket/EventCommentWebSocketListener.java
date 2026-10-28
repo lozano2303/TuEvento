@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.event.infrastructure.websocket;
 
 import com.capysoft.tuevento.modules.event.domain.event.EventRatingAddedEvent;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -28,7 +28,7 @@ import java.util.Map;
 public class EventCommentWebSocketListener {
 
     private final SimpMessagingTemplate messagingTemplate;
-    private final ProfileJpaRepository  profileJpaRepository;
+    private final UserDirectoryPort     userDirectoryPort;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onEventRatingAdded(EventRatingAddedEvent event) {
@@ -40,8 +40,8 @@ public class EventCommentWebSocketListener {
         String topic = "/topic/events/" + event.getEventId() + "/comments";
 
         try {
-            String authorName = profileJpaRepository.findByUserId(event.getUserId().intValue())
-                    .map(p -> p.getFullName())
+            String authorName = userDirectoryPort.findUser(event.getUserId().intValue())
+                    .map(UserDirectoryPort.UserRef::fullName)
                     .orElse("Usuario");
 
             Map<String, Object> payload = new HashMap<>();

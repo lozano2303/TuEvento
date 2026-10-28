@@ -1,0 +1,89 @@
+databaseChangeLog:
+  - changeSet:
+      id: 106-create-outbox-event
+      author: capysoft
+      comment: >
+        Tabla outbox_event para el patrón transactional outbox.
+        Garantiza que los eventos de dominio publicados a Kafka se persisten
+        atómicamente con el cambio de negocio que los originó. El relay
+        (OutboxRelayScheduler) los publica a Kafka y marca processed=true.
+      changes:
+        - createTable:
+            tableName: outbox_event
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: aggregate_type
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                  remarks: "Tipo del agregado que originó el evento (ej: seat, order, event)"
+              - column:
+                  name: aggregate_id
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                  remarks: "ID del agregado (como string para soportar Long, Integer, UUID)"
+              - column:
+                  name: event_type
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                  remarks: "Nombre del evento (ej: SeatsHeld, OrderPaid, EventStatusChanged)"
+              - column:
+                  name: payload
+                  type: TEXT
+                  constraints:
+                    nullable: false
+                  remarks: "JSON del evento serializado"
+              - column:
+                  name: topic
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+                  remarks: "Topic Kafka destino (ej: tuevento.seat.seats-held)"
+              - column:
+                  name: processed
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+                  remarks: "true cuando el relay ya publicó el evento a Kafka"
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processed_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  remarks: "Momento en que el relay publicó el evento"
+              - column:
+                  name: retry_count
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+                  remarks: "Número de intentos fallidos de publicación a Kafka"
+              - column:
+                  name: last_error
+                  type: TEXT
+                  remarks: "Último error de publicación (para diagnóstico)"
+
+        - createIndex:
+            tableName: outbox_event
+            indexName: idx_outbox_event_pending
+            columns:
+              - column:
+                  name: processed
+              - column:
+                  name: created_at
+            remarks: >
+              Índice compuesto para la query del relay:
+              WHERE processed = false ORDER BY created_at ASC

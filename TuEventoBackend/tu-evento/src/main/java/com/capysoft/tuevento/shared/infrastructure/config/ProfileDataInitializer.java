@@ -10,8 +10,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
-import com.capysoft.tuevento.modules.profile.domain.model.Profile;
-import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
+import com.capysoft.tuevento.modules.identitybridge.client.IdentityServiceClient;
 import com.capysoft.tuevento.modules.storage.application.dto.request.UploadFileRequest;
 import com.capysoft.tuevento.modules.storage.application.port.in.UploadFilePort;
 import com.capysoft.tuevento.modules.storage.application.port.out.StorageClientPort;
@@ -35,7 +34,7 @@ public class ProfileDataInitializer implements ApplicationRunner {
 
     private final StoredFileRepository storedFileRepository;
     private final UploadFilePort       uploadFilePort;
-    private final ProfileRepository    profileRepository;
+    private final IdentityServiceClient identityServiceClient;
     private final StorageClientPort    storageClient;
 
     @Value("${app.storage.bucket-default:tuevento}")
@@ -119,21 +118,16 @@ public class ProfileDataInitializer implements ApplicationRunner {
      * Assigns the default avatar to all profiles that have storedFileId=null.
      * Covers profiles created before MinIO was available (e.g. admin on first run).
      */
+    /**
+     * Los perfiles son de identity-service: se le pide que asigne el avatar a los que no tienen.
+     * Si aún no responde (arranque simultáneo), se reintenta en el próximo arranque.
+     */
     private void assignAvatarToProfilesWithNullStoredFileId(Integer avatarStoredFileId) {
-        List<Profile> profiles = profileRepository.findAllWithNullStoredFileId();
-        if (profiles.isEmpty()) {
-            log.info("No profiles with null storedFileId found, skipping avatar assignment");
-            return;
+        try {
+            int assigned = identityServiceClient.assignDefaultAvatar(avatarStoredFileId);
+            log.info("Default avatar (storedFileId={}) assigned to {} profile(s)", avatarStoredFileId, assigned);
+        } catch (Exception e) {
+            log.warn("Could not assign the default avatar to profiles now: {}", e.getMessage());
         }
-
-        log.info("Assigning default avatar (storedFileId={}) to {} profile(s) with null storedFileId",
-                avatarStoredFileId, profiles.size());
-
-        for (Profile profile : profiles) {
-            profile.setStoredFileId(avatarStoredFileId);
-            profileRepository.save(profile);
-        }
-
-        log.info("Default avatar assigned to {} profile(s)", profiles.size());
     }
 }

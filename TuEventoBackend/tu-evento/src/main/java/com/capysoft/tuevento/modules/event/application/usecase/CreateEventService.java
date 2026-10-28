@@ -14,9 +14,8 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatusLog;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventStatusLogRepository;
-import com.capysoft.tuevento.modules.geolocation.application.dto.response.SiteResponse;
-import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort;
-import com.capysoft.tuevento.modules.language.application.service.TranslationService;
+import com.capysoft.tuevento.modules.event.application.port.out.SiteLookupPort;
+import com.capysoft.tuevento.modules.event.application.port.out.SiteSummary;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -37,9 +36,8 @@ public class CreateEventService implements CreateEventUseCase {
     private final ApplicationEventPublisher eventPublisher;
     private final CategoryUseCase           categoryUseCase;
     private final CategoryEventUseCase      categoryEventUseCase;
-    private final GetSitePort               getSitePort;
+    private final SiteLookupPort            siteLookupPort;
     private final EventDateValidator        eventDateValidator;
-    private final TranslationService        translationService;
 
     @Override
     @Transactional
@@ -48,16 +46,16 @@ public class CreateEventService implements CreateEventUseCase {
         eventDateValidator.validate(request.getStartDate(), request.getFinishDate());
 
         // Validate site exists and seats do not exceed capacity
-        SiteResponse site;
+        SiteSummary site;
         try {
-            site = getSitePort.getSite(Math.toIntExact(request.getSiteId()));
+            site = siteLookupPort.getSite(Math.toIntExact(request.getSiteId()));
         } catch (NotFoundException e) {
             throw new NotFoundException("SITE_NOT_FOUND",
                     "Site not found with id: " + request.getSiteId());
         }
-        if (request.getAvailableSeats() > site.getCapacity()) {
+        if (request.getAvailableSeats() > site.capacity()) {
             throw new BusinessException("SEATS_EXCEED_CAPACITY",
-                    "availableSeats cannot exceed site capacity of " + site.getCapacity());
+                    "availableSeats cannot exceed site capacity of " + site.capacity());
         }
 
         if (eventRepository.existsByEventNameAndStartDateAndSiteId(
@@ -120,7 +118,7 @@ public class CreateEventService implements CreateEventUseCase {
         // Resolve siteName — already fetched during create, re-fetch here for consistency
         String siteName = null;
         try {
-            siteName = getSitePort.getSite(Math.toIntExact(e.getSiteId())).getName();
+            siteName = siteLookupPort.getSite(Math.toIntExact(e.getSiteId())).name();
         } catch (Exception ex) {
             log.warn("Could not resolve siteName for event {}: {}", e.getEventId(), ex.getMessage());
         }

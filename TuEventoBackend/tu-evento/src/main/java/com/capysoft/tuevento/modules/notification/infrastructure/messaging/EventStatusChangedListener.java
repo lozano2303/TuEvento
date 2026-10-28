@@ -2,7 +2,7 @@ package com.capysoft.tuevento.modules.notification.infrastructure.messaging;
 
 import com.capysoft.tuevento.modules.event.domain.event.EventStatusChangedEvent;
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
-import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
+import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationEntityTypes;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
 import lombok.RequiredArgsConstructor;
@@ -46,7 +46,7 @@ public class EventStatusChangedListener {
     private static final String PUBLISHED      = "PUBLISHED";
     private static final String REJECTED       = "REJECTED";
 
-    private final SendNotificationUseCase sendNotificationUseCase;
+    private final NotificationSender notificationSender;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -89,7 +89,7 @@ public class EventStatusChangedListener {
                     .idempotencySuffix(idempotencySuffix)
                     .build();
 
-            sendNotificationUseCase.execute(command);
+            notificationSender.send(command);
 
             log.info("[EventStatusChangedListener] Notification {} sent for eventId={}, organizerId={}",
                     typeName, event.getEventId(), event.getOrganizerId());

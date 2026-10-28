@@ -3,8 +3,7 @@ package com.capysoft.tuevento.modules.section.interfaces.rest;
 import com.capysoft.tuevento.modules.section.application.dto.response.SectionTypeResponse;
 import com.capysoft.tuevento.modules.section.application.port.in.SectionTypeUseCase;
 import com.capysoft.tuevento.modules.section.domain.model.SectionCategory;
-import com.capysoft.tuevento.modules.security.application.port.out.CurrentRolePort;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenVerifier;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,8 +30,7 @@ class SectionTypeControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
-    @MockitoBean private TokenGeneratorPort tokenGenerator;
-    @MockitoBean private CurrentRolePort currentRolePort;
+    @MockitoBean private AccessTokenVerifier accessTokenVerifier;
     @MockitoBean private SectionTypeUseCase sectionTypeUseCase;
 
     @Test

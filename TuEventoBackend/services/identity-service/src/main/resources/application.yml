@@ -1,0 +1,147 @@
+server:
+  port: ${IDENTITY_SERVICE_PORT:8088}
+
+spring:
+  application:
+    name: identity-service
+  # Documento de la solicitud de organizador: mismos límites que el monolito
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+  # Misma base de datos que el monolito: las tablas de usuarios y sesiones, de temas y de perfiles
+  # las crea y migra su Liquibase (también los datos iniciales).
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/tuevento_db}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:postgres}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:postgres}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # Pocas conexiones: comparte el límite de la base con el monolito
+      maximum-pool-size: ${IDENTITY_DB_POOL_SIZE:5}
+  jpa:
+    hibernate:
+      # Falla al arrancar si las entidades no coinciden con las tablas del monolito
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    enabled: false
+  # Avisos en vivo (THEME_UPDATED, LANGUAGE_UPDATED) y peticiones de traducción de la biografía:
+  # el /ws y el motor de traducciones siguen en el monolito, que los atiende desde Kafka
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        # Un broker caído no debe colgar la petición que cambió el tema
+        max.block.ms: 5000
+        request.timeout.ms: 4000
+        delivery.timeout.ms: 9000
+  # Lista de revocación de access tokens que escribe Identidad (la misma instancia de Redis que el monolito)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      # Se consulta en cada petición y falla cerrada: responder 503 rápido en vez de esperar 60 s
+      timeout: ${REDIS_TIMEOUT:2s}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:2s}
+  # Correos de activación, recuperación de contraseña y reactivación de cuenta
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        transport:
+          protocol: smtp
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8088/.well-known/jwks.json}
+
+app:
+  # Cuenta de administrador inicial (se crea al arrancar si no existe; mismas variables que antes el monolito)
+  admin:
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
+    alias: ${ADMIN_ALIAS:admin}
+  # RS256 con la MISMA clave que el monolito: los tokens que firma uno los valida el otro (y el JWKS
+  # que publica el monolito sirve para todos los servicios). Sin clave no arranca: dos claves
+  # distintas harían que los tokens de un lado se rechacen en el otro.
+  jwt:
+    private-key: ${APP_JWT_PRIVATE_KEY:}
+    private-key-path: ${APP_JWT_PRIVATE_KEY_PATH:file:/run/secrets/jwt-private.pem}
+    ephemeral-keys-allowed: false
+    # Secreto HS256 anterior: solo valida tokens emitidos antes del cambio a RS256
+    secret: ${JWT_SECRET:}
+    access-token-expiration: ${APP_JWT_ACCESS_TOKEN_EXPIRATION:900000}       # 15 minutos
+    refresh-token-expiration: ${APP_JWT_REFRESH_TOKEN_EXPIRATION:604800000}  # 7 días
+  auth:
+    refresh-cookie:
+      secure: ${AUTH_COOKIE_SECURE:true}
+      same-site: ${AUTH_COOKIE_SAME_SITE:Strict}
+  mail:
+    from: ${MAIL_USERNAME:}
+  oauth:
+    # URLs exactas a las que se puede devolver el navegador tras el OAuth (evita open redirects)
+    allowed-frontend-redirect-uris: "${APP_OAUTH_ALLOWED_FRONTEND_REDIRECT_URIS:http://localhost:5173/login,http://localhost:3000/login}"
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
+      client-secret: ${GOOGLE_CLIENT_SECRET:}
+      redirect-uri: ${APP_OAUTH_GOOGLE_REDIRECT_URI:http://localhost:8080/api/v1/auth/oauth/google/callback}
+      token-uri: https://oauth2.googleapis.com/token
+      userinfo-uri: https://www.googleapis.com/oauth2/v3/userinfo
+      authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+  profile:
+    # storedFileId del avatar por defecto de los perfiles nuevos (el mismo que usa el monolito)
+    default-avatar-stored-file-id: ${APP_PROFILE_DEFAULT_AVATAR_ID:1}
+    default-language-id: 1
+  # Estado de los trabajos de traducción (GET /internal/..., con X-Internal-Api-Key)
+  monolith:
+    base-url: ${MONOLITH_BASE_URL:http://localhost:8080}
+  internal:
+    api-key: ${INTERNAL_API_KEY:}
+  # Ciudades del perfil (GET /api/v1/geolocation/cities/{id})
+  geolocation:
+    base-url: ${GEOLOCATION_SERVICE_URL:http://localhost:8087}
+    cache-ttl: PT1M
+  localization:
+    # Idiomas activos (GET /api/v1/languages); hoy los sirve el monolito
+    base-url: ${LOCALIZATION_BASE_URL:http://localhost:8080}
+    cache-ttl: ${LOCALIZATION_CACHE_TTL:PT10M}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      # El estado (UP/DOWN) es público para los healthchecks; el detalle, solo autenticado
+      show-details: when-authorized
+
+logging:
+  level:
+    com.capysoft.identity: INFO
+
+# Bloqueo de cuenta tras intentos fallidos (mismo valor que el monolito)
+security:
+  lockout:
+    minutes: ${SECURITY_LOCKOUT_MINUTES:30}
+
+# Límite de intentos en login, registro, activación y recuperación; los contadores viven en el
+# mismo Redis que el monolito, así el límite es único aunque una petición vaya a uno u otro
+rate-limit:
+  auth:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    requests-per-minute: ${RATE_LIMIT_REQUESTS_PER_MINUTE:10}
+    trusted-proxies: ${RATE_LIMIT_TRUSTED_PROXIES:0}

@@ -6,7 +6,7 @@ import com.capysoft.tuevento.modules.event.domain.event.EventRatingUpdatedEvent;
 import com.capysoft.tuevento.modules.event.domain.model.EventRating;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class EditEventRatingService implements EditEventRatingUseCase {
     private final EventRatingRepository     ratingRepository;
     private final EventRepository           eventRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final ProfileJpaRepository      profileJpaRepository;
+    private final UserDirectoryPort         userDirectoryPort;
     private final Clock                     clock;
 
     @Override
@@ -102,8 +102,8 @@ public class EditEventRatingService implements EditEventRatingUseCase {
                 .build());
 
         // ── Resolver nombre del autor ────────────────────────────────────────
-        String authorName = profileJpaRepository.findByUserId(userId.intValue())
-                .map(p -> p.getFullName())
+        String authorName = userDirectoryPort.findUser(userId.intValue())
+                .map(UserDirectoryPort.UserRef::fullName)
                 .orElse("Usuario");
 
         // ── Publicar evento de dominio (AFTER_COMMIT → WebSocket) ────────────

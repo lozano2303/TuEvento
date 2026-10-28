@@ -1,20 +1,20 @@
 package com.capysoft.tuevento.shared.infrastructure.security;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -23,32 +23,66 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.Ordered;
 
-import com.capysoft.tuevento.modules.security.application.port.out.CurrentRolePort;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenVerifier;
+import com.capysoft.tuevento.shared.infrastructure.security.token.JwksAccessTokenVerifier;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import com.capysoft.tuevento.shared.infrastructure.security.token.TokenRevocationPort;
+import com.capysoft.tuevento.shared.infrastructure.security.token.InMemoryTokenRevocationStore;
+import com.capysoft.tuevento.shared.infrastructure.security.token.RedisTokenRevocationStore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final TokenGeneratorPort tokenGenerator;
-    private final CurrentRolePort    currentRolePort;
+    private final ObjectMapper       objectMapper;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(tokenGenerator, currentRolePort);
+    public JwtAuthenticationFilter jwtAuthenticationFilter(AccessTokenVerifier accessTokenVerifier,
+                                                           TokenRevocationPort tokenRevocationPort) {
+        return new JwtAuthenticationFilter(accessTokenVerifier, tokenRevocationPort, objectMapper);
+    }
+
+    /**
+     * Los tokens los firma identity-service; aquí solo se verifican con su clave pública (JWK Set).
+     * Las claves se guardan en caché y se vuelven a pedir si llega un {@code kid} nuevo.
+     */
+    @Bean
+    public AccessTokenVerifier accessTokenVerifier(
+            @Value("${app.identity.jwk-set-uri:http://localhost:8088/.well-known/jwks.json}") String jwkSetUri) {
+        return new JwksAccessTokenVerifier(NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build());
+    }
+
+    /**
+     * Lista de revocación de access tokens. Con Redis configurado (dev, k8s, producción) es Redis
+     * y, si Redis no responde, las peticiones con token se rechazan (fail-closed). Solo sin Redis
+     * configurado, que únicamente ocurre en los tests, se usa una lista en memoria.
+     */
+    @Bean
+    public TokenRevocationPort tokenRevocationPort(ObjectProvider<StringRedisTemplate> redis,
+            ObjectProvider<Clock> clockProvider,
+            @Value("${app.jwt.access-token-expiration:900000}") long accessTokenExpirationMs) {
+        Clock clock = clockProvider.getIfAvailable(Clock::systemUTC);
+        StringRedisTemplate template = redis.getIfAvailable();
+        if (template == null) {
+            log.warn("Redis is not configured: JWT revocation list kept in memory (tests only, not shared across replicas)");
+            return new InMemoryTokenRevocationStore(clock);
+        }
+        return new RedisTokenRevocationStore(template, Duration.ofMillis(accessTokenExpirationMs), clock);
     }
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/auth/**",
-            "/api/v1/geolocation/**",
             "/api/v1/profiles/*/",
             "/api/v1/profiles/user/**",
             "/api/v1/webhooks/**",  // Webhook endpoints — autenticación por HMAC signature
@@ -57,7 +91,8 @@ public class SecurityConfig {
             "/api-docs/**",
             "/v3/api-docs/**",
             "/actuator/**",
-            "/ws/**"   // WebSocket endpoint con SockJS (web + móvil) — autenticación en JwtHandshakeInterceptor
+            "/ws/**",              // WebSocket endpoint con SockJS (web + móvil) — autenticación en JwtHandshakeInterceptor
+            "/.well-known/jwks.json" // JWK Set público — clave pública RSA para verificar JWT
     };
 
     private static final String[] PUBLIC_GET_ENDPOINTS = {
@@ -91,8 +126,42 @@ public class SecurityConfig {
                 .build();
     }
 
+    /**
+     * API interna entre servicios ({@code /internal/**}): solo con la clave de
+     * {@link InternalApiKeyFilter}, nunca con el JWT de un usuario. El gateway no la enruta, pero el
+     * ingress de k8s sí llega al backend, así que la clave es la única barrera.
+     */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(Ordered.HIGHEST_PRECEDENCE + 1)
+    public SecurityFilterChain internalFilterChain(HttpSecurity http,
+            @Value("${app.internal.api-key:}") String internalApiKey) throws Exception {
+        return http
+                .securityMatcher("/internal/**")
+                // CSRF is safe to disable: this chain is stateless and authenticates only with the
+                // X-Internal-Api-Key header, never with cookies, so a browser cannot forge the request.
+                .csrf(AbstractHttpConfigurer::disable) // NOSONAR java:S4502 header-only service auth
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(new InternalApiKeyFilter(internalApiKey), UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, e) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json; charset=UTF-8");
+                            response.getWriter().write("{\"success\":false,\"code\":\"INTERNAL_AUTH_REQUIRED\","
+                                    + "\"message\":\"Internal API key required\"}");
+                        })
+                        .accessDeniedHandler((request, response, e) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json; charset=UTF-8");
+                            response.getWriter().write("{\"success\":false,\"code\":\"FORBIDDEN\","
+                                    + "\"message\":\"Internal API only\"}");
+                        }))
+                .authorizeHttpRequests(auth -> auth.anyRequest().hasAuthority(InternalApiKeyFilter.AUTHORITY))
+                .build();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -121,10 +190,6 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET,
                                 PUBLIC_GET_ENDPOINTS).permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST,
-                                "/api/v1/geolocation/sites").hasAnyAuthority("ADMIN", "ORGANIZER")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT,
-                                "/api/v1/geolocation/sites/**").hasAnyAuthority("ADMIN", "ORGANIZER")
                         .requestMatchers(org.springframework.http.HttpMethod.POST,
                                 "/api/v1/categories/**").hasAuthority("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT,
@@ -199,7 +264,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.POST,
                                 "/api/v1/wallet/adjust").hasAuthority("ADMIN")
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
@@ -218,14 +283,5 @@ public class SecurityConfig {
         return source;
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
-    }
 
-    @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
 }

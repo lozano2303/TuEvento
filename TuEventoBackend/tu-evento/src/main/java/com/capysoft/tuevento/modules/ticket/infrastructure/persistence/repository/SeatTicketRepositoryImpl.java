@@ -1,5 +1,9 @@
 package com.capysoft.tuevento.modules.ticket.infrastructure.persistence.repository;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import com.capysoft.tuevento.modules.ticket.domain.model.OrderStatus;
 import com.capysoft.tuevento.modules.ticket.domain.model.SeatTicket;
 import com.capysoft.tuevento.modules.ticket.domain.repository.SeatTicketRepository;
 import com.capysoft.tuevento.modules.ticket.infrastructure.persistence.entity.SeatTicketEntity;
@@ -52,6 +56,14 @@ public class SeatTicketRepositoryImpl implements SeatTicketRepository {
     @Override
     public Optional<SeatTicket> findBySeatIdAndTicketId(Integer seatId, Long ticketId) {
         return jpaRepository.findBySeatIdAndTicketId(seatId, ticketId).map(this::toDomain);
+    }
+
+    @Override
+    public Set<Integer> findSeatIdsByOrderStatus(Collection<Integer> seatIds, OrderStatus status) {
+        if (seatIds.isEmpty()) {
+            return Set.of();
+        }
+        return new HashSet<>(jpaRepository.findSeatIdsByOrderStatus(seatIds, status));
     }
     
     private SeatTicketEntity toEntity(SeatTicket seatTicket) {

@@ -51,33 +51,36 @@ public class SeatController {
                 seatUseCase.getSeatLog(seatId)));
     }
 
+    // Escrituras: solo el organizador del evento (y en DRAFT); ADMIN solo consulta, igual que en las secciones
     @Operation(summary = "Create a new seat")
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ORGANIZER', 'ADMIN')")
+    @PreAuthorize("hasAuthority('ORGANIZER')")
     public ResponseEntity<ApiResponse<SeatResponse>> create(
-            @Valid @RequestBody CreateSeatRequest request) {
+            @Valid @RequestBody CreateSeatRequest request,
+            @AuthenticationPrincipal SecurityUser principal) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok("Silla creada correctamente",
-                        seatUseCase.createSeat(request)));
+                        seatUseCase.createSeat(request, principal.getUserId().longValue())));
     }
 
-    @Operation(summary = "Update seat status")
+    @Operation(summary = "Mark or unmark a seat as courtesy")
     @PatchMapping("/{seatId}/status")
-    @PreAuthorize("hasAnyAuthority('ORGANIZER', 'ADMIN')")
+    @PreAuthorize("hasAuthority('ORGANIZER')")
     public ResponseEntity<ApiResponse<SeatResponse>> updateStatus(
             @PathVariable Integer seatId,
             @Valid @RequestBody UpdateSeatStatusRequest request,
             @AuthenticationPrincipal SecurityUser principal) {
         return ResponseEntity.ok(ApiResponse.ok("Estado actualizado correctamente",
-                seatUseCase.updateSeatStatus(seatId, request, principal.getUserId())));
+                seatUseCase.updateSeatStatusByOrganizer(seatId, request, principal.getUserId().longValue())));
     }
 
     @Operation(summary = "Delete a seat")
     @DeleteMapping("/{seatId}")
-    @PreAuthorize("hasAnyAuthority('ORGANIZER', 'ADMIN')")
+    @PreAuthorize("hasAuthority('ORGANIZER')")
     public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable Integer seatId) {
-        seatUseCase.deleteSeat(seatId);
+            @PathVariable Integer seatId,
+            @AuthenticationPrincipal SecurityUser principal) {
+        seatUseCase.deleteSeat(seatId, principal.getUserId().longValue());
         return ResponseEntity.ok(ApiResponse.ok("Silla eliminada correctamente"));
     }
 }

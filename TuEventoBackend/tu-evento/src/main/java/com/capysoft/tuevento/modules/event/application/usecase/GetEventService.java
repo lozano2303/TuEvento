@@ -1,5 +1,7 @@
 package com.capysoft.tuevento.modules.event.application.usecase;
 
+import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
+import com.capysoft.tuevento.shared.application.translation.TranslationRequests;
 import com.capysoft.tuevento.modules.category.application.dto.response.CategoryResponse;
 import com.capysoft.tuevento.modules.category.application.port.in.CategoryEventUseCase;
 import com.capysoft.tuevento.modules.event.application.dto.response.EventResponse;
@@ -9,7 +11,7 @@ import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.geolocation.application.port.in.GetSitePort;
+import com.capysoft.tuevento.modules.event.application.port.out.SiteLookupPort;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -26,15 +28,14 @@ public class GetEventService implements GetEventUseCase {
 
     private final EventRepository      eventRepository;
     private final CategoryEventUseCase categoryEventUseCase;
-    private final GetSitePort          getSitePort;
+    private final SiteLookupPort       siteLookupPort;
     private final EventMediaRepository eventMediaRepository;
     private final com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository ticketRepository;
 
     // Translation support
-    private final com.capysoft.tuevento.modules.language.domain.repository.EventTranslationRepository eventTranslationRepository;
-    private final com.capysoft.tuevento.modules.language.domain.repository.LanguageRepository languageRepository;
-    private final com.capysoft.tuevento.modules.language.domain.repository.TranslationJobRepository translationJobRepository;
-    private final com.capysoft.tuevento.modules.language.application.service.TranslationService translationService;
+    private final com.capysoft.tuevento.modules.event.domain.repository.EventTranslationRepository eventTranslationRepository;
+    private final LanguageCatalog languageCatalog;
+    private final TranslationRequests translationRequests;
 
     // ─── Authenticated queries ────────────────────────────────────────────────
 
@@ -142,7 +143,7 @@ public class GetEventService implements GetEventUseCase {
 
         String siteName = null;
         try {
-            siteName = getSitePort.getSite(Math.toIntExact(e.getSiteId())).getName();
+            siteName = siteLookupPort.getSite(Math.toIntExact(e.getSiteId())).name();
         } catch (Exception ex) {
             log.warn("Could not resolve siteName for event {}: {}", e.getEventId(), ex.getMessage());
         }
@@ -173,7 +174,7 @@ public class GetEventService implements GetEventUseCase {
                     log.debug("Requested language is Spanish (source language) - no translation needed for event {}", 
                             e.getEventId());
                 } else {
-                    var language = languageRepository.findByCode(languageCode);
+                    var language = languageCatalog.findByCode(languageCode);
                     if (language.isPresent()) {
                         var translation = eventTranslationRepository.findByEventAndLanguage(
                                 Math.toIntExact(e.getEventId()), language.get().getLanguageId());
@@ -184,40 +185,8 @@ public class GetEventService implements GetEventUseCase {
                             translatedDescription = translation.get().getTranslatedDescription();
                             actualLanguageCode = languageCode;
                         } else {
-                            // Translation doesn't exist - check job status before creating
-                            log.info("Translation not found for event {} language {} - checking job status",
-                                    e.getEventId(), languageCode);
-                            
-                            // Check if job already exists
-                            var existingJob = translationJobRepository.findByEntityAndTargetLanguage(
-                                    "event", Math.toIntExact(e.getEventId()), language.get().getLanguageId());
-                            
-                            if (existingJob.isEmpty() || 
-                                existingJob.get().getStatus() == com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus.FAILED) {
-                                // No job exists or previous job failed - create new translation job
-                                translationService.requestTranslation("event", e.getEventId(), "es");
-                                translationGenerating = true;
-                                log.info("Lazy loading translation job created for event {} -> {}", 
-                                        e.getEventId(), languageCode);
-                            } else {
-                                // Job exists - check its status
-                                var jobStatus = existingJob.get().getStatus();
-                                if (jobStatus == com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus.PENDING || 
-                                    jobStatus == com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus.PROCESSING) {
-                                    translationGenerating = true;
-                                    log.info("Translation job in progress ({}) for event {} -> {}", 
-                                            jobStatus, e.getEventId(), languageCode);
-                                } else if (jobStatus == com.capysoft.tuevento.shared.domain.valueobject.TranslationJobStatus.COMPLETED) {
-                                    // Job completed but no PUBLISHED translation found - this shouldn't happen
-                                    // but let's handle it gracefully by not showing generating indicator
-                                    log.warn("Translation job COMPLETED but no PUBLISHED translation found for event {} -> {}", 
-                                            e.getEventId(), languageCode);
-                                } else {
-                                    // Other status (like FAILED is already handled above)
-                                    log.warn("Translation job status {} for event {} -> {}", 
-                                            jobStatus, e.getEventId(), languageCode);
-                                }
-                            }
+                            translationGenerating = translationRequests.ensureRequested(
+                                    "event", e.getEventId(), language.get().getLanguageId());
                         }
                     }
                 }
@@ -266,7 +235,7 @@ public class GetEventService implements GetEventUseCase {
     private EventSummaryResponse toSummary(Event e) {
         String siteName = null;
         try {
-            siteName = getSitePort.getSite(Math.toIntExact(e.getSiteId())).getName();
+            siteName = siteLookupPort.getSite(Math.toIntExact(e.getSiteId())).name();
         } catch (Exception ex) {
             log.warn("Could not resolve siteName for event {}: {}", e.getEventId(), ex.getMessage());
         }

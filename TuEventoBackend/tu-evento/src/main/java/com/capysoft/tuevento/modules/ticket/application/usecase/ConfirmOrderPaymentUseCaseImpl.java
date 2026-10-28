@@ -6,9 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.capysoft.tuevento.modules.seat.application.dto.request.UpdateSeatStatusRequest;
 import com.capysoft.tuevento.modules.seat.application.port.in.SeatUseCase;
-import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 import com.capysoft.tuevento.modules.ticket.application.port.in.ConfirmOrderPaymentUseCase;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.model.OrderNotFoundException;
@@ -67,15 +65,12 @@ public class ConfirmOrderPaymentUseCaseImpl implements ConfirmOrderPaymentUseCas
             ticketLogRepository.save(log);
         }
         
-        // Marcar sillas como SOLD
+        // Marcar sillas como SOLD a nombre del comprador: si alguna la tomó otra persona mientras
+        // tanto, falla y se deshace toda la confirmación (no se entrega dos veces la misma silla)
         for (Ticket ticket : tickets) {
             List<SeatTicket> seatTickets = seatTicketRepository.findByTicketId(ticket.getTicketId());
             for (SeatTicket seatTicket : seatTickets) {
-                UpdateSeatStatusRequest seatStatusRequest = UpdateSeatStatusRequest.builder()
-                    .newStatus(SeatStatus.SOLD)
-                    .reason("Payment confirmed: " + providerPaymentId)
-                    .build();
-                seatUseCase.updateSeatStatus(seatTicket.getSeatId(), seatStatusRequest, null);
+                seatUseCase.sellSeat(seatTicket.getSeatId(), order.getUserId(), "Payment confirmed: " + providerPaymentId);
             }
         }
     }

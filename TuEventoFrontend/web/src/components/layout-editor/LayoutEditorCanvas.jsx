@@ -10,9 +10,12 @@ import {
 } from './layoutEditorUtils';
 
 const GRID_SIZE          = 20;
-const ZOOM_MIN           = 0.2;
-const ZOOM_MAX           = 3;
-const ZOOM_STEP          = 0.1;
+// Zoom multiplicativo: cada paso acerca o aleja un 15 %, parejo en cualquier nivel.
+// El mínimo es bajo para poder ver completos layouts con decenas de miles de sillas.
+const ZOOM_MIN           = 0.02;
+const ZOOM_MAX           = 4;
+const ZOOM_FACTOR        = 1.15;
+const clampZoom = (z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +z.toFixed(3)));
 const FIT_MARGIN         = 40;
 const SNAP_THRESHOLD     = 6;
 const GUIDE_COLOR        = '#FF4D8F';
@@ -115,13 +118,13 @@ export default function LayoutEditorCanvas({
     const pointer  = stage.getPointerPosition();
     const mpt = { x: (pointer.x - stage.x()) / oldScale, y: (pointer.y - stage.y()) / oldScale };
     const dir = e.evt.deltaY < 0 ? 1 : -1;
-    const ns  = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, +(oldScale + dir * ZOOM_STEP).toFixed(2)));
+    const ns  = clampZoom(dir > 0 ? oldScale * ZOOM_FACTOR : oldScale / ZOOM_FACTOR);
     onZoomChange(ns);
     setStagePos({ x: pointer.x - mpt.x * ns, y: pointer.y - mpt.y * ns });
   }, [zoom, onZoomChange]);
 
   const handleZoomIn = useCallback(() => {
-    const next = Math.min(ZOOM_MAX, +(zoom + ZOOM_STEP).toFixed(2));
+    const next = clampZoom(zoom * ZOOM_FACTOR);
     onZoomChange(next);
     const sw = containerRef?.current?.clientWidth  ?? 800;
     const sh = containerRef?.current?.clientHeight ?? 600;
@@ -132,7 +135,7 @@ export default function LayoutEditorCanvas({
   }, [zoom, onZoomChange, containerRef]);
 
   const handleZoomOut = useCallback(() => {
-    const next = Math.max(ZOOM_MIN, +(zoom - ZOOM_STEP).toFixed(2));
+    const next = clampZoom(zoom / ZOOM_FACTOR);
     onZoomChange(next);
     const sw = containerRef?.current?.clientWidth  ?? 800;
     const sh = containerRef?.current?.clientHeight ?? 600;
@@ -151,8 +154,7 @@ export default function LayoutEditorCanvas({
       minX = Math.min(minX, el.x); minY = Math.min(minY, el.y);
       maxX = Math.max(maxX, el.x + el.width); maxY = Math.max(maxY, el.y + el.height);
     }
-    const ns = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN,
-      +(Math.min((sw - FIT_MARGIN * 2) / (maxX - minX), (sh - FIT_MARGIN * 2) / (maxY - minY))).toFixed(2)));
+    const ns = clampZoom(Math.min((sw - FIT_MARGIN * 2) / (maxX - minX), (sh - FIT_MARGIN * 2) / (maxY - minY)));
     onZoomChange(ns);
     setStagePos({ x: (sw - (maxX - minX) * ns) / 2 - minX * ns, y: (sh - (maxY - minY) * ns) / 2 - minY * ns });
   }, [elements, onZoomChange, containerRef]);
@@ -814,6 +816,7 @@ export default function LayoutEditorCanvas({
               onGroupDragEnd:   isMulti ? handleGroupDragEnd   : undefined,
               canvasSize,
               canvasSizeRef,
+              zoom,
             };
 
             if (el.type === 'section') {
@@ -879,6 +882,7 @@ export default function LayoutEditorCanvas({
                 onClearCurve={handleClearCurve}
                 onVertexGuideChange={handleVertexGuideChange}
                 otherElements={elements.filter((e) => e.id !== editingPolygonId)}
+                zoom={zoom}
               />
             );
           })()}

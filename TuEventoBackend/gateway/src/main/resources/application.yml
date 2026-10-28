@@ -1,0 +1,184 @@
+server:
+  port: ${GATEWAY_PORT:8090}
+
+spring:
+  application:
+    name: tuevento-gateway
+
+  # ── Redis (rate limiting futuro) ───────────────────────────────────────────
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  # ── Cloud Gateway routes ───────────────────────────────────────────────────
+  cloud:
+    gateway:
+      # Spring Cloud Gateway 4.3: las propiedades viven bajo server.webflux (las antiguas,
+      # sin este prefijo, se traducían en parte y default-filters se ignoraba)
+      server:
+        webflux:
+          # Los frontends no cambian ninguna URL: el gateway preserva /api/v1/* y /ws/*
+          # exactamente como los recibe, y los reenvía al monolito (o al microservicio
+          # correspondiente en fases posteriores).
+          routes:
+
+            # ── WebSocket (STOMP) ────────────────────────────────────────────────
+            # Debe ir ANTES que las rutas HTTP porque SockJS usa /ws/info (GET)
+            # y /ws/<session>/<token>/websocket (Upgrade). Si el matcher HTTP
+            # captura /ws/**, el handshake WS nunca llega.
+            - id: websocket
+              uri: ${MONOLITH_URI:http://localhost:8080}
+              predicates:
+                - Path=/ws/**
+              filters:
+                - RewritePath=/ws/(?<segment>.*), /ws/${segment}
+              metadata:
+                connect-timeout: 5000
+                # -1 desactiva el límite: una conexión WebSocket dura lo que dure la sesión
+                # (0 significa un límite de 0 ms y el handshake de SockJS daba 504)
+                response-timeout: -1
+
+            # ── JWKS público del servicio Identidad ──────────────────────────────
+            - id: jwks
+              uri: ${IDENTITY_SERVICE_URI:http://localhost:8088}
+              predicates:
+                - Path=/.well-known/jwks.json
+              filters:
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
+
+            # ── Microservicio de Archivos/Storage (PRIMERA EXTRACCIÓN) ───────────
+            # Más específico: debe ir ANTES que monolith. Los frontends siguen
+            # llamando a /api/v1/storage/** exactamente igual.
+            # STORAGE_SERVICE_URI apunta al microservicio (comparte la BD y el bucket del monolito).
+            # Sin la variable, la ruta vuelve al monolito: es la vuelta atrás.
+            - id: storage-service
+              uri: ${STORAGE_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
+              predicates:
+                - Path=/api/v1/storage/**
+              filters:
+                - PreserveHostHeader
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
+              metadata:
+                connect-timeout: 5000
+                # Una subida pasa por la moderación de imágenes (NSFW en CPU + Sightengine): en frío
+                # tarda más de 30 s. Mismo margen que el proxy de nginx que la atendía antes.
+                response-timeout: 120000
+
+            # ── Microservicio de notificaciones ─────────────────────────────────
+            # Bandeja in-app (GET /me, /me/unread-count, PATCH /{id}/read, /me/read-all).
+            # NOTIFICATION_SERVICE_URI apunta al microservicio; sin la variable vuelve al monolito.
+            # El envío lo decide NOTIFICATION_MODE del monolito (local | remote), no esta ruta.
+            - id: notification-service
+              uri: ${NOTIFICATION_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
+              predicates:
+                - Path=/api/v1/notifications/**
+              filters:
+                - PreserveHostHeader
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
+              metadata:
+                connect-timeout: 5000
+                response-timeout: 30000
+
+            # ── Microservicio de geolocalización ────────────────────────────────
+            # Departamentos, ciudades y sedes. Solo los sirve el microservicio: el monolito ya no
+            # tiene módulo de geolocalización, así que no hay vuelta atrás al monolito.
+            - id: geolocation-service
+              uri: ${GEOLOCATION_SERVICE_URI:http://localhost:8087}
+              predicates:
+                - Path=/api/v1/geolocation/**
+              filters:
+                - PreserveHostHeader
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
+              metadata:
+                connect-timeout: 5000
+                response-timeout: 30000
+
+            # Catálogo de idiomas: también es del servicio de localización (misma tabla language
+            # que lee el monolito). El monolito aún tiene el controlador, pero ya no le llega tráfico.
+            - id: localization-languages
+              uri: ${GEOLOCATION_SERVICE_URI:http://localhost:8087}
+              predicates:
+                - Path=/api/v1/languages,/api/v1/languages/**,/api/v1/admin/languages,/api/v1/admin/languages/**
+              filters:
+                - PreserveHostHeader
+              metadata:
+                connect-timeout: 5000
+                response-timeout: 30000
+
+            # ── Microservicio de Identidad ──────────────────────────────────────
+            # Login, registro, sesiones, contraseñas, OAuth y la cuenta del usuario; solicitudes de
+            # organizador y panel de admin (estadísticas, pendientes, solicitudes, revocación,
+            # actividad y usuarios); temas y paletas; perfiles y sus traducciones. El resto de
+            # /api/v1/admin/** (eventos, reembolsos, billetera, traducciones) y el JWKS siguen en el monolito.
+            # Solo los sirve el microservicio: el monolito ya no tiene los módulos de Identidad.
+            - id: identity-service
+              uri: ${IDENTITY_SERVICE_URI:http://localhost:8088}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/change-password,/api/v1/users/oauth/link,/api/v1/users/me,/api/v1/users/organizer-request,/api/v1/users/organizer-petition,/api/v1/admin/stats,/api/v1/admin/pending-counts,/api/v1/admin/organizer-requests,/api/v1/admin/organizer-requests/**,/api/v1/admin/organizer-users/**,/api/v1/admin/activity,/api/v1/admin/users,/api/v1/themes,/api/v1/themes/**,/api/v1/profiles,/api/v1/profiles/**,/api/v1/admin/profile-translations/**
+              filters:
+                - PreserveHostHeader
+                # Explícito en la ruta (no solo en default-filters): el dedupe no debe aplicarse a /ws
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
+              metadata:
+                connect-timeout: 5000
+                response-timeout: 30000
+
+            # ── API REST principal ────────────────────────────────────────────────
+            # Captura todo /api/v1/** y lo reenvía al monolito sin modificar la ruta.
+            # En Fases 1-5 se irán añadiendo rutas específicas ANTES de esta.
+            - id: monolith
+              uri: ${MONOLITH_URI:http://localhost:8080}
+              predicates:
+                - Path=/api/v1/**
+              filters:
+                # Conserva el Host original. X-Forwarded-For se reenvía tal cual (sin trusted-proxies
+                # el gateway no añade entrada): ver RATE_LIMIT_TRUSTED_PROXIES en docker-compose.prod.yml
+                - PreserveHostHeader
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
+              metadata:
+                connect-timeout: 5000
+                # Mismo límite que tenía nginx (60 s por defecto) antes de existir el gateway: la
+                # subida de imágenes de eventos sigue aquí y también pasa por la moderación
+                response-timeout: 60000
+
+          # Configuración global de timeout y HTTP/2
+          httpclient:
+            connect-timeout: 5000
+            response-timeout: 60s
+            pool:
+              max-connections: 500
+              acquire-timeout: 45000
+
+          # CORS global — los frontends apuntan al gateway
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origin-patterns: ${GATEWAY_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:19000}
+                allowed-methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+                allowed-headers: ['*']
+                exposed-headers: [Retry-After]
+                allow-credentials: true
+                max-age: 3600
+
+          # El monolito también añade cabeceras CORS: sin DedupeResponseHeader el navegador recibiría
+          # Access-Control-Allow-Origin dos veces y rechazaría la respuesta. Va en cada ruta HTTP y
+          # no en default-filters: en /ws las cabeceras ya están confirmadas tras el 101 (son de solo
+          # lectura), el filtro lanzaba UnsupportedOperationException y cortaba la conexión STOMP.
+
+# ── Actuator ──────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      # El estado (UP/DOWN) es público para los healthchecks; el detalle, solo autenticado
+      show-details: when-authorized
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  level:
+    org.springframework.cloud.gateway: ${GATEWAY_LOG_LEVEL:INFO}
+    reactor.netty: WARN
