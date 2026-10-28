@@ -89,7 +89,8 @@
         "editor": "Éditeur visuel",
         "secure": "Sécurisé",
         "available": "Disponible"
-      }
+      },
+      "becomeOrganizer": "Devenir organisateur"
     },
     "heroCard": {
       "editor": {

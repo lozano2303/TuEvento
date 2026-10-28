@@ -64,7 +64,8 @@
         "editor": "Editor visual",
         "secure": "Seguro",
         "available": "Disponible"
-      }
+      },
+      "becomeOrganizer": "Ser organizador"
     },
     "heroCard": {
       "editor": {
