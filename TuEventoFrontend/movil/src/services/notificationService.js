@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { httpRequest } from "./httpClient";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -21,7 +22,7 @@ export const getUserNotifications = async ({ unreadOnly = false, page = 0, size 
     size: size.toString(),
     unreadOnly: unreadOnly.toString(),
   });
-  const response = await fetch(`${BASE_URL}/notifications/me?${params}`, {
+  const response = await httpRequest(`${BASE_URL}/notifications/me?${params}`, {
     headers: await authHeaders(),
   });
   const json = await response.json();
@@ -34,7 +35,7 @@ export const getUserNotifications = async ({ unreadOnly = false, page = 0, size 
  * PATCH /api/v1/notifications/{notificationUserId}/read
  */
 export const markAsRead = async (notificationUserId) => {
-  const response = await fetch(`${BASE_URL}/notifications/${notificationUserId}/read`, {
+  const response = await httpRequest(`${BASE_URL}/notifications/${notificationUserId}/read`, {
     method: "PATCH",
     headers: await authHeaders(),
   });
@@ -48,7 +49,7 @@ export const markAsRead = async (notificationUserId) => {
  * PATCH /api/v1/notifications/me/read-all
  */
 export const markAllAsRead = async () => {
-  const response = await fetch(`${BASE_URL}/notifications/me/read-all`, {
+  const response = await httpRequest(`${BASE_URL}/notifications/me/read-all`, {
     method: "PATCH",
     headers: await authHeaders(),
   });

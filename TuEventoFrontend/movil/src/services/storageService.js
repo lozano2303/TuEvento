@@ -1,16 +1,18 @@
+import { httpRequest } from "./httpClient";
+
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
-export const getFileUrl = async (fileId, accessToken) => {
-  const response = await fetch(`${BASE_URL}/storage/${fileId}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+// El parámetro accessToken se conserva por compatibilidad: httpRequest usa siempre el token
+// guardado y lo renueva si expiró (antes un token vencido daba "sesión requerida" al subir).
+export const getFileUrl = async (fileId, _accessToken) => {
+  const response = await httpRequest(`${BASE_URL}/storage/${fileId}`);
   const json = await response.json();
   if (!json.success) throw new Error(json.message);
   const url = json.data.publicUrl.replace("localhost", process.env.EXPO_PUBLIC_MINIO_HOST ?? "localhost");
   return url;
 };
 
-export const uploadFile = async (imageUri, categoryCode, accessToken) => {
+export const uploadFile = async (imageUri, categoryCode, _accessToken) => {
   const filename = imageUri.split("/").pop();
   const match = /\.(\w+)$/.exec(filename);
   const mimeType = match ? `image/${match[1].toLowerCase()}` : "image/jpeg";
@@ -19,9 +21,8 @@ export const uploadFile = async (imageUri, categoryCode, accessToken) => {
   formData.append("file", { uri: imageUri, name: filename, type: mimeType });
   formData.append("categoryCode", categoryCode);
 
-  const response = await fetch(`${BASE_URL}/storage/upload`, {
+  const response = await httpRequest(`${BASE_URL}/storage/upload`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}` },
     body: formData,
   });
   const json = await response.json();
