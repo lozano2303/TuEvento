@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-28
+
+### Added — feat(web): legal pages and about page (#185)
+
+### Changed — feat(frontend): Spanish by default and comment author avatars (#184)
+
+- Web and mobile start in Spanish; event comments show the author's avatar (resolved by the backend and sent with the comment and its WebSocket updates)
+
+### Fixed — fix(web): Google sign-in works in Chrome (#187)
+
+- The real Google Identity Services button was rendered invisible on top of a custom one; Chrome ignores clicks on a Google button it cannot see (anti-clickjacking visibility check), so sign-in only worked in Firefox. The official button is now shown as is: dark theme, centered, card width and page language
+
+### Deployment notes
+
+- `docker-compose.prod.yml` did not change: only update `TUEVENTO_VERSION`
+- Rebuild the backend and frontend images; the other seven can be retagged from `v1.1.1`
+- The mobile changes reach users with the next EAS build
+
 ## [1.1.1] - 2026-10-28
 
 ### Changed — refactor(storage): the monolith no longer has a storage module (#176)
