@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.event.infrastructure.websocket;
 
 import com.capysoft.tuevento.modules.event.domain.event.EventRatingAddedEvent;
 import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
+import com.capysoft.tuevento.modules.event.application.service.CommentAuthorAvatars;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,7 @@ class EventCommentWebSocketListenerTest {
 
     @Mock private SimpMessagingTemplate messagingTemplate;
     @Mock private UserDirectoryPort  userDirectoryPort;
+    @Mock private CommentAuthorAvatars   commentAuthorAvatars;
 
     @InjectMocks
     private EventCommentWebSocketListener listener;
@@ -104,6 +106,21 @@ class EventCommentWebSocketListenerTest {
             ArgumentCaptor<Map<String, Object>> cap = ArgumentCaptor.forClass(Map.class);
             verify(messagingTemplate).convertAndSend(anyString(), cap.capture());
             assertThat(cap.getValue().get("authorName")).isEqualTo("Usuario");
+        }
+
+        @Test
+        @DisplayName("payload incluye la foto de perfil del autor")
+        void author_avatar_in_payload() {
+            UserDirectoryPort.UserRef author = new UserDirectoryPort.UserRef(USER_ID.intValue(), "Carlos Org", null, 9);
+            when(userDirectoryPort.findUser(USER_ID.intValue())).thenReturn(Optional.of(author));
+            when(commentAuthorAvatars.of(author)).thenReturn("https://cdn/carlos.jpg");
+
+            listener.onEventRatingAdded(event(4, false));
+
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<Map<String, Object>> cap = ArgumentCaptor.forClass(Map.class);
+            verify(messagingTemplate).convertAndSend(anyString(), cap.capture());
+            assertThat(cap.getValue().get("authorAvatarUrl")).isEqualTo("https://cdn/carlos.jpg");
         }
     }
 

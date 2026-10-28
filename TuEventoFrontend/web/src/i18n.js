@@ -1,6 +1,5 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 
 import es from './locales/es.json';
 import en from './locales/en.json';
@@ -15,8 +14,9 @@ const LANGUAGE_CODE_MAP = {
   'pt': 'pt',
 };
 
+// La app arranca siempre en español (sin detectar el idioma del navegador ni recordar el de la
+// sesión anterior); el usuario lo cambia durante la sesión con el selector.
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources: {
@@ -25,16 +25,11 @@ i18n
       fr: { translation: fr },
       pt: { translation: pt },
     },
+    lng: 'es',
     fallbackLng: 'es',
     debug: false,
     interpolation: {
       escapeValue: false, // React already escapes
-    },
-    detection: {
-      // Orden de detección: localStorage > navegador
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
-      lookupLocalStorage: 'i18nextLng',
     },
   });
 

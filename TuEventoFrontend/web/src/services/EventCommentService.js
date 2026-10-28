@@ -18,7 +18,7 @@
  *   C  — Borrar un principal borra sus respuestas.
  *
  * Payload del GET (lista plana):
- *   { ratingId, userId, authorName, rating (nullable), comment, isVisible,
+ *   { ratingId, userId, authorName, authorAvatarUrl (nullable), rating (nullable), comment, isVisible,
  *     isOrganizer, createdAt, editedAt (nullable), parentRatingId (nullable) }
  */
 import { httpRequest } from './httpClient.js';

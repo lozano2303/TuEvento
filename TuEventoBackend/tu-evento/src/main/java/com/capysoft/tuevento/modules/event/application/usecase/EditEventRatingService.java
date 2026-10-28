@@ -7,6 +7,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventRating;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
+import com.capysoft.tuevento.modules.event.application.service.CommentAuthorAvatars;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,7 @@ public class EditEventRatingService implements EditEventRatingUseCase {
     private final EventRepository           eventRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final UserDirectoryPort         userDirectoryPort;
+    private final CommentAuthorAvatars commentAuthorAvatars;
     private final Clock                     clock;
 
     @Override
@@ -101,10 +103,10 @@ public class EditEventRatingService implements EditEventRatingUseCase {
                 .parentRatingId(existing.getParentRatingId())
                 .build());
 
-        // ── Resolver nombre del autor ────────────────────────────────────────
-        String authorName = userDirectoryPort.findUser(userId.intValue())
-                .map(UserDirectoryPort.UserRef::fullName)
-                .orElse("Usuario");
+        // ── Resolver nombre y foto del autor ─────────────────────────────────
+        UserDirectoryPort.UserRef author = userDirectoryPort.findUser(userId.intValue()).orElse(null);
+        String authorName = author != null && author.fullName() != null ? author.fullName() : "Usuario";
+        String authorAvatarUrl = commentAuthorAvatars.of(author);
 
         // ── Publicar evento de dominio (AFTER_COMMIT → WebSocket) ────────────
         // Payload con la MISMA forma que un elemento del GET /ratings.
@@ -113,6 +115,7 @@ public class EditEventRatingService implements EditEventRatingUseCase {
                 .eventId(eventId)
                 .userId(updated.getUserId())
                 .authorName(authorName)
+                .authorAvatarUrl(authorAvatarUrl)
                 .rating(updated.getRating())
                 .comment(updated.getComment())
                 .isVisible(updated.getIsVisible())
@@ -128,6 +131,7 @@ public class EditEventRatingService implements EditEventRatingUseCase {
                 .ratingId(updated.getRatingId())
                 .userId(updated.getUserId())
                 .authorName(authorName)
+                .authorAvatarUrl(authorAvatarUrl)
                 .rating(updated.getRating())
                 .comment(updated.getComment())
                 .isVisible(updated.getIsVisible())

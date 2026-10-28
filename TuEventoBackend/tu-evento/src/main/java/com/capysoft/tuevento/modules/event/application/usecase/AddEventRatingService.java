@@ -10,6 +10,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
+import com.capysoft.tuevento.modules.event.application.service.CommentAuthorAvatars;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,7 @@ public class AddEventRatingService implements AddEventRatingUseCase {
     private final EventRatingRepository     ratingRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final UserDirectoryPort         userDirectoryPort;
+    private final CommentAuthorAvatars commentAuthorAvatars;
     private final Clock                     clock;
 
     @Override
@@ -174,10 +176,10 @@ public class AddEventRatingService implements AddEventRatingUseCase {
                 .replyToUserName(replyToUserName)
                 .build());
 
-        // ── Resolver nombre del autor ────────────────────────────────────────
-        String authorName = userDirectoryPort.findUser(userId.intValue())
-                .map(UserDirectoryPort.UserRef::fullName)
-                .orElse("Usuario");
+        // ── Resolver nombre y foto del autor ─────────────────────────────────
+        UserDirectoryPort.UserRef author = userDirectoryPort.findUser(userId.intValue()).orElse(null);
+        String authorName = author != null && author.fullName() != null ? author.fullName() : "Usuario";
+        String authorAvatarUrl = commentAuthorAvatars.of(author);
 
         // ── Publicar evento de dominio (AFTER_COMMIT → WebSocket) ────────────
         eventPublisher.publishEvent(EventRatingAddedEvent.builder()
@@ -198,6 +200,7 @@ public class AddEventRatingService implements AddEventRatingUseCase {
                 .ratingId(saved.getRatingId())
                 .userId(saved.getUserId())
                 .authorName(authorName)
+                .authorAvatarUrl(authorAvatarUrl)
                 .rating(saved.getRating())
                 .comment(saved.getComment())
                 .isVisible(saved.getIsVisible())
