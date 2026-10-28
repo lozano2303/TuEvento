@@ -26,7 +26,7 @@
 import { clearAccessToken, getAccessToken, setAccessToken } from './tokenStore.js';
 import { disableGoogleAutoSelect } from './googleIdentity.js';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8090/api/v1';
 
 // El backend pone el refresh token en una cookie httpOnly cuando recibe esta cabecera
 export const AUTH_MODE_HEADERS = { 'X-Auth-Mode': 'cookie' };

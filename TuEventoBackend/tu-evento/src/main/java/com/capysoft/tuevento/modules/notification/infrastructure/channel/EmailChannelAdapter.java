@@ -10,9 +10,7 @@ import com.capysoft.tuevento.modules.notification.domain.model.Notification;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationChannelNames;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationUser;
 import com.capysoft.tuevento.modules.notification.domain.repository.NotificationUserRepository;
-import com.capysoft.tuevento.modules.profile.domain.model.Profile;
-import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
-import com.capysoft.tuevento.modules.security.domain.repository.LoginCredentialsRepository;
+import com.capysoft.tuevento.modules.notification.application.port.out.RecipientDirectoryPort;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,8 +44,7 @@ public class EmailChannelAdapter implements NotificationChannelPort {
     private static final long TRANSLATION_POLL_INTERVAL_MS = 3000; // 3 segundos
 
     private final NotificationUserRepository notificationUserRepository;
-    private final LoginCredentialsRepository loginCredentialsRepository;
-    private final ProfileRepository profileRepository;
+    private final RecipientDirectoryPort recipientDirectoryPort;
     private final NotificationTranslationRepository notificationTranslationRepository;
     private final LanguageCatalog languageCatalog;
     private final JavaMailSender mailSender;
@@ -88,23 +85,18 @@ public class EmailChannelAdapter implements NotificationChannelPort {
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     protected Map<Integer, UserData> loadUserData(List<Integer> userIds) {
         Map<Integer, UserData> result = new HashMap<>();
-        
-        for (Integer userId : userIds) {
-            try {
-                String email = loginCredentialsRepository.findEmailByUserId(userId).orElse(null);
-                
-                Optional<Profile> profileOpt = profileRepository.findByUserId(userId);
-                Long preferredLanguageId = null;
-                if (profileOpt.isPresent() && profileOpt.get().getPreferredLanguageId() != null) {
-                    preferredLanguageId = profileOpt.get().getPreferredLanguageId();
-                }
-                
-                result.put(userId, new UserData(email, preferredLanguageId));
-            } catch (Exception e) {
-                log.error("Failed to load user data for userId={}: {}", userId, e.getMessage());
+        try {
+            // Todos los destinatarios en una sola consulta
+            Map<Integer, RecipientDirectoryPort.Recipient> recipients = recipientDirectoryPort.findRecipients(userIds);
+            for (Integer userId : userIds) {
+                RecipientDirectoryPort.Recipient r = recipients.get(userId);
+                result.put(userId, r == null
+                        ? new UserData(null, null)
+                        : new UserData(r.email(), r.preferredLanguageId()));
             }
+        } catch (Exception e) {
+            log.error("Failed to load user data for userIds={}: {}", userIds, e.getMessage());
         }
-        
         return result;
     }
     

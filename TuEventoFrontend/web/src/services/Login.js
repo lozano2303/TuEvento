@@ -3,7 +3,7 @@
 import { AUTH_MODE_HEADERS, httpRequest } from './httpClient.js';
 import { throwIfRateLimited } from '../utils/rateLimit.js';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8090/api/v1';
 
 // Función para iniciar sesión
 export const loginUser = async (email, password) => {

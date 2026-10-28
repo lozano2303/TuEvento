@@ -239,6 +239,7 @@ services:
     volumes:
       - ./TuEventoBackend/tu-evento/src/main/resources/keys:/run/secrets:ro
     environment:
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
@@ -374,6 +375,9 @@ services:
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - JWK_SET_URI=http://backend:8080/.well-known/jwks.json
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       # Mismo proveedor y bucket que el backend: los dos leen y escriben los mismos objetos
       - STORAGE_PROVIDER=${STORAGE_PROVIDER:-minio}
       - APP_STORAGE_ENDPOINT=http://minio:9000
@@ -389,6 +393,8 @@ services:
       - SIGHTENGINE_API_USER=${SIGHTENGINE_API_USER}
       - SIGHTENGINE_API_SECRET=${SIGHTENGINE_API_SECRET}
     depends_on:
+      redis:
+        condition: service_started
       postgres:
         condition: service_started
       minio:
@@ -421,11 +427,16 @@ services:
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - JWK_SET_URI=http://backend:8080/.well-known/jwks.json
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
       - NOTIFICATION_EMAIL_ENABLED=${NOTIFICATION_EMAIL_ENABLED:-true}
     depends_on:
+      redis:
+        condition: service_started
       postgres:
         condition: service_started
       kafka:
@@ -462,7 +473,12 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - TRANSLATION_LIBRETRANSLATE_BASE_URL=http://libretranslate:5000
       - TRANSLATION_PROTECTED_TERMS=${TRANSLATION_PROTECTED_TERMS:-Tu Evento}
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     depends_on:
+      redis:
+        condition: service_started
       postgres:
         condition: service_started
       kafka:

@@ -1,6 +1,13 @@
 package com.capysoft.geolocation.infrastructure.security;
 
+import com.capysoft.common.infrastructure.security.RedisTokenRevocationChecker;
+import com.capysoft.common.infrastructure.security.RevocationAwareAuthenticationEntryPoint;
+import com.capysoft.common.infrastructure.security.RevocationCheckingJwtDecoder;
 import com.capysoft.common.infrastructure.security.SecurityUser;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -37,9 +44,23 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
+                        // 503 (no 401) si la lista de revocación no responde: fail-closed sin cerrar la sesión del cliente
+                        .authenticationEntryPoint(new RevocationAwareAuthenticationEntryPoint())
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(SecurityConfig::toAuthentication))
                 );
         return http.build();
+    }
+
+    /**
+     * Valida la firma con el JWKS de Identidad y después la lista de revocación de Redis: un token
+     * con el rol revocado, cerrado con logout o de una cuenta desactivada deja de valer aquí en el
+     * acto, igual que en el monolito.
+     */
+    @Bean
+    public JwtDecoder jwtDecoder(@Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}") String jwkSetUri,
+                                 StringRedisTemplate redis) {
+        return new RevocationCheckingJwtDecoder(NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build(),
+                new RedisTokenRevocationChecker(redis));
     }
 
     /**

@@ -197,6 +197,31 @@ class JwtTokenGeneratorTest {
         assertThat(fromEnv.isTokenValid(fromEnv.generateAccessToken(1, "u", "USER"))).isTrue();
     }
 
+    @Test
+    @DisplayName("extractMetadata da jti, emisión en ms (iatMs) y expiración del access token")
+    void extractMetadata_accessToken() {
+        long before = System.currentTimeMillis();
+        String token = generator.generateAccessToken(7, "ana", "ORGANIZER");
+        long after = System.currentTimeMillis();
+
+        var metadata = generator.extractMetadata(token).orElseThrow();
+
+        assertThat(metadata.tokenId()).isNotBlank();
+        assertThat(metadata.issuedAt().toEpochMilli()).isBetween(before, after);
+        assertThat(metadata.expiresAt().toEpochMilli() - metadata.issuedAt().toEpochMilli())
+                .isBetween(899_000L, 900_000L);
+    }
+
+    @Test
+    @DisplayName("extractMetadata cae a iat (segundos) en tokens sin iatMs y está vacío si el token no vale")
+    void extractMetadata_legacyAndInvalid() {
+        String refresh = generator.generateRefreshToken(7);
+
+        var metadata = generator.extractMetadata(refresh).orElseThrow();
+        assertThat(metadata.issuedAt().toEpochMilli() % 1000).isZero();
+        assertThat(generator.extractMetadata("not-a-jwt")).isEmpty();
+    }
+
     private static JwtTokenGenerator generatorWithMissingKey(boolean ephemeralAllowed) {
         JwtTokenGenerator g = new JwtTokenGenerator();
         ReflectionTestUtils.setField(g, "privateKeyResource", new ClassPathResource("keys/does-not-exist.pem"));

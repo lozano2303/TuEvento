@@ -14,12 +14,12 @@ public class OrganizerRoleRevocationRepositoryImpl implements OrganizerRoleRevoc
     private final OrganizerRoleRevocationJpaRepository jpaRepository;
 
     @Override
-    public void record(Integer userId, Integer revokedBy, String reason) {
-        jpaRepository.save(OrganizerRoleRevocationEntity.builder()
+    public Long record(Integer userId, Integer revokedBy, String reason) {
+        return jpaRepository.save(OrganizerRoleRevocationEntity.builder()
                 .userId(userId)
                 .revokedBy(revokedBy)
                 .reason(reason)
                 .createdAt(LocalDateTime.now())
-                .build());
+                .build()).getRevocationId();
     }
 }

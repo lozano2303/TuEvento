@@ -7,7 +7,7 @@ import com.capysoft.tuevento.modules.notification.application.dto.SendNotificati
 import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationEntityTypes;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.tuevento.modules.notification.application.port.out.RecipientDirectoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -44,14 +44,14 @@ public class EventRatingNotificationListener {
 
     private final NotificationSender notificationSender;
     private final EventRepository         eventRepository;
-    private final ProfileJpaRepository    profileJpaRepository;
+    private final RecipientDirectoryPort  recipientDirectoryPort;
 
     public EventRatingNotificationListener(NotificationSender notificationSender,
                                           EventRepository eventRepository,
-                                          ProfileJpaRepository profileJpaRepository) {
+                                          RecipientDirectoryPort recipientDirectoryPort) {
         this.notificationSender = notificationSender;
         this.eventRepository = eventRepository;
-        this.profileJpaRepository = profileJpaRepository;
+        this.recipientDirectoryPort = recipientDirectoryPort;
     }
 
     @Async
@@ -69,8 +69,8 @@ public class EventRatingNotificationListener {
             String eventName     = parentEvent.getEventName();
 
             // Resolve commenter's display name
-            String commenterName = profileJpaRepository.findByUserId(event.getUserId().intValue())
-                    .map(p -> p.getFullName())
+            String commenterName = recipientDirectoryPort.findRecipient(event.getUserId().intValue())
+                    .map(RecipientDirectoryPort.Recipient::fullName)
                     .orElse("Un usuario");
 
             // Truncate comment text for the notification body (max 200 chars)

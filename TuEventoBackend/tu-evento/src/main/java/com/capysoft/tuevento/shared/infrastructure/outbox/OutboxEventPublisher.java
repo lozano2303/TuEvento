@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Fachada para guardar eventos de dominio en el outbox.
@@ -17,12 +19,21 @@ import java.time.LocalDateTime;
  * {@link OutboxRelayScheduler} los publicará a Kafka en un paso posterior.
  *
  * <h3>Convención de topics</h3>
+ * <p>Un topic por tipo de agregado y el tipo de evento en el header {@link OutboxHeaders#EVENT_TYPE}:
  * <pre>
- *   tuevento.{aggregateType}.{eventType-kebab-case}
- *   ej: tuevento.seat.seats-held
- *       tuevento.order.order-paid
- *       tuevento.event.event-status-changed
+ *   tuevento.{aggregateType}
+ *   ej: tuevento.order   (OrderCreated, SeatsHeld, OrderPaid…)
+ *       tuevento.event   (EventStatusChanged…)
  * </pre>
+ * Todos los eventos de un agregado comparten topic y key ({@code aggregateId}), así que caen en
+ * la misma partición y el consumidor los lee en el orden en que se publicaron.
+ *
+ * <h3>Orden por agregado</h3>
+ * <p>El relay publica en orden de {@code created_at} dentro de cada agregado. Ese orden solo es el
+ * real si quien publica serializa las escrituras del agregado: bloquear su fila (p. ej.
+ * {@code SELECT ... FOR UPDATE} sobre la orden) antes de llamar a {@link #publish}. Dos
+ * transacciones concurrentes sobre el mismo agregado sin ese bloqueo pueden confirmarse en un
+ * orden distinto al de su {@code created_at}.
  */
 @Slf4j
 @Component
@@ -44,6 +55,32 @@ public class OutboxEventPublisher {
      */
     public void publish(String aggregateType, String aggregateId,
                         String eventType, Object payload) {
+        publish(aggregateType, aggregateId, eventType, payload, UUID.randomUUID());
+    }
+
+    /**
+     * Igual que {@link #publish(String, String, String, Object)} pero con un {@code eventId}
+     * elegido por quien publica, p. ej. derivado del ID de la orden en la saga. La restricción
+     * única de {@code event_id} impide guardar dos veces el mismo evento de negocio.
+     *
+     * <p>Un {@code eventId} repetido no se ignora: la restricción falla y en PostgreSQL deja abortada
+     * la transacción de negocio. Usarlo solo cuando repetirlo sea un error, o comprobar antes si
+     * el evento ya existe.
+     *
+     * @param eventId ID estable del evento; viaja en el header {@link OutboxHeaders#EVENT_ID}
+     */
+    public void publish(String aggregateType, String aggregateId,
+                        String eventType, Object payload, UUID eventId) {
+        if (eventId == null) {
+            throw new IllegalArgumentException("Outbox eventId is required");
+        }
+        if (aggregateType == null || aggregateType.isBlank()) {
+            throw new IllegalArgumentException("Outbox aggregateType is required");
+        }
+        if (eventType == null || eventType.isBlank()) {
+            throw new IllegalArgumentException("Outbox eventType is required");
+        }
+        String normalizedType = aggregateType.trim().toLowerCase(Locale.ROOT);
         String json;
         try {
             json = objectMapper.writeValueAsString(payload);
@@ -54,10 +91,11 @@ public class OutboxEventPublisher {
                     "Cannot serialize outbox event payload: " + e.getMessage(), e);
         }
 
-        String topic = buildTopic(aggregateType, eventType);
+        String topic = TOPIC_PREFIX + "." + normalizedType;
 
         OutboxEvent event = OutboxEvent.builder()
-                .aggregateType(aggregateType)
+                .eventId(eventId)
+                .aggregateType(normalizedType)
                 .aggregateId(aggregateId)
                 .eventType(eventType)
                 .payload(json)
@@ -69,18 +107,7 @@ public class OutboxEventPublisher {
 
         outboxEventRepository.save(event);
 
-        log.debug("OutboxEvent saved: aggregateType={}, aggregateId={}, eventType={}, topic={}",
-                aggregateType, aggregateId, eventType, topic);
-    }
-
-    /**
-     * Convierte "SeatsHeld" → "tuevento.seat.seats-held".
-     * CamelCase → kebab-case con prefijo tuevento.{aggregateType}.
-     */
-    private String buildTopic(String aggregateType, String eventType) {
-        String kebab = eventType
-                .replaceAll("([a-z])([A-Z])", "$1-$2")
-                .toLowerCase();
-        return TOPIC_PREFIX + "." + aggregateType.toLowerCase() + "." + kebab;
+        log.debug("OutboxEvent saved: eventId={}, aggregateType={}, aggregateId={}, eventType={}, topic={}",
+                eventId, normalizedType, aggregateId, eventType, topic);
     }
 }

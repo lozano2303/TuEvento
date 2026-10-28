@@ -1,16 +1,8 @@
 package com.capysoft.tuevento.modules.security.interfaces.rest;
 
-import com.capysoft.tuevento.modules.event.application.port.in.AdminChangeEventStatusPort;
-import com.capysoft.tuevento.modules.event.application.port.in.GetAdminEventsPort;
-import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
-import com.capysoft.tuevento.modules.event.infrastructure.persistence.entity.EventEntity;
-import com.capysoft.tuevento.modules.event.infrastructure.persistence.repository.EventJpaRepository;
-import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.PaymentJpaRepository;
-import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.RefundJpaRepository;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.entity.ProfileEntity;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.tuevento.modules.security.application.port.out.OrganizerDocumentPort;
+import com.capysoft.tuevento.modules.security.application.usecase.GetAdminDashboardUseCase;
 import com.capysoft.tuevento.modules.security.application.dto.request.RevokeOrganizerRoleRequest;
-import com.capysoft.tuevento.modules.security.application.dto.response.ActivityItemResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.ApproveOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetAdminPendingCountsPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizerRequestsPort;
@@ -18,9 +10,6 @@ import com.capysoft.tuevento.modules.security.application.port.in.RejectOrganize
 import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganizerRolePort;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
-import com.capysoft.tuevento.modules.storage.application.port.in.GeneratePublicUrlPort;
-import com.capysoft.tuevento.modules.ticket.infrastructure.persistence.repository.TicketJpaRepository;
-import com.capysoft.tuevento.modules.wallet.application.usecase.BulkCreditWalletUseCaseImpl;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -33,9 +22,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,18 +54,11 @@ class AdminControllerTest {
     @MockitoBean private ApproveOrganizerRequestPort approveOrganizerRequestPort;
     @MockitoBean private RejectOrganizerRequestPort  rejectOrganizerRequestPort;
     @MockitoBean private GetAdminPendingCountsPort   getAdminPendingCountsPort;
-    @MockitoBean private GeneratePublicUrlPort       generatePublicUrlPort;
+    @MockitoBean private OrganizerDocumentPort       organizerDocumentPort;
     @MockitoBean private OrganizerPetitionRepository organizerPetitionRepository;
     @MockitoBean private RevokeOrganizerRolePort     revokeOrganizerRolePort;
-    @MockitoBean private GetAdminEventsPort          getAdminEventsPort;
-    @MockitoBean private AdminChangeEventStatusPort  adminChangeEventStatusPort;
+    @MockitoBean private GetAdminDashboardUseCase    getAdminDashboardUseCase;
     @MockitoBean private UserJpaRepository           userJpaRepository;
-    @MockitoBean private EventJpaRepository          eventJpaRepository;
-    @MockitoBean private TicketJpaRepository         ticketJpaRepository;
-    @MockitoBean private PaymentJpaRepository        paymentJpaRepository;
-    @MockitoBean private RefundJpaRepository         refundJpaRepository;
-    @MockitoBean private ProfileJpaRepository        profileJpaRepository;
-    @MockitoBean private BulkCreditWalletUseCaseImpl bulkCreditWalletUseCase;
 
     @Autowired
     private AdminController controller;
@@ -135,7 +115,7 @@ class AdminControllerTest {
     // ── User management and refunds ───────────────────────────────────────────
 
     @Nested
-    @DisplayName("GET /users and GET /refunds")
+    @DisplayName("GET /users")
     @WithMockUser(authorities = "ADMIN")
     class UsersAndRefunds {
 
@@ -159,17 +139,6 @@ class AdminControllerTest {
         }
 
         @Test
-        @DisplayName("refunds page size is capped at 300")
-        void getRefunds_capsLimit() {
-            when(refundJpaRepository.findRecentForAdmin(any())).thenReturn(List.of());
-
-            var response = controller.getRefunds(1000);
-
-            assertThat(response.getBody().getData()).isEmpty();
-            verify(refundJpaRepository).findRecentForAdmin(PageRequest.of(0, 300));
-        }
-
-        @Test
         @WithMockUser(authorities = "ORGANIZER")
         @DisplayName("ORGANIZER → AccessDeniedException")
         void getUsers_organizer_isDenied() {
@@ -180,49 +149,31 @@ class AdminControllerTest {
         }
     }
 
-    // ── Activity feed null-safety ─────────────────────────────────────────────
+    // ── Dashboard ─────────────────────────────────────────────────────────────
 
     @Nested
-    @DisplayName("GET /activity")
+    @DisplayName("GET /stats y GET /activity")
     @WithMockUser(authorities = "ADMIN")
-    class Activity {
+    class Dashboard {
 
-        private EventEntity event(Long userId, String name, EventStatus status, LocalDateTime updatedAt) {
-            var entity = EventEntity.builder().eventId(1L).userId(userId).eventName(name).status(status).build();
-            ReflectionTestUtils.setField(entity, "updatedAt", updatedAt);
-            return entity;
-        }
+        @Test
+        @DisplayName("delegan en el caso de uso del panel, que compone Identidad, Catálogo y Comercio")
+        void delegateToDashboardUseCase() {
+            when(getAdminDashboardUseCase.getActivity(50)).thenReturn(List.of());
 
-        private String actorFor(List<ActivityItemResponse> items, String eventName) {
-            return items.stream()
-                    .filter(i -> i.getDescription().contains(eventName))
-                    .findFirst()
-                    .orElseThrow()
-                    .getActor();
+            assertThat(controller.getActivity(50).getBody().getData()).isEmpty();
+            controller.getStats();
+
+            verify(getAdminDashboardUseCase).getActivity(50);
+            verify(getAdminDashboardUseCase).getStats();
         }
 
         @Test
-        @DisplayName("resolves organizer names and falls back to 'Organizador' for missing user or name")
-        void getActivity_missingOrganizerData_usesFallbackName() {
-            var now = LocalDateTime.now();
-            var withName    = event(ORGANIZER_ID.longValue(), "Jazz Night", EventStatus.PUBLISHED, now);
-            var noOrganizer = event(null, "Orphan Fest", EventStatus.REJECTED, now.minusHours(1));
-            var noName      = event(16L, "Indie Day", EventStatus.PENDING_REVIEW, now.minusHours(2));
-            when(eventJpaRepository.findTopByOrderByUpdatedAtDesc(any()))
-                    .thenReturn(List.of(withName, noOrganizer, noName));
-            when(profileJpaRepository.findAllByUserIdIn(List.of(ORGANIZER_ID, 16))).thenReturn(List.of(
-                    ProfileEntity.builder().userId(ORGANIZER_ID).fullName("Bob Marley").build(),
-                    ProfileEntity.builder().userId(16).fullName(null).build(),
-                    ProfileEntity.builder().userId(null).fullName("Ghost").build()));
-
-            var items = controller.getActivity(50).getBody().getData();
-
-            assertThat(items).hasSize(3);
-            assertThat(actorFor(items, "Jazz Night")).isEqualTo("Organizer: Bob Marley");
-            assertThat(actorFor(items, "Orphan Fest")).isEqualTo("Organizer: Organizador");
-            assertThat(actorFor(items, "Indie Day")).isEqualTo("Organizer: Organizador");
-            assertThat(items).extracting(ActivityItemResponse::getTitle).containsExactly(
-                    "Event approved and published", "Event rejected", "Event submitted for review");
+        @WithMockUser(authorities = "ORGANIZER")
+        @DisplayName("ORGANIZER → AccessDeniedException")
+        void organizer_isDenied() {
+            assertThatThrownBy(() -> controller.getStats()).isInstanceOf(AccessDeniedException.class);
+            verifyNoInteractions(getAdminDashboardUseCase);
         }
     }
 }

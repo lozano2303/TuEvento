@@ -1,16 +1,21 @@
 package com.capysoft.tuevento.modules.security.infrastructure.persistence.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.capysoft.tuevento.modules.security.application.dto.UserSummary;
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminUserResponse;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.entity.UserEntity;
+
+import jakarta.persistence.LockModeType;
 
 public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
 
@@ -21,6 +26,14 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
     @Query("SELECT u FROM UserEntity u JOIN FETCH u.role JOIN FETCH u.userStatus WHERE u.userId = :userId")
     Optional<UserEntity> findByIdEager(@Param("userId") Integer userId);
     
+    /**
+     * Como {@link #findByIdEager} pero bloqueando la fila hasta el fin de la transacción: dos cambios
+     * de rol simultáneos sobre el mismo usuario se aplican uno detrás de otro.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM UserEntity u JOIN FETCH u.role JOIN FETCH u.userStatus WHERE u.userId = :userId")
+    Optional<UserEntity> findByIdEagerForUpdate(@Param("userId") Integer userId);
+
     @Query("SELECT COUNT(u) > 0 FROM UserEntity u WHERE u.alias = :alias")
     boolean existsByAlias(@Param("alias") String alias);
 
@@ -55,5 +68,24 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, Integer> {
             ORDER BY u.createdAt DESC
             """)
     List<AdminUserResponse> searchForAdmin(@Param("q") String q, @Param("role") String role, Pageable pageable);
+
+    /**
+     * Datos públicos de varios usuarios en una sola consulta: alias, email (login_credentials) y
+     * nombre, foto e idioma (profile). Un usuario sin perfil o sin credenciales sale igual, con
+     * esos campos en null.
+     */
+    @Query("""
+            SELECT new com.capysoft.tuevento.modules.security.application.dto.UserSummary(
+                       u.userId, u.alias, c.email, p.fullName, p.storedFileId, p.preferredLanguageId)
+            FROM UserEntity u
+            LEFT JOIN ProfileEntity p ON p.userId = u.userId
+            LEFT JOIN LoginCredentialsEntity c ON c.user = u
+            WHERE u.userId IN :userIds
+            """)
+    List<UserSummary> findSummariesByUserIds(@Param("userIds") Collection<Integer> userIds);
+
+    /** IDs mayores que {@code afterUserId} en orden ascendente (recorrido por cursor). */
+    @Query("SELECT u.userId FROM UserEntity u WHERE u.userId > :afterUserId ORDER BY u.userId ASC")
+    List<Integer> findUserIdsAfter(@Param("afterUserId") Integer afterUserId, Pageable pageable);
 
 }
