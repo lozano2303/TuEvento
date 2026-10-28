@@ -5,10 +5,12 @@ import com.capysoft.tuevento.modules.security.application.port.in.GetAdminPendin
 import com.capysoft.tuevento.modules.security.domain.event.OrganizerApprovedEvent;
 import com.capysoft.tuevento.modules.security.domain.event.OrganizerPetitionCreatedEvent;
 import com.capysoft.tuevento.modules.security.domain.event.OrganizerRejectedEvent;
+import com.capysoft.tuevento.shared.infrastructure.websocket.AdminPendingCountsChangedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.context.event.EventListener;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -56,6 +58,12 @@ public class AdminPendingCountsWebSocketListener {
         if (PENDING_REVIEW.equals(event.getOldStatus()) || PENDING_REVIEW.equals(event.getNewStatus())) {
             broadcast();
         }
+    }
+
+    /** Una solicitud cambió en identity-service: el aviso llega por {@code IdentityPushRelay}. */
+    @EventListener
+    public void onChangedElsewhere(AdminPendingCountsChangedEvent event) {
+        broadcast();
     }
 
     private void broadcast() {
