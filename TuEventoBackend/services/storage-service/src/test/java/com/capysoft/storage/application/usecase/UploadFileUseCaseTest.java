@@ -33,6 +33,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.capysoft.common.domain.exception.ImagePolicyViolationException;
+
 /**
  * Unit tests for {@link UploadFileUseCase}: REST upload rules and error messages that never
  * leak storage SDK details.
@@ -108,6 +110,51 @@ class UploadFileUseCaseTest {
             assertThat(saved.getValue().getOwnerEntityId()).isNull();
             assertThat(saved.getValue().getOwnerEntityType()).isNull();
             assertThat(saved.getValue().getPublicUrl()).isEqualTo("https://s3.example.com/x");
+        }
+    }
+
+    @Nested
+    @DisplayName("Image moderation")
+    class ImageModeration {
+
+        private UploadFileRequest request(String filename, String contentType) {
+            return UploadFileRequest.builder()
+                    .fileCategoryCode("PROFILE_PICTURE").uploadedBy(OWNER_ID)
+                    .originalFilename(filename).contentType(contentType).content(CONTENT).build();
+        }
+
+        @Test
+        @DisplayName("an image declared as image/* is moderated")
+        void declaredImage_moderated() {
+            givenProfilePictureCategory();
+            givenSaveReturnsInput();
+
+            useCase.upload(request("a.jpg", "image/jpeg"));
+
+            verify(moderationService).moderate(CONTENT);
+        }
+
+        @Test
+        @DisplayName("an image sent with another Content-Type, or none, is still moderated by its extension")
+        void disguisedImage_stillModerated() {
+            givenProfilePictureCategory();
+            givenSaveReturnsInput();
+
+            useCase.upload(request("a.PNG", "application/octet-stream"));
+            useCase.upload(request("b.jpg", null));
+
+            verify(moderationService, times(2)).moderate(CONTENT);
+        }
+
+        @Test
+        @DisplayName("a rejected image is never stored")
+        void rejected_notStored() {
+            givenProfilePictureCategory();
+            doThrow(new ImagePolicyViolationException("NSFW_CONTENT")).when(moderationService).moderate(CONTENT);
+
+            assertThatThrownBy(() -> useCase.upload(request("a.jpg", "text/plain")))
+                    .isInstanceOf(ImagePolicyViolationException.class);
+            verifyNoInteractions(storageClient, storedFileRepository);
         }
     }
 

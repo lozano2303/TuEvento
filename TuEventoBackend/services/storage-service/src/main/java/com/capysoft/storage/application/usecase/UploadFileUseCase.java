@@ -26,12 +26,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UploadFileUseCase implements UploadFilePort, UploadUserFilePort {
+
+    /** Extensions moderated as images whatever Content-Type the client declares. */
+    private static final Set<String> IMAGE_EXTENSIONS =
+            Set.of("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic", "heif", "avif");
 
     private final FileCategoryRepository        fileCategoryRepository;
     private final StoredFileRepository          storedFileRepository;
@@ -70,9 +75,10 @@ public class UploadFileUseCase implements UploadFilePort, UploadUserFilePort {
         validateExtension(request.getOriginalFilename(), category.getAllowedExtensions());
         validateSize(request.getContent().length, category.getMaxSizeMb());
 
-        // Moderation cascade: only for images, skipped for PDFs and other types.
-        // Null-safe: getContentType() can be null if the browser omits the part's Content-Type header.
-        if (request.getContentType() != null && request.getContentType().startsWith("image/")) {
+        // Moderation cascade: only for images, skipped for PDFs and other types. The Content-Type is
+        // chosen by the client, so an image sent as application/octet-stream (or without the header)
+        // is still recognized by its extension, which validateExtension has already checked.
+        if (isImage(request.getContentType(), request.getOriginalFilename())) {
             moderationService.moderate(request.getContent());
         }
 
@@ -136,6 +142,11 @@ public class UploadFileUseCase implements UploadFilePort, UploadUserFilePort {
                 .sizeBytes(savedFile.getSizeBytes())
                 .publicUrl(savedFile.getPublicUrl())
                 .build();
+    }
+
+    private boolean isImage(String contentType, String filename) {
+        return (contentType != null && contentType.toLowerCase().startsWith("image/"))
+                || IMAGE_EXTENSIONS.contains(extractExtension(filename).toLowerCase());
     }
 
     private void validateExtension(String filename, String allowedExtensions) {
