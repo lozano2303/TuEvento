@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-27
+
+### Added — feat(identity): identity-service (strangler fig, phase 4)
+
+- **identity-service** (port 8088) now owns sign-in, registration, Google OAuth, sessions, profiles, themes and the admin panel. It signs the RS256 access tokens and publishes the JWK Set at `/.well-known/jwks.json`; the monolith and the other services only verify tokens against it
+- The monolith no longer holds the private key or the OAuth and admin settings. It reaches identity data through an internal API (`/internal/**`, `X-Internal-Api-Key`) and `modules/identitybridge`
+- **Token revocation** shared through Redis (fail-closed): logout and organizer-role revocation reject the token on every service, including the WebSocket
+- **Outbox hardening** and idempotent Kafka consumers (`processed_event`); `UserActivated` and `OrganizerRoleRevoked` travel over Kafka
+- Cross-module foreign keys between identity and the other modules removed (new Liquibase changesets, existing ones untouched)
+- The api-gateway routes identity paths and the JWK Set to identity-service
+
+### Added — feat(localization): geolocation-service serves languages and runs the translations
+
+- The language catalog (`/api/v1/languages`) is served by geolocation-service, and automatic translations run there: the monolith requests them over Kafka (`TRANSLATION_MODE=remote`) and receives the results back over Kafka
+
+### Security — fix(security): profile ownership
+
+- A user can only create or update their own profile; ADMIN can update any (#153)
+
+### Fixed — fix(gateway): WebSocket upgrade through the api-gateway (#154)
+
+### Fixed — fix(config): the monolith reads `REDIS_HOST`/`REDIS_PORT`
+
+- Outside the `prod` profile the monolith ignored them and always used `localhost:6379`, so in the dev compose every request with a token got a 503 and a revoked token could keep working (#172)
+
+### Deployment notes
+
+- New images: `identity-vX.Y.Z`, `geolocation-vX.Y.Z`, `storage-vX.Y.Z`, `notifications-vX.Y.Z` and `api-gateway-vX.Y.Z`
+- New required variables: `APP_JWT_PRIVATE_KEY` and `INTERNAL_API_KEY` (same value on every service); mail, Google OAuth and admin variables now go to identity-service (see `.env.prod.example`)
+- Back up the database before deploying: this release runs new Liquibase changesets
+
 ### Fixed — fix(events): organizers are notified again when an admin approves or rejects their event
 
 - **Approving or rejecting an event** from the admin panel no longer notified the organizer (in-app, WebSocket and email) since 1.0.1: `AdminChangeEventStatusPort.execute(eventId, request, adminUserId)` was a `default` method, so Spring's proxy opened no transaction and the inner call to the variant with `cause` bypassed it. Without a transaction the `AFTER_COMMIT` listener that sends `EVENT_PUBLISHED` / `EVENT_REJECTED` was silently dropped, and each save committed on its own. The method is now implemented by the use case with its own `@Transactional`
@@ -31,10 +62,6 @@ All notable changes to this project will be documented in this file.
 - **Admin and organizer refunds** returned a 500 after 30 s: the gateway was called inside the transaction that locks the tickets, and the gateway sends the refund webhook before answering, so the webhook waited for those locks until the call timed out. The rollback also deleted the `REQUESTED` refund, leaving refunded payments without a refund record. The gateway is now called after the commit; the refund answers in under a second and ends `PROCESSED`
 - **Seat map in real time**: sales, released reservations and failed payments now reach `/topic/events/{eventId}/seats`; only reservations did. System seat changes validate the transition (a courtesy seat can only become available again, a sold seat never goes back to reserved) and repeating the same status is a no-op
 - **`availableSeats`** of an event section now follows capacity changes made through `PUT /event-sections/{id}`; it kept the original capacity
-### Removed — chore: remove Facebook login
-
-- **Facebook sign-in removed** from the web (login and register), the mobile app (LoginScreen, RegisterScreen), and the backend (`OauthConfig` resolver, `oauthAuthorizationUrls`, all `app.oauth.facebook.*` YAML properties and env vars). Facebook Login was designed for real users in production, but while the Meta app stays in **development mode** it only works for the app admin and accounts manually added as testers — everyone else saw "La aplicación no está activa". Going **live** requires a privacy policy URL, a data-deletion endpoint, a Meta app review, and potentially business verification: requirements that go beyond the scope of this academic project. The mobile implementation was also broken (`AuthSession.startAsync` was removed in the current Expo SDK). Sign-in with **email/password** and **Google** remain fully supported. Existing `oauth_account` rows with `provider = 'facebook'` are kept in the database unchanged.
-
 ### Added — feat(seats): courtesy seats and potential earnings
 
 - **Courtesy seats in the layout editor**: a "Cortesías" menu asks how many courtesy seats each section has and shows the estimated earnings live. The toolbar shows the courtesy total and the estimate, Σ price × (seats − courtesy)
