@@ -38,6 +38,27 @@ const FEATURES = [
 ];
 
 /* ═══════════════════════════════════════════════════════════════════════ */
+/** Encabezado de una sección de valor del landing: textos de `landing.value.<section>`. */
+function ValueSectionHeading({ section }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <p className="text-sm font-semibold tracking-widest uppercase" style={{ color: 'var(--color-accent)' }}>
+        {t(`landing.value.${section}.eyebrow`)}
+      </p>
+      <h2 className="text-3xl md:text-4xl font-bold text-textPrimary leading-tight">
+        {t(`landing.value.${section}.title`)}<br />
+        <span style={{ background: 'linear-gradient(90deg, var(--color-accent), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+          {t(`landing.value.${section}.titleAccent`)}
+        </span>
+      </h2>
+      <p className="text-textSecondary text-lg leading-relaxed">
+        {t(`landing.value.${section}.description`)}
+      </p>
+    </>
+  );
+}
+
 export default function LadingPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -408,18 +429,7 @@ export default function LadingPage() {
           {/* Bloque 1 */}
           <div className="grid md:grid-cols-2 gap-14 items-center">
             <div className="space-y-6">
-              <p className="text-sm font-semibold tracking-widest uppercase" style={{ color: 'var(--color-accent)' }}>
-                {t('landing.value.section1.eyebrow')}
-              </p>
-              <h2 className="text-3xl md:text-4xl font-bold text-textPrimary leading-tight">
-                {t('landing.value.section1.title')}<br />
-                <span style={{ background: 'linear-gradient(90deg, var(--color-accent), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                  {t('landing.value.section1.titleAccent')}
-                </span>
-              </h2>
-              <p className="text-textSecondary text-lg leading-relaxed">
-                {t('landing.value.section1.description')}
-              </p>
+              <ValueSectionHeading section="section1" />
               <ul className="space-y-4">
                 {[
                   { Icon: Map,       text: t('landing.value.section1.items.editor') },
@@ -481,18 +491,7 @@ export default function LadingPage() {
               </div>
             </div>
             <div className="space-y-6 order-1 md:order-2">
-              <p className="text-sm font-semibold tracking-widest uppercase" style={{ color: 'var(--color-accent)' }}>
-                {t('landing.value.section2.eyebrow')}
-              </p>
-              <h2 className="text-3xl md:text-4xl font-bold text-textPrimary leading-tight">
-                {t('landing.value.section2.title')}<br />
-                <span style={{ background: 'linear-gradient(90deg, var(--color-accent), var(--color-primary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                  {t('landing.value.section2.titleAccent')}
-                </span>
-              </h2>
-              <p className="text-textSecondary text-lg leading-relaxed">
-                {t('landing.value.section2.description')}
-              </p>
+              <ValueSectionHeading section="section2" />
               <ul className="space-y-4">
                 {[
                   { Icon: Navigation, text: t('landing.value.section2.items.filter') },
