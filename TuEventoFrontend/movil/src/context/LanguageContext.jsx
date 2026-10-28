@@ -11,10 +11,11 @@ import { onSessionEvent } from '../utils/sessionEvents';
  * LanguageContext — equivalente móvil del sistema de idioma de la web
  * (i18n.js + useLanguageSync + persistencia en perfil).
  *
- * La app arranca siempre en español: no se recuerda el idioma de la sesión anterior ni se
- * aplica el del perfil al abrir.
+ * Sin sesión (primera visita) la app arranca en español; con la sesión iniciada (al abrir o
+ * al hacer login) arranca en el idioma preferido del perfil.
  *
  * Responsabilidades:
+ *   0. Al iniciar sesión: aplica el idioma preferido del perfil (user.preferredLanguageId).
  *   1. Cambios en vivo: LANGUAGE_UPDATED (el usuario cambió el idioma en otro dispositivo).
  *   2. changeLanguage(code): cambia i18next y lo guarda en el perfil si hay sesión (para el
  *      idioma de las notificaciones y como aviso a sus otras sesiones abiertas).
@@ -48,6 +49,24 @@ export function LanguageProvider({ children }) {
       }
     })();
   }, []);
+
+  // 0. Al iniciar sesión (restaurada o login) se aplica el idioma preferido del perfil, una
+  //    vez por sesión: un cambio posterior con el selector no se pisa.
+  const preferredLanguageId = user?.preferredLanguageId ?? null;
+  useEffect(() => {
+    if (!user?.userId || preferredLanguageId === null) return;
+    void (async () => {
+      try {
+        const list = await getActiveLanguages();
+        const lang = list.find((l) => l.languageId === preferredLanguageId);
+        if (lang && lang.code !== i18n.language) await changeUILanguage(lang.code);
+      } catch {
+        // no crítico — se mantiene el español
+      }
+    })();
+    // Solo al empezar la sesión: preferredLanguageId se lee de ese momento
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.userId]);
 
   // 1. Cambios en vivo: LANGUAGE_UPDATED llega por WebSocket cuando el idioma
   //    preferido cambia en otro dispositivo o en la web (solo se aplica local).

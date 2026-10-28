@@ -1832,6 +1832,9 @@ input[type="password"]::-ms-reveal { display: none; }
 }
 
 /* ── Hero ────────────────────────────────────────────────────────────────── */
+/* El hero se pinta sobre el fondo de la página (--color-background), no sobre un degradado de
+   primary: sus textos usan --color-textPrimary, que readablePalette garantiza legible sobre ese
+   fondo en todos los temas. --color-onPrimary queda solo para lo que va sobre primary (botón). */
 .lp2-hero {
   position: relative;
   overflow: hidden;
@@ -1892,16 +1895,16 @@ input[type="password"]::-ms-reveal { display: none; }
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: color-mix(in srgb, var(--color-onPrimary) 15%, transparent);
+  background: color-mix(in srgb, var(--color-textPrimary) 8%, transparent);
   backdrop-filter: blur(8px);
-  border: 1px solid color-mix(in srgb, var(--color-onPrimary) 25%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-textPrimary) 25%, transparent);
   border-radius: 9999px;
   padding: 0.35rem 1rem;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-onPrimary) 95%, transparent);
+  color: var(--color-textPrimary);
   animation: lp2-slide-up 0.6s ease both;
 }
 .lp2-eyebrow-dot {
@@ -1917,12 +1920,12 @@ input[type="password"]::-ms-reveal { display: none; }
   font-size: clamp(2.5rem, 6vw, 5rem);
   font-weight: 900;
   line-height: 1.05;
-  color: var(--color-onPrimary);
+  color: var(--color-textPrimary);
   letter-spacing: -0.02em;
   animation: lp2-slide-up 0.7s 0.1s ease both;
 }
 .lp2-hero-title-accent {
-  background: linear-gradient(90deg, var(--color-onPrimary) 0%, color-mix(in srgb, var(--color-onPrimary) 70%, transparent) 100%);
+  background: linear-gradient(90deg, var(--color-textPrimary) 0%, color-mix(in srgb, var(--color-textPrimary) 70%, var(--color-background)) 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -1932,7 +1935,7 @@ input[type="password"]::-ms-reveal { display: none; }
 
 .lp2-hero-subtitle {
   font-size: 1.125rem;
-  color: color-mix(in srgb, var(--color-onPrimary) 80%, transparent);
+  color: color-mix(in srgb, var(--color-textPrimary) 80%, var(--color-background));
   max-width: 540px;
   line-height: 1.7;
   animation: lp2-slide-up 0.7s 0.2s ease both;
@@ -1949,8 +1952,8 @@ input[type="password"]::-ms-reveal { display: none; }
   font-size: 0.9375rem;
   border: none;
   cursor: pointer;
-  background: var(--color-onPrimary);
-  color: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primaryDark));
+  color: var(--color-onPrimary);
   box-shadow: 0 6px 24px rgba(0,0,0,0.25);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   animation: lp2-slide-up 0.7s 0.3s ease both;
@@ -1971,14 +1974,14 @@ input[type="password"]::-ms-reveal { display: none; }
   font-size: 0.9375rem;
   cursor: pointer;
   background: transparent;
-  color: var(--color-onPrimary);
-  border: 2px solid color-mix(in srgb, var(--color-onPrimary) 45%, transparent);
+  color: var(--color-textPrimary);
+  border: 2px solid color-mix(in srgb, var(--color-textPrimary) 45%, transparent);
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
   animation: lp2-slide-up 0.7s 0.35s ease both;
 }
 .lp2-btn-secondary:hover {
-  background: color-mix(in srgb, var(--color-onPrimary) 12%, transparent);
-  border-color: color-mix(in srgb, var(--color-onPrimary) 70%, transparent);
+  background: color-mix(in srgb, var(--color-textPrimary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-textPrimary) 70%, transparent);
   transform: translateY(-2px);
 }
 
@@ -1989,14 +1992,15 @@ input[type="password"]::-ms-reveal { display: none; }
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: color-mix(in srgb, var(--color-onPrimary) 15%, transparent);
+  background: color-mix(in srgb, var(--color-textPrimary) 8%, transparent);
   border-radius: 1rem;
   padding: 0.75rem 1rem;
 }
 .lp2-stat-pill-icon {
   width: 40px; height: 40px;
   border-radius: 0.75rem;
-  background: color-mix(in srgb, var(--color-onPrimary) 20%, transparent);
+  background: color-mix(in srgb, var(--color-textPrimary) 12%, transparent);
+  color: var(--color-textPrimary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2006,12 +2010,12 @@ input[type="password"]::-ms-reveal { display: none; }
 .lp2-stat-pill-val {
   font-size: 1.25rem;
   font-weight: 800;
-  color: var(--color-onPrimary);
+  color: var(--color-textPrimary);
   line-height: 1;
 }
 .lp2-stat-pill-label {
   font-size: 0.75rem;
-  color: color-mix(in srgb, var(--color-onPrimary) 70%, transparent);
+  color: var(--color-textSecondary);
   line-height: 1;
 }
 
@@ -2112,8 +2116,9 @@ input[type="password"]::-ms-reveal { display: none; }
   transform: translateX(-50%);
   width: 28px; height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-accent), var(--color-primary));
-  color: #ffffff;
+  /* primary→primaryDark con onPrimary: blanco fijo sobre accent no se leía en todos los temas */
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primaryDark));
+  color: var(--color-onPrimary);
   font-size: 0.7rem;
   font-weight: 800;
   display: flex;
@@ -2205,13 +2210,13 @@ input[type="password"]::-ms-reveal { display: none; }
 .lp2-avatar {
   width: 44px; height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-accent), var(--color-primary));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primaryDark));
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 1rem;
-  color: #ffffff;
+  color: var(--color-onPrimary);
   flex-shrink: 0;
 }
 .lp2-stars {
@@ -2336,9 +2341,9 @@ input[type="password"]::-ms-reveal { display: none; }
 
 /* ── Scan line on hero card ───────────────────────────────────────────── */
 .lp2-hero-card {
-  background: rgba(255,255,255,0.12);
+  background: color-mix(in srgb, var(--color-textPrimary) 6%, transparent);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.20);
+  border: 1px solid color-mix(in srgb, var(--color-textPrimary) 18%, transparent);
   border-radius: 1.5rem;
   padding: 1.5rem;
   animation: lp2-float 6s ease-in-out infinite;
