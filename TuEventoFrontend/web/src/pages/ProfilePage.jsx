@@ -53,7 +53,7 @@ const inputCls =
 const ProfilePage = () => {
   const { t } = useTranslation();
   const { refreshPalette, activeThemeId } = useTheme();
-  const currentLanguage = useLanguageSync(); // Sincroniza automáticamente con el idioma preferido
+  const currentLanguage = useLanguageSync(); // Idioma actual de la interfaz
   // El perfil se guarda en español (idioma fuente de las traducciones): fuera de
   // español solo se puede consultar, exista o no la traducción.
   const editLocked = (currentLanguage || 'es').split('-')[0] !== 'es'; // 'es-CO' del navegador cuenta como español
@@ -200,27 +200,10 @@ const ProfilePage = () => {
       if (!token || !userId) return;
       
       setAvatarLoading(true);
-      let userLanguageCode = null;
-
-      // Si hay usuario autenticado, cargar su idioma preferido
-      if (userId) {
-        try {
-          const profileRes = await getProfileByUserId(userId);
-          const preferredLangId = profileRes?.data?.preferredLanguageId;
-          if (preferredLangId) {
-            const langs = languages;
-            const preferredLang = langs.find(l => l.languageId === preferredLangId);
-            if (preferredLang) {
-              userLanguageCode = preferredLang.code;
-            }
-          }
-        } catch (err) {
-          console.warn('[ProfilePage] No se pudo cargar idioma preferido del usuario:', err);
-        }
-      }
+      // La biografía se pide en el idioma de la interfaz (la app arranca siempre en español)
+      const userLanguageCode = currentLanguage === 'es' ? null : currentLanguage;
 
       try {
-        // Cargar perfil con el idioma del usuario (si lo tiene)
         const result = await getProfileByUserId(userId, userLanguageCode);
         const profileData = result?.data;
         if (!profileData) return;
@@ -239,21 +222,15 @@ const ProfilePage = () => {
         
         // Cargar idioma preferido
         if (profileData.preferredLanguageId) {
+          // Solo se muestra en el selector: abrir el perfil no cambia el idioma de la interfaz
           setSelectedLanguage(profileData.preferredLanguageId);
           setInitialLanguage(profileData.preferredLanguageId);
-          
-          // Sincronizar i18next con el idioma del backend
-          const lang = languages.find(l => l.languageId === profileData.preferredLanguageId);
-          if (lang) {
-            changeUILanguage(lang.code);
-          }
         } else {
           // Si no tiene idioma, pre-seleccionar español (language_id = 1)
           const spanishLang = languages.find(l => l.code === 'es');
           if (spanishLang) {
             setSelectedLanguage(spanishLang.languageId);
             setInitialLanguage(spanishLang.languageId);
-            changeUILanguage('es');
           }
         }
         
@@ -275,7 +252,7 @@ const ProfilePage = () => {
     };
     
     void loadProfileWithUserLanguage();
-  }, [languages]); // Depende de languages
+  }, [languages, currentLanguage]); // Recargar al cargar los idiomas o cambiar el de la interfaz
 
   useEffect(() => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
