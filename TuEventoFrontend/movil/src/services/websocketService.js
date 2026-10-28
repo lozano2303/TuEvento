@@ -4,10 +4,10 @@ import SockJS from 'sockjs-client';
 
 /**
  * Deriva la URL base desde EXPO_PUBLIC_API_URL.
- * Ejemplo: http://10.3.232.220:8080/api/v1 → http://10.3.232.220:8080
+ * Ejemplo: http://10.3.232.220:8090/api/v1 → http://10.3.232.220:8090
  */
 function getBaseURL() {
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8090/api/v1';
   // Quitar /api/v1 para obtener la URL base
   return apiUrl.replace('/api/v1', '');
 }

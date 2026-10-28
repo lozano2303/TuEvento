@@ -5,7 +5,7 @@ import { httpRequest } from '../services/httpClient';
 import ConfirmModal from '../components/common/ConfirmModal';
 import AdminSidebar from '../components/admin/AdminSidebar';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8090/api/v1';
 
 export default function AdminPanel() {
   const [requests, setRequests] = useState([]);

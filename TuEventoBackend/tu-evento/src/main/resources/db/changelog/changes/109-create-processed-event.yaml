@@ -1,0 +1,42 @@
+databaseChangeLog:
+  # Registro de los mensajes de Kafka que cada consumidor ya procesó (patrón inbox). La entrega es
+  # at-least-once: el mismo eventId puede llegar más de una vez y el consumidor lo descarta si ya
+  # está aquí. La clave es (consumer, event_id) porque varios consumidores pueden procesar el mismo
+  # evento, cada uno por su cuenta. Solo crea una tabla nueva: no toca datos existentes.
+  - changeSet:
+      id: 109-create-processed-event
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: processed_event
+      changes:
+        - createTable:
+            tableName: processed_event
+            columns:
+              - column:
+                  name: consumer
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                  remarks: "Nombre del consumidor (p. ej. catalogo.organizer-role-revoked)"
+              - column:
+                  name: event_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+                  remarks: "Header eventId del mensaje (outbox_event.event_id del productor)"
+              - column:
+                  name: processed_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: processed_event
+            columnNames: consumer, event_id
+            constraintName: pk_processed_event
+      rollback:
+        - dropTable:
+            tableName: processed_event

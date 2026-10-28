@@ -1,45 +1,30 @@
 package com.capysoft.tuevento.modules.security.interfaces.rest;
 
-import com.capysoft.tuevento.modules.event.application.dto.request.ChangeEventStatusRequest;
-import com.capysoft.tuevento.modules.event.application.dto.response.AdminEventSummaryResponse;
-import com.capysoft.tuevento.modules.event.application.dto.response.EventStatusLogResponse;
-import com.capysoft.tuevento.modules.event.application.port.in.AdminChangeEventStatusPort;
-import com.capysoft.tuevento.modules.event.application.port.in.GetAdminEventsPort;
-import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
-import com.capysoft.tuevento.modules.event.infrastructure.persistence.repository.EventJpaRepository;
-import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.PaymentJpaRepository;
-import com.capysoft.tuevento.modules.wallet.application.dto.BulkCreditWalletRequest;
-import com.capysoft.tuevento.modules.wallet.application.dto.BulkCreditWalletResponse;
-import com.capysoft.tuevento.modules.wallet.application.usecase.BulkCreditWalletUseCaseImpl;
-import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.RefundJpaRepository;
-import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
-import com.capysoft.tuevento.modules.payment.domain.model.RefundStatus;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
-import com.capysoft.tuevento.modules.payment.application.dto.response.AdminRefundResponse;
 import com.capysoft.tuevento.modules.security.application.dto.request.RevokeOrganizerRoleRequest;
 import com.capysoft.tuevento.modules.security.application.dto.response.ActivityItemResponse;
-import com.capysoft.tuevento.modules.security.application.dto.response.AdminUserResponse;
-import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganizerRolePort;
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminDashboardStatsResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.AdminPendingCountsResponse;
+import com.capysoft.tuevento.modules.security.application.dto.response.AdminUserResponse;
 import com.capysoft.tuevento.modules.security.application.dto.response.OrganizerRequestResponse;
 import com.capysoft.tuevento.modules.security.application.port.in.ApproveOrganizerRequestPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetAdminPendingCountsPort;
 import com.capysoft.tuevento.modules.security.application.port.in.GetOrganizerRequestsPort;
 import com.capysoft.tuevento.modules.security.application.port.in.RejectOrganizerRequestPort;
+import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganizerRolePort;
+import com.capysoft.tuevento.modules.security.application.port.out.OrganizerDocumentPort.DocumentUrl;
+import com.capysoft.tuevento.modules.security.application.port.out.OrganizerDocumentPort;
+import com.capysoft.tuevento.modules.security.application.usecase.GetAdminDashboardUseCase;
 import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
-import com.capysoft.tuevento.modules.storage.application.dto.response.PublicUrlResponse;
-import com.capysoft.tuevento.modules.storage.application.dto.request.StorageRequester;
-import com.capysoft.tuevento.modules.storage.application.port.in.GeneratePublicUrlPort;
-import com.capysoft.tuevento.modules.ticket.infrastructure.persistence.repository.TicketJpaRepository;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -47,45 +32,31 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
 @PreAuthorize("hasAuthority('ADMIN')")
 @Tag(name = "Admin", description = "Administration endpoints — requires ADMIN role")
 public class AdminController {
+    // Endpoints de admin de Identidad: usuarios, solicitudes de organizador y el resumen del panel.
+    // Los de otros servicios viven con su dueño, en la misma URL: /admin/events en Catálogo
+    // (AdminEventController), /admin/refunds y /admin/wallet en Comercio.
+
 
     // ── Organizer requests ────────────────────────────────────────────────────
     private final GetOrganizerRequestsPort    getOrganizerRequestsPort;
     private final ApproveOrganizerRequestPort approveOrganizerRequestPort;
     private final RejectOrganizerRequestPort  rejectOrganizerRequestPort;
     private final GetAdminPendingCountsPort   getAdminPendingCountsPort;
-    private final GeneratePublicUrlPort       generatePublicUrlPort;
+    private final OrganizerDocumentPort       organizerDocumentPort;
     private final OrganizerPetitionRepository organizerPetitionRepository;
 
     // ── Organizer role management ─────────────────────────────────────────────
     private final RevokeOrganizerRolePort     revokeOrganizerRolePort;
 
-    // ── Events ────────────────────────────────────────────────────────────────
-    private final GetAdminEventsPort          getAdminEventsPort;
-    private final AdminChangeEventStatusPort  adminChangeEventStatusPort;
-
-    // ── Stats (JPA repos injected directly — read-only aggregates) ────────────
+    // ── Dashboard (compone Identidad + Catálogo + Comercio por puertos) ───────
+    private final GetAdminDashboardUseCase    getAdminDashboardUseCase;
     private final UserJpaRepository           userJpaRepository;
-    private final EventJpaRepository          eventJpaRepository;
-    private final TicketJpaRepository         ticketJpaRepository;
-    private final PaymentJpaRepository        paymentJpaRepository;
-    private final RefundJpaRepository         refundJpaRepository;
-    private final ProfileJpaRepository        profileJpaRepository;
-
-    // ── Wallet bulk credit ────────────────────────────────────────────────────
-    private final BulkCreditWalletUseCaseImpl bulkCreditWalletUseCase;
 
     // ═════════════════════════════════════════════════════════════════════════
     // Dashboard stats
@@ -94,30 +65,7 @@ public class AdminController {
     @Operation(summary = "Get aggregated platform stats for the admin dashboard")
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<AdminDashboardStatsResponse>> getStats() {
-        var stats = AdminDashboardStatsResponse.builder()
-                // users
-                .totalUsers(userJpaRepository.count())
-                // events
-                .totalEvents(eventJpaRepository.count())
-                .publishedEvents(eventJpaRepository.countByStatus(EventStatus.PUBLISHED))
-                .pendingReviewEvents(eventJpaRepository.countByStatus(EventStatus.PENDING_REVIEW))
-                .rejectedEvents(eventJpaRepository.countByStatus(EventStatus.REJECTED))
-                .cancelledEvents(eventJpaRepository.countByStatus(EventStatus.CANCELLED))
-                .completedEvents(eventJpaRepository.countByStatus(EventStatus.COMPLETED))
-                .draftEvents(eventJpaRepository.countByStatus(EventStatus.DRAFT))
-                // tickets
-                .totalTickets(ticketJpaRepository.count())
-                // organizer requests
-                .pendingOrganizerRequests(organizerPetitionRepository.findByStatus("PENDING").size())
-                .approvedOrganizerRequests(organizerPetitionRepository.findByStatus("APPROVED").size())
-                // payments
-                .totalRevenue(paymentJpaRepository.sumApprovedRevenue())
-                .approvedPayments(paymentJpaRepository.countByStatus(PaymentStatus.APPROVED))
-                .pendingRefunds(refundJpaRepository.countByStatus(RefundStatus.REQUESTED))
-                .totalRefundedAmount(paymentJpaRepository.sumTotalRefundedAmount())
-                .processedRefunds(refundJpaRepository.countByStatus(RefundStatus.PROCESSED))
-                .build();
-        return ResponseEntity.ok(ApiResponse.ok("Dashboard stats retrieved", stats));
+        return ResponseEntity.ok(ApiResponse.ok("Dashboard stats retrieved", getAdminDashboardUseCase.getStats()));
     }
 
     @Operation(summary = "Get counts of items awaiting admin action (organizer requests and events in review). "
@@ -156,7 +104,7 @@ public class AdminController {
 
     @Operation(summary = "Get document public URL for an organizer request")
     @GetMapping("/organizer-requests/{id}/document")
-    public ResponseEntity<ApiResponse<PublicUrlResponse>> getDocumentUrl(
+    public ResponseEntity<ApiResponse<DocumentUrl>> getDocumentUrl(
             @PathVariable Integer id,
             @AuthenticationPrincipal SecurityUser principal) {
         OrganizerPetition petition = organizerPetitionRepository.findById(id)
@@ -167,8 +115,7 @@ public class AdminController {
         }
 
         return ResponseEntity.ok(ApiResponse.ok("Document URL generated",
-                generatePublicUrlPort.generate(petition.getStoredFileId(),
-                        StorageRequester.of(principal.getUserId(), principal.getRole()))));
+                organizerDocumentPort.publicUrl(petition.getStoredFileId(), principal.getUserId(), principal.getRole())));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -188,28 +135,6 @@ public class AdminController {
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // Event-management endpoints
-    // ═════════════════════════════════════════════════════════════════════════
-
-    @Operation(summary = "List all events (all statuses). Pass ?status=DRAFT|PENDING_REVIEW|PUBLISHED|REJECTED|CANCELLED|COMPLETED to filter.")
-    @GetMapping("/events")
-    public ResponseEntity<ApiResponse<List<AdminEventSummaryResponse>>> getEvents(
-            @RequestParam(required = false) EventStatus status) {
-        return ResponseEntity.ok(ApiResponse.ok("Events retrieved",
-                getAdminEventsPort.getEvents(status)));
-    }
-
-    @Operation(summary = "Admin force-change event status — bypasses ownership check")
-    @PatchMapping("/events/{eventId}/status")
-    public ResponseEntity<ApiResponse<EventStatusLogResponse>> changeEventStatus(
-            @PathVariable Long eventId,
-            @Valid @RequestBody ChangeEventStatusRequest request,
-            @AuthenticationPrincipal SecurityUser principal) {
-        return ResponseEntity.ok(ApiResponse.ok("Event status changed",
-                adminChangeEventStatusPort.execute(eventId, request, principal.getUserId().longValue())));
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
     // Activity feed
     // ═════════════════════════════════════════════════════════════════════════
 
@@ -217,92 +142,7 @@ public class AdminController {
     @GetMapping("/activity")
     public ResponseEntity<ApiResponse<List<ActivityItemResponse>>> getActivity(
             @RequestParam(defaultValue = "50") int limit) {
-
-        List<ActivityItemResponse> items = new ArrayList<>();
-
-        // ── Recent event status changes ───────────────────────────────────────
-        var recentEvents = eventJpaRepository.findTopByOrderByUpdatedAtDesc(
-                PageRequest.of(0, Math.min(limit, 100)));
-
-        // Collect organizer userIds to resolve names in one query
-        var organizerIds = recentEvents.stream()
-                .filter(e -> e.getUserId() != null)
-                .map(e -> e.getUserId().intValue())
-                .distinct()
-                .toList();
-
-        Map<Integer, String> organizerNames = profileJpaRepository
-                .findAllByUserIdIn(organizerIds)
-                .stream()
-                .filter(p -> p.getUserId() != null)
-                .collect(Collectors.toMap(
-                        p -> p.getUserId(),
-                        p -> p.getFullName() != null ? p.getFullName() : "Organizador",
-                        (a, b) -> a));
-
-        for (var ev : recentEvents) {
-            String organizerName = ev.getUserId() != null
-                    ? organizerNames.getOrDefault(ev.getUserId().intValue(), "Organizador")
-                    : "Organizador";
-            String title = switch (ev.getStatus()) {
-                case PUBLISHED       -> "Event approved and published";
-                case REJECTED        -> "Event rejected";
-                case CANCELLED       -> "Event cancelled";
-                case PENDING_REVIEW  -> "Event submitted for review";
-                case COMPLETED       -> "Event completed";
-                default              -> "Event created as draft";
-            };
-            items.add(ActivityItemResponse.builder()
-                    .type("EVENT_STATUS_CHANGE")
-                    .title(title)
-                    .description("\"" + ev.getEventName() + "\"")
-                    .actor("Organizer: " + organizerName)
-                    .occurredAt(ev.getUpdatedAt() != null ? ev.getUpdatedAt() : ev.getCreatedAt())
-                    .build());
-        }
-
-        // ── Recent approved payments ──────────────────────────────────────────
-        var recentPayments = paymentJpaRepository.findTopByOrderByProcessedAtDesc(
-                PageRequest.of(0, Math.min(limit / 2, 20)));
-
-        for (var p : recentPayments) {
-            String label = p.getStatus() == PaymentStatus.APPROVED
-                    ? "Payment approved"
-                    : "Payment processed";
-            String amountStr = p.getAmount() != null
-                    ? "$ " + String.format("%,.0f", p.getAmount()) + " " + p.getCurrency()
-                    : "";
-            items.add(ActivityItemResponse.builder()
-                    .type("PAYMENT")
-                    .title(label)
-                    .description(amountStr)
-                    .actor("Order #" + p.getOrderId())
-                    .occurredAt(p.getProcessedAt())
-                    .build());
-        }
-
-        // ── Recent user registrations ─────────────────────────────────────────
-        var recentUsers = userJpaRepository.findTopByOrderByCreatedAtDesc(
-                PageRequest.of(0, Math.min(limit / 3, 15)));
-
-        for (var u : recentUsers) {
-            items.add(ActivityItemResponse.builder()
-                    .type("USER_REGISTERED")
-                    .title("New user registered")
-                    .description("@" + u.getAlias())
-                    .actor(u.getRole() != null ? u.getRole().getName() : "USER")
-                    .occurredAt(u.getCreatedAt())
-                    .build());
-        }
-
-        // ── Sort by occurredAt desc, cap to limit ─────────────────────────────
-        var sorted = items.stream()
-                .filter(i -> i.getOccurredAt() != null)
-                .sorted(Comparator.comparing(ActivityItemResponse::getOccurredAt).reversed())
-                .limit(limit)
-                .toList();
-
-        return ResponseEntity.ok(ApiResponse.ok("Activity feed retrieved", sorted));
+        return ResponseEntity.ok(ApiResponse.ok("Activity feed retrieved", getAdminDashboardUseCase.getActivity(limit)));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -320,34 +160,5 @@ public class AdminController {
         int size = Math.min(Math.max(limit, 1), 200);
         return ResponseEntity.ok(ApiResponse.ok("Users retrieved",
                 userJpaRepository.searchForAdmin(pattern, roleCode, PageRequest.of(0, size))));
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // Refunds
-    // ═════════════════════════════════════════════════════════════════════════
-
-    @Operation(summary = "List the most recent refunds with payment breakdown, buyer and event")
-    @GetMapping("/refunds")
-    public ResponseEntity<ApiResponse<List<AdminRefundResponse>>> getRefunds(
-            @RequestParam(defaultValue = "100") int limit) {
-        int size = Math.min(Math.max(limit, 1), 300);
-        return ResponseEntity.ok(ApiResponse.ok("Refunds retrieved",
-                refundJpaRepository.findRecentForAdmin(PageRequest.of(0, size))));
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // Bulk wallet credit
-    // ═════════════════════════════════════════════════════════════════════════
-
-    @Operation(summary = "Credit wallet balance to ALL platform users — idempotent via jobId")
-    @PostMapping("/wallet/credit-all")
-    public ResponseEntity<ApiResponse<BulkCreditWalletResponse>> bulkCreditAll(
-            @Valid @RequestBody BulkCreditWalletRequest request) {
-        BulkCreditWalletResponse result = bulkCreditWalletUseCase.execute(
-                request.getAmount(),
-                request.getReason(),
-                request.getJobId()
-        );
-        return ResponseEntity.ok(ApiResponse.ok("Bulk wallet credit completed", result));
     }
 }

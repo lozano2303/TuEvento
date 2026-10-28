@@ -1,24 +1,26 @@
 package com.capysoft.tuevento.modules.security.application.usecase;
 
-import com.capysoft.tuevento.modules.event.application.dto.request.ChangeEventStatusRequest;
-import com.capysoft.tuevento.modules.event.application.port.in.AdminChangeEventStatusPort;
-import com.capysoft.tuevento.modules.event.domain.event.EventStatusChangedEvent;
-import com.capysoft.tuevento.modules.event.domain.model.Event;
-import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.security.application.dto.OrganizerRoleRevokedMessage;
 import com.capysoft.tuevento.modules.security.application.port.in.RevokeOrganizerRolePort;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort;
 import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedEvent;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerRoleRevocationRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.RoleJpaRepository;
 import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.UserJpaRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
+import com.capysoft.tuevento.shared.infrastructure.outbox.OutboxEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.UUID;
 
 /**
  * Quita el rol de organizador a un usuario y lo devuelve a USER.
@@ -28,9 +30,10 @@ import java.time.LocalDateTime;
  * en {@link OrganizerRoleRevokedEvent}: el listener lo notifica al usuario y le envía
  * ROLE_REVOKED por /topic/role-change/{userId}.
  *
- * <p>Sus eventos activos se cierran en la misma transacción: los PUBLISHED se cancelan
- * (los compradores reciben el reembolso en su cartera y quien esté viendo el evento ve el
- * aviso con la causa ORGANIZER_REVOKED) y los PENDING_REVIEW se rechazan con el motivo.
+ * <p>Identidad no toca los eventos del organizador. En la misma transacción que el cambio de rol
+ * deja {@code OrganizerRoleRevoked} en el outbox (topic {@code tuevento.user}); Catálogo lo consume
+ * y cierra sus eventos: los PUBLISHED se cancelan (con reembolso a los compradores) y los
+ * PENDING_REVIEW se rechazan. Si el cierre falla se reintenta allí, sin deshacer la revocación.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,8 +45,9 @@ public class RevokeOrganizerRoleUseCase implements RevokeOrganizerRolePort {
     private final RoleJpaRepository                 roleJpaRepository;
     private final ApplicationEventPublisher         eventPublisher;
     private final OrganizerRoleRevocationRepository revocationRepository;
-    private final EventRepository                   eventRepository;
-    private final AdminChangeEventStatusPort        adminChangeEventStatusPort;
+    private final OutboxEventPublisher              outboxEventPublisher;
+    private final TokenRevocationPort               tokenRevocationPort;
+    private final Clock                             clock;
 
     @Override
     @Transactional
@@ -54,7 +58,8 @@ public class RevokeOrganizerRoleUseCase implements RevokeOrganizerRolePort {
                     "A reason of at least " + REASON_MIN_LENGTH + " characters is required");
         }
 
-        var userEntity = userJpaRepository.findByIdEager(userId)
+        // Bloquea al usuario: dos revocaciones simultáneas no pueden pasar ambas la comprobación del rol
+        var userEntity = userJpaRepository.findByIdEagerForUpdate(userId)
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
 
         if (userEntity.getRole() == null || !"ORGANIZER".equals(userEntity.getRole().getCode())) {
@@ -67,36 +72,29 @@ public class RevokeOrganizerRoleUseCase implements RevokeOrganizerRolePort {
 
         userEntity.setRole(userRole);
         userJpaRepository.save(userEntity);
-        revocationRepository.record(userId, adminUserId, trimmedReason);
-        closeActiveEvents(userId, adminUserId, trimmedReason);
+        Long revocationId = revocationRepository.record(userId, adminUserId, trimmedReason);
+
+        Instant now = clock.instant();
+        // Sus access tokens con rol ORGANIZER dejan de valer en el monolito y en los servicios; al
+        // renovar recibe uno con USER. Si la lista no responde, la revocación entera se deshace.
+        tokenRevocationPort.revokeUser(userId, now);
+        outboxEventPublisher.publish(OrganizerRoleRevokedMessage.AGGREGATE_TYPE, String.valueOf(userId),
+                OrganizerRoleRevokedMessage.EVENT_TYPE,
+                new OrganizerRoleRevokedMessage(revocationId, userId, userEntity.getAlias(), adminUserId,
+                        trimmedReason, now.toString()),
+                eventIdOf(revocationId));
 
         eventPublisher.publishEvent(OrganizerRoleRevokedEvent.builder()
                 .userId(userId)
                 .alias(userEntity.getAlias())
                 .revokedBy(adminUserId)
                 .reason(trimmedReason)
-                .occurredAt(LocalDateTime.now())
+                .occurredAt(LocalDateTime.ofInstant(now, ZoneId.systemDefault()))
                 .build());
     }
 
-    private void closeActiveEvents(Integer userId, Integer adminUserId, String reason) {
-        Long adminId = adminUserId == null ? null : adminUserId.longValue();
-        for (Event event : eventRepository.findByUserId(userId.longValue())) {
-            if (event.getStatus() == EventStatus.PUBLISHED) {
-                adminChangeEventStatusPort.execute(event.getEventId(),
-                        ChangeEventStatusRequest.builder()
-                                .newStatus(EventStatus.CANCELLED)
-                                .reason("Rol de organizador revocado: " + reason)
-                                .build(),
-                        adminId, EventStatusChangedEvent.CAUSE_ORGANIZER_REVOKED);
-            } else if (event.getStatus() == EventStatus.PENDING_REVIEW) {
-                adminChangeEventStatusPort.execute(event.getEventId(),
-                        ChangeEventStatusRequest.builder()
-                                .newStatus(EventStatus.REJECTED)
-                                .reason("Se revocó tu rol de organizador: " + reason)
-                                .build(),
-                        adminId, EventStatusChangedEvent.CAUSE_ORGANIZER_REVOKED);
-            }
-        }
+    /** Un eventId por revocación: el mismo valor en cualquier reenvío, distinto en cada revocación. */
+    static UUID eventIdOf(Long revocationId) {
+        return UUID.nameUUIDFromBytes(("OrganizerRoleRevoked:" + revocationId).getBytes(StandardCharsets.UTF_8));
     }
 }

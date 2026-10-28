@@ -1,8 +1,7 @@
 package com.capysoft.tuevento.modules.event.infrastructure.websocket;
 
 import com.capysoft.tuevento.modules.event.domain.event.EventRatingAddedEvent;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.entity.ProfileEntity;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
+import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,7 +36,7 @@ import static org.mockito.Mockito.*;
 class EventCommentWebSocketListenerTest {
 
     @Mock private SimpMessagingTemplate messagingTemplate;
-    @Mock private ProfileJpaRepository  profileJpaRepository;
+    @Mock private UserDirectoryPort  userDirectoryPort;
 
     @InjectMocks
     private EventCommentWebSocketListener listener;
@@ -62,7 +61,7 @@ class EventCommentWebSocketListenerTest {
         @Test
         @DisplayName("payload incluye rating null e isOrganizer=false para segundo comentario")
         void null_rating_and_false_organizer_in_payload() {
-            when(profileJpaRepository.findByUserId(USER_ID.intValue())).thenReturn(Optional.empty());
+            when(userDirectoryPort.findUser(USER_ID.intValue())).thenReturn(Optional.empty());
 
             listener.onEventRatingAdded(event(null, false));
 
@@ -80,9 +79,8 @@ class EventCommentWebSocketListenerTest {
         @Test
         @DisplayName("payload incluye isOrganizer=true para el dueño del evento")
         void organizer_flag_propagated() {
-            ProfileEntity p = mock(ProfileEntity.class);
-            when(p.getFullName()).thenReturn("Carlos Org");
-            when(profileJpaRepository.findByUserId(USER_ID.intValue())).thenReturn(Optional.of(p));
+            when(userDirectoryPort.findUser(USER_ID.intValue()))
+                    .thenReturn(Optional.of(new UserDirectoryPort.UserRef(USER_ID.intValue(), "Carlos Org", null, null)));
 
             listener.onEventRatingAdded(event(null, true));
 
@@ -98,7 +96,7 @@ class EventCommentWebSocketListenerTest {
         @Test
         @DisplayName("authorName cae a 'Usuario' cuando no hay perfil")
         void author_name_fallback() {
-            when(profileJpaRepository.findByUserId(USER_ID.intValue())).thenReturn(Optional.empty());
+            when(userDirectoryPort.findUser(USER_ID.intValue())).thenReturn(Optional.empty());
 
             listener.onEventRatingAdded(event(4, false));
 
@@ -122,7 +120,7 @@ class EventCommentWebSocketListenerTest {
                     .occurredAt(LocalDateTime.now()).build();
 
             listener.onEventRatingAdded(hidden);
-            verifyNoInteractions(messagingTemplate, profileJpaRepository);
+            verifyNoInteractions(messagingTemplate, userDirectoryPort);
         }
     }
 
@@ -133,7 +131,7 @@ class EventCommentWebSocketListenerTest {
         @Test
         @DisplayName("fallo de SimpMessagingTemplate → no lanza excepción")
         void messaging_failure_non_breaking() {
-            when(profileJpaRepository.findByUserId(USER_ID.intValue())).thenReturn(Optional.empty());
+            when(userDirectoryPort.findUser(USER_ID.intValue())).thenReturn(Optional.empty());
             doThrow(new RuntimeException("Broker down"))
                     .when(messagingTemplate).convertAndSend(anyString(), any(Object.class));
 

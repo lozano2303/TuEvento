@@ -26,6 +26,12 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 12MB
+  # Lista de revocación de access tokens que escribe Identidad (la misma instancia de Redis que el monolito)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
   security:
     oauth2:
       resourceserver:

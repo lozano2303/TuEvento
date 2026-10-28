@@ -1,6 +1,8 @@
 package com.capysoft.tuevento.shared.infrastructure.websocket;
 
+import com.capysoft.tuevento.modules.security.application.dto.AccessTokenClaims;
 import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -39,6 +41,7 @@ import java.util.Map;
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
     private final TokenGeneratorPort tokenGenerator;
+    private final TokenRevocationPort tokenRevocationPort;
 
     private static final String TOKEN_PARAM = "token";
     private static final String USER_ID_ATTRIBUTE = "userId";
@@ -84,6 +87,13 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
             return false;
         }
 
+        // Un token revocado (rol quitado, logout, cuenta desactivada) no abre el /ws; si no se puede
+        // comprobar, tampoco (fail-closed)
+        if (isRevoked(token)) {
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            return false;
+        }
+
         // Extraer userId del token y almacenarlo en attributes (disponible en la sesión WS)
         tokenGenerator.extractUserId(token).ifPresentOrElse(
             userId -> {
@@ -100,6 +110,28 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
         boolean accepted = attributes.containsKey(USER_ID_ATTRIBUTE);
         log.info("Handshake result: {}", accepted ? "ACCEPTED" : "REJECTED");
         return accepted;
+    }
+
+    private boolean isRevoked(String token) {
+        Integer userId = tokenGenerator.extractUserId(token).orElse(null);
+        if (userId == null) {
+            return false; // lo rechaza la comprobación de userId de abajo
+        }
+        TokenGeneratorPort.TokenMetadata metadata = tokenGenerator.extractMetadata(token).orElse(null);
+        AccessTokenClaims claims = new AccessTokenClaims(userId, null, null,
+                metadata == null ? null : metadata.tokenId(),
+                metadata == null ? null : metadata.issuedAt(),
+                metadata == null ? null : metadata.expiresAt());
+        try {
+            if (tokenRevocationPort.isRevoked(claims)) {
+                log.warn("WebSocket handshake rejected: revoked token for userId={}", userId);
+                return true;
+            }
+            return false;
+        } catch (TokenRevocationPort.TokenRevocationUnavailableException e) {
+            log.error("WebSocket handshake rejected: token revocation store unavailable: {}", e.getMessage());
+            return true;
+        }
     }
 
     /**

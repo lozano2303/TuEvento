@@ -1,9 +1,13 @@
 package com.capysoft.tuevento.shared.infrastructure.security;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,12 +27,17 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.Ordered;
 
-import com.capysoft.tuevento.modules.security.application.port.out.CurrentRolePort;
 import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
+import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort;
+import com.capysoft.tuevento.modules.security.infrastructure.external.InMemoryTokenRevocationStore;
+import com.capysoft.tuevento.modules.security.infrastructure.external.RedisTokenRevocationStore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -36,14 +45,32 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
     private final TokenGeneratorPort tokenGenerator;
-    private final CurrentRolePort    currentRolePort;
+    private final ObjectMapper       objectMapper;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(tokenGenerator, currentRolePort);
+    public JwtAuthenticationFilter jwtAuthenticationFilter(TokenRevocationPort tokenRevocationPort) {
+        return new JwtAuthenticationFilter(tokenGenerator, tokenRevocationPort, objectMapper);
+    }
+
+    /**
+     * Lista de revocación de access tokens. Con Redis configurado (dev, k8s, producción) es Redis
+     * y, si Redis no responde, las peticiones con token se rechazan (fail-closed). Solo sin Redis
+     * configurado, que únicamente ocurre en los tests, se usa una lista en memoria.
+     */
+    @Bean
+    public TokenRevocationPort tokenRevocationPort(ObjectProvider<StringRedisTemplate> redis,
+            ObjectProvider<Clock> clockProvider,
+            @Value("${app.jwt.access-token-expiration:900000}") long accessTokenExpirationMs) {
+        Clock clock = clockProvider.getIfAvailable(Clock::systemUTC);
+        StringRedisTemplate template = redis.getIfAvailable();
+        if (template == null) {
+            log.warn("Redis is not configured: JWT revocation list kept in memory (tests only, not shared across replicas)");
+            return new InMemoryTokenRevocationStore(clock);
+        }
+        return new RedisTokenRevocationStore(template, Duration.ofMillis(accessTokenExpirationMs), clock);
     }
 
     private static final String[] PUBLIC_ENDPOINTS = {
@@ -91,8 +118,42 @@ public class SecurityConfig {
                 .build();
     }
 
+    /**
+     * API interna entre servicios ({@code /internal/**}): solo con la clave de
+     * {@link InternalApiKeyFilter}, nunca con el JWT de un usuario. El gateway no la enruta, pero el
+     * ingress de k8s sí llega al backend, así que la clave es la única barrera.
+     */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(Ordered.HIGHEST_PRECEDENCE + 1)
+    public SecurityFilterChain internalFilterChain(HttpSecurity http,
+            @Value("${app.internal.api-key:}") String internalApiKey) throws Exception {
+        return http
+                .securityMatcher("/internal/**")
+                // CSRF is safe to disable: this chain is stateless and authenticates only with the
+                // X-Internal-Api-Key header, never with cookies, so a browser cannot forge the request.
+                .csrf(AbstractHttpConfigurer::disable) // NOSONAR java:S4502 header-only service auth
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(new InternalApiKeyFilter(internalApiKey), UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, e) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json; charset=UTF-8");
+                            response.getWriter().write("{\"success\":false,\"code\":\"INTERNAL_AUTH_REQUIRED\","
+                                    + "\"message\":\"Internal API key required\"}");
+                        })
+                        .accessDeniedHandler((request, response, e) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json; charset=UTF-8");
+                            response.getWriter().write("{\"success\":false,\"code\":\"FORBIDDEN\","
+                                    + "\"message\":\"Internal API only\"}");
+                        }))
+                .authorizeHttpRequests(auth -> auth.anyRequest().hasAuthority(InternalApiKeyFilter.AUTHORITY))
+                .build();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -195,7 +256,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.POST,
                                 "/api/v1/wallet/adjust").hasAuthority("ADMIN")
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

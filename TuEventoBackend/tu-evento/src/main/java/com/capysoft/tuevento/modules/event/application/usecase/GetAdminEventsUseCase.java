@@ -9,8 +9,8 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.SiteLookupPort;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
-import com.capysoft.tuevento.modules.security.infrastructure.persistence.repository.LoginCredentialsJpaRepository;
+import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
+import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort.UserRef;
 import com.capysoft.tuevento.modules.storage.domain.repository.StoredFileRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Admin-only use case: lists all events regardless of status or visibility.
@@ -33,8 +35,7 @@ public class GetAdminEventsUseCase implements GetAdminEventsPort {
     private final EventMediaRepository  eventMediaRepository;
     private final CategoryEventUseCase  categoryEventUseCase;
     private final SiteLookupPort        siteLookupPort;
-    private final ProfileJpaRepository  profileRepository;
-    private final LoginCredentialsJpaRepository loginCredentialsRepository;
+    private final UserDirectoryPort     userDirectoryPort;
     private final StoredFileRepository  storedFileRepository;
 
     @Override
@@ -44,12 +45,29 @@ public class GetAdminEventsUseCase implements GetAdminEventsPort {
                 ? eventRepository.findAll()
                 : eventRepository.findByStatus(status);
 
+        Map<Integer, UserRef> organizers = findOrganizers(events);
         return events.stream()
-                .map(this::toAdminSummary)
+                .map(e -> toAdminSummary(e, organizers))
                 .toList();
     }
 
-    private AdminEventSummaryResponse toAdminSummary(Event e) {
+    /** Todos los organizadores de la lista en una sola consulta, en vez de tres por evento. */
+    private Map<Integer, UserRef> findOrganizers(List<Event> events) {
+        List<Integer> organizerIds = events.stream()
+                .map(Event::getUserId)
+                .filter(Objects::nonNull)
+                .map(Math::toIntExact)
+                .distinct()
+                .toList();
+        try {
+            return userDirectoryPort.findUsers(organizerIds);
+        } catch (Exception ex) {
+            log.warn("Admin events: could not resolve organizers: {}", ex.getMessage());
+            return Map.of();
+        }
+    }
+
+    private AdminEventSummaryResponse toAdminSummary(Event e, Map<Integer, UserRef> organizers) {
 
         // ── Site name ─────────────────────────────────────────────────────────
         String siteName = null;
@@ -86,47 +104,24 @@ public class GetAdminEventsUseCase implements GetAdminEventsPort {
                     e.getEventId(), ex.getMessage());
         }
 
-        // ── Organizer name (from profile) ─────────────────────────────────────
-        String organizerName = null;
-        try {
-            organizerName = profileRepository
-                    .findByUserId(Math.toIntExact(e.getUserId()))
-                    .map(p -> p.getFullName())
-                    .orElse(null);
-        } catch (Exception ex) {
-            log.warn("Admin events: could not resolve organizerName for event {}, userId {}: {}",
-                    e.getEventId(), e.getUserId(), ex.getMessage());
-        }
-
-        // ── Organizer email (from login_credentials) ──────────────────────────
-        String organizerEmail = null;
-        try {
-            organizerEmail = loginCredentialsRepository
-                    .findByUserUserId(Math.toIntExact(e.getUserId()))
-                    .map(c -> c.getEmail())
-                    .orElse(null);
-        } catch (Exception ex) {
-            log.warn("Admin events: could not resolve organizerEmail for event {}, userId {}: {}",
-                    e.getEventId(), e.getUserId(), ex.getMessage());
-        }
+        // ── Organizer (nombre, email y foto, de Identidad) ────────────────────
+        UserRef organizer = e.getUserId() == null ? null : organizers.get(Math.toIntExact(e.getUserId()));
+        String organizerName  = organizer == null ? null : organizer.fullName();
+        String organizerEmail = organizer == null ? null : organizer.email();
 
         // ── Organizer profile picture — lee publicUrl directamente desde stored_file,
         //    sin generar URL presignada (evita escritura de log dentro de readOnly tx) ──
         String organizerProfilePicture = null;
-        try {
-            var profileOpt = profileRepository.findByUserId(Math.toIntExact(e.getUserId()));
-            if (profileOpt.isPresent()) {
-                Integer avatarFileId = profileOpt.get().getStoredFileId();
-                if (avatarFileId != null) {
-                    organizerProfilePicture = storedFileRepository.findById(avatarFileId)
-                            .filter(f -> !Boolean.TRUE.equals(f.getDeleted()))
-                            .map(f -> f.getPublicUrl())
-                            .orElse(null);
-                }
+        if (organizer != null && organizer.avatarFileId() != null) {
+            try {
+                organizerProfilePicture = storedFileRepository.findById(organizer.avatarFileId())
+                        .filter(f -> !Boolean.TRUE.equals(f.getDeleted()))
+                        .map(f -> f.getPublicUrl())
+                        .orElse(null);
+            } catch (Exception ex) {
+                log.warn("Admin events: could not resolve organizerProfilePicture for event {}, userId {}: {}",
+                        e.getEventId(), e.getUserId(), ex.getMessage());
             }
-        } catch (Exception ex) {
-            log.warn("Admin events: could not resolve organizerProfilePicture for event {}, userId {}: {}",
-                    e.getEventId(), e.getUserId(), ex.getMessage());
         }
 
         return AdminEventSummaryResponse.builder()

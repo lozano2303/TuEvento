@@ -14,8 +14,8 @@ import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.domain.model.EventRatingTranslation;
 import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingTranslationRepository;
+import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
 import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
-import com.capysoft.tuevento.modules.profile.infrastructure.persistence.repository.ProfileJpaRepository;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
@@ -64,7 +64,7 @@ public class EventRatingController {
     private final EditEventRatingUseCase             editEventRatingUseCase;
     private final EventRatingRepository              eventRatingRepository;
     private final EventRepository                    eventRepository;
-    private final ProfileJpaRepository               profileJpaRepository;
+    private final UserDirectoryPort                  userDirectoryPort;
     private final EventRatingTranslationRepository   eventRatingTranslationRepository;
     private final LanguageCatalog                    languageCatalog;
     private final TranslationRequests translationRequests;
@@ -116,11 +116,13 @@ public class EventRatingController {
                 .map(r -> r.getUserId().intValue())
                 .distinct()
                 .collect(Collectors.toList());
-        Map<Integer, String> nameByUserId = profileJpaRepository.findAllByUserIdIn(userIds)
+        // Sin perfil o sin nombre el usuario no entra en el mapa (toMap no admite valores null)
+        Map<Integer, String> nameByUserId = userDirectoryPort.findUsers(userIds).values()
                 .stream()
+                .filter(u -> u.fullName() != null)
                 .collect(Collectors.toMap(
-                        p -> p.getUserId(),
-                        p -> p.getFullName()));
+                        UserDirectoryPort.UserRef::userId,
+                        UserDirectoryPort.UserRef::fullName));
 
         // ── Lógica de traducción ──────────────────────────────────────────────────
         boolean needsTranslation = languageCode != null 

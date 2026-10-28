@@ -10,7 +10,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrganizerRoleRevocationRepositoryImpl")
@@ -20,10 +22,17 @@ class OrganizerRoleRevocationRepositoryImplTest {
     @InjectMocks private OrganizerRoleRevocationRepositoryImpl repository;
 
     @Test
-    @DisplayName("record → guarda usuario, admin, motivo y fecha")
+    @DisplayName("record → guarda usuario, admin, motivo y fecha, y devuelve el ID de la revocación")
     void record_savesRevocation() {
-        repository.record(15, 1, "Incumplimiento de las normas");
+        when(jpaRepository.save(any())).thenAnswer(inv -> {
+            OrganizerRoleRevocationEntity entity = inv.getArgument(0);
+            entity.setRevocationId(77L);
+            return entity;
+        });
 
+        Long revocationId = repository.record(15, 1, "Incumplimiento de las normas");
+
+        assertThat(revocationId).isEqualTo(77L);
         ArgumentCaptor<OrganizerRoleRevocationEntity> cap = ArgumentCaptor.forClass(OrganizerRoleRevocationEntity.class);
         verify(jpaRepository).save(cap.capture());
         OrganizerRoleRevocationEntity saved = cap.getValue();

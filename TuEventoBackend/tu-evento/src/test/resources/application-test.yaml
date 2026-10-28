@@ -89,3 +89,8 @@ payment:
 notification:
   email:
     enabled: false
+
+# Los tests corren sin Kafka (KafkaAutoConfiguration excluida): sin consumidores de eventos de dominio
+messaging:
+  consumers:
+    enabled: false

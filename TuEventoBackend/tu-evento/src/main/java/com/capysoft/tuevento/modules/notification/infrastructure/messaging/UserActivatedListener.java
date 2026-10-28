@@ -1,7 +1,6 @@
 package com.capysoft.tuevento.modules.notification.infrastructure.messaging;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,8 +12,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
 import com.capysoft.tuevento.modules.notification.application.port.out.NotificationSender;
 import com.capysoft.tuevento.modules.notification.domain.model.NotificationTypeNames;
-import com.capysoft.tuevento.modules.profile.domain.model.Profile;
-import com.capysoft.tuevento.modules.profile.domain.repository.ProfileRepository;
+import com.capysoft.tuevento.modules.notification.application.port.out.RecipientDirectoryPort;
 import com.capysoft.tuevento.modules.security.domain.event.UserActivatedEvent;
 
 import lombok.RequiredArgsConstructor;
@@ -30,7 +28,7 @@ public class UserActivatedListener {
     private static final Logger log = LoggerFactory.getLogger(UserActivatedListener.class);
 
     private final NotificationSender notificationSender;
-    private final ProfileRepository profileRepository;
+    private final RecipientDirectoryPort recipientDirectoryPort;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -39,8 +37,9 @@ public class UserActivatedListener {
 
         try {
             // Get user's full name from profile
-            Optional<Profile> profileOpt = profileRepository.findByUserId(event.getUserId());
-            String fullName = profileOpt.map(Profile::getFullName).orElse(event.getAlias());
+            String fullName = recipientDirectoryPort.findRecipient(event.getUserId())
+                    .map(RecipientDirectoryPort.Recipient::fullName)
+                    .orElse(event.getAlias());
 
             // Send welcome notification via IN_APP and EMAIL
             SendNotificationCommand command = SendNotificationCommand.builder()
