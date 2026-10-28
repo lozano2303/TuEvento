@@ -16,9 +16,7 @@ import com.capysoft.tuevento.modules.security.domain.model.OrganizerPetition;
 import com.capysoft.tuevento.modules.security.domain.model.User;
 import com.capysoft.tuevento.modules.security.domain.repository.OrganizerPetitionRepository;
 import com.capysoft.tuevento.modules.security.domain.repository.UserRepository;
-import com.capysoft.tuevento.modules.storage.application.dto.request.UploadFileRequest;
-import com.capysoft.tuevento.modules.storage.application.dto.response.UploadFileResponse;
-import com.capysoft.tuevento.modules.storage.application.port.in.UploadFilePort;
+import com.capysoft.tuevento.modules.security.application.port.out.OrganizerDocumentPort;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
@@ -36,7 +34,7 @@ public class RequestOrganizerUseCase implements RequestOrganizerPort {
 
     private final OrganizerPetitionRepository organizerPetitionRepository;
     private final UserRepository              userRepository;
-    private final UploadFilePort              uploadFilePort;
+    private final OrganizerDocumentPort       organizerDocumentPort;
     private final ApplicationEventPublisher   eventPublisher;
 
     @Override
@@ -66,19 +64,15 @@ public class RequestOrganizerUseCase implements RequestOrganizerPort {
             throw new BusinessException("DOCUMENT_READ_ERROR", "Failed to read uploaded document");
         }
 
-        UploadFileResponse fileResponse = uploadFilePort.upload(UploadFileRequest.builder()
-                .fileCategoryCode(ORGANIZER_DOCUMENT_CODE)
-                .uploadedBy(user.getUserId())
-                .originalFilename(request.getDocument().getOriginalFilename())
-                .contentType(request.getDocument().getContentType())
-                .content(documentBytes)
-                .ownerEntityType(OWNER_ENTITY_TYPE)
-                .build());
+        Integer storedFileId = organizerDocumentPort.upload(new OrganizerDocumentPort.DocumentUpload(
+                ORGANIZER_DOCUMENT_CODE, OWNER_ENTITY_TYPE, user.getUserId(),
+                request.getDocument().getOriginalFilename(), request.getDocument().getContentType(),
+                documentBytes));
 
         LocalDateTime now = LocalDateTime.now();
         OrganizerPetition petition = organizerPetitionRepository.save(OrganizerPetition.builder()
                 .user(user)
-                .storedFileId(fileResponse.getStoredFileId())
+                .storedFileId(storedFileId)
                 .applicationDate(now)
                 .documentType(request.getDocumentType())
                 .status(PENDING_STATUS)
@@ -94,7 +88,7 @@ public class RequestOrganizerUseCase implements RequestOrganizerPort {
                 .organizerPetitionId(petition.getOrganizerPetitionId())
                 .status(petition.getStatus())
                 .applicationDate(petition.getApplicationDate())
-                .storedFileId(fileResponse.getStoredFileId())
+                .storedFileId(storedFileId)
                 .build();
     }
 }
