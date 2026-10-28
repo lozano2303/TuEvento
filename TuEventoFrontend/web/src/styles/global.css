@@ -1696,61 +1696,12 @@ input[type="password"]::-ms-reveal { display: none; }
   box-shadow: 0 0 14px rgba(168, 85, 247, 0.16);
 }
 
-/* ── Wrapper del GoogleButton dentro del grid ────────────────────────────── */
-.login-google-wrapper {
-  position: relative;
+/* ── Official Google button (visible: Chrome ignores clicks on a hidden one) ── */
+.login-google-button {
   width: 100%;
-  height: 56px;
-  border-radius: 12px;
-  border: 1px solid rgba(124, 58, 237, 0.35);
-  background: rgba(255, 255, 255, 0.04);
-  cursor: pointer;
-  overflow: hidden;
+  min-height: 44px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 0.625rem;
-  color: #ffffff;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
-  font-family: 'Montserrat', sans-serif;
-}
-
-.login-google-wrapper:hover {
-  background: rgba(124, 58, 237, 0.16);
-  border-color: rgba(168, 85, 247, 0.60);
-  box-shadow: 0 0 14px rgba(168, 85, 247, 0.16);
-}
-
-/* Contenido visual del botón Google (bajo el overlay) */
-.login-google-visual {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  pointer-events: none;
-  user-select: none;
-  position: relative;
-  z-index: 0;
-}
-
-/* Overlay GoogleLogin — cubre todo el wrapper */
-.login-google-overlay {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  z-index: 1;
-  overflow: hidden;
-  display: flex;
-  align-items: stretch;
-}
-
-.login-google-overlay > div,
-.login-google-overlay iframe,
-.login-google-overlay > div > div {
-  width: 100% !important;
-  height: 100% !important;
-  min-width: unset !important;
 }
 
 /* ── Links de pie de tarjeta ─────────────────────────────────────────────── */
