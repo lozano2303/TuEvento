@@ -58,6 +58,10 @@ app:
   identity:
     base-url: ${IDENTITY_SERVICE_URL:http://localhost:8088}
     jwk-set-uri: ${IDENTITY_JWK_SET_URI:http://localhost:8088/.well-known/jwks.json}
+  # Archivos (subidas, URLs y moderación de imágenes) viven en storage-service: se usan por su API
+  # interna (con app.internal.api-key)
+  storage-service:
+    base-url: ${STORAGE_SERVICE_URL:http://localhost:8085}
   internal:
     api-key: ${INTERNAL_API_KEY:}
 

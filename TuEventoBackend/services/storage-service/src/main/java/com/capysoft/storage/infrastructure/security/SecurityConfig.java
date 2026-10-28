@@ -1,5 +1,6 @@
 package com.capysoft.storage.infrastructure.security;
 
+import com.capysoft.common.infrastructure.security.InternalApiKeyFilter;
 import com.capysoft.common.infrastructure.security.RedisTokenRevocationChecker;
 import com.capysoft.common.infrastructure.security.RevocationAwareAuthenticationEntryPoint;
 import com.capysoft.common.infrastructure.security.RevocationCheckingJwtDecoder;
@@ -19,12 +20,46 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.core.annotation.Order;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    /**
+     * API interna ({@code /internal/**}) para el monolito y los demás servicios: solo con la clave
+     * entre servicios (sin ella, o sin clave configurada, todo se rechaza). El gateway no la enruta.
+     */
     @Bean
+    @Order(1)
+    public SecurityFilterChain internalFilterChain(HttpSecurity http,
+            @Value("${app.internal.api-key:}") String internalApiKey) throws Exception {
+        return http
+                .securityMatcher("/internal/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(new InternalApiKeyFilter(internalApiKey), UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, e) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json; charset=UTF-8");
+                            response.getWriter().write("{\"success\":false,\"code\":\"INTERNAL_AUTH_REQUIRED\","
+                                    + "\"message\":\"Internal API key required\"}");
+                        })
+                        .accessDeniedHandler((request, response, e) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json; charset=UTF-8");
+                            response.getWriter().write("{\"success\":false,\"code\":\"FORBIDDEN\","
+                                    + "\"message\":\"Internal API only\"}");
+                        }))
+                .authorizeHttpRequests(auth -> auth.anyRequest().hasAuthority(InternalApiKeyFilter.AUTHORITY))
+                .build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
