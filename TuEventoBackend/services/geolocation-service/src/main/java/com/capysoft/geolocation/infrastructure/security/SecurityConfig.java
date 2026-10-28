@@ -38,6 +38,9 @@ public class SecurityConfig {
                         // Crear y editar sedes: ADMIN u ORGANIZER (también con @PreAuthorize en el controlador)
                         .requestMatchers(HttpMethod.POST, "/api/v1/geolocation/sites").hasAnyAuthority("ADMIN", "ORGANIZER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/geolocation/sites/**").hasAnyAuthority("ADMIN", "ORGANIZER")
+                        // Idiomas activos e idioma por id: públicos; administrarlos, solo ADMIN (como en el monolito)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/languages", "/api/v1/languages/*").permitAll()
+                        .requestMatchers("/api/v1/admin/languages", "/api/v1/admin/languages/**").hasAuthority("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

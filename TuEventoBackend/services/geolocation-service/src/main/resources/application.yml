@@ -21,6 +21,16 @@ spring:
     open-in-view: false
   liquibase:
     enabled: false
+  # Órdenes de traducción del monolito y resultados de vuelta (solo con translation.enabled).
+  # Local: el broker del docker-compose publica 9094 al host. Dentro de Docker: kafka:9092
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    consumer:
+      auto-offset-reset: earliest
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
   # Lista de revocación de access tokens que escribe Identidad (la misma instancia de Redis que el monolito)
   data:
     redis:
@@ -35,6 +45,27 @@ spring:
       resourceserver:
         jwt:
           jwk-set-uri: ${JWK_SET_URI:http://localhost:8088/.well-known/jwks.json}
+
+# Núcleo de traducción automática (LibreTranslate). Apagado por defecto: mientras el monolito
+# traduzca en local (TRANSLATION_MODE=local) sus planificadores procesan los mismos trabajos de
+# translation_job, así que solo se enciende a la vez que el monolito pasa a remote.
+translation:
+  enabled: ${TRANSLATION_ENABLED:false}
+  provider: libretranslate
+  protected-terms: ${TRANSLATION_PROTECTED_TERMS:Tu Evento}
+  max-attempts: 3
+  processing-timeout-minutes: 10
+  libretranslate:
+    base-url: ${TRANSLATION_LIBRETRANSLATE_BASE_URL:http://localhost:5001}
+    timeout:
+      connect: 10s
+      read: 30s
+  executor:
+    core-pool-size: 2
+    max-pool-size: 4
+    queue-capacity: 50
+  backoff:
+    max-minutes: 60
 
 management:
   endpoints:
