@@ -14,8 +14,8 @@ const LANGUAGE_CODE_MAP = {
   'pt': 'pt',
 };
 
-// La app arranca siempre en español (sin detectar el idioma del navegador ni recordar el de la
-// sesión anterior); el usuario lo cambia durante la sesión con el selector.
+// Sin sesión la app arranca en español (sin detectar el idioma del navegador); con sesión,
+// applySessionLanguage (services/sessionLanguage.js) aplica el idioma preferido del perfil.
 i18n
   .use(initReactI18next)
   .init({

@@ -46,6 +46,7 @@ export function AuthProvider({ children }) {
           fullName: profile.fullName,
           profileId: profile.profileId,
           storedFileId: profile.storedFileId,
+          preferredLanguageId: profile.preferredLanguageId ?? null,
         });
       } catch {
         // Sin red u otro fallo pasajero: arranca sin sesión pero conserva los tokens para
@@ -69,6 +70,7 @@ export function AuthProvider({ children }) {
       fullName: profile.fullName,
       profileId: profile.profileId,
       storedFileId: profile.storedFileId,
+      preferredLanguageId: profile.preferredLanguageId ?? null,
     });
     return decoded.role;
   };
