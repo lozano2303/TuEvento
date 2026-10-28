@@ -111,15 +111,32 @@ class RemoteTranslationTest {
     @DisplayName("TranslationResultListener")
     class Results {
 
-        private final TranslationResultListener listener = new TranslationResultListener(contents, objectMapper);
+        private final JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        private final TranslationResultListener listener = new TranslationResultListener(contents, objectMapper, jdbc);
+
+        private String result() throws Exception {
+            return objectMapper.writeValueAsString(Map.of(
+                    "entityType", "profile", "entityId", 9, "languageCode", "pt", "texts", Map.of("bio", "Olá")));
+        }
 
         @Test
         @DisplayName("guarda la traducción recibida en el dominio")
         void saves() throws Exception {
-            listener.onResult(objectMapper.writeValueAsString(Map.of(
-                    "entityType", "profile", "entityId", 9, "languageCode", "pt", "texts", Map.of("bio", "Olá"))));
+            when(jdbc.queryForObject(anyString(), eq(Integer.class), eq("profile"), eq(9L), eq("pt"))).thenReturn(1);
+
+            listener.onResult(result());
 
             verify(contents).saveMachineTranslation("profile", 9L, "pt", Map.of("bio", "Olá"));
+        }
+
+        @Test
+        @DisplayName("un resultado sin trabajo de traducción para esa entidad e idioma se descarta")
+        void discardsWithoutJob() throws Exception {
+            when(jdbc.queryForObject(anyString(), eq(Integer.class), eq("profile"), eq(9L), eq("pt"))).thenReturn(0);
+
+            listener.onResult(result());
+
+            verifyNoInteractions(contents);
         }
 
         @Test
