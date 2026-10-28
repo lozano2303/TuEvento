@@ -77,6 +77,9 @@ export const uploadProfilePicture = async (file) => {
   return data?.data;
 };
 
+/** Evento del DOM que emite ProfilePage al cambiar la foto (detail: { url }); lo escucha el Navbar. */
+export const PROFILE_PICTURE_CHANGED_EVENT = 'profile-picture-changed';
+
 export const getProfilePictureUrl = async (storedFileId) => {
   // Use /url endpoint to get a fresh presigned URL (60-min expiry) instead of
   // the stale static URL stored in the DB, which points to the internal MinIO

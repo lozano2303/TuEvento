@@ -4,7 +4,7 @@ import { changeUILanguage } from '../i18n';
 import Footer from '../layouts/Footer';
 import { useTheme } from '../context/ThemeContext';
 import { getThemes, activateTheme } from '../services/themeService';
-import { getProfileByUserId, getProfilePictureUrl, updateProfile, uploadProfilePicture } from '../services/ProfileService';
+import { getProfileByUserId, getProfilePictureUrl, updateProfile, uploadProfilePicture, PROFILE_PICTURE_CHANGED_EVENT } from '../services/ProfileService';
 import { getActiveLanguages } from '../services/LanguageService';
 import { performLogout } from '../services/httpClient';
 import { useLanguageSync } from '../hooks/useLanguageSync';
@@ -418,6 +418,7 @@ const ProfilePage = () => {
       await updateProfile(profileId, { storedFileId: newId });
       const newUrl = await getProfilePictureUrl(newId);
       setAvatarUrl(newUrl || null);
+      window.dispatchEvent(new CustomEvent(PROFILE_PICTURE_CHANGED_EVENT, { detail: { url: newUrl || null } }));
       setPreviewUrl(null);
       setAvatarMessage({ type: 'success', text: t('profile.photoUpdated') });
     } catch (err) {

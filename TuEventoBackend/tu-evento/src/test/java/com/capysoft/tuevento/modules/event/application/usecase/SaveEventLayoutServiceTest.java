@@ -159,17 +159,18 @@ class SaveEventLayoutServiceTest {
     }
 
     @Test
-    @DisplayName("las últimas sillas de la sección quedan como cortesía y la sección vende el resto")
-    void marksTheLastSeatsAsCourtesy() {
+    @DisplayName("las primeras sillas de la sección quedan como cortesía y la sección vende el resto")
+    void marksTheFirstSeatsAsCourtesy() {
         when(seatBlockRepository.save(any())).thenReturn(SeatBlock.builder().seatBlockId(33).build());
 
         save(layoutWithCourtesy(SECTION_ID, 2, new int[]{3, 2}, new int[]{2, 2}));
 
         List<Seat> seats = insertedSeats();
         assertThat(seats).extracting(Seat::getStatus).containsExactly(
-                SeatStatus.AVAILABLE, SeatStatus.AVAILABLE, SeatStatus.AVAILABLE, SeatStatus.COURTESY, SeatStatus.COURTESY);
+                SeatStatus.COURTESY, SeatStatus.COURTESY, SeatStatus.AVAILABLE, SeatStatus.AVAILABLE, SeatStatus.AVAILABLE);
         assertThat(seats).extracting(Seat::getType).containsExactly(
-                SeatType.REGULAR, SeatType.REGULAR, SeatType.REGULAR, SeatType.COURTESY, SeatType.COURTESY);
+                SeatType.COURTESY, SeatType.COURTESY, SeatType.REGULAR, SeatType.REGULAR, SeatType.REGULAR);
+        assertThat(seats).extracting(Seat::getCode).startsWith("A1", "A2");
 
         ArgumentCaptor<EventSection> section = ArgumentCaptor.forClass(EventSection.class);
         verify(eventSectionRepository).save(section.capture());
@@ -249,7 +250,7 @@ class SaveEventLayoutServiceTest {
 
         verify(seatRepository, never()).countByEventSectionId(anyInt());
         assertThat(insertedSeats()).extracting(Seat::getStatus).containsExactly(
-                SeatStatus.AVAILABLE, SeatStatus.AVAILABLE, SeatStatus.COURTESY);
+                SeatStatus.COURTESY, SeatStatus.AVAILABLE, SeatStatus.AVAILABLE);
     }
 
     @Test

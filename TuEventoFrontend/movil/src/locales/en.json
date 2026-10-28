@@ -1732,7 +1732,11 @@
     "expiresIn": "Expires in",
     "generateNew": "Generate new QR",
     "regenerate": "Regenerate",
-    "securityNote": "Show this code to the organizer to validate your ticket. It's single-use and refreshes every few seconds for security."
+    "securityNote": "Show this code to the organizer to validate your ticket. It's single-use and refreshes every few seconds for security.",
+    "validatedTitle": "QR validated!",
+    "validatedTicket": "Your ticket was validated by the organizer. Enjoy the event!",
+    "validatedOrder": "Your order was validated by the organizer. Enjoy the event!",
+    "back": "Back"
   },
   "mobileScan": {
     "title": "Validate tickets",

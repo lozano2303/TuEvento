@@ -346,13 +346,12 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
      * La numeración de códigos (A1, A2, B1...) continúa a través de todos los
      * elementos del grupo, sin reiniciarse entre sub-secciones.
      *
-     * Las últimas {@code courtesySeats} sillas quedan como cortesía (tipo y estado COURTESY):
-     * no se pueden reservar ni comprar.
+     * Las primeras {@code courtesySeats} sillas (A1, A2…) quedan como cortesía (tipo y estado
+     * COURTESY): no se pueden reservar ni comprar.
      */
     List<Seat> buildContinuousSeatsForSection(Integer seatBlockId, Integer eventSectionId,
                                               List<SectionElement> elements, int courtesySeats) {
         int total = elements.stream().mapToInt(e -> e.targetSeats).sum();
-        int firstCourtesyIndex = total - courtesySeats;
         List<Seat> seats = new ArrayList<>(total);
         int globalCurrentRow = 1;
         int globalCurrentPosition = 1;
@@ -365,7 +364,7 @@ public class SaveEventLayoutService implements SaveEventLayoutUseCase {
                 // Usar numeración global continua
                 String rowLabel = getRowLabel(globalCurrentRow);
                 String code = rowLabel + globalCurrentPosition;
-                boolean courtesy = seats.size() >= firstCourtesyIndex;
+                boolean courtesy = seats.size() < courtesySeats;
 
                 seats.add(Seat.builder()
                         .seatBlockId(seatBlockId)

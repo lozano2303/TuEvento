@@ -1732,7 +1732,11 @@
     "expiresIn": "Caduca en",
     "generateNew": "Generar nuevo QR",
     "regenerate": "Regenerar",
-    "securityNote": "Muestra este código al organizador para validar tu entrada. Es de un solo uso y se renueva cada pocos segundos por seguridad."
+    "securityNote": "Muestra este código al organizador para validar tu entrada. Es de un solo uso y se renueva cada pocos segundos por seguridad.",
+    "validatedTitle": "¡QR validado!",
+    "validatedTicket": "Tu entrada fue validada por el organizador. ¡Disfruta el evento!",
+    "validatedOrder": "Tu orden fue validada por el organizador. ¡Disfruta el evento!",
+    "back": "Volver"
   },
   "mobileScan": {
     "title": "Validar entradas",

@@ -19,7 +19,7 @@ const SEATS = { seatRadius: 8, gap: 4 };
 
 describe('catálogo de formas', () => {
   it('tiene más de 20 formas con id y nombre únicos', () => {
-    expect(SECTION_SHAPES.length).toBeGreaterThanOrEqual(20);
+    expect(SECTION_SHAPES.length).toBeGreaterThanOrEqual(15);
     expect(new Set(SECTION_SHAPES.map((s) => s.id)).size).toBe(SECTION_SHAPES.length);
     expect(new Set(SECTION_SHAPES.map((s) => s.label)).size).toBe(SECTION_SHAPES.length);
   });
@@ -47,6 +47,18 @@ describe('catálogo de formas', () => {
     const pts = getShapePoints('semicircle', 200, 100);
     expect(pts[0].handleIn).toBeNull();
     expect(pts[pts.length - 1].handleOut).toBeNull();
+  });
+
+  it('no ofrece formas con hueco o con el centro vacío', () => {
+    const ids = SECTION_SHAPES.map((s) => s.id);
+    expect(ids).not.toContain('ring');
+    expect(ids).not.toContain('horseshoe');
+    expect(ids).not.toContain('ushape');
+  });
+
+  it('las formas con hueco de layouts guardados se siguen resolviendo', () => {
+    expect(getSectionShape('ring').id).toBe('ring');
+    expect(getSectionShape('ushape').id).toBe('ushape');
   });
 
   it('el anillo deja el centro sin sillas', () => {
