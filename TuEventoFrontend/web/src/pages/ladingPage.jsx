@@ -59,9 +59,8 @@ function ValueSectionHeading({ section }) {
   );
 }
 
-// Always the APK attached to the latest GitHub release: publishing a new build only needs a new
-// release with a `TuEvento.apk` asset, without touching or redeploying the web.
-const ANDROID_APK_URL = 'https://github.com/lozano2303/TuEvento/releases/latest/download/TuEvento.apk';
+// APK of the latest EAS build (`eas build -p android --profile preview`); update it with each new build.
+const ANDROID_APK_URL = 'https://expo.dev/artifacts/eas/znDmcpbq2SovFGjtlmpPwlf9Kj2STBd3s_pdcMiOjLM.apk';
 
 export default function LadingPage() {
   const navigate = useNavigate();
