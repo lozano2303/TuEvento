@@ -21,6 +21,7 @@ public class EventRatingUpdatedEvent {
     private Long          eventId;
     private Long          userId;
     private String        authorName;
+    private String        authorAvatarUrl;
     private Integer       rating;
     private String        comment;
     private Boolean       isVisible;

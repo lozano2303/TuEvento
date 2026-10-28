@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, StyleSheet, Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -52,6 +52,32 @@ function Stars({ value, size = 14, onChange, color }) {
  *   eventId          — id del evento
  *   organizerUserId  — userId del organizador (no lleva calificación)
  */
+// La URL de la foto apunta al almacenamiento; en desarrollo es localhost, que el teléfono no alcanza
+const toDeviceUrl = (url) => url.replace("localhost", process.env.EXPO_PUBLIC_MINIO_HOST ?? "localhost");
+
+/** Foto de perfil del autor; si no tiene o no carga, su inicial (como antes). */
+function CommentAvatar({ comment, styles, accent }) {
+  const [failed, setFailed] = useState(false);
+  const url = comment.authorAvatarUrl;
+  const organizerStyle = comment.isOrganizer && { backgroundColor: accent, borderColor: accent };
+
+  if (url && !failed) {
+    return (
+      <Image
+        source={{ uri: toDeviceUrl(url) }}
+        style={[styles.avatar, styles.avatarImage, organizerStyle]}
+        onError={() => setFailed(true)}
+        accessibilityLabel={comment.authorName}
+      />
+    );
+  }
+  return (
+    <View style={[styles.avatar, organizerStyle]}>
+      <Text style={styles.avatarText}>{(comment.authorName || "?").charAt(0).toUpperCase()}</Text>
+    </View>
+  );
+}
+
 export default function EventComments({ eventId, organizerUserId }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -278,9 +304,7 @@ export default function EventComments({ eventId, organizerUserId }) {
     return (
       <View key={c.ratingId} style={[styles.comment, isReply && styles.reply]}>
         <View style={styles.commentHeader}>
-          <View style={[styles.avatar, c.isOrganizer && { backgroundColor: colors.accent }]}>
-            <Text style={styles.avatarText}>{(c.authorName || "?").charAt(0).toUpperCase()}</Text>
-          </View>
+          <CommentAvatar comment={c} styles={styles} accent={colors.accent} />
           <View style={{ flex: 1 }}>
             <View style={styles.nameRow}>
               <Text style={styles.author} numberOfLines={1}>
@@ -491,6 +515,8 @@ function createStyles(colors) {
       width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary,
       alignItems: "center", justifyContent: "center",
     },
+    // El organizador conserva su color en el borde de la foto
+    avatarImage: { borderWidth: 2, borderColor: "transparent" },
     avatarText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
     nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
     author: { color: colors.textPrimary, fontSize: 14, fontWeight: "700", flexShrink: 1 },

@@ -22,6 +22,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
+import CommentAvatar from '../components/events/CommentAvatar';
 import { useNotifications } from '../context/NotificationContext';
 import { getAccessToken } from '../services/tokenStore.js';
 import { buildSectionOrder, runWithConcurrency } from '../utils/seatSections';
@@ -1178,6 +1179,7 @@ export default function EventDetail() {
                         {/* Cabecera */}
                         <div className="flex items-start justify-between mb-1 gap-2">
                           <div className="flex items-center gap-2 flex-wrap">
+                            <CommentAvatar comment={c} size={32} />
                             <span className="text-sm font-medium" style={{ color: '#c4b5fd' }}>{c.authorName || 'Usuario'}</span>
                             {isOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>{t('eventDetail.you')}</span>}
                             {c.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>{t('eventDetail.organizer')}</span>}
@@ -1404,6 +1406,7 @@ export default function EventDetail() {
                               <li key={r.ratingId} className="pl-4" style={{ borderLeft: '2px solid rgba(167,139,250,0.15)' }}>
                                 <div className="flex items-start justify-between gap-2 mb-0.5">
                                   <div className="flex items-center gap-2 flex-wrap">
+                                    <CommentAvatar comment={r} size={24} />
                                     <span className="text-xs font-medium" style={{ color: '#c4b5fd' }}>{r.authorName || 'Usuario'}</span>
                                     {replyIsOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>Tú</span>}
                                     {r.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>Organizador</span>}

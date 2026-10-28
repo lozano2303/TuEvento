@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.event.infrastructure.websocket;
 
 import com.capysoft.tuevento.modules.event.domain.event.EventRatingAddedEvent;
 import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
+import com.capysoft.tuevento.modules.event.application.service.CommentAuthorAvatars;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -19,7 +20,7 @@ import java.util.Map;
  * <p>Canal: {@code /topic/events/{eventId}/comments}
  *
  * <p>El payload tiene la MISMA forma que cada elemento del GET /ratings:
- * ratingId, userId, authorName, rating (nullable), comment,
+ * ratingId, userId, authorName, authorAvatarUrl (nullable), rating (nullable), comment,
  * isVisible, isOrganizer, parentRatingId (nullable), createdAt.
  */
 @Slf4j
@@ -29,6 +30,7 @@ public class EventCommentWebSocketListener {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final UserDirectoryPort     userDirectoryPort;
+    private final CommentAuthorAvatars commentAuthorAvatars;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onEventRatingAdded(EventRatingAddedEvent event) {
@@ -40,14 +42,14 @@ public class EventCommentWebSocketListener {
         String topic = "/topic/events/" + event.getEventId() + "/comments";
 
         try {
-            String authorName = userDirectoryPort.findUser(event.getUserId().intValue())
-                    .map(UserDirectoryPort.UserRef::fullName)
-                    .orElse("Usuario");
+            UserDirectoryPort.UserRef author = userDirectoryPort.findUser(event.getUserId().intValue()).orElse(null);
+            String authorName = author != null && author.fullName() != null ? author.fullName() : "Usuario";
 
             Map<String, Object> payload = new HashMap<>();
             payload.put("ratingId",      event.getRatingId());
             payload.put("userId",        event.getUserId());
             payload.put("authorName",    authorName);
+            payload.put("authorAvatarUrl", commentAuthorAvatars.of(author)); // nullable
             payload.put("rating",        event.getRating());       // nullable
             payload.put("comment",       event.getComment());
             payload.put("isVisible",     event.getIsVisible());

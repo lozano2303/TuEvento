@@ -9,6 +9,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
+import com.capysoft.tuevento.modules.event.application.service.CommentAuthorAvatars;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +41,7 @@ class AddEventRatingServiceTest {
     @Mock private EventRatingRepository     ratingRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private UserDirectoryPort      userDirectoryPort;
+    @Mock private CommentAuthorAvatars   commentAuthorAvatars;
     @Mock private Clock                     clock;
 
     @InjectMocks private AddEventRatingService service;
