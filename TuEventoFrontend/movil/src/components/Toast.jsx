@@ -1,20 +1,24 @@
-import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
+import { Text, StyleSheet, Animated } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 
-const { width } = Dimensions.get('window');
+// Distancia desde la que entra el aviso (por encima de la pantalla)
+const HIDDEN_OFFSET = -160;
 
 /**
- * Componente de Toast/Snackbar para mostrar alertas temporales.
- * 
+ * Aviso temporal arriba de la pantalla, bajo la barra de estado. Arriba porque abajo quedaba
+ * tapado por el carrito y el mapa de sillas del detalle del evento.
+ *
  * @param {Object} props
  * @param {Object} props.toast - { key, message, type }
  * @param {Function} props.onHide - Callback cuando se oculta el toast
  */
 export default function Toast({ toast, onHide }) {
   const { colors } = useTheme();
-  const translateY = useRef(new Animated.Value(100)).current;
+  const insets = useSafeAreaInsets();
+  const translateY = useRef(new Animated.Value(HIDDEN_OFFSET)).current;
 
   useEffect(() => {
     if (toast) {
@@ -27,7 +31,7 @@ export default function Toast({ toast, onHide }) {
     } else {
       // Animar salida
       Animated.timing(translateY, {
-        toValue: 100,
+        toValue: HIDDEN_OFFSET,
         duration: 200,
         useNativeDriver: true,
       }).start();
@@ -54,36 +58,24 @@ export default function Toast({ toast, onHide }) {
     }
   };
 
-  const getBackgroundColor = () => {
-    if (toast.type === 'warning') {
-      // Warning como tip/sugerencia: fondo más suave usando accent
-      const accentColor = colors.accent || '#A78BFA';
-      return `${accentColor}20`; // 20% opacity para fondo suave
-    }
-    return colors.surface || '#1e1e2e';
-  };
-
-  const getTextColor = () => {
-    if (toast.type === 'warning') {
-      // Para tips/sugerencias, usar texto primario para mejor legibilidad
-      return colors.textPrimary || '#FFFFFF';
-    }
-    return colors.textPrimary || '#FFFFFF';
-  };
-
   return (
     <Animated.View
+      accessible
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
       style={[
         styles.container,
         {
+          top: insets.top + 8,
           transform: [{ translateY }],
-          backgroundColor: getBackgroundColor(),
+          // Fondo opaco: encima del mapa de sillas un fondo translúcido no se leía
+          backgroundColor: colors.surface || '#1e1e2e',
           borderLeftColor: getColor(),
         },
       ]}
     >
       <Ionicons name={getIcon()} size={20} color={getColor()} />
-      <Text style={[styles.message, { color: getTextColor() }]}>
+      <Text style={[styles.message, { color: colors.textPrimary || '#FFFFFF' }]}>
         {toast.message}
       </Text>
     </Animated.View>
@@ -93,7 +85,6 @@ export default function Toast({ toast, onHide }) {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 20,
     left: 16,
     right: 16,
     flexDirection: 'row',

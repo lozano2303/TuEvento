@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { httpRequest } from "./httpClient";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -17,7 +18,7 @@ async function authHeaders() {
  * @returns {Promise<Object>} OrderResponse
  */
 export const createOrder = async ({ eventId, seatIds }) => {
-  const response = await fetch(`${BASE_URL}/orders`, {
+  const response = await httpRequest(`${BASE_URL}/orders`, {
     method: "POST",
     headers: await authHeaders(),
     body: JSON.stringify({ eventId, seatIds }),
@@ -34,7 +35,7 @@ export const createOrder = async ({ eventId, seatIds }) => {
  * @returns {Promise<Object>} OrderResponse
  */
 export const getOrder = async (orderId) => {
-  const response = await fetch(`${BASE_URL}/orders/${orderId}`, {
+  const response = await httpRequest(`${BASE_URL}/orders/${orderId}`, {
     headers: await authHeaders(),
   });
   const json = await response.json();
@@ -49,7 +50,7 @@ export const getOrder = async (orderId) => {
  * @returns {Promise<Array>} Array de TicketResponse
  */
 export const getOrderTickets = async (orderId) => {
-  const response = await fetch(`${BASE_URL}/orders/${orderId}/tickets`, {
+  const response = await httpRequest(`${BASE_URL}/orders/${orderId}/tickets`, {
     headers: await authHeaders(),
   });
   const json = await response.json();

@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { httpRequest } from "./httpClient";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -17,7 +18,7 @@ async function authHeaders() {
  * @throws si el usuario no tiene wallet (404)
  */
 export const getMyWallet = async () => {
-  const response = await fetch(`${BASE_URL}/wallet/me`, {
+  const response = await httpRequest(`${BASE_URL}/wallet/me`, {
     headers: await authHeaders(),
   });
   const json = await response.json();
@@ -31,7 +32,7 @@ export const getMyWallet = async () => {
  * @returns {Promise<Array>} Array de WalletTransactionResponse
  */
 export const getMyWalletTransactions = async () => {
-  const response = await fetch(`${BASE_URL}/wallet/me/transactions`, {
+  const response = await httpRequest(`${BASE_URL}/wallet/me/transactions`, {
     headers: await authHeaders(),
   });
   const json = await response.json();

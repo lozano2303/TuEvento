@@ -1,11 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { httpRequest } from "./httpClient";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const getActivePalette = async () => {
   const token = await AsyncStorage.getItem("accessToken");
   if (!token) return null;
-  const response = await fetch(`${BASE_URL}/themes/my-active`, {
+  const response = await httpRequest(`${BASE_URL}/themes/my-active`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) throw new Error(`Error fetching active theme: ${response.status}`);
@@ -23,7 +24,7 @@ export const getThemes = async () => {
 export const activateTheme = async (themeId) => {
   const token = await AsyncStorage.getItem("accessToken");
 
-  const response = await fetch(`${BASE_URL}/themes/activate/${themeId}`, {
+  const response = await httpRequest(`${BASE_URL}/themes/activate/${themeId}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -33,7 +34,7 @@ export const activateTheme = async (themeId) => {
 };
 
 export const customizeTheme = async (property, value, accessToken) => {
-  const response = await fetch(`${BASE_URL}/themes/my-active/customize`, {
+  const response = await httpRequest(`${BASE_URL}/themes/my-active/customize`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -47,7 +48,7 @@ export const customizeTheme = async (property, value, accessToken) => {
 };
 
 export const resetCustomization = async (property, accessToken) => {
-  const response = await fetch(`${BASE_URL}/themes/my-active/customize/${property}`, {
+  const response = await httpRequest(`${BASE_URL}/themes/my-active/customize/${property}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
   });
@@ -57,7 +58,7 @@ export const resetCustomization = async (property, accessToken) => {
 };
 
 export const getCustomizationLog = async (accessToken) => {
-  const response = await fetch(`${BASE_URL}/themes/my-active/log`, {
+  const response = await httpRequest(`${BASE_URL}/themes/my-active/log`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!response.ok) throw new Error(`Error fetching log: ${response.status}`);

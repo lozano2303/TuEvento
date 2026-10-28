@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.capysoft</groupId>
 	<artifactId>tu-evento</artifactId>
-	<version>1.1.0</version>
+	<version>1.1.1</version>
 	<name>TuEvento API</name>
 	<description>API principal de TuEvento (CapySoft): gestión de eventos, layouts de venues, venta de boletas, pagos y validación de entradas con QR.</description>
 	<url>https://github.com/lozano2303/TuEvento</url>

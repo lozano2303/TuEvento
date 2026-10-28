@@ -79,6 +79,11 @@ function CommentAvatar({ comment, styles, accent }) {
 }
 
 export default function EventComments({ eventId, organizerUserId }) {
+/**
+ * @param {Function} [props.onInputFocus] recibe el campo de texto que obtuvo el foco, para que la
+ *   pantalla lo deje a la vista por encima del teclado
+ */
+export default function EventComments({ eventId, organizerUserId, onInputFocus }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { user } = useAuth();
@@ -277,6 +282,7 @@ export default function EventComments({ eventId, organizerUserId }) {
           style={styles.composerInput}
           multiline
           maxLength={MAX_LENGTH}
+          onFocus={(e) => onInputFocus?.(e.currentTarget)}
         />
         <TouchableOpacity
           onPress={onSubmit}

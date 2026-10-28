@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { getValidAccessToken } from './httpClient';
 
 /**
  * Deriva la URL base desde EXPO_PUBLIC_API_URL.
@@ -37,7 +37,8 @@ function getBaseURL() {
  * @returns {Promise<Client | null>} Cliente STOMP para desconectar en cleanup, o null si no hay token
  */
 export async function connectSeatSocket(eventId, onSeatUpdate, onStatusEvent) {
-  const token = await AsyncStorage.getItem('accessToken');
+  // Token vigente (renovado si expiró): el handshake rechaza un token vencido
+  let token = await getValidAccessToken();
 
   if (!token) {
     console.info('[WebSocket] No token found — skipping WebSocket connection.');
@@ -47,6 +48,11 @@ export async function connectSeatSocket(eventId, onSeatUpdate, onStatusEvent) {
   const baseUrl = getBaseURL();
 
   const client = new Client({
+    // Antes de cada (re)conexión se pide un token vigente: el access token dura 15 min y
+    // reconectar con el original fallaría siempre después de ese tiempo
+    beforeConnect: async () => {
+      token = (await getValidAccessToken()) ?? token;
+    },
     // SockJS como factory de transporte (igual que la web)
     webSocketFactory: () => new SockJS(`${baseUrl}/ws?token=${token}`),
 

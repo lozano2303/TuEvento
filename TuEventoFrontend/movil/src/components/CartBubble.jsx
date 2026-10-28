@@ -65,9 +65,10 @@ function CartItem({ seat, section, now, onRelease, isReleasing, colors, styles }
  *   selectedQuantity — cantidad elegida en el selector; el pago se habilita al completarla
  *   reserving        — Set de seatId con una operación en curso
  *   onRelease(seatId), onExpire(seatId), onCheckout()
+ *   hidden           — no se dibuja (p. ej. con el teclado abierto) pero sigue vigilando vencimientos
  */
 export default function CartBubble({
-  cart, sections, selectedQuantity, reserving, onRelease, onExpire, onCheckout,
+  cart, sections, selectedQuantity, reserving, onRelease, onExpire, onCheckout, hidden = false,
 }) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -117,7 +118,8 @@ export default function CartBubble({
     if (cart.length === 0) setOpen(false);
   }, [cart.length]);
 
-  if (cart.length === 0) return null;
+  // hidden: se oculta sin desmontarse, para seguir detectando los vencimientos de las reservas
+  if (cart.length === 0 || hidden) return null;
 
   const sectionOf = (seat) => sections.find((s) => s.eventSectionId === seat.eventSectionId);
   const total = cart.reduce((sum, seat) => sum + (sectionOf(seat)?.price ?? 0), 0);

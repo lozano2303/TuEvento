@@ -94,3 +94,17 @@ export async function httpRequest(url, options = {}) {
 
   return res;
 }
+
+/**
+ * Para endpoints públicos que envían el token solo si hay sesión (p. ej. para traer datos
+ * personalizados): igual que httpRequest, pero si la sesión ya no se puede renovar la
+ * request se repite sin token en vez de fallar.
+ */
+export async function optionalAuthRequest(url, options = {}) {
+  try {
+    return await httpRequest(url, options);
+  } catch (e) {
+    if (e.message !== "SESSION_EXPIRED") throw e;
+    return fetch(url, options);
+  }
+}
