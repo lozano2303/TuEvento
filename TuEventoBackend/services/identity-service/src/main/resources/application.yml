@@ -66,9 +66,14 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8088/.well-known/jwks.json}
 
 app:
+  # Cuenta de administrador inicial (se crea al arrancar si no existe; mismas variables que antes el monolito)
+  admin:
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
+    alias: ${ADMIN_ALIAS:admin}
   # RS256 con la MISMA clave que el monolito: los tokens que firma uno los valida el otro (y el JWKS
   # que publica el monolito sirve para todos los servicios). Sin clave no arranca: dos claves
   # distintas harían que los tokens de un lado se rechacen en el otro.

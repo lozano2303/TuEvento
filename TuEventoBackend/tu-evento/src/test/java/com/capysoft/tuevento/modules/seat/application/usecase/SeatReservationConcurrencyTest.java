@@ -25,7 +25,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.capysoft.tuevento.modules.section.domain.model.EventSection;
 import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
-import com.capysoft.tuevento.shared.infrastructure.config.DataInitializer;
 
 /**
  * Regresión de la doble reserva (F2): dos peticiones simultáneas sobre la misma silla contra
@@ -39,8 +38,6 @@ class SeatReservationConcurrencyTest {
 
     private static final int SEAT_ID = 7001;
 
-    // H2 arranca sin Liquibase: se omite la creación del admin
-    @MockitoBean DataInitializer dataInitializer;
     @MockitoBean EventSectionRepository eventSectionRepository;
 
     @Autowired SeatReservationService service;

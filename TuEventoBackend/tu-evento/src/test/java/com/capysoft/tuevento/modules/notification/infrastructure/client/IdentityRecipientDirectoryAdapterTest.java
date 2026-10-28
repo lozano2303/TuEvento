@@ -11,19 +11,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.capysoft.tuevento.modules.notification.application.port.out.RecipientDirectoryPort.Recipient;
-import com.capysoft.tuevento.modules.security.application.dto.UserSummary;
-import com.capysoft.tuevento.modules.security.application.port.in.GetUserSummariesPort;
+import com.capysoft.tuevento.modules.identitybridge.client.IdentityServiceClient.UserSummary;
+import com.capysoft.tuevento.modules.identitybridge.client.IdentityServiceClient;
 
 @DisplayName("IdentityRecipientDirectoryAdapter (notification → Identidad)")
 class IdentityRecipientDirectoryAdapterTest {
 
-    private final GetUserSummariesPort identity = mock(GetUserSummariesPort.class);
+    private final IdentityServiceClient identity = mock(IdentityServiceClient.class);
     private final IdentityRecipientDirectoryAdapter adapter = new IdentityRecipientDirectoryAdapter(identity);
 
     @Test
     @DisplayName("entrega alias, nombre, email e idioma de cada destinatario")
     void mapsRecipients() {
-        when(identity.getSummaries(List.of(7))).thenReturn(Map.of(
+        when(identity.getUserSummaries(List.of(7))).thenReturn(Map.of(
                 7, new UserSummary(7, "ana", "ana@test.com", "Ana", 15, 2L)));
 
         assertThat(adapter.findRecipients(List.of(7)))
@@ -34,7 +34,7 @@ class IdentityRecipientDirectoryAdapterTest {
     @Test
     @DisplayName("un destinatario desconocido no aparece")
     void unknownRecipient() {
-        when(identity.getSummaries(List.of(9))).thenReturn(Map.of());
+        when(identity.getUserSummaries(List.of(9))).thenReturn(Map.of());
 
         assertThat(adapter.findRecipient(9)).isEmpty();
     }

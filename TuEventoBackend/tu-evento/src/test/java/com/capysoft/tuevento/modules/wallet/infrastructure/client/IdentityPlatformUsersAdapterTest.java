@@ -9,12 +9,12 @@ import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.capysoft.tuevento.modules.security.application.port.in.ListUserIdsPort;
+import com.capysoft.tuevento.modules.identitybridge.client.IdentityServiceClient;
 
 @DisplayName("IdentityPlatformUsersAdapter (wallet → Identidad)")
 class IdentityPlatformUsersAdapterTest {
 
-    private final ListUserIdsPort identity = mock(ListUserIdsPort.class);
+    private final IdentityServiceClient identity = mock(IdentityServiceClient.class);
     private final IdentityPlatformUsersAdapter adapter = new IdentityPlatformUsersAdapter(identity);
 
     @Test

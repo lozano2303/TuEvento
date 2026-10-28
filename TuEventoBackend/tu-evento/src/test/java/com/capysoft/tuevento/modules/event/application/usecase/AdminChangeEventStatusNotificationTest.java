@@ -5,7 +5,6 @@ import com.capysoft.tuevento.modules.event.application.port.in.AdminChangeEventS
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.notification.application.dto.SendNotificationCommand;
 import com.capysoft.tuevento.modules.notification.application.usecase.SendNotificationUseCase;
-import com.capysoft.tuevento.shared.infrastructure.config.DataInitializer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -30,8 +29,6 @@ import static org.mockito.Mockito.verify;
 @DisplayName("AdminChangeEventStatusUseCase — notificación al organizador")
 class AdminChangeEventStatusNotificationTest {
 
-    // H2 arranca sin Liquibase: se omite la creación del admin
-    @MockitoBean DataInitializer dataInitializer;
     @MockitoBean SendNotificationUseCase sendNotificationUseCase;
 
     @Autowired AdminChangeEventStatusPort adminChangeEventStatusPort;

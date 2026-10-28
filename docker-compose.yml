@@ -236,8 +236,6 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
-    volumes:
-      - ./TuEventoBackend/tu-evento/src/main/resources/keys:/run/secrets:ro
     environment:
       - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
       - SPRING_PROFILES_ACTIVE=dev
@@ -245,10 +243,9 @@ services:
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
 
-      # RS256: clave privada montada desde el host; si no existe, el perfil dev usa un par en memoria
-      - APP_JWT_PRIVATE_KEY_PATH=file:/run/secrets/jwt-private.pem
-      - APP_JWT_ACCESS_TOKEN_EXPIRATION=900000
-      - APP_JWT_REFRESH_TOKEN_EXPIRATION=604800000
+      # Identidad: verifica los tokens con el JWK Set de identity-service y usa su API interna
+      - IDENTITY_SERVICE_URL=http://identity-service:8088
+      - IDENTITY_JWK_SET_URI=http://identity-service:8088/.well-known/jwks.json
 
       # Endpoint interno (container-to-container) para upload/delete
       - APP_STORAGE_ENDPOINT=http://minio:9000
@@ -262,16 +259,6 @@ services:
 
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
-
-      - ADMIN_EMAIL=${ADMIN_EMAIL}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - ADMIN_ALIAS=${ADMIN_ALIAS}
-
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-
-      - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID}
-      - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET}
 
       - NSFW_SERVICE_URL=http://nsfw-classifier:8000
       - NSFW_THRESHOLD=0.4
@@ -333,7 +320,7 @@ services:
       # /api/v1/notifications va al microservicio; para volver al monolito, quitar esta variable
       - NOTIFICATION_SERVICE_URI=http://notification-service:8086
       # /api/v1/auth, /api/v1/users, el panel de admin, /api/v1/themes y /api/v1/profiles van al
-      # microservicio de Identidad; para volver al monolito, quitar esta variable
+      # microservicio de Identidad (el monolito ya no tiene esos módulos)
       - IDENTITY_SERVICE_URI=http://identity-service:8088
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -380,7 +367,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
-      - JWK_SET_URI=http://backend:8080/.well-known/jwks.json
+      - JWK_SET_URI=http://identity-service:8088/.well-known/jwks.json
       # Lista de revocación de JWT (fail-closed): misma instancia que el backend
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -432,7 +419,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
-      - JWK_SET_URI=http://backend:8080/.well-known/jwks.json
+      - JWK_SET_URI=http://identity-service:8088/.well-known/jwks.json
       # Lista de revocación de JWT (fail-closed): misma instancia que el backend
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -473,7 +460,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
-      - JWK_SET_URI=http://backend:8080/.well-known/jwks.json
+      - JWK_SET_URI=http://identity-service:8088/.well-known/jwks.json
       # Lista de revocación de JWT (fail-closed): misma instancia que el backend
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -511,6 +498,10 @@ services:
       - APP_JWT_PRIVATE_KEY_PATH=file:/run/secrets/jwt-private.pem
       - APP_JWT_ACCESS_TOKEN_EXPIRATION=900000
       - APP_JWT_REFRESH_TOKEN_EXPIRATION=604800000
+      # Cuenta de administrador inicial (se crea al arrancar si no existe)
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - ADMIN_ALIAS=${ADMIN_ALIAS}
       # En local la web va por http: la cookie del refresh token no puede ser Secure
       - AUTH_COOKIE_SECURE=false
       - MAIL_USERNAME=${MAIL_USERNAME}
@@ -520,7 +511,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
-      - JWK_SET_URI=http://backend:8080/.well-known/jwks.json
+      - JWK_SET_URI=http://localhost:8088/.well-known/jwks.json
       # Idiomas activos (GET /api/v1/languages); hoy los sirve el backend
       - LOCALIZATION_BASE_URL=http://backend:8080
       # Estado de las traducciones de la biografía (API interna del backend, con la clave entre servicios)

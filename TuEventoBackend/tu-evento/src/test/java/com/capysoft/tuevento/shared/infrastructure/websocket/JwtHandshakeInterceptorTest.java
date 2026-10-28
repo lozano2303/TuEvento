@@ -20,26 +20,24 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.socket.WebSocketHandler;
 
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort;
-import com.capysoft.tuevento.modules.security.infrastructure.external.InMemoryTokenRevocationStore;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenClaims;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenVerifier;
+import com.capysoft.tuevento.shared.infrastructure.security.token.TokenRevocationPort;
+import com.capysoft.tuevento.shared.infrastructure.security.token.InMemoryTokenRevocationStore;
 
 @DisplayName("JwtHandshakeInterceptor — solo access tokens abren el /ws")
 class JwtHandshakeInterceptorTest {
 
     private static final Instant NOW = Instant.parse("2026-10-27T15:00:00Z");
 
-    private final TokenGeneratorPort tokens = mock(TokenGeneratorPort.class);
+    private final AccessTokenVerifier tokens = mock(AccessTokenVerifier.class);
     private final InMemoryTokenRevocationStore revocations =
             new InMemoryTokenRevocationStore(Clock.fixed(NOW, ZoneOffset.UTC));
     private final JwtHandshakeInterceptor interceptor = new JwtHandshakeInterceptor(tokens, revocations);
 
     private void accessToken(String token) {
-        when(tokens.isTokenValid(token)).thenReturn(true);
-        when(tokens.extractRole(token)).thenReturn(Optional.of("ORGANIZER"));
-        when(tokens.extractUserId(token)).thenReturn(Optional.of(7));
-        when(tokens.extractMetadata(token)).thenReturn(Optional.of(
-                new TokenGeneratorPort.TokenMetadata("jti-7", NOW.minusSeconds(60), NOW.plusSeconds(840))));
+        when(tokens.verify(token)).thenReturn(Optional.of(
+                new AccessTokenClaims(7, "org", "ORGANIZER", "jti-7", NOW.minusSeconds(60), NOW.plusSeconds(840))));
     }
 
     private boolean handshake(String query, Map<String, Object> attributes, MockHttpServletResponse servletResponse) throws Exception {
@@ -52,9 +50,8 @@ class JwtHandshakeInterceptorTest {
     @Test
     @DisplayName("un access token abre la sesión con su userId")
     void accessToken_isAccepted() throws Exception {
-        when(tokens.isTokenValid("acc")).thenReturn(true);
-        when(tokens.extractRole("acc")).thenReturn(Optional.of("USER"));
-        when(tokens.extractUserId("acc")).thenReturn(Optional.of(7));
+        when(tokens.verify("acc")).thenReturn(Optional.of(
+                new AccessTokenClaims(7, "ana", "USER", null, NOW.minusSeconds(60), NOW.plusSeconds(840))));
         Map<String, Object> attributes = new HashMap<>();
 
         assertThat(handshake("token=acc", attributes, new MockHttpServletResponse())).isTrue();
@@ -64,8 +61,8 @@ class JwtHandshakeInterceptorTest {
     @Test
     @DisplayName("un refresh token (sin rol) se rechaza con 401")
     void refreshToken_isRejected() throws Exception {
-        when(tokens.isTokenValid("ref")).thenReturn(true);
-        when(tokens.extractRole("ref")).thenReturn(Optional.empty());
+        // El verificador descarta el refresh token (sin rol)
+        when(tokens.verify("ref")).thenReturn(Optional.empty());
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         assertThat(handshake("token=ref", new HashMap<>(), response)).isFalse();
@@ -101,7 +98,7 @@ class JwtHandshakeInterceptorTest {
     @Test
     @DisplayName("sin token o con un token inválido se rechaza")
     void missingOrInvalidToken_isRejected() throws Exception {
-        when(tokens.isTokenValid("bad")).thenReturn(false);
+        when(tokens.verify("bad")).thenReturn(Optional.empty());
 
         assertThat(handshake(null, new HashMap<>(), new MockHttpServletResponse())).isFalse();
         assertThat(handshake("token=bad", new HashMap<>(), new MockHttpServletResponse())).isFalse();

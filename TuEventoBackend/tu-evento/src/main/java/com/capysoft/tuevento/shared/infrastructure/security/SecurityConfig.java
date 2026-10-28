@@ -10,15 +10,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -27,10 +23,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.Ordered;
 
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort;
-import com.capysoft.tuevento.modules.security.infrastructure.external.InMemoryTokenRevocationStore;
-import com.capysoft.tuevento.modules.security.infrastructure.external.RedisTokenRevocationStore;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenVerifier;
+import com.capysoft.tuevento.shared.infrastructure.security.token.JwksAccessTokenVerifier;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import com.capysoft.tuevento.shared.infrastructure.security.token.TokenRevocationPort;
+import com.capysoft.tuevento.shared.infrastructure.security.token.InMemoryTokenRevocationStore;
+import com.capysoft.tuevento.shared.infrastructure.security.token.RedisTokenRevocationStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -44,15 +42,25 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final TokenGeneratorPort tokenGenerator;
     private final ObjectMapper       objectMapper;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(TokenRevocationPort tokenRevocationPort) {
-        return new JwtAuthenticationFilter(tokenGenerator, tokenRevocationPort, objectMapper);
+    public JwtAuthenticationFilter jwtAuthenticationFilter(AccessTokenVerifier accessTokenVerifier,
+                                                           TokenRevocationPort tokenRevocationPort) {
+        return new JwtAuthenticationFilter(accessTokenVerifier, tokenRevocationPort, objectMapper);
+    }
+
+    /**
+     * Los tokens los firma identity-service; aquí solo se verifican con su clave pública (JWK Set).
+     * Las claves se guardan en caché y se vuelven a pedir si llega un {@code kid} nuevo.
+     */
+    @Bean
+    public AccessTokenVerifier accessTokenVerifier(
+            @Value("${app.identity.jwk-set-uri:http://localhost:8088/.well-known/jwks.json}") String jwkSetUri) {
+        return new JwksAccessTokenVerifier(NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build());
     }
 
     /**
@@ -275,14 +283,5 @@ public class SecurityConfig {
         return source;
     }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
-    }
 
-    @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
 }

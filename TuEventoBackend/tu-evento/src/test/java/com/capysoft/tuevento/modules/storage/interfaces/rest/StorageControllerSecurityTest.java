@@ -1,7 +1,6 @@
 package com.capysoft.tuevento.modules.storage.interfaces.rest;
 
-import com.capysoft.tuevento.modules.security.application.port.out.CurrentRolePort;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenVerifier;
 import com.capysoft.tuevento.modules.storage.application.dto.request.DeleteFileRequest;
 import com.capysoft.tuevento.modules.storage.application.dto.request.StorageRequester;
 import com.capysoft.tuevento.modules.storage.application.dto.response.PublicUrlResponse;
@@ -54,8 +53,7 @@ class StorageControllerSecurityTest {
 
     @Autowired private MockMvc mockMvc;
 
-    @MockitoBean private TokenGeneratorPort    tokenGenerator;
-    @MockitoBean private CurrentRolePort       currentRolePort;
+    @MockitoBean private AccessTokenVerifier    accessTokenVerifier;
     @MockitoBean private UploadUserFilePort    uploadUserFilePort;
     @MockitoBean private DeleteFilePort        deleteFilePort;
     @MockitoBean private GetFilePort           getFilePort;

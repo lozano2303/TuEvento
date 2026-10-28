@@ -10,11 +10,10 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.capysoft.tuevento.modules.security.application.dto.AccessTokenClaims;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenGeneratorPort.TokenMetadata;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort;
-import com.capysoft.tuevento.modules.security.application.port.out.TokenRevocationPort.TokenRevocationUnavailableException;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenClaims;
+import com.capysoft.tuevento.shared.infrastructure.security.token.AccessTokenVerifier;
+import com.capysoft.tuevento.shared.infrastructure.security.token.TokenRevocationPort;
+import com.capysoft.tuevento.shared.infrastructure.security.token.TokenRevocationPort.TokenRevocationUnavailableException;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -43,7 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX        = "Bearer ";
 
-    private final TokenGeneratorPort  tokenGenerator;
+    private final AccessTokenVerifier accessTokenVerifier;
     private final TokenRevocationPort tokenRevocationPort;
     private final ObjectMapper        objectMapper;
 
@@ -59,7 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String token = extractToken(request);
-        AccessTokenClaims claims = StringUtils.hasText(token) ? readAccessToken(token) : null;
+        AccessTokenClaims claims = StringUtils.hasText(token) ? accessTokenVerifier.verify(token).orElse(null) : null;
 
         if (claims != null) {
             boolean revoked;
@@ -79,26 +78,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    /** Los claims de un access token válido, o null si no lo es (inválido, expirado o refresh token). */
-    private AccessTokenClaims readAccessToken(String token) {
-        if (!tokenGenerator.isTokenValid(token)) {
-            return null;
-        }
-        Integer userId = tokenGenerator.extractUserId(token).orElse(null);
-        String role = tokenGenerator.extractRole(token).orElse("");
-        // El refresh token (7 días) se firma igual pero no lleva rol: no sirve como access token
-        if (userId == null || role.isBlank()) {
-            log.debug("JWT without userId or role ignored (not an access token)");
-            return null;
-        }
-        String alias = tokenGenerator.extractSubject(token).orElse("");
-        TokenMetadata metadata = tokenGenerator.extractMetadata(token).orElse(null);
-        return new AccessTokenClaims(userId, alias, role,
-                metadata == null ? null : metadata.tokenId(),
-                metadata == null ? null : metadata.issuedAt(),
-                metadata == null ? null : metadata.expiresAt());
     }
 
     private void authenticate(HttpServletRequest request, AccessTokenClaims claims) {
