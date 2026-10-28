@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import { authService } from "../services/authService";
 import { profileService } from "../services/profileService";
+import { refreshAccessToken } from "../services/httpClient";
 import { mapErrorMessage } from "../utils/errorMessages";
 
 const AuthContext = createContext(null);
@@ -14,31 +15,41 @@ export function AuthProvider({ children }) {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Inicialización: verifica si hay sesión guardada al arrancar
+  // Inicialización: restaura la sesión guardada al arrancar. El access token dura 15 min, así
+  // que al volver a abrir la app suele estar vencido: se renueva con el refresh token en vez
+  // de cerrar la sesión.
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        const accessToken = await AsyncStorage.getItem("accessToken");
-        if (accessToken) {
-          const decoded = jwtDecode(accessToken);
-          // Token expirado — limpiar y no restaurar
-          if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-            await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
-          } else {
-            const profile = await profileService.getByUserId(decoded.userId, accessToken);
-            setUser({
-              userId: decoded.userId,
-              alias: decoded.sub,
-              role: decoded.role,
-              fullName: profile.fullName,
-              profileId: profile.profileId,
-              storedFileId: profile.storedFileId,
-            });
+        let accessToken = await AsyncStorage.getItem("accessToken");
+        if (!accessToken) return;
+        const { exp } = jwtDecode(accessToken);
+        if (exp && exp * 1000 - Date.now() < 30_000) {
+          try {
+            accessToken = await refreshAccessToken();
+          } catch (e) {
+            // El servidor rechazó el refresh (vencido o revocado) o no hay refresh token: sin sesión.
+            // Un fallo de red cae al catch de abajo y conserva los tokens.
+            if (e.message === "REFRESH_FAILED" || e.message === "NO_REFRESH_TOKEN") {
+              await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+              return;
+            }
+            throw e;
           }
         }
+        const decoded = jwtDecode(accessToken);
+        const profile = await profileService.getByUserId(decoded.userId, accessToken);
+        setUser({
+          userId: decoded.userId,
+          alias: decoded.sub,
+          role: decoded.role,
+          fullName: profile.fullName,
+          profileId: profile.profileId,
+          storedFileId: profile.storedFileId,
+        });
       } catch {
-        // Si falla la restauración, simplemente arranca sin sesión
-        await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
+        // Sin red u otro fallo pasajero: arranca sin sesión pero conserva los tokens para
+        // restaurarla en el próximo arranque (una sesión inválida la limpia httpRequest)
       } finally {
         setIsLoading(false);
       }

@@ -1,8 +1,9 @@
+/* Arriba de la pantalla: abajo quedaba tapado por el carrito y el mapa de sillas del evento */
 .toast {
   position: fixed;
-  bottom: 20px;
+  top: 20px;
   left: 50%;
-  transform: translateX(-50%) translateY(100px);
+  transform: translateX(-50%) translateY(-120px);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -12,8 +13,8 @@
   font-size: 14px;
   font-weight: 500;
   z-index: 9999;
-  min-width: 300px;
-  max-width: 500px;
+  min-width: min(300px, calc(100vw - 32px));
+  max-width: min(500px, calc(100vw - 32px));
   transition: transform 0.3s ease, opacity 0.3s ease;
   opacity: 0;
 }

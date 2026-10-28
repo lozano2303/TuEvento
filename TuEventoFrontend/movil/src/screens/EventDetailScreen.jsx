@@ -10,6 +10,9 @@ import {
   StatusBar,
   Dimensions,
   Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -76,6 +79,46 @@ export default function EventDetailScreen() {
 
   // Sillas por sección: cada sección se descarga una sola vez (promesa compartida)
   const sectionLoadsRef = useRef(new Map());
+
+  // ── Teclado de los comentarios ──
+  // Con edge-to-edge (Expo 54) Android ya no encoge la ventana al abrir el teclado: el
+  // KeyboardAvoidingView hace sitio y, al enfocar un campo, se desplaza lo justo para dejarlo
+  // a la vista. Mientras el teclado está abierto se oculta el carrito flotante, que lo tapaba.
+  const scrollRef = useRef(null);
+  const scrollYRef = useRef(0);
+  const keyboardHeightRef = useRef(0);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      keyboardHeightRef.current = e.endCoordinates?.height ?? 0;
+      setKeyboardVisible(true);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      keyboardHeightRef.current = 0;
+      setKeyboardVisible(false);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const scrollInputIntoView = useCallback((input) => {
+    if (typeof input?.measureInWindow !== "function") return;
+    // Espera a que el teclado termine de abrirse para medir con su altura real
+    setTimeout(() => {
+      input.measureInWindow((_x, y, _w, h) => {
+        const visibleBottom = Dimensions.get("window").height - keyboardHeightRef.current - 24;
+        const overflow = y + h - visibleBottom;
+        if (overflow > 0) {
+          scrollRef.current?.scrollTo({ y: scrollYRef.current + overflow, animated: true });
+        }
+      });
+    }, 300);
+  }, []);
   const [loadedSectionIds, setLoadedSectionIds] = useState(() => new Set());
 
   const ensureSectionSeats = useCallback((sectionId) => {
@@ -532,10 +575,16 @@ export default function EventDetailScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
-      
+
+      <KeyboardAvoidingView style={styles.keyboardAvoider} behavior="padding">
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+        onScroll={(e) => { scrollYRef.current = e.nativeEvent.contentOffset.y; }}
+        scrollEventThrottle={32}
       >
         {/* Imagen de portada */}
         <View style={styles.coverContainer}>
@@ -950,11 +999,12 @@ export default function EventDetailScreen() {
           )}
 
           {/* Comentarios, calificaciones y respuestas */}
-          <EventComments eventId={eventId} organizerUserId={event.userId} />
+          <EventComments eventId={eventId} organizerUserId={event.userId} onInputFocus={scrollInputIntoView} />
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
-      {/* Carrito flotante (burbuja + modal con resumen y pago) */}
+      {/* Carrito flotante (burbuja + modal con resumen y pago); oculto mientras se escribe */}
       <CartBubble
         cart={cart}
         sections={sections}
@@ -963,6 +1013,7 @@ export default function EventDetailScreen() {
         onRelease={handleReleaseSeat}
         onExpire={handleSeatExpire}
         onCheckout={handleCheckout}
+        hidden={keyboardVisible}
       />
       {/* Toast de alertas */}
       <Toast toast={toast} onHide={hideToast} />
@@ -1014,6 +1065,9 @@ function createStyles(colors) {
       backgroundColor: colors.surface,
       alignItems: "center",
       justifyContent: "center",
+    },
+    keyboardAvoider: {
+      flex: 1,
     },
     scrollContent: {
       flexGrow: 1,

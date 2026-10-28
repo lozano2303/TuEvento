@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-28
+
+### Changed — refactor(storage): the monolith no longer has a storage module (#176)
+
+- Uploads, file URLs and image moderation go through storage-service's internal API (`STORAGE_SERVICE_URL`, `/internal/files`, `X-Internal-Api-Key`); the backend no longer needs the RustFS, NSFW or Sightengine settings
+
+### Changed — refactor(notifications): the monolith no longer has a notification module (#177)
+
+- The backend's listeners decide the notifications and notification-service sends them over Kafka; `NOTIFICATION_MODE` and the mail settings were removed from the backend
+
+### Fixed — fix(deploy): the api-gateway reaches Redis in production (#178)
+
+- The prod compose passes `REDIS_HOST`, `REDIS_PORT` and `SPRING_DATA_REDIS_PASSWORD` to the api-gateway; without them its health check failed and the frontend never started
+
+### Fixed — fix(web): Google sign-in button (#180)
+
+- The button spans the card width, centered like the primary button and the mobile app, with the translated label ("Iniciar sesión con Google", "Sign in with Google", …)
+
+### Deployment notes
+
+- `docker-compose.prod.yml` changed (backend environment): paste the new file in the Portainer stack editor before updating `TUEVENTO_VERSION`
+- Rebuild the backend, frontend, api-gateway and the four services (`tuevento-common` changed); only `nsfw` and `gateway` can be retagged
+
 ## [1.1.0] - 2026-10-27
 
 ### Added — feat(identity): identity-service (strangler fig, phase 4)

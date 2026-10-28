@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { httpRequest, optionalAuthRequest } from "./httpClient";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -10,14 +11,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
  * @returns {Promise<Array>} Array de SeatResponse
  */
 export const getSeatsBySection = async (eventSectionId) => {
-  const token = await AsyncStorage.getItem("accessToken");
-  
-  const headers = {};
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${BASE_URL}/seats/section/${eventSectionId}`, { headers });
+  const response = await optionalAuthRequest(`${BASE_URL}/seats/section/${eventSectionId}`);
   
   if (!response.ok) {
     throw new Error(`Error fetching seats: ${response.status}`);
@@ -45,12 +39,9 @@ export const reserveSeat = async (seatId) => {
     throw new Error("Debes iniciar sesión para reservar sillas");
   }
 
-  const response = await fetch(`${BASE_URL}/seats/${seatId}/reserve`, {
+  const response = await httpRequest(`${BASE_URL}/seats/${seatId}/reserve`, {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
   });
   
   const json = await response.json();
@@ -86,12 +77,9 @@ export const releaseSeat = async (seatId) => {
     throw new Error("Debes iniciar sesión para liberar reservas");
   }
 
-  const response = await fetch(`${BASE_URL}/seats/${seatId}/release`, {
+  const response = await httpRequest(`${BASE_URL}/seats/${seatId}/release`, {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
   });
   
   const json = await response.json();

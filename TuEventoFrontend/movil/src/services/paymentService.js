@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { httpRequest } from "./httpClient";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -18,7 +19,7 @@ async function authHeaders() {
  *   walletAmountApplied y amountToPayViaGateway
  */
 export const createPayment = async ({ orderId, paymentMethod = "QR", applyWalletCredit = false }) => {
-  const response = await fetch(`${BASE_URL}/payments`, {
+  const response = await httpRequest(`${BASE_URL}/payments`, {
     method: "POST",
     headers: await authHeaders(),
     body: JSON.stringify({ orderId, paymentMethod, applyWalletCredit }),
@@ -36,7 +37,7 @@ export const createPayment = async ({ orderId, paymentMethod = "QR", applyWallet
  * @returns {Promise<Object>} PaymentResponse
  */
 export const getPayment = async (paymentId) => {
-  const response = await fetch(`${BASE_URL}/payments/${paymentId}`, {
+  const response = await httpRequest(`${BASE_URL}/payments/${paymentId}`, {
     headers: await authHeaders(),
   });
   // PaymentController retorna el objeto directo, sin wrapper ApiResponse
