@@ -59,6 +59,10 @@ function ValueSectionHeading({ section }) {
   );
 }
 
+// Always the APK attached to the latest GitHub release: publishing a new build only needs a new
+// release with a `TuEvento.apk` asset, without touching or redeploying the web.
+const ANDROID_APK_URL = 'https://github.com/lozano2303/TuEvento/releases/latest/download/TuEvento.apk';
+
 export default function LadingPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -718,7 +722,7 @@ export default function LadingPage() {
             icon: <Download className="w-4 h-4" />,
             variant: 'primary',
             onClick: () => {
-              window.open('https://drive.google.com/file/d/1VeECC-bj0F9i-5uczP3Si0FP5c6N8LE8/view?usp=drivesdk', '_blank', 'noopener,noreferrer');
+              window.open(ANDROID_APK_URL, '_blank', 'noopener,noreferrer');
               setShowApkModal(false);
             },
           },
