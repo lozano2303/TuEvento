@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { PALETTE_ELEMENTS } from '../../data/mockLayoutElements';
 import { generateId } from './layoutEditorUtils';
+import { decorIcon } from '../../utils/decorIcons';
 
 // Infraestructura — siempre hardcodeada, sin depender del backend
 const INFRA = PALETTE_ELEMENTS.filter((e) => e.type !== 'section');
@@ -125,7 +126,12 @@ export default function ElementPalette({ onAddElement, occupiedSectionCounts = {
       title={title}
     >
       <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: template.color }} />
-      <span className="flex-1 min-w-0 text-xs font-medium text-textPrimary truncate">{template.label}</span>
+      <span className="flex-1 min-w-0 text-xs font-medium text-textPrimary truncate">
+        {template.type !== 'section' && decorIcon(template.type) && (
+          <span className="mr-1" aria-hidden="true">{decorIcon(template.type)}</span>
+        )}
+        {template.label}
+      </span>
       {badge && (
         <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-accent/20 text-accent border border-accent/30 leading-none">
           {badge}

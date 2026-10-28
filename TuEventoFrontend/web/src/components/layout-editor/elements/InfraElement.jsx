@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { Group, Rect, Text, Transformer } from 'react-konva';
 import { snapToGrid, getElementAABB, CANVAS_MARGIN, TRANSFORMER_ANCHOR_SIZE } from '../layoutEditorUtils';
+import { decorText } from '../../../utils/decorIcons';
 
 export default function InfraElement({
   element,
@@ -143,8 +144,9 @@ export default function InfraElement({
           width={element.width}
           height={element.height}
           verticalAlign="middle"
-          text={element.label}
+          text={decorText(element)}
           fontSize={labelFontSize}
+          lineHeight={1.25}
           fontStyle="bold"
           fill="#ffffff"
           align="center"

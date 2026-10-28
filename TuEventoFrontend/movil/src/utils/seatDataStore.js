@@ -181,6 +181,23 @@ export class SeatDataStore {
   }
 
   /**
+   * Sillas AVAILABLE de cada sección cargada (una agotada queda en 0). Las sillas se
+   * actualizan por WebSocket, así que el conteo baja con cada compra o reserva.
+   * @returns {Map<number, number>} eventSectionId → disponibles
+   */
+  countAvailableBySection() {
+    const available = new Map();
+    for (const [sectionId, indices] of this.sectionIndex) {
+      let count = 0;
+      for (const idx of indices) {
+        if (this.statuses[idx] === SeatStatus.AVAILABLE) count++;
+      }
+      available.set(sectionId, count);
+    }
+    return available;
+  }
+
+  /**
    * Índices de las sillas de una sección ordenados por código (cacheado).
    * El orden no depende del estado, así que reservar o liberar no lo invalida.
    */

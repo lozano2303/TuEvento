@@ -12,6 +12,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.SiteLookupPort;
+import com.capysoft.tuevento.modules.seat.application.usecase.SeatAvailabilityService;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class GetEventService implements GetEventUseCase {
     private final SiteLookupPort       siteLookupPort;
     private final EventMediaRepository eventMediaRepository;
     private final com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository ticketRepository;
+    private final SeatAvailabilityService seatAvailabilityService;
 
     // Translation support
     private final com.capysoft.tuevento.modules.event.domain.repository.EventTranslationRepository eventTranslationRepository;
@@ -207,7 +209,7 @@ public class GetEventService implements GetEventUseCase {
                 .finishDate(e.getFinishDate())
                 .status(e.getStatus())
                 .isPublic(e.getIsPublic())
-                .availableSeats(e.getAvailableSeats())
+                .availableSeats(countAvailable(e))
                 .categoryId(categoryId)
                 .ticketsSold(countSold(e))
                 .coverUrl(coverUrl)
@@ -221,6 +223,11 @@ public class GetEventService implements GetEventUseCase {
                 .createdBy(e.getCreatedBy())
                 .updatedBy(e.getUpdatedBy())
                 .build();
+    }
+
+    /** Sillas disponibles en el mapa, en vivo (el valor guardado no baja con las compras). */
+    private int countAvailable(Event e) {
+        return seatAvailabilityService.availableInEvent(e.getEventId(), e.getAvailableSeats());
     }
 
     private long countSold(Event e) {
@@ -267,7 +274,7 @@ public class GetEventService implements GetEventUseCase {
                 .startDate(e.getStartDate())
                 .finishDate(e.getFinishDate())
                 .isPublic(e.getIsPublic())
-                .availableSeats(e.getAvailableSeats())
+                .availableSeats(countAvailable(e))
                 .siteName(siteName)
                 .categoryId(categoryId)
                 .ticketsSold(countSold(e))

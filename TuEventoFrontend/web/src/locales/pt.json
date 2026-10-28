@@ -59,7 +59,9 @@
     "loginRequired": "Faça login para reservar lugares",
     "eventUnavailable": "Este evento não aceita mais reservas",
     "total": "Total",
-    "continueToPayment": "Continuar para o pagamento"
+    "continueToPayment": "Continuar para o pagamento",
+    "viewAll": "Ver todas",
+    "expiredCountdown": "Expirado"
   },
   "landing": {
     "hero": {

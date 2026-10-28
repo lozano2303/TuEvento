@@ -36,6 +36,17 @@ public interface SeatJpaRepository extends JpaRepository<SeatEntity, Integer> {
 
     long countByEventSectionId(Integer eventSectionId);
 
+    /** Filas [eventSectionId, sillas AVAILABLE] de cada sección del evento que tiene sillas. */
+    @Query("""
+            SELECT s.eventSectionId, SUM(CASE WHEN s.status = :available THEN 1L ELSE 0L END)
+            FROM SeatEntity s
+            JOIN EventSectionEntity es ON es.eventSectionId = s.eventSectionId
+            WHERE es.eventId = :eventId
+            GROUP BY s.eventSectionId
+            """)
+    List<Object[]> countAvailableBySectionOfEvent(@Param("eventId") Integer eventId,
+                                                  @Param("available") SeatStatus available);
+
     // DELETE explícito: el deleteAllBy derivado de Spring Data carga y borra las filas una a una
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("DELETE FROM SeatEntity s WHERE s.eventSectionId = :eventSectionId")

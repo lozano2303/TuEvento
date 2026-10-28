@@ -25,7 +25,9 @@ import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
 import CommentAvatar from '../components/events/CommentAvatar';
 import { useNotifications } from '../context/NotificationContext';
 import { getAccessToken } from '../services/tokenStore.js';
-import { buildSectionOrder, runWithConcurrency } from '../utils/seatSections';
+import { buildSectionOrder, runWithConcurrency, countAvailableBySection } from '../utils/seatSections';
+import { decorText } from '../utils/decorIcons';
+import { normalizeReservedUntil } from '../utils/seatHold';
 
 // Secciones que se descargan a la vez en segundo plano
 const SEAT_LOAD_CONCURRENCY = 4;
@@ -1719,6 +1721,14 @@ function SeatSelectorSection({
     return { [selectedSectionFilter]: ids.map((id) => seats[id]).filter(Boolean) };
   }, [selectedSectionFilter, sectionOrder, seats]);
 
+  // Disponibles en vivo de las secciones con sillas cargadas (las demás usan el valor del backend)
+  const availableBySection = useMemo(() => countAvailableBySection(seats), [seats]);
+
+  // Nombre (traducido) de cada sección, rotulado sobre el mapa en la vista general
+  const sectionNames = useMemo(
+    () => Object.fromEntries(sections.map((s) => [s.eventSectionId, s.sectionTypeName])),
+    [sections]);
+
   const sectionSeatsLoading = selectedSectionFilter !== null && !loadedSectionIds.has(selectedSectionFilter);
 
   // ── Sub-secciones de la sección actualmente filtrada ──
@@ -2239,7 +2249,7 @@ function SeatSelectorSection({
           layoutElements={layoutElements}
           selectedSectionFilter={selectedSectionFilter}
           setSelectedSectionFilter={setSelectedSectionFilter}
-          seats={seats}
+          availableBySection={availableBySection}
           showToast={showToast}
         />
 
@@ -2373,6 +2383,7 @@ function SeatSelectorSection({
                   <SectionRenderer
                     key={section.id}
                     section={section}
+                    sectionName={sectionNames[section.backendSectionId] ?? section.label ?? ''}
                     seatsBySection={seatsBySection}
                     currentUserId={currentUserId}
                     reserving={reserving}
@@ -2418,7 +2429,7 @@ function SeatSelectorSection({
  * Menú lateral de secciones con nombre, tipo y precio.
  * Click en una sección activa el filtro (solo esa sección es seleccionable).
  */
-function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelectedSectionFilter, seats, showToast }) {
+function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelectedSectionFilter, availableBySection, showToast }) {
   const { t } = useTranslation();
   
   // Mapear eventSectionId de la sección backend con los elementos de layout
@@ -2453,19 +2464,16 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
       </div>
       {sectionsWithLayout.map((sec) => {
         const isActive = selectedSectionFilter === sec.eventSectionId;
+        // Sillas libres del mapa: en vivo si la sección ya está cargada, si no las del backend
+        const liveAvailable = availableBySection[sec.eventSectionId];
+        const available = liveAvailable ?? sec.availableSeats;
         return (
           <button
             key={sec.eventSectionId}
             onClick={() => {
               // CASO 5: Detectar sección sin sillas disponibles
-              if (!isActive) {
-                const sectionSeats = Object.values(seats).filter(
-                  (seat) => seat.eventSectionId === sec.eventSectionId
-                );
-                const availableSeats = sectionSeats.filter((seat) => seat.status === 'AVAILABLE');
-                if (availableSeats.length === 0 && sectionSeats.length > 0) {
-                  showToast('section-no-seats', 'Se agotaron las sillas disponibles en esta sección', 'warning');
-                }
+              if (!isActive && liveAvailable === 0) {
+                showToast('section-no-seats', 'Se agotaron las sillas disponibles en esta sección', 'warning');
               }
               
               setSelectedSectionFilter(isActive ? null : sec.eventSectionId);
@@ -2486,7 +2494,7 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
                   {sec.sectionTypeName}
                 </div>
                 <div className="text-xs mt-1" style={{ color: 'var(--color-textMuted)' }}>
-                  {sec.availableSeats}/{sec.capacity}
+                  {available}/{sec.capacity}
                 </div>
               </div>
               <div className="text-sm font-bold shrink-0" style={{ color: 'var(--color-accent)' }}>
@@ -2501,11 +2509,8 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
 }
 
 /**
- * Renderiza una sección con sus sillas clickeables.
- */
-/**
  * Elemento del recinto que no se vende (escenario, baños, barra, entradas…): se dibuja igual que
- * en el editor de layout y no responde a clics ni toques.
+ * en el editor de layout, con su emoji, y no responde a clics ni toques.
  */
 function DecorElement({ element }) {
   const fontSize = Math.max(10, Math.min(13, element.width / 10));
@@ -2525,8 +2530,9 @@ function DecorElement({ element }) {
         height={element.height}
         verticalAlign="middle"
         align="center"
-        text={element.label ?? ''}
+        text={decorText(element)}
         fontSize={fontSize}
+        lineHeight={1.25}
         fontStyle="bold"
         fill="#ffffff"
       />
@@ -2534,8 +2540,12 @@ function DecorElement({ element }) {
   );
 }
 
+/**
+ * Renderiza una sección con sus sillas clickeables.
+ */
 function SectionRenderer({
   section,
+  sectionName,
   seatsBySection,
   currentUserId,
   reserving,
@@ -2771,6 +2781,21 @@ function SectionRenderer({
           );
         });
       })()}
+
+      {/* Vista general: nombre de la sección sobre su forma, como en la app móvil */}
+      {inOverviewMode && sectionName !== '' && (
+        <Text
+          width={section.width}
+          height={section.height}
+          verticalAlign="middle"
+          align="center"
+          text={sectionName}
+          fontSize={Math.max(10, Math.min(16, section.width / 6))}
+          fontStyle="bold"
+          fill="#ffffff"
+          listening={false}
+        />
+      )}
     </Group>
   );
 }
@@ -2982,13 +3007,17 @@ function CartItem({ seat, section, onRelease, onExpire, isReleasing }) {
   const [timeLeft, setTimeLeft] = useState('');
   const { t } = useTranslation();
 
+  // Fin del bloqueo (10 minutos) leído con la zona correcta: reservedUntil llega sin zona horaria
+  const holdEndsAt = useMemo(() => {
+    const normalized = normalizeReservedUntil(seat.reservedUntil);
+    return normalized ? Date.parse(normalized) : null;
+  }, [seat.reservedUntil]);
+
   useEffect(() => {
-    if (!seat.reservedUntil) return;
+    if (holdEndsAt === null) return;
 
     const updateTimer = () => {
-      const now = new Date();
-      const until = new Date(seat.reservedUntil);
-      const diffMs = until - now;
+      const diffMs = holdEndsAt - Date.now();
 
       if (diffMs <= 0) {
         setTimeLeft(t('seats.expiredCountdown'));
@@ -3009,7 +3038,7 @@ function CartItem({ seat, section, onRelease, onExpire, isReleasing }) {
     const interval = setInterval(updateTimer, 1000);
 
     return () => clearInterval(interval);
-  }, [seat.reservedUntil, seat.seatId, onExpire, t]);
+  }, [holdEndsAt, seat.seatId, onExpire, t]);
 
   return (
     <div

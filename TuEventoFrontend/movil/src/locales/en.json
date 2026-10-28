@@ -470,6 +470,7 @@
   "seats": {
     "selectSeats": "Select your Seats",
     "availableSeats": "Available seats",
+    "availableCount": "{{count}} available",
     "reservedSeats": "Reserved seats",
     "soldSeats": "Sold seats",
     "myReservations": "My reservations",
