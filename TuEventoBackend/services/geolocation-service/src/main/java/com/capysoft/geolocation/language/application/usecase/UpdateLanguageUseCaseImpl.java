@@ -4,13 +4,11 @@ import com.capysoft.geolocation.language.application.dto.request.UpdateLanguageR
 import com.capysoft.geolocation.language.application.dto.response.LanguageResponse;
 import com.capysoft.geolocation.language.application.mapper.LanguageAppMapper;
 import com.capysoft.geolocation.language.application.port.in.UpdateLanguageUseCase;
-import com.capysoft.geolocation.language.domain.event.DefaultLanguageChangedEvent;
 import com.capysoft.geolocation.language.domain.model.Language;
 import com.capysoft.geolocation.language.domain.repository.LanguageRepository;
 import com.capysoft.common.domain.exception.BusinessException;
 import com.capysoft.common.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +23,6 @@ public class UpdateLanguageUseCaseImpl implements UpdateLanguageUseCase {
 
     private final LanguageRepository languageRepository;
     private final LanguageAppMapper mapper;
-    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -96,7 +93,6 @@ public class UpdateLanguageUseCaseImpl implements UpdateLanguageUseCase {
 
         // Obtener el idioma por defecto actual
         Optional<Language> currentDefault = languageRepository.findDefaultLanguage();
-        Integer previousDefaultId = currentDefault.map(Language::getLanguageId).orElse(null);
 
         // Desmarcar el idioma por defecto actual si existe
         if (currentDefault.isPresent()) {
@@ -110,9 +106,6 @@ public class UpdateLanguageUseCaseImpl implements UpdateLanguageUseCase {
         // Marcar el nuevo idioma como por defecto
         language.setAsDefault();
         Language savedLanguage = languageRepository.save(language);
-
-        // Publicar evento de dominio
-        eventPublisher.publishEvent(new DefaultLanguageChangedEvent(previousDefaultId, languageId));
 
         return mapper.toResponse(savedLanguage);
     }

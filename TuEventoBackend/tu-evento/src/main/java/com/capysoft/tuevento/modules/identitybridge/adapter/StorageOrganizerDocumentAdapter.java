@@ -3,36 +3,32 @@ package com.capysoft.tuevento.modules.identitybridge.adapter;
 import org.springframework.stereotype.Component;
 
 import com.capysoft.tuevento.modules.identitybridge.port.OrganizerDocumentPort;
-import com.capysoft.tuevento.modules.storage.application.dto.request.StorageRequester;
-import com.capysoft.tuevento.modules.storage.application.dto.request.UploadFileRequest;
-import com.capysoft.tuevento.modules.storage.application.port.in.GeneratePublicUrlPort;
-import com.capysoft.tuevento.modules.storage.application.port.in.UploadFilePort;
+import com.capysoft.tuevento.shared.application.storage.FileStorage;
 
 import lombok.RequiredArgsConstructor;
 
-/** Único punto de Identidad que conoce a Archivos: sube documentos y pide URLs. Al separar los servicios será un cliente REST. */
+/** Único punto de Identidad que conoce a Archivos: sube documentos y pide URLs al servicio de archivos. */
 @Component
 @RequiredArgsConstructor
 class StorageOrganizerDocumentAdapter implements OrganizerDocumentPort {
 
-    private final GeneratePublicUrlPort generatePublicUrlPort;
-    private final UploadFilePort        uploadFilePort;
+    private final FileStorage fileStorage;
 
     @Override
     public Integer upload(DocumentUpload upload) {
-        return uploadFilePort.upload(UploadFileRequest.builder()
-                .fileCategoryCode(upload.fileCategoryCode())
-                .uploadedBy(upload.uploadedBy())
-                .originalFilename(upload.originalFilename())
-                .contentType(upload.contentType())
-                .content(upload.content())
-                .ownerEntityType(upload.ownerEntityType())
-                .build()).getStoredFileId();
+        return fileStorage.upload(new FileStorage.FileUpload(
+                upload.fileCategoryCode(),
+                upload.uploadedBy(),
+                upload.originalFilename(),
+                upload.contentType(),
+                upload.content(),
+                upload.ownerEntityType(),
+                null)).storedFileId();
     }
 
     @Override
     public DocumentUrl publicUrl(Integer storedFileId, Integer requesterUserId, String requesterRole) {
-        var url = generatePublicUrlPort.generate(storedFileId, StorageRequester.of(requesterUserId, requesterRole));
-        return new DocumentUrl(url.getStoredFileId(), url.getPublicUrl());
+        var url = fileStorage.publicUrl(storedFileId, requesterUserId, requesterRole);
+        return new DocumentUrl(url.storedFileId(), url.publicUrl());
     }
 }

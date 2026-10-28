@@ -38,45 +38,14 @@ springdoc:
     path: /swagger-ui
     enabled: true
 
-minio:
-  # Public-facing URL embedded in presigned URLs sent to the browser.
-  # Must differ from app.storage.endpoint when MinIO runs inside Docker.
-  public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
-
 app:
   qr:
     # Secreto propio para firmar los QR de tickets (separado del JWT de sesión).
     secret: ${QR_SECRET:${JWT_SECRET}}
     # Vida del token QR en milisegundos (60s).
     expiration: ${QR_EXPIRATION:60000}
-  storage:
-    enabled: true
-    endpoint: ${APP_STORAGE_ENDPOINT:http://localhost:9000}
-    access-key: ${MINIO_ROOT_USER}
-    secret-key: ${MINIO_ROOT_PASSWORD}
-    region: us-east-1
-    bucket-default: tuevento
-    # Strategy de almacenamiento: minio (por defecto) | rustfs
-    provider: ${STORAGE_PROVIDER:minio}
-    rustfs:
-      endpoint: ${RUSTFS_ENDPOINT:http://localhost:9100}
-      public-url: ${RUSTFS_PUBLIC_URL:http://localhost:9100}
-      access-key: ${RUSTFS_ACCESS_KEY:rustfsadmin}
-      secret-key: ${RUSTFS_SECRET_KEY:rustfsadmin}
-      region: us-east-1
   cors:
     allowed-origins: "${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}"
-
-moderation:
-  nsfw:
-    url: ${NSFW_SERVICE_URL:http://localhost:8001}
-    threshold: ${NSFW_THRESHOLD:0.4}
-  sightengine:
-    api-user: ${SIGHTENGINE_API_USER}
-    api-secret: ${SIGHTENGINE_API_SECRET}
-    models: ${SIGHTENGINE_MODELS:gore,nudity,weapon}
-    threshold: ${SIGHTENGINE_THRESHOLD:0.4}
-    nudity-threshold: ${SIGHTENGINE_NUDITY_THRESHOLD:0.15}
 
 payment:
   gateway: ${PAYMENT_GATEWAY:fake}

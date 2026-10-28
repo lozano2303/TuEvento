@@ -50,10 +50,9 @@ spring:
             # ── Microservicio de Archivos/Storage (PRIMERA EXTRACCIÓN) ───────────
             # Más específico: debe ir ANTES que monolith. Los frontends siguen
             # llamando a /api/v1/storage/** exactamente igual.
-            # STORAGE_SERVICE_URI apunta al microservicio (comparte la BD y el bucket del monolito).
-            # Sin la variable, la ruta vuelve al monolito: es la vuelta atrás.
+            # Solo los sirve el microservicio: el monolito ya no tiene el módulo de archivos.
             - id: storage-service
-              uri: ${STORAGE_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
+              uri: ${STORAGE_SERVICE_URI:http://localhost:8085}
               predicates:
                 - Path=/api/v1/storage/**
               filters:
