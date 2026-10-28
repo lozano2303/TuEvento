@@ -332,7 +332,7 @@ services:
       - GEOLOCATION_SERVICE_URI=http://geolocation-service:8087
       # /api/v1/notifications va al microservicio; para volver al monolito, quitar esta variable
       - NOTIFICATION_SERVICE_URI=http://notification-service:8086
-      # /api/v1/themes va al microservicio de Identidad; para volver al monolito, quitar esta variable
+      # /api/v1/themes y /api/v1/profiles van al microservicio de Identidad; para volver al monolito, quitar esta variable
       - IDENTITY_SERVICE_URI=http://identity-service:8088
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -494,7 +494,7 @@ services:
       - tuevento-network
 
   # ── Microservicio de Identidad ─────────────────────────────────────────────
-  # Por ahora, temas y paletas de usuario sobre la misma base que el backend.
+  # Temas y perfiles de usuario sobre la misma base que el backend.
   identity-service:
     build:
       context: ./TuEventoBackend/services
@@ -510,7 +510,12 @@ services:
       - JWK_SET_URI=http://backend:8080/.well-known/jwks.json
       # Idiomas activos (GET /api/v1/languages); hoy los sirve el backend
       - LOCALIZATION_BASE_URL=http://backend:8080
-      # Avisos en vivo (THEME_UPDATED): el backend los reenvía al /ws
+      # Estado de las traducciones de la biografía (API interna del backend, con la clave entre servicios)
+      - MONOLITH_BASE_URL=http://backend:8080
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      # Ciudad del perfil
+      - GEOLOCATION_SERVICE_URL=http://geolocation-service:8087
+      # Avisos en vivo (THEME_UPDATED, LANGUAGE_UPDATED) y traducciones: el backend los atiende desde Kafka
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       # Lista de revocación de JWT (fail-closed): misma instancia que el backend
       - REDIS_HOST=redis

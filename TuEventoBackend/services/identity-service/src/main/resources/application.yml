@@ -4,8 +4,9 @@ server:
 spring:
   application:
     name: identity-service
-  # Misma base de datos que el monolito: theme, user_theme, theme_customization, theme_log y
-  # theme_translation las crea y migra su Liquibase (también los datos iniciales).
+  # Misma base de datos que el monolito: las tablas de temas (theme, user_theme, theme_customization,
+  # theme_log, theme_translation) y de perfiles (profile, profile_log, profile_translation) las crea
+  # y migra su Liquibase (también los datos iniciales).
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/tuevento_db}
     username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:postgres}}
@@ -21,7 +22,8 @@ spring:
     open-in-view: false
   liquibase:
     enabled: false
-  # Avisos en vivo (THEME_UPDATED): el /ws sigue en el monolito, que los reenvía desde Kafka
+  # Avisos en vivo (THEME_UPDATED, LANGUAGE_UPDATED) y peticiones de traducción de la biografía:
+  # el /ws y el motor de traducciones siguen en el monolito, que los atiende desde Kafka
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
     producer:
@@ -48,6 +50,19 @@ spring:
           jwk-set-uri: ${JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
 
 app:
+  profile:
+    # storedFileId del avatar por defecto de los perfiles nuevos (el mismo que usa el monolito)
+    default-avatar-stored-file-id: ${APP_PROFILE_DEFAULT_AVATAR_ID:1}
+    default-language-id: 1
+  # Estado de los trabajos de traducción (GET /internal/..., con X-Internal-Api-Key)
+  monolith:
+    base-url: ${MONOLITH_BASE_URL:http://localhost:8080}
+  internal:
+    api-key: ${INTERNAL_API_KEY:}
+  # Ciudades del perfil (GET /api/v1/geolocation/cities/{id})
+  geolocation:
+    base-url: ${GEOLOCATION_SERVICE_URL:http://localhost:8087}
+    cache-ttl: PT1M
   localization:
     # Idiomas activos (GET /api/v1/languages); hoy los sirve el monolito
     base-url: ${LOCALIZATION_BASE_URL:http://localhost:8080}

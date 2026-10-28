@@ -20,9 +20,9 @@ import lombok.extern.slf4j.Slf4j;
  * identity-service llegan por {@link #TOPIC} y se reenvían aquí al canal de sesión del usuario.
  *
  * <p>Solo se acepta {@code /topic/users/{userId}/session} con los tipos de {@link #ALLOWED_TYPES}, y
- * el payload se arma aquí ({@code {type}}): por ese canal también viajan ROLE_REVOKED o
- * ROLE_UPDATED, que la web usa para cerrar o renovar la sesión, y un mensaje de Kafka no debe
- * poder provocarlos.
+ * el payload se arma aquí con sus campos conocidos ({@code {type}}, más {@code languageId} en
+ * LANGUAGE_UPDATED): por ese canal también viajan ROLE_REVOKED o ROLE_UPDATED, que la web usa para
+ * cerrar o renovar la sesión, y un mensaje de Kafka no debe poder provocarlos.
  */
 @Slf4j
 @Component
@@ -32,7 +32,9 @@ public class IdentityPushRelay {
 
     public static final String TOPIC = "tuevento.identidad.push";
     static final Pattern ALLOWED_DESTINATION = Pattern.compile("^/topic/users/\\d+/session$");
-    static final Set<String> ALLOWED_TYPES = Set.of("THEME_UPDATED");
+    static final String THEME_UPDATED = "THEME_UPDATED";
+    static final String LANGUAGE_UPDATED = "LANGUAGE_UPDATED";
+    static final Set<String> ALLOWED_TYPES = Set.of(THEME_UPDATED, LANGUAGE_UPDATED);
 
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
@@ -40,7 +42,7 @@ public class IdentityPushRelay {
     @JsonIgnoreProperties(ignoreUnknown = true)
     record PushMessage(String destination, Body body) {
         @JsonIgnoreProperties(ignoreUnknown = true)
-        record Body(String type) {
+        record Body(String type, Long languageId) {
         }
     }
 
@@ -53,6 +55,15 @@ public class IdentityPushRelay {
                     || !ALLOWED_TYPES.contains(type)) {
                 log.warn("Identity push discarded: destination or type not allowed ({}, {})",
                         message.destination(), type);
+                return;
+            }
+            if (LANGUAGE_UPDATED.equals(type)) {
+                if (message.body().languageId() == null) {
+                    log.warn("Identity push discarded: LANGUAGE_UPDATED without languageId");
+                    return;
+                }
+                messagingTemplate.convertAndSend(message.destination(),
+                        Map.of("type", type, "languageId", message.body().languageId()));
                 return;
             }
             messagingTemplate.convertAndSend(message.destination(), Map.of("type", type));

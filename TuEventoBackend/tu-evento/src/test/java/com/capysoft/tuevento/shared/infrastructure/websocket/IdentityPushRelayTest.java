@@ -28,6 +28,16 @@ class IdentityPushRelayTest {
     }
 
     @Test
+    @DisplayName("LANGUAGE_UPDATED se reenvía con su languageId; sin languageId se descarta")
+    void relaysLanguageUpdated() {
+        relay.relay("{\"destination\":\"/topic/users/7/session\",\"body\":{\"type\":\"LANGUAGE_UPDATED\",\"languageId\":2}}");
+        relay.relay("{\"destination\":\"/topic/users/7/session\",\"body\":{\"type\":\"LANGUAGE_UPDATED\"}}");
+
+        verify(messaging).convertAndSend("/topic/users/7/session", Map.of("type", "LANGUAGE_UPDATED", "languageId", 2L));
+        org.mockito.Mockito.verifyNoMoreInteractions(messaging);
+    }
+
+    @Test
     @DisplayName("otros canales o tipos que cierran la sesión (ROLE_REVOKED) se descartan")
     void discardsAnythingElse() {
         relay.relay("{\"destination\":\"/topic/users/7/session\",\"body\":{\"type\":\"ROLE_REVOKED\"}}");

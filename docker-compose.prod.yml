@@ -360,7 +360,7 @@ services:
 
   # ── API gateway: punto de entrada de /api y /ws ────────────────────────────
   # Envía /api/v1/storage/**, /api/v1/notifications/**, /api/v1/geolocation/** y
-  # /api/v1/themes/** a sus microservicios y el resto al monolito.
+  # /api/v1/themes/** y /api/v1/profiles/** a sus microservicios y el resto al monolito.
   api-gateway:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:api-gateway-${TUEVENTO_VERSION:?}
     container_name: tuevento-api-gateway
@@ -566,7 +566,7 @@ services:
       - internal
 
   # ── Microservicio de Identidad ─────────────────────────────────────────────
-  # Por ahora, temas y paletas de usuario; misma base de datos que el monolito.
+  # Temas y perfiles de usuario; misma base de datos que el monolito.
   identity-service:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:identity-${TUEVENTO_VERSION:?}
     container_name: tuevento-identity-service
@@ -579,7 +579,12 @@ services:
       JWK_SET_URI: http://backend:8080/.well-known/jwks.json
       # Idiomas activos (GET /api/v1/languages); hoy los sirve el backend
       LOCALIZATION_BASE_URL: http://backend:8080
-      # Avisos en vivo (THEME_UPDATED): el backend los reenvía al /ws
+      # Estado de las traducciones de la biografía (API interna del backend, con la clave entre servicios)
+      MONOLITH_BASE_URL: http://backend:8080
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      # Ciudad del perfil
+      GEOLOCATION_SERVICE_URL: http://geolocation-service:8087
+      # Avisos en vivo (THEME_UPDATED, LANGUAGE_UPDATED) y traducciones: el backend los atiende desde Kafka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       # Lista de revocación de JWT (fail-closed): misma instancia que el backend
       REDIS_HOST: redis
@@ -591,6 +596,8 @@ services:
       kafka:
         condition: service_healthy
       backend:
+        condition: service_healthy
+      geolocation-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8088/actuator/health | grep -q UP"]

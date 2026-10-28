@@ -1,4 +1,4 @@
-package com.capysoft.identity.theme.infrastructure.client;
+package com.capysoft.identity.shared.infrastructure.client;
 
 import java.time.Duration;
 import java.util.List;
@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-import com.capysoft.identity.theme.application.port.out.LanguageDirectoryPort;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import lombok.extern.slf4j.Slf4j;
@@ -22,14 +21,19 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Idiomas de Localización por su API pública ({@code GET /api/v1/languages}, idiomas activos), que
  * hoy sirve el monolito. Son datos de referencia: la lista se guarda en memoria durante el TTL.
- * Si Localización no responde, los temas se devuelven sin traducir (igual que con un idioma
- * desconocido) en vez de fallar la petición.
+ * Si Localización no responde, el idioma se trata como desconocido (temas y perfiles se devuelven
+ * sin traducir) en vez de fallar la petición. Es el adaptador del puerto de idiomas de theme y de
+ * profile.
  */
 @Slf4j
 @Component
-public class LocalizationLanguageClient implements LanguageDirectoryPort {
+public class LocalizationLanguageClient implements
+        com.capysoft.identity.theme.application.port.out.LanguageDirectoryPort,
+        com.capysoft.identity.profile.application.port.out.LanguageDirectoryPort {
 
     private static final ParameterizedTypeReference<Envelope> TYPE = new ParameterizedTypeReference<>() { };
+
+    private static final Cached EMPTY = new Cached(Map.of(), 0);
 
     private final RestClient restClient;
     private final long ttlNanos;
@@ -52,30 +56,42 @@ public class LocalizationLanguageClient implements LanguageDirectoryPort {
         if (languageCode == null) {
             return Optional.empty();
         }
-        return Optional.ofNullable(languagesByCode().get(languageCode.toLowerCase()));
+        return Optional.ofNullable(languages().byCode().get(languageCode.toLowerCase()));
     }
 
-    private Map<String, Integer> languagesByCode() {
+    @Override
+    public Optional<String> findCodeById(Integer languageId) {
+        if (languageId == null) {
+            return Optional.empty();
+        }
+        return languages().byCode().entrySet().stream()
+                .filter(e -> e.getValue().equals(languageId))
+                .map(Map.Entry::getKey)
+                .findFirst();
+    }
+
+    private Cached languages() {
         Cached current = cached;
         if (current != null && System.nanoTime() < current.expiresAt()) {
-            return current.byCode();
+            return current;
         }
         try {
             Envelope body = restClient.get().uri("/api/v1/languages").retrieve().body(TYPE);
             if (body == null || body.data() == null) {
                 log.warn("Localization returned no languages");
-                return Map.of();
+                return current != null ? current : EMPTY;
             }
             Map<String, Integer> byCode = body.data().stream()
                     .filter(l -> l.code() != null && l.languageId() != null)
                     .collect(Collectors.toUnmodifiableMap(l -> l.code().toLowerCase(), LanguageData::languageId,
                             (a, b) -> a));
-            cached = new Cached(byCode, System.nanoTime() + ttlNanos);
-            return byCode;
+            Cached fresh = new Cached(byCode, System.nanoTime() + ttlNanos);
+            cached = fresh;
+            return fresh;
         } catch (RestClientException e) {
             // Sin caché nueva: el siguiente intento vuelve a preguntar
             log.warn("Localization languages unavailable: {}", e.getMessage());
-            return current != null ? current.byCode() : Map.of();
+            return current != null ? current : EMPTY;
         }
     }
 
