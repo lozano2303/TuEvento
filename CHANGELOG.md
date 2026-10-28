@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-10-28
+
+### Added — feat(layout): decorative elements, courtesy seats and wizard improvements in the layout editor (#190)
+
+### Fixed — fix(web): theme contrast and landing page translations (#186)
+
+### Fixed — fix(mobile): notification translations (#191)
+
+### Fixed — fix(web): Android APK download (#193)
+
+- The landing page button downloads `TuEvento.apk` from the latest GitHub release (the Google Drive link returned 404)
+
+### Changed — fix(web): the footer no longer links to the profile (#192)
+
+### Deployment notes
+
+- `docker-compose.prod.yml` did not change: only update `TUEVENTO_VERSION`
+- Rebuild the backend and frontend images; the other seven can be retagged from `v1.1.2`
+- The APK download needs a GitHub release with a `TuEvento.apk` asset
+
 ## [1.1.2] - 2026-10-28
 
 ### Added — feat(web): legal pages and about page (#185)
