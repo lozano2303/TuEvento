@@ -1241,18 +1241,6 @@ export default function EventManage() {
                 </div>
               </div>
 
-              {/* Visibilidad */}
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox" id="isPublic"
-                  className="w-4 h-4 accent-accent"
-                  checked={editForm.isPublic}
-                  onChange={(e) => setEditForm((f) => ({ ...f, isPublic: e.target.checked }))}
-                />
-                <label htmlFor="isPublic" className="text-sm text-textSecondary cursor-pointer">
-                  Evento público (visible para todos)
-                </label>
-              </div>
 
               {/* Error */}
               {editError && (

@@ -187,29 +187,6 @@ export default function StepGeneralInfo({ formData, onChange, onNext, onCityChan
         </div>
       </div>
 
-      {/* Público */}
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => onChange({ isPublic: !formData.isPublic })}
-          className={[
-            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-            formData.isPublic ? 'bg-accent' : 'bg-surfaceAlt',
-          ].join(' ')}
-          aria-checked={formData.isPublic}
-          role="switch"
-        >
-          <span
-            className={[
-              'inline-block h-4 w-4 rounded-full bg-white shadow transition-transform',
-              formData.isPublic ? 'translate-x-6' : 'translate-x-1',
-            ].join(' ')}
-          />
-        </button>
-        <span className="text-sm text-textSecondary">
-          Evento {formData.isPublic ? 'público' : 'privado'}
-        </span>
-      </div>
 
       {/* Categoría */}
       <div>

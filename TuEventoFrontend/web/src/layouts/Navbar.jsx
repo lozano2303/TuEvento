@@ -7,6 +7,7 @@ import { getEventsByUser } from "../services/EventService.js";
 import NotificationBell from "../components/common/NotificationBell.jsx";
 import LanguageSelector from "../components/common/LanguageSelector.jsx";
 import { getAccessToken } from '../services/tokenStore.js';
+import { getProfileByUserId, getProfilePictureUrl, PROFILE_PICTURE_CHANGED_EVENT } from '../services/ProfileService.js';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ export default function Navbar() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // Foto de perfil del botón del menú; sin foto (o si no carga) se muestra el ícono
+  const [avatarUrl, setAvatarUrl] = useState(null);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -43,6 +46,30 @@ export default function Navbar() {
     window.addEventListener('roleChanged', handleRoleChanged);
     return () => window.removeEventListener('roleChanged', handleRoleChanged);
   }, []);
+
+  const userId = userData?.userId;
+  useEffect(() => {
+    if (!userId) {
+      setAvatarUrl(null);
+      return undefined;
+    }
+    let cancelled = false;
+    getProfileByUserId(userId)
+      .then((res) => {
+        const storedFileId = res?.data?.storedFileId;
+        return storedFileId ? getProfilePictureUrl(storedFileId) : null;
+      })
+      .then((url) => { if (!cancelled) setAvatarUrl(url || null); })
+      .catch(() => { if (!cancelled) setAvatarUrl(null); });
+
+    // ProfilePage avisa al cambiar la foto: el menú se actualiza sin recargar
+    const handlePictureChanged = (e) => setAvatarUrl(e.detail?.url || null);
+    window.addEventListener(PROFILE_PICTURE_CHANGED_EVENT, handlePictureChanged);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(PROFILE_PICTURE_CHANGED_EVENT, handlePictureChanged);
+    };
+  }, [userId]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -156,8 +183,18 @@ const displayName = (() => {
                   onClick={() => setIsModalOpen(!isModalOpen)}
                   className="group inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full bg-primary hover:bg-primaryDark transition-all duration-200 outline-none cursor-pointer"
                 >
-                  <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-white/20">
-                    <User className="w-4 h-4 text-textPrimary" />
+                  <span className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-white/20">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                        onError={() => setAvatarUrl(null)}
+                      />
+                    ) : (
+                      <User className="w-4 h-4 text-textPrimary" />
+                    )}
                   </span>
                   <span className="text-[13px] font-medium text-textPrimary leading-none">
                     {displayName}
