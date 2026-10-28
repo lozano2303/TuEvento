@@ -16,7 +16,7 @@ export default function CommentAvatar({ comment, size = 32 }) {
   const style = {
     width: size,
     height: size,
-    border: `2px solid ${comment.isOrganizer ? ORGANIZER_COLOR : 'rgba(167,139,250,0.35)'}`,
+    border: `2px solid ${comment.isOrganizer ? ORGANIZER_COLOR : 'color-mix(in srgb, var(--color-accent) 35%, transparent)'}`,
   };
 
   if (comment.authorAvatarUrl && !failed) {
@@ -34,8 +34,8 @@ export default function CommentAvatar({ comment, size = 32 }) {
   return (
     <span
       aria-hidden="true"
-      className="rounded-full flex items-center justify-center flex-shrink-0 font-bold text-white"
-      style={{ ...style, background: '#6d28d9', fontSize: Math.round(size * 0.42) }}
+      className="rounded-full flex items-center justify-center flex-shrink-0 font-bold"
+      style={{ ...style, background: 'var(--color-primary)', color: 'var(--color-onPrimary)', fontSize: Math.round(size * 0.42) }}
     >
       {name.charAt(0).toUpperCase()}
     </span>

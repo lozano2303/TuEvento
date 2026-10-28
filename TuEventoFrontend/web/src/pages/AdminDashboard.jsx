@@ -75,7 +75,7 @@ function translateActivityTitle(raw) {
 function resolveActivityStyle(item) {
   const { type, title = '' } = item;
   if (type === 'USER_REGISTERED') {
-    return { Icon: UserPlus, iconBg: 'bg-violet-500/15', iconColor: 'text-violet-400' };
+    return { Icon: UserPlus, iconBg: 'bg-violet-500/15', iconColor: 'text-accent' };
   }
   if (type === 'PAYMENT') {
     return { Icon: CreditCard, iconBg: 'bg-amber-500/15', iconColor: 'text-amber-400' };
@@ -93,7 +93,7 @@ function resolveActivityStyle(item) {
   if (t.includes('completed') || t.includes('finalizado')) {
     return { Icon: CalendarCheck, iconBg: 'bg-primary/15', iconColor: 'text-accent' };
   }
-  return { Icon: Calendar, iconBg: 'bg-slate-500/15', iconColor: 'text-slate-400' };
+  return { Icon: Calendar, iconBg: 'bg-slate-500/15', iconColor: 'text-textSecondary' };
 }
 
 function fmtRelTime(iso) {
@@ -180,7 +180,7 @@ export default function AdminDashboard() {
     {
       icon:       UsersRound,
       iconBg:     'bg-violet-500/15',
-      iconColor:  'text-violet-400',
+      iconColor:  'text-accent',
       label:      'Usuarios registrados',
       value:      fmtNum(stats?.totalUsers),
       sub:        `${fmtNum(stats?.approvedOrganizerRequests)} organizadores aprobados`,
@@ -321,7 +321,7 @@ export default function AdminDashboard() {
               <div className="rounded-xl p-4 border border-white/[0.06] flex flex-col gap-2"
                 style={{ background: 'rgba(255,255,255,0.04)' }}>
                 <div className="w-9 h-9 rounded-lg bg-violet-500/15 flex items-center justify-center">
-                  <CreditCard className="w-4 h-4 text-violet-400" />
+                  <CreditCard className="w-4 h-4 text-accent" />
                 </div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-textMuted">Saldo compensatorio total</p>
                 {loadingStats

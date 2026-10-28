@@ -132,7 +132,7 @@ export default function Checkout() {
         {loading && (
           <div
             className="rounded-xl p-8 flex flex-col items-center gap-4"
-            style={{ background: 'var(--color-surface)', border: '1px solid rgba(167,139,250,0.15)' }}
+            style={{ background: 'var(--color-surface)', border: '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)' }}
           >
             <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--color-primary)' }} />
             <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>{t('checkout.preparingOrder')}</p>
@@ -170,7 +170,7 @@ export default function Checkout() {
             {/* Tarjeta de sillas */}
             <div
               className="rounded-xl p-5"
-              style={{ background: 'var(--color-surface)', border: '1px solid rgba(167,139,250,0.15)' }}
+              style={{ background: 'var(--color-surface)', border: '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)' }}
             >
               <div className="flex items-center gap-2 mb-4">
                 <ShoppingCart className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
@@ -179,7 +179,7 @@ export default function Checkout() {
                 </h2>
                 <span
                   className="ml-auto text-xs px-2 py-0.5 rounded-full"
-                  style={{ background: 'rgba(167,139,250,0.15)', color: 'var(--color-accent)' }}
+                  style={{ background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)', color: 'var(--color-accent)' }}
                 >
                   {cartItems.length} {cartItems.length === 1 ? t('checkout.seat') : t('checkout.seats')}
                 </span>
@@ -202,7 +202,7 @@ export default function Checkout() {
               </div>
               <div
                 className="mt-4 pt-4 flex items-center justify-between"
-                style={{ borderTop: '1px solid rgba(167,139,250,0.15)' }}
+                style={{ borderTop: '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)' }}
               >
                 <span className="text-sm font-semibold" style={{ color: 'var(--color-textSecondary)' }}>
                   {t('checkout.total')}
@@ -217,7 +217,7 @@ export default function Checkout() {
             {availableWallet > 0 && (
               <div
                 className="rounded-xl p-5 space-y-4"
-                style={{ background: 'var(--color-surface)', border: '1px solid rgba(167,139,250,0.15)' }}
+                style={{ background: 'var(--color-surface)', border: '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)' }}
               >
                 <div className="flex items-center gap-2">
                   <Wallet className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
@@ -226,7 +226,7 @@ export default function Checkout() {
                   </h2>
                   <span
                     className="ml-auto text-xs px-2 py-0.5 rounded-full"
-                    style={{ background: 'rgba(167,139,250,0.15)', color: 'var(--color-accent)' }}
+                    style={{ background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)', color: 'var(--color-accent)' }}
                   >
                     ${availableWallet.toLocaleString('es-CO')} {t('checkout.available')}
                   </span>
@@ -275,7 +275,7 @@ export default function Checkout() {
                     </div>
                     <div
                       className="flex justify-between font-semibold pt-2"
-                      style={{ borderTop: '1px solid rgba(167,139,250,0.15)' }}
+                      style={{ borderTop: '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)' }}
                     >
                       <span style={{ color: 'var(--color-textPrimary)' }}>
                         {remainder === 0 ? t('checkout.walletCoversAll') : t('checkout.remainingGateway')}
@@ -293,7 +293,7 @@ export default function Checkout() {
             {(!useWallet || remainder > 0) && (
               <div
                 className="rounded-xl p-5"
-                style={{ background: 'var(--color-surface)', border: '1px solid rgba(167,139,250,0.15)' }}
+                style={{ background: 'var(--color-surface)', border: '1px solid color-mix(in srgb, var(--color-accent) 15%, transparent)' }}
               >
                 <div className="flex items-center gap-2 mb-3">
                   <CreditCard className="w-4 h-4" style={{ color: 'var(--color-accent)' }} />
@@ -303,11 +303,11 @@ export default function Checkout() {
                 </div>
                 <div
                   className="flex items-center gap-3 p-3 rounded-lg"
-                  style={{ background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)' }}
+                  style={{ background: 'color-mix(in srgb, var(--color-accent) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--color-accent) 20%, transparent)' }}
                 >
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center text-lg"
-                    style={{ background: 'rgba(167,139,250,0.15)' }}
+                    style={{ background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)' }}
                   >
                     📱
                   </div>

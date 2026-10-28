@@ -112,6 +112,44 @@ export async function connectSeatSocket(eventId, onSeatUpdate, onStatusEvent) {
 }
 
 /**
+ * Conecta al canal personal de tickets del usuario (/topic/users/{userId}/tickets). Solo el
+ * dueño puede suscribirse; el backend avisa ahí { type: 'QR_VALIDATED', scope, targetId,
+ * eventId, ticketIds } cuando el organizador valida su QR.
+ *
+ * @returns {Promise<Client | null>} Cliente STOMP para desconectar en cleanup, o null sin token
+ */
+export async function connectUserTicketsSocket(userId, onTicketsEvent) {
+  let token = await getValidAccessToken();
+  if (!token || !userId) return null;
+
+  const baseUrl = getBaseURL();
+  const client = new Client({
+    beforeConnect: async () => {
+      token = (await getValidAccessToken()) ?? token;
+    },
+    webSocketFactory: () => new SockJS(`${baseUrl}/ws?token=${token}`),
+    onConnect: () => {
+      client.subscribe(`/topic/users/${userId}/tickets`, (message) => {
+        try {
+          onTicketsEvent(JSON.parse(message.body));
+        } catch (err) {
+          console.error('[WebSocket] Error parsing tickets event:', err);
+        }
+      });
+    },
+    onStompError: (frame) => {
+      console.error('[WebSocket] STOMP error:', frame.headers['message']);
+    },
+    reconnectDelay: 5000,
+    heartbeatIncoming: 10000,
+    heartbeatOutgoing: 10000,
+  });
+
+  client.activate();
+  return client;
+}
+
+/**
  * Desconecta un cliente WebSocket de forma limpia.
  * 
  * @param {Client | null} client - Cliente STOMP a desconectar

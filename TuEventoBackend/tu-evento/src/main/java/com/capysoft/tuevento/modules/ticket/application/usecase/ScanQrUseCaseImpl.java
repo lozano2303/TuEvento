@@ -4,6 +4,7 @@ import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.ScanResultResponse;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.ScanResultResponse.ScannedTicket;
+import com.capysoft.tuevento.modules.ticket.domain.event.TicketsValidatedEvent;
 import com.capysoft.tuevento.modules.ticket.domain.model.Ticket;
 import com.capysoft.tuevento.modules.ticket.domain.model.TicketLog;
 import com.capysoft.tuevento.modules.ticket.domain.model.TicketStatus;
@@ -18,13 +19,16 @@ import com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Valida un token QR escaneado por un organizador y marca el/los ticket(s) como USED.
@@ -37,6 +41,8 @@ import java.util.List;
  *      (ningún otro organizador puede escanear) → 403 si no.
  *   4. Marca como USED el ticket (scope TICKET) o todos los tickets PAID
  *      restantes de la orden (scope ORDER). Los ya usados se reportan aparte.
+ *   5. Avisa a cada dueño de los tickets validados (tras el commit) para que su app
+ *      deje de mostrar el QR.
  */
 @Service
 @RequiredArgsConstructor
@@ -48,6 +54,7 @@ public class ScanQrUseCaseImpl {
     private final TicketCheckinRepository ticketCheckinRepository;
     private final TicketLogRepository ticketLogRepository;
     private final EventRepository eventRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public ScanResultResponse execute(String qrToken, Long organizerUserId) {
@@ -89,6 +96,7 @@ public class ScanQrUseCaseImpl {
 
         List<ScannedTicket> validated = new ArrayList<>();
         List<ScannedTicket> alreadyUsed = new ArrayList<>();
+        Map<Long, List<Long>> validatedByOwner = new LinkedHashMap<>();
 
         for (Ticket ticket : targetTickets) {
             // Defensa: todos los tickets deben pertenecer al mismo evento del QR
@@ -114,12 +122,16 @@ public class ScanQrUseCaseImpl {
 
             markUsed(ticket, organizerUserId);
             validated.add(toScanned(ticket));
+            validatedByOwner.computeIfAbsent(ticket.getUserId(), k -> new ArrayList<>()).add(ticket.getTicketId());
         }
 
         if (validated.isEmpty() && alreadyUsed.isEmpty()) {
             throw new BusinessException("QR_NO_VALIDATABLE_TICKETS",
                     "No tickets could be validated with this QR");
         }
+
+        validatedByOwner.forEach((userId, ticketIds) -> eventPublisher.publishEvent(new TicketsValidatedEvent(
+                userId, payload.scope().name(), payload.targetId(), payload.eventId(), ticketIds)));
 
         return ScanResultResponse.builder()
                 .scope(payload.scope().name())

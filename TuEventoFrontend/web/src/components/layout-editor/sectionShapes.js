@@ -121,7 +121,7 @@ const grandstandArc = () => [
  * Catálogo de formas base. `aspect` es la relación ancho/alto con la que se crea la
  * sección; `rect` marca la única forma que no es polígono (shapeMode 'rect').
  */
-export const SECTION_SHAPES = [
+const ALL_SHAPES = [
   { id: 'rect',              label: 'Rectángulo',            aspect: 4 / 3, rect: true },
   { id: 'roundedRect',       label: 'Rectángulo redondeado', aspect: 4 / 3, unit: roundedRect },
   { id: 'circle',            label: 'Círculo',               aspect: 1,     unit: () => ellipse(0, 0, 1, 1) },
@@ -129,8 +129,8 @@ export const SECTION_SHAPES = [
   { id: 'semicircle',        label: 'Semicírculo',           aspect: 2,     unit: () => arc(0, 0, 1, 1, Math.PI, Math.PI * 2) },
   { id: 'quarterCircle',     label: 'Cuarto de círculo',     aspect: 1,     unit: () => [...arc(0, 1, 1, 1, -HALF_PI, 0), anchor(0, 1)] },
   { id: 'grandstandArc',     label: 'Arco de tribuna',       aspect: 2.5,   unit: grandstandArc },
-  { id: 'ring',              label: 'Anillo',                aspect: 1,     unit: ring },
-  { id: 'horseshoe',         label: 'Herradura',             aspect: 1,     unit: horseshoe },
+  { id: 'ring',              label: 'Anillo',                aspect: 1,     unit: ring, hollow: true },
+  { id: 'horseshoe',         label: 'Herradura',             aspect: 1,     unit: horseshoe, hollow: true },
   { id: 'trapezoid',         label: 'Trapecio',              aspect: 1.6,   unit: () => poly([[0.15, 0], [0.85, 0], [1, 1], [0, 1]]) },
   { id: 'invertedTrapezoid', label: 'Trapecio invertido',    aspect: 1.6,   unit: () => poly([[0, 0], [1, 0], [0.85, 1], [0.15, 1]]) },
   { id: 'parallelogram',     label: 'Paralelogramo',         aspect: 1.6,   unit: () => poly([[0.2, 0], [1, 0], [0.8, 1], [0, 1]]) },
@@ -141,12 +141,19 @@ export const SECTION_SHAPES = [
   { id: 'hexagon',           label: 'Hexágono',              aspect: 1.15,  unit: () => regular(6) },
   { id: 'octagon',           label: 'Octágono',              aspect: 1,     unit: () => regular(8) },
   { id: 'lshape',            label: 'Forma L',               aspect: 1,     unit: () => poly([[0, 0], [0.5, 0], [0.5, 0.5], [1, 0.5], [1, 1], [0, 1]]) },
-  { id: 'ushape',            label: 'Forma U',               aspect: 1.2,   unit: () => poly([[0, 0], [0.3, 0], [0.3, 0.6], [0.7, 0.6], [0.7, 0], [1, 0], [1, 1], [0, 1]]) },
+  { id: 'ushape',            label: 'Forma U',               aspect: 1.2,   unit: () => poly([[0, 0], [0.3, 0], [0.3, 0.6], [0.7, 0.6], [0.7, 0], [1, 0], [1, 1], [0, 1]]), hollow: true },
   { id: 'tshape',            label: 'Forma T',               aspect: 1,     unit: () => poly([[0, 0], [1, 0], [1, 0.35], [0.65, 0.35], [0.65, 1], [0.35, 1], [0.35, 0.35], [0, 0.35]]) },
   { id: 'cross',             label: 'Cruz',                  aspect: 1,     unit: () => poly([[0.33, 0], [0.67, 0], [0.67, 0.33], [1, 0.33], [1, 0.67], [0.67, 0.67], [0.67, 1], [0.33, 1], [0.33, 0.67], [0, 0.67], [0, 0.33], [0.33, 0.33]]) },
 ];
 
-const SHAPES_BY_ID = Object.fromEntries(SECTION_SHAPES.map((s) => [s.id, s]));
+/**
+ * Formas que se ofrecen al crear o cambiar una sección. Las que tienen un hueco o el centro
+ * vacío (`hollow`) no se ofrecen; se mantienen solo para que los layouts guardados con ellas
+ * se sigan resolviendo.
+ */
+export const SECTION_SHAPES = ALL_SHAPES.filter((shape) => !shape.hollow);
+
+const SHAPES_BY_ID = Object.fromEntries(ALL_SHAPES.map((s) => [s.id, s]));
 
 export const getSectionShape = (id) => SHAPES_BY_ID[id] ?? SHAPES_BY_ID.rect;
 

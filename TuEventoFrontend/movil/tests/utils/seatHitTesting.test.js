@@ -1,4 +1,5 @@
 import { findSeatAt, findSectionAt } from "../../src/utils/seatHitTesting";
+import { getElementAABB, toElementLocal } from "../../src/utils/layoutUtils";
 
 const rectSection = (id, x, y, width, height) => ({
   id: `el-${id}`,
@@ -66,5 +67,39 @@ describe("findSeatAt", () => {
 
   it("devuelve null si no se toca ninguna silla visible", () => {
     expect(findSeatAt(300, 300, visibleSeats, element, 1, 0, 0)).toBeNull();
+  });
+});
+
+describe("secciones rotadas (la vista general las dibuja como el editor)", () => {
+  // Rectángulo de 100x40 rotado 90° alrededor de su esquina (200, 100): ocupa x 160–200, y 100–200
+  const rotated = { id: "r", backendSectionId: 9, x: 200, y: 100, width: 100, height: 40, rotation: 90 };
+
+  it("detecta la sección dentro de su área rotada y no en la original", () => {
+    expect(findSectionAt(180, 150, [rotated], 1, 0, 0)).toBe(rotated);
+    expect(findSectionAt(260, 120, [rotated], 1, 0, 0)).toBeNull();
+  });
+
+  it("findSeatAt aplica la rotación solo cuando se le pide", () => {
+    const seats = [{ pos: { x: 50, y: 20, r: 5 }, seatId: 7 }];
+    // Silla local (50, 20) rotada 90° → (200 - 20, 100 + 50)
+    expect(findSeatAt(180, 150, seats, rotated, 1, 0, 0, true)).toBe(7);
+    expect(findSeatAt(250, 120, seats, rotated, 1, 0, 0)).toBe(7);
+    expect(findSeatAt(180, 150, seats, rotated, 1, 0, 0)).toBeNull();
+  });
+});
+
+describe("getElementAABB", () => {
+  it("rota alrededor de la esquina superior izquierda, como Konva", () => {
+    const box = getElementAABB({ x: 200, y: 100, width: 100, height: 40, rotation: 90 });
+    expect(box.minX).toBeCloseTo(160);
+    expect(box.minY).toBeCloseTo(100);
+    expect(box.maxX).toBeCloseTo(200);
+    expect(box.maxY).toBeCloseTo(200);
+  });
+
+  it("toElementLocal deshace la rotación del elemento", () => {
+    const local = toElementLocal(180, 150, { x: 200, y: 100, rotation: 90 });
+    expect(local.x).toBeCloseTo(50);
+    expect(local.y).toBeCloseTo(20);
   });
 });

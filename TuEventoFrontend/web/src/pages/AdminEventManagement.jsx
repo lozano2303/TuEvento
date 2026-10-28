@@ -47,7 +47,7 @@ const fmtTime = (d) => {
 const statusStyle = (status) => {
   if (status === 'DRAFT')          return {
     label: 'Borrador',
-    cls: 'bg-slate-500/10 text-slate-400 border border-slate-500/30',
+    cls: 'bg-slate-500/10 text-textSecondary border border-slate-500/30',
   };
   if (status === 'PENDING_REVIEW') return {
     label: 'En revisión',
@@ -69,7 +69,7 @@ const statusStyle = (status) => {
     label: 'Finalizado',
     cls: 'bg-primary/10 text-primary border border-primary/30',
   };
-  return { label: status, cls: 'bg-slate-700/30 text-slate-500 border border-white/10' };
+  return { label: status, cls: 'bg-slate-700/30 text-textMuted border border-white/10' };
 };
 
 // Transiciones permitidas según las reglas de negocio del backend:
@@ -694,7 +694,7 @@ export default function AdminEventManagement() {
                     <span className={`admin-badge-angular flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold
                       ${modalData.isPublic
                         ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/35'
-                        : 'bg-violet-900/40 text-violet-300 border border-violet-700/40'}`}>
+                        : 'bg-violet-900/40 text-accent border border-violet-700/40'}`}>
                       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${modalData.isPublic ? 'bg-emerald-400' : 'bg-violet-400'}`} />
                       {modalData.isPublic ? 'Público' : 'Privado'}
                     </span>
@@ -718,7 +718,7 @@ export default function AdminEventManagement() {
                     {modalData.eventName}
                   </h2>
                   <p className="text-[11px] font-bold uppercase tracking-[0.12em] mt-0.5"
-                    style={{ color: 'rgba(196,181,253,0.62)' }}>
+                    style={{ color: 'var(--color-textMuted)' }}>
                     ID #{modalData.eventId}
                   </p>
                 </div>
@@ -741,7 +741,7 @@ export default function AdminEventManagement() {
               {mediaUrls.length > 0 && (
                 <div
                   className="flex gap-2 px-6 py-2.5 items-center"
-                  style={{ background: 'rgba(15,5,32,0.80)', borderBottom: '1px solid rgba(124,58,237,0.15)' }}
+                  style={{ background: 'rgba(15,5,32,0.80)', borderBottom: '1px solid color-mix(in srgb, var(--color-primary) 15%, transparent)' }}
                 >
                   {mediaUrls.length > 1 && mediaUrls.map((url, i) => (
                     <button
@@ -752,7 +752,7 @@ export default function AdminEventManagement() {
                       style={{
                         width: '48px', height: '34px',
                         ...(i === carouselIdx
-                          ? { outline: '2px solid rgba(167,139,250,0.9)', outlineOffset: '2px' }
+                          ? { outline: '2px solid color-mix(in srgb, var(--color-accent) 90%, transparent)', outlineOffset: '2px' }
                           : {}),
                       }}
                       aria-label={`Imagen ${i + 1}`}
@@ -763,14 +763,14 @@ export default function AdminEventManagement() {
                   ))}
 
                   {/* Contador */}
-                  <span className="ml-auto self-center text-[11px] font-semibold tabular-nums" style={{ color: 'rgba(196,181,253,0.60)' }}>
+                  <span className="ml-auto self-center text-[11px] font-semibold tabular-nums" style={{ color: 'var(--color-textMuted)' }}>
                     {carouselIdx + 1} / {mediaUrls.length}
                   </span>
 
                   {/* Botón abrir lightbox */}
                   <button
                     onClick={() => { setLightboxIdx(carouselIdx); setLightboxOpen(true); }}
-                    className="self-center p-1 rounded hover:text-white/80 transition-colors" style={{ color: 'rgba(196,181,253,0.55)' }}
+                    className="self-center p-1 rounded hover:text-white/80 transition-colors" style={{ color: 'var(--color-textMuted)' }}
                     aria-label="Ver en pantalla completa"
                   >
                     <ZoomIn className="w-3.5 h-3.5" />
@@ -804,7 +804,7 @@ export default function AdminEventManagement() {
             <div className="overflow-y-auto flex-1 px-6 pt-5 pb-8 space-y-5">
 
               {detailLoading && (
-                <div className="flex items-center gap-2 text-xs" style={{ color: 'rgba(196,181,253,0.55)' }}>
+                <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-textMuted)' }}>
                   <Loader2 className="w-3 h-3 animate-spin" /> Cargando información completa…
                 </div>
               )}
@@ -816,15 +816,15 @@ export default function AdminEventManagement() {
                     <span
                       className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
                       style={{
-                        background: 'rgba(124,58,237,0.18)',
-                        border: '1px solid rgba(124,58,237,0.30)',
+                        background: 'color-mix(in srgb, var(--color-primary) 18%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
                         color: 'rgba(220,210,255,0.92)',
                       }}
                     >
                       <Calendar className="w-3 h-3 flex-shrink-0" />
                       {fmtDate(modalData.startDate)}
                       {fmtTime(modalData.startDate) !== '—' && (
-                        <span style={{ color: 'rgba(196,181,253,0.65)' }}>· {fmtTime(modalData.startDate)}</span>
+                        <span style={{ color: 'var(--color-textMuted)' }}>· {fmtTime(modalData.startDate)}</span>
                       )}
                     </span>
                   )}
@@ -854,12 +854,12 @@ export default function AdminEventManagement() {
                   >
                     <div
                       className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ background: 'rgba(124,58,237,0.18)' }}
+                      style={{ background: 'color-mix(in srgb, var(--color-primary) 18%, transparent)' }}
                     >
-                      <FileText className="w-[15px] h-[15px]" style={{ color: 'rgba(167,139,250,0.85)' }} />
+                      <FileText className="w-[15px] h-[15px]" style={{ color: 'var(--color-accent)' }} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5" style={{ color: 'rgba(196,181,253,0.78)' }}>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5" style={{ color: 'var(--color-textSecondary)' }}>
                         Descripción del evento
                       </p>
                       <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(220,210,255,0.75)' }}>
@@ -899,14 +899,14 @@ export default function AdminEventManagement() {
               {/* ── Grid 2×N de InfoCards ─────────────────────────────────────── */}
               <div>
                 {/* Grupo temporal — fecha inicio + fin */}
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: 'rgba(196,181,253,0.82)' }}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: 'var(--color-textSecondary)' }}>
                   Fechas
                 </p>
                 <div className="grid grid-cols-2 gap-2 mb-4">
                   <InfoCard icon={Calendar} iconColor="text-sky-400" iconBg="bg-sky-500/15" label="Fecha y hora">
                     <p className="text-sm font-bold text-white">{fmtDate(modalData.startDate)}</p>
                     {fmtTime(modalData.startDate) !== '—' && (
-                      <p className="text-xs mt-0.5" style={{ color: 'rgba(196,181,253,0.65)' }}>{fmtTime(modalData.startDate)}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--color-textMuted)' }}>{fmtTime(modalData.startDate)}</p>
                     )}
                   </InfoCard>
                   <InfoCard icon={Calendar} iconColor="text-sky-400" iconBg="bg-sky-500/15" label="Fecha de fin">
@@ -915,15 +915,15 @@ export default function AdminEventManagement() {
                 </div>
 
                 {/* Grupo de contexto — tipo, ciudad, modalidad, estado */}
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: 'rgba(196,181,253,0.82)' }}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: 'var(--color-textSecondary)' }}>
                   Detalles
                 </p>
                 <div className="grid grid-cols-2 gap-2 mb-4">
-                  <InfoCard icon={Tag} iconColor="text-violet-400" iconBg="bg-violet-500/15" label="Tipo de evento">
+                  <InfoCard icon={Tag} iconColor="text-accent" iconBg="bg-violet-500/15" label="Tipo de evento">
                     {modalData.categoryName
                       ? <span
                           className="admin-badge-angular inline-block mt-0.5 px-2 py-0.5 text-xs font-semibold"
-                          style={{ background: 'rgba(124,58,237,0.15)', color: 'rgba(196,181,253,0.9)', border: '1px solid rgba(124,58,237,0.25)' }}
+                          style={{ background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)', color: 'var(--color-textSecondary)', border: '1px solid color-mix(in srgb, var(--color-primary) 25%, transparent)' }}
                         >
                           {modalData.categoryName}
                         </span>
@@ -940,11 +940,11 @@ export default function AdminEventManagement() {
                   </InfoCard>
                   <InfoCard
                     icon={Shield}
-                    iconColor={modalData.isPublic ? 'text-emerald-400' : 'text-violet-300'}
+                    iconColor={modalData.isPublic ? 'text-emerald-400' : 'text-accent'}
                     iconBg={modalData.isPublic ? 'bg-emerald-500/15' : 'bg-violet-900/30'}
                     label="Estado"
                   >
-                    <p className={`text-sm font-bold ${modalData.isPublic ? 'text-emerald-400' : 'text-violet-300'}`}>
+                    <p className={`text-sm font-bold ${modalData.isPublic ? 'text-emerald-400' : 'text-accent'}`}>
                       {modalData.isPublic == null ? '—' : modalData.isPublic ? 'Público' : 'Privado'}
                     </p>
                   </InfoCard>
@@ -953,7 +953,7 @@ export default function AdminEventManagement() {
                 {/* ── Secciones del evento ─────────────────────────────────── */}
                 <div className="admin-divider-angled" />
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2 text-violet-300">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2 text-accent">
                     Estructura de secciones
                   </p>
 
@@ -962,7 +962,7 @@ export default function AdminEventManagement() {
                       No se pudieron cargar las secciones en este momento.
                     </p>
                   ) : eventSections.length === 0 && !detailLoading ? (
-                    <p className="text-xs text-violet-300/50">
+                    <p className="text-xs text-accent/50">
                       Este evento aún no tiene secciones configuradas.
                     </p>
                   ) : eventSections.length > 0 && (
@@ -972,7 +972,7 @@ export default function AdminEventManagement() {
                           <tr className="bg-white/[0.04]">
                             {['Tipo', 'Capacidad', 'Disponibles', 'Precio', 'Activa'].map((h) => (
                               <th key={h}
-                                className="px-3 py-2 text-left font-bold uppercase tracking-wider text-violet-300/70">
+                                className="px-3 py-2 text-left font-bold uppercase tracking-wider text-accent/70">
                                 {h}
                               </th>
                             ))}
@@ -998,7 +998,7 @@ export default function AdminEventManagement() {
                                 <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${
                                   s.isActive
                                     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25'
-                                    : 'bg-slate-500/10 text-slate-400 border-slate-500/25'
+                                    : 'bg-slate-500/10 text-textSecondary border-slate-500/25'
                                 }`}>
                                   {s.isActive ? 'Sí' : 'No'}
                                 </span>
@@ -1009,13 +1009,13 @@ export default function AdminEventManagement() {
                         {/* Total row */}
                         <tfoot>
                           <tr className="border-t border-violet-600/25 bg-violet-900/10">
-                            <td className="px-3 py-2 font-bold text-xs text-violet-300">
+                            <td className="px-3 py-2 font-bold text-xs text-accent">
                               Total
                             </td>
-                            <td className="px-3 py-2 font-bold tabular-nums text-violet-300">
+                            <td className="px-3 py-2 font-bold tabular-nums text-accent">
                               {eventSections.reduce((acc, s) => acc + (s.capacity ?? 0), 0).toLocaleString('es-CO')}
                             </td>
-                            <td className="px-3 py-2 font-bold tabular-nums text-violet-300">
+                            <td className="px-3 py-2 font-bold tabular-nums text-accent">
                               {eventSections.reduce((acc, s) => acc + (s.availableSeats ?? 0), 0).toLocaleString('es-CO')}
                             </td>
                             <td colSpan={2} />
@@ -1027,14 +1027,14 @@ export default function AdminEventManagement() {
                 </div>
 
                 {/* Organizador + boletas */}
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: 'rgba(196,181,253,0.82)' }}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2" style={{ color: 'var(--color-textSecondary)' }}>
                   Organización
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  <InfoCard icon={UserCircle} iconColor="text-violet-300" iconBg="bg-violet-900/30" label="Organizador" wide>
+                  <InfoCard icon={UserCircle} iconColor="text-accent" iconBg="bg-violet-900/30" label="Organizador" wide>
                     <p className="text-sm font-bold text-white truncate">{modalData.organizerName || '—'}</p>
                     {modalData.organizerEmail && (
-                      <p className="text-xs truncate mt-0.5" style={{ color: 'rgba(167,139,250,0.75)' }}>
+                      <p className="text-xs truncate mt-0.5" style={{ color: 'var(--color-accent)' }}>
                         {modalData.organizerEmail}
                       </p>
                     )}
@@ -1043,15 +1043,15 @@ export default function AdminEventManagement() {
                     <p className="text-sm font-bold text-white">{modalData.availableSeats?.toLocaleString('es-CO') ?? '—'}</p>
                   </InfoCard>
                   {modalData.createdAt && (
-                    <InfoCard icon={Clock} iconColor="text-violet-300" iconBg="bg-violet-900/30" label="Creado el">
+                    <InfoCard icon={Clock} iconColor="text-accent" iconBg="bg-violet-900/30" label="Creado el">
                       <p className="text-sm font-bold text-white">{fmtDateTime(modalData.createdAt)}</p>
                       {modalData.createdBy && (
-                        <p className="text-[10px] mt-0.5" style={{ color: 'rgba(196,181,253,0.55)' }}>por {modalData.createdBy}</p>
+                        <p className="text-[10px] mt-0.5" style={{ color: 'var(--color-textMuted)' }}>por {modalData.createdBy}</p>
                       )}
                     </InfoCard>
                   )}
                   {modalData.updatedAt && (
-                    <InfoCard icon={Clock} iconColor="text-violet-300" iconBg="bg-violet-900/30" label="Última actualización">
+                    <InfoCard icon={Clock} iconColor="text-accent" iconBg="bg-violet-900/30" label="Última actualización">
                       <p className="text-sm font-bold text-white">{fmtDateTime(modalData.updatedAt)}</p>
                     </InfoCard>
                   )}
@@ -1087,8 +1087,8 @@ export default function AdminEventManagement() {
                             : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/20'
                       }`}
                     style={value === 'PUBLISHED' ? {
-                      background: 'linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%)',
-                      boxShadow: 'rgba(124,58,237,0.45) 0 12px 32px, rgba(124,58,237,0.15) 0 0 0 1px inset',
+                      background: 'linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%)',
+                      boxShadow: 'color-mix(in srgb, var(--color-primary) 45%, transparent) 0 12px 32px, color-mix(in srgb, var(--color-primary) 15%, transparent) 0 0 0 1px inset',
                     } : undefined}
                   >
                     {actionLoading ? (
@@ -1177,7 +1177,7 @@ export default function AdminEventManagement() {
               {pendingConfirm?.label?.toLowerCase() ?? ''}
             </span>{' '}
             el evento{' '}
-            <span className="text-white font-semibold">"{pendingConfirm?.eventName}"</span>.
+            <span className="text-white font-semibold">&ldquo;{pendingConfirm?.eventName}&rdquo;</span>.
             {pendingConfirm?.newStatus === 'PUBLISHED' &&
               ' Una vez publicado será visible para todos los usuarios.'}
           </>
@@ -1208,7 +1208,7 @@ export default function AdminEventManagement() {
               <h3 className="text-base font-black text-textPrimary mb-1">¿Cancelar este evento?</h3>
               <p className="text-sm text-textSecondary leading-relaxed">
                 Estás por cancelar{' '}
-                <span className="text-white font-semibold">"{pendingCancel.eventName}"</span>.
+                <span className="text-white font-semibold">&ldquo;{pendingCancel.eventName}&rdquo;</span>.
                 Esta acción no se puede deshacer y dejará de ser visible para los asistentes.
               </p>
             </div>
@@ -1257,7 +1257,7 @@ export default function AdminEventManagement() {
                   Rechazar evento
                 </h3>
                 <p className="text-xs text-textMuted leading-snug">
-                  <span className="text-textSecondary font-medium">"{pendingReject.eventName}"</span>
+                  <span className="text-textSecondary font-medium">&ldquo;{pendingReject.eventName}&rdquo;</span>
                   {' '}— indica el motivo para que el organizador pueda corregirlo.
                 </p>
               </div>
@@ -1291,7 +1291,7 @@ export default function AdminEventManagement() {
               <div className="flex items-center justify-between mt-1">
                 <p className="text-[10px] text-textMuted">
                   {rejectReason.trim().length < 20 && rejectReason.trim().length > 0
-                    ? <span style={{ color: 'rgba(248,113,113,0.9)' }}>Mínimo 20 caracteres</span>
+                    ? <span style={{ color: 'var(--color-error)' }}>Mínimo 20 caracteres</span>
                     : <span>Mínimo 20 caracteres</span>
                   }
                 </p>

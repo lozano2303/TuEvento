@@ -731,7 +731,10 @@
       "WALLET_CREDITED": "Wallet credited",
       "WELCOME": "Welcome",
       "EVENT_PUBLISHED": "Event published",
-      "EVENT_REJECTED": "Event rejected"
+      "EVENT_REJECTED": "Event rejected",
+      "NEW_COMMENT": "New comment",
+      "NEW_REPLY": "New reply",
+      "ORGANIZER_ROLE_REVOKED": "Organizer role revoked"
     },
     "translating": "Translating...",
     "details": {
@@ -1732,7 +1735,11 @@
     "expiresIn": "Expires in",
     "generateNew": "Generate new QR",
     "regenerate": "Regenerate",
-    "securityNote": "Show this code to the organizer to validate your ticket. It's single-use and refreshes every few seconds for security."
+    "securityNote": "Show this code to the organizer to validate your ticket. It's single-use and refreshes every few seconds for security.",
+    "validatedTitle": "QR validated!",
+    "validatedTicket": "Your ticket was validated by the organizer. Enjoy the event!",
+    "validatedOrder": "Your order was validated by the organizer. Enjoy the event!",
+    "back": "Back"
   },
   "mobileScan": {
     "title": "Validate tickets",

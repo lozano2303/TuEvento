@@ -115,7 +115,7 @@ export default function CompleteProfile() {
             aria-invalid={!!error}
           />
           {error && (
-            <p id="name-error" role="alert" className="text-red-500 text-xs mt-1">
+            <p id="name-error" role="alert" className="text-error text-xs mt-1">
               {error}
             </p>
           )}

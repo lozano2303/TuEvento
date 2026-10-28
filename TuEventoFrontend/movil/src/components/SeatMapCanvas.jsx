@@ -1,6 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo } from "react";
 import { View, StyleSheet } from "react-native";
-import { Canvas, Path, Text, rect, Skia } from "@shopify/react-native-skia";
+import { Canvas, Group, Path, Text, rect, Skia, vec } from "@shopify/react-native-skia";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import {
   migrateElement,
@@ -169,6 +169,9 @@ export default function SeatMapCanvas({
       <GestureDetector gesture={tapGesture}>
         <View style={{ width: containerWidth, height: containerHeight }}>
           <Canvas style={{ width: containerWidth, height: containerHeight }}>
+            {view.decorElements.map((element) => (
+              <DecorRenderer key={element.id} element={element} view={view} />
+            ))}
             {view.visibleElements.map((element) => (
               <SectionRenderer
                 key={element.id}
@@ -201,6 +204,8 @@ function computeView({
   // Determinar elementos visibles segun filtro y sub-seccion
   let visibleElements;
   let orderedLayoutElements = [];
+  // Escenario, baños, barra, entradas…: solo se dibujan en la vista general y no se tocan
+  let decorElements = [];
   if (!inOverviewMode) {
     const subSections = [...(groupedSections[focusedSectionId] || [])]
       .sort((a, b) => elementIndex[a.id] - elementIndex[b.id]);
@@ -210,10 +215,14 @@ function computeView({
       : subSections;
   } else {
     visibleElements = elements.filter((el) => el.type === "section");
+    decorElements = elements.filter((el) => el.type !== "section" && el.width > 0 && el.height > 0);
   }
 
-  // AABB del contenido visible
-  const totalAABB = computeTotalAABB(visibleElements);
+  // AABB del contenido visible (la decoración cuenta para que no quede cortada). Una sección
+  // enfocada se muestra derecha para leer bien sus sillas: su encuadre ignora la rotación
+  const totalAABB = computeTotalAABB(inOverviewMode
+    ? [...visibleElements, ...decorElements]
+    : visibleElements.map((el) => ({ ...el, rotation: 0 })));
   const contentWidth  = totalAABB.maxX - totalAABB.minX;
   const contentHeight = totalAABB.maxY - totalAABB.minY;
   if (!contentWidth || !contentHeight || contentWidth <= 0 || contentHeight <= 0) return null;
@@ -350,6 +359,7 @@ function computeView({
   return {
     ...fit,
     visibleElements,
+    decorElements,
     orderedLayoutElements,
     pageSeatsByElement,
     backgroundRects,
@@ -362,6 +372,55 @@ function computeView({
 // ---------------------------------------------------------------------------
 // Renderer de una seccion individual
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Elemento del recinto que no se vende: rectángulo con su color y nombre, rotado
+// alrededor de su esquina superior izquierda como en el editor (Konva).
+// ---------------------------------------------------------------------------
+function DecorRenderer({ element, view }) {
+  const { scale, offsetX, offsetY } = view;
+
+  const path = useMemo(() => {
+    const rad = ((element.rotation ?? 0) * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const corners = [[0, 0], [element.width, 0], [element.width, element.height], [0, element.height]];
+    const p = Skia.Path.Make();
+    corners.forEach(([cx, cy], i) => {
+      const x = (element.x + cx * cos - cy * sin) * scale + offsetX;
+      const y = (element.y + cx * sin + cy * cos) * scale + offsetY;
+      if (i === 0) p.moveTo(x, y);
+      else p.lineTo(x, y);
+    });
+    p.close();
+    return p;
+  }, [element, scale, offsetX, offsetY]);
+
+  const label = element.label ?? "";
+  const size = Math.max(8, Math.min(13, element.width / 10) * scale);
+  // Centro del rectángulo rotado
+  const rad = ((element.rotation ?? 0) * Math.PI) / 180;
+  const hw = element.width / 2;
+  const hh = element.height / 2;
+  const centerX = (element.x + hw * Math.cos(rad) - hh * Math.sin(rad)) * scale + offsetX;
+  const centerY = (element.y + hw * Math.sin(rad) + hh * Math.cos(rad)) * scale + offsetY;
+
+  return (
+    <>
+      <Path path={path} color={(element.color || "#334155") + "D9"} style="fill" />
+      <Path path={path} color="rgba(255,255,255,0.25)" style="stroke" strokeWidth={1} />
+      {label !== "" && (
+        <Text
+          x={centerX - label.length * size * 0.28}
+          y={centerY + size * 0.35}
+          text={label}
+          color="#FFFFFF"
+          size={size}
+        />
+      )}
+    </>
+  );
+}
+
 function SectionRenderer({ element, view, inOverviewMode, sectionData, seats }) {
   const { scale, offsetX, offsetY, seatRadiusFactor } = view;
   const transformX = (x) => x * scale + offsetX;
@@ -431,8 +490,14 @@ function SectionRenderer({ element, view, inOverviewMode, sectionData, seats }) 
   const centerX = transformX(element.x + backgroundRect.x + backgroundRect.width / 2);
   const centerY = transformY(element.y + backgroundRect.y + backgroundRect.height / 2);
 
+  // Vista general: la sección conserva la rotación del editor, alrededor de su esquina (x, y)
+  const rotation = inOverviewMode ? element.rotation ?? 0 : 0;
+
   return (
-    <>
+    <Group
+      origin={vec(transformX(element.x), transformY(element.y))}
+      transform={[{ rotate: (rotation * Math.PI) / 180 }]}
+    >
       <Path path={shapePath} color={fillColor} style="fill" />
       <Path path={shapePath} color={color} style="stroke" strokeWidth={strokeWidth} />
 
@@ -467,7 +532,7 @@ function SectionRenderer({ element, view, inOverviewMode, sectionData, seats }) 
           size={12 * scale}
         />
       )}
-    </>
+    </Group>
   );
 }
 

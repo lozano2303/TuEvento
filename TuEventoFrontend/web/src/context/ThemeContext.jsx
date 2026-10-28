@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { getActivePalette, activateTheme as activateThemeService, getThemes } from '../services/themeService';
 import { THEMES, DEFAULT_THEME_ID } from '../theme/themes';
+import { readablePalette } from '../theme/contrast';
 import { THEME_UPDATED_EVENT } from './NotificationContext';
 import { getAccessToken } from '../services/tokenStore.js';
 
@@ -28,8 +29,11 @@ export const DEFAULT_PALETTE = THEMES.find(t => t.id === DEFAULT_THEME_ID)?.pale
 // También deriva --color-onPrimary: el color de texto con mejor contraste
 // sobre el primary del tema (blanco o negro), para usarlo en headers de
 // modales y botones que usan primary como fondo.
-const applyPaletteToDOM = (palette) => {
+const applyPaletteToDOM = (rawPalette) => {
   const root = document.documentElement;
+  // Los colores de texto se ajustan lo justo para leerse (WCAG AA) sobre el fondo y las
+  // tarjetas del tema, también en las paletas que personaliza el usuario.
+  const palette = readablePalette(rawPalette);
   Object.entries(palette).forEach(([key, value]) => {
     if (typeof value === 'string') {
       root.style.setProperty(`--color-${key}`, value);

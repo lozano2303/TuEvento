@@ -94,7 +94,7 @@ export default function StepEventMedia({ createdEventId, onFinish }) {
           Agrega fotos para que los asistentes conozcan el evento. Puedes subir varias imágenes.
         </p>
         <p className="text-xs text-textMuted mt-1">
-          Este paso es opcional — puedes omitirlo y agregar imágenes más tarde desde "Mis Eventos".
+          Este paso es opcional — puedes omitirlo y agregar imágenes más tarde desde &ldquo;Mis Eventos&rdquo;.
         </p>
       </div>
 

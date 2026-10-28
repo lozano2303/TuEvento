@@ -1,3 +1,5 @@
+import { normalizeReservedUntil } from "./seatHold";
+
 /**
  * Data-Oriented Design para manejo eficiente de 100k+ sillas
  * Usa Structures of Arrays (SoA) con TypedArrays para performance
@@ -94,7 +96,7 @@ export class SeatDataStore {
       this.reservedBy[i] = seat.reservedBy || 0;
       this.sectionIds[i] = seat.eventSectionId;
       this.codes[i] = seat.code;
-      this.reservedUntil[i] = seat.reservedUntil;
+      this.reservedUntil[i] = normalizeReservedUntil(seat.reservedUntil);
       this.colors[i] = this._computeColor(i, currentUserId);
 
       this.seatIdToIndex.set(seat.seatId, i);
@@ -153,7 +155,7 @@ export class SeatDataStore {
     }
 
     if (updates.reservedUntil !== undefined) {
-      this.reservedUntil[idx] = updates.reservedUntil;
+      this.reservedUntil[idx] = normalizeReservedUntil(updates.reservedUntil);
       changed = true;
     }
 

@@ -13,7 +13,6 @@ export default function Footer() {
     { label: t('navigation.home'),    to: '/' },
     { label: t('navigation.about'),  to: '/nosotros' },
     { label: t('navigation.events'),   to: '/events' },
-    { label: t('navigation.profile'),    to: '/profile' },
   ];
 
   const legal = [

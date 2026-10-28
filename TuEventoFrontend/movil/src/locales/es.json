@@ -731,7 +731,10 @@
       "WALLET_CREDITED": "Cartera acreditada",
       "WELCOME": "Bienvenida",
       "EVENT_PUBLISHED": "Evento publicado",
-      "EVENT_REJECTED": "Evento rechazado"
+      "EVENT_REJECTED": "Evento rechazado",
+      "NEW_COMMENT": "Nuevo comentario",
+      "NEW_REPLY": "Nueva respuesta",
+      "ORGANIZER_ROLE_REVOKED": "Rol de organizador revocado"
     },
     "translating": "Traduciendo...",
     "details": {
@@ -1732,7 +1735,11 @@
     "expiresIn": "Caduca en",
     "generateNew": "Generar nuevo QR",
     "regenerate": "Regenerar",
-    "securityNote": "Muestra este código al organizador para validar tu entrada. Es de un solo uso y se renueva cada pocos segundos por seguridad."
+    "securityNote": "Muestra este código al organizador para validar tu entrada. Es de un solo uso y se renueva cada pocos segundos por seguridad.",
+    "validatedTitle": "¡QR validado!",
+    "validatedTicket": "Tu entrada fue validada por el organizador. ¡Disfruta el evento!",
+    "validatedOrder": "Tu orden fue validada por el organizador. ¡Disfruta el evento!",
+    "back": "Volver"
   },
   "mobileScan": {
     "title": "Validar entradas",

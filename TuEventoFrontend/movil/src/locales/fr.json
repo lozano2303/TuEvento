@@ -731,7 +731,10 @@
       "WALLET_CREDITED": "Portefeuille crédité",
       "WELCOME": "Bienvenue",
       "EVENT_PUBLISHED": "Événement publié",
-      "EVENT_REJECTED": "Événement rejeté"
+      "EVENT_REJECTED": "Événement rejeté",
+      "NEW_COMMENT": "Nouveau commentaire",
+      "NEW_REPLY": "Nouvelle réponse",
+      "ORGANIZER_ROLE_REVOKED": "Rôle d'organisateur révoqué"
     },
     "translating": "Traduction...",
     "details": {
@@ -1732,7 +1735,11 @@
     "expiresIn": "Expire dans",
     "generateNew": "Générer un nouveau QR",
     "regenerate": "Régénérer",
-    "securityNote": "Montrez ce code à l'organisateur pour valider votre billet. Il est à usage unique et se renouvelle toutes les quelques secondes par sécurité."
+    "securityNote": "Montrez ce code à l'organisateur pour valider votre billet. Il est à usage unique et se renouvelle toutes les quelques secondes par sécurité.",
+    "validatedTitle": "QR validé !",
+    "validatedTicket": "Ton billet a été validé par l'organisateur. Profite de l'événement !",
+    "validatedOrder": "Ta commande a été validée par l'organisateur. Profite de l'événement !",
+    "back": "Retour"
   },
   "mobileScan": {
     "title": "Valider les billets",

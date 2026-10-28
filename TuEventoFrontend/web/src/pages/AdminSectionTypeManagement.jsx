@@ -272,7 +272,7 @@ export default function AdminSectionTypeManagement() {
                         disabled={actionLoading}
                         className={`p-2 rounded-lg transition-colors ${
                           sectionType.active 
-                            ? 'hover:bg-red-500/20 text-red-400' 
+                            ? 'hover:bg-red-500/20 text-error' 
                             : 'hover:bg-emerald-500/20 text-emerald-400'
                         }`}
                         title={sectionType.active ? 'Desactivar' : 'Activar'}

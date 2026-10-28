@@ -38,11 +38,11 @@ describe('SectionWizardModal', () => {
   it('envía las sillas, la forma, el tamaño y el precio elegidos', () => {
     const { onConfirm } = renderWizard();
     fill(SEATS_LABEL, '120');
-    fireEvent.click(screen.getByTitle('Herradura'));
+    fireEvent.click(screen.getByTitle('Hexágono'));
     fireEvent.click(screen.getByRole('radio', { name: 'Mini' }));
     fill(PRICE_LABEL, '85000');
     fireEvent.click(screen.getByText('Crear sección'));
-    expect(onConfirm).toHaveBeenCalledWith({ targetSeats: 120, shapeId: 'horseshoe', seatSize: 'mini', price: 85000 });
+    expect(onConfirm).toHaveBeenCalledWith({ targetSeats: 120, shapeId: 'hexagon', seatSize: 'mini', price: 85000 });
   });
 
   it('al intentar crear sin precio muestra por qué no se puede', () => {

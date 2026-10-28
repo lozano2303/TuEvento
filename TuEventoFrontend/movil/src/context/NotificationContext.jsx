@@ -86,7 +86,9 @@ export function NotificationProvider({ children }) {
     }, TRANSLATION_POLL_MS);
 
     return () => clearInterval(intervalId);
-  }, [notifications]);
+    // El idioma cuenta: al cambiarlo hay que esperar las traducciones del nuevo
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifications, i18n.language]);
 
   const refreshAdminPending = useCallback(async () => {
     try {

@@ -4,7 +4,7 @@ import { changeUILanguage } from '../i18n';
 import Footer from '../layouts/Footer';
 import { useTheme } from '../context/ThemeContext';
 import { getThemes, activateTheme } from '../services/themeService';
-import { getProfileByUserId, getProfilePictureUrl, updateProfile, uploadProfilePicture } from '../services/ProfileService';
+import { getProfileByUserId, getProfilePictureUrl, updateProfile, uploadProfilePicture, PROFILE_PICTURE_CHANGED_EVENT } from '../services/ProfileService';
 import { getActiveLanguages } from '../services/LanguageService';
 import { performLogout } from '../services/httpClient';
 import { useLanguageSync } from '../hooks/useLanguageSync';
@@ -418,6 +418,7 @@ const ProfilePage = () => {
       await updateProfile(profileId, { storedFileId: newId });
       const newUrl = await getProfilePictureUrl(newId);
       setAvatarUrl(newUrl || null);
+      window.dispatchEvent(new CustomEvent(PROFILE_PICTURE_CHANGED_EVENT, { detail: { url: newUrl || null } }));
       setPreviewUrl(null);
       setAvatarMessage({ type: 'success', text: t('profile.photoUpdated') });
     } catch (err) {
@@ -776,7 +777,7 @@ const ProfilePage = () => {
                     <div className={`mt-3 flex items-center gap-2 text-xs px-3 py-2 rounded-lg ${
                       languageSaveMessage.type === 'success'
                         ? 'bg-green-500/10 border border-green-500/30 text-green-400'
-                        : 'bg-red-500/10 border border-red-500/30 text-red-400'
+                        : 'bg-red-500/10 border border-red-500/30 text-error'
                     }`}>
                       {languageSaveMessage.type === 'success' ? (
                         <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" />
