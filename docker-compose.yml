@@ -99,7 +99,7 @@ services:
       - tuevento-network
 
   # Alternativa a MinIO (S3 compatible, escrita en Rust).
-  # Se usa con STORAGE_PROVIDER=rustfs; el backend crea el bucket y aplica las
+  # Se usa con STORAGE_PROVIDER=rustfs; storage-service crea el bucket y aplica las
   # políticas públicas al arrancar (no necesita un servicio init).
   rustfs:
     image: rustfs/rustfs:1.0.0-alpha.59
@@ -247,27 +247,11 @@ services:
       - IDENTITY_SERVICE_URL=http://identity-service:8088
       - IDENTITY_JWK_SET_URI=http://identity-service:8088/.well-known/jwks.json
 
-      # Endpoint interno (container-to-container) para upload/delete
-      - APP_STORAGE_ENDPOINT=http://minio:9000
-      - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
-      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
-      # URL pública embebida en presigned URLs — debe ser alcanzable desde el browser
-      - MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-http://localhost:9000}
+      # Archivos (subidas, URLs y moderación): storage-service por su API interna (el backend ya no tiene ese módulo)
+      - STORAGE_SERVICE_URL=http://storage-service:8085
 
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
-
-      - NSFW_SERVICE_URL=http://nsfw-classifier:8000
-      - NSFW_THRESHOLD=0.4
-
-      - SIGHTENGINE_API_USER=${SIGHTENGINE_API_USER}
-      - SIGHTENGINE_API_SECRET=${SIGHTENGINE_API_SECRET}
-      - SIGHTENGINE_MODELS=${SIGHTENGINE_MODELS}
-      - SIGHTENGINE_THRESHOLD=${SIGHTENGINE_THRESHOLD}
-      - SIGHTENGINE_NUDITY_THRESHOLD=${SIGHTENGINE_NUDITY_THRESHOLD}
 
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -283,11 +267,7 @@ services:
     depends_on:
       postgres:
         condition: service_started
-      minio:
-        condition: service_healthy
       redis:
-        condition: service_started
-      nsfw-classifier:
         condition: service_started
       kafka:
         condition: service_healthy
@@ -359,6 +339,8 @@ services:
       - "8085:8085"
     environment:
       - STORAGE_SERVICE_PORT=8085
+      # El backend sube y consulta archivos por /internal/files con esta clave
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY:-}
       # Misma base que el monolito (las tablas de storage las migra su Liquibase)
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
@@ -367,7 +349,7 @@ services:
       # Lista de revocación de JWT (fail-closed): misma instancia que el backend
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      # Mismo proveedor y bucket que el backend: los dos leen y escriben los mismos objetos
+      # Único servicio que escribe en el bucket (lo crea al arrancar si no existe)
       - STORAGE_PROVIDER=${STORAGE_PROVIDER:-minio}
       - APP_STORAGE_ENDPOINT=http://minio:9000
       - MINIO_ROOT_USER=${MINIO_ROOT_USER}
@@ -381,12 +363,17 @@ services:
       - NSFW_THRESHOLD=0.4
       - SIGHTENGINE_API_USER=${SIGHTENGINE_API_USER}
       - SIGHTENGINE_API_SECRET=${SIGHTENGINE_API_SECRET}
+      - SIGHTENGINE_MODELS=${SIGHTENGINE_MODELS}
+      - SIGHTENGINE_THRESHOLD=${SIGHTENGINE_THRESHOLD}
+      - SIGHTENGINE_NUDITY_THRESHOLD=${SIGHTENGINE_NUDITY_THRESHOLD}
     depends_on:
       redis:
         condition: service_started
       postgres:
         condition: service_started
       minio:
+        condition: service_healthy
+      nsfw-classifier:
         condition: service_started
       # El backend migra las tablas y publica el JWKS
       backend:

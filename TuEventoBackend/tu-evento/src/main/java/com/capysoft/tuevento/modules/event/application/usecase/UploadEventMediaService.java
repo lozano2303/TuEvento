@@ -11,9 +11,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaLogRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.storage.application.dto.request.UploadFileRequest;
-import com.capysoft.tuevento.modules.storage.application.dto.response.UploadFileResponse;
-import com.capysoft.tuevento.modules.storage.application.port.in.UploadFilePort;
+import com.capysoft.tuevento.shared.application.storage.FileStorage;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +31,7 @@ public class UploadEventMediaService implements UploadEventMediaUseCase {
     private final EventMediaRepository    mediaRepository;
     private final EventMediaLogRepository mediaLogRepository;
     private final EventRepository         eventRepository;
-    private final UploadFilePort          uploadFilePort;
+    private final FileStorage             fileStorage;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -57,19 +55,18 @@ public class UploadEventMediaService implements UploadEventMediaUseCase {
                     "Failed to read uploaded file: " + e.getMessage());
         }
 
-        UploadFileResponse uploaded = uploadFilePort.upload(UploadFileRequest.builder()
-                .fileCategoryCode(FILE_CATEGORY_CODE)
-                .uploadedBy(userId.intValue())
-                .originalFilename(request.getFile().getOriginalFilename())
-                .contentType(request.getFile().getContentType())
-                .content(content)
-                .ownerEntityId(request.getEventId().intValue())
-                .ownerEntityType("EVENT")
-                .build());
+        FileStorage.StoredFileRef uploaded = fileStorage.upload(new FileStorage.FileUpload(
+                FILE_CATEGORY_CODE,
+                userId.intValue(),
+                request.getFile().getOriginalFilename(),
+                request.getFile().getContentType(),
+                content,
+                "EVENT",
+                request.getEventId().intValue()));
 
         EventMedia media = mediaRepository.save(EventMedia.builder()
                 .eventId(request.getEventId())
-                .imgUrl(uploaded.getPublicUrl())
+                .imgUrl(uploaded.publicUrl())
                 .build());
 
         int nextVersion = mediaLogRepository.findNextVersionByEventId(request.getEventId());

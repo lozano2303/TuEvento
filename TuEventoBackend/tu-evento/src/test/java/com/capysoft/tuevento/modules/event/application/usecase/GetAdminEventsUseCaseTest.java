@@ -33,8 +33,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.SiteLookupPort;
-import com.capysoft.tuevento.modules.storage.domain.model.StoredFile;
-import com.capysoft.tuevento.modules.storage.domain.repository.StoredFileRepository;
+import com.capysoft.tuevento.shared.application.storage.FileStorage;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -46,7 +45,7 @@ class GetAdminEventsUseCaseTest {
     @Mock CategoryEventUseCase categoryEventUseCase;
     @Mock SiteLookupPort siteLookupPort;
     @Mock UserDirectoryPort userDirectoryPort;
-    @Mock StoredFileRepository storedFileRepository;
+    @Mock FileStorage fileStorage;
     @InjectMocks GetAdminEventsUseCase useCase;
 
     private static Event event(long eventId, long organizerId) {
@@ -65,14 +64,15 @@ class GetAdminEventsUseCaseTest {
         when(userDirectoryPort.findUsers(anyCollection())).thenReturn(Map.of(
                 7, new UserRef(7, "Ana", "ana@test.com", 15),
                 8, new UserRef(8, null, null, null)));
-        when(storedFileRepository.findById(15)).thenReturn(Optional.of(
-                StoredFile.builder().storedFileId(15).publicUrl("https://cdn/ana.png").deleted(false).build()));
+        when(fileStorage.findPublicUrl(15)).thenReturn(Optional.of("https://cdn/ana.png"));
 
         List<AdminEventSummaryResponse> events = useCase.getEvents(EventStatus.PUBLISHED);
 
         ArgumentCaptor<Collection<Integer>> ids = ArgumentCaptor.forClass(Collection.class);
         verify(userDirectoryPort, times(1)).findUsers(ids.capture());
         assertThat(ids.getValue()).containsExactlyInAnyOrder(7, 8);
+        // Una sola petición por foto distinta, aunque Ana organice dos eventos
+        verify(fileStorage, times(1)).findPublicUrl(15);
 
         assertThat(events.get(0).getOrganizerName()).isEqualTo("Ana");
         assertThat(events.get(0).getOrganizerEmail()).isEqualTo("ana@test.com");
@@ -94,5 +94,20 @@ class GetAdminEventsUseCaseTest {
         assertThat(events).hasSize(1);
         assertThat(events.get(0).getOrganizerName()).isNull();
         assertThat(events.get(0).getOrganizerUserId()).isEqualTo(7L);
+    }
+
+    @Test
+    @DisplayName("si el servicio de archivos falla, la lista sale igual sin la foto del organizador")
+    void storageFailureIsSoft() {
+        when(eventRepository.findAll()).thenReturn(List.of(event(1, 7)));
+        when(eventMediaRepository.findFirstByEventId(anyLong())).thenReturn(Optional.empty());
+        when(categoryEventUseCase.getCategoriesByEvent(anyInt())).thenReturn(List.of());
+        when(userDirectoryPort.findUsers(anyCollection())).thenReturn(Map.of(7, new UserRef(7, "Ana", "a@t.com", 15)));
+        when(fileStorage.findPublicUrl(15)).thenThrow(new IllegalStateException("storage down"));
+
+        List<AdminEventSummaryResponse> events = useCase.getEvents(null);
+
+        assertThat(events.get(0).getOrganizerName()).isEqualTo("Ana");
+        assertThat(events.get(0).getOrganizerProfilePicture()).isNull();
     }
 }

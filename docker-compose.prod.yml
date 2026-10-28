@@ -265,12 +265,8 @@ services:
       SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD:?}
       SPRING_REDIS_SSL: "false"
 
-      # Almacenamiento: subidas por la red interna, URLs firmadas con el host público
-      STORAGE_PROVIDER: rustfs
-      RUSTFS_ENDPOINT: http://rustfs:9000
-      RUSTFS_PUBLIC_URL: ${RUSTFS_PUBLIC_URL:?}
-      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?}
-      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?}
+      # Archivos (subidas, URLs y moderación): storage-service por su API interna (el backend ya no tiene ese módulo)
+      STORAGE_SERVICE_URL: http://storage-service:8085
 
       # Seguridad (los tokens los firma identity-service; aquí solo se verifican)
       # Respaldo del secreto de los QR de tickets cuando QR_SECRET no está definido
@@ -292,15 +288,6 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:?}
       NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-true}
 
-      # Moderación de imágenes
-      NSFW_SERVICE_URL: http://nsfw-classifier:8000
-      NSFW_THRESHOLD: ${NSFW_THRESHOLD:-0.6}
-      SIGHTENGINE_API_USER: ${SIGHTENGINE_API_USER:-}
-      SIGHTENGINE_API_SECRET: ${SIGHTENGINE_API_SECRET:-}
-      SIGHTENGINE_MODELS: ${SIGHTENGINE_MODELS:-gore,nudity,weapon}
-      SIGHTENGINE_THRESHOLD: ${SIGHTENGINE_THRESHOLD:-0.6}
-      SIGHTENGINE_NUDITY_THRESHOLD: ${SIGHTENGINE_NUDITY_THRESHOLD:-0.15}
-
       # Pagos
       PAYMENT_GATEWAY: fake
       FAKE_GATEWAY_URL: http://fake-payment-gateway:4001
@@ -313,10 +300,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      rustfs:
-        condition: service_healthy
-      nsfw-classifier:
-        condition: service_started
       kafka:
         condition: service_healthy
     healthcheck:
@@ -383,6 +366,8 @@ services:
     restart: unless-stopped
     environment:
       JAVA_TOOL_OPTIONS: -Xmx320m
+      # El backend sube y consulta archivos por /internal/files con esta clave
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
@@ -411,6 +396,8 @@ services:
         condition: service_healthy
       rustfs:
         condition: service_healthy
+      nsfw-classifier:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health | grep -q UP"]
       interval: 30s
