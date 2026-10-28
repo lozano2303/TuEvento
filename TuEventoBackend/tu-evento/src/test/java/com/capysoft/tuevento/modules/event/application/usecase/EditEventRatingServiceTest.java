@@ -8,6 +8,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
+import com.capysoft.tuevento.modules.event.application.service.CommentAuthorAvatars;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +40,7 @@ class EditEventRatingServiceTest {
     @Mock private EventRepository           eventRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private UserDirectoryPort      userDirectoryPort;
+    @Mock private CommentAuthorAvatars   commentAuthorAvatars;
     @Mock private Clock                     clock;
 
     @InjectMocks private EditEventRatingService service;
@@ -89,6 +91,28 @@ class EditEventRatingServiceTest {
     private void stubProfile(Long userId, String name) {
         when(userDirectoryPort.findUser(userId.intValue()))
                 .thenReturn(Optional.of(new UserDirectoryPort.UserRef(userId.intValue(), name, null, null)));
+    }
+
+    @Test @DisplayName("la foto de perfil del autor viaja en la respuesta y en el evento en vivo")
+    void author_avatar_in_response_and_event() {
+        Instant now = Instant.parse("2026-10-05T14:30:00Z");
+        givenClock(now);
+        LocalDateTime createdAt = toLocal(now.minusSeconds(60));
+        UserDirectoryPort.UserRef author = new UserDirectoryPort.UserRef(USER_ID.intValue(), "Ana", null, 9);
+
+        when(ratingRepository.findById(RATING_ID)).thenReturn(Optional.of(existingRating(USER_ID, createdAt)));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(publishedEvent(ORGANIZER)));
+        when(ratingRepository.save(any())).thenReturn(savedWith(USER_ID, "editado", createdAt, toLocal(now)));
+        when(userDirectoryPort.findUser(USER_ID.intValue())).thenReturn(Optional.of(author));
+        when(commentAuthorAvatars.of(author)).thenReturn("https://cdn/ana.jpg");
+
+        EventRatingResponse res = service.execute(EVENT_ID, RATING_ID, USER_ID, "editado");
+
+        assertThat(res.getAuthorName()).isEqualTo("Ana");
+        assertThat(res.getAuthorAvatarUrl()).isEqualTo("https://cdn/ana.jpg");
+        ArgumentCaptor<EventRatingUpdatedEvent> captor = ArgumentCaptor.forClass(EventRatingUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().getAuthorAvatarUrl()).isEqualTo("https://cdn/ana.jpg");
     }
 
     @Test @DisplayName("autor edita dentro de 2 h → OK con editedAt poblado")

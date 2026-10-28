@@ -18,7 +18,7 @@ import java.util.Map;
  * <p>Canal: {@code /topic/events/{eventId}/comments/updated}
  *
  * <p>El payload tiene la MISMA forma que cada elemento del GET /ratings:
- * ratingId, userId, authorName, rating (nullable), comment, isVisible,
+ * ratingId, userId, authorName, authorAvatarUrl (nullable), rating (nullable), comment, isVisible,
  * isOrganizer, createdAt, editedAt, parentRatingId (nullable).
  * Esto permite que el frontend reemplace el comentario completo por ratingId
  * sin perder ningún campo que no cambia (rating, createdAt, isOrganizer, etc.).
@@ -39,6 +39,7 @@ public class EventCommentUpdatedWebSocketListener {
             payload.put("ratingId",       event.getRatingId());
             payload.put("userId",         event.getUserId());
             payload.put("authorName",     event.getAuthorName());
+            payload.put("authorAvatarUrl", event.getAuthorAvatarUrl()); // nullable
             payload.put("rating",         event.getRating());         // nullable
             payload.put("comment",        event.getComment());
             payload.put("isVisible",      event.getIsVisible());

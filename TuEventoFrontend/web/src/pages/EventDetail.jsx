@@ -22,6 +22,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import Toast from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 import EventImagePlaceholder from '../components/common/EventImagePlaceholder';
+import CommentAvatar from '../components/events/CommentAvatar';
 import { useNotifications } from '../context/NotificationContext';
 import { getAccessToken } from '../services/tokenStore.js';
 import { buildSectionOrder, runWithConcurrency } from '../utils/seatSections';
@@ -1178,9 +1179,10 @@ export default function EventDetail() {
                         {/* Cabecera */}
                         <div className="flex items-start justify-between mb-1 gap-2">
                           <div className="flex items-center gap-2 flex-wrap">
+                            <CommentAvatar comment={c} size={32} />
                             <span className="text-sm font-medium" style={{ color: 'var(--color-accent)' }}>{c.authorName || 'Usuario'}</span>
                             {isOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)', color: 'var(--color-accent)', border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)' }}>{t('eventDetail.you')}</span>}
-                            {c.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>{t('eventDetail.organizer')}</span>}
+                            {c.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: 'var(--color-textPrimary)', border: '1px solid rgba(251,191,36,0.45)' }}>{t('eventDetail.organizer')}</span>}
                             {c.rating != null && (
                               <div className="flex items-center gap-0.5" aria-label={`${c.rating} de 5 estrellas`}>
                                 {[1,2,3,4,5].map((star) => (
@@ -1404,9 +1406,10 @@ export default function EventDetail() {
                               <li key={r.ratingId} className="pl-4" style={{ borderLeft: '2px solid color-mix(in srgb, var(--color-accent) 15%, transparent)' }}>
                                 <div className="flex items-start justify-between gap-2 mb-0.5">
                                   <div className="flex items-center gap-2 flex-wrap">
+                                    <CommentAvatar comment={r} size={24} />
                                     <span className="text-xs font-medium" style={{ color: 'var(--color-accent)' }}>{r.authorName || 'Usuario'}</span>
                                     {replyIsOwn && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'color-mix(in srgb, var(--color-accent) 15%, transparent)', color: 'var(--color-accent)', border: '1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)' }}>Tú</span>}
-                                    {r.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>Organizador</span>}
+                                    {r.isOrganizer && <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(251,191,36,0.15)', color: 'var(--color-textPrimary)', border: '1px solid rgba(251,191,36,0.45)' }}>Organizador</span>}
                                   </div>
                                   {replyIsOwn && getAccessToken() && (
                                     <div className="flex items-center gap-2 shrink-0">

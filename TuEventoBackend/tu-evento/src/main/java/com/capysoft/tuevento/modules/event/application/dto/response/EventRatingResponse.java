@@ -36,6 +36,8 @@ public class EventRatingResponse {
     private final Long          ratingId;
     private final Long          userId;
     private final String        authorName;
+    /** URL de la foto de perfil del autor; null si no tiene (la UI muestra su inicial). */
+    private final String        authorAvatarUrl;
     private final Integer       rating;
     private final String        comment;
     private final Boolean       isVisible;

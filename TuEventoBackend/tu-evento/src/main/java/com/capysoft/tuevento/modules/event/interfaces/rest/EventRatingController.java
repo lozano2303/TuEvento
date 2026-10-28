@@ -15,6 +15,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventRatingTranslation;
 import com.capysoft.tuevento.shared.application.translation.LanguageSummary;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRatingTranslationRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.UserDirectoryPort;
+import com.capysoft.tuevento.modules.event.application.service.CommentAuthorAvatars;
 import com.capysoft.tuevento.shared.application.translation.LanguageCatalog;
 import com.capysoft.tuevento.shared.domain.valueobject.TranslationStatus;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
@@ -65,6 +66,7 @@ public class EventRatingController {
     private final EventRatingRepository              eventRatingRepository;
     private final EventRepository                    eventRepository;
     private final UserDirectoryPort                  userDirectoryPort;
+    private final CommentAuthorAvatars               commentAuthorAvatars;
     private final EventRatingTranslationRepository   eventRatingTranslationRepository;
     private final LanguageCatalog                    languageCatalog;
     private final TranslationRequests translationRequests;
@@ -117,12 +119,14 @@ public class EventRatingController {
                 .distinct()
                 .collect(Collectors.toList());
         // Sin perfil o sin nombre el usuario no entra en el mapa (toMap no admite valores null)
-        Map<Integer, String> nameByUserId = userDirectoryPort.findUsers(userIds).values()
+        Map<Integer, UserDirectoryPort.UserRef> authors = userDirectoryPort.findUsers(userIds);
+        Map<Integer, String> nameByUserId = authors.values()
                 .stream()
                 .filter(u -> u.fullName() != null)
                 .collect(Collectors.toMap(
                         UserDirectoryPort.UserRef::userId,
                         UserDirectoryPort.UserRef::fullName));
+        Map<Integer, String> avatarByUserId = commentAuthorAvatars.byUser(authors.values());
 
         // ── Lógica de traducción ──────────────────────────────────────────────────
         boolean needsTranslation = languageCode != null 
@@ -179,6 +183,7 @@ public class EventRatingController {
                             .ratingId(r.getRatingId())
                             .userId(r.getUserId())
                             .authorName(nameByUserId.getOrDefault(r.getUserId().intValue(), "Usuario"))
+                            .authorAvatarUrl(avatarByUserId.get(r.getUserId().intValue()))
                             .rating(r.getRating())
                             .comment(r.getComment())
                             .isVisible(r.getIsVisible())

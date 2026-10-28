@@ -5,8 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { useLanguageSync } from '../hooks/useLanguageSync';
 import { getAllEvents, cancelEvent } from '../services/EventService.js';
 import { searchEvents } from '../services/searchEvents.js';
-import { getProfileByUserId } from '../services/ProfileService';
-import { getActiveLanguages } from '../services/LanguageService';
 import EventCard from '../components/events/EventCard.jsx';
 import { onEventCancelled, withoutEvent } from '../utils/eventCancellation';
 const TuEvento = () => {
@@ -49,27 +47,8 @@ const TuEvento = () => {
       try {
         setLoading(true);
         
-        // Obtener idioma del usuario si está autenticado
-        const userId = localStorage.getItem('userID');
-        let userLanguageCode = null;
-
-        if (userId) {
-          try {
-            const profileRes = await getProfileByUserId(userId);
-            const preferredLangId = profileRes?.data?.preferredLanguageId;
-            if (preferredLangId) {
-              const langs = await getActiveLanguages();
-              const preferredLang = langs.find(l => l.languageId === preferredLangId);
-              if (preferredLang) {
-                userLanguageCode = preferredLang.code;
-              }
-            }
-          } catch (err) {
-            console.warn('[Events] No se pudo cargar idioma preferido del usuario:', err);
-          }
-        }
-
-        const result = await getAllEvents(userLanguageCode);
+        // El contenido va en el idioma de la interfaz (la app arranca siempre en español)
+        const result = await getAllEvents(currentLanguage === 'es' ? null : currentLanguage);
         if (result.success) {
           setEvents(result.data);
         } else {
@@ -116,27 +95,8 @@ const TuEvento = () => {
     
     const checkTranslations = async () => {
       try {
-        // Obtener idioma del usuario para el polling también
-        const userId = localStorage.getItem('userID');
-        let userLanguageCode = null;
-
-        if (userId) {
-          try {
-            const profileRes = await getProfileByUserId(userId);
-            const preferredLangId = profileRes?.data?.preferredLanguageId;
-            if (preferredLangId) {
-              const langs = await getActiveLanguages();
-              const preferredLang = langs.find(l => l.languageId === preferredLangId);
-              if (preferredLang) {
-                userLanguageCode = preferredLang.code;
-              }
-            }
-          } catch (err) {
-            console.warn('[Events] No se pudo cargar idioma preferido del usuario para polling:', err);
-          }
-        }
-
-        const result = await getAllEvents(userLanguageCode);
+        // El contenido va en el idioma de la interfaz (la app arranca siempre en español)
+        const result = await getAllEvents(currentLanguage === 'es' ? null : currentLanguage);
         if (result.success) {
           const updatedEvents = result.data;
           setEvents(updatedEvents);
