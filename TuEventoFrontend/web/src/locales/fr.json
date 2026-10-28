@@ -296,7 +296,6 @@
       "badge": "Rencontrez l'équipe",
       "title": "Notre Équipe",
       "description": "Une équipe passionnée de 2 professionnels dédiés à rendre chaque événement mémorable.",
-      "counter": "{{current}} de {{total}}",
       "members": {
         "cristofer": {
           "name": "Cristofer David Lozano Contreras",
@@ -708,7 +707,8 @@
     "termsOfService": "Conditions d'utilisation",
     "privacy": "Confidentialité",
     "copyright": "© {{year}} Tu Evento · Tous droits réservés",
-    "madeWith": "Fait avec ♥ par CapySoft"
+    "madeWith": "Fait avec ♥ par CapySoft",
+    "dataDeletion": "Suppression des données"
   },
   "notifications": {
     "title": "Notifications",
@@ -1022,100 +1022,80 @@
     }
   },
   "privacy": {
-    "title": "Politique de Confidentialité",
-    "subtitle": "Tu Evento",
-    "lastUpdate": "Dernière mise à jour: 24 septembre 2026",
-    "backToHome": "Retour à l'accueil",
-    "disclaimer": "Ce document est un projet préliminaire élaboré pour le projet académique \"Tu Evento\" (SENA). Il ne constitue pas un conseil juridique certifié. Un examen par un professionnel du droit est recommandé avant un déploiement en production avec de vrais utilisateurs.",
-    "intro": "Chez Tu Evento, développé par l'équipe CapySoft, nous nous engageons à protéger vos informations personnelles conformément à la loi 1581 de 2012 et au décret 1377 de 2013 de Colombie sur la protection des données personnelles.",
-    "section1": {
-      "title": "1. Responsable du traitement des données",
-      "p1": "Tu Evento (équipe CapySoft) est responsable du traitement des données personnelles collectées via sa plateforme web et mobile.",
-      "p2": "E-mail de contact pour les questions de confidentialité:",
-      "email": "soporte.capysoft@gmail.com"
-    },
-    "section2": {
-      "title": "2. Données que nous collectons",
-      "intro": "Nous collectons les données suivantes selon votre utilisation de la Plateforme:",
-      "register": {
-        "title": "Lors de l'inscription:",
-        "item1": "E-mail et mot de passe (stockés de manière cryptée), ou",
-        "item2": "Données de base de votre compte Google ou Facebook si vous vous inscrivez via ces comptes (nom et e-mail associés à ce compte)."
+    "title": "Politique de confidentialité de TuEvento",
+    "lastUpdate": "Dernière mise à jour : 25 octobre 2026",
+    "sections": [
+      {
+        "title": "1. Responsable du traitement",
+        "paragraphs": [
+          "TuEvento est une plateforme destinée à faciliter la consultation, la publication et la gestion d'événements.",
+          "Pour toute question concernant la confidentialité et les données personnelles, vous pouvez nous contacter à : [[email]]."
+        ]
       },
-      "profile": {
-        "title": "Dans votre profil (facultatif, vous les saisissez):",
-        "item1": "Nom.",
-        "item2": "Description/biographie.",
-        "item3": "Photo de profil."
+      {
+        "title": "2. Informations que nous pouvons collecter",
+        "paragraphs": [
+          "Selon les fonctionnalités que vous utilisez, TuEvento peut traiter des informations telles que :"
+        ],
+        "items": [
+          "Les données de compte, comme le nom et l'adresse e-mail.",
+          "Les informations de profil de base fournies lors de la connexion avec Google ou Facebook.",
+          "Les informations relatives aux événements que vous publiez, organisez ou consultez.",
+          "Les données techniques nécessaires à la sécurité et au fonctionnement du service."
+        ]
       },
-      "purchase": {
-        "title": "Lors de l'achat de billets:",
-        "item1": "Historique des achats et billets acquis au sein de la Plateforme.",
-        "item2": "Données de paiement: traitées directement par notre passerelle de paiement Wompi; Tu Evento ne stocke pas les données complètes de votre carte."
+      {
+        "title": "3. Pourquoi nous utilisons les données",
+        "paragraphs": [
+          "Nous utilisons les données personnelles pour :"
+        ],
+        "items": [
+          "Créer et gérer les comptes utilisateur.",
+          "Permettre la connexion via des fournisseurs externes, comme Google et Facebook.",
+          "Faciliter la publication, l'organisation et la consultation d'événements.",
+          "Protéger la plateforme contre les usages abusifs.",
+          "Répondre aux demandes d'assistance et de confidentialité."
+        ]
       },
-      "event": {
-        "title": "Lors de la publication d'un événement (organisateurs):",
-        "item1": "Informations de l'événement (date, lieu, prix, images) et données de contact associées à l'événement."
+      {
+        "title": "4. Connexion avec des tiers",
+        "paragraphs": [
+          "Si vous choisissez de vous connecter avec Google ou Facebook, le fournisseur concerné peut partager avec TuEvento les données autorisées lors de l'authentification. Le traitement effectué par chaque fournisseur est également soumis à sa propre politique de confidentialité.",
+          "TuEvento ne doit ni demander ni conserver vos mots de passe Google ou Facebook."
+        ]
       },
-      "technical": {
-        "title": "Données techniques:",
-        "item1": "Préférences de langue et de thème visuel au sein de la Plateforme.",
-        "item2": "Informations de session nécessaires pour maintenir votre connexion active (jetons d'authentification)."
+      {
+        "title": "5. Conservation et sécurité",
+        "paragraphs": [
+          "Nous conservons les données pendant la durée nécessaire pour fournir le service, respecter les obligations applicables et traiter les demandes correspondantes.",
+          "Nous appliquons des mesures de sécurité raisonnables pour protéger les informations. Aucun système ne peut garantir une sécurité absolue."
+        ]
+      },
+      {
+        "title": "6. Partage des données",
+        "paragraphs": [
+          "Nous ne vendons pas de données personnelles. Les informations peuvent être traitées par des prestataires technologiques nécessaires au fonctionnement de la plateforme, ou communiquées lorsqu'une obligation légale l'exige ou que cela est nécessaire pour protéger le service."
+        ]
+      },
+      {
+        "title": "7. Droits des utilisateurs",
+        "paragraphs": [
+          "Vous pouvez demander l'accès, la rectification ou la suppression de vos données personnelles, conformément à la législation applicable, en écrivant à [[email]]."
+        ]
+      },
+      {
+        "title": "8. Suppression des données",
+        "paragraphs": [
+          "Pour demander la suppression de vos données, consultez notre page de [[link:/eliminacion-datos|suppression des données utilisateur]]."
+        ]
+      },
+      {
+        "title": "9. Modifications de cette politique",
+        "paragraphs": [
+          "Nous pouvons mettre à jour cette politique lorsque les fonctionnalités ou les pratiques de traitement des données de TuEvento changent. Nous publierons la version en vigueur sur cette page."
+        ]
       }
-    },
-    "section3": {
-      "title": "3. Finalité du traitement",
-      "intro": "Nous utilisons vos données pour:",
-      "item1": "Créer et gérer votre compte.",
-      "item2": "Vous permettre d'acheter ou de vendre des billets d'événements.",
-      "item3": "Générer et valider vos billets avec code QR.",
-      "item4": "Vous envoyer des notifications liées à vos achats ou événements.",
-      "item5": "Modérer le contenu publié (photos de profil et d'événements) pour éviter le contenu inapproprié.",
-      "item6": "Améliorer la sécurité et le fonctionnement de la Plateforme.",
-      "p1": "Nous n'utilisons pas vos données à des fins autres que celles décrites ici sans votre consentement."
-    },
-    "section4": {
-      "title": "4. Stockage et conservation",
-      "item1": "Les images que vous téléchargez (photo de profil, images d'événements) sont stockées dans notre infrastructure de stockage de fichiers tant que votre compte ou l'événement correspondant restent actifs.",
-      "item2": "Si vous supprimez votre compte ou un événement, nous procéderons à la suppression ou à l'anonymisation des données associées, sauf celles que nous devons conserver par obligation légale (par exemple, les enregistrements de transactions de paiement)."
-    },
-    "section5": {
-      "title": "5. Avec qui nous partageons vos données",
-      "item1": "Wompi: pour le traitement des paiements, sous ses propres politiques de confidentialité et de sécurité.",
-      "item2": "Fournisseurs d'authentification (Google, Facebook): uniquement pour valider votre identité lors de la connexion avec ces comptes, si vous choisissez de les utiliser.",
-      "item3": "Nous ne vendons ni ne partageons vos données personnelles avec des tiers à des fins publicitaires."
-    },
-    "section6": {
-      "title": "6. Vos droits",
-      "intro": "En tant que titulaire de vos données, vous pouvez à tout moment:",
-      "item1": "Demander l'accès aux données que nous avons sur vous.",
-      "item2": "Demander la correction de données inexactes.",
-      "item3": "Demander la suppression de votre compte et de vos données personnelles.",
-      "item4": "Révoquer votre autorisation pour le traitement de vos données, sauf s'il existe une obligation légale de les conserver.",
-      "p1": "Vous pouvez exercer ces droits depuis votre profil sur la Plateforme ou en écrivant à",
-      "email": "soporte.capysoft@gmail.com"
-    },
-    "section7": {
-      "title": "7. Sécurité de l'information",
-      "intro": "Nous mettons en œuvre des mesures techniques pour protéger vos informations, notamment:",
-      "item1": "Mots de passe stockés de manière cryptée (jamais en texte clair).",
-      "item2": "Authentification via des jetons (JWT) avec expiration et renouvellement sécurisés.",
-      "item3": "Modération automatique de contenu pour empêcher la publication d'images inappropriées.",
-      "p1": "Aucun système n'est infaillible à 100%; en cas d'incident de sécurité affectant vos données, nous vous en informerons conformément aux exigences de la réglementation applicable."
-    },
-    "section8": {
-      "title": "8. Mineurs",
-      "p1": "La Plateforme n'est pas destinée aux mineurs de moins de 18 ans. Si vous avez connaissance qu'un mineur a créé un compte sans l'autorisation de ses parents ou tuteurs, contactez-nous pour procéder à sa suppression."
-    },
-    "section9": {
-      "title": "9. Modifications de cette politique",
-      "p1": "Nous pouvons mettre à jour cette Politique de Confidentialité. Tout changement pertinent sera notifié au sein de la Plateforme avant qu'il n'entre en vigueur."
-    },
-    "section10": {
-      "title": "10. Contact",
-      "p1": "Pour exercer vos droits ou résoudre des questions sur le traitement de vos données:",
-      "email": "soporte.capysoft@gmail.com"
-    }
+    ]
   },
   "login": {
     "welcomeBack": "BIENVENUE DE RETOUR",
@@ -1526,5 +1506,50 @@
     "loadError": "Erreur lors du chargement des données",
     "backToEvents": "Retour aux événements",
     "remainingBalance": "Votre solde restant"
+  },
+  "dataDeletion": {
+    "title": "Suppression des données utilisateur de TuEvento",
+    "lastUpdate": "Dernière mise à jour : 25 octobre 2026",
+    "intro": [
+      "Chez TuEvento, nous respectons votre droit de demander la suppression de vos données personnelles."
+    ],
+    "sections": [
+      {
+        "title": "Comment demander la suppression",
+        "paragraphs": [
+          "Pour demander la suppression de vos données, envoyez un e-mail à [[email]] avec l'objet :",
+          "**Solicitud de eliminación de datos — TuEvento**",
+          "Indiquez l'adresse e-mail associée à votre compte et, si vous vous êtes connecté avec Google ou Facebook, précisez laquelle de ces méthodes vous avez utilisée.",
+          "Pour des raisons de sécurité, nous pouvons vous demander des informations raisonnables pour vérifier que vous êtes le titulaire du compte. N'envoyez ni mots de passe ni clés secrètes."
+        ]
+      },
+      {
+        "title": "Que se passe-t-il ensuite ?",
+        "steps": [
+          "Nous examinerons la demande et vérifierons votre identité si nécessaire.",
+          "Nous vous informerons si nous avons besoin d'informations supplémentaires.",
+          "Nous supprimerons les données personnelles qui doivent l'être, conformément à la législation applicable.",
+          "Si certaines informations doivent être conservées en raison d'une obligation légale ou pour des motifs légitimes de sécurité, nous vous en expliquerons la raison le cas échéant."
+        ],
+        "after": [
+          "La suppression peut inclure les données associées à votre compte et à votre profil. Les informations relatives aux événements, aux transactions ou à d'autres enregistrements peuvent être soumises à des conditions particulières selon leur nature et les obligations applicables."
+        ]
+      },
+      {
+        "title": "Supprimer Facebook ou Google supprime-t-il votre compte TuEvento ?",
+        "paragraphs": [
+          "Pas nécessairement. Retirer l'accès d'une application depuis Google ou Facebook ne revient pas, à lui seul, à supprimer les données conservées par TuEvento. Pour demander cette suppression, suivez la procédure indiquée sur cette page."
+        ]
+      },
+      {
+        "title": "Contact",
+        "paragraphs": [
+          "Pour toute question sur les demandes de suppression, écrivez à [[email]]."
+        ]
+      }
+    ]
+  },
+  "legal": {
+    "backToHome": "Retour à l'accueil"
   }
 }
