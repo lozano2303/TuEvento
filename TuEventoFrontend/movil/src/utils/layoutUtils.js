@@ -300,15 +300,33 @@ export const distributeSeats = (element) => {
 export function getElementAABB(el) {
   const { x, y, width, height, rotation = 0 } = el;
   if (rotation === 0) return { minX: x, minY: y, maxX: x + width, maxY: y + height };
-  
+
+  // El editor (Konva) rota cada elemento alrededor de su esquina superior izquierda (x, y)
   const rad = (rotation * Math.PI) / 180;
-  const cos = Math.abs(Math.cos(rad));
-  const sin = Math.abs(Math.sin(rad));
-  const cx = x + width / 2;
-  const cy = y + height / 2;
-  const hw = (width * cos + height * sin) / 2;
-  const hh = (width * sin + height * cos) / 2;
-  return { minX: cx - hw, minY: cy - hh, maxX: cx + hw, maxY: cy + hh };
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const xs = [0, width * cos, width * cos - height * sin, -height * sin];
+  const ys = [0, width * sin, width * sin + height * cos, height * cos];
+  return {
+    minX: x + Math.min(...xs), minY: y + Math.min(...ys),
+    maxX: x + Math.max(...xs), maxY: y + Math.max(...ys),
+  };
+}
+
+/**
+ * Pasa un punto del layout a las coordenadas propias del elemento: relativo a su esquina
+ * (x, y) y sin su rotación.
+ */
+export function toElementLocal(px, py, el) {
+  const dx = px - el.x;
+  const dy = py - el.y;
+  const rotation = el.rotation ?? 0;
+  if (rotation === 0) return { x: dx, y: dy };
+  const rad = (-rotation * Math.PI) / 180;
+  return {
+    x: dx * Math.cos(rad) - dy * Math.sin(rad),
+    y: dx * Math.sin(rad) + dy * Math.cos(rad),
+  };
 }
 
 /**

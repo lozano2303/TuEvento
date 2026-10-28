@@ -1,4 +1,4 @@
-import { flattenPolygonForFill } from "./layoutUtils";
+import { flattenPolygonForFill, toElementLocal } from "./layoutUtils";
 
 const SEAT_TOLERANCE = 8; // Píxeles de tolerancia para hacer más fácil tocar con el dedo
 const SECTION_TOLERANCE = 6;
@@ -13,17 +13,19 @@ const SECTION_TOLERANCE = 6;
  * @param {number} scale - Factor de escala aplicado al canvas
  * @param {number} offsetX - Offset X del canvas (para centrado)
  * @param {number} offsetY - Offset Y del canvas (para centrado)
+ * @param {boolean} [rotated=false] - Si la sección se dibuja con su rotación
  * @returns {number | null} seatId de la silla tocada, o null si no se tocó ninguna
  */
-export function findSeatAt(tapX, tapY, visibleSeats, element, scale, offsetX, offsetY) {
-  for (const { pos, seatId } of visibleSeats) {
-    const seatScreenX = (element.x + pos.x) * scale + offsetX;
-    const seatScreenY = (element.y + pos.y) * scale + offsetY;
-    const seatRadius = pos.r * scale;
+export function findSeatAt(tapX, tapY, visibleSeats, element, scale, offsetX, offsetY, rotated = false) {
+  const layoutX = (tapX - offsetX) / scale;
+  const layoutY = (tapY - offsetY) / scale;
+  const local = toElementLocal(layoutX, layoutY, rotated ? element : { ...element, rotation: 0 });
+  const tolerance = SEAT_TOLERANCE / scale;
 
-    const dx = tapX - seatScreenX;
-    const dy = tapY - seatScreenY;
-    if (dx * dx + dy * dy <= (seatRadius + SEAT_TOLERANCE) ** 2) {
+  for (const { pos, seatId } of visibleSeats) {
+    const dx = local.x - pos.x;
+    const dy = local.y - pos.y;
+    if (dx * dx + dy * dy <= (pos.r + tolerance) ** 2) {
       return seatId;
     }
   }
@@ -60,12 +62,14 @@ export function findSectionAt(tapX, tapY, elements, scale, offsetX, offsetY) {
     const el = elements[i];
     if (!el.backendSectionId) continue;
 
+    // La vista general dibuja cada sección con su rotación del editor
+    const local = toElementLocal(x, y, el);
     if ((el.shapeMode ?? "rect") === "polygon" && el.polygonPoints) {
-      const points = flattenPolygonForFill(el.polygonPoints).map((p) => ({ x: el.x + p.x, y: el.y + p.y }));
-      if (points.length >= 3 && pointInPolygon(x, y, points)) return el;
+      const points = flattenPolygonForFill(el.polygonPoints);
+      if (points.length >= 3 && pointInPolygon(local.x, local.y, points)) return el;
     } else if (
-      x >= el.x - tolerance && x <= el.x + el.width + tolerance &&
-      y >= el.y - tolerance && y <= el.y + el.height + tolerance
+      local.x >= -tolerance && local.x <= el.width + tolerance &&
+      local.y >= -tolerance && local.y <= el.height + tolerance
     ) {
       return el;
     }

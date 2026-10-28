@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Calendar, MapPin, Users, ImageOff, ShoppingCart, Clock, X, Plus, Minus, Star, Send, CornerDownLeft, Pencil, Globe, AlertTriangle } from 'lucide-react';
-import { Stage, Layer, Group, Rect, Circle, Shape } from 'react-konva';
+import { Stage, Layer, Group, Rect, Circle, Shape, Text } from 'react-konva';
 import Konva from 'konva';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
@@ -48,6 +48,8 @@ export default function EventDetail() {
 
   // Estado de selección de sillas
   const [layoutElements, setLayoutElements] = useState([]);
+  // Escenario, baños, barra, entradas…: solo decoración en el mapa (no se seleccionan)
+  const [decorElements, setDecorElements] = useState([]);
   const [sections, setSections] = useState([]); // EventSection[] con precio
   const [seats, setSeats] = useState({}); // { seatId: SeatResponse }
   const [selectedQuantity, setSelectedQuantity] = useState(1);
@@ -171,6 +173,9 @@ export default function EventDetail() {
             (el) => el.type === 'section' && el.backendSectionId
           );
           setLayoutElements(sectionElements);
+          setDecorElements((parsed.elements ?? []).filter(
+            (el) => el.type !== 'section' && el.width > 0 && el.height > 0
+          ));
 
           // Con sesión, las sillas de todas las secciones se cargan en segundo plano (carrito
           // y reservas existentes); sin sesión, cada sección se carga al abrirla. Una sección
@@ -1051,6 +1056,7 @@ export default function EventDetail() {
         {layoutElements.length > 0 && (
           <SeatSelectorSection
             layoutElements={layoutElements}
+            decorElements={decorElements}
             sections={sections}
             seats={seats}
             loadedSectionIds={loadedSectionIds}
@@ -1652,6 +1658,7 @@ export default function EventDetail() {
  */
 function SeatSelectorSection({
   layoutElements,
+  decorElements = [],
   sections,
   seats,
   loadedSectionIds,
@@ -2055,7 +2062,7 @@ function SeatSelectorSection({
 
     if (selectedSectionFilter === null) {
       // Vista general: todas las secciones (SIN vista de ventana)
-      const framing = calculateFraming(layoutElements, containerSize.width, containerSize.height, 0, 0, false);
+      const framing = calculateFraming([...layoutElements, ...decorElements], containerSize.width, containerSize.height, 0, 0, false);
       setTotalRowPages(framing.totalRowPages);
       setTotalColPages(framing.totalColPages);
       setDynamicColPages(framing.dynamicColPages);
@@ -2096,7 +2103,7 @@ function SeatSelectorSection({
         animateToFraming(framing);
       }
     }
-  }, [selectedSectionFilter, currentSubSectionIndex, currentRowPage, currentColPage, layoutElements, containerSize, currentSubSections, calculateFraming, animateToFraming]);
+  }, [selectedSectionFilter, currentSubSectionIndex, currentRowPage, currentColPage, layoutElements, decorElements, containerSize, currentSubSections, calculateFraming, animateToFraming]);
 
   // Filtrar layoutElements: mostrar solo la sub-sección actual cuando hay filtro
   const visibleLayoutElements = selectedSectionFilter && hasMultipleSubSections
@@ -2358,6 +2365,10 @@ function SeatSelectorSection({
               height={containerSize.height}
             >
               <Layer>
+                {/* Decoración del recinto, solo en la vista general y debajo de las secciones */}
+                {selectedSectionFilter === null && decorElements.map((el) => (
+                  <DecorElement key={el.id} element={el} />
+                ))}
                 {visibleLayoutElements.map((section) => (
                   <SectionRenderer
                     key={section.id}
@@ -2492,6 +2503,37 @@ function SectionMenu({ sections, layoutElements, selectedSectionFilter, setSelec
 /**
  * Renderiza una sección con sus sillas clickeables.
  */
+/**
+ * Elemento del recinto que no se vende (escenario, baños, barra, entradas…): se dibuja igual que
+ * en el editor de layout y no responde a clics ni toques.
+ */
+function DecorElement({ element }) {
+  const fontSize = Math.max(10, Math.min(13, element.width / 10));
+  return (
+    <Group x={element.x} y={element.y} rotation={element.rotation ?? 0} listening={false}>
+      <Rect
+        width={element.width}
+        height={element.height}
+        fill={element.color || '#334155'}
+        opacity={0.85}
+        cornerRadius={4}
+        stroke="rgba(255,255,255,0.25)"
+        strokeWidth={1}
+      />
+      <Text
+        width={element.width}
+        height={element.height}
+        verticalAlign="middle"
+        align="center"
+        text={element.label ?? ''}
+        fontSize={fontSize}
+        fontStyle="bold"
+        fill="#ffffff"
+      />
+    </Group>
+  );
+}
+
 function SectionRenderer({
   section,
   seatsBySection,
