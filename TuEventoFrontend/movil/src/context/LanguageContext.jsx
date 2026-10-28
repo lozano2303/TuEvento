@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import i18n, { bootstrapLanguage, changeUILanguage } from '../i18n';
+import i18n, { changeUILanguage } from '../i18n';
 import { getActiveLanguages } from '../services/languageService';
 import { profileService } from '../services/profileService';
 import { useAuth } from './AuthContext';
@@ -11,12 +11,13 @@ import { onSessionEvent } from '../utils/sessionEvents';
  * LanguageContext — equivalente móvil del sistema de idioma de la web
  * (i18n.js + useLanguageSync + persistencia en perfil).
  *
+ * La app arranca siempre en español: no se recuerda el idioma de la sesión anterior ni se
+ * aplica el del perfil al abrir.
+ *
  * Responsabilidades:
- *   1. Al arrancar: aplicar el idioma persistido en AsyncStorage (bootstrapLanguage).
- *   2. Con sesión: sincronizar con el idioma preferido del perfil del backend
- *      (preferredLanguageId -> code via getActiveLanguages -> changeUILanguage).
- *   3. changeLanguage(code): cambia i18next + persiste local + persiste en el
- *      perfil del backend si hay sesión.
+ *   1. Cambios en vivo: LANGUAGE_UPDATED (el usuario cambió el idioma en otro dispositivo).
+ *   2. changeLanguage(code): cambia i18next y lo guarda en el perfil si hay sesión (para el
+ *      idioma de las notificaciones y como aviso a sus otras sesiones abiertas).
  *
  * Expone: { language, isSpanish, changeLanguage, languages, ready }
  */
@@ -27,7 +28,8 @@ export function LanguageProvider({ children }) {
   const { user } = useAuth();
   const [language, setLanguage] = useState(i18n.language || 'es');
   const [languages, setLanguages] = useState([]); // [{ languageId, code }]
-  const [ready, setReady] = useState(false);
+  // Sin idioma que restaurar, el contexto está listo desde el primer render
+  const ready = true;
 
   // Mantener el estado `language` en sync con los cambios de i18next.
   useEffect(() => {
@@ -35,15 +37,6 @@ export function LanguageProvider({ children }) {
     i18nInstance.on('languageChanged', onChange);
     return () => i18nInstance.off('languageChanged', onChange);
   }, [i18nInstance]);
-
-  // 1. Aplicar idioma persistido al arrancar.
-  useEffect(() => {
-    void (async () => {
-      await bootstrapLanguage();
-      setLanguage(i18n.language);
-      setReady(true);
-    })();
-  }, []);
 
   // Cargar catálogo de idiomas activos (para mapear id <-> code).
   useEffect(() => {
@@ -56,27 +49,7 @@ export function LanguageProvider({ children }) {
     })();
   }, []);
 
-  // 2. Sincronizar con el idioma preferido del perfil cuando hay sesión.
-  useEffect(() => {
-    if (!user?.userId) return;
-    void (async () => {
-      try {
-        const token = await AsyncStorage.getItem('accessToken');
-        if (!token) return;
-        const profile = await profileService.getByUserId(user.userId, token);
-        if (!profile?.preferredLanguageId) return;
-        const list = languages.length ? languages : await getActiveLanguages();
-        const preferred = list.find((l) => l.languageId === profile.preferredLanguageId);
-        if (preferred && preferred.code !== i18n.language) {
-          await changeUILanguage(preferred.code);
-        }
-      } catch {
-        // no crítico — mantener idioma actual
-      }
-    })();
-  }, [user?.userId, languages]);
-
-  // 3. Cambios en vivo: LANGUAGE_UPDATED llega por WebSocket cuando el idioma
+  // 1. Cambios en vivo: LANGUAGE_UPDATED llega por WebSocket cuando el idioma
   //    preferido cambia en otro dispositivo o en la web (solo se aplica local).
   useEffect(() => {
     if (!user?.userId) return;
@@ -95,7 +68,7 @@ export function LanguageProvider({ children }) {
   }, [user?.userId]);
 
   /**
-   * Cambia el idioma de la UI. Persiste local siempre; en el perfil si hay sesión.
+   * 2. Cambia el idioma de la UI y lo guarda en el perfil si hay sesión.
    * @param {string} code - es | en | fr | pt
    */
   const changeLanguage = async (code) => {
