@@ -14,7 +14,7 @@
 #   LibreTranslate es opcional (≈2 GB de RAM):
 #     docker compose -f docker-compose.prod.yml --env-file .env.prod --profile translate up -d
 # - Límites de memoria pensados para 8 GB de RAM + 4 GB de swap:
-#   ≈8.0 GB sin LibreTranslate y ≈10.0 GB con él (topes, no reservas; el swap cubre el resto).
+#   ≈8.4 GB sin LibreTranslate y ≈10.4 GB con él (topes, no reservas; el swap cubre el resto).
 # ============================================================
 
 name: tuevento
@@ -359,8 +359,8 @@ services:
       - messaging
 
   # ── API gateway: punto de entrada de /api y /ws ────────────────────────────
-  # Envía /api/v1/storage/**, /api/v1/notifications/** y /api/v1/geolocation/** a sus
-  # microservicios y el resto al monolito.
+  # Envía /api/v1/storage/**, /api/v1/notifications/**, /api/v1/geolocation/** y
+  # /api/v1/themes/** a sus microservicios y el resto al monolito.
   api-gateway:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:api-gateway-${TUEVENTO_VERSION:?}
     container_name: tuevento-api-gateway
@@ -370,6 +370,7 @@ services:
       STORAGE_SERVICE_URI: http://storage-service:8085
       GEOLOCATION_SERVICE_URI: http://geolocation-service:8087
       NOTIFICATION_SERVICE_URI: http://notification-service:8086
+      IDENTITY_SERVICE_URI: http://identity-service:8088
       GATEWAY_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
       JAVA_TOOL_OPTIONS: -Xmx256m
     depends_on:
@@ -380,6 +381,8 @@ services:
       geolocation-service:
         condition: service_healthy
       notification-service:
+        condition: service_healthy
+      identity-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8090/actuator/health | grep -q UP"]
@@ -562,6 +565,48 @@ services:
     networks:
       - internal
 
+  # ── Microservicio de Identidad ─────────────────────────────────────────────
+  # Por ahora, temas y paletas de usuario; misma base de datos que el monolito.
+  identity-service:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:identity-${TUEVENTO_VERSION:?}
+    container_name: tuevento-identity-service
+    restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx256m
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
+      JWK_SET_URI: http://backend:8080/.well-known/jwks.json
+      # Idiomas activos (GET /api/v1/languages); hoy los sirve el backend
+      LOCALIZATION_BASE_URL: http://backend:8080
+      # Avisos en vivo (THEME_UPDATED): el backend los reenvía al /ws
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # Lista de revocación de JWT (fail-closed): misma instancia que el backend
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8088/actuator/health | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+    logging: *default-logging
+    networks:
+      - internal
+      - messaging
+
   # ── Frontend (SPA + proxy de /api y /ws al api-gateway) ─────────────────────
   frontend:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:frontend-${TUEVENTO_VERSION:?}
@@ -589,8 +634,9 @@ networks:
   internal:
     name: tuevento-internal
     driver: bridge
-  # Kafka no tiene autenticación: solo los dos servicios que lo usan comparten esta red, así
-  # ningún otro contenedor puede publicar notificaciones (ni elegir a quién se envía un email)
+  # Kafka no tiene autenticación: solo los servicios que lo usan (backend, notification-service e
+  # identity-service) comparten esta red, así ningún otro contenedor puede publicar notificaciones
+  # (ni elegir a quién se envía un email)
   messaging:
     name: tuevento-messaging
     driver: bridge
