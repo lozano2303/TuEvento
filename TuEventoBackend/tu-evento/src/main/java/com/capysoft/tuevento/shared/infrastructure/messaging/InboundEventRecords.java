@@ -2,6 +2,7 @@ package com.capysoft.tuevento.shared.infrastructure.messaging;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -19,22 +20,33 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public final class InboundEventRecords {
 
-    /** An event still to be handled: its {@code eventId} ({@code null} when the header is missing) and payload. */
-    public record Inbound<T>(UUID eventId, T payload) {
+    /**
+     * An event still to be handled: its type, its {@code eventId} ({@code null} when the header is
+     * missing) and its payload.
+     */
+    public record Inbound<T>(String eventType, UUID eventId, T payload) {
     }
 
     private InboundEventRecords() {
     }
 
-    /**
-     * The event, when the record is of {@code eventType}, {@code consumer} has not processed it yet and
-     * its payload can be read as {@code type}. An unreadable message can never succeed on retry, so it is
-     * logged and discarded like the others.
-     */
+    /** Same as {@link #readNew(ConsumerRecord, Set, String, ProcessedEventStore, ObjectMapper, Class)} for one type. */
     public static <T> Optional<Inbound<T>> readNew(ConsumerRecord<String, String> rec, String eventType,
                                                    String consumer, ProcessedEventStore processedEventStore,
                                                    ObjectMapper objectMapper, Class<T> type) {
-        if (!eventType.equals(header(rec, OutboxHeaders.EVENT_TYPE))) {
+        return readNew(rec, Set.of(eventType), consumer, processedEventStore, objectMapper, type);
+    }
+
+    /**
+     * The event, when the record is of one of {@code eventTypes}, {@code consumer} has not processed it yet and
+     * its payload can be read as {@code type}. An unreadable message can never succeed on retry, so it is
+     * logged and discarded like the others.
+     */
+    public static <T> Optional<Inbound<T>> readNew(ConsumerRecord<String, String> rec, Set<String> eventTypes,
+                                                   String consumer, ProcessedEventStore processedEventStore,
+                                                   ObjectMapper objectMapper, Class<T> type) {
+        String eventType = header(rec, OutboxHeaders.EVENT_TYPE);
+        if (eventType == null || !eventTypes.contains(eventType)) {
             return Optional.empty();
         }
         UUID eventId = eventId(rec);
@@ -43,7 +55,7 @@ public final class InboundEventRecords {
             return Optional.empty();
         }
         try {
-            return Optional.of(new Inbound<>(eventId, objectMapper.readValue(rec.value(), type)));
+            return Optional.of(new Inbound<>(eventType, eventId, objectMapper.readValue(rec.value(), type)));
         } catch (Exception e) {
             log.error("Discarding unreadable {}: offset={}, eventId={}: {}",
                     eventType, rec.offset(), eventId, e.getMessage());

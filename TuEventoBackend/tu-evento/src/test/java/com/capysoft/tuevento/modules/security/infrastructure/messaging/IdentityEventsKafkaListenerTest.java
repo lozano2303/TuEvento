@@ -91,10 +91,10 @@ class IdentityEventsKafkaListenerTest {
     @DisplayName("without an eventId it still publishes, and a missing or invalid occurredAt falls back to now")
     void withoutEventIdAndWithBadTime() {
         ConsumerRecord<String, String> noId = new ConsumerRecord<>("tuevento.user", 0, 0L, "7",
-                "{\"userId\":7,\"occurredAt\":\"yesterday\"}");
+                "{\"userId\":7,\"occurredAt\":\"yesterday\",\"origin\":\"identity-service\"}");
         noId.headers().add(OutboxHeaders.EVENT_TYPE, "UserActivated".getBytes(StandardCharsets.UTF_8));
         listener.onMessage(noId);
-        listener.onMessage(record("UserActivated", UUID.randomUUID(), "{\"userId\":8}"));
+        listener.onMessage(record("UserActivated", UUID.randomUUID(), "{\"userId\":8,\"origin\":\"identity-service\"}"));
 
         ArgumentCaptor<Object> event = ArgumentCaptor.forClass(Object.class);
         verify(events, org.mockito.Mockito.times(2)).publishEvent(event.capture());

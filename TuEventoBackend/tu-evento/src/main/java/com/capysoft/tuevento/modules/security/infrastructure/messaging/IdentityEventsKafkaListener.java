@@ -1,13 +1,12 @@
 package com.capysoft.tuevento.modules.security.infrastructure.messaging;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.common.header.Header;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -18,7 +17,8 @@ import com.capysoft.tuevento.modules.security.domain.event.OrganizerRoleRevokedE
 import com.capysoft.tuevento.modules.security.domain.event.UserActivatedEvent;
 import com.capysoft.tuevento.shared.infrastructure.config.DomainEventsConsumerConfig;
 import com.capysoft.tuevento.shared.infrastructure.messaging.ProcessedEventStore;
-import com.capysoft.tuevento.shared.infrastructure.outbox.OutboxHeaders;
+import com.capysoft.tuevento.shared.infrastructure.messaging.InboundEventRecords;
+import com.capysoft.tuevento.shared.infrastructure.messaging.InboundEventRecords.Inbound;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -45,6 +45,7 @@ public class IdentityEventsKafkaListener {
     static final String TOPIC = "tuevento.user";
     static final String USER_ACTIVATED = "UserActivated";
     static final String ORGANIZER_ROLE_REVOKED = "OrganizerRoleRevoked";
+    static final Set<String> EVENT_TYPES = Set.of(USER_ACTIVATED, ORGANIZER_ROLE_REVOKED);
     static final String ORIGIN = "identity-service";
     static final String CONSUMER = "identidad.monolith-listeners";
 
@@ -60,22 +61,15 @@ public class IdentityEventsKafkaListener {
     @KafkaListener(topics = TOPIC, groupId = "identidad-monolith-listeners",
             containerFactory = DomainEventsConsumerConfig.CONTAINER_FACTORY)
     public void onMessage(ConsumerRecord<String, String> rec) {
-        String type = header(rec, OutboxHeaders.EVENT_TYPE);
-        if (!USER_ACTIVATED.equals(type) && !ORGANIZER_ROLE_REVOKED.equals(type)) {
+        Inbound<Message> inbound = InboundEventRecords
+                .readNew(rec, EVENT_TYPES, CONSUMER, processedEventStore, objectMapper, Message.class)
+                .orElse(null);
+        if (inbound == null) {
             return;
         }
-        UUID eventId = parseEventId(header(rec, OutboxHeaders.EVENT_ID));
-        if (eventId != null && processedEventStore.isProcessed(CONSUMER, eventId)) {
-            log.debug("{} {} already processed, skipping", type, eventId);
-            return;
-        }
-        Message message;
-        try {
-            message = objectMapper.readValue(rec.value(), Message.class);
-        } catch (Exception e) {
-            log.error("Discarding unreadable {}: offset={}, eventId={}: {}", type, rec.offset(), eventId, e.getMessage());
-            return;
-        }
+        String type = inbound.eventType();
+        UUID eventId = inbound.eventId();
+        Message message = inbound.payload();
         if (!ORIGIN.equals(message.origin())) {
             return;
         }
@@ -111,22 +105,6 @@ public class IdentityEventsKafkaListener {
             } catch (Exception e) {
                 return LocalDateTime.now();
             }
-        }
-    }
-
-    private static String header(ConsumerRecord<String, String> rec, String name) {
-        Header header = rec.headers().lastHeader(name);
-        return header == null || header.value() == null ? null : new String(header.value(), StandardCharsets.UTF_8);
-    }
-
-    private static UUID parseEventId(String value) {
-        if (value == null) {
-            return null;
-        }
-        try {
-            return UUID.fromString(value);
-        } catch (IllegalArgumentException e) {
-            return null;
         }
     }
 }

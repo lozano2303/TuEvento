@@ -49,7 +49,7 @@ class InboundEventRecordsTest {
         UUID id = UUID.randomUUID();
 
         assertThat(read(rec(TYPE, id.toString(), "{\"userId\":7}")))
-                .contains(new Inbound<>(id, new Payload(7)));
+                .contains(new Inbound<>(TYPE, id, new Payload(7)));
     }
 
     @Test
@@ -72,9 +72,18 @@ class InboundEventRecordsTest {
     @Test
     @DisplayName("a missing or malformed eventId still delivers the event, just without dedupe")
     void missingOrMalformedEventId() {
-        assertThat(read(rec(TYPE, null, "{\"userId\":7}"))).contains(new Inbound<>(null, new Payload(7)));
-        assertThat(read(rec(TYPE, "not-a-uuid", "{\"userId\":7}"))).contains(new Inbound<>(null, new Payload(7)));
+        assertThat(read(rec(TYPE, null, "{\"userId\":7}"))).contains(new Inbound<>(TYPE, null, new Payload(7)));
+        assertThat(read(rec(TYPE, "not-a-uuid", "{\"userId\":7}"))).contains(new Inbound<>(TYPE, null, new Payload(7)));
         verifyNoInteractions(processed);
+    }
+
+    @Test
+    @DisplayName("accepts any of several event types and reports which one arrived")
+    void acceptsSeveralTypes() {
+        assertThat(InboundEventRecords.readNew(rec("OrganizerRoleRevoked", null, "{\"userId\":7}"),
+                java.util.Set.of(TYPE, "OrganizerRoleRevoked"), CONSUMER, processed, objectMapper, Payload.class))
+                .map(Inbound::eventType)
+                .contains("OrganizerRoleRevoked");
     }
 
     @Test
