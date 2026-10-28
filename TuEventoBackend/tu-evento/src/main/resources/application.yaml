@@ -13,6 +13,10 @@ spring:
   # un Redis colgado retiene cada hilo HTTP 60 s (valor por defecto de Lettuce) antes del 503
   data:
     redis:
+      # Same REDIS_HOST/REDIS_PORT the compose files and the microservices use; the prod profile
+      # overrides them with SPRING_REDIS_HOST/SPRING_REDIS_PORT
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
       timeout: ${REDIS_TIMEOUT:2s}
       connect-timeout: ${REDIS_CONNECT_TIMEOUT:2s}
   # Local: el broker del docker-compose publica 9094 al host. Dentro de Docker/k8s: kafka:9092
