@@ -5,7 +5,6 @@
  * Colombia, algo que acaba de pasar aparece 5 horas en el futuro. Leídas siempre como UTC
  * fallarían con un servidor en hora local. Para fechas que ya ocurrieron (envío, lectura) se
  * prueban ambas lecturas y se queda la más reciente que no esté en el futuro.
-
  *
  * Espejo de TuEventoFrontend/web/src/utils/serverDate.js: las dos apps se construyen por separado y no
  * pueden compartir el módulo. Cualquier cambio aquí debe replicarse allá.
