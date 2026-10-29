@@ -1,11 +1,14 @@
 package com.capysoft.tuevento.modules.ticket.application.usecase;
 
-import com.capysoft.tuevento.modules.seat.domain.model.Seat;
-import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
-import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
-import com.capysoft.tuevento.modules.section.domain.model.EventSection;
-import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
 import com.capysoft.tuevento.modules.ticket.application.dto.request.CreateOrderRequest;
+import com.capysoft.tuevento.modules.ticket.application.dto.response.OrderResponse;
+import com.capysoft.tuevento.modules.ticket.application.port.out.CatalogSeatsPort;
+import com.capysoft.tuevento.modules.ticket.application.port.out.CatalogSeatsPort.HeldSeat;
+import com.capysoft.tuevento.modules.ticket.application.port.out.CatalogSeatsPort.HeldSeats;
+import com.capysoft.tuevento.modules.ticket.domain.model.Order;
+import com.capysoft.tuevento.modules.ticket.domain.model.OrderStatus;
+import com.capysoft.tuevento.modules.ticket.domain.model.SeatTicket;
+import com.capysoft.tuevento.modules.ticket.domain.model.Ticket;
 import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
 import com.capysoft.tuevento.modules.ticket.domain.repository.SeatTicketRepository;
 import com.capysoft.tuevento.modules.ticket.domain.repository.TicketLogRepository;
@@ -13,104 +16,113 @@ import com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Validaciones antes de crear una orden: cada silla debe seguir RESERVADA por el comprador
- * y pertenecer al evento de la orden.
+ * Crear una orden: las sillas se bloquean en Catálogo a nombre de la orden y sus precios
+ * fijan el total y el de cada entrada. Si el bloqueo falla, no se crea ninguna entrada (y la
+ * transacción deshace la orden en DRAFT). Las validaciones de cada silla: CatalogSeatsAdapterTest.
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("CreateOrderWithTicketsUseCaseImpl — validación de sillas")
+@DisplayName("CreateOrderWithTicketsUseCaseImpl — sillas bloqueadas en Catálogo")
 class CreateOrderWithTicketsValidationTest {
 
     private static final long USER_ID = 7L;
     private static final long EVENT_ID = 5L;
-    private static final int SEAT_ID = 10;
-    private static final int SECTION_ID = 70;
+    private static final long ORDER_ID = 40L;
 
     @Mock OrderRepository orderRepository;
     @Mock TicketRepository ticketRepository;
     @Mock SeatTicketRepository seatTicketRepository;
     @Mock TicketLogRepository ticketLogRepository;
-    @Mock SeatRepository seatRepository;
-    @Mock EventSectionRepository eventSectionRepository;
+    @Mock CatalogSeatsPort catalogSeatsPort;
 
     @InjectMocks CreateOrderWithTicketsUseCaseImpl useCase;
 
-    private void seatIs(SeatStatus status) {
-        when(seatRepository.findByIdForUpdate(SEAT_ID)).thenReturn(Optional.of(Seat.builder()
-                .seatId(SEAT_ID).eventSectionId(SECTION_ID).status(status)
-                .reservedBy((int) USER_ID).reservedUntil(LocalDateTime.now().plusMinutes(5)).build()));
+    /** El repositorio devuelve la orden con su id, como la BD. */
+    private void ordersGetAnId() {
+        when(orderRepository.save(any())).thenAnswer(inv -> {
+            Order o = inv.getArgument(0);
+            return Order.builder().orderId(ORDER_ID).userId(o.getUserId()).eventId(o.getEventId())
+                    .totalAmount(o.getTotalAmount()).status(o.getStatus()).build();
+        });
     }
 
-    private static CreateOrderRequest request() {
-        return new CreateOrderRequest(EVENT_ID, List.of(SEAT_ID));
-    }
+    @Test
+    @DisplayName("si Catálogo rechaza una silla, el error sube y no se crea ninguna entrada")
+    void holdFailure_createsNoTickets() {
+        ordersGetAnId();
+        when(catalogSeatsPort.holdForOrder(eq(ORDER_ID), eq(USER_ID), eq(EVENT_ID), anyList()))
+                .thenThrow(new IllegalStateException("Seat 10 is not reserved (status SOLD)"));
 
-    @ParameterizedTest(name = "silla {0}")
-    @EnumSource(value = SeatStatus.class, names = {"AVAILABLE", "SOLD", "COURTESY"})
-    @DisplayName("una silla que ya no está RESERVADA no entra en la orden, aunque conserve reservedBy")
-    void seatMustStillBeReserved(SeatStatus status) {
-        seatIs(status);
-
-        assertThatThrownBy(() -> useCase.execute(request(), USER_ID))
+        assertThatThrownBy(() -> useCase.execute(new CreateOrderRequest(EVENT_ID, List.of(10)), USER_ID))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("is not reserved");
-        verify(orderRepository, never()).save(any());
+        verify(orderRepository, times(1)).save(any());
+        verify(ticketRepository, never()).saveAll(any());
+        verify(seatTicketRepository, never()).saveAll(any());
     }
 
     @Test
-    @DisplayName("no se pueden mezclar sillas de otro evento en la orden")
-    void seatMustBelongToTheOrderEvent() {
-        seatIs(SeatStatus.RESERVED);
-        when(eventSectionRepository.findById(SECTION_ID)).thenReturn(Optional.of(
-                EventSection.builder().eventSectionId(SECTION_ID).eventId(99).price(BigDecimal.TEN).build()));
+    @DisplayName("bloquea las sillas sin repetidas y en orden ascendente, a nombre de la orden")
+    void holdsDistinctSortedSeatsForTheOrder() {
+        ordersGetAnId();
+        when(catalogSeatsPort.holdForOrder(eq(ORDER_ID), eq(USER_ID), eq(EVENT_ID), anyList()))
+                .thenThrow(new IllegalStateException("stop"));
 
-        assertThatThrownBy(() -> useCase.execute(request(), USER_ID))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("does not belong to event");
-        verify(orderRepository, never()).save(any());
+        assertThatThrownBy(() -> useCase.execute(new CreateOrderRequest(EVENT_ID, List.of(12, 10, 12)), USER_ID))
+                .isInstanceOf(IllegalStateException.class);
+        verify(catalogSeatsPort).holdForOrder(ORDER_ID, USER_ID, EVENT_ID, List.of(10, 12));
     }
 
     @Test
-    @DisplayName("una reserva de otro usuario o vencida se rechaza")
-    void reservationMustBeOwnAndActive() {
-        when(seatRepository.findByIdForUpdate(SEAT_ID)).thenReturn(Optional.of(Seat.builder()
-                .seatId(SEAT_ID).eventSectionId(SECTION_ID).status(SeatStatus.RESERVED)
-                .reservedBy(8).reservedUntil(LocalDateTime.now().plusMinutes(5)).build()));
-        assertThatThrownBy(() -> useCase.execute(request(), USER_ID)).hasMessageContaining("not reserved by this user");
+    @DisplayName("el total y cada entrada llevan el precio que devuelve Catálogo")
+    void pricesComeFromTheHold() {
+        ordersGetAnId();
+        when(catalogSeatsPort.holdForOrder(ORDER_ID, USER_ID, EVENT_ID, List.of(10, 11))).thenReturn(new HeldSeats("COP",
+                List.of(new HeldSeat(10, 70, new BigDecimal("100")), new HeldSeat(11, 71, new BigDecimal("250")))));
+        AtomicLong ids = new AtomicLong(100);
+        when(ticketRepository.saveAll(anyList())).thenAnswer(inv -> {
+            List<Ticket> saved = new ArrayList<>();
+            for (Ticket t : inv.<List<Ticket>>getArgument(0)) {
+                saved.add(Ticket.builder().ticketId(ids.getAndIncrement()).orderId(t.getOrderId())
+                        .eventId(t.getEventId()).userId(t.getUserId()).status(t.getStatus())
+                        .totalPrice(t.getTotalPrice()).build());
+            }
+            return saved;
+        });
 
-        when(seatRepository.findByIdForUpdate(SEAT_ID)).thenReturn(Optional.of(Seat.builder()
-                .seatId(SEAT_ID).eventSectionId(SECTION_ID).status(SeatStatus.RESERVED)
-                .reservedBy((int) USER_ID).reservedUntil(LocalDateTime.now().minusMinutes(1)).build()));
-        assertThatThrownBy(() -> useCase.execute(request(), USER_ID)).hasMessageContaining("expired");
-    }
+        OrderResponse response = useCase.execute(new CreateOrderRequest(EVENT_ID, List.of(11, 10)), USER_ID);
 
-    @Test
-    @DisplayName("las sillas se bloquean en orden ascendente y una repetida se bloquea una sola vez")
-    void seatsAreLockedInAscendingOrderWithoutRepeats() {
-        // La 10 (la menor) falla: si se bloqueara primero la 12, este test lo detectaría
-        seatIs(SeatStatus.AVAILABLE);
-        CreateOrderRequest request = new CreateOrderRequest(EVENT_ID, List.of(12, SEAT_ID, 12));
+        assertThat(response.getOrderId()).isEqualTo(ORDER_ID);
+        assertThat(response.getTotalAmount()).isEqualByComparingTo("350");
+        assertThat(response.getStatus()).isEqualTo(OrderStatus.DRAFT);
+        assertThat(response.getTickets()).hasSize(2);
 
-        assertThatThrownBy(() -> useCase.execute(request, USER_ID)).isInstanceOf(IllegalStateException.class);
-        verify(seatRepository).findByIdForUpdate(SEAT_ID);
-        verify(seatRepository, never()).findByIdForUpdate(12);
-        verify(seatRepository, never()).findById(any());
+        ArgumentCaptor<List<SeatTicket>> seatTickets = ArgumentCaptor.captor();
+        verify(seatTicketRepository).saveAll(seatTickets.capture());
+        assertThat(seatTickets.getValue()).extracting(SeatTicket::getSeatId, SeatTicket::getTicketId, SeatTicket::getPrice)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(10, 100L, new BigDecimal("100")),
+                        org.assertj.core.groups.Tuple.tuple(11, 101L, new BigDecimal("250")));
+        verify(orderRepository, times(2)).save(any());
     }
 }

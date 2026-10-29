@@ -9,9 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.capysoft.tuevento.modules.seat.application.dto.request.UpdateSeatStatusRequest;
-import com.capysoft.tuevento.modules.seat.application.port.in.SeatUseCase;
-import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
+import com.capysoft.tuevento.modules.ticket.application.port.out.CatalogSeatsPort;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.model.OrderNotFoundException;
 import com.capysoft.tuevento.modules.ticket.domain.model.SeatTicket;
@@ -37,7 +35,7 @@ public class CancelOrderUseCaseImpl {
     private final TicketRepository ticketRepository;
     private final SeatTicketRepository seatTicketRepository;
     private final TicketLogRepository ticketLogRepository;
-    private final SeatUseCase seatUseCase;
+    private final CatalogSeatsPort catalogSeatsPort;
     
     @Transactional
     public void execute(Long orderId, Long requesterId) {
@@ -73,24 +71,17 @@ public class CancelOrderUseCaseImpl {
         }
         
         // Liberar las sillas marcándolas como AVAILABLE
-        for (Ticket ticket : tickets) {
-            List<SeatTicket> seatTickets = seatTicketRepository.findByTicketId(ticket.getTicketId());
-            for (SeatTicket seatTicket : seatTickets) {
-                UpdateSeatStatusRequest seatStatusRequest = UpdateSeatStatusRequest.builder()
-                    .newStatus(SeatStatus.AVAILABLE)
-                    .reason("Order cancelled")
-                    .build();
-                
-                Integer userId = null;
-                try {
-                    userId = Integer.parseInt(getCurrentUsername());
-                } catch (NumberFormatException e) {
-                    // changedBy será null si no es un userId válido
-                }
-                
-                seatUseCase.updateSeatStatus(seatTicket.getSeatId(), seatStatusRequest, userId);
-            }
+        List<Integer> seatIds = tickets.stream()
+            .flatMap(ticket -> seatTicketRepository.findByTicketId(ticket.getTicketId()).stream())
+            .map(SeatTicket::getSeatId)
+            .toList();
+        Integer changedByUserId = null;
+        try {
+            changedByUserId = Integer.parseInt(getCurrentUsername());
+        } catch (NumberFormatException e) {
+            // changedBy será null si no es un userId válido
         }
+        catalogSeatsPort.release(order.getOrderId(), seatIds, changedByUserId, "Order cancelled");
     }
     
     private String getCurrentUsername() {

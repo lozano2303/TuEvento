@@ -6,9 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.capysoft.tuevento.modules.seat.application.dto.request.UpdateSeatStatusRequest;
-import com.capysoft.tuevento.modules.seat.application.port.in.SeatUseCase;
-import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
+import com.capysoft.tuevento.modules.ticket.application.port.out.CatalogSeatsPort;
 import com.capysoft.tuevento.modules.ticket.application.port.in.FailOrderPaymentUseCase;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.model.OrderNotFoundException;
@@ -35,7 +33,7 @@ public class FailOrderPaymentUseCaseImpl implements FailOrderPaymentUseCase {
     private final TicketRepository ticketRepository;
     private final SeatTicketRepository seatTicketRepository;
     private final TicketLogRepository ticketLogRepository;
-    private final SeatUseCase seatUseCase;
+    private final CatalogSeatsPort catalogSeatsPort;
     
     @Override
     @Transactional
@@ -70,15 +68,10 @@ public class FailOrderPaymentUseCaseImpl implements FailOrderPaymentUseCase {
         }
         
         // Liberar las sillas marcándolas como AVAILABLE
-        for (Ticket ticket : tickets) {
-            List<SeatTicket> seatTickets = seatTicketRepository.findByTicketId(ticket.getTicketId());
-            for (SeatTicket seatTicket : seatTickets) {
-                UpdateSeatStatusRequest seatStatusRequest = UpdateSeatStatusRequest.builder()
-                    .newStatus(SeatStatus.AVAILABLE)
-                    .reason("Payment failed: " + reason)
-                    .build();
-                seatUseCase.updateSeatStatus(seatTicket.getSeatId(), seatStatusRequest, null);
-            }
-        }
+        List<Integer> seatIds = tickets.stream()
+            .flatMap(ticket -> seatTicketRepository.findByTicketId(ticket.getTicketId()).stream())
+            .map(SeatTicket::getSeatId)
+            .toList();
+        catalogSeatsPort.release(order.getOrderId(), seatIds, null, "Payment failed: " + reason);
     }
 }

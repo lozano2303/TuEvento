@@ -37,6 +37,17 @@ public class Order {
     }
     
     /**
+     * Fija el total con los precios que devuelve Catálogo al bloquear las sillas.
+     * Solo mientras la orden está en DRAFT: después el total ya se cobró o se está cobrando.
+     */
+    public void assignTotal(Money total) {
+        if (status != OrderStatus.DRAFT) {
+            throw new IllegalStateException("Order " + orderId + " total can only change in DRAFT (status " + status + ")");
+        }
+        this.totalAmount = total;
+    }
+
+    /**
      * Marca la orden como pagada.
      */
     public void markAsPaid() {

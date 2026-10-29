@@ -6,7 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.capysoft.tuevento.modules.seat.application.port.in.SeatUseCase;
+import com.capysoft.tuevento.modules.ticket.application.port.out.CatalogSeatsPort;
 import com.capysoft.tuevento.modules.ticket.application.port.in.ConfirmOrderPaymentUseCase;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.model.OrderNotFoundException;
@@ -33,7 +33,7 @@ public class ConfirmOrderPaymentUseCaseImpl implements ConfirmOrderPaymentUseCas
     private final TicketRepository ticketRepository;
     private final TicketLogRepository ticketLogRepository;
     private final SeatTicketRepository seatTicketRepository;
-    private final SeatUseCase seatUseCase;
+    private final CatalogSeatsPort catalogSeatsPort;
     
     @Override
     @Transactional
@@ -67,11 +67,14 @@ public class ConfirmOrderPaymentUseCaseImpl implements ConfirmOrderPaymentUseCas
         
         // Marcar sillas como SOLD a nombre del comprador: si alguna la tomó otra persona mientras
         // tanto, falla y se deshace toda la confirmación (no se entrega dos veces la misma silla)
-        for (Ticket ticket : tickets) {
-            List<SeatTicket> seatTickets = seatTicketRepository.findByTicketId(ticket.getTicketId());
-            for (SeatTicket seatTicket : seatTickets) {
-                seatUseCase.sellSeat(seatTicket.getSeatId(), order.getUserId(), "Payment confirmed: " + providerPaymentId);
-            }
-        }
+        catalogSeatsPort.sell(order.getOrderId(), order.getUserId(), seatIdsOf(tickets),
+                "Payment confirmed: " + providerPaymentId);
+    }
+
+    private List<Integer> seatIdsOf(List<Ticket> tickets) {
+        return tickets.stream()
+                .flatMap(ticket -> seatTicketRepository.findByTicketId(ticket.getTicketId()).stream())
+                .map(SeatTicket::getSeatId)
+                .toList();
     }
 }

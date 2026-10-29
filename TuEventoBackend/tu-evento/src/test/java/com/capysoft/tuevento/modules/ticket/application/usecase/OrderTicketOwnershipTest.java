@@ -2,7 +2,7 @@ package com.capysoft.tuevento.modules.ticket.application.usecase;
 
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
-import com.capysoft.tuevento.modules.seat.application.port.in.SeatUseCase;
+import com.capysoft.tuevento.modules.ticket.application.port.out.CatalogSeatsPort;
 import com.capysoft.tuevento.modules.ticket.domain.model.Money;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.model.OrderStatus;
@@ -55,7 +55,7 @@ class OrderTicketOwnershipTest {
     @Mock private SeatTicketRepository seatTicketRepository;
     @Mock private TicketLogRepository ticketLogRepository;
     @Mock private TicketCheckinRepository ticketCheckinRepository;
-    @Mock private SeatUseCase seatUseCase;
+    @Mock private CatalogSeatsPort catalogSeatsPort;
     @Mock private EventRepository eventRepository;
 
     @InjectMocks private GetOrderUseCaseImpl getOrder;

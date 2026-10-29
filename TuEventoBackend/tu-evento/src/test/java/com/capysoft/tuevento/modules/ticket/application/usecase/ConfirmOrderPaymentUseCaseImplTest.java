@@ -1,6 +1,6 @@
 package com.capysoft.tuevento.modules.ticket.application.usecase;
 
-import com.capysoft.tuevento.modules.seat.application.port.in.SeatUseCase;
+import com.capysoft.tuevento.modules.ticket.application.port.out.CatalogSeatsPort;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.model.OrderStatus;
 import com.capysoft.tuevento.modules.ticket.domain.model.SeatTicket;
@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -44,7 +45,7 @@ class ConfirmOrderPaymentUseCaseImplTest {
     @Mock TicketRepository ticketRepository;
     @Mock TicketLogRepository ticketLogRepository;
     @Mock SeatTicketRepository seatTicketRepository;
-    @Mock SeatUseCase seatUseCase;
+    @Mock CatalogSeatsPort catalogSeatsPort;
 
     @InjectMocks ConfirmOrderPaymentUseCaseImpl useCase;
 
@@ -67,15 +68,14 @@ class ConfirmOrderPaymentUseCaseImplTest {
         useCase.confirmOrderPayment(ORDER_ID, "gw-1");
 
         assertThat(ticket.getStatus()).isEqualTo(TicketStatus.PAID);
-        verify(seatUseCase).sellSeat(eq(10), eq(BUYER_ID), anyString());
-        verify(seatUseCase).sellSeat(eq(11), eq(BUYER_ID), anyString());
+        verify(catalogSeatsPort).sell(eq(ORDER_ID), eq(BUYER_ID), eq(List.of(10, 11)), anyString());
     }
 
     @Test
     @DisplayName("si una silla ya es de otra persona, la confirmación falla (y la transacción se deshace)")
     void failsWhenASeatWasTaken() {
-        when(seatUseCase.sellSeat(eq(10), eq(BUYER_ID), anyString()))
-                .thenThrow(new BusinessException("SEAT_ALREADY_TAKEN", "La silla 10 ya no está disponible"));
+        doThrow(new BusinessException("SEAT_ALREADY_TAKEN", "La silla 10 ya no está disponible"))
+                .when(catalogSeatsPort).sell(eq(ORDER_ID), eq(BUYER_ID), eq(List.of(10, 11)), anyString());
 
         assertThatThrownBy(() -> useCase.confirmOrderPayment(ORDER_ID, "gw-1"))
                 .isInstanceOf(BusinessException.class)

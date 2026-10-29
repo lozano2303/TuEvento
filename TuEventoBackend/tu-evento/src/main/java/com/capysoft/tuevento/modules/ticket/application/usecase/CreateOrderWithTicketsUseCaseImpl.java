@@ -3,10 +3,7 @@ package com.capysoft.tuevento.modules.ticket.application.usecase;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -15,12 +12,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.capysoft.tuevento.modules.seat.domain.model.Seat;
-import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
-import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
-import com.capysoft.tuevento.modules.section.domain.exception.EventSectionNotFoundException;
-import com.capysoft.tuevento.modules.section.domain.model.EventSection;
-import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
+import com.capysoft.tuevento.modules.ticket.application.port.out.CatalogSeatsPort;
+import com.capysoft.tuevento.modules.ticket.application.port.out.CatalogSeatsPort.HeldSeat;
+import com.capysoft.tuevento.modules.ticket.application.port.out.CatalogSeatsPort.HeldSeats;
 import com.capysoft.tuevento.modules.ticket.application.dto.request.CreateOrderRequest;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.OrderResponse;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.TicketResponse;
@@ -49,79 +43,41 @@ public class CreateOrderWithTicketsUseCaseImpl {
     private final TicketRepository ticketRepository;
     private final SeatTicketRepository seatTicketRepository;
     private final TicketLogRepository ticketLogRepository;
-    private final SeatRepository seatRepository;
-    private final EventSectionRepository eventSectionRepository;
+    private final CatalogSeatsPort catalogSeatsPort;
+
+    private static final String DEFAULT_CURRENCY = "COP";
     
     @Transactional
     public OrderResponse execute(CreateOrderRequest request, Long userId) {
-        // 1. Validar que todas las sillas estén reservadas temporalmente por este usuario
+        // 1. Crear la Order en DRAFT: hace falta su id para bloquear las sillas a su nombre.
+        // Si el bloqueo falla, la transacción se deshace y la orden no llega a existir
         // Las sillas se bloquean en orden ascendente (dos órdenes con sillas cruzadas no se
         // interbloquean) y sin repetidas (una silla enviada dos veces daría dos entradas)
         List<Integer> seatIds = request.getSeatIds().stream().distinct().sorted().toList();
-        List<Seat> seats = new ArrayList<>();
-        for (Integer seatId : seatIds) {
-            Seat seat = seatRepository.findByIdForUpdate(seatId)
-                .orElseThrow(() -> new IllegalArgumentException("Seat not found: " + seatId));
-            
-            // Validar que la silla siga RESERVADA por este usuario y la reserva siga vigente
-            // (sin el estado, una silla ya vendida que conservara reservedBy pasaría la validación)
-            if (seat.getStatus() != SeatStatus.RESERVED) {
-                throw new IllegalStateException("Seat " + seatId + " is not reserved (status " + seat.getStatus() + ")");
-            }
-            if (seat.getReservedBy() == null || !seat.getReservedBy().equals(userId.intValue())) {
-                throw new IllegalStateException("Seat " + seatId + " is not reserved by this user");
-            }
-            
-            if (seat.getReservedUntil() == null || LocalDateTime.now().isAfter(seat.getReservedUntil())) {
-                throw new IllegalStateException("Seat " + seatId + " reservation has expired");
-            }
-            
-            seats.add(seat);
-        }
-        
-        // 2. Obtener precios reales desde EventSection (agrupando por sectionId para eficiencia)
-        Set<Integer> uniqueSectionIds = seats.stream()
-            .map(Seat::getEventSectionId)
-            .collect(Collectors.toSet());
-        
-        // Traer todas las secciones necesarias en una sola consulta por sección única
-        Map<Integer, BigDecimal> sectionPrices = new HashMap<>();
-        for (Integer sectionId : uniqueSectionIds) {
-            EventSection section = eventSectionRepository.findById(sectionId)
-                .orElseThrow(() -> new EventSectionNotFoundException(sectionId));
-            // Todas las sillas deben ser del evento de la orden: si no, sus entradas y su dinero
-            // quedarían atribuidos a otro evento
-            if (!section.getEventId().equals(Math.toIntExact(request.getEventId()))) {
-                throw new IllegalStateException("Seat section " + sectionId + " does not belong to event " + request.getEventId());
-            }
-            sectionPrices.put(sectionId, section.getPrice());
-        }
-        
-        // Calcular precio total sumando el precio real de cada silla según su sección
-        BigDecimal totalAmount = seats.stream()
-            .map(seat -> sectionPrices.get(seat.getEventSectionId()))
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
-        String currency = "COP";
-        
-        // 3. Crear Order en estado DRAFT
-        Order order = Order.builder()
+        Order savedOrder = orderRepository.save(Order.builder()
             .userId(userId)
             .eventId(request.getEventId())
-            .totalAmount(new Money(totalAmount, currency))
+            .totalAmount(new Money(BigDecimal.ZERO, DEFAULT_CURRENCY))
             .status(OrderStatus.DRAFT)
-            .build();
-        
-        Order savedOrder = orderRepository.save(order);
+            .build());
+
+        // 2. Bloquear las sillas en Catálogo: reservadas por este usuario, vigentes y del evento.
+        // Devuelve el precio real de cada una, que la orden y sus entradas copian
+        HeldSeats held = catalogSeatsPort.holdForOrder(savedOrder.getOrderId(), userId, request.getEventId(), seatIds);
+        String currency = held.currency();
+
+        // 3. Fijar el total con los precios de las sillas
+        savedOrder.assignTotal(new Money(held.total(), currency));
+        savedOrder = orderRepository.save(savedOrder);
         
         // 4. Crear un Ticket PENDING por cada seat con su precio real
         List<Ticket> tickets = new ArrayList<>();
-        for (Seat seat : seats) {
+        for (HeldSeat seat : held.seats()) {
             String ticketCode = generateTicketCode();
             String qrCode = generateQrCode(savedOrder.getOrderId(), ticketCode);
             
             // Obtener precio de la sección de esta silla (ya cacheado en memoria)
-            BigDecimal seatPrice = sectionPrices.get(seat.getEventSectionId());
+            BigDecimal seatPrice = seat.price();
             
             Ticket ticket = Ticket.builder()
                 .eventId(request.getEventId())
@@ -141,11 +97,11 @@ public class CreateOrderWithTicketsUseCaseImpl {
         
         // 5. Crear SeatTicket con price snapshot del precio real
         List<SeatTicket> seatTickets = new ArrayList<>();
-        for (int i = 0; i < seats.size(); i++) {
-            BigDecimal seatPrice = sectionPrices.get(seats.get(i).getEventSectionId());
+        for (int i = 0; i < held.seats().size(); i++) {
+            BigDecimal seatPrice = held.seats().get(i).price();
             
             SeatTicket seatTicket = SeatTicket.builder()
-                .seatId(seats.get(i).getSeatId())
+                .seatId(held.seats().get(i).seatId())
                 .ticketId(savedTickets.get(i).getTicketId())
                 .price(seatPrice)
                 .build();
