@@ -1,6 +1,6 @@
 package com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository;
 
-import com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsByEventResponse;
+import com.capysoft.tuevento.modules.payment.application.dto.response.OrganizerEarningsByEventResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

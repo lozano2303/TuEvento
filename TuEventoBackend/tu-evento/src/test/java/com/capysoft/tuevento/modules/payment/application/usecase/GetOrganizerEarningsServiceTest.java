@@ -1,10 +1,10 @@
-package com.capysoft.tuevento.modules.event.application.usecase;
+package com.capysoft.tuevento.modules.payment.application.usecase;
 
-import com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsByEventResponse;
-import com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsResponse;
+import com.capysoft.tuevento.modules.payment.application.dto.response.OrganizerEarningsByEventResponse;
+import com.capysoft.tuevento.modules.payment.application.dto.response.OrganizerEarningsResponse;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentRepository;
-import com.capysoft.tuevento.modules.seat.domain.model.EventSeatSummary;
-import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
+import com.capysoft.tuevento.modules.payment.application.port.out.OrganizerSeatsPort;
+import com.capysoft.tuevento.modules.payment.application.port.out.OrganizerSeatsPort.EventSeats;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,21 +29,21 @@ class GetOrganizerEarningsServiceTest {
     private static final long ORGANIZER_ID = 7L;
 
     @Mock PaymentRepository paymentRepository;
-    @Mock SeatRepository seatRepository;
+    @Mock OrganizerSeatsPort organizerSeatsPort;
 
     private GetOrganizerEarningsService service;
 
     @BeforeEach
     void setUp() {
-        service = new GetOrganizerEarningsService(paymentRepository, seatRepository);
+        service = new GetOrganizerEarningsService(paymentRepository, organizerSeatsPort);
     }
 
     private static OrganizerEarningsByEventResponse paid(long eventId, String name, int tickets, String revenue) {
         return new OrganizerEarningsByEventResponse(eventId, name, tickets, new BigDecimal(revenue), "COP");
     }
 
-    private static EventSeatSummary seats(long eventId, String name, String potential, long courtesy, long total) {
-        return new EventSeatSummary(eventId, name, new BigDecimal(potential), courtesy, total);
+    private static EventSeats seats(long eventId, String name, String potential, long courtesy, long total) {
+        return new EventSeats(eventId, name, new BigDecimal(potential), courtesy, total);
     }
 
     @Test
@@ -51,7 +51,7 @@ class GetOrganizerEarningsServiceTest {
     void mergesRevenueAndPotentialPerEvent() {
         when(paymentRepository.findEarningsByOrganizer(ORGANIZER_ID)).thenReturn(List.of(
                 paid(1, "Concierto", 4, "400000")));
-        when(seatRepository.summarizeSeatsByOrganizer(ORGANIZER_ID)).thenReturn(List.of(
+        when(organizerSeatsPort.summarizeByOrganizer(ORGANIZER_ID)).thenReturn(List.of(
                 seats(2, "Teatro", "900000", 0, 30),
                 seats(1, "Concierto", "1000000", 3, 13)));
 
@@ -84,7 +84,7 @@ class GetOrganizerEarningsServiceTest {
     void keepsRevenueOfEventsWithoutSeats() {
         when(paymentRepository.findEarningsByOrganizer(ORGANIZER_ID)).thenReturn(List.of(
                 paid(5, "Cancelado", 2, "120000")));
-        when(seatRepository.summarizeSeatsByOrganizer(ORGANIZER_ID)).thenReturn(List.of());
+        when(organizerSeatsPort.summarizeByOrganizer(ORGANIZER_ID)).thenReturn(List.of());
 
         OrganizerEarningsByEventResponse event = service.execute(ORGANIZER_ID).getEarningsByEvent().get(0);
 
@@ -97,7 +97,7 @@ class GetOrganizerEarningsServiceTest {
     @DisplayName("sin eventos devuelve todo en cero y moneda COP")
     void emptyOrganizer() {
         when(paymentRepository.findEarningsByOrganizer(ORGANIZER_ID)).thenReturn(List.of());
-        when(seatRepository.summarizeSeatsByOrganizer(ORGANIZER_ID)).thenReturn(List.of());
+        when(organizerSeatsPort.summarizeByOrganizer(ORGANIZER_ID)).thenReturn(List.of());
 
         OrganizerEarningsResponse response = service.execute(ORGANIZER_ID);
 

@@ -1,10 +1,10 @@
-package com.capysoft.tuevento.modules.event.application.usecase;
+package com.capysoft.tuevento.modules.payment.application.usecase;
 
-import com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsByEventResponse;
-import com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsResponse;
+import com.capysoft.tuevento.modules.payment.application.dto.response.OrganizerEarningsByEventResponse;
+import com.capysoft.tuevento.modules.payment.application.dto.response.OrganizerEarningsResponse;
+import com.capysoft.tuevento.modules.payment.application.port.out.OrganizerSeatsPort;
+import com.capysoft.tuevento.modules.payment.application.port.out.OrganizerSeatsPort.EventSeats;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentRepository;
-import com.capysoft.tuevento.modules.seat.domain.model.EventSeatSummary;
-import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +36,7 @@ public class GetOrganizerEarningsService {
     private static final String DEFAULT_CURRENCY = "COP";
 
     private final PaymentRepository paymentRepository;
-    private final SeatRepository seatRepository;
+    private final OrganizerSeatsPort organizerSeatsPort;
 
     @Transactional(readOnly = true)
     public OrganizerEarningsResponse execute(Long organizerId) {
@@ -44,8 +44,8 @@ public class GetOrganizerEarningsService {
         Map<Long, OrganizerEarningsByEventResponse> revenueByEvent = paymentRepository
                 .findEarningsByOrganizer(organizerId).stream()
                 .collect(Collectors.toMap(OrganizerEarningsByEventResponse::getEventId, Function.identity()));
-        Map<Long, EventSeatSummary> seatsByEvent = seatRepository.summarizeSeatsByOrganizer(organizerId).stream()
-                .collect(Collectors.toMap(EventSeatSummary::eventId, Function.identity()));
+        Map<Long, EventSeats> seatsByEvent = organizerSeatsPort.summarizeByOrganizer(organizerId).stream()
+                .collect(Collectors.toMap(EventSeats::eventId, Function.identity()));
 
         List<OrganizerEarningsByEventResponse> byEvent = Stream
                 .concat(revenueByEvent.keySet().stream(), seatsByEvent.keySet().stream())
@@ -71,18 +71,18 @@ public class GetOrganizerEarningsService {
 
     /** Une lo cobrado de un evento con el resumen de sus sillas; cualquiera de los dos puede faltar. */
     private static OrganizerEarningsByEventResponse merge(OrganizerEarningsByEventResponse revenue,
-                                                          EventSeatSummary seats) {
+                                                          EventSeats seats) {
         Optional<OrganizerEarningsByEventResponse> paid = Optional.ofNullable(revenue);
-        Optional<EventSeatSummary> summary = Optional.ofNullable(seats);
+        Optional<EventSeats> summary = Optional.ofNullable(seats);
         return OrganizerEarningsByEventResponse.builder()
                 .eventId(paid.map(OrganizerEarningsByEventResponse::getEventId).orElseGet(() -> seats.eventId()))
                 .eventName(paid.map(OrganizerEarningsByEventResponse::getEventName).orElseGet(() -> seats.eventName()))
                 .ticketsSold(paid.map(OrganizerEarningsByEventResponse::getTicketsSold).orElse(0))
                 .totalRevenue(paid.map(OrganizerEarningsByEventResponse::getTotalRevenue).orElse(BigDecimal.ZERO))
                 .currency(paid.map(OrganizerEarningsByEventResponse::getCurrency).orElse(DEFAULT_CURRENCY))
-                .potentialRevenue(summary.map(EventSeatSummary::potentialRevenue).orElse(BigDecimal.ZERO))
-                .courtesySeats(summary.map(EventSeatSummary::courtesySeats).orElse(0L))
-                .totalSeats(summary.map(EventSeatSummary::totalSeats).orElse(0L))
+                .potentialRevenue(summary.map(EventSeats::potentialRevenue).orElse(BigDecimal.ZERO))
+                .courtesySeats(summary.map(EventSeats::courtesySeats).orElse(0L))
+                .totalSeats(summary.map(EventSeats::totalSeats).orElse(0L))
                 .build();
     }
 
