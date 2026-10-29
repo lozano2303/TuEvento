@@ -18,6 +18,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import com.capysoft.tuevento.modules.seat.application.usecase.SeatAvailabilityService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -46,6 +47,7 @@ class GetAdminEventsUseCaseTest {
     @Mock SiteLookupPort siteLookupPort;
     @Mock UserDirectoryPort userDirectoryPort;
     @Mock FileStorage fileStorage;
+    @Mock SeatAvailabilityService seatAvailabilityService;
     @InjectMocks GetAdminEventsUseCase useCase;
 
     private static Event event(long eventId, long organizerId) {
@@ -79,6 +81,20 @@ class GetAdminEventsUseCaseTest {
         assertThat(events.get(0).getOrganizerProfilePicture()).isEqualTo("https://cdn/ana.png");
         assertThat(events.get(2).getOrganizerName()).isNull();
         assertThat(events.get(2).getOrganizerProfilePicture()).isNull();
+    }
+
+    @Test
+    @DisplayName("las sillas disponibles salen del conteo en vivo del mapa")
+    void availableSeatsAreLive() {
+        Event published = Event.builder().eventId(1L).userId(7L).eventName("E1").siteId(1L)
+                .status(EventStatus.PUBLISHED).availableSeats(100).build();
+        when(eventRepository.findAll()).thenReturn(List.of(published));
+        when(eventMediaRepository.findFirstByEventId(anyLong())).thenReturn(Optional.empty());
+        when(categoryEventUseCase.getCategoriesByEvent(anyInt())).thenReturn(List.of());
+        when(userDirectoryPort.findUsers(anyCollection())).thenReturn(Map.of());
+        when(seatAvailabilityService.availableInEvent(1L, 100)).thenReturn(88);
+
+        assertThat(useCase.getEvents(null).get(0).getAvailableSeats()).isEqualTo(88);
     }
 
     @Test

@@ -160,6 +160,30 @@ class SeatRepositoryImplBulkTest {
     }
 
     @Test
+    @DisplayName("countAvailableBySectionOfEvent cuenta solo las sillas AVAILABLE de cada sección del evento")
+    void countsAvailableSeatsPerSection() {
+        insertEvent(1, 7, "Concierto", "PUBLISHED");
+        insertEvent(2, 7, "Otro", "PUBLISHED");
+        insertSection(101, 1, "100.00");
+        insertSection(102, 1, "50.00");
+        insertSection(103, 1, "10.00"); // sin sillas: no aparece
+        insertSection(201, 2, "10.00");
+
+        List<Seat> rows = new ArrayList<>(seats(1, 101, 5));
+        rows.add(courtesy(101, 1));
+        rows.add(Seat.builder().seatBlockId(1).eventSectionId(101).code("V1").row(98).position(1)
+                .type(SeatType.REGULAR).status(SeatStatus.SOLD).build());
+        rows.add(Seat.builder().seatBlockId(1).eventSectionId(102).code("R1").row(98).position(1)
+                .type(SeatType.REGULAR).status(SeatStatus.RESERVED).reservedBy(3).build());
+        rows.addAll(seats(1, 201, 8));
+        seatRepository.insertAll(rows);
+
+        assertThat(seatRepository.countAvailableBySectionOfEvent(1))
+                .containsOnly(java.util.Map.entry(101, 5), java.util.Map.entry(102, 0));
+        assertThat(seatRepository.countAvailableBySectionOfEvent(99)).isEmpty();
+    }
+
+    @Test
     @DisplayName("deleteAllByEventSectionId borra solo las sillas y bloques de esa sección")
     void deletesOnlyTheGivenSection() {
         SeatBlock blockA = seatBlockRepository.save(SeatBlock.builder().eventSectionId(10).name("A").capacity(30).build());

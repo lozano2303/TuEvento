@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Text as RNText } from "react-native";
 import { Canvas, Group, Path, Text, rect, Skia, vec } from "@shopify/react-native-skia";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import {
@@ -11,6 +11,7 @@ import {
   rowsInColumnWindow,
 } from "../utils/layoutUtils";
 import { findSeatAt, findSectionAt } from "../utils/seatHitTesting";
+import { decorText } from "../utils/decorIcons";
 
 const PAGE_SIZE = 10;
 const ZOOM_MARGIN_BASE = 60;       // Margen base (igual que web)
@@ -183,6 +184,10 @@ export default function SeatMapCanvas({
               />
             ))}
           </Canvas>
+          {/* Nombres con emoji de la decoración: Text de RN (Skia no pinta emojis a color) */}
+          {view.decorElements.map((element) => (
+            <DecorLabel key={element.id} element={element} view={view} />
+          ))}
         </View>
       </GestureDetector>
     </View>
@@ -373,8 +378,8 @@ function computeView({
 // Renderer de una seccion individual
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// Elemento del recinto que no se vende: rectángulo con su color y nombre, rotado
-// alrededor de su esquina superior izquierda como en el editor (Konva).
+// Elemento del recinto que no se vende: rectángulo con su color, rotado alrededor
+// de su esquina superior izquierda como en el editor (Konva). El nombre va en DecorLabel.
 // ---------------------------------------------------------------------------
 function DecorRenderer({ element, view }) {
   const { scale, offsetX, offsetY } = view;
@@ -395,29 +400,51 @@ function DecorRenderer({ element, view }) {
     return p;
   }, [element, scale, offsetX, offsetY]);
 
-  const label = element.label ?? "";
-  const size = Math.max(8, Math.min(13, element.width / 10) * scale);
-  // Centro del rectángulo rotado
-  const rad = ((element.rotation ?? 0) * Math.PI) / 180;
+  return (
+    <>
+      <Path path={path} color={(element.color || "#334155") + "D9"} style="fill" />
+      <Path path={path} color="rgba(255,255,255,0.25)" style="stroke" strokeWidth={1} />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Emoji y nombre de un elemento de decoración, centrados y rotados con él. Va sobre
+// el canvas y no recibe toques (los gestiona el GestureDetector del mapa).
+// ---------------------------------------------------------------------------
+function DecorLabel({ element, view }) {
+  const text = decorText(element);
+  if (text === "") return null;
+
+  const { scale, offsetX, offsetY } = view;
+  const rotation = element.rotation ?? 0;
+  const rad = (rotation * Math.PI) / 180;
+  const width = element.width * scale;
+  const height = element.height * scale;
+  // Centro del rectángulo rotado alrededor de su esquina (x, y)
   const hw = element.width / 2;
   const hh = element.height / 2;
   const centerX = (element.x + hw * Math.cos(rad) - hh * Math.sin(rad)) * scale + offsetX;
   const centerY = (element.y + hw * Math.sin(rad) + hh * Math.cos(rad)) * scale + offsetY;
 
   return (
-    <>
-      <Path path={path} color={(element.color || "#334155") + "D9"} style="fill" />
-      <Path path={path} color="rgba(255,255,255,0.25)" style="stroke" strokeWidth={1} />
-      {label !== "" && (
-        <Text
-          x={centerX - label.length * size * 0.28}
-          y={centerY + size * 0.35}
-          text={label}
-          color="#FFFFFF"
-          size={size}
-        />
-      )}
-    </>
+    <View
+      pointerEvents="none"
+      style={[styles.decorLabel, {
+        left: centerX - width / 2,
+        top: centerY - height / 2,
+        width,
+        height,
+        transform: [{ rotate: `${rotation}deg` }],
+      }]}
+    >
+      <RNText
+        numberOfLines={2}
+        style={[styles.decorLabelText, { fontSize: Math.max(8, Math.min(13, element.width / 10) * scale) }]}
+      >
+        {text}
+      </RNText>
+    </View>
   );
 }
 
@@ -553,5 +580,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1A1A1A",
+  },
+  decorLabel: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  decorLabelText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });

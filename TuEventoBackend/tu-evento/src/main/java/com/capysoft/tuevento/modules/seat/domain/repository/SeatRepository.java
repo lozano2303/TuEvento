@@ -7,6 +7,7 @@ import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface SeatRepository {
@@ -40,4 +41,10 @@ public interface SeatRepository {
 
     /** Sillas y ganancia potencial de cada evento no cancelado del organizador, en una sola consulta. */
     List<EventSeatSummary> summarizeSeatsByOrganizer(Long organizerId);
+
+    /**
+     * Sillas en estado AVAILABLE de cada sección del evento, en una sola consulta.
+     * Solo aparecen las secciones que ya tienen sillas generadas (una agotada aparece con 0).
+     */
+    Map<Integer, Integer> countAvailableBySectionOfEvent(Integer eventId);
 }

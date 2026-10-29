@@ -59,9 +59,8 @@ function ValueSectionHeading({ section }) {
   );
 }
 
-// Always the APK attached to the latest GitHub release: publishing a new build only needs a new
-// release with a `TuEvento.apk` asset, without touching or redeploying the web.
-const ANDROID_APK_URL = 'https://github.com/lozano2303/TuEvento/releases/latest/download/TuEvento.apk';
+// APK of the latest EAS build (`eas build -p android --profile preview`); update it with each new build.
+const ANDROID_APK_URL = 'https://expo.dev/artifacts/eas/znDmcpbq2SovFGjtlmpPwlf9Kj2STBd3s_pdcMiOjLM.apk';
 
 export default function LadingPage() {
   const navigate = useNavigate();
@@ -317,8 +316,8 @@ export default function LadingPage() {
                       { Icon: CreditCard, label: t('landing.hero.trust.noCard') },
                       { Icon: Headphones, label: t('landing.hero.trust.support') },
                     ].map(({ Icon, label }) => (
-                      <span key={label} className="flex items-center gap-2 text-xs" style={{ color: 'color-mix(in srgb, var(--color-onPrimary) 80%, transparent)' }}>
-                        <Icon className="w-3.5 h-3.5" style={{ color: 'color-mix(in srgb, var(--color-onPrimary) 65%, transparent)' }} />
+                      <span key={label} className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-textSecondary)' }}>
+                        <Icon className="w-3.5 h-3.5" style={{ color: 'var(--color-accent)' }} />
                         {label}
                       </span>
                     ))}
@@ -334,13 +333,13 @@ export default function LadingPage() {
                         key={val}
                         className="flex items-center gap-2 px-4 py-2 rounded-xl"
                         style={{
-                          background: 'color-mix(in srgb, var(--color-onPrimary) 22%, transparent)',
-                          border: '1px solid color-mix(in srgb, var(--color-onPrimary) 45%, transparent)',
+                          background: 'color-mix(in srgb, var(--color-textPrimary) 8%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--color-textPrimary) 25%, transparent)',
                           backdropFilter: 'blur(12px)',
                         }}
                       >
-                        <span style={{ color: 'var(--color-onPrimary)', fontWeight: 900, fontSize: '0.95rem', lineHeight: 1 }}>{val}</span>
-                        <span style={{ color: 'color-mix(in srgb, var(--color-onPrimary) 90%, transparent)', fontSize: '0.78rem', fontWeight: 500 }}>{label}</span>
+                        <span style={{ color: 'var(--color-textPrimary)', fontWeight: 900, fontSize: '0.95rem', lineHeight: 1 }}>{val}</span>
+                        <span style={{ color: 'var(--color-textSecondary)', fontSize: '0.78rem', fontWeight: 500 }}>{label}</span>
                       </div>
                     ))}
                   </div>
@@ -358,7 +357,7 @@ export default function LadingPage() {
                   <div className="space-y-3">
                     <div className="lp2-stat-pill">
                       <div className="lp2-stat-pill-icon">
-                        <Map className="w-5 h-5 text-white opacity-80" />
+                        <Map className="w-5 h-5 opacity-80" />
                       </div>
                       <div>
                         <div className="lp2-stat-pill-val">{t('landing.heroCard.editor.title')}</div>
@@ -367,7 +366,7 @@ export default function LadingPage() {
                     </div>
                     <div className="lp2-stat-pill">
                       <div className="lp2-stat-pill-icon">
-                        <Ticket className="w-5 h-5 text-white opacity-80" />
+                        <Ticket className="w-5 h-5 opacity-80" />
                       </div>
                       <div>
                         <div className="lp2-stat-pill-val">{t('landing.heroCard.tickets.title')}</div>
@@ -381,18 +380,18 @@ export default function LadingPage() {
                 <div
                   className="absolute -bottom-4 -left-6 flex items-center gap-3 px-4 py-2.5 rounded-2xl shadow-xl"
                   style={{
-                    background: 'color-mix(in srgb, var(--color-onPrimary) 16%, transparent)',
+                    background: 'color-mix(in srgb, var(--color-surface) 85%, transparent)',
                     backdropFilter: 'blur(14px)',
-                    border: '1px solid color-mix(in srgb, var(--color-onPrimary) 25%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-textPrimary) 20%, transparent)',
                     animation: 'lp2-float 5s 1s ease-in-out infinite',
                   }}
                 >
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: 'color-mix(in srgb, var(--color-onPrimary) 28%, transparent)' }}>
-                    <Ticket className="w-4 h-4" style={{ color: 'var(--color-onPrimary)' }} />
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ background: 'color-mix(in srgb, var(--color-textPrimary) 12%, transparent)' }}>
+                    <Ticket className="w-4 h-4" style={{ color: 'var(--color-textPrimary)' }} />
                   </div>
                   <div>
-                    <p style={{ color: 'var(--color-onPrimary)', fontSize: '0.75rem', fontWeight: 700 }}>{t('landing.heroCard.badge.title')}</p>
-                    <p style={{ color: 'color-mix(in srgb, var(--color-onPrimary) 75%, transparent)', fontSize: '0.65rem' }}>{t('landing.heroCard.badge.sub')}</p>
+                    <p style={{ color: 'var(--color-textPrimary)', fontSize: '0.75rem', fontWeight: 700 }}>{t('landing.heroCard.badge.title')}</p>
+                    <p style={{ color: 'var(--color-textSecondary)', fontSize: '0.65rem' }}>{t('landing.heroCard.badge.sub')}</p>
                   </div>
                 </div>
               </div>
