@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsByEventResponse;
+import com.capysoft.tuevento.modules.payment.application.dto.response.OrganizerEarningsByEventResponse;
 import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
 import com.capysoft.tuevento.modules.payment.infrastructure.persistence.entity.PaymentEntity;
 
@@ -51,7 +51,7 @@ public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, Long>
      * de 4 sillas son 4 entradas, y las reembolsadas no cuentan.
      */
     @Query("""
-            SELECT new com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsByEventResponse(
+            SELECT new com.capysoft.tuevento.modules.payment.application.dto.response.OrganizerEarningsByEventResponse(
                 e.eventId,
                 e.eventName,
                 CAST((SELECT COUNT(t.ticketId) FROM TicketEntity t

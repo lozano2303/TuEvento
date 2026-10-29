@@ -1,4 +1,4 @@
-package com.capysoft.tuevento.modules.event.application.dto.response;
+package com.capysoft.tuevento.modules.payment.application.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

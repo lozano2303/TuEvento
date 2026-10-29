@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsByEventResponse;
+import com.capysoft.tuevento.modules.payment.application.dto.response.OrganizerEarningsByEventResponse;
 import com.capysoft.tuevento.modules.payment.domain.model.Payment;
 import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
 
