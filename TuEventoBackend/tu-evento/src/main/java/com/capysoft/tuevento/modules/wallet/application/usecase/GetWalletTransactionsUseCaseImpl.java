@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort;
 import com.capysoft.tuevento.modules.ticket.domain.repository.OrderRepository;
 import com.capysoft.tuevento.modules.wallet.application.dto.WalletTransactionResponse;
 import com.capysoft.tuevento.modules.wallet.domain.model.Wallet;
@@ -31,7 +31,7 @@ public class GetWalletTransactionsUseCaseImpl {
     private final WalletTransactionRepository walletTransactionRepository;
     private final WalletReferenceRepository walletReferenceRepository;
     private final OrderRepository orderRepository;
-    private final EventRepository eventRepository;
+    private final EventLookupPort eventLookupPort;
 
     @Transactional(readOnly = true)
     public List<WalletTransactionResponse> execute(Long userId) {
@@ -76,8 +76,8 @@ public class GetWalletTransactionsUseCaseImpl {
         // Si es ORDER, intentar obtener el nombre del evento
         if (ref.getEntityType() == WalletReferenceEntityType.ORDER && ref.getEntityId() != null) {
             orderRepository.findById(ref.getEntityId()).ifPresent(order ->
-                eventRepository.findById(order.getEventId()).ifPresent(event ->
-                    builder.eventName(event.getEventName())
+                eventLookupPort.find(order.getEventId()).ifPresent(event ->
+                    builder.eventName(event.name())
                 )
             );
         }

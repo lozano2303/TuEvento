@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.ticket.application.usecase;
 
-import com.capysoft.tuevento.modules.event.domain.model.Event;
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort.EventRef;
 import com.capysoft.tuevento.modules.seat.application.port.in.SeatUseCase;
 import com.capysoft.tuevento.modules.ticket.domain.model.Money;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
@@ -56,7 +56,7 @@ class OrderTicketOwnershipTest {
     @Mock private TicketLogRepository ticketLogRepository;
     @Mock private TicketCheckinRepository ticketCheckinRepository;
     @Mock private SeatUseCase seatUseCase;
-    @Mock private EventRepository eventRepository;
+    @Mock private EventLookupPort eventLookupPort;
 
     @InjectMocks private GetOrderUseCaseImpl getOrder;
     @InjectMocks private GetOrderTicketsUseCaseImpl getOrderTickets;
@@ -152,7 +152,7 @@ class OrderTicketOwnershipTest {
         @DisplayName("Organizer of another event → denied and the ticket is not used")
         void checkin_notEventOwner_isDenied() {
             when(ticketRepository.findByIdForUpdate(TICKET_ID)).thenReturn(Optional.of(paidTicket()));
-            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(Event.builder().userId(ORGANIZER_ID).build()));
+            when(eventLookupPort.find(EVENT_ID)).thenReturn(Optional.of(new EventRef(EVENT_ID, ORGANIZER_ID, null, null)));
 
             assertThatThrownBy(() -> checkinTicket.execute(TICKET_ID, OTHER_USER_ID))
                     .isInstanceOf(AccessDeniedException.class);
@@ -164,7 +164,7 @@ class OrderTicketOwnershipTest {
         @DisplayName("Event owner → check-in recorded with the authenticated organizer as validator")
         void checkin_eventOwner_isRecorded() {
             when(ticketRepository.findByIdForUpdate(TICKET_ID)).thenReturn(Optional.of(paidTicket()));
-            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(Event.builder().userId(ORGANIZER_ID).build()));
+            when(eventLookupPort.find(EVENT_ID)).thenReturn(Optional.of(new EventRef(EVENT_ID, ORGANIZER_ID, null, null)));
             when(ticketCheckinRepository.existsByTicketId(TICKET_ID)).thenReturn(false);
             when(ticketCheckinRepository.save(any(TicketCheckin.class))).thenAnswer(inv -> inv.getArgument(0));
 

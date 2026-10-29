@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.ticket.application.usecase;
 
-import com.capysoft.tuevento.modules.event.domain.model.Event;
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort.EventRef;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.ScanResultResponse;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.ScanResultResponse.ScannedTicket;
 import com.capysoft.tuevento.modules.ticket.domain.event.TicketsValidatedEvent;
@@ -53,7 +53,7 @@ public class ScanQrUseCaseImpl {
     private final TicketRepository ticketRepository;
     private final TicketCheckinRepository ticketCheckinRepository;
     private final TicketLogRepository ticketLogRepository;
-    private final EventRepository eventRepository;
+    private final EventLookupPort eventLookupPort;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -71,10 +71,10 @@ public class ScanQrUseCaseImpl {
         }
 
         // 3. Autorizar: el organizador debe ser dueño del evento
-        Event event = eventRepository.findById(payload.eventId())
+        EventRef event = eventLookupPort.find(payload.eventId())
                 .orElseThrow(() -> new NotFoundException("EVENT_NOT_FOUND",
                         "Event not found for this QR"));
-        if (!event.getUserId().equals(organizerUserId)) {
+        if (!event.ownerId().equals(organizerUserId)) {
             throw new AccessDeniedException("You are not the organizer of this event");
         }
 

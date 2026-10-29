@@ -1,6 +1,6 @@
 package com.capysoft.tuevento.modules.payment.application.usecase;
 
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort;
 import com.capysoft.tuevento.modules.payment.application.port.out.PaymentGatewayPort;
 import com.capysoft.tuevento.modules.payment.domain.event.PaymentRefundedEvent;
 import com.capysoft.tuevento.modules.payment.domain.model.*;
@@ -75,7 +75,7 @@ public class RequestRefundUseCaseImpl {
     private final ReverseWalletPaymentUseCaseImpl reverseWalletPaymentUseCase;
     private final CreditWalletUseCaseImpl creditWalletUseCase;
     private final ApplicationEventPublisher eventPublisher;
-    private final EventRepository eventRepository;
+    private final EventLookupPort eventLookupPort;
 
     /**
      * Reembolso pedido desde la API: un administrador puede reembolsar cualquier
@@ -87,8 +87,8 @@ public class RequestRefundUseCaseImpl {
             Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException(paymentId));
             boolean ownsEvent = orderRepository.findById(payment.getOrderId())
-                .flatMap(order -> eventRepository.findById(order.getEventId()))
-                .map(event -> event.getUserId().equals(requesterId))
+                .flatMap(order -> eventLookupPort.find(order.getEventId()))
+                .map(event -> event.ownerId().equals(requesterId))
                 .orElse(false);
             if (!ownsEvent) {
                 throw new AccessDeniedException("You can only refund payments of your own events");
