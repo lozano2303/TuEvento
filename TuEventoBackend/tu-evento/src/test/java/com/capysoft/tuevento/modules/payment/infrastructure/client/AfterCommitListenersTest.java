@@ -1,4 +1,4 @@
-package com.capysoft.tuevento.modules.payment.infrastructure.messaging;
+package com.capysoft.tuevento.modules.payment.infrastructure.client;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.after;
