@@ -16,6 +16,8 @@ import com.capysoft.tuevento.modules.payment.infrastructure.persistence.reposito
 import com.capysoft.tuevento.modules.payment.application.port.out.BuyerDirectoryPort;
 import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.AdminRefundRow;
 import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.RefundJpaRepository;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort.EventRef;
 import com.capysoft.tuevento.modules.ticket.infrastructure.persistence.repository.TicketJpaRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class GetCommerceAdminStatsUseCase implements GetCommerceAdminStatsPort {
     private final PaymentJpaRepository paymentJpaRepository;
     private final RefundJpaRepository  refundJpaRepository;
     private final BuyerDirectoryPort   buyerDirectoryPort;
+    private final EventLookupPort      eventLookupPort;
 
     @Override
     @Transactional(readOnly = true)
@@ -61,11 +64,13 @@ public class GetCommerceAdminStatsUseCase implements GetCommerceAdminStatsPort {
     public List<AdminRefundResponse> findRecentRefunds(int limit) {
         List<AdminRefundRow> rows = refundJpaRepository.findRecentForAdmin(PageRequest.of(0, limit));
         Map<Integer, BuyerDirectoryPort.Buyer> buyers = findBuyers(rows);
+        Map<Long, EventRef> events = eventLookupPort.findAll(rows.stream().map(AdminRefundRow::getEventId).toList());
         return rows.stream().map(r -> {
             BuyerDirectoryPort.Buyer buyer = r.getUserId() == null ? null : buyers.get(r.getUserId().intValue());
+            EventRef event = events.get(r.getEventId());
             return new AdminRefundResponse(r.getRefundId(), r.getPaymentId(), r.getOrderId(), r.getUserId(),
                     buyer == null ? null : buyer.alias(), buyer == null ? null : buyer.fullName(),
-                    buyer == null ? null : buyer.email(), r.getEventId(), r.getEventName(), r.getGatewayAmount(),
+                    buyer == null ? null : buyer.email(), r.getEventId(), event == null ? null : event.name(), r.getGatewayAmount(),
                     r.getWalletAmount(), r.getCurrency(), r.getStatus(), r.getReason(), r.getRequestedAt(),
                     r.getProcessedAt());
         }).toList();

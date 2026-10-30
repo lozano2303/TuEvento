@@ -5,6 +5,8 @@ import com.capysoft.tuevento.modules.payment.application.dto.response.OrganizerE
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentRepository;
 import com.capysoft.tuevento.modules.payment.application.port.out.OrganizerSeatsPort;
 import com.capysoft.tuevento.modules.payment.application.port.out.OrganizerSeatsPort.EventSeats;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort.EventRef;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,8 +16,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -30,16 +34,21 @@ class GetOrganizerEarningsServiceTest {
 
     @Mock PaymentRepository paymentRepository;
     @Mock OrganizerSeatsPort organizerSeatsPort;
+    @Mock EventLookupPort eventLookupPort;
 
     private GetOrganizerEarningsService service;
 
     @BeforeEach
     void setUp() {
-        service = new GetOrganizerEarningsService(paymentRepository, organizerSeatsPort);
+        service = new GetOrganizerEarningsService(paymentRepository, organizerSeatsPort, eventLookupPort);
     }
 
-    private static OrganizerEarningsByEventResponse paid(long eventId, String name, int tickets, String revenue) {
-        return new OrganizerEarningsByEventResponse(eventId, name, tickets, new BigDecimal(revenue), "COP");
+    private static OrganizerEarningsByEventResponse paid(long eventId, int tickets, String revenue) {
+        return new OrganizerEarningsByEventResponse(eventId, tickets, new BigDecimal(revenue), "COP");
+    }
+
+    private static EventRef event(long eventId, String name) {
+        return new EventRef(eventId, ORGANIZER_ID, name, "PUBLISHED");
     }
 
     private static EventSeats seats(long eventId, String name, String potential, long courtesy, long total) {
@@ -49,8 +58,8 @@ class GetOrganizerEarningsServiceTest {
     @Test
     @DisplayName("une lo cobrado y lo potencial por evento, incluidos los eventos aún sin ventas")
     void mergesRevenueAndPotentialPerEvent() {
-        when(paymentRepository.findEarningsByOrganizer(ORGANIZER_ID)).thenReturn(List.of(
-                paid(1, "Concierto", 4, "400000")));
+        when(eventLookupPort.findByOwner(ORGANIZER_ID)).thenReturn(List.of(event(1, "Concierto"), event(2, "Teatro")));
+        when(paymentRepository.findEarningsByEvents(Set.of(1L, 2L))).thenReturn(List.of(paid(1, 4, "400000")));
         when(organizerSeatsPort.summarizeByOrganizer(ORGANIZER_ID)).thenReturn(List.of(
                 seats(2, "Teatro", "900000", 0, 30),
                 seats(1, "Concierto", "1000000", 3, 13)));
@@ -67,6 +76,7 @@ class GetOrganizerEarningsServiceTest {
         assertThat(response.getEarningsByEvent()).extracting(OrganizerEarningsByEventResponse::getEventId)
                 .containsExactly(1L, 2L);
         OrganizerEarningsByEventResponse concert = response.getEarningsByEvent().get(0);
+        assertThat(concert.getEventName()).isEqualTo("Concierto");
         assertThat(concert.getTotalRevenue()).isEqualByComparingTo("400000");
         assertThat(concert.getPotentialRevenue()).isEqualByComparingTo("1000000");
         assertThat(concert.getCourtesySeats()).isEqualTo(3);
@@ -82,8 +92,8 @@ class GetOrganizerEarningsServiceTest {
     @Test
     @DisplayName("un evento con ventas pero sin sillas (p. ej. cancelado) conserva lo cobrado y potencial 0")
     void keepsRevenueOfEventsWithoutSeats() {
-        when(paymentRepository.findEarningsByOrganizer(ORGANIZER_ID)).thenReturn(List.of(
-                paid(5, "Cancelado", 2, "120000")));
+        when(eventLookupPort.findByOwner(ORGANIZER_ID)).thenReturn(List.of(event(5, "Cancelado")));
+        when(paymentRepository.findEarningsByEvents(Set.of(5L))).thenReturn(List.of(paid(5, 2, "120000")));
         when(organizerSeatsPort.summarizeByOrganizer(ORGANIZER_ID)).thenReturn(List.of());
 
         OrganizerEarningsByEventResponse event = service.execute(ORGANIZER_ID).getEarningsByEvent().get(0);
@@ -96,7 +106,7 @@ class GetOrganizerEarningsServiceTest {
     @Test
     @DisplayName("sin eventos devuelve todo en cero y moneda COP")
     void emptyOrganizer() {
-        when(paymentRepository.findEarningsByOrganizer(ORGANIZER_ID)).thenReturn(List.of());
+        when(eventLookupPort.findByOwner(ORGANIZER_ID)).thenReturn(List.of());
         when(organizerSeatsPort.summarizeByOrganizer(ORGANIZER_ID)).thenReturn(List.of());
 
         OrganizerEarningsResponse response = service.execute(ORGANIZER_ID);
@@ -105,5 +115,6 @@ class GetOrganizerEarningsServiceTest {
         assertThat(response.getTotalEarnings()).isEqualByComparingTo("0");
         assertThat(response.getTotalPotentialEarnings()).isEqualByComparingTo("0");
         assertThat(response.getCurrency()).isEqualTo("COP");
+        verifyNoInteractions(paymentRepository);
     }
 }

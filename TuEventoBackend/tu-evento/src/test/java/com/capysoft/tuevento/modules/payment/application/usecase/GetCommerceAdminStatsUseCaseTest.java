@@ -25,6 +25,8 @@ import com.capysoft.tuevento.modules.payment.infrastructure.persistence.entity.P
 import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.AdminRefundRow;
 import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.PaymentJpaRepository;
 import com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository.RefundJpaRepository;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort.EventRef;
 import com.capysoft.tuevento.modules.ticket.infrastructure.persistence.repository.TicketJpaRepository;
 
 @DisplayName("GetCommerceAdminStatsUseCase")
@@ -34,12 +36,14 @@ class GetCommerceAdminStatsUseCaseTest {
     private final PaymentJpaRepository payments = mock(PaymentJpaRepository.class);
     private final RefundJpaRepository refunds = mock(RefundJpaRepository.class);
     private final BuyerDirectoryPort buyers = mock(BuyerDirectoryPort.class);
-    private final GetCommerceAdminStatsUseCase useCase = new GetCommerceAdminStatsUseCase(tickets, payments, refunds, buyers);
+    private final EventLookupPort events = mock(EventLookupPort.class);
+    private final GetCommerceAdminStatsUseCase useCase = new GetCommerceAdminStatsUseCase(tickets, payments, refunds, buyers, events);
 
     private static AdminRefundRow refund(Long userId) {
         AdminRefundRow row = mock(AdminRefundRow.class);
         when(row.getRefundId()).thenReturn(1L);
         when(row.getUserId()).thenReturn(userId);
+        when(row.getEventId()).thenReturn(3L);
         when(row.getStatus()).thenReturn(RefundStatus.REQUESTED);
         return row;
     }
@@ -90,6 +94,22 @@ class GetCommerceAdminStatsUseCaseTest {
     }
 
     @Test
+    @DisplayName("fills each refund with its event name, and leaves it empty when catalog has no such event")
+    void refundsWithEventName() {
+        List<AdminRefundRow> rows = List.of(refund(null));
+        when(refunds.findRecentForAdmin(any())).thenReturn(rows);
+        when(events.findAll(List.of(3L))).thenReturn(Map.of(3L, new EventRef(3L, 30L, "Concierto", "PUBLISHED")));
+
+        assertThat(useCase.findRecentRefunds(10)).singleElement()
+                .satisfies(refund -> assertThat(refund.eventName()).isEqualTo("Concierto"));
+
+        when(events.findAll(List.of(3L))).thenReturn(Map.of());
+
+        assertThat(useCase.findRecentRefunds(10)).singleElement()
+                .satisfies(refund -> assertThat(refund.eventName()).isNull());
+    }
+
+    @Test
     @DisplayName("lists refunds without buyers when identity is unavailable or no refund has a user")
     void refundsWithoutBuyers() {
         List<AdminRefundRow> withUser = List.of(refund(7L));
@@ -102,7 +122,7 @@ class GetCommerceAdminStatsUseCaseTest {
         BuyerDirectoryPort unused = mock(BuyerDirectoryPort.class);
         List<AdminRefundRow> withoutUser = List.of(refund(null));
         when(refunds.findRecentForAdmin(any())).thenReturn(withoutUser);
-        assertThat(new GetCommerceAdminStatsUseCase(tickets, payments, refunds, unused).findRecentRefunds(10)).hasSize(1);
+        assertThat(new GetCommerceAdminStatsUseCase(tickets, payments, refunds, unused, events).findRecentRefunds(10)).hasSize(1);
         verifyNoInteractions(unused);
     }
 }
