@@ -27,9 +27,9 @@ public class OrganizerEarningsByEventResponse {
     private long courtesySeats;
     private long totalSeats;
 
-    /** Constructor de la consulta JPQL de pagos: solo trae lo cobrado. */
-    public OrganizerEarningsByEventResponse(Long eventId, String eventName, int ticketsSold,
+    /** Constructor de la consulta JPQL de pagos: solo trae lo cobrado; el nombre lo aporta Catálogo. */
+    public OrganizerEarningsByEventResponse(Long eventId, int ticketsSold,
                                             BigDecimal totalRevenue, String currency) {
-        this(eventId, eventName, ticketsSold, totalRevenue, currency, BigDecimal.ZERO, 0, 0);
+        this(eventId, null, ticketsSold, totalRevenue, currency, BigDecimal.ZERO, 0, 0);
     }
 }

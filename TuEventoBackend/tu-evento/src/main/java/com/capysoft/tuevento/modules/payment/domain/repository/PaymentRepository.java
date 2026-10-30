@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.payment.domain.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +26,6 @@ public interface PaymentRepository {
      */
     List<Payment> findPendingOlderThan(LocalDateTime olderThan);
 
-    /** Retorna las ganancias desglosadas por evento para el organizador indicado. */
-    List<OrganizerEarningsByEventResponse> findEarningsByOrganizer(Long organizerId);
+    /** Retorna las ganancias desglosadas de los eventos indicados. */
+    List<OrganizerEarningsByEventResponse> findEarningsByEvents(Collection<Long> eventIds);
 }

@@ -1,8 +1,10 @@
 package com.capysoft.tuevento.modules.ticket.infrastructure.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
@@ -53,5 +55,25 @@ class CatalogEventLookupAdapterTest {
         when(eventRepository.findById(5L)).thenReturn(Optional.empty());
 
         assertThat(adapter.find(5L)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("findAll devuelve por id los que existen, sin repetir lecturas")
+    void findAllSkipsMissing() {
+        when(eventRepository.findById(5L)).thenReturn(Optional.of(Event.builder()
+                .eventId(5L).userId(30L).eventName("Concierto").status(EventStatus.PUBLISHED).build()));
+        when(eventRepository.findById(6L)).thenReturn(Optional.empty());
+
+        assertThat(adapter.findAll(List.of(5L, 5L, 6L))).containsOnlyKeys(5L);
+        verify(eventRepository).findById(5L);
+    }
+
+    @Test
+    @DisplayName("findByOwner devuelve los eventos del organizador")
+    void findByOwner() {
+        when(eventRepository.findByUserId(30L)).thenReturn(List.of(Event.builder()
+                .eventId(5L).userId(30L).eventName("Concierto").status(EventStatus.DRAFT).build()));
+
+        assertThat(adapter.findByOwner(30L)).containsExactly(new EventRef(5L, 30L, "Concierto", "DRAFT"));
     }
 }

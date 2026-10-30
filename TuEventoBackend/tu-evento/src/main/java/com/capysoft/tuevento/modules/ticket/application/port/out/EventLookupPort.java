@@ -1,5 +1,8 @@
 package com.capysoft.tuevento.modules.ticket.application.port.out;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -10,6 +13,12 @@ public interface EventLookupPort {
 
     /** El evento pedido, o vacío si no existe. */
     Optional<EventRef> find(Long eventId);
+
+    /** Los eventos pedidos que existan, por id. */
+    Map<Long, EventRef> findAll(Collection<Long> eventIds);
+
+    /** Los eventos de un organizador. */
+    List<EventRef> findByOwner(Long ownerId);
 
     /**
      * @param ownerId userId del organizador dueño del evento

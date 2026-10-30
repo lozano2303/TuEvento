@@ -16,19 +16,19 @@ public interface RefundJpaRepository extends JpaRepository<RefundEntity, Long> {
     long countByStatus(RefundStatus status);
 
     /**
-     * Reembolsos más recientes con pago y evento — panel de reembolsos del admin. Los datos del
-     * comprador (alias, nombre, email) los completa Identidad: aquí solo va su userId.
+     * Reembolsos más recientes con su pago — panel de reembolsos del admin. Los datos del comprador
+     * (alias, nombre, email) los completa Identidad y el nombre del evento, Catálogo: aquí solo van
+     * sus ids.
      */
     @Query("""
             SELECT r.refundId AS refundId, r.paymentId AS paymentId, p.orderId AS orderId,
                    o.userId AS userId,
-                   o.eventId AS eventId, e.eventName AS eventName,
+                   o.eventId AS eventId,
                    p.amount AS gatewayAmount, p.walletAmountApplied AS walletAmount, p.currency AS currency,
                    r.status AS status, r.reason AS reason, r.requestedAt AS requestedAt, r.processedAt AS processedAt
             FROM RefundEntity r
             JOIN PaymentEntity p ON p.paymentId = r.paymentId
             JOIN OrderEntity o ON o.orderId = p.orderId
-            LEFT JOIN EventEntity e ON e.eventId = o.eventId
             ORDER BY r.requestedAt DESC
             """)
     List<AdminRefundRow> findRecentForAdmin(Pageable pageable);

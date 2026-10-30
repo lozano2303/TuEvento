@@ -2,6 +2,7 @@ package com.capysoft.tuevento.modules.payment.infrastructure.persistence.reposit
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -59,8 +60,8 @@ public class PaymentRepositoryImpl implements PaymentRepository {
     }
 
     @Override
-    public List<OrganizerEarningsByEventResponse> findEarningsByOrganizer(Long organizerId) {
-        return jpaRepository.findEarningsByOrganizer(organizerId);
+    public List<OrganizerEarningsByEventResponse> findEarningsByEvents(Collection<Long> eventIds) {
+        return jpaRepository.findEarningsByEvents(eventIds);
     }
 
     @Override

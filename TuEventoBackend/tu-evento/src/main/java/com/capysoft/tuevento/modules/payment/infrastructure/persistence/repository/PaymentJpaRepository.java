@@ -1,6 +1,7 @@
 package com.capysoft.tuevento.modules.payment.infrastructure.persistence.repository;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,29 +44,26 @@ public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, Long>
     List<PaymentEntity> findTopByOrderByProcessedAtDesc(Pageable pageable);
 
     /**
-     * Ganancias desglosadas por evento para un organizador.
-     * Hace JOIN: payment → order → event filtrando por event.userId = :organizerId
-     * y payment.status = APPROVED.
-     * Retorna una proyección con (eventId, eventName, ticketsSold, totalRevenue, currency).
+     * Ganancias desglosadas de los eventos indicados.
+     * Hace JOIN: payment → order filtrando por order.eventId y payment.status = APPROVED.
+     * Retorna una proyección con (eventId, ticketsSold, totalRevenue, currency).
      * ticketsSold cuenta entradas (una por silla) pagadas o ya usadas, no pagos: una compra
      * de 4 sillas son 4 entradas, y las reembolsadas no cuentan.
      */
     @Query("""
             SELECT new com.capysoft.tuevento.modules.payment.application.dto.response.OrganizerEarningsByEventResponse(
-                e.eventId,
-                e.eventName,
+                o.eventId,
                 CAST((SELECT COUNT(t.ticketId) FROM TicketEntity t
-                      WHERE t.eventId = e.eventId AND t.status IN ('PAID', 'USED')) AS int),
+                      WHERE t.eventId = o.eventId AND t.status IN ('PAID', 'USED')) AS int),
                 COALESCE(SUM(p.amount + p.walletAmountApplied), 0),
                 MAX(o.currency)
             )
             FROM PaymentEntity p
             JOIN OrderEntity o ON o.orderId = p.orderId
-            JOIN EventEntity e ON e.eventId = o.eventId
-            WHERE e.userId = :organizerId
+            WHERE o.eventId IN :eventIds
               AND p.status = 'APPROVED'
-            GROUP BY e.eventId, e.eventName
+            GROUP BY o.eventId
             ORDER BY SUM(p.amount + p.walletAmountApplied) DESC
             """)
-    List<OrganizerEarningsByEventResponse> findEarningsByOrganizer(@Param("organizerId") Long organizerId);
+    List<OrganizerEarningsByEventResponse> findEarningsByEvents(@Param("eventIds") Collection<Long> eventIds);
 }
