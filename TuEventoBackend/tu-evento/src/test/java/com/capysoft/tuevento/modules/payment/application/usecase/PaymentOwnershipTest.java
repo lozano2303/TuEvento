@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.payment.application.usecase;
 
-import com.capysoft.tuevento.modules.event.domain.model.Event;
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort.EventRef;
 import com.capysoft.tuevento.modules.payment.application.dto.request.CreatePaymentRequest;
 import com.capysoft.tuevento.modules.payment.application.port.out.PaymentGatewayPort;
 import com.capysoft.tuevento.modules.payment.domain.model.Payment;
@@ -74,7 +74,7 @@ class PaymentOwnershipTest {
     @Mock private ReverseWalletPaymentUseCaseImpl reverseWalletPaymentUseCase;
     @Mock private CreditWalletUseCaseImpl creditWalletUseCase;
     @Mock private ApplicationEventPublisher eventPublisher;
-    @Mock private EventRepository eventRepository;
+    @Mock private EventLookupPort eventLookupPort;
 
     @InjectMocks private CreatePaymentUseCaseImpl createPayment;
     @InjectMocks private GetPaymentUseCaseImpl getPayment;
@@ -128,7 +128,7 @@ class PaymentOwnershipTest {
         void refund_otherOrganizer_isDenied() {
             when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(approvedPayment()));
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
-            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(Event.builder().userId(ORGANIZER_ID).build()));
+            when(eventLookupPort.find(EVENT_ID)).thenReturn(Optional.of(new EventRef(EVENT_ID, ORGANIZER_ID, null, null)));
 
             assertThatThrownBy(() -> requestRefund.execute(PAYMENT_ID, "reason", OTHER_USER_ID, false))
                     .isInstanceOf(AccessDeniedException.class);
@@ -146,7 +146,7 @@ class PaymentOwnershipTest {
                     .build();
             when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(approved));
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order()));
-            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(Event.builder().userId(ORGANIZER_ID).build()));
+            when(eventLookupPort.find(EVENT_ID)).thenReturn(Optional.of(new EventRef(EVENT_ID, ORGANIZER_ID, null, null)));
             when(refundRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
             // Ningún ticket usado: reembolso completo por la pasarela
             when(confirmRefundUseCase.getRefundableTickets(ORDER_ID))
@@ -166,7 +166,7 @@ class PaymentOwnershipTest {
             // El estado ERROR corta el flujo después de la autorización: basta para ver que no se consultó el evento
             assertThatThrownBy(() -> requestRefund.execute(PAYMENT_ID, "reason", OTHER_USER_ID, true))
                     .isInstanceOf(IllegalStateException.class);
-            verify(eventRepository, never()).findById(anyLong());
+            verify(eventLookupPort, never()).find(anyLong());
         }
     }
 }

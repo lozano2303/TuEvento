@@ -1,8 +1,7 @@
 package com.capysoft.tuevento.modules.ticket.application.usecase;
 
-import com.capysoft.tuevento.modules.event.domain.model.Event;
-import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort.EventRef;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.TicketQrResponse;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
 import com.capysoft.tuevento.modules.ticket.domain.model.OrderNotFoundException;
@@ -38,7 +37,7 @@ public class GenerateOrderQrUseCaseImpl {
 
     private final OrderRepository orderRepository;
     private final TicketRepository ticketRepository;
-    private final EventRepository eventRepository;
+    private final EventLookupPort eventLookupPort;
     private final QrTokenPort qrTokenPort;
     private final QrNonceStore qrNonceStore;
 
@@ -52,12 +51,12 @@ public class GenerateOrderQrUseCaseImpl {
         }
 
         // El evento debe seguir publicado: cancelado/finalizado → no se puede validar.
-        Event event = eventRepository.findById(order.getEventId())
+        EventRef event = eventLookupPort.find(order.getEventId())
                 .orElseThrow(() -> new NotFoundException("EVENT_NOT_FOUND",
                         "Event not found for this order"));
-        if (event.getStatus() != EventStatus.PUBLISHED) {
+        if (!event.isPublished()) {
             throw new BusinessException("EVENT_NOT_ACTIVE",
-                    "The event is not active (status: " + event.getStatus() + ")");
+                    "The event is not active (status: " + event.status() + ")");
         }
 
         List<Ticket> tickets = ticketRepository.findByOrderId(orderId);

@@ -1,6 +1,6 @@
 package com.capysoft.tuevento.modules.ticket.application.usecase;
 
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.TicketCheckinResponse;
 import com.capysoft.tuevento.modules.ticket.domain.model.*;
 import com.capysoft.tuevento.modules.ticket.domain.repository.TicketCheckinRepository;
@@ -27,7 +27,7 @@ public class CheckinTicketUseCaseImpl {
     private final TicketRepository ticketRepository;
     private final TicketCheckinRepository ticketCheckinRepository;
     private final TicketLogRepository ticketLogRepository;
-    private final EventRepository eventRepository;
+    private final EventLookupPort eventLookupPort;
     
     @Transactional
     public TicketCheckinResponse execute(Long ticketId, Long validatedBy) {
@@ -36,9 +36,9 @@ public class CheckinTicketUseCaseImpl {
             .orElseThrow(() -> new TicketNotFoundException(ticketId));
 
         // Autorizar: el organizador autenticado debe ser el dueño del evento del ticket
-        Long eventOwnerId = eventRepository.findById(ticket.getEventId())
+        Long eventOwnerId = eventLookupPort.find(ticket.getEventId())
             .orElseThrow(() -> new NotFoundException("EVENT_NOT_FOUND", "Event not found for this ticket"))
-            .getUserId();
+            .ownerId();
         if (!eventOwnerId.equals(validatedBy)) {
             throw new AccessDeniedException("You are not the organizer of this event");
         }

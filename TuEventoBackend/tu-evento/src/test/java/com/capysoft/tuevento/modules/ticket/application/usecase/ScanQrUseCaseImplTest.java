@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.ticket.application.usecase;
 
-import com.capysoft.tuevento.modules.event.domain.model.Event;
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort.EventRef;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.ScanResultResponse;
 import com.capysoft.tuevento.modules.ticket.domain.event.TicketsValidatedEvent;
 import com.capysoft.tuevento.modules.ticket.domain.model.Ticket;
@@ -50,7 +50,7 @@ class ScanQrUseCaseImplTest {
     @Mock private TicketRepository ticketRepository;
     @Mock private TicketCheckinRepository ticketCheckinRepository;
     @Mock private TicketLogRepository ticketLogRepository;
-    @Mock private EventRepository eventRepository;
+    @Mock private EventLookupPort eventLookupPort;
     @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private ScanQrUseCaseImpl useCase;
@@ -66,7 +66,7 @@ class ScanQrUseCaseImplTest {
         QrPayload payload = new QrPayload(scope, targetId, EVENT_ID, OWNER_ID, "nonce");
         when(qrTokenPort.parse("token")).thenReturn(Optional.of(payload));
         when(qrNonceStore.consume(scope, targetId, "nonce")).thenReturn(true);
-        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(Event.builder().userId(ORGANIZER_ID).build()));
+        when(eventLookupPort.find(EVENT_ID)).thenReturn(Optional.of(new EventRef(EVENT_ID, ORGANIZER_ID, null, null)));
     }
 
     @Test

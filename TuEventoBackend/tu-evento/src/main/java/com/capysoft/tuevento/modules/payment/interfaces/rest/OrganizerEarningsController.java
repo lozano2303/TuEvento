@@ -1,7 +1,7 @@
-package com.capysoft.tuevento.modules.event.interfaces.rest;
+package com.capysoft.tuevento.modules.payment.interfaces.rest;
 
-import com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsResponse;
-import com.capysoft.tuevento.modules.event.application.usecase.GetOrganizerEarningsService;
+import com.capysoft.tuevento.modules.payment.application.dto.response.OrganizerEarningsResponse;
+import com.capysoft.tuevento.modules.payment.application.usecase.GetOrganizerEarningsService;
 import com.capysoft.tuevento.shared.infrastructure.security.SecurityUser;
 import com.capysoft.tuevento.shared.interfaces.ApiResponse;
 import lombok.RequiredArgsConstructor;

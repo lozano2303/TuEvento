@@ -1,7 +1,7 @@
 package com.capysoft.tuevento.modules.ticket.application.usecase;
 
-import com.capysoft.tuevento.modules.event.domain.model.Event;
-import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort;
+import com.capysoft.tuevento.modules.ticket.application.port.out.EventLookupPort.EventRef;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.OrderResponse;
 import com.capysoft.tuevento.modules.ticket.application.dto.response.TicketResponse;
 import com.capysoft.tuevento.modules.ticket.domain.model.Order;
@@ -26,7 +26,7 @@ public class GetMyOrdersUseCaseImpl {
 
     private final OrderRepository orderRepository;
     private final TicketRepository ticketRepository;
-    private final EventRepository eventRepository;
+    private final EventLookupPort eventLookupPort;
 
     @Transactional(readOnly = true)
     public List<OrderResponse> execute(Long userId, OrderStatus statusFilter) {
@@ -40,10 +40,9 @@ public class GetMyOrdersUseCaseImpl {
                             .map(TicketResponse::fromDomain)
                             .collect(Collectors.toList());
 
-                    Event event = eventRepository.findById(order.getEventId()).orElse(null);
-                    String eventName   = event != null ? event.getEventName() : null;
-                    String eventStatus = event != null && event.getStatus() != null
-                            ? event.getStatus().name() : null;
+                    EventRef event = eventLookupPort.find(order.getEventId()).orElse(null);
+                    String eventName   = event != null ? event.name() : null;
+                    String eventStatus = event != null ? event.status() : null;
 
                     return OrderResponse.fromDomainWithTickets(order, tickets, eventName, eventStatus);
                 })

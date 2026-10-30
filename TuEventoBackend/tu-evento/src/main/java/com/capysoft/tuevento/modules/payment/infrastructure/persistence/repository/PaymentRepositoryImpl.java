@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
-import com.capysoft.tuevento.modules.event.application.dto.response.OrganizerEarningsByEventResponse;
+import com.capysoft.tuevento.modules.payment.application.dto.response.OrganizerEarningsByEventResponse;
 import com.capysoft.tuevento.modules.payment.domain.model.Payment;
 import com.capysoft.tuevento.modules.payment.domain.model.PaymentStatus;
 import com.capysoft.tuevento.modules.payment.domain.repository.PaymentRepository;
