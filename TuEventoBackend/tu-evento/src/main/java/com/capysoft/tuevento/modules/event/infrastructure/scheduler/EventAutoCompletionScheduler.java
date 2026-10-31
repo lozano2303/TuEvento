@@ -1,5 +1,6 @@
 package com.capysoft.tuevento.modules.event.infrastructure.scheduler;
 
+import com.capysoft.tuevento.modules.event.domain.event.EventStatusChangedEvent;
 import com.capysoft.tuevento.modules.event.domain.model.Event;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.model.EventStatusLog;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,6 +40,7 @@ public class EventAutoCompletionScheduler {
 
     private final EventRepository          eventRepository;
     private final EventStatusLogRepository eventStatusLogRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     // Self-injection vía @Lazy para que @Transactional aplique correctamente
     // en la invocación desde onStartup() (evita el problema de self-invocation
@@ -105,6 +108,16 @@ public class EventAutoCompletionScheduler {
                     .newStatus(EventStatus.COMPLETED)
                     .changedAt(LocalDateTime.now())
                     .changedBy(null) // null = cambio automático del sistema
+                    .build());
+
+            // Comercio replica el estado: sin este aviso seguiría validando QR de un evento terminado
+            eventPublisher.publishEvent(EventStatusChangedEvent.builder()
+                    .eventId(event.getEventId())
+                    .oldStatus(oldStatus.name())
+                    .newStatus(EventStatus.COMPLETED.name())
+                    .occurredAt(LocalDateTime.now())
+                    .organizerId(event.getUserId())
+                    .eventName(event.getEventName())
                     .build());
 
             log.info("[Scheduler] Event {} '{}' marked as COMPLETED (was {}).",

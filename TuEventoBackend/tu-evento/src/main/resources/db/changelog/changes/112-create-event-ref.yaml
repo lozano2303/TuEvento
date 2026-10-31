@@ -1,0 +1,46 @@
+databaseChangeLog:
+  # Réplica en Comercio de los datos de un evento que necesita (dueño, nombre, estado y fecha). La
+  # mantiene commerce-service con los eventos de tuevento.event. Solo crea una tabla nueva.
+  - changeSet:
+      id: 112-create-event-ref
+      author: capysoft
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: event_ref
+      changes:
+        - createTable:
+            tableName: event_ref
+            columns:
+              - column:
+                  name: event_id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: owner_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+              - column:
+                  name: start_date
+                  type: DATE
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_event_ref_owner
+            tableName: event_ref
+            columns:
+              - column:
+                  name: owner_id
