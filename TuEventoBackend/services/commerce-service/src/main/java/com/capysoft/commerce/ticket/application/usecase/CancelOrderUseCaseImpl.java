@@ -81,7 +81,8 @@ public class CancelOrderUseCaseImpl {
         } catch (NumberFormatException e) {
             // changedBy será null si no es un userId válido
         }
-        catalogSeatsPort.release(order.getOrderId(), seatIds, changedByUserId, "Order cancelled");
+        catalogSeatsPort.release(order.getOrderId(), order.getUserId(), seatIds, changedByUserId,
+                CatalogSeatsPort.ReleaseReason.CANCELLED, "Order cancelled");
     }
     
     private String getCurrentUsername() {

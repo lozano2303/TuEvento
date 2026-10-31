@@ -6,9 +6,10 @@ import java.util.List;
 /**
  * Las sillas de una orden, que son de Catálogo: la saga de compra vista desde Comercio.
  *
- * <p>Hoy el adaptador local hace todo en la transacción del caso de uso. Al separar Catálogo,
- * {@code holdForOrder} pasa a {@code POST /internal/seats/hold} y {@code sell}/{@code release}
- * a los eventos {@code OrderPaid}/{@code OrderReleased}, sin cambiar a quien llama.
+ * <p>{@code holdForOrder} es síncrono ({@code POST /internal/seats/hold}). {@code sell} y
+ * {@code release} se guardan en el outbox dentro de la transacción de quien llama
+ * ({@code OrderPaid} y {@code OrderReleased}): Catálogo los aplica después, así que el webhook de la
+ * pasarela nunca depende de que Catálogo esté arriba.
  */
 public interface CatalogSeatsPort {
 
@@ -17,16 +18,23 @@ public interface CatalogSeatsPort {
      * vigente y ser del evento. Devuelve el precio de cada una, que la orden copia.
      *
      * @param seatIds sin repetidas y en orden ascendente (así se bloquean, sin interbloqueos)
-     * @throws IllegalArgumentException si una silla no existe
-     * @throws IllegalStateException    si una silla no cumple las condiciones
+     * @throws IllegalStateException si una silla no cumple las condiciones
      */
     HeldSeats holdForOrder(Long orderId, Long userId, Long eventId, List<Integer> seatIds);
 
     /** Pago aprobado: las sillas de la orden pasan a vendidas a nombre del comprador. */
-    void sell(Long orderId, Long buyerId, List<Integer> seatIds, String reason);
+    void sell(Long orderId, Long buyerId, Long eventId, List<Integer> seatIds, String providerPaymentId);
 
-    /** Pago fallido o orden cancelada: las sillas de la orden vuelven a estar disponibles. */
-    void release(Long orderId, List<Integer> seatIds, Integer changedBy, String reason);
+    /**
+     * Pago fallido o orden cancelada: las sillas de la orden vuelven a estar disponibles.
+     *
+     * @param detail texto libre para el historial de la silla
+     */
+    void release(Long orderId, Long buyerId, List<Integer> seatIds, Integer changedBy, ReleaseReason reason, String detail);
+
+    enum ReleaseReason {
+        FAILED, CANCELLED, EXPIRED
+    }
 
     /** @param seats en el mismo orden en que se pidieron */
     record HeldSeats(String currency, List<HeldSeat> seats) {

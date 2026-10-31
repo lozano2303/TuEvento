@@ -53,6 +53,15 @@ class CommerceServiceApplicationTest {
     }
 
     @Test
+    @DisplayName("la API interna exige la clave y no acepta tokens")
+    void internalApiNeedsTheKey() throws Exception {
+        mvc.perform(get("/internal/admin/stats")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/internal/admin/stats").header("X-Internal-Api-Key", "bad")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/internal/admin/stats").header("X-Internal-Api-Key", "test-internal-key"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     @DisplayName("el webhook no pide token: lo autentica su firma, y sin firma no pasa de ahí")
     void webhookIsNotBehindTheToken() throws Exception {
         int status = mvc.perform(post("/api/v1/webhooks/payment").contentType(MediaType.APPLICATION_JSON).content("{}"))

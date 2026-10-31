@@ -1,6 +1,7 @@
 package com.capysoft.commerce.ticket.application.usecase;
 
 import com.capysoft.commerce.ticket.application.port.out.CatalogSeatsPort;
+import com.capysoft.commerce.ticket.application.port.out.CatalogSeatsPort.ReleaseReason;
 import com.capysoft.commerce.ticket.domain.model.Money;
 import com.capysoft.commerce.ticket.domain.model.Order;
 import com.capysoft.commerce.ticket.domain.model.OrderStatus;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,7 +73,8 @@ class ReleaseOrderSeatsTest {
                 ticketLogRepository, catalogSeatsPort).failOrderPayment(ORDER_ID, "DECLINED");
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
-        verify(catalogSeatsPort).release(ORDER_ID, List.of(10, 11), null, "Payment failed: DECLINED");
+        verify(catalogSeatsPort).release(eq(ORDER_ID), any(), eq(List.of(10, 11)), isNull(),
+                eq(ReleaseReason.FAILED), eq("Payment failed: DECLINED"));
     }
 
     @Test
@@ -80,7 +84,8 @@ class ReleaseOrderSeatsTest {
 
         newCancelOrder().execute(ORDER_ID, BUYER_ID);
 
-        verify(catalogSeatsPort).release(ORDER_ID, List.of(10, 11), 7, "Order cancelled");
+        verify(catalogSeatsPort).release(eq(ORDER_ID), any(), eq(List.of(10, 11)), eq(7),
+                eq(ReleaseReason.CANCELLED), eq("Order cancelled"));
     }
 
     @Test
@@ -88,8 +93,8 @@ class ReleaseOrderSeatsTest {
     void cancelledWithoutUserId_releasesSeatsWithoutUser() {
         newCancelOrder().execute(ORDER_ID, BUYER_ID);
 
-        verify(catalogSeatsPort).release(org.mockito.ArgumentMatchers.eq(ORDER_ID),
-                org.mockito.ArgumentMatchers.eq(List.of(10, 11)), isNull(), org.mockito.ArgumentMatchers.eq("Order cancelled"));
+        verify(catalogSeatsPort).release(eq(ORDER_ID), any(), eq(List.of(10, 11)), isNull(),
+                eq(ReleaseReason.CANCELLED), eq("Order cancelled"));
     }
 
     private CancelOrderUseCaseImpl newCancelOrder() {

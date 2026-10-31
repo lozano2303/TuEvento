@@ -488,6 +488,8 @@ services:
       - REDIS_PORT=6379
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - IDENTITY_SERVICE_URL=http://identity-service:8088
+      # API interna de Catálogo: el backend mientras Catálogo siga allí
+      - CATALOG_SERVICE_URL=http://backend:8080
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       # Mismo secreto que el backend: los QR ya emitidos siguen siendo válidos tras el corte
       - QR_SECRET=${QR_SECRET:-${JWT_SECRET}}

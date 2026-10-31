@@ -14,7 +14,13 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
       - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
 
+messaging:
+  consumers:
+    enabled: false
+
 app:
+  internal:
+    api-key: test-internal-key
   qr:
     secret: test-secret-key-for-ci-only-at-least-32-chars
 

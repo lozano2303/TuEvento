@@ -65,10 +65,10 @@ public class ConfirmOrderPaymentUseCaseImpl implements ConfirmOrderPaymentUseCas
             ticketLogRepository.save(log);
         }
         
-        // Marcar sillas como SOLD a nombre del comprador: si alguna la tomó otra persona mientras
-        // tanto, falla y se deshace toda la confirmación (no se entrega dos veces la misma silla)
-        catalogSeatsPort.sell(order.getOrderId(), order.getUserId(), seatIdsOf(tickets),
-                "Payment confirmed: " + providerPaymentId);
+        // Catálogo marca las sillas como SOLD a nombre del comprador. Si alguna la tomó otra persona
+        // mientras tanto, publica SeatsSaleRejected y aquí se reembolsa (RefundRejectedSaleUseCase)
+        catalogSeatsPort.sell(order.getOrderId(), order.getUserId(), order.getEventId(), seatIdsOf(tickets),
+                providerPaymentId);
     }
 
     private List<Integer> seatIdsOf(List<Ticket> tickets) {

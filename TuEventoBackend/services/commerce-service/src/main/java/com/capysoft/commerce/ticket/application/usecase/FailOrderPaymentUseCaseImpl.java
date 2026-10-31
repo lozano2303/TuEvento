@@ -72,6 +72,7 @@ public class FailOrderPaymentUseCaseImpl implements FailOrderPaymentUseCase {
             .flatMap(ticket -> seatTicketRepository.findByTicketId(ticket.getTicketId()).stream())
             .map(SeatTicket::getSeatId)
             .toList();
-        catalogSeatsPort.release(order.getOrderId(), seatIds, null, "Payment failed: " + reason);
+        catalogSeatsPort.release(order.getOrderId(), order.getUserId(), seatIds, null,
+                CatalogSeatsPort.ReleaseReason.FAILED, "Payment failed: " + reason);
     }
 }

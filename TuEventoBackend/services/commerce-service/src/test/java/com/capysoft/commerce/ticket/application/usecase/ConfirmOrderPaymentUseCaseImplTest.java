@@ -24,6 +24,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -68,14 +69,14 @@ class ConfirmOrderPaymentUseCaseImplTest {
         useCase.confirmOrderPayment(ORDER_ID, "gw-1");
 
         assertThat(ticket.getStatus()).isEqualTo(TicketStatus.PAID);
-        verify(catalogSeatsPort).sell(eq(ORDER_ID), eq(BUYER_ID), eq(List.of(10, 11)), anyString());
+        verify(catalogSeatsPort).sell(eq(ORDER_ID), eq(BUYER_ID), any(), eq(List.of(10, 11)), anyString());
     }
 
     @Test
     @DisplayName("si una silla ya es de otra persona, la confirmación falla (y la transacción se deshace)")
     void failsWhenASeatWasTaken() {
         doThrow(new BusinessException("SEAT_ALREADY_TAKEN", "La silla 10 ya no está disponible"))
-                .when(catalogSeatsPort).sell(eq(ORDER_ID), eq(BUYER_ID), eq(List.of(10, 11)), anyString());
+                .when(catalogSeatsPort).sell(eq(ORDER_ID), eq(BUYER_ID), any(), eq(List.of(10, 11)), anyString());
 
         assertThatThrownBy(() -> useCase.confirmOrderPayment(ORDER_ID, "gw-1"))
                 .isInstanceOf(BusinessException.class)
