@@ -1,0 +1,83 @@
+server:
+  port: ${COMMERCE_SERVICE_PORT:8084}
+
+spring:
+  application:
+    name: commerce-service
+  # Misma base de datos que el monolito: sus tablas las crea y migra su Liquibase
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/tuevento_db}
+    username: ${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER:postgres}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD:postgres}}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # Pocas conexiones: comparte el límite de la base con el monolito
+      maximum-pool-size: ${COMMERCE_DB_POOL_SIZE:5}
+  jpa:
+    hibernate:
+      # Falla al arrancar si las entidades no coinciden con las tablas del monolito
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    enabled: false
+  # Notificaciones y avisos en tiempo real.
+  # Local: el broker del docker-compose publica 9094 al host. Dentro de Docker: kafka:9092
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+  # Lista de revocación de access tokens que escribe Identidad y nonces de un solo uso de los QR
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      # Se consulta en cada petición y falla cerrada: responder 503 rápido en vez de esperar 60 s
+      timeout: ${REDIS_TIMEOUT:2s}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:2s}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://localhost:8088/.well-known/jwks.json}
+
+app:
+  identity:
+    base-url: ${IDENTITY_SERVICE_URL:http://localhost:8088}
+  internal:
+    api-key: ${INTERNAL_API_KEY:}
+  qr:
+    # El mismo secreto que el monolito: un QR emitido antes del corte debe seguir validándose
+    secret: ${QR_SECRET:${JWT_SECRET}}
+    expiration: ${QR_EXPIRATION:60000}
+
+payment:
+  gateway: ${PAYMENT_GATEWAY:fake}
+  fake-gateway:
+    url: ${FAKE_GATEWAY_URL:http://localhost:4001}
+    api-key: ${FAKE_GATEWAY_API_KEY:}
+  webhook:
+    secret: ${WEBHOOK_SECRET}
+  reconciliation:
+    # Apagada hasta el corte (C3): la conciliación solo puede correr en un sitio a la vez, y hasta
+    # entonces la hace el monolito
+    enabled: ${PAYMENT_RECONCILIATION_ENABLED:false}
+    pending-threshold-minutes: ${PAYMENT_RECONCILIATION_THRESHOLD_MINUTES:15}
+    expire-after-minutes: ${PAYMENT_RECONCILIATION_EXPIRE_MINUTES:30}
+    cron: ${PAYMENT_RECONCILIATION_CRON:0 */5 * * * *}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      # El estado (UP/DOWN) es público para los healthchecks; el detalle, solo autenticado
+      show-details: when-authorized
+
+logging:
+  level:
+    com.capysoft.commerce: INFO

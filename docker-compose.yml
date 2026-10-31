@@ -467,6 +467,52 @@ services:
     networks:
       - tuevento-network
 
+  # ── Microservicio de Comercio ──────────────────────────────────────────────
+  # Órdenes, entradas, pagos y wallet sobre la misma base que el backend. Aún sin tráfico: el
+  # gateway sigue enviando estas rutas al backend, y lo que depende de Catálogo responde 503.
+  commerce-service:
+    build:
+      context: ./TuEventoBackend/services
+      dockerfile: commerce-service/Dockerfile
+    container_name: tuevento-commerce-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - JWK_SET_URI=http://identity-service:8088/.well-known/jwks.json
+      # Lista de revocación de JWT (fail-closed) y nonces de los QR: misma instancia que el backend
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - IDENTITY_SERVICE_URL=http://identity-service:8088
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      # Mismo secreto que el backend: los QR ya emitidos siguen siendo válidos tras el corte
+      - QR_SECRET=${QR_SECRET:-${JWT_SECRET}}
+      - FAKE_GATEWAY_URL=http://fake-payment-gateway:4001
+      - FAKE_GATEWAY_API_KEY=${FAKE_GATEWAY_API_KEY:-dev-admin-key-change-in-production}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+      # El backend migra las tablas
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - tuevento-network
+
   # ── Microservicio de Identidad ─────────────────────────────────────────────
   # Login, sesiones, cuentas, temas y perfiles de usuario sobre la misma base que el backend.
   identity-service:

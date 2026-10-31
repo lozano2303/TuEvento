@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:commercedb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;NON_KEYWORDS=ROW,VALUE,USER,KEY,YEAR,MONTH,DAY
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+app:
+  qr:
+    secret: test-secret-key-for-ci-only-at-least-32-chars
+
+payment:
+  gateway: fake
+  fake-gateway:
+    url: http://localhost:4001
+    api-key: test-admin-key
+  webhook:
+    secret: test-webhook-secret

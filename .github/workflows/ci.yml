@@ -84,6 +84,9 @@ jobs:
       - name: identity-service (tests)
         run: TuEventoBackend/tu-evento/mvnw -B -f TuEventoBackend/services/identity-service/pom.xml verify
 
+      - name: commerce-service (tests)
+        run: TuEventoBackend/tu-evento/mvnw -B -f TuEventoBackend/services/commerce-service/pom.xml verify
+
       - name: api-gateway (build)
         run: TuEventoBackend/tu-evento/mvnw -B -f TuEventoBackend/gateway/pom.xml package
 
@@ -99,6 +102,9 @@ jobs:
 
       - name: Imagen de identity-service
         run: docker build -f TuEventoBackend/services/identity-service/Dockerfile TuEventoBackend/services
+
+      - name: Imagen de commerce-service
+        run: docker build -f TuEventoBackend/services/commerce-service/Dockerfile TuEventoBackend/services
 
       - name: Imagen de api-gateway
         run: docker build TuEventoBackend/gateway
