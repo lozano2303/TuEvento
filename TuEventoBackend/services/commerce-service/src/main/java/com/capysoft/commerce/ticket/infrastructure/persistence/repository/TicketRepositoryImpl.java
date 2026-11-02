@@ -83,6 +83,16 @@ public class TicketRepositoryImpl implements TicketRepository {
             List.of(com.capysoft.commerce.ticket.domain.model.TicketStatus.PAID,
                     com.capysoft.commerce.ticket.domain.model.TicketStatus.USED));
     }
+
+    @Override
+    public java.util.Map<Long, Long> countSoldByEventIds(java.util.Collection<Long> eventIds) {
+        java.util.Map<Long, Long> counts = new java.util.HashMap<>();
+        jpaRepository.countByEventIdInAndStatusIn(eventIds,
+                List.of(com.capysoft.commerce.ticket.domain.model.TicketStatus.PAID,
+                        com.capysoft.commerce.ticket.domain.model.TicketStatus.USED))
+            .forEach(row -> counts.put((Long) row[0], ((Number) row[1]).longValue()));
+        return counts;
+    }
     
     private TicketEntity toEntity(Ticket ticket) {
         return TicketEntity.builder()

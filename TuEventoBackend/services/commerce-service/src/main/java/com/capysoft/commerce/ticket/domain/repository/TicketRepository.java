@@ -2,7 +2,9 @@ package com.capysoft.commerce.ticket.domain.repository;
 
 import com.capysoft.commerce.ticket.domain.model.Ticket;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -25,4 +27,6 @@ public interface TicketRepository {
     boolean existsById(Long ticketId);
     /** Entradas vendidas de un evento (pagadas o ya usadas). */
     long countSoldByEventId(Long eventId);
+    /** Sold tickets per event, only for the events that have any. */
+    Map<Long, Long> countSoldByEventIds(Collection<Long> eventIds);
 }

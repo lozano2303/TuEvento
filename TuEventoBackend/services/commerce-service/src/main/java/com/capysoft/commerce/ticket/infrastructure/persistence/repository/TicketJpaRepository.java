@@ -28,5 +28,9 @@ public interface TicketJpaRepository extends JpaRepository<TicketEntity, Long> {
 
     List<TicketEntity> findByUserId(Long userId);
     Optional<TicketEntity> findByCode(String code);
+    @Query("SELECT t.eventId, COUNT(t) FROM TicketEntity t WHERE t.eventId IN :eventIds AND t.status IN :statuses GROUP BY t.eventId")
+    List<Object[]> countByEventIdInAndStatusIn(@Param("eventIds") java.util.Collection<Long> eventIds,
+                                               @Param("statuses") java.util.Collection<com.capysoft.commerce.ticket.domain.model.TicketStatus> statuses);
+
     long countByEventIdAndStatusIn(Long eventId, java.util.Collection<com.capysoft.commerce.ticket.domain.model.TicketStatus> statuses);
 }
