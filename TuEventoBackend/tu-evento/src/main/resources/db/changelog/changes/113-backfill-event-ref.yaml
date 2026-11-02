@@ -1,0 +1,13 @@
+databaseChangeLog:
+  # Relleno inicial de event_ref. ON CONFLICT: si el relleno corre tras un evento ya replicado, gana
+  # lo replicado.
+  - changeSet:
+      id: 113-backfill-event-ref
+      author: capysoft
+      changes:
+        - sql:
+            sql: >-
+              INSERT INTO event_ref (event_id, owner_id, name, status, start_date, updated_at)
+              SELECT event_id, user_id, event_name, status, start_date, COALESCE(updated_at, CURRENT_TIMESTAMP)
+              FROM event
+              ON CONFLICT (event_id) DO NOTHING
