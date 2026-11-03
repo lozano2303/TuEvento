@@ -10,24 +10,28 @@ import org.springframework.web.client.RestClientException;
 
 import com.capysoft.identity.security.application.port.out.AdminPanelSourcesPort;
 import com.capysoft.identity.shared.domain.exception.ServiceUnavailableException;
+import com.capysoft.identity.shared.infrastructure.client.CommerceInternalApiConfig;
 import com.capysoft.identity.shared.infrastructure.client.MonolithInternalApiConfig;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Datos de Catálogo y Comercio para el panel de admin, por la API interna del monolito
- * ({@code /internal/admin-panel/**}). Si no responde, 503: el panel muestra el error en vez de
- * estadísticas en cero que parecerían reales.
+ * Catalog and Commerce figures for the admin panel, through their internal APIs: Catalog's
+ * ({@code /internal/admin-panel/**}) and commerce-service's ({@code /internal/admin/**}). If one does
+ * not answer, 503: the panel shows the error instead of zeroed figures that would look real.
  */
 @Slf4j
 @Component
-public class MonolithAdminPanelClient implements AdminPanelSourcesPort {
+public class AdminPanelSourcesClient implements AdminPanelSourcesPort {
 
-    private final RestClient restClient;
+    private final RestClient catalog;
+    private final RestClient commerce;
 
-    public MonolithAdminPanelClient(@Qualifier(MonolithInternalApiConfig.BEAN) RestClient restClient) {
-        this.restClient = restClient;
+    public AdminPanelSourcesClient(@Qualifier(MonolithInternalApiConfig.BEAN) RestClient catalog,
+                                   @Qualifier(CommerceInternalApiConfig.BEAN) RestClient commerce) {
+        this.catalog = catalog;
+        this.commerce = commerce;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -36,33 +40,33 @@ public class MonolithAdminPanelClient implements AdminPanelSourcesPort {
 
     @Override
     public CatalogStats catalogStats() {
-        return get("/internal/admin-panel/catalog-stats", new ParameterizedTypeReference<Envelope<CatalogStats>>() { });
+        return get(catalog, "/internal/admin-panel/catalog-stats", new ParameterizedTypeReference<Envelope<CatalogStats>>() { });
     }
 
     @Override
     public long eventsPendingReview() {
-        Long count = get("/internal/admin-panel/events-pending-review", new ParameterizedTypeReference<Envelope<Long>>() { });
+        Long count = get(catalog, "/internal/admin-panel/events-pending-review", new ParameterizedTypeReference<Envelope<Long>>() { });
         return count == null ? 0 : count;
     }
 
     @Override
     public List<RecentEvent> recentlyUpdatedEvents(int limit) {
-        return get("/internal/admin-panel/recent-events?limit=" + limit,
+        return get(catalog, "/internal/admin-panel/recent-events?limit=" + limit,
                 new ParameterizedTypeReference<Envelope<List<RecentEvent>>>() { });
     }
 
     @Override
     public CommerceStats commerceStats() {
-        return get("/internal/admin-panel/commerce-stats", new ParameterizedTypeReference<Envelope<CommerceStats>>() { });
+        return get(commerce, "/internal/admin/stats", new ParameterizedTypeReference<Envelope<CommerceStats>>() { });
     }
 
     @Override
     public List<RecentPayment> recentPayments(int limit) {
-        return get("/internal/admin-panel/recent-payments?limit=" + limit,
+        return get(commerce, "/internal/admin/recent-payments?limit=" + limit,
                 new ParameterizedTypeReference<Envelope<List<RecentPayment>>>() { });
     }
 
-    private <T> T get(String path, ParameterizedTypeReference<Envelope<T>> type) {
+    private static <T> T get(RestClient restClient, String path, ParameterizedTypeReference<Envelope<T>> type) {
         try {
             Envelope<T> body = restClient.get().uri(path).retrieve().body(type);
             if (body == null || body.data() == null) {

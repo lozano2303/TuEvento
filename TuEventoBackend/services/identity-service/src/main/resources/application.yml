@@ -108,6 +108,9 @@ app:
   # Estado de los trabajos de traducción (GET /internal/..., con X-Internal-Api-Key)
   monolith:
     base-url: ${MONOLITH_BASE_URL:http://localhost:8080}
+  # Commerce figures for the admin panel (GET /internal/admin/**, with X-Internal-Api-Key)
+  commerce:
+    base-url: ${COMMERCE_SERVICE_URL:http://localhost:8084}
   internal:
     api-key: ${INTERNAL_API_KEY:}
   # Ciudades del perfil (GET /api/v1/geolocation/cities/{id})
