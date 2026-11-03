@@ -20,6 +20,7 @@ import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
 import com.capysoft.tuevento.modules.section.domain.model.EventSection;
 import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
+import com.capysoft.tuevento.shared.domain.exception.ServiceUnavailableException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,8 +71,13 @@ public class SeatReservationExpirationScheduler {
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
         log.info("[Scheduler] Running startup catch-up for expired seat reservations...");
-        self.releaseExpiredReservations(); // via proxy → @Transactional aplica correctamente
-        log.info("[Scheduler] Startup catch-up finished.");
+        try {
+            self.releaseExpiredReservations(); // via proxy → @Transactional aplica correctamente
+            log.info("[Scheduler] Startup catch-up finished.");
+        } catch (RuntimeException e) {
+            // A failure here would abort the startup; the cron retries in 10 seconds
+            log.warn("[Scheduler] Startup catch-up skipped, the cron will retry: {}", e.getMessage());
+        }
     }
 
     /**
@@ -95,9 +101,17 @@ public class SeatReservationExpirationScheduler {
         List<Seat> candidates = seatRepository.findAllByStatusAndReservedUntilBefore(SeatStatus.RESERVED, now);
 
         // Excluye sillas con órdenes en PAYMENT_PENDING para evitar venta duplicada
-        Set<Integer> pendingPayment = candidates.isEmpty() ? Set.of()
-                : pendingPaymentSeatsPort.findSeatIdsWithPendingPayment(
-                        candidates.stream().map(Seat::getSeatId).toList());
+        Set<Integer> pendingPayment;
+        try {
+            pendingPayment = candidates.isEmpty() ? Set.of()
+                    : pendingPaymentSeatsPort.findSeatIdsWithPendingPayment(
+                            candidates.stream().map(Seat::getSeatId).toList());
+        } catch (ServiceUnavailableException e) {
+            // Without Commerce's answer a seat being paid could be freed: release nothing this round
+            log.warn("[Scheduler] Commerce unavailable, keeping {} expired reservation(s) until the next run.",
+                    candidates.size());
+            return;
+        }
         List<Seat> expired = candidates.stream()
                 .filter(seat -> !pendingPayment.contains(seat.getSeatId()))
                 .toList();
