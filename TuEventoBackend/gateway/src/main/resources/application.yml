@@ -109,7 +109,7 @@ spring:
             # Login, registro, sesiones, contraseñas, OAuth y la cuenta del usuario; solicitudes de
             # organizador y panel de admin (estadísticas, pendientes, solicitudes, revocación,
             # actividad y usuarios); temas y paletas; perfiles y sus traducciones. El resto de
-            # /api/v1/admin/** (eventos, reembolsos, billetera, traducciones) y el JWKS siguen en el monolito.
+            # /api/v1/admin/** (eventos y traducciones) sigue en el monolito.
             # Solo los sirve el microservicio: el monolito ya no tiene los módulos de Identidad.
             - id: identity-service
               uri: ${IDENTITY_SERVICE_URI:http://localhost:8088}
@@ -122,6 +122,22 @@ spring:
               metadata:
                 connect-timeout: 5000
                 response-timeout: 30000
+
+            # ── Commerce microservice ────────────────────────────────────────────
+            # Orders, tickets (QR, scan and check-in), payments and the gateway webhook, refunds,
+            # wallet and organizer earnings. Only the microservice serves them: the monolith no
+            # longer has the ticket, payment or wallet modules.
+            - id: commerce-service
+              uri: ${COMMERCE_SERVICE_URI:http://localhost:8084}
+              predicates:
+                - Path=/api/v1/orders,/api/v1/orders/**,/api/v1/tickets,/api/v1/tickets/**,/api/v1/payments,/api/v1/payments/**,/api/v1/webhooks/**,/api/v1/wallet,/api/v1/wallet/**,/api/v1/admin/wallet,/api/v1/admin/wallet/**,/api/v1/admin/refunds,/api/v1/admin/refunds/**,/api/v1/organizer/earnings,/api/v1/organizer/earnings/**
+              filters:
+                - PreserveHostHeader
+                - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
+              metadata:
+                connect-timeout: 5000
+                # Paying through the gateway calls the payment provider synchronously
+                response-timeout: 60000
 
             # ── API REST principal ────────────────────────────────────────────────
             # Captura todo /api/v1/** y lo reenvía al monolito sin modificar la ruta.

@@ -33,9 +33,9 @@ class CommerceServiceApplicationTest {
     @Value("${payment.reconciliation.enabled}") boolean reconciliationEnabled;
 
     @Test
-    @DisplayName("la conciliación de pagos viene apagada: hasta el corte la hace el monolito")
-    void reconciliationIsOffByDefault() {
-        assertThat(reconciliationEnabled).isFalse();
+    @DisplayName("payment reconciliation is on by default: only this service reconciles payments")
+    void reconciliationIsOnByDefault() {
+        assertThat(reconciliationEnabled).isTrue();
     }
 
     @Test
