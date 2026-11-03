@@ -46,16 +46,6 @@ public class InternalAdminPanelController {
         return ResponseEntity.ok(ApiResponse.ok("Recent events retrieved", sources.recentlyUpdatedEvents(clamp(limit))));
     }
 
-    @GetMapping("/commerce-stats")
-    public ResponseEntity<ApiResponse<AdminPanelSourcesPort.CommerceStats>> commerceStats() {
-        return ResponseEntity.ok(ApiResponse.ok("Commerce stats retrieved", sources.commerceStats()));
-    }
-
-    @GetMapping("/recent-payments")
-    public ResponseEntity<ApiResponse<List<AdminPanelSourcesPort.RecentPayment>>> recentPayments(
-            @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(ApiResponse.ok("Recent payments retrieved", sources.recentPayments(clamp(limit))));
-    }
 
     private static int clamp(int limit) {
         return Math.max(1, Math.min(limit, MAX_LIMIT));

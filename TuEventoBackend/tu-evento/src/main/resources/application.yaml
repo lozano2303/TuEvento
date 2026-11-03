@@ -56,6 +56,10 @@ app:
   # interna (con app.internal.api-key)
   storage-service:
     base-url: ${STORAGE_SERVICE_URL:http://localhost:8085}
+  # Orders, tickets, payments and wallet live in commerce-service: Catalog asks its internal API
+  # (with app.internal.api-key) for seats being paid and tickets sold
+  commerce:
+    base-url: ${COMMERCE_SERVICE_URL:http://localhost:8084}
   internal:
     api-key: ${INTERNAL_API_KEY:}
 

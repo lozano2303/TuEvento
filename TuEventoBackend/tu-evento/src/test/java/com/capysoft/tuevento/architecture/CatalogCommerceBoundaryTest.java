@@ -27,9 +27,6 @@ class CatalogCommerceBoundaryTest {
     private static final List<String> COMMERCE = List.of("ticket", "payment", "wallet");
     private static final String ADAPTERS = "/infrastructure/client/";
 
-    /** Pendiente de Catálogo: cuenta las entradas vendidas con TicketRepository. Se borra al corregirlo. */
-    private static final Set<String> KNOWN_CATALOG_VIOLATIONS = Set.of("event/application/usecase/GetEventService.java");
-
     @Test
     @DisplayName("Comercio solo usa clases de Catálogo desde sus adaptadores")
     void commerceReachesCatalogThroughAdapters() throws IOException {
@@ -39,7 +36,7 @@ class CatalogCommerceBoundaryTest {
     @Test
     @DisplayName("Catálogo solo usa clases de Comercio desde sus adaptadores")
     void catalogReachesCommerceThroughAdapters() throws IOException {
-        assertThat(referencesOutsideAdapters(CATALOG, COMMERCE)).isSubsetOf(KNOWN_CATALOG_VIOLATIONS);
+        assertThat(referencesOutsideAdapters(CATALOG, COMMERCE)).isEmpty();
     }
 
     @Test
