@@ -39,19 +39,6 @@ springdoc:
     enabled: true
 
 app:
-  qr:
-    # Secreto propio para firmar los QR de tickets (separado del JWT de sesión).
-    secret: ${QR_SECRET:${JWT_SECRET}}
-    # Vida del token QR en milisegundos (60s).
-    expiration: ${QR_EXPIRATION:60000}
   cors:
     allowed-origins: "${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}"
-
-payment:
-  gateway: ${PAYMENT_GATEWAY:fake}
-  fake-gateway:
-    url: ${FAKE_GATEWAY_URL:http://localhost:4001}
-    api-key: ${FAKE_GATEWAY_API_KEY:dev-admin-key-change-in-production}
-  webhook:
-    secret: ${WEBHOOK_SECRET:default-secret-change-in-production}
 

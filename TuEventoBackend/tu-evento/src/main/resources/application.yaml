@@ -68,13 +68,4 @@ server:
 
 # Bloqueo de cuenta por intentos fallidos de login
 
-# Conciliación de pagos PENDING sin webhook
-payment:
-  reconciliation:
-    enabled: ${PAYMENT_RECONCILIATION_ENABLED:true}
-    pending-threshold-minutes: ${PAYMENT_RECONCILIATION_THRESHOLD_MINUTES:15}
-    # Pago aún PENDING en la pasarela pasado este plazo: se cancela y se liberan los asientos
-    expire-after-minutes: ${PAYMENT_RECONCILIATION_EXPIRE_MINUTES:30}
-    cron: ${PAYMENT_RECONCILIATION_CRON:0 */5 * * * *}
-
 # Límite por IP en login, registro, recuperación y activación de cuenta
