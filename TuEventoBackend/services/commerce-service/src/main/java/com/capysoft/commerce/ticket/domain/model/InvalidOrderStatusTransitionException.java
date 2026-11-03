@@ -1,0 +1,10 @@
+package com.capysoft.commerce.ticket.domain.model;
+
+/**
+ * Excepción lanzada cuando se intenta una transición de estado inválida en Order.
+ */
+public class InvalidOrderStatusTransitionException extends RuntimeException {
+    public InvalidOrderStatusTransitionException(String message) {
+        super(message);
+    }
+}

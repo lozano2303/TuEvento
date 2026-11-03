@@ -85,7 +85,6 @@ public class SecurityConfig {
             "/api/v1/auth/**",
             "/api/v1/profiles/*/",
             "/api/v1/profiles/user/**",
-            "/api/v1/webhooks/**",  // Webhook endpoints — autenticación por HMAC signature
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/api-docs/**",
@@ -256,13 +255,6 @@ public class SecurityConfig {
                                 "/api/v1/admin/languages/**").hasAuthority("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.POST,
                                 "/api/v1/admin/languages/*/set-default").hasAuthority("ADMIN")
-                        // ── Wallet — los GET caen en anyRequest().authenticated()
-                        // Los POST tienen @PreAuthorize en el controller, pero necesitan
-                        // pasar el filtro de SecurityConfig como authenticated() primero.
-                        .requestMatchers(org.springframework.http.HttpMethod.POST,
-                                "/api/v1/wallet/credit").hasAuthority("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.POST,
-                                "/api/v1/wallet/adjust").hasAuthority("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

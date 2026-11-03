@@ -12,6 +12,7 @@ import com.capysoft.tuevento.modules.event.domain.model.EventStatus;
 import com.capysoft.tuevento.modules.event.domain.repository.EventMediaRepository;
 import com.capysoft.tuevento.modules.event.domain.repository.EventRepository;
 import com.capysoft.tuevento.modules.event.application.port.out.SiteLookupPort;
+import com.capysoft.tuevento.modules.event.application.port.out.TicketSalesPort;
 import com.capysoft.tuevento.modules.seat.application.usecase.SeatAvailabilityService;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.NotFoundException;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -31,7 +33,7 @@ public class GetEventService implements GetEventUseCase {
     private final CategoryEventUseCase categoryEventUseCase;
     private final SiteLookupPort       siteLookupPort;
     private final EventMediaRepository eventMediaRepository;
-    private final com.capysoft.tuevento.modules.ticket.domain.repository.TicketRepository ticketRepository;
+    private final TicketSalesPort      ticketSalesPort;
     private final SeatAvailabilityService seatAvailabilityService;
 
     // Translation support
@@ -56,46 +58,38 @@ public class GetEventService implements GetEventUseCase {
 
     @Override
     public List<EventSummaryResponse> findByUser(Long userId) {
-        return eventRepository.findByUserId(userId).stream()
-                .map(this::toSummary)
-                .toList();
+        return toSummaries(eventRepository.findByUserId(userId));
     }
 
     @Override
     public List<EventSummaryResponse> findByStatus(EventStatus status) {
-        return eventRepository.findByStatus(status).stream()
-                .map(this::toSummary)
-                .toList();
+        return toSummaries(eventRepository.findByStatus(status));
     }
 
     // ─── Public queries ───────────────────────────────────────────────────────
 
     @Override
     public List<EventSummaryResponse> getPublishedEvents() {
-        return eventRepository.findAllPublished().stream()
-                .map(this::toSummary)
-                .toList();
+        return toSummaries(eventRepository.findAllPublished());
     }
 
     @Override
     public List<EventResponse> getPublishedEventsWithTranslations(String languageCode) {
-        return eventRepository.findAllPublished().stream()
-                .map(event -> toResponse(event, languageCode))
+        List<Event> events = eventRepository.findAllPublished();
+        Map<Long, Long> sold = countSold(events);
+        return events.stream()
+                .map(event -> toResponse(event, languageCode, sold))
                 .toList();
     }
 
     @Override
     public List<EventSummaryResponse> getPublishedEventsByCityId(Long cityId) {
-        return eventRepository.findByCityId(cityId).stream()
-                .map(this::toSummary)
-                .toList();
+        return toSummaries(eventRepository.findByCityId(cityId));
     }
 
     @Override
     public List<EventSummaryResponse> getPublishedEventsByCategoryId(Integer categoryId) {
-        return eventRepository.findByCategoryId(categoryId).stream()
-                .map(this::toSummary)
-                .toList();
+        return toSummaries(eventRepository.findByCategoryId(categoryId));
     }
 
     @Override
@@ -104,9 +98,7 @@ public class GetEventService implements GetEventUseCase {
             throw new BusinessException("INVALID_DATE_RANGE",
                     "from must be before or equal to to");
         }
-        return eventRepository.findByDateRange(from, to).stream()
-                .map(this::toSummary)
-                .toList();
+        return toSummaries(eventRepository.findByDateRange(from, to));
     }
 
     @Override
@@ -124,7 +116,7 @@ public class GetEventService implements GetEventUseCase {
                 ? eventRepository.searchPublishedByText(term)
                 : eventRepository.searchPublishedByTextAndDate(term, date);
 
-        return results.stream().map(this::toSummary).toList();
+        return toSummaries(results);
     }
 
     // ─── Mappers ──────────────────────────────────────────────────────────────
@@ -134,6 +126,10 @@ public class GetEventService implements GetEventUseCase {
     }
 
     private EventResponse toResponse(Event e, String languageCode) {
+        return toResponse(e, languageCode, countSold(List.of(e)));
+    }
+
+    private EventResponse toResponse(Event e, String languageCode, Map<Long, Long> sold) {
         Integer categoryId = null;
         try {
             List<CategoryResponse> cats = categoryEventUseCase.getCategoriesByEvent(
@@ -211,7 +207,7 @@ public class GetEventService implements GetEventUseCase {
                 .isPublic(e.getIsPublic())
                 .availableSeats(countAvailable(e))
                 .categoryId(categoryId)
-                .ticketsSold(countSold(e))
+                .ticketsSold(sold.getOrDefault(e.getEventId(), 0L))
                 .coverUrl(coverUrl)
                 .translatedName(translatedName)
                 .translatedDescription(translatedDescription)
@@ -230,16 +226,25 @@ public class GetEventService implements GetEventUseCase {
         return seatAvailabilityService.availableInEvent(e.getEventId(), e.getAvailableSeats());
     }
 
-    private long countSold(Event e) {
+    /** One call to Commerce per list; if it does not answer the cards show 0 sold, as before. */
+    private Map<Long, Long> countSold(List<Event> events) {
+        if (events.isEmpty()) {
+            return Map.of();
+        }
         try {
-            return ticketRepository.countSoldByEventId(e.getEventId());
+            return ticketSalesPort.countSoldByEventIds(events.stream().map(Event::getEventId).toList());
         } catch (Exception ex) {
-            log.warn("Could not count sold tickets for event {}: {}", e.getEventId(), ex.getMessage());
-            return 0;
+            log.warn("Could not count sold tickets for {} event(s): {}", events.size(), ex.getMessage());
+            return Map.of();
         }
     }
 
-    private EventSummaryResponse toSummary(Event e) {
+    private List<EventSummaryResponse> toSummaries(List<Event> events) {
+        Map<Long, Long> sold = countSold(events);
+        return events.stream().map(e -> toSummary(e, sold)).toList();
+    }
+
+    private EventSummaryResponse toSummary(Event e, Map<Long, Long> sold) {
         String siteName = null;
         try {
             siteName = siteLookupPort.getSite(Math.toIntExact(e.getSiteId())).name();
@@ -277,7 +282,7 @@ public class GetEventService implements GetEventUseCase {
                 .availableSeats(countAvailable(e))
                 .siteName(siteName)
                 .categoryId(categoryId)
-                .ticketsSold(countSold(e))
+                .ticketsSold(sold.getOrDefault(e.getEventId(), 0L))
                 .coverUrl(coverUrl)
                 .build();
     }

@@ -5,21 +5,16 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.capysoft.tuevento.modules.event.application.port.in.GetEventAdminStatsPort;
-import com.capysoft.tuevento.modules.payment.application.port.in.GetCommerceAdminStatsPort;
 import com.capysoft.tuevento.modules.identitybridge.port.AdminPanelSourcesPort;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * Único punto de Identidad que conoce a Catálogo y Comercio para el panel de administración.
- * Hoy delega en sus casos de uso del monolito; al separarlos se sustituye por clientes REST.
- */
+/** The only place of the identity bridge that knows Catalog, for the admin panel. */
 @Component
 @RequiredArgsConstructor
 class AdminPanelSourcesAdapter implements AdminPanelSourcesPort {
 
-    private final GetEventAdminStatsPort    eventStats;
-    private final GetCommerceAdminStatsPort commerceStats;
+    private final GetEventAdminStatsPort eventStats;
 
     @Override
     public CatalogStats catalogStats() {
@@ -40,17 +35,4 @@ class AdminPanelSourcesAdapter implements AdminPanelSourcesPort {
                 .toList();
     }
 
-    @Override
-    public CommerceStats commerceStats() {
-        var s = commerceStats.getStats();
-        return new CommerceStats(s.totalTickets(), s.totalRevenue(), s.approvedPayments(),
-                s.pendingRefunds(), s.totalRefundedAmount(), s.processedRefunds());
-    }
-
-    @Override
-    public List<RecentPayment> recentPayments(int limit) {
-        return commerceStats.findRecentPayments(limit).stream()
-                .map(p -> new RecentPayment(p.approved(), p.amount(), p.currency(), p.orderId(), p.processedAt()))
-                .toList();
-    }
 }

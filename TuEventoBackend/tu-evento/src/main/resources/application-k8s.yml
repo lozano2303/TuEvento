@@ -29,9 +29,6 @@ management:
       roles: ANONYMOUS
 
 app:
-  qr:
-    secret: ${QR_SECRET:${JWT_SECRET}}
-    expiration: ${QR_EXPIRATION:60000}
   cors:
     # Controls which browser origins can read JSON API responses (including OAuth callback).
     # Set CORS_ALLOWED_ORIGINS to the actual frontend domain(s) in production.

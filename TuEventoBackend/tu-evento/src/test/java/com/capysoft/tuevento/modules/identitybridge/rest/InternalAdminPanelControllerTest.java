@@ -19,15 +19,13 @@ class InternalAdminPanelControllerTest {
     private final InternalAdminPanelController controller = new InternalAdminPanelController(sources);
 
     @Test
-    @DisplayName("serves the catalog and commerce figures straight from the panel sources")
+    @DisplayName("serves the catalog figures straight from the panel sources")
     void servesStats() {
         when(sources.eventsPendingReview()).thenReturn(4L);
 
         assertThat(controller.eventsPendingReview().getBody().getData()).isEqualTo(4L);
         assertThat(controller.catalogStats().getStatusCode().is2xxSuccessful()).isTrue();
-        assertThat(controller.commerceStats().getStatusCode().is2xxSuccessful()).isTrue();
         verify(sources).catalogStats();
-        verify(sources).commerceStats();
     }
 
     @Test
@@ -36,11 +34,7 @@ class InternalAdminPanelControllerTest {
         when(sources.recentlyUpdatedEvents(InternalAdminPanelController.MAX_LIMIT)).thenReturn(List.of());
 
         assertThat(controller.recentEvents(500).getBody().getData()).isEmpty();
-        controller.recentPayments(0);
-        controller.recentPayments(20);
 
         verify(sources).recentlyUpdatedEvents(InternalAdminPanelController.MAX_LIMIT);
-        verify(sources).recentPayments(1);
-        verify(sources).recentPayments(20);
     }
 }

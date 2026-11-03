@@ -194,7 +194,8 @@ services:
       - POSTGRES_DB=fake_gateway_db
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - PAYMENT_CALLBACK_URL=http://host.docker.internal:8080/api/v1/webhooks/payment
+      # Payment results go to commerce-service (published on the host, so it also works when run from the IDE)
+      - PAYMENT_CALLBACK_URL=http://host.docker.internal:8084/api/v1/webhooks/payment
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
       - ADMIN_API_KEY=${FAKE_GATEWAY_API_KEY:-dev-admin-key-change-in-production}
       - LOG_LEVEL=INFO
@@ -227,7 +228,7 @@ services:
     networks:
       - tuevento-network
 
-  # ── Backend (Spring Boot) ───────────────────────────────────────────────────
+  # ── catalog-service (formerly the monolith; Spring Boot) ────────────────────
   backend:
     build:
       context: ./TuEventoBackend/tu-evento
@@ -259,6 +260,8 @@ services:
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       # Eventos y perfiles leen sedes y ciudades de geolocation-service (el backend ya no tiene ese módulo)
       - GEOLOCATION_SERVICE_URL=http://geolocation-service:8087
+      # Seats being paid and tickets sold: commerce-service's internal API (the backend no longer has those modules)
+      - COMMERCE_SERVICE_URL=http://commerce-service:8084
     depends_on:
       postgres:
         condition: service_started
@@ -266,8 +269,11 @@ services:
         condition: service_started
       kafka:
         condition: service_healthy
+    # The service keeps its old name; the other services reach it as catalog-service
     networks:
-      - tuevento-network
+      tuevento-network:
+        aliases:
+          - catalog-service
 
 
   # ── API Gateway (Spring Cloud Gateway) ─────────────────────────────────────
@@ -283,7 +289,8 @@ services:
       - "8090:8090"
     environment:
       - GATEWAY_PORT=8090
-      - MONOLITH_URI=http://backend:8080
+      # Catalog (events, categories, sections, seats) and the STOMP broker of /ws
+      - CATALOG_SERVICE_URI=http://catalog-service:8080
       # /api/v1/storage va al microservicio; para volver al monolito, quitar esta variable
       - STORAGE_SERVICE_URI=http://storage-service:8085
       # /api/v1/geolocation solo lo sirve el microservicio (el monolito ya no tiene ese módulo)
@@ -293,6 +300,9 @@ services:
       # /api/v1/auth, /api/v1/users, el panel de admin, /api/v1/themes y /api/v1/profiles van al
       # microservicio de Identidad (el monolito ya no tiene esos módulos)
       - IDENTITY_SERVICE_URI=http://identity-service:8088
+      # Orders, tickets, payments, refunds, wallet and earnings go to the Commerce microservice
+      # (the monolith no longer has those modules)
+      - COMMERCE_SERVICE_URI=http://commerce-service:8084
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - GATEWAY_CORS_ALLOWED_ORIGINS=${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000}
@@ -307,6 +317,8 @@ services:
       notification-service:
         condition: service_started
       identity-service:
+        condition: service_started
+      commerce-service:
         condition: service_started
       redis:
         condition: service_started
@@ -467,6 +479,54 @@ services:
     networks:
       - tuevento-network
 
+  # ── Microservicio de Comercio ──────────────────────────────────────────────
+  # Orders, tickets, payments and wallet on the same database as the backend. The gateway sends it
+  # every commerce route; it talks to Catalog through its internal API and the saga messages on Kafka.
+  commerce-service:
+    build:
+      context: ./TuEventoBackend/services
+      dockerfile: commerce-service/Dockerfile
+    container_name: tuevento-commerce-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/tuevento_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - JWK_SET_URI=http://identity-service:8088/.well-known/jwks.json
+      # Lista de revocación de JWT (fail-closed) y nonces de los QR: misma instancia que el backend
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - IDENTITY_SERVICE_URL=http://identity-service:8088
+      # API interna de Catálogo: el backend mientras Catálogo siga allí
+      - CATALOG_SERVICE_URL=http://catalog-service:8080
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      # Mismo secreto que el backend: los QR ya emitidos siguen siendo válidos tras el corte
+      - QR_SECRET=${QR_SECRET:-${JWT_SECRET}}
+      - FAKE_GATEWAY_URL=http://fake-payment-gateway:4001
+      - FAKE_GATEWAY_API_KEY=${FAKE_GATEWAY_API_KEY:-dev-admin-key-change-in-production}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+    depends_on:
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+      # El backend migra las tablas
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - tuevento-network
+
   # ── Microservicio de Identidad ─────────────────────────────────────────────
   # Login, sesiones, cuentas, temas y perfiles de usuario sobre la misma base que el backend.
   identity-service:
@@ -501,10 +561,12 @@ services:
       # Idiomas activos (GET /api/v1/languages); los sirve geolocation-service (el backend ya no)
       - LOCALIZATION_BASE_URL=http://geolocation-service:8087
       # Estado de las traducciones de la biografía (API interna del backend, con la clave entre servicios)
-      - MONOLITH_BASE_URL=http://backend:8080
+      - CATALOG_SERVICE_URL=http://catalog-service:8080
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       # Ciudad del perfil
       - GEOLOCATION_SERVICE_URL=http://geolocation-service:8087
+      # Commerce figures of the admin panel (commerce-service's internal API)
+      - COMMERCE_SERVICE_URL=http://commerce-service:8084
       # Avisos en vivo (THEME_UPDATED, LANGUAGE_UPDATED) y traducciones: el backend los atiende desde Kafka
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       # Lista de revocación de JWT (fail-closed): misma instancia que el backend

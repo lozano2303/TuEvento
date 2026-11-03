@@ -9,27 +9,36 @@ de 8 GB de RAM + 4 GB de swap. Los dominios son marcadores: reemplazar
 ```
 Internet ──► NPM :80/:443 (TLS Let's Encrypt)          red "edge"
               ├─ tuevento.example.com     ─► frontend:80 ──┬─ /      SPA (fallback a index.html)
-              │                                            ├─ /api ─► backend:8080
-              │                                            └─ /ws  ─► backend:8080 (WebSocket)
+              │                                            ├─ /api ─► api-gateway:8090
+              │                                            └─ /ws  ─► api-gateway:8090 (WebSocket)
               ├─ s3.tuevento.example.com  ─► rustfs:9000   (URLs firmadas de imágenes)
               └─ pay.tuevento.example.com ─► fake-payment-gateway:4001 (popup de pago)
 
+api-gateway (sin ruta comodín; un prefijo sin dueño responde 404):
+  /api/v1/auth, users, profiles, themes, admin (panel) ─► identity-service:8088
+  /api/v1/orders, tickets, payments, webhooks, wallet, refunds, earnings ─► commerce-service:8084
+  /api/v1/events, categories, sections, seats, admin/events ─► catalog-service:8080 (contenedor backend)
+  /api/v1/storage ─► storage-service · /notifications ─► notification-service
+  /api/v1/geolocation, languages ─► geolocation-service · /ws ─► catalog-service (STOMP)
+
 red "internal" (sin puertos publicados):
-  backend ─► postgres, redis, storage-service, fake-payment-gateway
+  catalog-service (backend) ─► postgres (migra todas las tablas), redis, storage-service, commerce-service, identity-service, kafka
+  commerce-service ─► postgres, redis, kafka (saga), catalog-service, identity-service, fake-payment-gateway
+  identity-service ─► postgres, redis, kafka, catalog-service, commerce-service, geolocation-service
   storage-service ─► postgres, redis, rustfs, nsfw-classifier
   geolocation-service ─► postgres, redis, kafka (traducciones), libretranslate*
-  fake-payment-gateway ─► postgres-gateway, backend (webhook)
+  fake-payment-gateway ─► postgres-gateway, commerce-service (webhook)
 ```
 
 `*` LibreTranslate solo arranca con el perfil `translate`.
 
 Solo NPM publica puertos: 80 y 443 en todas las interfaces, y su panel (81) solo en
 `127.0.0.1`. La API, Swagger y Actuator no tienen proxy host propio: el navegador
-solo llega al backend por `/api` y `/ws`.
+solo llega a los servicios por `/api` y `/ws`, a través del api-gateway.
 
 ## 2. Imágenes `v1.0.0` (build y push)
 
-Las 9 imágenes van al repositorio `jhampier23/tu-evento` de Docker Hub, diferenciadas
+Las 10 imágenes van al repositorio `jhampier23/tu-evento` de Docker Hub, diferenciadas
 por prefijo de tag. `docker-compose.prod.yml` no usa `build:`; la pasarela simulada
 también necesita su imagen porque la compra de tickets depende de ella.
 
@@ -44,6 +53,7 @@ también necesita su imagen porque la compra de tickets depende de ella.
 | geolocation-service (microservicio de geolocalización) | `jhampier23/tu-evento:geolocation-v1.0.0` |
 | identity-service (microservicio de Identidad: login, cuentas, panel de admin, temas y perfiles) | `jhampier23/tu-evento:identity-v1.0.0` |
 | notification-service (microservicio de notificaciones) | `jhampier23/tu-evento:notifications-v1.0.0` |
+| commerce-service (orders, tickets, payments and wallet) | `jhampier23/tu-evento:commerce-v1.0.0` |
 
 Desde la raíz del repo, con `.env.prod` ya completo (solo se leen las `VITE_*`).
 Si se construye en una máquina ARM (p. ej. Mac M1+), añadir `--platform linux/amd64`
@@ -73,6 +83,7 @@ docker build -t jhampier23/tu-evento:storage-v1.0.0       -f TuEventoBackend/ser
 docker build -t jhampier23/tu-evento:geolocation-v1.0.0   -f TuEventoBackend/services/geolocation-service/Dockerfile TuEventoBackend/services
 docker build -t jhampier23/tu-evento:identity-v1.0.0      -f TuEventoBackend/services/identity-service/Dockerfile TuEventoBackend/services
 docker build -t jhampier23/tu-evento:notifications-v1.0.0 -f TuEventoBackend/services/notification-service/Dockerfile TuEventoBackend/services
+docker build -t jhampier23/tu-evento:commerce-v1.0.0      -f TuEventoBackend/services/commerce-service/Dockerfile TuEventoBackend/services
 
 docker push jhampier23/tu-evento:v1.0.0
 docker push jhampier23/tu-evento:frontend-v1.0.0
@@ -83,6 +94,7 @@ docker push jhampier23/tu-evento:storage-v1.0.0
 docker push jhampier23/tu-evento:geolocation-v1.0.0
 docker push jhampier23/tu-evento:identity-v1.0.0
 docker push jhampier23/tu-evento:notifications-v1.0.0
+docker push jhampier23/tu-evento:commerce-v1.0.0
 ```
 
 Build args de producción del frontend (Vite los incrusta en el bundle; cambiarlos
@@ -96,8 +108,8 @@ exige reconstruir la imagen):
 
 ### Publicar una versión: qué imágenes reconstruir y cuáles reetiquetar
 
-`docker-compose.prod.yml` usa un único `TUEVENTO_VERSION` para las 9 imágenes, así que
-**los 9 tags tienen que existir** con la versión nueva o el stack falla al hacer pull.
+`docker-compose.prod.yml` usa un único `TUEVENTO_VERSION` para las 10 imágenes, así que
+**los 10 tags tienen que existir** con la versión nueva o el stack falla al hacer pull.
 
 **Regla:** reconstruye las imágenes cuyo código cambió desde la versión anterior y
 **reetiqueta solo las que no cambiaron**. Reetiquetar copia el manifiesto de la versión
@@ -115,6 +127,7 @@ desde el commit de la versión (el tag `vX.Y.Z` en `main`, ver `docs/versioning.
 | geolocation | `geolocation-vX.Y.Z` | `TuEventoBackend/services/geolocation-service` y `tuevento-common` |
 | identity | `identity-vX.Y.Z` | `TuEventoBackend/services/identity-service` y `tuevento-common` |
 | notifications | `notifications-vX.Y.Z` | `TuEventoBackend/services/notification-service` y `tuevento-common` |
+| commerce | `commerce-vX.Y.Z` | `TuEventoBackend/services/commerce-service` y `tuevento-common` |
 
 Para cada carpeta, compara con el tag anterior; si no sale nada, esa imagen se reetiqueta:
 
@@ -383,10 +396,11 @@ La app móvil debe apuntar a `https://tuevento.example.com/api/v1`.
 | api-gateway | 384 MB | `-Xmx256m` |
 | geolocation-service | 384 MB | `-Xmx256m` |
 | identity-service | 384 MB | `-Xmx256m` |
+| commerce-service | 384 MB | `-Xmx256m` |
 | notification-service | 512 MB | `-Xmx320m` |
 | kafka | 768 MB | `-Xmx384m`, KRaft de un nodo |
 | frontend | 64 MB | |
 | libretranslate (opcional) | 2048 MB | perfil `translate` |
 
-Total ≈ 8.4 GB sin LibreTranslate y ≈ 10.4 GB con él (topes, no reservas: el uso real
+Total ≈ 8.8 GB sin LibreTranslate y ≈ 10.8 GB con él (topes, no reservas: el uso real
 es menor; con LibreTranslate el swap absorbe la diferencia y los picos puntuales).
