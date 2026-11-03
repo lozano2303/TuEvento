@@ -51,11 +51,23 @@ Additional roles include **anonymous users** (browse-only on web) and **administ
 
 ## Architecture
 
-The system is built on a modular **N-Layer architecture with Domain-Driven Design (DDD)**, oriented toward microservices. Key architectural decisions:
+The backend is a set of **microservices**, each one a hexagonal **DDD** application, behind a Spring Cloud **API Gateway**:
 
-- Authentication is handled via **JWT** with a **Refresh Token** system, ensuring secure and auditable session management.
-- All client-server communication is performed over **HTTP** with JSON as the data exchange format.
-- The **API Gateway** provides routing and access control per role.
+| Service | Owns |
+|---|---|
+| `identity-service` | Accounts, login, sessions, OAuth, roles, profiles, themes, admin panel |
+| `catalog-service` (`TuEventoBackend/tu-evento`) | Events, media, layouts, ratings and comments, categories, sections, seats; the `/ws` STOMP broker and the database migrations |
+| `commerce-service` | Orders, tickets and QR check-in, payments and refunds, wallet, organizer earnings |
+| `storage-service` | File uploads, signed URLs and image moderation |
+| `notification-service` | In-app notifications and email |
+| `geolocation-service` | Departments, cities, venues, languages and automatic translations |
+
+Key architectural decisions:
+
+- The gateway routes every `/api/v1` prefix to the service that owns it; there is no catch-all route.
+- Services never read each other's tables. They talk through small internal REST APIs (`/internal/**`, protected by a service-to-service key) and through domain events on **Kafka**, written with a transactional **outbox** and consumed idempotently.
+- A ticket purchase is a choreographed **saga**: commerce creates the order and asks catalog to hold the seats; when the payment is confirmed it publishes `OrderPaid` and catalog sells the seats; if the sale is rejected catalog publishes `SeatsSaleRejected` and commerce refunds the payment. Cancelled or expired orders publish `OrderReleased` and catalog frees the seats.
+- Authentication uses RS256 **JWT** access tokens with a **Refresh Token**, signed by identity-service and verified by every service through its JWKS, plus a Redis revocation list that fails closed.
 - Venue layout and event configuration are **web-exclusive**; mobile clients focus on browsing, purchasing, and QR validation.
 
 ---

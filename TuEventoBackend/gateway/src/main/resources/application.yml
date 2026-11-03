@@ -20,16 +20,17 @@ spring:
       server:
         webflux:
           # Los frontends no cambian ninguna URL: el gateway preserva /api/v1/* y /ws/*
-          # exactamente como los recibe, y los reenvía al monolito (o al microservicio
-          # correspondiente en fases posteriores).
+          # exactamente como los recibe y los reenvía al microservicio dueño de cada ruta.
+          # No hay ruta comodín: un /api/v1/** que ningún servicio declara responde 404.
           routes:
 
             # ── WebSocket (STOMP) ────────────────────────────────────────────────
             # Debe ir ANTES que las rutas HTTP porque SockJS usa /ws/info (GET)
             # y /ws/<session>/<token>/websocket (Upgrade). Si el matcher HTTP
             # captura /ws/**, el handshake WS nunca llega.
+            # The STOMP broker lives in catalog-service: the other services push through Kafka
             - id: websocket
-              uri: ${MONOLITH_URI:http://localhost:8080}
+              uri: ${CATALOG_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
               predicates:
                 - Path=/ws/**
               filters:
@@ -49,9 +50,7 @@ spring:
                 - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
 
             # ── Microservicio de Archivos/Storage (PRIMERA EXTRACCIÓN) ───────────
-            # Más específico: debe ir ANTES que monolith. Los frontends siguen
-            # llamando a /api/v1/storage/** exactamente igual.
-            # Solo los sirve el microservicio: el monolito ya no tiene el módulo de archivos.
+            # Los frontends siguen llamando a /api/v1/storage/** exactamente igual.
             - id: storage-service
               uri: ${STORAGE_SERVICE_URI:http://localhost:8085}
               predicates:
@@ -67,7 +66,6 @@ spring:
 
             # ── Microservicio de notificaciones ─────────────────────────────────
             # Bandeja in-app (GET /me, /me/unread-count, PATCH /{id}/read, /me/read-all).
-            # Solo los sirve el microservicio: el monolito ya no tiene el módulo de notificaciones.
             - id: notification-service
               uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8086}
               predicates:
@@ -80,8 +78,7 @@ spring:
                 response-timeout: 30000
 
             # ── Microservicio de geolocalización ────────────────────────────────
-            # Departamentos, ciudades y sedes. Solo los sirve el microservicio: el monolito ya no
-            # tiene módulo de geolocalización, así que no hay vuelta atrás al monolito.
+            # Departamentos, ciudades y sedes.
             - id: geolocation-service
               uri: ${GEOLOCATION_SERVICE_URI:http://localhost:8087}
               predicates:
@@ -93,8 +90,7 @@ spring:
                 connect-timeout: 5000
                 response-timeout: 30000
 
-            # Catálogo de idiomas: también es del servicio de localización (misma tabla language
-            # que lee el monolito). El monolito aún tiene el controlador, pero ya no le llega tráfico.
+            # Catálogo de idiomas: también es del servicio de localización (misma tabla language).
             - id: localization-languages
               uri: ${GEOLOCATION_SERVICE_URI:http://localhost:8087}
               predicates:
@@ -108,9 +104,7 @@ spring:
             # ── Microservicio de Identidad ──────────────────────────────────────
             # Login, registro, sesiones, contraseñas, OAuth y la cuenta del usuario; solicitudes de
             # organizador y panel de admin (estadísticas, pendientes, solicitudes, revocación,
-            # actividad y usuarios); temas y paletas; perfiles y sus traducciones. El resto de
-            # /api/v1/admin/** (eventos y traducciones) sigue en el monolito.
-            # Solo los sirve el microservicio: el monolito ya no tiene los módulos de Identidad.
+            # actividad y usuarios); temas y paletas; perfiles y sus traducciones.
             - id: identity-service
               uri: ${IDENTITY_SERVICE_URI:http://localhost:8088}
               predicates:
@@ -125,8 +119,7 @@ spring:
 
             # ── Commerce microservice ────────────────────────────────────────────
             # Orders, tickets (QR, scan and check-in), payments and the gateway webhook, refunds,
-            # wallet and organizer earnings. Only the microservice serves them: the monolith no
-            # longer has the ticket, payment or wallet modules.
+            # wallet and organizer earnings.
             - id: commerce-service
               uri: ${COMMERCE_SERVICE_URI:http://localhost:8084}
               predicates:
@@ -139,13 +132,14 @@ spring:
                 # Paying through the gateway calls the payment provider synchronously
                 response-timeout: 60000
 
-            # ── API REST principal ────────────────────────────────────────────────
-            # Captura todo /api/v1/** y lo reenvía al monolito sin modificar la ruta.
-            # En Fases 1-5 se irán añadiendo rutas específicas ANTES de esta.
-            - id: monolith
-              uri: ${MONOLITH_URI:http://localhost:8080}
+            # ── Catalog microservice ─────────────────────────────────────────────
+            # Events (media, layout, ratings and comments), categories, section types, event
+            # sections, seat blocks and seats, the admin event review and the catalog translations.
+            # A trailing /** also matches the bare prefix.
+            - id: catalog-service
+              uri: ${CATALOG_SERVICE_URI:${MONOLITH_URI:http://localhost:8080}}
               predicates:
-                - Path=/api/v1/**
+                - Path=/api/v1/events/**,/api/v1/categories/**,/api/v1/category-events/**,/api/v1/section-types/**,/api/v1/event-sections/**,/api/v1/seat-blocks/**,/api/v1/seats/**,/api/v1/admin/events/**,/api/v1/admin/event-translations/**,/api/v1/admin/category-translations/**,/api/v1/admin/comment-translations/**,/api/v1/admin/section-type-translations/**
               filters:
                 # Conserva el Host original. X-Forwarded-For se reenvía tal cual (sin trusted-proxies
                 # el gateway no añade entrada): ver RATE_LIMIT_TRUSTED_PROXIES en docker-compose.prod.yml
@@ -153,8 +147,7 @@ spring:
                 - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary, RETAIN_UNIQUE
               metadata:
                 connect-timeout: 5000
-                # Mismo límite que tenía nginx (60 s por defecto) antes de existir el gateway: la
-                # subida de imágenes de eventos sigue aquí y también pasa por la moderación
+                # La subida de imágenes de eventos pasa por la moderación de storage-service
                 response-timeout: 60000
 
           # Configuración global de timeout y HTTP/2
@@ -176,7 +169,7 @@ spring:
                 allow-credentials: true
                 max-age: 3600
 
-          # El monolito también añade cabeceras CORS: sin DedupeResponseHeader el navegador recibiría
+          # Los servicios también añaden cabeceras CORS: sin DedupeResponseHeader el navegador recibiría
           # Access-Control-Allow-Origin dos veces y rechazaría la respuesta. Va en cada ruta HTTP y
           # no en default-filters: en /ws las cabeceras ya están confirmadas tras el 101 (son de solo
           # lectura), el filtro lanzaba UnsupportedOperationException y cortaba la conexión STOMP.

@@ -240,7 +240,7 @@ services:
     networks:
       - internal
 
-  # ── Backend (Spring Boot, perfil prod) ─────────────────────────────────────
+  # ── catalog-service (formerly the monolith; Spring Boot, perfil prod) ───────
   backend:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:${TUEVENTO_VERSION:?}
     container_name: tuevento-backend
@@ -299,20 +299,25 @@ services:
         limits:
           memory: 1280m
     logging: *default-logging
+    # The container keeps its old name; the other services reach it as catalog-service
     networks:
-      - internal
-      - messaging
+      internal:
+        aliases:
+          - catalog-service
+      messaging:
+        aliases:
+          - catalog-service
 
   # ── API gateway: punto de entrada de /api y /ws ────────────────────────────
-  # Envía /api/v1/storage/**, /api/v1/notifications/**, /api/v1/geolocation/**,
-  # /api/v1/themes/**, /api/v1/profiles/**, /api/v1/auth/**, la cuenta del usuario, el panel de
-  # admin y las órdenes, entradas, pagos y wallet a sus microservicios y el resto al monolito.
+  # Sends every /api/v1 prefix to the microservice that owns it (storage, notifications,
+  # geolocation, identity, commerce and catalog) and /ws to catalog-service. There is no
+  # catch-all route: a path no service declares answers 404.
   api-gateway:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:api-gateway-${TUEVENTO_VERSION:?}
     container_name: tuevento-api-gateway
     restart: unless-stopped
     environment:
-      MONOLITH_URI: http://backend:8080
+      CATALOG_SERVICE_URI: http://catalog-service:8080
       STORAGE_SERVICE_URI: http://storage-service:8085
       GEOLOCATION_SERVICE_URI: http://geolocation-service:8087
       NOTIFICATION_SERVICE_URI: http://notification-service:8086
@@ -566,7 +571,7 @@ services:
       # Idiomas activos (GET /api/v1/languages); los sirve geolocation-service (el backend ya no)
       LOCALIZATION_BASE_URL: http://geolocation-service:8087
       # Estado de las traducciones de la biografía (API interna del backend, con la clave entre servicios)
-      MONOLITH_BASE_URL: http://backend:8080
+      CATALOG_SERVICE_URL: http://catalog-service:8080
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       # Ciudad del perfil
       GEOLOCATION_SERVICE_URL: http://geolocation-service:8087
@@ -621,7 +626,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       IDENTITY_SERVICE_URL: http://identity-service:8088
-      CATALOG_SERVICE_URL: http://backend:8080
+      CATALOG_SERVICE_URL: http://catalog-service:8080
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       # Same secret the backend used: the QR codes already issued keep validating
       QR_SECRET: ${QR_SECRET:?}

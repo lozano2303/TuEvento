@@ -228,7 +228,7 @@ services:
     networks:
       - tuevento-network
 
-  # ── Backend (Spring Boot) ───────────────────────────────────────────────────
+  # ── catalog-service (formerly the monolith; Spring Boot) ────────────────────
   backend:
     build:
       context: ./TuEventoBackend/tu-evento
@@ -269,8 +269,11 @@ services:
         condition: service_started
       kafka:
         condition: service_healthy
+    # The service keeps its old name; the other services reach it as catalog-service
     networks:
-      - tuevento-network
+      tuevento-network:
+        aliases:
+          - catalog-service
 
 
   # ── API Gateway (Spring Cloud Gateway) ─────────────────────────────────────
@@ -286,7 +289,8 @@ services:
       - "8090:8090"
     environment:
       - GATEWAY_PORT=8090
-      - MONOLITH_URI=http://backend:8080
+      # Catalog (events, categories, sections, seats) and the STOMP broker of /ws
+      - CATALOG_SERVICE_URI=http://catalog-service:8080
       # /api/v1/storage va al microservicio; para volver al monolito, quitar esta variable
       - STORAGE_SERVICE_URI=http://storage-service:8085
       # /api/v1/geolocation solo lo sirve el microservicio (el monolito ya no tiene ese módulo)
@@ -497,7 +501,7 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - IDENTITY_SERVICE_URL=http://identity-service:8088
       # API interna de Catálogo: el backend mientras Catálogo siga allí
-      - CATALOG_SERVICE_URL=http://backend:8080
+      - CATALOG_SERVICE_URL=http://catalog-service:8080
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       # Mismo secreto que el backend: los QR ya emitidos siguen siendo válidos tras el corte
       - QR_SECRET=${QR_SECRET:-${JWT_SECRET}}
@@ -557,7 +561,7 @@ services:
       # Idiomas activos (GET /api/v1/languages); los sirve geolocation-service (el backend ya no)
       - LOCALIZATION_BASE_URL=http://geolocation-service:8087
       # Estado de las traducciones de la biografía (API interna del backend, con la clave entre servicios)
-      - MONOLITH_BASE_URL=http://backend:8080
+      - CATALOG_SERVICE_URL=http://catalog-service:8080
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       # Ciudad del perfil
       - GEOLOCATION_SERVICE_URL=http://geolocation-service:8087

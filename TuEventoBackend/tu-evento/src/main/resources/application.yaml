@@ -1,6 +1,6 @@
 spring:
   application:
-    name: tu-evento
+    name: catalog-service
   profiles:
     active: dev
   jpa:

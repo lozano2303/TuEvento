@@ -17,8 +17,8 @@ public class OpenApiConfig {
     public OpenAPI tuEventoOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Tu Evento API")
-                        .description("API REST para la plataforma de gestión de eventos y tickets")
+                        .title("Tu Evento Catalog API")
+                        .description("Catalog service: events, categories, sections, seats, layouts and ratings")
                         .version("v1.0.0")
                         .contact(new Contact()
                                 .name("Capysoft")

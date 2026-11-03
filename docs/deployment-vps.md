@@ -9,14 +9,22 @@ de 8 GB de RAM + 4 GB de swap. Los dominios son marcadores: reemplazar
 ```
 Internet ──► NPM :80/:443 (TLS Let's Encrypt)          red "edge"
               ├─ tuevento.example.com     ─► frontend:80 ──┬─ /      SPA (fallback a index.html)
-              │                                            ├─ /api ─► backend:8080
-              │                                            └─ /ws  ─► backend:8080 (WebSocket)
+              │                                            ├─ /api ─► api-gateway:8090
+              │                                            └─ /ws  ─► api-gateway:8090 (WebSocket)
               ├─ s3.tuevento.example.com  ─► rustfs:9000   (URLs firmadas de imágenes)
               └─ pay.tuevento.example.com ─► fake-payment-gateway:4001 (popup de pago)
 
+api-gateway (sin ruta comodín; un prefijo sin dueño responde 404):
+  /api/v1/auth, users, profiles, themes, admin (panel) ─► identity-service:8088
+  /api/v1/orders, tickets, payments, webhooks, wallet, refunds, earnings ─► commerce-service:8084
+  /api/v1/events, categories, sections, seats, admin/events ─► catalog-service:8080 (contenedor backend)
+  /api/v1/storage ─► storage-service · /notifications ─► notification-service
+  /api/v1/geolocation, languages ─► geolocation-service · /ws ─► catalog-service (STOMP)
+
 red "internal" (sin puertos publicados):
-  backend ─► postgres, redis, storage-service, commerce-service, kafka
-  commerce-service ─► postgres, redis, kafka (saga), backend, identity-service, fake-payment-gateway
+  catalog-service (backend) ─► postgres (migra todas las tablas), redis, storage-service, commerce-service, identity-service, kafka
+  commerce-service ─► postgres, redis, kafka (saga), catalog-service, identity-service, fake-payment-gateway
+  identity-service ─► postgres, redis, kafka, catalog-service, commerce-service, geolocation-service
   storage-service ─► postgres, redis, rustfs, nsfw-classifier
   geolocation-service ─► postgres, redis, kafka (traducciones), libretranslate*
   fake-payment-gateway ─► postgres-gateway, commerce-service (webhook)
@@ -26,7 +34,7 @@ red "internal" (sin puertos publicados):
 
 Solo NPM publica puertos: 80 y 443 en todas las interfaces, y su panel (81) solo en
 `127.0.0.1`. La API, Swagger y Actuator no tienen proxy host propio: el navegador
-solo llega al backend por `/api` y `/ws`.
+solo llega a los servicios por `/api` y `/ws`, a través del api-gateway.
 
 ## 2. Imágenes `v1.0.0` (build y push)
 
