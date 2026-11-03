@@ -51,11 +51,23 @@ Additional roles include **anonymous users** (browse-only on web) and **administ
 
 ## Architecture
 
-The system is built on a modular **N-Layer architecture with Domain-Driven Design (DDD)**, oriented toward microservices. Key architectural decisions:
+The backend is a set of **microservices**, each one a hexagonal **DDD** application, behind a Spring Cloud **API Gateway**:
 
-- Authentication is handled via **JWT** with a **Refresh Token** system, ensuring secure and auditable session management.
-- All client-server communication is performed over **HTTP** with JSON as the data exchange format.
-- The **API Gateway** provides routing and access control per role.
+| Service | Owns |
+|---|---|
+| `identity-service` | Accounts, login, sessions, OAuth, roles, profiles, themes, admin panel |
+| `catalog-service` (`TuEventoBackend/tu-evento`) | Events, media, layouts, ratings and comments, categories, sections, seats; the `/ws` STOMP broker and the database migrations |
+| `commerce-service` | Orders, tickets and QR check-in, payments and refunds, wallet, organizer earnings |
+| `storage-service` | File uploads, signed URLs and image moderation |
+| `notification-service` | In-app notifications and email |
+| `geolocation-service` | Departments, cities, venues, languages and automatic translations |
+
+Key architectural decisions:
+
+- The gateway routes every `/api/v1` prefix to the service that owns it; there is no catch-all route.
+- Services never read each other's tables. They talk through small internal REST APIs (`/internal/**`, protected by a service-to-service key) and through domain events on **Kafka**, written with a transactional **outbox** and consumed idempotently.
+- A ticket purchase is a choreographed **saga**: commerce creates the order and asks catalog to hold the seats; when the payment is confirmed it publishes `OrderPaid` and catalog sells the seats; if the sale is rejected catalog publishes `SeatsSaleRejected` and commerce refunds the payment. Cancelled or expired orders publish `OrderReleased` and catalog frees the seats.
+- Authentication uses RS256 **JWT** access tokens with a **Refresh Token**, signed by identity-service and verified by every service through its JWKS, plus a Redis revocation list that fails closed.
 - Venue layout and event configuration are **web-exclusive**; mobile clients focus on browsing, purchasing, and QR validation.
 
 ---
@@ -493,12 +505,24 @@ Los roles adicionales incluyen **usuarios anónimos** (solo navegación en web) 
 
 ## Arquitectura
 
-El sistema está construido sobre una **arquitectura modular N-Layer con Domain-Driven Design (DDD)**, orientada a microservicios. Decisiones arquitectónicas clave:
+El backend es un conjunto de **microservicios**, cada uno una aplicación hexagonal con **DDD**, detrás de un **API Gateway** de Spring Cloud:
 
-- La autenticación se maneja mediante **JWT** con un sistema de **Refresh Token**, asegurando una gestión de sesiones segura y auditable.
-- Toda la comunicación cliente-servidor se realiza sobre **HTTP** con JSON como formato de intercambio de datos.
-- La **API Gateway** proporciona enrutamiento y control de acceso por rol.
-- La distribución de venues y configuración de eventos son **exclusivas de web**; los clientes móviles se enfocan en navegación, compra y validación QR.
+| Servicio | Responsable de |
+|---|---|
+| `identity-service` | Cuentas, login, sesiones, OAuth, roles, perfiles, temas, panel de administración |
+| `catalog-service` (`TuEventoBackend/tu-evento`) | Eventos, imágenes, layouts, calificaciones y comentarios, categorías, secciones, sillas; el broker STOMP `/ws` y las migraciones de la base de datos |
+| `commerce-service` | Órdenes, entradas y check-in con QR, pagos y reembolsos, billetera, ganancias del organizador |
+| `storage-service` | Subida de archivos, URLs firmadas y moderación de imágenes |
+| `notification-service` | Notificaciones en la app y correo |
+| `geolocation-service` | Departamentos, ciudades, sedes, idiomas y traducciones automáticas |
+
+Decisiones arquitectónicas clave:
+
+- El gateway envía cada prefijo de `/api/v1` al servicio dueño; no hay ruta comodín.
+- Ningún servicio lee las tablas de otro. Se comunican por pequeñas APIs REST internas (`/internal/**`, protegidas con una clave entre servicios) y por eventos de dominio en **Kafka**, escritos con un **outbox** transaccional y consumidos de forma idempotente.
+- La compra de entradas es una **saga** coreografiada: commerce crea la orden y le pide a catalog reservar las sillas; cuando se confirma el pago publica `OrderPaid` y catalog vende las sillas; si la venta se rechaza, catalog publica `SeatsSaleRejected` y commerce reembolsa el pago. Las órdenes canceladas o vencidas publican `OrderReleased` y catalog libera las sillas.
+- La autenticación usa access tokens **JWT** RS256 con **Refresh Token**, firmados por identity-service y verificados por cada servicio con su JWKS, más una lista de revocación en Redis que falla cerrada.
+- La distribución de venues y la configuración de eventos son **exclusivas de web**; los clientes móviles se enfocan en navegación, compra y validación QR.
 
 ---
 

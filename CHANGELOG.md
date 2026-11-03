@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-03
+
+### Added — feat: commerce-service and the monolith becomes catalog-service (#204)
+
+- New `commerce-service` owns orders, tickets and QR check-in, payments and refunds, wallet and organizer earnings; the `ticket`, `payment` and `wallet` modules are removed from the monolith
+- The monolith is now `catalog-service`: events, categories, sections and seats. The API gateway routes every `/api/v1` prefix to its owner and no longer has a catch-all route, so unknown paths return 404
+- Ticket purchase is a choreographed Kafka saga with a transactional outbox and idempotent consumers: commerce holds the seats through catalog's internal API, `OrderPaid` sells them, `SeatsSaleRejected` refunds the payment and `OrderReleased` frees the seats of cancelled or expired orders
+- Catalog replicates events to commerce (`EventUpserted`, `EventStatusChanged`) and asks commerce for seats with a pending payment and tickets sold; identity reads the admin panel commerce figures from commerce-service
+- Payment reconciliation runs in commerce-service and is on by default
+
+### Changed — refactor(commerce): commerce prepared for the split (#201, #202, #203)
+
+- Organizer earnings moved to the payment module, payments read events through `EventLookupPort` and the commerce exception handlers left the shared `GlobalExceptionHandler`
+
+### Added — feat(seat-map): decor emojis, live section badges and a 10-minute cart hold on web (#195)
+
+### Changed — feat(i18n): web and mobile start in the user's preferred language when a session exists (#198)
+
+### Fixed — fix(web): the landing hero text is readable on every theme (#198)
+
+### Fixed — fix(web): the APK download points to the latest EAS build (#199)
+
+### Security — fix(storage): images are moderated by extension, not only by the client-declared content type (#197)
+
+### Deployment notes
+
+- New image `commerce-v1.2.0` (10 images in total). Rebuild backend, api-gateway, identity, commerce, storage and frontend; `gateway`, `nsfw`, `geolocation` and `notifications` can be retagged from `v1.1.3`
+- `docker-compose.prod.yml` changed: new `commerce-service` block, the backend gets the `catalog-service` network alias and the api-gateway and identity use `CATALOG_SERVICE_URI(L)` and `COMMERCE_SERVICE_URI(L)`
+- commerce-service needs `QR_SECRET`, `WEBHOOK_SECRET` and `FAKE_GATEWAY_API_KEY` (already in `.env.prod`); the backend no longer uses them
+- The fake payment gateway webhook now goes to `http://commerce-service:8084/api/v1/webhooks/payment`
+- No new database migration; back up the database before updating the stack
+
 ## [1.1.3] - 2026-10-28
 
 ### Added — feat(layout): decorative elements, courtesy seats and wizard improvements in the layout editor (#190)

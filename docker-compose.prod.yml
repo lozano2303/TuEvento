@@ -189,9 +189,9 @@ services:
       POSTGRES_DB: ${GATEWAY_POSTGRES_DB:-fake_gateway_db}
       POSTGRES_USER: ${GATEWAY_POSTGRES_USER:?}
       POSTGRES_PASSWORD: ${GATEWAY_POSTGRES_PASSWORD:?}
-      PAYMENT_CALLBACK_URL: http://backend:8080/api/v1/webhooks/payment
+      PAYMENT_CALLBACK_URL: http://commerce-service:8084/api/v1/webhooks/payment
       WEBHOOK_SECRET: ${WEBHOOK_SECRET:?}
-      # X-Api-Key exigida en /admin/** (cancelar/reembolsar); mismo valor que FAKE_GATEWAY_API_KEY del backend
+      # X-Api-Key exigida en /admin/** (cancelar/reembolsar); mismo valor que FAKE_GATEWAY_API_KEY de commerce-service
       ADMIN_API_KEY: ${ADMIN_API_KEY:?}
       LOG_LEVEL: INFO
     depends_on:
@@ -240,7 +240,7 @@ services:
     networks:
       - internal
 
-  # ── Backend (Spring Boot, perfil prod) ─────────────────────────────────────
+  # ── catalog-service (formerly the monolith; Spring Boot, perfil prod) ───────
   backend:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:${TUEVENTO_VERSION:?}
     container_name: tuevento-backend
@@ -269,10 +269,6 @@ services:
       STORAGE_SERVICE_URL: http://storage-service:8085
 
       # Seguridad (los tokens los firma identity-service; aquí solo se verifican)
-      # Respaldo del secreto de los QR de tickets cuando QR_SECRET no está definido
-      JWT_SECRET: ${JWT_SECRET:-}
-      QR_SECRET: ${QR_SECRET:?}
-      QR_EXPIRATION: ${QR_EXPIRATION:-60000}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
 
@@ -282,12 +278,8 @@ services:
       # Eventos y perfiles leen sedes y ciudades de geolocation-service (el backend ya no tiene ese módulo)
       GEOLOCATION_SERVICE_URL: http://geolocation-service:8087
 
-      # Pagos
-      PAYMENT_GATEWAY: fake
-      FAKE_GATEWAY_URL: http://fake-payment-gateway:4001
-      # Se envía como X-Api-Key al cancelar/reembolsar; mismo valor que ADMIN_API_KEY de la pasarela
-      FAKE_GATEWAY_API_KEY: ${FAKE_GATEWAY_API_KEY:?}
-      WEBHOOK_SECRET: ${WEBHOOK_SECRET:?}
+      # Seats being paid and tickets sold: commerce-service's internal API (the backend no longer has those modules)
+      COMMERCE_SERVICE_URL: http://commerce-service:8084
 
     depends_on:
       postgres:
@@ -307,24 +299,30 @@ services:
         limits:
           memory: 1280m
     logging: *default-logging
+    # The container keeps its old name; the other services reach it as catalog-service
     networks:
-      - internal
-      - messaging
+      internal:
+        aliases:
+          - catalog-service
+      messaging:
+        aliases:
+          - catalog-service
 
   # ── API gateway: punto de entrada de /api y /ws ────────────────────────────
-  # Envía /api/v1/storage/**, /api/v1/notifications/**, /api/v1/geolocation/** y
-  # /api/v1/themes/**, /api/v1/profiles/**, /api/v1/auth/**, la cuenta del usuario y el panel de
-  # admin a sus microservicios y el resto al monolito.
+  # Sends every /api/v1 prefix to the microservice that owns it (storage, notifications,
+  # geolocation, identity, commerce and catalog) and /ws to catalog-service. There is no
+  # catch-all route: a path no service declares answers 404.
   api-gateway:
     image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:api-gateway-${TUEVENTO_VERSION:?}
     container_name: tuevento-api-gateway
     restart: unless-stopped
     environment:
-      MONOLITH_URI: http://backend:8080
+      CATALOG_SERVICE_URI: http://catalog-service:8080
       STORAGE_SERVICE_URI: http://storage-service:8085
       GEOLOCATION_SERVICE_URI: http://geolocation-service:8087
       NOTIFICATION_SERVICE_URI: http://notification-service:8086
       IDENTITY_SERVICE_URI: http://identity-service:8088
+      COMMERCE_SERVICE_URI: http://commerce-service:8084
       GATEWAY_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:?}
       JAVA_TOOL_OPTIONS: -Xmx256m
       # Its actuator health checks Redis: without these it tries localhost and stays unhealthy
@@ -341,6 +339,8 @@ services:
       notification-service:
         condition: service_healthy
       identity-service:
+        condition: service_healthy
+      commerce-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8090/actuator/health | grep -q UP"]
@@ -571,10 +571,12 @@ services:
       # Idiomas activos (GET /api/v1/languages); los sirve geolocation-service (el backend ya no)
       LOCALIZATION_BASE_URL: http://geolocation-service:8087
       # Estado de las traducciones de la biografía (API interna del backend, con la clave entre servicios)
-      MONOLITH_BASE_URL: http://backend:8080
+      CATALOG_SERVICE_URL: http://catalog-service:8080
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       # Ciudad del perfil
       GEOLOCATION_SERVICE_URL: http://geolocation-service:8087
+      # Commerce figures of the admin panel (commerce-service's internal API)
+      COMMERCE_SERVICE_URL: http://commerce-service:8084
       # Avisos en vivo (THEME_UPDATED, LANGUAGE_UPDATED) y traducciones: el backend los atiende desde Kafka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       # Lista de revocación de JWT (fail-closed): misma instancia que el backend
@@ -592,6 +594,60 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8088/actuator/health | grep -q UP"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+    logging: *default-logging
+    networks:
+      - internal
+      - messaging
+
+  # ── Commerce microservice ──────────────────────────────────────────────────
+  # Orders, tickets, payments, refunds and wallet; same database as the monolith. It holds and
+  # sells seats in Catalog through the saga on Kafka (tuevento.order / tuevento.seat / tuevento.event).
+  commerce-service:
+    image: ${TUEVENTO_IMAGE_REPO:-jhampier23/tu-evento}:commerce-${TUEVENTO_VERSION:?}
+    container_name: tuevento-commerce-service
+    restart: unless-stopped
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx256m
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?}
+      JWK_SET_URI: http://identity-service:8088/.well-known/jwks.json
+      # JWT revocation list (fail-closed) and single-use QR nonces: same instance as the backend
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      IDENTITY_SERVICE_URL: http://identity-service:8088
+      CATALOG_SERVICE_URL: http://catalog-service:8080
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
+      # Same secret the backend used: the QR codes already issued keep validating
+      QR_SECRET: ${QR_SECRET:?}
+      QR_EXPIRATION: ${QR_EXPIRATION:-60000}
+      PAYMENT_GATEWAY: fake
+      FAKE_GATEWAY_URL: http://fake-payment-gateway:4001
+      # Sent as X-Api-Key to cancel/refund; same value as the gateway's ADMIN_API_KEY
+      FAKE_GATEWAY_API_KEY: ${FAKE_GATEWAY_API_KEY:?}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:?}
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      # The backend migrates the tables
+      backend:
+        condition: service_healthy
+      identity-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health | grep -q UP"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -633,7 +689,7 @@ networks:
     name: tuevento-internal
     driver: bridge
   # Kafka no tiene autenticación: solo los servicios que lo usan (backend, notification-service,
-  # identity-service y geolocation-service) comparten esta red, así ningún otro contenedor puede
+  # identity-service, geolocation-service y commerce-service) comparten esta red, así ningún otro contenedor puede
   # publicar notificaciones o traducciones (ni elegir a quién se envía un email)
   messaging:
     name: tuevento-messaging

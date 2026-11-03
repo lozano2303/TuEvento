@@ -27,6 +27,7 @@ import com.capysoft.tuevento.modules.seat.domain.model.SeatStatus;
 import com.capysoft.tuevento.modules.seat.domain.model.SeatType;
 import com.capysoft.tuevento.modules.seat.domain.repository.SeatRepository;
 import com.capysoft.tuevento.modules.section.domain.repository.EventSectionRepository;
+import com.capysoft.tuevento.shared.domain.exception.ServiceUnavailableException;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("SeatReservationExpirationScheduler")
@@ -85,5 +86,32 @@ class SeatReservationExpirationSchedulerTest {
         scheduler.releaseExpiredReservations();
 
         verify(pendingPaymentSeatsPort, never()).findSeatIdsWithPendingPayment(anyCollection());
+    }
+
+    @Test
+    @DisplayName("if commerce-service does not answer it releases nothing and does not fail")
+    void commerceDown_releasesNothing() {
+        when(seatRepository.findAllByStatusAndReservedUntilBefore(any(), any())).thenReturn(List.of(expired(1)));
+        when(pendingPaymentSeatsPort.findSeatIdsWithPendingPayment(anyCollection()))
+                .thenThrow(new ServiceUnavailableException("COMMERCE_UNAVAILABLE", "down"));
+
+        scheduler.releaseExpiredReservations();
+
+        verify(seatRepository, never()).findByIdForUpdate(any());
+        verify(seatRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("a failing startup catch-up never aborts the startup")
+    void startupCatchUpNeverThrows() throws Exception {
+        var self = SeatReservationExpirationScheduler.class.getDeclaredField("self");
+        self.setAccessible(true);
+        SeatReservationExpirationScheduler failing = org.mockito.Mockito.mock(SeatReservationExpirationScheduler.class);
+        org.mockito.Mockito.doThrow(new IllegalStateException("db down")).when(failing).releaseExpiredReservations();
+        self.set(scheduler, failing);
+
+        scheduler.onStartup();
+
+        verify(failing).releaseExpiredReservations();
     }
 }

@@ -1,0 +1,111 @@
+package com.capysoft.commerce.payment.infrastructure.persistence.repository;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Component;
+
+import com.capysoft.commerce.payment.application.dto.response.OrganizerEarningsByEventResponse;
+import com.capysoft.commerce.payment.domain.model.Payment;
+import com.capysoft.commerce.payment.domain.model.PaymentStatus;
+import com.capysoft.commerce.payment.domain.repository.PaymentRepository;
+import com.capysoft.commerce.payment.infrastructure.persistence.entity.PaymentEntity;
+import com.capysoft.commerce.ticket.domain.model.Money;
+
+import lombok.RequiredArgsConstructor;
+
+@Component
+@RequiredArgsConstructor
+public class PaymentRepositoryImpl implements PaymentRepository {
+
+    private final PaymentJpaRepository jpaRepository;
+
+    @Override
+    public Payment save(Payment payment) {
+        PaymentEntity entity = toEntity(payment);
+        PaymentEntity savedEntity = jpaRepository.save(entity);
+        return toDomain(savedEntity);
+    }
+
+    @Override
+    public Optional<Payment> findById(Long paymentId) {
+        return jpaRepository.findById(paymentId).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Payment> findByOrderId(Long orderId) {
+        return jpaRepository.findByOrderId(orderId).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<Payment> findByGatewayTransactionId(String gatewayTransactionId) {
+        return jpaRepository.findByGatewayTransactionId(gatewayTransactionId).map(this::toDomain);
+    }
+
+    @Override
+    public boolean existsById(Long paymentId) {
+        return jpaRepository.existsById(paymentId);
+    }
+
+    @Override
+    public List<Payment> findByOrderIdInAndStatus(List<Long> orderIds, PaymentStatus status) {
+        return jpaRepository.findByOrderIdInAndStatus(orderIds, status)
+                .stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrganizerEarningsByEventResponse> findEarningsByEvents(Collection<Long> eventIds) {
+        return jpaRepository.findEarningsByEvents(eventIds);
+    }
+
+    @Override
+    public List<Payment> findPendingOlderThan(LocalDateTime olderThan) {
+        return jpaRepository.findByStatusAndCreatedAtBefore(PaymentStatus.PENDING, olderThan)
+                .stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    private PaymentEntity toEntity(Payment payment) {
+        return PaymentEntity.builder()
+            .paymentId(payment.getPaymentId())
+            .orderId(payment.getOrderId())
+            .gateway(payment.getGateway())
+            .gatewayTransactionId(payment.getGatewayTransactionId())
+            .status(payment.getStatus())
+            .amount(payment.getAmount().getAmount())
+            .currency(payment.getAmount().getCurrency())
+            .paymentMethod(payment.getPaymentMethod())
+            .processedAt(payment.getProcessedAt())
+            .walletAmountApplied(payment.getWalletAmountApplied() != null
+                ? payment.getWalletAmountApplied() : BigDecimal.ZERO)
+            .walletTransactionId(payment.getWalletTransactionId())
+            .build();
+    }
+
+    private Payment toDomain(PaymentEntity entity) {
+        return Payment.builder()
+            .paymentId(entity.getPaymentId())
+            .orderId(entity.getOrderId())
+            .gateway(entity.getGateway())
+            .gatewayTransactionId(entity.getGatewayTransactionId())
+            .status(entity.getStatus())
+            .amount(new Money(entity.getAmount(), entity.getCurrency()))
+            .paymentMethod(entity.getPaymentMethod())
+            .processedAt(entity.getProcessedAt())
+            .walletAmountApplied(entity.getWalletAmountApplied() != null
+                ? entity.getWalletAmountApplied() : BigDecimal.ZERO)
+            .walletTransactionId(entity.getWalletTransactionId())
+            .createdAt(entity.getCreatedAt())
+            .updatedAt(entity.getUpdatedAt())
+            .createdBy(entity.getCreatedBy())
+            .updatedBy(entity.getUpdatedBy())
+            .build();
+    }
+}

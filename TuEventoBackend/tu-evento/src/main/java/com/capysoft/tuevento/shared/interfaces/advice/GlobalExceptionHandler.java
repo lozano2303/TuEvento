@@ -16,9 +16,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import com.capysoft.tuevento.modules.payment.domain.model.InvalidPaymentStatusTransitionException;
-import com.capysoft.tuevento.modules.ticket.domain.model.InvalidOrderStatusTransitionException;
-import com.capysoft.tuevento.modules.wallet.domain.model.InsufficientWalletBalanceException;
 import com.capysoft.tuevento.shared.domain.exception.BusinessException;
 import com.capysoft.tuevento.shared.domain.exception.ForbiddenException;
 import com.capysoft.tuevento.shared.domain.exception.ImagePolicyViolationException;
@@ -130,27 +127,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleIllegalStateException(IllegalStateException ex) {
         log.warn("Illegal state — {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(InvalidPaymentStatusTransitionException.class)
-    public ResponseEntity<ApiResponse<Void>> handleInvalidPaymentStatusTransition(InvalidPaymentStatusTransitionException ex) {
-        log.warn("Invalid payment status transition — {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(InvalidOrderStatusTransitionException.class)
-    public ResponseEntity<ApiResponse<Void>> handleInvalidOrderStatusTransition(InvalidOrderStatusTransitionException ex) {
-        log.warn("Invalid order status transition — {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(InsufficientWalletBalanceException.class)
-    public ResponseEntity<ApiResponse<Void>> handleInsufficientWalletBalance(InsufficientWalletBalanceException ex) {
-        log.warn("Insufficient wallet balance — {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(ApiResponse.error(ex.getMessage()));
     }
 

@@ -15,7 +15,6 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
-import com.capysoft.tuevento.modules.payment.infrastructure.notification.PaymentEventListener;
 
 /**
  * Sends notifications to the event organizer when their event exits admin review.
@@ -34,7 +33,7 @@ import com.capysoft.tuevento.modules.payment.infrastructure.notification.Payment
  * the second notification being suppressed.
  *
  * <h3>Pattern</h3>
- * Follows {@link PaymentEventListener}: {@code @TransactionalEventListener(AFTER_COMMIT)}
+ * Follows {@code PaymentEventListener} (payment module): {@code @TransactionalEventListener(AFTER_COMMIT)}
  * + {@code @Async} + {@code @Transactional(REQUIRES_NEW)} so the notification
  * write never blocks or rolls back the originating status-change transaction.
  */
