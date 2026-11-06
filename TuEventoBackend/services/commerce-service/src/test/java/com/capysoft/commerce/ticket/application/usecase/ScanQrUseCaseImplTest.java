@@ -100,16 +100,60 @@ class ScanQrUseCaseImplTest {
         verify(eventPublisher, never()).publishEvent(any());
     }
 
-    @Test
-    @DisplayName("un QR ya consumido se rechaza sin tocar tickets ni avisar")
-    void replacedQrIsRejected() {
+    private void consumedQr(QrScope scope, Long targetId, Long organizerId) {
         when(qrTokenPort.parse("token"))
-                .thenReturn(Optional.of(new QrPayload(QrScope.TICKET, 11L, EVENT_ID, OWNER_ID, "nonce")));
-        when(qrNonceStore.consume(QrScope.TICKET, 11L, "nonce")).thenReturn(false);
+                .thenReturn(Optional.of(new QrPayload(scope, targetId, EVENT_ID, OWNER_ID, "nonce")));
+        when(qrNonceStore.consume(scope, targetId, "nonce")).thenReturn(false);
+        when(eventLookupPort.find(EVENT_ID)).thenReturn(Optional.of(new EventRef(EVENT_ID, organizerId, null, null)));
+    }
+
+    @Test
+    @DisplayName("un QR regenerado (entrada sin usar) se rechaza sin tocar tickets ni avisar")
+    void replacedQrIsRejected() {
+        consumedQr(QrScope.TICKET, 11L, ORGANIZER_ID);
+        when(ticketRepository.findById(11L)).thenReturn(Optional.of(ticket(11, TicketStatus.PAID)));
 
         assertThatThrownBy(() -> useCase.execute("token", ORGANIZER_ID))
-                .isInstanceOf(BusinessException.class);
-        verify(ticketRepository, never()).findByIdForUpdate(anyLong());
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("no longer valid");
+        verify(ticketRepository, never()).save(any());
         verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("el mismo QR escaneado otra vez responde 'ya usada' sin validar ni avisar")
+    void rescannedTicketQrReportsAlreadyUsed() {
+        consumedQr(QrScope.TICKET, 11L, ORGANIZER_ID);
+        when(ticketRepository.findById(11L)).thenReturn(Optional.of(ticket(11, TicketStatus.USED)));
+
+        ScanResultResponse result = useCase.execute("token", ORGANIZER_ID);
+
+        assertThat(result.getValidatedCount()).isZero();
+        assertThat(result.getAlreadyUsedCount()).isEqualTo(1);
+        verify(ticketRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("una orden escaneada otra vez responde 'ya usadas' (los cancelados no cuentan)")
+    void rescannedOrderQrReportsAlreadyUsed() {
+        consumedQr(QrScope.ORDER, ORDER_ID, ORGANIZER_ID);
+        when(ticketRepository.findByOrderId(ORDER_ID))
+                .thenReturn(List.of(ticket(11, TicketStatus.USED), ticket(12, TicketStatus.CANCELLED)));
+
+        ScanResultResponse result = useCase.execute("token", ORGANIZER_ID);
+
+        assertThat(result.getAlreadyUsedCount()).isEqualTo(1);
+        assertThat(result.getOrderId()).isEqualTo(ORDER_ID);
+    }
+
+    @Test
+    @DisplayName("otro organizador no puede ver si un QR consumido ya fue usado")
+    void rescanByAnotherOrganizerIsForbidden() {
+        consumedQr(QrScope.TICKET, 11L, 99L);
+
+        assertThatThrownBy(() -> useCase.execute("token", ORGANIZER_ID))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        verify(ticketRepository, never()).findById(anyLong());
     }
 }
