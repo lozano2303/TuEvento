@@ -29,14 +29,17 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Valida un token QR escaneado por un organizador y marca el/los ticket(s) como USED.
  *
  * Flujo:
  *   1. Verifica firma + expiración del JWT (fuente de verdad de la caducidad).
- *   2. Consume el nonce de forma atómica: si no es el vigente (QR regenerado o
- *      ya escaneado) → rechazo. Esto impide reutilizar/revender un QR.
+ *   2. Consume el nonce de forma atómica: si no es el vigente → no se valida nada.
+ *      Si sus entradas ya estaban usadas (el mismo QR escaneado otra vez) se responde
+ *      "ya usada" para que el organizador vea "Entrada ya escaneada"; si no (QR
+ *      regenerado) → rechazo. Esto impide reutilizar/revender un QR.
  *   3. Autoriza que el organizador autenticado sea el DUEÑO del evento del QR
  *      (ningún otro organizador puede escanear) → 403 si no.
  *   4. Marca como USED el ticket (scope TICKET) o todos los tickets PAID
@@ -66,17 +69,13 @@ public class ScanQrUseCaseImpl {
         // 2. Consumir nonce (single-use + anti-regeneración). Fail-closed.
         boolean consumed = qrNonceStore.consume(payload.scope(), payload.targetId(), payload.nonce());
         if (!consumed) {
-            throw new BusinessException("QR_EXPIRED_OR_REPLACED",
-                    "QR code is no longer valid. Ask the attendee to generate a new one.");
+            return alreadyUsedResult(payload, organizerUserId)
+                    .orElseThrow(() -> new BusinessException("QR_EXPIRED_OR_REPLACED",
+                            "QR code is no longer valid. Ask the attendee to generate a new one."));
         }
 
         // 3. Autorizar: el organizador debe ser dueño del evento
-        EventRef event = eventLookupPort.find(payload.eventId())
-                .orElseThrow(() -> new NotFoundException("EVENT_NOT_FOUND",
-                        "Event not found for this QR"));
-        if (!event.ownerId().equals(organizerUserId)) {
-            throw new AccessDeniedException("You are not the organizer of this event");
-        }
+        authorizeOrganizer(payload, organizerUserId);
 
         // 4. Resolver los tickets a validar según el alcance
         List<Ticket> targetTickets = switch (payload.scope()) {
@@ -142,6 +141,53 @@ public class ScanQrUseCaseImpl {
                 .validatedCount(validated.size())
                 .alreadyUsedCount(alreadyUsed.size())
                 .build();
+    }
+
+    private void authorizeOrganizer(QrPayload payload, Long organizerUserId) {
+        EventRef event = eventLookupPort.find(payload.eventId())
+                .orElseThrow(() -> new NotFoundException("EVENT_NOT_FOUND",
+                        "Event not found for this QR"));
+        if (!event.ownerId().equals(organizerUserId)) {
+            throw new AccessDeniedException("You are not the organizer of this event");
+        }
+    }
+
+    /**
+     * QR cuyo nonce ya no es el vigente: si todas sus entradas ya estaban usadas es el mismo
+     * QR escaneado otra vez y se responde "ya usada" (sin validar nada ni avisar a nadie).
+     * Vacío si queda alguna entrada sin usar: el QR fue regenerado y debe rechazarse.
+     * Solo el organizador dueño del evento puede ver el estado de las entradas.
+     */
+    private Optional<ScanResultResponse> alreadyUsedResult(QrPayload payload, Long organizerUserId) {
+        authorizeOrganizer(payload, organizerUserId);
+
+        List<Ticket> tickets = switch (payload.scope()) {
+            case TICKET -> ticketRepository.findById(payload.targetId()).map(List::of).orElse(List.of());
+            case ORDER -> ticketRepository.findByOrderId(payload.targetId());
+        };
+        List<ScannedTicket> used = new ArrayList<>();
+        for (Ticket ticket : tickets) {
+            if (!ticket.getEventId().equals(payload.eventId())) {
+                continue;
+            }
+            if (ticket.getStatus() == TicketStatus.USED) {
+                used.add(toScanned(ticket));
+            } else if (ticket.canCheckin()) {
+                return Optional.empty();
+            }
+        }
+        if (used.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(ScanResultResponse.builder()
+                .scope(payload.scope().name())
+                .eventId(payload.eventId())
+                .orderId(payload.scope() == QrScope.ORDER ? payload.targetId() : null)
+                .validatedTickets(List.of())
+                .alreadyUsedTickets(used)
+                .validatedCount(0)
+                .alreadyUsedCount(used.size())
+                .build());
     }
 
     private void markUsed(Ticket ticket, Long organizerUserId) {

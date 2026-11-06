@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-06
+
+### Fixed — fix(commerce): scanning an already-used QR says the ticket was already scanned (#207)
+
+- A second scan of the same QR returned "QR no longer valid, ask for a new one" because its nonce was already consumed. It now returns an already-used result, shown on mobile as "Ticket already scanned. Re-entry is not allowed"; a regenerated QR with unused tickets is still rejected
+
+### Deployment notes
+
+- `docker-compose.prod.yml` did not change: only update `TUEVENTO_VERSION`
+- Rebuild only the `commerce-v1.2.1` image; the other nine are retagged from `v1.2.0`
+- No mobile release is needed: the app already renders the already-used result
+
 ## [1.2.0] - 2026-11-03
 
 ### Added — feat: commerce-service and the monolith becomes catalog-service (#204)
