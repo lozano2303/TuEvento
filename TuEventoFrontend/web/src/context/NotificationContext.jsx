@@ -124,6 +124,22 @@ function subscribeSessionEvents(client, userId, subscriptionsRef) {
   subscriptionsRef.current.set('session', sub);
 }
 
+/** Abre (o reabre) una subscripción de página y la guarda con su clave. */
+function openDynamicSubscription(client, key, destination, callback, subscriptionsRef) {
+  const previous = subscriptionsRef.current.get(key);
+  if (previous) {
+    try { previous.unsubscribe(); } catch { /* la conexión anterior ya se cerró */ }
+  }
+  const subscription = client.subscribe(destination, (message) => {
+    try {
+      callback(JSON.parse(message.body));
+    } catch {
+      // Mensaje que no se puede leer
+    }
+  });
+  subscriptionsRef.current.set(key, subscription);
+}
+
 /** Canal global de eventos cancelados: los listados abiertos quitan el evento en vivo. */
 function subscribeEventCancellations(client, subscriptionsRef) {
   const sub = client.subscribe(EVENT_CANCELLED_TOPIC, (message) => {
@@ -163,6 +179,11 @@ export function NotificationProvider({ children }) {
   
   // Map de subscripciones activas (para poder desuscribir)
   const subscriptionsRef = useRef(new Map());
+
+  // Subscripciones pedidas por las páginas (p. ej. las sillas de un evento): clave → { destination,
+  // callback }. Se recuerdan aunque el WebSocket aún no esté conectado y se vuelven a crear en cada
+  // conexión, porque una reconexión (renovación del token, caída de red) descarta las anteriores.
+  const dynamicSubscriptionsRef = useRef(new Map());
   
   // Polling para traducciones pendientes
   
@@ -272,30 +293,23 @@ export function NotificationProvider({ children }) {
    * @returns {function} Función para desuscribirse
    */
   const subscribe = useCallback((destination, callback, key) => {
-    if (!wsClientRef.current || !wsClientRef.current.connected) {
-      return () => {};
+    dynamicSubscriptionsRef.current.set(key, { destination, callback });
+    const client = wsClientRef.current;
+    if (client && client.connected) {
+      openDynamicSubscription(client, key, destination, callback, subscriptionsRef);
     }
 
-    // Si ya existe una subscripción con esta clave, desuscribir primero
-    if (subscriptionsRef.current.has(key)) {
-      subscriptionsRef.current.get(key).unsubscribe();
-    }
-    
-    const subscription = wsClientRef.current.subscribe(destination, (message) => {
-      try {
-        const data = JSON.parse(message.body);
-        callback(data);
-      } catch (err) {
-        // Error parsing message
-      }
-    });
-
-    subscriptionsRef.current.set(key, subscription);
-
-    // Retornar función de cleanup
+    // Cleanup: deja de recordarla y la cierra si está abierta
     return () => {
-      subscription.unsubscribe();
-      subscriptionsRef.current.delete(key);
+      const current = dynamicSubscriptionsRef.current.get(key);
+      if (current && current.callback === callback) {
+        dynamicSubscriptionsRef.current.delete(key);
+      }
+      const subscription = subscriptionsRef.current.get(key);
+      if (subscription) {
+        try { subscription.unsubscribe(); } catch { /* la conexión ya se cerró */ }
+        subscriptionsRef.current.delete(key);
+      }
     };
   }, []);
 
@@ -363,6 +377,11 @@ export function NotificationProvider({ children }) {
 
         // Eventos cancelados: los listados abiertos los quitan sin recargar
         subscribeEventCancellations(client, subscriptionsRef);
+
+        // Subscripciones de las páginas abiertas (p. ej. sillas en vivo del evento)
+        dynamicSubscriptionsRef.current.forEach(({ destination, callback }, key) => {
+          openDynamicSubscription(client, key, destination, callback, subscriptionsRef);
+        });
       },
 
       onStompError: (frame) => {
@@ -469,6 +488,11 @@ export function NotificationProvider({ children }) {
 
         // Eventos cancelados: los listados abiertos los quitan sin recargar
         subscribeEventCancellations(client, subscriptionsRef);
+
+        // Subscripciones de las páginas abiertas (p. ej. sillas en vivo del evento)
+        dynamicSubscriptionsRef.current.forEach(({ destination, callback }, key) => {
+          openDynamicSubscription(client, key, destination, callback, subscriptionsRef);
+        });
       },
 
       onStompError: (frame) => {
