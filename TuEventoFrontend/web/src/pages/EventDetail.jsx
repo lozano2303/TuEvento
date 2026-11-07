@@ -508,7 +508,7 @@ export default function EventDetail() {
             [event.seatId]: {
               ...seat,
               status: event.newStatus,
-              reservedBy: event.newStatus === 'RESERVED' ? seat.reservedBy : null,
+              reservedBy: event.newStatus === 'RESERVED' ? (event.changedBy ?? seat.reservedBy) : null,
               reservedUntil: event.reservedUntil,
             },
           };

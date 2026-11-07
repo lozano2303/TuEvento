@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 114-fix-organizer-petition-pending-unique-index
+      author: capysoft
+      comment: >
+        El changeset 052 quiso un índice único parcial (solo solicitudes PENDING), pero createIndex
+        ignora "where" y quedó único en (user_id, status) para todos los estados. Un usuario al que
+        se le revocó el rol y volvió a pedirlo no se podía aprobar: ya tenía una solicitud APPROVED.
+        Se rehace como índice parcial: como mucho una solicitud PENDING por usuario.
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: postgresql
+      changes:
+        - sql:
+            sql: >
+              DROP INDEX IF EXISTS ux_organizer_petition_user_pending;
+              CREATE UNIQUE INDEX ux_organizer_petition_user_pending
+                ON organizer_petition (user_id) WHERE status = 'PENDING';
+      rollback:
+        - sql:
+            sql: >
+              DROP INDEX IF EXISTS ux_organizer_petition_user_pending;
+              CREATE UNIQUE INDEX ux_organizer_petition_user_pending
+                ON organizer_petition (user_id, status);
