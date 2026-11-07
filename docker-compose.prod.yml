@@ -182,6 +182,8 @@ services:
     container_name: tuevento-fake-gateway
     restart: unless-stopped
     environment:
+      # Hora de Colombia: LocalDateTime.now() y las fechas guardadas sin zona usan esta zona
+      TZ: ${APP_TIMEZONE:-America/Bogota}
       JAVA_OPTS: ${GATEWAY_JAVA_OPTS:--Xms64m -Xmx256m -XX:MaxMetaspaceSize=128m}
       FAKE_GATEWAY_PORT: "4001"
       POSTGRES_HOST: postgres-gateway
@@ -246,6 +248,8 @@ services:
     container_name: tuevento-backend
     restart: unless-stopped
     environment:
+      # Hora de Colombia: LocalDateTime.now() y las fechas guardadas sin zona usan esta zona
+      TZ: ${APP_TIMEZONE:-America/Bogota}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
       SPRING_PROFILES_ACTIVE: prod
       # Identidad: verifica los tokens con el JWK Set de identity-service y usa su API interna
@@ -317,6 +321,8 @@ services:
     container_name: tuevento-api-gateway
     restart: unless-stopped
     environment:
+      # Hora de Colombia: LocalDateTime.now() y las fechas guardadas sin zona usan esta zona
+      TZ: ${APP_TIMEZONE:-America/Bogota}
       CATALOG_SERVICE_URI: http://catalog-service:8080
       STORAGE_SERVICE_URI: http://storage-service:8085
       GEOLOCATION_SERVICE_URI: http://geolocation-service:8087
@@ -363,6 +369,8 @@ services:
     container_name: tuevento-storage-service
     restart: unless-stopped
     environment:
+      # Hora de Colombia: LocalDateTime.now() y las fechas guardadas sin zona usan esta zona
+      TZ: ${APP_TIMEZONE:-America/Bogota}
       JAVA_TOOL_OPTIONS: -Xmx320m
       # El backend sube y consulta archivos por /internal/files con esta clave
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-}
@@ -456,6 +464,8 @@ services:
     container_name: tuevento-notification-service
     restart: unless-stopped
     environment:
+      # Hora de Colombia: LocalDateTime.now() y las fechas guardadas sin zona usan esta zona
+      TZ: ${APP_TIMEZONE:-America/Bogota}
       JAVA_TOOL_OPTIONS: -Xmx320m
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
@@ -499,6 +509,8 @@ services:
     container_name: tuevento-geolocation-service
     restart: unless-stopped
     environment:
+      # Hora de Colombia: LocalDateTime.now() y las fechas guardadas sin zona usan esta zona
+      TZ: ${APP_TIMEZONE:-America/Bogota}
       JAVA_TOOL_OPTIONS: -Xmx256m
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
@@ -543,6 +555,8 @@ services:
     container_name: tuevento-identity-service
     restart: unless-stopped
     environment:
+      # Hora de Colombia: LocalDateTime.now() y las fechas guardadas sin zona usan esta zona
+      TZ: ${APP_TIMEZONE:-America/Bogota}
       JAVA_TOOL_OPTIONS: -Xmx256m
       # La MISMA clave RS256 que el backend: los tokens que firma uno los valida el otro
       APP_JWT_PRIVATE_KEY: ${APP_JWT_PRIVATE_KEY:?}
@@ -615,6 +629,8 @@ services:
     container_name: tuevento-commerce-service
     restart: unless-stopped
     environment:
+      # Hora de Colombia: LocalDateTime.now() y las fechas guardadas sin zona usan esta zona
+      TZ: ${APP_TIMEZONE:-America/Bogota}
       JAVA_TOOL_OPTIONS: -Xmx256m
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:?}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?}
