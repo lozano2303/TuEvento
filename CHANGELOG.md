@@ -4,17 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [1.2.1] - 2026-11-06
+## [1.2.1] - 2026-11-07
 
 ### Fixed — fix(commerce): scanning an already-used QR says the ticket was already scanned (#207)
 
 - A second scan of the same QR returned "QR no longer valid, ask for a new one" because its nonce was already consumed. It now returns an already-used result, shown on mobile as "Ticket already scanned. Re-entry is not allowed"; a regenerated QR with unused tickets is still rejected
 
+### Fixed — fix(web): live seat updates survive WebSocket connects and reconnects (#210)
+
+- A seat reserved by another user (for example on mobile) did not show as taken on the web when the event page opened before the socket connected or after any reconnect; page subscriptions are now reopened on every connect
+
+### Fixed — fix(db): a user whose organizer role was revoked can be approved again (#211)
+
+- Approving the new petition failed with a 500 because `ux_organizer_petition_user_pending` was unique on `(user_id, status)` for every status; changeset 114 makes it a partial index on pending petitions only
+
+### Fixed — fix(deploy): the Java services run in Colombia time (#209)
+
+- The containers ran in GMT, so new timestamps were 5 hours ahead; `TZ=America/Bogota` (overridable with `APP_TIMEZONE`) is set on the eight Java services. Rows written before the change keep the old offset
+
 ### Deployment notes
 
-- `docker-compose.prod.yml` did not change: only update `TUEVENTO_VERSION`
-- Rebuild only the `commerce-v1.2.1` image; the other nine are retagged from `v1.2.0`
-- No mobile release is needed: the app already renders the already-used result
+- Replace the Portainer stack file with this `docker-compose.prod.yml` (adds `TZ`) and set `TUEVENTO_VERSION=v1.2.1`
+- Rebuild `v1.2.1` (backend: Liquibase changeset 114), `frontend-v1.2.1` and `commerce-v1.2.1`; retag the other seven from `v1.2.0`
+- Deploy when no purchase is in progress: seat holds and lockouts active during the time-zone switch last up to 5 hours longer
+- No mobile release is needed
 
 ## [1.2.0] - 2026-11-03
 
