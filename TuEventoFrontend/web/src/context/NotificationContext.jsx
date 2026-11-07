@@ -184,6 +184,45 @@ export function NotificationProvider({ children }) {
   // callback }. Se recuerdan aunque el WebSocket aún no esté conectado y se vuelven a crear en cada
   // conexión, porque una reconexión (renovación del token, caída de red) descarta las anteriores.
   const dynamicSubscriptionsRef = useRef(new Map());
+
+  /**
+   * Subscripciones de cada conexión: notificaciones, cambios de rol, sesión, eventos cancelados y
+   * las que pidieron las páginas abiertas. Se llama en cada onConnect (también al reconectar).
+   */
+  const subscribeAllChannels = (client, userId, handleNewNotification, handleRoleRevoked) => {
+    // /topic/notifications/{userId}: el simple broker de Spring no maneja bien los user destinations
+    const notifSubscription = client.subscribe(`/topic/notifications/${userId}`, (message) => {
+      try {
+        handleNewNotification(JSON.parse(message.body));
+      } catch {
+        // Notificación que no se puede leer
+      }
+    });
+    subscriptionsRef.current.set('notifications', notifSubscription);
+
+    // ROLE_REVOKED: el admin revoca el rol al organizador
+    const roleSubscription = client.subscribe(`/topic/role-change/${userId}`, (message) => {
+      try {
+        if (JSON.parse(message.body)?.type === 'ROLE_REVOKED') {
+          void handleRoleRevoked();
+        }
+      } catch {
+        // Mensaje que no se puede leer
+      }
+    });
+    subscriptionsRef.current.set('role-change', roleSubscription);
+
+    // ROLE_UPDATED: solicitud de organizador aprobada
+    subscribeSessionEvents(client, userId, subscriptionsRef);
+
+    // Eventos cancelados: los listados abiertos los quitan sin recargar
+    subscribeEventCancellations(client, subscriptionsRef);
+
+    // Subscripciones de las páginas abiertas (p. ej. sillas en vivo del evento)
+    dynamicSubscriptionsRef.current.forEach(({ destination, callback }, key) => {
+      openDynamicSubscription(client, key, destination, callback, subscriptionsRef);
+    });
+  };
   
   // Polling para traducciones pendientes
   
@@ -347,41 +386,7 @@ export function NotificationProvider({ children }) {
       webSocketFactory: () => new SockJS(`${WS_BASE_URL}/ws?token=${newToken}`),
 
       onConnect: () => {
-        const notificationDest = `/topic/notifications/${userId}`;
-        const notifSubscription = client.subscribe(notificationDest, (message) => {
-          try {
-            const notification = JSON.parse(message.body);
-            handleNewNotification(notification);
-          } catch (err) {
-            // Error parsing notification
-          }
-        });
-        subscriptionsRef.current.set('notifications', notifSubscription);
-
-        // Role-change subscription: ROLE_REVOKED (admin revoca el rol al organizador)
-        const roleChangeDest = `/topic/role-change/${userId}`;
-        const roleSubscription = client.subscribe(roleChangeDest, (message) => {
-          try {
-            const payload = JSON.parse(message.body);
-            if (payload?.type === 'ROLE_REVOKED') {
-              void handleRoleRevoked();
-            }
-          } catch (err) {
-            // Error parsing role-change message
-          }
-        });
-        subscriptionsRef.current.set('role-change', roleSubscription);
-
-        // Session events subscription: ROLE_UPDATED (solicitud de organizador aprobada)
-        subscribeSessionEvents(client, userId, subscriptionsRef);
-
-        // Eventos cancelados: los listados abiertos los quitan sin recargar
-        subscribeEventCancellations(client, subscriptionsRef);
-
-        // Subscripciones de las páginas abiertas (p. ej. sillas en vivo del evento)
-        dynamicSubscriptionsRef.current.forEach(({ destination, callback }, key) => {
-          openDynamicSubscription(client, key, destination, callback, subscriptionsRef);
-        });
+        subscribeAllChannels(client, userId, handleNewNotification, handleRoleRevoked);
       },
 
       onStompError: (frame) => {
@@ -453,46 +458,7 @@ export function NotificationProvider({ children }) {
       webSocketFactory: () => new SockJS(`${WS_BASE_URL}/ws?token=${token}`),
 
       onConnect: () => {
-        // SIEMPRE suscribirse a notificaciones (subscripción permanente)
-        // Usar /topic/notifications/{userId} porque el simple broker de Spring
-        // no soporta user destinations correctamente
-        const notificationDest = `/topic/notifications/${userId}`;
-        
-        const notifSubscription = client.subscribe(notificationDest, (message) => {
-          try {
-            const notification = JSON.parse(message.body);
-            handleNewNotification(notification);
-          } catch (err) {
-            // Error parsing notification
-          }
-        });
-
-        subscriptionsRef.current.set('notifications', notifSubscription);
-
-        // Role-change subscription: ROLE_REVOKED (admin revoca el rol al organizador)
-        const roleChangeDest = `/topic/role-change/${userId}`;
-        const roleSubscription = client.subscribe(roleChangeDest, (message) => {
-          try {
-            const payload = JSON.parse(message.body);
-            if (payload?.type === 'ROLE_REVOKED') {
-              void handleRoleRevoked();
-            }
-          } catch (err) {
-            // Error parsing role-change message
-          }
-        });
-        subscriptionsRef.current.set('role-change', roleSubscription);
-
-        // Session events subscription: ROLE_UPDATED (solicitud de organizador aprobada)
-        subscribeSessionEvents(client, userId, subscriptionsRef);
-
-        // Eventos cancelados: los listados abiertos los quitan sin recargar
-        subscribeEventCancellations(client, subscriptionsRef);
-
-        // Subscripciones de las páginas abiertas (p. ej. sillas en vivo del evento)
-        dynamicSubscriptionsRef.current.forEach(({ destination, callback }, key) => {
-          openDynamicSubscription(client, key, destination, callback, subscriptionsRef);
-        });
+        subscribeAllChannels(client, userId, handleNewNotification, handleRoleRevoked);
       },
 
       onStompError: (frame) => {
